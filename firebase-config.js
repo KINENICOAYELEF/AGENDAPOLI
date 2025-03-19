@@ -1,23 +1,22 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { getStorage } from "firebase/storage";
-
-// Your web app's Firebase configuration
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBYaNbZWHUS-Pvm49kmMtHw9LqqxUDySYA",
   authDomain: "base-de-datos-poli.firebaseapp.com",
   projectId: "base-de-datos-poli",
-  storageBucket: "base-de-datos-poli.appspot.com",
+  storageBucket: "base-de-datos-poli.firebasestorage.app",
   messagingSenderId: "954754202697",
   appId: "1:954754202697:web:e06171f6b0ade314259398"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
 
-export { app, db, auth, storage };
+// Referencias a servicios de Firebase
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// Exportar para uso en otros archivos
+window.db = db;
+window.auth = auth;
+window.storage = storage;
