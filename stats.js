@@ -520,4 +520,273 @@ export function exportReportToCSV(reportData) {
     });
     
     return csv;
-  } catch
+  } catch (error) {
+    console.error('Error al exportar reporte a CSV:', error);
+    throw error;
+  }
+}
+
+// Exportar reporte a PDF (usando la API html2pdf)
+export function exportReportToPDF(reportData) {
+  try {
+    // Generar HTML para el PDF
+    const startDate = reportData.periodStart.toLocaleDateString('es-CL');
+    const endDate = reportData.periodEnd.toLocaleDateString('es-CL');
+    
+    let html = `
+      <div class="report-container">
+        <h1>Reporte de Actividad</h1>
+        <h2>${startDate} al ${endDate}</h2>
+        
+        <div class="report-section">
+          <h3>Resumen</h3>
+          <table class="report-table">
+            <tr>
+              <th>Total de citas</th>
+              <th>Asistieron</th>
+              <th>No asistieron</th>
+              <th>Reprogramadas</th>
+              <th>Pendientes</th>
+              <th>Tasa de asistencia</th>
+            </tr>
+            <tr>
+              <td>${reportData.summaryStats.totalAppointments}</td>
+              <td>${reportData.summaryStats.attendedAppointments}</td>
+              <td>${reportData.summaryStats.missedAppointments}</td>
+              <td>${reportData.summaryStats.rescheduledAppointments}</td>
+              <td>${reportData.summaryStats.pendingAppointments}</td>
+              <td>${reportData.summaryStats.attendanceRate.toFixed(2)}%</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="report-section">
+          <h3>Estadísticas por Paciente</h3>
+          <table class="report-table">
+            <tr>
+              <th>Nombre</th>
+              <th>RUT</th>
+              <th>Total</th>
+              <th>Asistieron</th>
+              <th>No asistieron</th>
+              <th>Reprogramadas</th>
+              <th>Pendientes</th>
+            </tr>
+    `;
+    
+    // Agregar filas de pacientes (limitar a los 20 primeros para evitar PDFs muy grandes)
+    reportData.patientStats.slice(0, 20).forEach(patient => {
+      html += `
+        <tr>
+          <td>${patient.name}</td>
+          <td>${patient.rut}</td>
+          <td>${patient.total}</td>
+          <td>${patient.attended}</td>
+          <td>${patient.missed}</td>
+          <td>${patient.rescheduled}</td>
+          <td>${patient.pending}</td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </table>
+        </div>
+        
+        <div class="report-section">
+          <h3>Distribución por Día de la Semana</h3>
+          <table class="report-table">
+            <tr>
+              <th>Día</th>
+              <th>Cantidad</th>
+            </tr>
+    `;
+    
+    reportData.weekdayDistribution.forEach(day => {
+      html += `
+        <tr>
+          <td>${day.day}</td>
+          <td>${day.count}</td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </table>
+        </div>
+        
+        <div class="report-section">
+          <h3>Listado de Citas</h3>
+          <table class="report-table appointments-table">
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Paciente</th>
+              <th>Estado</th>
+              <th>Notas</th>
+            </tr>
+    `;
+    
+    // Agregar filas de citas (limitar a las 50 primeras para evitar PDFs muy grandes)
+    reportData.rawAppointments.slice(0, 50).forEach(appointment => {
+      const date = appointment.date.toLocaleDateString('es-CL');
+      const time = appointment.date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      
+      html += `
+        <tr>
+          <td>${date}</td>
+          <td>${time}</td>
+          <td>${appointment.patientName}</td>
+          <td>${formatAttendanceStatus(appointment.attendance)}</td>
+          <td>${appointment.notes || ''}</td>
+        </tr>
+      `;
+    });
+    
+    html += `
+          </table>
+        </div>
+      </div>
+    `;
+    
+    // Estilos CSS para el PDF
+    const styles = `
+      <style>
+        .report-container {
+          font-family: Arial, sans-serif;
+          max-width: 1000px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        
+        h1, h2 {
+          text-align: center;
+          color: #3498db;
+        }
+        
+        h2 {
+          margin-bottom: 30px;
+          font-weight: normal;
+        }
+        
+        .report-section {
+          margin-bottom: 30px;
+        }
+        
+        h3 {
+          color: #2980b9;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 5px;
+          margin-bottom: 10px;
+        }
+        
+        .report-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        
+        .report-table th, .report-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: center;
+        }
+        
+        .report-table th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+        }
+        
+        .report-table tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+        
+        .appointments-table td:nth-child(5) {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      </style>
+    `;
+    
+    // Combinar HTML y CSS
+    const content = styles + html;
+    
+    return content;
+  } catch (error) {
+    console.error('Error al exportar reporte a PDF:', error);
+    throw error;
+  }
+}
+
+// Formatear estado de asistencia
+function formatAttendanceStatus(status) {
+  switch (status) {
+    case 'attended': return 'Asistió';
+    case 'missed': return 'No asistió';
+    case 'rescheduled': return 'Reprogramada';
+    case 'pending': return 'Pendiente';
+    default: return status;
+  }
+}
+
+// Generar datos simulados para gráficos (útil para pruebas)
+export function generateMockData() {
+  // Datos de asistencia simulados
+  const attendanceData = {
+    attended: Math.floor(Math.random() * 50) + 50, // Entre 50 y 100
+    missed: Math.floor(Math.random() * 30) + 10,   // Entre 10 y 40
+    rescheduled: Math.floor(Math.random() * 20) + 5, // Entre 5 y 25
+    pending: Math.floor(Math.random() * 15) + 5    // Entre 5 y 20
+  };
+  
+  // Datos de distribución horaria simulados
+  const timeDistribution = {
+    labels: [],
+    data: []
+  };
+  
+  for (let hour = 8; hour <= 18; hour++) {
+    timeDistribution.labels.push(`${hour}:00`);
+    timeDistribution.data.push(Math.floor(Math.random() * 15) + 1); // Entre 1 y 16 por hora
+  }
+  
+  // Datos de pacientes frecuentes simulados
+  const frequentPatients = {
+    labels: [],
+    data: []
+  };
+  
+  const patientNames = [
+    'Juan Pérez', 'María González', 'Carlos Rodríguez', 'Ana Martínez',
+    'Pedro Sánchez', 'Lucía Fernández', 'José López', 'Carmen Díaz',
+    'Luis Torres', 'Laura Ramírez'
+  ];
+  
+  patientNames.forEach(name => {
+    frequentPatients.labels.push(name);
+    frequentPatients.data.push(Math.floor(Math.random() * 20) + 1); // Entre 1 y 21 citas
+  });
+  
+  // Datos de carga semanal simulados
+  const workloadData = {
+    labels: [],
+    data: []
+  };
+  
+  const today = new Date();
+  for (let i = 0; i < 30; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    workloadData.labels.push(date.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }));
+    workloadData.data.push(Math.floor(Math.random() * 12) + 1); // Entre 1 y 13 citas por día
+  }
+  
+  return {
+    attendanceData,
+    timeDistribution,
+    frequentPatients,
+    workloadData
+  };
+}
