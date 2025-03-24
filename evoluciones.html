@@ -2165,8 +2165,7 @@
         // Import the functions you need from the SDKs you need
        // Actualiza estas importaciones
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyA8fY-L1r3nBq61CFPOAFRI6TlS9A5GNTA",
@@ -3397,7 +3396,7 @@ async function addPatient(patientData) {
 function setupNavigation() {
     // Contenido de las diferentes vistas
     const views = {
-        'dashboard': document.querySelector('.content'), // La vista actual por defecto
+        'dashboard': document.querySelector('.content').outerHTML, // Guardar HTML original
         'pacientes': `
             <div class="content">
                 <h1 class="page-title">Gestión de Pacientes</h1>
@@ -3461,6 +3460,70 @@ function setupNavigation() {
             </div>
         `
     };
+
+    // Configurar eventos de navegación
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Eliminar clase active de todos los items
+            document.querySelectorAll('.menu-item').forEach(menuItem => {
+                menuItem.classList.remove('active');
+            });
+            
+            // Añadir clase active al item clicado
+            this.classList.add('active');
+            
+            // Obtener el nombre de la vista seleccionada
+            const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
+            
+            // Reemplazar contenido
+            const mainContent = document.getElementById('mainContent');
+            const header = mainContent.querySelector('.header');
+            const currentContent = mainContent.querySelector('.content');
+            
+            if (currentContent) {
+                currentContent.remove();
+            }
+            
+            // Crear nuevo contenido
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = views[viewName];
+            
+            // Insertar después del header
+            header.after(tempDiv.firstElementChild);
+            
+            // Mostrar un mensaje
+            showToast(`Navegando a: ${viewName}`, "info");
+            
+            // Cargar datos según la vista
+            if (viewName === 'dashboard') {
+                getPatients();
+            } 
+            else if (viewName === 'pacientes') {
+                getPatients().then(patients => {
+                    renderPatientsInView('patientListView', patients);
+                    
+                    // Añadir evento al botón
+                    const addBtn = document.getElementById('addPatientBtnView');
+                    if (addBtn) {
+                        addBtn.addEventListener('click', function() {
+                            document.getElementById('newPatientModal').classList.add('active');
+                        });
+                    }
+                });
+            }
+            else if (viewName === 'evoluciones') {
+                getPatients().then(patients => {
+                    renderPatientsInView('patientEvolutionsView', patients);
+                });
+            }
+            else if (viewName === 'reportes') {
+                updateReportStatistics();
+            }
+        });
+    });
+}
 
     // Función para cambiar la vista
   // Busca esta función en setupNavigation() (cerca de la línea 2700)
