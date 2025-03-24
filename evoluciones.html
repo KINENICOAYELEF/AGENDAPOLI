@@ -2163,21 +2163,22 @@
     <!-- Script for Firebase -->
     <script type="module">
 // Import the functions you need from the SDKs you need
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyA8fY-L1r3nBq61CFPOAFRI6TlS9A5GNTA",
-    authDomain: "agendapoli-13963.firebaseapp.com",
-    projectId: "agendapoli-13963",
-    storageBucket: "agendapoli-13963.appspot.com", // Corregido el formato de storage bucket
-    messagingSenderId: "265927768586",
-    appId: "1:265927768586:web:c7e37e6a561bd996687df3"
+  apiKey: "AIzaSyDD1kjbOr566240HrDtWi5egah47kGZLvQ",
+  authDomain: "evoluciones-poli.firebaseapp.com",
+  projectId: "evoluciones-poli",
+  storageBucket: "evoluciones-poli.appspot.com", // Nota: Corregí el formato aquí
+  messagingSenderId: "771046852975",
+  appId: "1:771046852975:web:ceedc5c0e5d22ea039809a"
 };
 
-// Inicializar Firebase (simplificado)
+// Inicializar Firebase con mejor manejo de errores
 console.log("Inicializando Firebase...");
 let app, db, storage;
 try {
@@ -2185,8 +2186,10 @@ try {
     db = getFirestore(app);
     storage = getStorage(app);
     console.log("Firebase inicializado correctamente");
+    showToast("Conexión a Firebase establecida", "success");
 } catch (error) {
-    console.error("Error inicializando Firebase:", error);
+    console.error("Error al inicializar Firebase:", error);
+    showToast("Error al conectar con Firebase: " + error.message, "error");
 }
 
 // Definir vistas globalmente para que sean accesibles en todo el script
@@ -2299,11 +2302,23 @@ function formatDate(date) {
 }
 
 // Test Firebase connection
+// Test Firebase connection
 async function testFirebase() {
     try {
-        // Simplemente verificar que podemos acceder a Firestore sin escribir
+        // Probar lectura
         const testCollection = collection(db, "patients");
-        console.log("Conexión a Firebase establecida correctamente");
+        
+        // Probar escritura con un documento temporal
+        const testDoc = await addDoc(testCollection, {
+            test: true,
+            createdAt: new Date().toISOString(),
+            message: "Test connection"
+        });
+        
+        // Eliminar el documento de prueba para no dejar basura
+        await deleteDoc(doc(db, "patients", testDoc.id));
+        
+        console.log("Test de Firebase completado: Permisos de lectura y escritura OK");
         showToast("Conexión a Firebase verificada", "success");
         return true;
     } catch (error) {
