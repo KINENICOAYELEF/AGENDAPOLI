@@ -2163,10 +2163,10 @@
     <!-- Script for Firebase -->
     <script type="module">
         // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-storage.js";
-
+       // Actualiza estas importaciones
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
         // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyA8fY-L1r3nBq61CFPOAFRI6TlS9A5GNTA",
@@ -2176,6 +2176,42 @@
             messagingSenderId: "265927768586",
             appId: "1:265927768586:web:c7e37e6a561bd996687df3"
         };
+
+                    // Añade este código al inicio de la inicialización de Firebase
+            console.log("Configuración de Firebase:", firebaseConfig);
+            
+            // Verificar que Firebase está inicializado correctamente
+            const app = initializeApp(firebaseConfig);
+            console.log("Firebase inicializado:", app);
+            
+            const db = getFirestore(app);
+            console.log("Firestore obtenido:", db);
+            
+            // Función de prueba para verificar Firebase
+            async function testFirebase() {
+                try {
+                    // Intentar obtener colección
+                    const testCollection = collection(db, "test");
+                    console.log("Colección de prueba:", testCollection);
+                    
+                    // Intentar añadir documento
+                    const testDoc = await addDoc(testCollection, {
+                        test: true,
+                        timestamp: new Date().toISOString()
+                    });
+                    console.log("Documento de prueba creado:", testDoc.id);
+                    
+                    showToast("Conexión a Firebase verificada", "success");
+                    return true;
+                } catch (error) {
+                    console.error("Error en prueba de Firebase:", error);
+                    showToast("Error de conexión a Firebase: " + error.message, "error");
+                    return false;
+                }
+            }
+            
+            // Llama a esta función en initApp
+            await testFirebase();
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -2320,41 +2356,45 @@
         
         // Add new patient to Firebase
         // Modifica la función addPatient en el script de Firebase
-        async function addPatient(patientData) {
-            try {
-                showLoading();
-                
-                // Verifica que los campos obligatorios estén presentes
-                if (!patientData.name || !patientData.rut) {
-                    hideLoading();
-                    showToast("Error: Nombre y RUT son obligatorios", "error");
-                    return null;
-                }
-                
-                // Añade logs para depuración
-                console.log("Intentando añadir paciente:", patientData);
-                
-                // Add created_at timestamp
-                patientData.created_at = new Date().toISOString(); // Cambiado de serverTimestamp()
-                patientData.registerDate = formatDate(new Date());
-                patientData.progress = 0;
-                
-                const docRef = await addDoc(collection(db, "patients"), patientData);
-                console.log("Patient added with ID: ", docRef.id);
-                
-                // Update UI
-                await getPatients();
-                
-                hideLoading();
-                showToast("Paciente registrado correctamente", "success");
-                return docRef.id;
-            } catch (e) {
-                console.error("Error detallado al registrar paciente:", e);
-                hideLoading();
-                showToast(`Error al registrar paciente: ${e.message}`, "error");
-                return null;
-            }
-        }
+        // Reemplaza la función addPatient
+async function addPatient(patientData) {
+    try {
+        showLoading();
+        
+        console.log("Intentando registrar paciente con datos:", patientData);
+        
+        // Simplificar la estructura de datos
+        const simplePatientData = {
+            name: patientData.name || '',
+            rut: patientData.rut || '',
+            phone: patientData.phone || '',
+            email: patientData.email || '',
+            birthDate: patientData.birthDate || '',
+            created_at: new Date().toISOString(),
+            registerDate: formatDate(new Date()),
+            progress: 0
+        };
+        
+        // Intenta usar addDoc directo
+        const patientsRef = collection(db, "patients");
+        const docRef = await addDoc(patientsRef, simplePatientData);
+        
+        console.log("Paciente registrado con ID:", docRef.id);
+        
+        hideLoading();
+        showToast("Paciente registrado correctamente", "success");
+        
+        // Recargar pacientes
+        await getPatients();
+        
+        return docRef.id;
+    } catch (error) {
+        console.error("Error completo:", error);
+        hideLoading();
+        showToast(`Error: ${error.message}`, "error");
+        return null;
+    }
+}
 
         // Get patient by ID
         async function getPatient(patientId) {
@@ -3360,6 +3400,219 @@
         document.addEventListener('DOMContentLoaded', function() {
             initApp();
         });
+
+        // Añade esta función al script principal
+function setupNavigation() {
+    // Contenido de las diferentes vistas
+    const views = {
+        'dashboard': document.querySelector('.content'), // La vista actual por defecto
+        'pacientes': `
+            <div class="content">
+                <h1 class="page-title">Gestión de Pacientes</h1>
+                <div class="section-header">
+                    <h2 class="section-title">Listado de Pacientes</h2>
+                    <button class="action-btn btn-primary" id="addPatientBtnView">
+                        <i class="fas fa-plus"></i> Nuevo paciente
+                    </button>
+                </div>
+                <div class="patient-list" id="patientListView"></div>
+            </div>
+        `,
+        'evoluciones': `
+            <div class="content">
+                <h1 class="page-title">Registro de Evoluciones</h1>
+                <div class="section-header">
+                    <h2 class="section-title">Seleccione un paciente para registrar evoluciones</h2>
+                </div>
+                <div class="patient-list" id="patientEvolutionsView"></div>
+            </div>
+        `,
+        'reportes': `
+            <div class="content">
+                <h1 class="page-title">Reportes y Estadísticas</h1>
+                <div class="dashboard">
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="dashboard-info">
+                            <div class="dashboard-title">Total pacientes</div>
+                            <div class="dashboard-value" id="totalPatientsReport">0</div>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="dashboard-info">
+                            <div class="dashboard-title">Total evoluciones</div>
+                            <div class="dashboard-value" id="totalEvolutionsReport">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `,
+        'configuracion': `
+            <div class="content">
+                <h1 class="page-title">Configuración del Sistema</h1>
+                <div class="form-group">
+                    <label class="form-label">Nombre del centro</label>
+                    <input type="text" class="form-control" id="centerName" value="Polideportivo">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Logo del centro</label>
+                    <input type="file" class="form-control" id="centerLogo">
+                </div>
+                <button class="action-btn btn-primary" id="saveConfigBtn">
+                    <i class="fas fa-save"></i> Guardar configuración
+                </button>
+            </div>
+        `
+    };
+
+    // Función para cambiar la vista
+    function changeView(viewName) {
+        const mainContent = document.getElementById('mainContent');
+        const viewContent = document.querySelector('.content');
+        
+        // Eliminar el contenido actual
+        if (viewContent) {
+            viewContent.remove();
+        }
+        
+        // Crear y añadir el nuevo contenido
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = views[viewName];
+        
+        // Añadir la nueva vista
+        mainContent.appendChild(tempDiv.firstElementChild);
+        
+        // Si es la vista de pacientes, cargar la lista
+        if (viewName === 'pacientes') {
+            getPatients().then(patients => {
+                renderPatientsInView('patientListView', patients);
+                
+                // Añadir evento al botón de nuevo paciente
+                document.getElementById('addPatientBtnView').addEventListener('click', function() {
+                    document.getElementById('newPatientModal').classList.add('active');
+                });
+            });
+        }
+        
+        // Si es la vista de evoluciones, cargar la lista
+        if (viewName === 'evoluciones') {
+            getPatients().then(patients => {
+                renderPatientsInView('patientEvolutionsView', patients);
+            });
+        }
+        
+        // Si es la vista de reportes, actualizar estadísticas
+        if (viewName === 'reportes') {
+            updateReportStatistics();
+        }
+    }
+
+    // Renderizar pacientes en una vista específica
+    function renderPatientsInView(containerId, patients) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        // Limpiar contenedor
+        container.innerHTML = '';
+        
+        if (patients.length === 0) {
+            container.innerHTML = `
+                <div class="patient-card">
+                    <div class="patient-avatar">
+                        <i class="fas fa-user-injured"></i>
+                    </div>
+                    <h3 class="patient-name">No hay pacientes registrados</h3>
+                    <div class="patient-rut">Agregue un nuevo paciente para comenzar</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Añadir pacientes
+        patients.forEach(patient => {
+            const progress = calculatePatientProgress(patient);
+            const statusClass = getStatusClass(progress);
+            
+            const patientCard = document.createElement('div');
+            patientCard.classList.add('patient-card');
+            patientCard.setAttribute('data-id', patient.id);
+            
+            const initials = getInitials(patient.name);
+            
+            patientCard.innerHTML = `
+                <div class="patient-status ${statusClass}"></div>
+                <div class="patient-avatar">${initials}</div>
+                <h3 class="patient-name">${patient.name}</h3>
+                <div class="patient-rut">${patient.rut}</div>
+                <div class="patient-info">
+                    <div>
+                        <div class="patient-label">Última sesión</div>
+                        <div>${patient.lastSession || 'Ninguna'}</div>
+                    </div>
+                    <div>
+                        <div class="patient-label">Progreso</div>
+                        <div>${progress}%</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(patientCard);
+            
+            // Añadir evento para abrir modal de paciente
+            patientCard.addEventListener('click', () => openPatientModal(patient.id));
+        });
+    }
+
+    // Actualizar estadísticas de reportes
+    async function updateReportStatistics() {
+        try {
+            // Obtener todos los pacientes
+            const patients = await getPatients();
+            document.getElementById('totalPatientsReport').textContent = patients.length;
+            
+            // Contar todas las evoluciones
+            let totalEvolutions = 0;
+            for (const patient of patients) {
+                const evolutions = await getEvolutions(patient.id);
+                totalEvolutions += evolutions.length;
+            }
+            document.getElementById('totalEvolutionsReport').textContent = totalEvolutions;
+        } catch (error) {
+            console.error('Error updating report statistics:', error);
+        }
+    }
+
+    // Configurar eventos de navegación
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Eliminar clase active de todos los items
+            document.querySelectorAll('.menu-item').forEach(menuItem => {
+                menuItem.classList.remove('active');
+            });
+            
+            // Añadir clase active al item clicado
+            this.classList.add('active');
+            
+            // Cambiar la vista según el ítem seleccionado
+            const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
+            changeView(viewName);
+            
+            // Mostrar un mensaje
+            showToast(`Navegando a: ${viewName}`, "info");
+        });
+    });
+}
+
+// Llamar a esta función al final de initApp()
+setupNavigation();
+
     </script>
 </body>
 </html>
