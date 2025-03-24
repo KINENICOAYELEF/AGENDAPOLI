@@ -2660,6 +2660,9 @@ async function openPatientModal(patientId) {
         
         // Llenar pestaña de evoluciones
         fillEvolutionsTab(evolutions);
+
+        // Inicializar pestaña de diagnóstico
+        initDiagnosisTab(patientId);
         
         // Abrir modal
         document.getElementById('patientModal').classList.add('active');
@@ -3496,6 +3499,190 @@ async function exportToPDF(patientId) {
     }
 }
 
+// Mejorar el manejo de los sliders de escalas
+function setupScalesControls() {
+    // EVA Range
+    const evaRange = document.getElementById('evaRange');
+    const evaValue = document.getElementById('evaValue');
+    if (evaRange && evaValue) {
+        evaRange.addEventListener('input', function() {
+            evaValue.textContent = this.value + '/10';
+            const percentage = (this.value / 10) * 100;
+            document.querySelector('.eva-scale .scale-marker').style.left = percentage + '%';
+        });
+    }
+    
+    // GROC Range
+    const grocRange = document.getElementById('grocRange');
+    const grocValue = document.getElementById('grocValue');
+    if (grocRange && grocValue) {
+        grocRange.addEventListener('input', function() {
+            grocValue.textContent = this.value > 0 ? '+' + this.value : this.value;
+            const percentage = ((parseFloat(this.value) + 7) / 14) * 100;
+            document.querySelector('.groc-marker').style.left = percentage + '%';
+        });
+    }
+    
+    // SANE Range
+    const saneRange = document.getElementById('saneRange');
+    const saneValue = document.getElementById('saneValue');
+    if (saneRange && saneValue) {
+        saneRange.addEventListener('input', function() {
+            const value = this.value;
+            saneValue.textContent = value + '%';
+            
+            // Actualizar círculo SVG
+            const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+            if (circle) {
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * value / 100);
+                circle.setAttribute('stroke-dashoffset', offset);
+            }
+            
+            // Actualizar texto SVG
+            const text = document.querySelector('.sane-circle svg text');
+            if (text) {
+                text.textContent = value + '%';
+            }
+            
+            // Actualizar barra
+            const bar = document.querySelector('.sane-bar');
+            if (bar) {
+                bar.style.width = value + '%';
+            }
+        });
+    }
+    
+    // Añadir evento al botón para añadir actividad PSFS
+    const addPsfsBtn = document.getElementById('addPsfsActivityBtn');
+    if (addPsfsBtn) {
+        addPsfsBtn.addEventListener('click', function() {
+            const container = document.getElementById('psfsActivities');
+            if (container) {
+                const newActivity = document.createElement('div');
+                newActivity.className = 'psfs-activity';
+                newActivity.innerHTML = `
+                    <div class="activity-name">
+                        <input type="text" class="form-control" placeholder="Especifique la actividad" style="width: 100%; font-size: 13px;">
+                    </div>
+                    <div class="activity-rating">
+                        <div class="rating-number">5</div>
+                        <div class="rating-bar">
+                            <div class="rating-value" style="width: 50%;"></div>
+                        </div>
+                        <div class="rating-number">10</div>
+                    </div>
+                `;
+                container.appendChild(newActivity);
+                
+                // Añadir evento a la nueva entrada para actualizar al escribir
+                const input = newActivity.querySelector('input');
+                input.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        this.value = 'Nueva actividad';
+                    }
+                    // Reemplazar el input por un texto normal
+                    const div = document.createElement('div');
+                    div.className = 'activity-name';
+                    div.textContent = this.value;
+                    this.parentNode.replaceChild(div, this);
+                });
+                
+                // Dar foco al nuevo input
+                input.focus();
+            }
+        });
+    }
+}
+
+// Función para inicializar la pestaña de diagnóstico
+function initDiagnosisTab(patientId) {
+    try {
+        // Cargar diagnósticos y CIF del paciente
+        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
+        if (diagnosisTimeline) {
+            diagnosisTimeline.innerHTML = '<p>Cargando diagnósticos...</p>';
+            
+            // Aquí iría la lógica para cargar diagnósticos desde Firebase
+            // Por ahora, mostraremos un ejemplo
+            setTimeout(() => {
+                diagnosisTimeline.innerHTML = `
+                    <div class="timeline-item fade-in">
+                        <div class="timeline-dot">
+                            <i class="fas fa-file-medical"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">Evaluación inicial - 21/10/2024</div>
+                            <h3 class="timeline-title">Tendinitis rotuliana</h3>
+                            <p>Paciente presenta dolor en región anterior de rodilla derecha, relacionado con actividad deportiva...</p>
+                        </div>
+                    </div>
+                `;
+            }, 1000);
+        }
+        
+        // Inicializar botones de la pestaña de diagnóstico
+        const addDiagnosisBtn = document.getElementById('addDiagnosisBtn');
+        if (addDiagnosisBtn) {
+            addDiagnosisBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addCifFunctionBtn = document.getElementById('addCifFunctionBtn');
+        if (addCifFunctionBtn) {
+            addCifFunctionBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addCifStructureBtn = document.getElementById('addCifStructureBtn');
+        if (addCifStructureBtn) {
+            addCifStructureBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addCifActivityBtn = document.getElementById('addCifActivityBtn');
+        if (addCifActivityBtn) {
+            addCifActivityBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addCifFactorBtn = document.getElementById('addCifFactorBtn');
+        if (addCifFactorBtn) {
+            addCifFactorBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addObjectiveBtn = document.getElementById('addObjectiveBtn');
+        if (addObjectiveBtn) {
+            addObjectiveBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
+        if (addTreatmentPlanBtn) {
+            addTreatmentPlanBtn.addEventListener('click', function() {
+                showToast("Funcionalidad en desarrollo", "info");
+            });
+        }
+        
+        const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
+        if (saveDiagnosisBtn) {
+            saveDiagnosisBtn.addEventListener('click', function() {
+                showToast("Diagnóstico guardado correctamente", "success");
+            });
+        }
+    } catch (error) {
+        console.error("Error inicializando pestaña de diagnóstico:", error);
+        showToast("Error al cargar diagnósticos", "error");
+    }
+}
+        
 async function initApp() {
     try {
         console.log("Inicializando aplicación...");
@@ -3527,6 +3714,39 @@ async function initApp() {
         
         // Configurar navegación
         setupNavigation();
+
+        // Configurar previsualización de archivos adjuntos
+const evolutionAttachments = document.getElementById('evolutionAttachments');
+if (evolutionAttachments) {
+    evolutionAttachments.addEventListener('change', function() {
+        const previewContainer = document.getElementById('attachmentPreview');
+        if (!previewContainer) return;
+        
+        previewContainer.innerHTML = '';
+        
+        Array.from(this.files).forEach(file => {
+            const isImage = file.type.startsWith('image/');
+            const attachment = document.createElement('div');
+            attachment.className = 'attachment';
+            
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = file.name;
+                attachment.appendChild(img);
+            } else {
+                attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
+            }
+            
+            const typeLabel = document.createElement('div');
+            typeLabel.className = 'attachment-type';
+            typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
+            attachment.appendChild(typeLabel);
+            
+            previewContainer.appendChild(attachment);
+        });
+    });
+}
         
         // Configurar controles de escalas
         setupScalesControls();
@@ -3692,6 +3912,106 @@ async function initApp() {
                 exportToPDF(currentPatientId);
             });
         }
+
+        // Añadir event listener para formulario de nueva evolución
+const evolutionForm = document.getElementById('evolutionForm');
+if (evolutionForm) {
+    evolutionForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        try {
+            showLoading();
+            
+            const formData = new FormData(this);
+            
+            // Capturar datos de actividades PSFS
+            const psfsActivities = [];
+            document.querySelectorAll('#psfsActivities .psfs-activity').forEach(activity => {
+                const nameElement = activity.querySelector('.activity-name');
+                const ratingElement = activity.querySelector('.rating-number');
+                
+                if (nameElement && ratingElement) {
+                    const name = nameElement.textContent;
+                    const rating = parseInt(ratingElement.textContent);
+                    
+                    if (name && !isNaN(rating)) {
+                        psfsActivities.push({
+                            name: name,
+                            rating: rating
+                        });
+                    }
+                }
+            });
+            
+            // Obtener datos del formulario
+            const evolutionData = {
+                date: formData.get('date'),
+                time: formData.get('time'),
+                student: formData.get('student'),
+                patientState: formData.get('patientState'),
+                treatment: formData.get('treatment'),
+                response: formData.get('response'),
+                scales: {
+                    eva: parseInt(formData.get('eva')),
+                    groc: parseInt(formData.get('groc')),
+                    sane: parseInt(formData.get('sane')),
+                    psfs: psfsActivities
+                },
+                trainingPlan: formData.get('trainingPlan') || '',
+                observations: formData.get('observations') || '',
+                attachments: []
+            };
+            
+            console.log("Datos de evolución a guardar:", evolutionData);
+            
+            // Añadir evolución a Firebase
+            const evolutionId = await addEvolution(currentPatientId, evolutionData);
+            
+            if (evolutionId) {
+                // Cerrar modal
+                document.getElementById('newEvolutionModal').classList.remove('active');
+                
+                // Limpiar formulario
+                this.reset();
+                
+                // Restablecer campos con valores por defecto
+                const today = new Date().toISOString().split('T')[0];
+                const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
+                
+                document.getElementById('evolutionDate').value = today;
+                document.getElementById('evolutionTime').value = now;
+                document.getElementById('evaRange').value = 5;
+                document.getElementById('evaValue').textContent = '5/10';
+                document.getElementById('grocRange').value = 3;
+                document.getElementById('grocValue').textContent = '+3';
+                document.getElementById('saneRange').value = 70;
+                document.getElementById('saneValue').textContent = '70%';
+                
+                // Refrescar evoluciones si el modal de paciente está abierto
+                if (document.getElementById('patientModal').classList.contains('active')) {
+                    const evolutions = await getEvolutions(currentPatientId);
+                    fillEvolutionsTab(evolutions);
+                }
+                
+                // Refrescar lista de pacientes
+                await getPatients();
+                
+                showToast("Evolución registrada correctamente", "success");
+            }
+            
+            hideLoading();
+        } catch (error) {
+            hideLoading();
+            console.error("Error al guardar evolución:", error);
+            showToast("Error al guardar evolución: " + error.message, "error");
+        }
+    });
+}
         
         // Cargar pacientes iniciales
         await getPatients();
