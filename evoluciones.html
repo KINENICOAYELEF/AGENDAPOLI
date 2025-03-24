@@ -2481,17 +2481,32 @@ async function addPatient(patientData) {
     try {
         showLoading();
         
-        // Crear un documento MUY simple para pruebas
+        // Validar datos mínimos requeridos
+        if (!patientData.name || !patientData.rut) {
+            hideLoading();
+            showToast("Nombre y RUT son campos obligatorios", "error");
+            return null;
+        }
+        
+        // Crear documento del paciente
         const patientDoc = {
-            name: patientData.name || "Sin nombre",
-            rut: patientData.rut || "Sin RUT",
-            testField: "Prueba",
-            createdAt: new Date().toISOString()
+            name: patientData.name,
+            rut: patientData.rut,
+            birthDate: patientData.birthDate || "",
+            phone: patientData.phone || "",
+            email: patientData.email || "",
+            address: patientData.address || "",
+            medicalHistory: patientData.medicalHistory || "",
+            medications: patientData.medications || "",
+            student: patientData.student || "",
+            progress: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
         
-        console.log("Intentando registrar paciente simple:", patientDoc);
+        console.log("Registrando paciente:", patientDoc);
         
-        // Usar addDoc que ya está importado
+        // Usar colección de pacientes
         const patientsRef = collection(db, "patients");
         const docRef = await addDoc(patientsRef, patientDoc);
         
@@ -2505,9 +2520,7 @@ async function addPatient(patientData) {
         
         return docRef.id;
     } catch (error) {
-        console.error("Error DETALLADO al registrar paciente:", error);
-        console.log("Código de error:", error.code);
-        console.log("Mensaje de error:", error.message);
+        console.error("Error al registrar paciente:", error);
         hideLoading();
         showToast(`Error al registrar: ${error.message}`, "error");
         return null;
@@ -3056,11 +3069,23 @@ function changeView(viewName) {
             return;
         }
         
-        // Encontrar el elemento header para mantenerlo
+        // Guardar la referencia al header
         const header = mainContent.querySelector('.header');
         if (!header) {
             console.error("Elemento header no encontrado");
             return;
+        }
+        
+        // Actualizar título según la vista
+        const pageTitle = header.querySelector('.page-title');
+        if (pageTitle) {
+            switch(viewName) {
+                case 'dashboard': pageTitle.textContent = 'Evoluciones Polideportivo'; break;
+                case 'pacientes': pageTitle.textContent = 'Gestión de Pacientes'; break;
+                case 'evoluciones': pageTitle.textContent = 'Registro de Evoluciones'; break;
+                case 'reportes': pageTitle.textContent = 'Reportes y Estadísticas'; break;
+                case 'configuracion': pageTitle.textContent = 'Configuración del Sistema'; break;
+            }
         }
         
         // Eliminar contenido actual
@@ -3069,9 +3094,8 @@ function changeView(viewName) {
             currentContent.remove();
         }
         
-        // Manejar vista dashboard de forma especial para preservar el contenido original
+        // Manejar vista dashboard de forma especial
         if (viewName === 'dashboard' && views.dashboard) {
-            // Crear div temporal para contener el HTML
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = views.dashboard;
             
@@ -3081,6 +3105,20 @@ function changeView(viewName) {
             // Cargar pacientes para el dashboard
             getPatients().then(patients => {
                 renderPatients(patients);
+                
+                // Reconectar el botón de añadir paciente
+                const addBtn = document.getElementById('addPatientBtn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', function() {
+                        document.getElementById('newPatientModal').classList.add('active');
+                    });
+                }
+                
+                // Reconectar botón de añadir evolución
+                const addEvolutionBtn = document.getElementById('addEvolutionBtn');
+                if (addEvolutionBtn) {
+                    addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+                }
             });
         } else {
             // Para otras vistas, usar la plantilla
@@ -3095,7 +3133,7 @@ function changeView(viewName) {
                 getPatients().then(patients => {
                     renderPatientsInView('patientListView', patients);
                     
-                    // Añadir evento al botón de nuevo paciente
+                    // Reconectar botón de nuevo paciente
                     const addBtn = document.getElementById('addPatientBtnView');
                     if (addBtn) {
                         addBtn.addEventListener('click', function() {
@@ -3113,7 +3151,6 @@ function changeView(viewName) {
                 updateReportStatistics();
             }
             else if (viewName === 'configuracion') {
-                // Configurar evento para guardar configuración
                 const saveBtn = document.getElementById('saveConfigBtn');
                 if (saveBtn) {
                     saveBtn.addEventListener('click', function() {
@@ -3123,8 +3160,7 @@ function changeView(viewName) {
             }
         }
         
-        // Mostrar mensaje
-        showToast(`Navegando a: ${viewName}`, "info");
+        showToast(`Vista cargada: ${viewName}`, "info");
     } catch (error) {
         console.error(`Error cambiando a vista ${viewName}:`, error);
         showToast(`Error al cambiar de vista: ${error.message}`, "error");
@@ -3134,26 +3170,38 @@ function changeView(viewName) {
 // Configurar navegación
 function setupNavigation() {
     try {
-        // Configurar eventos de navegación para el menú lateral
+        // Mapeo de textos de menú a nombres de vistas
+        const menuToView = {
+            "Dashboard": "dashboard",
+            "Pacientes": "pacientes",
+            "Evoluciones": "evoluciones",
+            "Reportes": "reportes",
+            "Configuración": "configuracion"
+        };
+        
+        // Configurar eventos para cada ítem del menú
         document.querySelectorAll('.menu-item').forEach(item => {
             item.addEventListener('click', function(e) {
                 e.preventDefault();
                 
-                // Eliminar clase active de todos los items
-                document.querySelectorAll('.menu-item').forEach(menuItem => {
-                    menuItem.classList.remove('active');
+                // Quitar clase active de todos los ítems
+                document.querySelectorAll('.menu-item').forEach(mi => {
+                    mi.classList.remove('active');
                 });
                 
-                // Añadir clase active al item clicado
+                // Añadir clase active al ítem clicado
                 this.classList.add('active');
                 
-                // Cambiar la vista según el ítem seleccionado
-                const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
+                // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
+                const menuText = this.querySelector('.menu-item-text').textContent.trim();
+                const viewName = menuToView[menuText] || menuText.toLowerCase();
+                
+                console.log("Cambiando a vista:", viewName);
                 changeView(viewName);
             });
         });
         
-        // Manejar el toggle del sidebar
+        // Manejar toggle del sidebar
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
@@ -3174,6 +3222,13 @@ function setupNavigation() {
 async function exportToPDF(patientId) {
     try {
         showLoading();
+        
+        // Verificar que jsPDF esté disponible
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            showToast("Error: Librería jsPDF no disponible. Verifique la conexión a Internet.", "error");
+            hideLoading();
+            return;
+        }
         
         // Get patient data
         const patient = await getPatient(patientId);
@@ -3215,6 +3270,9 @@ async function exportToPDF(patientId) {
             doc.setTextColor(0, 0, 0);
             doc.text('No hay evoluciones registradas para este paciente.', 14, yPos);
         } else {
+            // Ordenar evoluciones de más reciente a más antigua
+            evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
             for (let i = 0; i < evolutions.length; i++) {
                 const evolution = evolutions[i];
                 
@@ -3318,6 +3376,18 @@ async function exportToPDF(patientId) {
                         yPos += 7;
                     }
                     
+                    // PSFS activities
+                    if (evolution.scales.psfs && evolution.scales.psfs.length > 0) {
+                        yPos += 3;
+                        doc.text("PSFS (Funcionalidad):", 14, yPos);
+                        yPos += 7;
+                        
+                        evolution.scales.psfs.forEach(activity => {
+                            doc.text(`- ${activity.name}: ${activity.rating}/10`, 20, yPos);
+                            yPos += 7;
+                        });
+                    }
+                    
                     yPos += 5;
                 }
                 
@@ -3364,6 +3434,15 @@ async function exportToPDF(patientId) {
             }
         }
         
+        // Add footer
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Página ${i} de ${pageCount} - Sistema Evoluciones Polideportivo`, 105, 290, null, null, 'center');
+        }
+        
         // Save the PDF
         doc.save(`Evoluciones_${patient.name.replace(/\s+/g, '_')}.pdf`);
         
@@ -3376,7 +3455,47 @@ async function exportToPDF(patientId) {
     }
 }
 
-// Inicializar la aplicación
+        function showNewEvolutionModal() {
+    try {
+        if (!currentPatientId) {
+            const patientCards = document.querySelectorAll('.patient-card');
+            if (patientCards.length > 0) {
+                // Sugerir seleccionar un paciente si hay pacientes disponibles
+                showToast("Por favor, seleccione un paciente primero", "info");
+            } else {
+                // Sugerir crear un paciente si no hay ninguno
+                showToast("No hay pacientes registrados. Añada un paciente primero", "info");
+            }
+            return;
+        }
+        
+        // Establecer fecha y hora actuales
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        
+        document.getElementById('evolutionDate').value = today;
+        document.getElementById('evolutionTime').value = now;
+        
+        // Actualizar título del modal con el nombre del paciente
+        const patientName = document.getElementById('patientModalTitle').textContent || "paciente";
+        document.getElementById('evolutionModalTitle').textContent = `Nueva evolución - ${patientName}`;
+        
+        // Restablecer valores predeterminados de las escalas
+        document.getElementById('evaRange').value = 5;
+        document.getElementById('evaValue').textContent = '5/10';
+        document.getElementById('grocRange').value = 3;
+        document.getElementById('grocValue').textContent = '+3';
+        document.getElementById('saneRange').value = 70;
+        document.getElementById('saneValue').textContent = '70%';
+        
+        // Mostrar modal
+        document.getElementById('newEvolutionModal').classList.add('active');
+    } catch (error) {
+        console.error("Error al mostrar modal de nueva evolución:", error);
+        showToast("Error al abrir formulario de evolución", "error");
+    }
+}
+
 async function initApp() {
     try {
         console.log("Inicializando aplicación...");
@@ -3406,6 +3525,38 @@ async function initApp() {
             document.getElementById('evolutionTime').value = now;
         }
         
+        // Configurar navegación
+        setupNavigation();
+        
+        // Configurar controles de escalas
+        setupScalesControls();
+        
+        // Añadir event listener para pestañas
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remover clase activa de todas las pestañas y contenidos
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Añadir clase activa a la pestaña clicada y su contenido correspondiente
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId + 'Tab').classList.add('active');
+            });
+        });
+        
+        // Añadir event listener para cabeceras de acordeón
+        const accordions = document.querySelectorAll('.accordion-header');
+        
+        accordions.forEach(accordion => {
+            accordion.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+            });
+        });
+        
         // Añadir event listener para formulario de nuevo paciente
         const patientForm = document.getElementById('patientForm');
         if (patientForm) {
@@ -3420,79 +3571,60 @@ async function initApp() {
                 }
                 
                 // Añadir paciente a Firebase
-                await addPatient(patientData);
+                const patientId = await addPatient(patientData);
                 
-                // Cerrar modal
-                document.getElementById('newPatientModal').classList.remove('active');
-                
-                // Limpiar formulario
-                this.reset();
+                if (patientId) {
+                    // Cerrar modal
+                    document.getElementById('newPatientModal').classList.remove('active');
+                    
+                    // Limpiar formulario
+                    this.reset();
+                    
+                    // Abrir modal del nuevo paciente
+                    setTimeout(() => {
+                        openPatientModal(patientId);
+                    }, 500);
+                }
             });
         }
         
-        // Añadir event listener para formulario de nueva evolución
-        const evolutionForm = document.getElementById('evolutionForm');
-        if (evolutionForm) {
-            evolutionForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                if (!currentPatientId) {
-                    showToast("Error: No hay paciente seleccionado", "error");
-                    return;
+        // Añadir event listener para botón de añadir paciente en página principal
+        const addPatientBtn = document.getElementById('addPatientBtn');
+        if (addPatientBtn) {
+            addPatientBtn.addEventListener('click', function() {
+                document.getElementById('newPatientModal').classList.add('active');
+            });
+        }
+        
+        // Añadir event listener para botón de añadir evolución en página principal
+        const addEvolutionBtn = document.getElementById('addEvolutionBtn');
+        if (addEvolutionBtn) {
+            addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+        }
+        
+        // Botones de cerrar modales
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Encontrar el ancestro modal-overlay y quitarle la clase active
+                let parent = this.closest('.modal-overlay');
+                if (parent) {
+                    parent.classList.remove('active');
                 }
-                
-                const formData = new FormData(this);
-                
-                // Obtener datos del formulario
-                const evolutionData = {
-                    date: formData.get('date'),
-                    time: formData.get('time'),
-                    student: formData.get('student'),
-                    patientState: formData.get('patientState'),
-                    treatment: formData.get('treatment'),
-                    response: formData.get('response'),
-                    scales: {
-                        eva: parseInt(formData.get('eva')),
-                        groc: parseInt(formData.get('groc')),
-                        sane: parseInt(formData.get('sane')),
-                        psfs: [
-                            { name: "Caminar 30 min", rating: 6 },
-                            { name: "Subir escaleras", rating: 5 },
-                            { name: "Ponerse de pie desde sentado", rating: 8 }
-                        ]
-                    },
-                    trainingPlan: formData.get('trainingPlan') || '',
-                    observations: formData.get('observations') || '',
-                    attachments: []
-                };
-                
-                // Añadir evolución a Firebase
-                await addEvolution(currentPatientId, evolutionData);
-                
-                // Cerrar modal
+            });
+        });
+        
+        // Botones de cancelar específicos
+        const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
+        if (cancelEvolutionBtn) {
+            cancelEvolutionBtn.addEventListener('click', function() {
                 document.getElementById('newEvolutionModal').classList.remove('active');
-                
-                // Limpiar formulario
-                this.reset();
-                
-                // Restablecer campos con valores por defecto
-                document.getElementById('evolutionDate').value = today;
-                document.getElementById('evolutionTime').value = now;
-                document.getElementById('evaRange').value = 5;
-                document.getElementById('evaValue').textContent = '5/10';
-                document.getElementById('grocRange').value = 3;
-                document.getElementById('grocValue').textContent = '+3';
-                document.getElementById('saneRange').value = 70;
-                document.getElementById('saneValue').textContent = '70%';
-                
-                // Refrescar evoluciones
-                if (document.getElementById('patientModal').classList.contains('active')) {
-                    const evolutions = await getEvolutions(currentPatientId);
-                    fillEvolutionsTab(evolutions);
-                }
-                
-                // Refrescar lista de pacientes
-                await getPatients();
+            });
+        }
+        
+        const cancelPatientBtn = document.getElementById('cancelPatientBtn');
+        if (cancelPatientBtn) {
+            cancelPatientBtn.addEventListener('click', function() {
+                document.getElementById('newPatientModal').classList.remove('active');
             });
         }
         
@@ -3536,8 +3668,8 @@ async function initApp() {
                 const patientCards = document.querySelectorAll('.patient-card');
                 
                 patientCards.forEach(card => {
-                    const name = card.querySelector('.patient-name').textContent.toLowerCase();
-                    const rut = card.querySelector('.patient-rut').textContent.toLowerCase();
+                    const name = card.querySelector('.patient-name')?.textContent.toLowerCase() || '';
+                    const rut = card.querySelector('.patient-rut')?.textContent.toLowerCase() || '';
                     
                     if (name.includes(searchTerm) || rut.includes(searchTerm)) {
                         card.style.display = 'block';
@@ -3561,147 +3693,7 @@ async function initApp() {
             });
         }
         
-        // Añadir event listener para botones de cancelar
-        const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
-        if (cancelEvolutionBtn) {
-            cancelEvolutionBtn.addEventListener('click', function() {
-                document.getElementById('newEvolutionModal').classList.remove('active');
-            });
-        }
-        
-        const cancelPatientBtn = document.getElementById('cancelPatientBtn');
-        if (cancelPatientBtn) {
-            cancelPatientBtn.addEventListener('click', function() {
-                document.getElementById('newPatientModal').classList.remove('active');
-            });
-        }
-        
-        // Añadir event listener para botones de cerrar modal
-        const closePatientModal = document.getElementById('closePatientModal');
-        if (closePatientModal) {
-            closePatientModal.addEventListener('click', function() {
-                document.getElementById('patientModal').classList.remove('active');
-                currentPatientId = null;
-            });
-        }
-        
-        const closeEvolutionModal = document.getElementById('closeEvolutionModal');
-        if (closeEvolutionModal) {
-            closeEvolutionModal.addEventListener('click', function() {
-                document.getElementById('newEvolutionModal').classList.remove('active');
-            });
-        }
-        
-        const closePatientModalNew = document.getElementById('closePatientModalNew');
-        if (closePatientModalNew) {
-            closePatientModalNew.addEventListener('click', function() {
-                document.getElementById('newPatientModal').classList.remove('active');
-            });
-        }
-        
-        // Añadir event listener para botón de añadir paciente
-        const addPatientBtn = document.getElementById('addPatientBtn');
-        if (addPatientBtn) {
-            addPatientBtn.addEventListener('click', function() {
-                document.getElementById('newPatientModal').classList.add('active');
-            });
-        }
-        
-        // Añadir event listener para botón de añadir evolución
-        const addEvolutionBtn = document.getElementById('addEvolutionBtn');
-        if (addEvolutionBtn) {
-            addEvolutionBtn.addEventListener('click', function() {
-                if (!currentPatientId) {
-                    showToast("Primero seleccione un paciente", "info");
-                    return;
-                }
-                
-                // Establecer fecha y hora actuales
-                document.getElementById('evolutionDate').value = today;
-                document.getElementById('evolutionTime').value = now;
-                
-                // Actualizar título del modal
-                document.getElementById('evolutionModalTitle').textContent = 
-                    'Nueva evolución - ' + document.getElementById('patientModalTitle').textContent;
-                
-                // Mostrar modal
-                document.getElementById('newEvolutionModal').classList.add('active');
-            });
-        }
-        
-        // Añadir event listeners para inputs de rango
-        const evaRange = document.getElementById('evaRange');
-        const evaValue = document.getElementById('evaValue');
-        if (evaRange && evaValue) {
-            evaRange.addEventListener('input', function() {
-                evaValue.textContent = this.value + '/10';
-                const percentage = (this.value / 10) * 100;
-                document.querySelector('.eva-scale .scale-marker').style.left = percentage + '%';
-            });
-        }
-        
-        const grocRange = document.getElementById('grocRange');
-        const grocValue = document.getElementById('grocValue');
-        if (grocRange && grocValue) {
-            grocRange.addEventListener('input', function() {
-                grocValue.textContent = this.value > 0 ? '+' + this.value : this.value;
-                const percentage = ((parseFloat(this.value) + 7) / 14) * 100;
-                document.querySelector('.groc-marker').style.left = percentage + '%';
-            });
-        }
-        
-        const saneRange = document.getElementById('saneRange');
-        const saneValue = document.getElementById('saneValue');
-        if (saneRange && saneValue) {
-            saneRange.addEventListener('input', function() {
-                saneValue.textContent = this.value + '%';
-                const saneCircle = document.querySelector('.sane-circle svg circle:nth-child(2)');
-                const saneText = document.querySelector('.sane-circle svg text');
-                const saneBar = document.querySelector('.sane-bar');
-                
-                // Actualizar círculo
-                const circumference = 2 * Math.PI * 35;
-                const offset = circumference - (circumference * this.value / 100);
-                saneCircle.setAttribute('stroke-dashoffset', offset);
-                
-                // Actualizar texto
-                saneText.textContent = this.value + '%';
-                
-                // Actualizar barra
-                saneBar.style.width = this.value + '%';
-            });
-        }
-        
-        // Añadir event listener para pestañas
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remover clase activa de todas las pestañas y contenidos
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                // Añadir clase activa a la pestaña clicada y su contenido correspondiente
-                this.classList.add('active');
-                const tabId = this.getAttribute('data-tab');
-                document.getElementById(tabId + 'Tab').classList.add('active');
-            });
-        });
-        
-        // Añadir event listener para cabeceras de acordeón
-        const accordions = document.querySelectorAll('.accordion-header');
-        
-        accordions.forEach(accordion => {
-            accordion.addEventListener('click', function() {
-                this.parentElement.classList.toggle('active');
-            });
-        });
-        
-        // Configurar navegación
-        setupNavigation();
-        
-        // Cargar pacientes
+        // Cargar pacientes iniciales
         await getPatients();
         
         console.log("Inicialización completada correctamente");
