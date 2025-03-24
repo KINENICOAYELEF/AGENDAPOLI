@@ -2466,30 +2466,20 @@ function updateDashboardStats(patients) {
 }
 
 // Add new patient to Firebase - simplified version
+// Add new patient to Firebase - simplified version
 async function addPatient(patientData) {
     try {
         showLoading();
         
-        // Crear un documento de paciente simple
+        // Crear un documento MUY simple para pruebas
         const patientDoc = {
             name: patientData.name || "Sin nombre",
             rut: patientData.rut || "Sin RUT",
-            registerDate: formatDate(new Date()),
-            lastSession: "",
-            progress: 0,
-            createdAt: new Date().toISOString() // Añadir timestamp
+            testField: "Prueba",
+            createdAt: new Date().toISOString()
         };
         
-        console.log("Datos del paciente a registrar:", patientDoc);
-        
-        // Añadir otros campos si existen
-        if (patientData.birthDate) patientDoc.birthDate = patientData.birthDate;
-        if (patientData.phone) patientDoc.phone = patientData.phone;
-        if (patientData.email) patientDoc.email = patientData.email;
-        if (patientData.address) patientDoc.address = patientData.address;
-        if (patientData.medicalHistory) patientDoc.medicalHistory = patientData.medicalHistory;
-        if (patientData.medications) patientDoc.medications = patientData.medications;
-        if (patientData.student) patientDoc.student = patientData.student;
+        console.log("Intentando registrar paciente simple:", patientDoc);
         
         // Usar addDoc que ya está importado
         const patientsRef = collection(db, "patients");
@@ -2505,7 +2495,9 @@ async function addPatient(patientData) {
         
         return docRef.id;
     } catch (error) {
-        console.error("Error al registrar paciente:", error);
+        console.error("Error DETALLADO al registrar paciente:", error);
+        console.log("Código de error:", error.code);
+        console.log("Mensaje de error:", error.message);
         hideLoading();
         showToast(`Error al registrar: ${error.message}`, "error");
         return null;
