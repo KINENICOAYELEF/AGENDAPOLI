@@ -2352,38 +2352,27 @@ async function testFirebase() {
         // Add new patient to Firebase
         // Modifica la función addPatient en el script de Firebase
         // Reemplaza la función addPatient
+// Busca esta función en el código (alrededor de la línea 1070)
 async function addPatient(patientData) {
     try {
         showLoading();
         
-        // Validar datos obligatorios
-        if (!patientData.name || patientData.name.trim() === '') {
+        // Validación mínima
+        if (!patientData.name || !patientData.rut) {
             hideLoading();
-            showToast("Error: El nombre del paciente es obligatorio", "error");
+            showToast("Nombre y RUT son obligatorios", "error");
             return null;
         }
         
-        if (!patientData.rut || patientData.rut.trim() === '') {
-            hideLoading();
-            showToast("Error: El RUT del paciente es obligatorio", "error");
-            return null;
-        }
-        
-        console.log("Intentando registrar paciente con datos:", patientData);
-        
-        // Simplificar la estructura de datos
+        // Estructura simplificada (mínima)
         const simplePatientData = {
             name: patientData.name,
             rut: patientData.rut,
-            phone: patientData.phone || '',
-            email: patientData.email || '',
-            birthDate: patientData.birthDate || '',
-            created_at: new Date().toISOString(),
-            registerDate: formatDate(new Date()),
-            progress: 0
+            // Añadir solo campos básicos
+            registerDate: formatDate(new Date())
         };
         
-        // Intentar usar addDoc directo
+        // Guardar en Firebase
         const patientsRef = collection(db, "patients");
         const docRef = await addDoc(patientsRef, simplePatientData);
         
@@ -2397,15 +2386,9 @@ async function addPatient(patientData) {
         
         return docRef.id;
     } catch (error) {
-        console.error("Error completo:", error);
+        console.error("Error al registrar paciente:", error);
         hideLoading();
-        
-        // Mensajes específicos según el error
-        if (error.code === 'permission-denied') {
-            showToast("Error: No tienes permisos para registrar pacientes", "error");
-        } else {
-            showToast(`Error: ${error.message}`, "error");
-        }
+        showToast(`Error al registrar: ${error.message}`, "error");
         return null;
     }
 }
@@ -2518,6 +2501,9 @@ async function addPatient(patientData) {
                 return null;
             }
         }
+
+        // Añadir justo después de obtener storage (cerca de línea 900)
+        console.log("Revisando configuración Firebase. Permisos:", firebaseConfig.apiKey ? "OK" : "Error");
         
         // Format date
         function formatDate(date) {
@@ -3488,46 +3474,64 @@ function setupNavigation() {
     };
 
     // Función para cambiar la vista
-    function changeView(viewName) {
-        const mainContent = document.getElementById('mainContent');
-        const viewContent = document.querySelector('.content');
-        
-        // Eliminar el contenido actual
-        if (viewContent) {
-            viewContent.remove();
-        }
-        
-        // Crear y añadir el nuevo contenido
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = views[viewName];
-        
-        // Añadir la nueva vista
-        mainContent.appendChild(tempDiv.firstElementChild);
-        
-        // Si es la vista de pacientes, cargar la lista
-        if (viewName === 'pacientes') {
-            getPatients().then(patients => {
-                renderPatientsInView('patientListView', patients);
-                
-                // Añadir evento al botón de nuevo paciente
-                document.getElementById('addPatientBtnView').addEventListener('click', function() {
+  // Busca esta función en setupNavigation() (cerca de la línea 2700)
+function changeView(viewName) {
+    const mainContent = document.getElementById('mainContent');
+    const viewContent = document.querySelector('.content');
+    
+    // Eliminar el contenido actual
+    if (viewContent) {
+        viewContent.remove();
+    }
+    
+    // Crear y añadir el nuevo contenido
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = views[viewName];
+    
+    // Añadir la nueva vista
+    mainContent.appendChild(tempDiv.firstElementChild);
+    
+    // Manejar casos específicos para cada vista
+    if (viewName === 'dashboard') {
+        // Para dashboard, cargar pacientes y actualizar estadísticas
+        getPatients().then(patients => {
+            // Renderizar pacientes en el dashboard
+            renderPatients(patients);
+            
+            // Actualizar estadísticas del dashboard
+            updateDashboardStats(patients);
+            
+            // Añadir evento al botón de nuevo paciente
+            const addBtn = document.getElementById('addPatientBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
                     document.getElementById('newPatientModal').classList.add('active');
                 });
-            });
-        }
-        
-        // Si es la vista de evoluciones, cargar la lista
-        if (viewName === 'evoluciones') {
-            getPatients().then(patients => {
-                renderPatientsInView('patientEvolutionsView', patients);
-            });
-        }
-        
-        // Si es la vista de reportes, actualizar estadísticas
-        if (viewName === 'reportes') {
-            updateReportStatistics();
-        }
+            }
+        });
     }
+    else if (viewName === 'pacientes') {
+        getPatients().then(patients => {
+            renderPatientsInView('patientListView', patients);
+            
+            // Añadir evento al botón de nuevo paciente
+            const addBtn = document.getElementById('addPatientBtnView');
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
+                    document.getElementById('newPatientModal').classList.add('active');
+                });
+            }
+        });
+    }
+    else if (viewName === 'evoluciones') {
+        getPatients().then(patients => {
+            renderPatientsInView('patientEvolutionsView', patients);
+        });
+    }
+    else if (viewName === 'reportes') {
+        updateReportStatistics();
+    }
+}
 
     // Renderizar pacientes en una vista específica
     function renderPatientsInView(containerId, patients) {
