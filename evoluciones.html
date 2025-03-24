@@ -2182,8 +2182,18 @@ console.log("Inicializando Firebase...");
 let app, db, storage;
 try {
     app = initializeApp(firebaseConfig);
+    console.log("App inicializada:", app);
+    
     db = getFirestore(app);
+    console.log("Firestore obtenido:", db);
+    
+    // Verificar conexión
+    const pathRef = doc(db, "test/connection");
+    console.log("Path de referencia creado:", pathRef);
+    
     storage = getStorage(app);
+    console.log("Storage obtenido:", storage);
+    
     console.log("Firebase inicializado correctamente");
     showToast("Conexión a Firebase establecida", "success");
 } catch (error) {
