@@ -462,6 +462,12 @@
             cursor: pointer;
         }
 
+        .patient-card.selected {
+    border-left: 4px solid var(--primary);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transform: translateY(-3px);
+}
+
         .patient-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 16px rgba(0,0,0,0.1);
@@ -2016,43 +2022,88 @@
                                     <input type="range" min="-7" max="7" value="3" class="form-control" id="grocRange" name="groc" style="width: 100%; margin-top: 10px;">
                                 </div>
                                 <div class="scale-card">
-                                    <div class="scale-header">
-                                        <div class="scale-name">SANE (Evaluación numérica)</div>
-                                        <div id="saneValue">70%</div>
-                                    </div>
-                                    <div class="sane-scale">
-                                        <div class="sane-circle">
-                                            <svg width="80" height="80" viewBox="0 0 80 80">
-                                                <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
-                                                <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="66" transform="rotate(-90 40 40)"/>
-                                                <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">70%</text>
-                                            </svg>
-                                        </div>
-                                        <div class="sane-info">
-                                            <div class="sane-label">¿Cómo evaluaría la función actual de su tobillo?</div>
-                                            <div class="sane-progress">
-                                                <div class="sane-bar" style="width: 70%;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <input type="range" min="0" max="100" value="70" class="form-control" id="saneRange" name="sane" style="width: 100%; margin-top: 10px;">
-                                </div>
-                            </div>
+    <div class="scale-header">
+        <div class="scale-name">SANE (Evaluación numérica)</div>
+        <div id="saneValue">70%</div>
+    </div>
+    <div class="sane-scale">
+        <div class="sane-circle">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
+                <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="66" transform="rotate(-90 40 40)"/>
+                <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">70%</text>
+            </svg>
+        </div>
+        <div class="sane-info">
+            <div class="sane-label-container">
+                <input type="text" id="saneCustomText" class="form-control" 
+                       value="¿Cómo evaluaría la función actual de la región afectada?" 
+                       style="width: 100%; font-size: 13px; margin-bottom: 8px;">
+            </div>
+            <div class="sane-progress">
+                <div class="sane-bar" style="width: 70%;"></div>
+            </div>
+        </div>
+    </div>
+    <input type="range" min="0" max="100" value="70" class="form-control" id="saneRange" name="sane" style="width: 100%; margin-top: 10px;">
+</div>
                         </div>
                     </div>
 
                     <div class="accordion">
-                        <div class="accordion-header">
-                            <span>Plan de entrenamiento</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Plan de ejercicios</label>
-                                <textarea class="form-control" rows="5" name="trainingPlan" id="evolutionTrainingPlan" placeholder="Detalle el plan de entrenamiento/ejercicios para el paciente"></textarea>
-                            </div>
-                        </div>
-                    </div>
+    <div class="accordion-header">
+        <span>Plan de entrenamiento</span>
+        <i class="fas fa-chevron-down accordion-icon"></i>
+    </div>
+    <div class="accordion-body">
+        <div class="form-group">
+            <label class="form-label">Descripción General</label>
+            <textarea class="form-control" rows="3" name="trainingPlan" id="evolutionTrainingPlan" placeholder="Descripción general del plan de entrenamiento"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Ejercicios</label>
+            <div class="exercise-table-container" style="margin-bottom: 15px; overflow-x: auto;">
+                <table class="exercise-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                    <thead>
+                        <tr style="background-color: var(--primary-light); color: white;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid var(--border);">Ejercicio</th>
+                            <th style="padding: 10px; text-align: center; border: 1px solid var(--border);">Series</th>
+                            <th style="padding: 10px; text-align: center; border: 1px solid var(--border);">Repeticiones</th>
+                            <th style="padding: 10px; text-align: center; border: 1px solid var(--border);">Intensidad</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid var(--border);">Observaciones</th>
+                            <th style="padding: 10px; text-align: center; border: 1px solid var(--border);">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exerciseTableBody">
+                        <!-- Los ejercicios se añadirán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="action-btn btn-secondary" id="addExerciseBtn" style="width: 100%;">
+                <i class="fas fa-plus"></i> Añadir ejercicio
+            </button>
+        </div>
+        
+        <div class="form-group" style="margin-top: 15px;">
+            <label class="form-label">Plantillas de ejercicios</label>
+            <div class="exercise-templates" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                <button type="button" class="template-btn" data-template="mmss" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                    Miembros superiores
+                </button>
+                <button type="button" class="template-btn" data-template="mmii" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                    Miembros inferiores
+                </button>
+                <button type="button" class="template-btn" data-template="core" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                    Core
+                </button>
+                <button type="button" class="template-btn" data-template="estiramiento" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                    Estiramientos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
                     <div class="accordion">
                         <div class="accordion-header">
@@ -2103,62 +2154,70 @@
             </div>
             <div class="modal-body">
                 <form id="patientForm">
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label">Nombre completo</label>
-                                <input type="text" class="form-control" name="name" required>
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label">RUT</label>
-                                <input type="text" class="form-control" name="rut" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label">Fecha de nacimiento</label>
-                                <input type="date" class="form-control" name="birthDate" required>
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label">Teléfono</label>
-                                <input type="tel" class="form-control" name="phone" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Correo electrónico</label>
-                        <input type="email" class="form-control" name="email">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Dirección</label>
-                        <input type="text" class="form-control" name="address">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Antecedentes médicos</label>
-                        <textarea class="form-control" rows="3" name="medicalHistory"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Medicamentos actuales</label>
-                        <textarea class="form-control" rows="2" name="medications"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estudiante responsable</label>
-                        <input type="text" class="form-control" name="student" value="María Soto" required>
-                    </div>
-                    <div class="form-group" style="margin-top: 20px; text-align: right;">
-                        <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelPatientBtn">Cancelar</button>
-                        <button type="submit" class="action-btn btn-primary">Registrar paciente</button>
-                    </div>
-                </form>
+    <div class="form-row">
+        <div class="form-col">
+            <div class="form-group">
+                <label class="form-label">Nombre completo *</label>
+                <input type="text" class="form-control" name="name" required>
+            </div>
+        </div>
+        <div class="form-col">
+            <div class="form-group">
+                <label class="form-label">RUT *</label>
+                <input type="text" class="form-control" name="rut" required>
             </div>
         </div>
     </div>
+    
+    <div class="accordion">
+        <div class="accordion-header">
+            <span>Datos adicionales</span>
+            <i class="fas fa-chevron-down accordion-icon"></i>
+        </div>
+        <div class="accordion-body">
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de nacimiento</label>
+                        <input type="date" class="form-control" name="birthDate">
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" name="phone">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Correo electrónico</label>
+                <input type="email" class="form-control" name="email">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dirección</label>
+                <input type="text" class="form-control" name="address">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Antecedentes médicos</label>
+                <textarea class="form-control" rows="3" name="medicalHistory"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Medicamentos actuales</label>
+                <textarea class="form-control" rows="2" name="medications"></textarea>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label class="form-label">Estudiante responsable *</label>
+        <input type="text" class="form-control" name="student" value="María Soto" required>
+    </div>
+    
+    <div class="form-group" style="margin-top: 20px; text-align: right;">
+        <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelPatientBtn">Cancelar</button>
+        <button type="submit" class="action-btn btn-primary">Registrar paciente</button>
+    </div>
+</form>
 
     <!-- Script for Firebase -->
     <script type="module">
@@ -2347,12 +2406,22 @@ async function getPatients() {
             return { id: doc.id, ...doc.data() };
         });
         
-        // Ordenar pacientes por fecha de última sesión (más reciente primero)
+       // Ordenar pacientes por fecha de última sesión (más reciente primero)
         patientList.sort((a, b) => {
+            // Si no hay lastSession, colocar al final de la lista
+            if (!a.lastSession && !b.lastSession) return 0;
             if (!a.lastSession) return 1;
             if (!b.lastSession) return -1;
-            return new Date(b.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1')) - 
-                   new Date(a.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1'));
+            
+            try {
+                // Convertir formato dd/mm/yyyy a yyyy-mm-dd para comparación
+                const dateA = a.lastSession.split('/').reverse().join('-');
+                const dateB = b.lastSession.split('/').reverse().join('-');
+                return new Date(dateB) - new Date(dateA);
+            } catch (error) {
+                console.error("Error al ordenar fechas:", error);
+                return 0;
+            }
         });
         
         // Renderizar pacientes en la UI
@@ -2638,9 +2707,31 @@ async function uploadFile(file, patientId, folder) {
 }
 
 // Open patient modal
-async function openPatientModal(patientId) {
+    async function openPatientModal(patientId) {
     try {
+        // Quitar selección anterior
+        document.querySelectorAll('.patient-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Añadir selección al paciente actual
+        document.querySelectorAll('.patient-card[data-id="' + patientId + '"]').forEach(card => {
+            card.classList.add('selected');
+        });
+        
         currentPatientId = patientId;
+        
+        // Mostrar indicador en la interfaz
+        const headerTitle = document.querySelector('.page-title');
+        if (headerTitle) {
+            const patient = await getPatient(patientId);
+            const originalTitle = headerTitle.getAttribute('data-original-title') || headerTitle.textContent;
+            headerTitle.setAttribute('data-original-title', originalTitle);
+            headerTitle.innerHTML = `${originalTitle} <span style="font-size: 16px; color: var(--primary); margin-left: 10px; background-color: rgba(30, 136, 229, 0.1); padding: 4px 8px; border-radius: 12px;">
+                <i class="fas fa-user"></i> Paciente: ${patient ? patient.name : 'Seleccionado'}</span>`;
+        }
+        
+        // Resto de la función permanece igual...
         
         // Obtener datos del paciente
         const patient = await getPatient(patientId);
@@ -2787,6 +2878,67 @@ function fillEvolutionsTab(evolutions) {
         console.error("Error llenando pestaña de evoluciones:", error);
         showToast("Error al cargar evoluciones: " + error.message, "error");
     }
+
+    // Función para renderizar ejercicios
+function renderExercises(exercises) {
+    if (!exercises || exercises.length === 0) return '';
+    
+    let exercisesHTML = `
+        <div class="evolution-section">
+            <div class="evolution-section-title">Ejercicios prescritos</div>
+            <div class="exercise-table-container" style="margin-top: 10px; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px;">
+                    <thead>
+                        <tr style="background-color: var(--primary-light); color: white;">
+                            <th style="padding: 8px; text-align: left; border: 1px solid var(--border);">Ejercicio</th>
+                            <th style="padding: 8px; text-align: center; border: 1px solid var(--border);">Series</th>
+                            <th style="padding: 8px; text-align: center; border: 1px solid var(--border);">Reps</th>
+                            <th style="padding: 8px; text-align: center; border: 1px solid var(--border);">Intensidad</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid var(--border);">Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    exercises.forEach(exercise => {
+        exercisesHTML += `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px; border: 1px solid var(--border);">${exercise.name || 'Ejercicio sin nombre'}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid var(--border);">${exercise.sets || '3'}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid var(--border);">${exercise.reps || '10'}</td>
+                <td style="padding: 8px; text-align: center; border: 1px solid var(--border);">
+                    <span style="display: inline-block; padding: 2px 8px; border-radius: 10px; 
+                                 background-color: ${getIntensityColor(exercise.intensity)}; 
+                                 color: white; font-size: 11px;">
+                        ${exercise.intensity || 'Media'}
+                    </span>
+                </td>
+                <td style="padding: 8px; border: 1px solid var(--border);">${exercise.notes || ''}</td>
+            </tr>
+        `;
+    });
+    
+    exercisesHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return exercisesHTML;
+}
+
+    ${evolution.exercises && evolution.exercises.length > 0 ? renderExercises(evolution.exercises) : ''}
+
+// Función para obtener color según intensidad
+function getIntensityColor(intensity) {
+    switch(intensity) {
+        case 'Baja': return 'var(--secondary)';
+        case 'Media': return 'var(--accent1)';
+        case 'Alta': return 'var(--accent2)';
+        default: return 'var(--primary)';
+    }
+}
 }
 
 // Render scales
@@ -2886,33 +3038,35 @@ function renderScales(scales) {
             }
             
             // SANE Scale
-            if (scales.sane !== undefined) {
-                const circumference = 2 * Math.PI * 35;
-                const offset = circumference - (circumference * scales.sane / 100);
-                
-                scalesHTML += `
-                    <div class="scale-card">
-                        <div class="scale-header">
-                            <div class="scale-name">SANE (Evaluación numérica)</div>
-                        </div>
-                        <div class="sane-scale">
-                            <div class="sane-circle">
-                                <svg width="80" height="80" viewBox="0 0 80 80">
-                                    <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
-                                    <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="${offset}" transform="rotate(-90 40 40)"/>
-                                    <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">${scales.sane}%</text>
-                                </svg>
-                            </div>
-                            <div class="sane-info">
-                                <div class="sane-label">¿Cómo evaluaría la función actual de su tobillo?</div>
-                                <div class="sane-progress">
-                                    <div class="sane-bar" style="width: ${scales.sane}%;"></div>
-                                </div>
-                            </div>
-                        </div>
+            // SANE Scale
+if (scales.sane !== undefined) {
+    const circumference = 2 * Math.PI * 35;
+    const offset = circumference - (circumference * scales.sane / 100);
+    const saneText = scales.saneText || "¿Cómo evaluaría la función actual de la región afectada?";
+    
+    scalesHTML += `
+        <div class="scale-card">
+            <div class="scale-header">
+                <div class="scale-name">SANE (Evaluación numérica)</div>
+            </div>
+            <div class="sane-scale">
+                <div class="sane-circle">
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
+                        <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="${offset}" transform="rotate(-90 40 40)"/>
+                        <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">${scales.sane}%</text>
+                    </svg>
+                </div>
+                <div class="sane-info">
+                    <div class="sane-label">${saneText}</div>
+                    <div class="sane-progress">
+                        <div class="sane-bar" style="width: ${scales.sane}%;"></div>
                     </div>
-                `;
-            }
+                </div>
+            </div>
+        </div>
+    `;
+}
             
             scalesHTML += `
                 </div>
@@ -3247,34 +3401,49 @@ async function exportToPDF(patientId) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Add title
-        doc.setFontSize(22);
-        doc.setTextColor(30, 136, 229);
-        doc.text('EVOLUCIONES POLIDEPORTIVO', 105, 20, null, null, 'center');
+        // Add header with logo and title
+        doc.setFillColor(30, 136, 229);
+        doc.rect(0, 0, 210, 25, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text('EVOLUCIONES POLIDEPORTIVO', 105, 15, null, null, 'center');
         
-        // Add patient info
-        doc.setFontSize(16);
+        // Add patient info in a box
+        doc.setFillColor(245, 247, 250);
+        doc.rect(10, 30, 190, 50, 'F');
+        doc.setTextColor(30, 136, 229);
+        doc.setFontSize(14);
+        doc.text(`Paciente: ${patient.name || 'Sin nombre'}`, 15, 40);
+        doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
-        doc.text(`Paciente: ${patient.name}`, 14, 40);
-        doc.setFontSize(12);
-        doc.text(`RUT: ${patient.rut}`, 14, 50);
-        doc.text(`Teléfono: ${patient.phone || 'No registrado'}`, 14, 60);
-        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 14, 70);
+        doc.text(`RUT: ${patient.rut || 'No registrado'}`, 15, 50);
+        doc.text(`Teléfono: ${patient.phone || 'No registrado'}`, 15, 60);
+        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 70);
         
         // Add evolutions
-        doc.setFontSize(16);
-        doc.setTextColor(30, 136, 229);
-        doc.text('Historial de Evoluciones', 14, 90);
+        doc.setFillColor(30, 136, 229);
+        doc.rect(10, 90, 190, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('HISTORIAL DE EVOLUCIONES', 105, 97, null, null, 'center');
         
-        let yPos = 100;
+        // Reset font
+        doc.setFont(undefined, 'normal');
         
-        if (evolutions.length === 0) {
-            doc.setFontSize(12);
+        let yPos = 110;
+        
+        if (!evolutions || evolutions.length === 0) {
+            doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
-            doc.text('No hay evoluciones registradas para este paciente.', 14, yPos);
+            doc.text('No hay evoluciones registradas para este paciente.', 15, yPos);
         } else {
             // Ordenar evoluciones de más reciente a más antigua
-            evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            evolutions.sort((a, b) => {
+                if (!a.date || !b.date) return 0;
+                return new Date(b.date) - new Date(a.date);
+            });
             
             for (let i = 0; i < evolutions.length; i++) {
                 const evolution = evolutions[i];
@@ -3285,31 +3454,42 @@ async function exportToPDF(patientId) {
                     yPos = 20;
                 }
                 
-                // Add evolution date
-                doc.setFontSize(14);
+                // Add evolution date with background
+                doc.setFillColor(230, 240, 250);
+                doc.rect(10, yPos - 5, 190, 10, 'F');
                 doc.setTextColor(30, 136, 229);
-                doc.text(`${formatDate(new Date(evolution.date))} - ${evolution.time || ''}`, 14, yPos);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                
+                const evolutionDate = evolution.date ? formatDate(new Date(evolution.date)) : 'Fecha no registrada';
+                const evolutionTime = evolution.time || '';
+                doc.text(`${evolutionDate} - ${evolutionTime}`, 15, yPos);
                 yPos += 10;
                 
+                // Reset font
+                doc.setFont(undefined, 'normal');
+                
                 // Add student
-                doc.setFontSize(12);
+                doc.setFontSize(10);
                 doc.setTextColor(100, 100, 100);
-                doc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 14, yPos);
+                doc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 15, yPos);
                 yPos += 10;
                 
                 // Add evolution details
-                doc.setFontSize(12);
+                doc.setFontSize(11);
                 doc.setTextColor(0, 0, 0);
                 
                 if (evolution.patientState) {
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Estado del paciente:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Estado del paciente:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     const patientStateLines = doc.splitTextToSize(evolution.patientState, 180);
-                    doc.text(patientStateLines, 14, yPos);
+                    doc.text(patientStateLines, 15, yPos);
                     yPos += patientStateLines.length * 7 + 5;
                 }
                 
@@ -3320,14 +3500,16 @@ async function exportToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Tratamiento realizado:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Tratamiento realizado:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     const treatmentLines = doc.splitTextToSize(evolution.treatment, 180);
-                    doc.text(treatmentLines, 14, yPos);
+                    doc.text(treatmentLines, 15, yPos);
                     yPos += treatmentLines.length * 7 + 5;
                 }
                 
@@ -3338,14 +3520,16 @@ async function exportToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Respuesta al tratamiento:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Respuesta al tratamiento:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     const responseLines = doc.splitTextToSize(evolution.response, 180);
-                    doc.text(responseLines, 14, yPos);
+                    doc.text(responseLines, 15, yPos);
                     yPos += responseLines.length * 7 + 5;
                 }
                 
@@ -3357,37 +3541,41 @@ async function exportToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Escalas de evaluación:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Escalas de evaluación:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     
                     if (evolution.scales.eva !== undefined) {
-                        doc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 14, yPos);
+                        doc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 20, yPos);
                         yPos += 7;
                     }
                     
                     if (evolution.scales.groc !== undefined) {
-                        doc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 14, yPos);
+                        doc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 20, yPos);
                         yPos += 7;
                     }
                     
                     if (evolution.scales.sane !== undefined) {
-                        doc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 14, yPos);
+                        doc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 20, yPos);
                         yPos += 7;
                     }
                     
                     // PSFS activities
                     if (evolution.scales.psfs && evolution.scales.psfs.length > 0) {
                         yPos += 3;
-                        doc.text("PSFS (Funcionalidad):", 14, yPos);
+                        doc.text("PSFS (Funcionalidad):", 20, yPos);
                         yPos += 7;
                         
                         evolution.scales.psfs.forEach(activity => {
-                            doc.text(`- ${activity.name}: ${activity.rating}/10`, 20, yPos);
-                            yPos += 7;
+                            if (activity && activity.name) {
+                                doc.text(`- ${activity.name}: ${activity.rating || 0}/10`, 25, yPos);
+                                yPos += 7;
+                            }
                         });
                     }
                     
@@ -3401,14 +3589,16 @@ async function exportToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Plan de entrenamiento:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Plan de entrenamiento:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     const planLines = doc.splitTextToSize(evolution.trainingPlan, 180);
-                    doc.text(planLines, 14, yPos);
+                    doc.text(planLines, 15, yPos);
                     yPos += planLines.length * 7 + 5;
                 }
                 
@@ -3419,20 +3609,22 @@ async function exportToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    doc.setFontSize(12);
+                    doc.setFontSize(11);
                     doc.setTextColor(30, 136, 229);
-                    doc.text('Observaciones adicionales:', 14, yPos);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('Observaciones adicionales:', 15, yPos);
                     yPos += 7;
                     
+                    doc.setFont(undefined, 'normal');
                     doc.setTextColor(0, 0, 0);
                     const observationsLines = doc.splitTextToSize(evolution.observations, 180);
-                    doc.text(observationsLines, 14, yPos);
+                    doc.text(observationsLines, 15, yPos);
                     yPos += observationsLines.length * 7 + 5;
                 }
                 
                 // Add separator line
                 doc.setDrawColor(200, 200, 200);
-                doc.line(14, yPos, 196, yPos);
+                doc.line(15, yPos, 195, yPos);
                 yPos += 10;
             }
         }
@@ -3441,13 +3633,18 @@ async function exportToPDF(patientId) {
         const pageCount = doc.getNumberOfPages();
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.setTextColor(150, 150, 150);
             doc.text(`Página ${i} de ${pageCount} - Sistema Evoluciones Polideportivo`, 105, 290, null, null, 'center');
+            
+            // Add timestamp
+            const timestamp = new Date().toLocaleString();
+            doc.text(`Generado: ${timestamp}`, 15, 290);
         }
         
         // Save the PDF
-        doc.save(`Evoluciones_${patient.name.replace(/\s+/g, '_')}.pdf`);
+        const sanitizedName = (patient.name || 'Paciente').replace(/[^a-zA-Z0-9_]/g, '_');
+        doc.save(`Evoluciones_${sanitizedName}.pdf`);
         
         hideLoading();
         showToast('PDF generado correctamente', 'success');
@@ -3553,48 +3750,181 @@ function setupScalesControls() {
         });
     }
     
-    // Añadir evento al botón para añadir actividad PSFS
-    const addPsfsBtn = document.getElementById('addPsfsActivityBtn');
-    if (addPsfsBtn) {
-        addPsfsBtn.addEventListener('click', function() {
-            const container = document.getElementById('psfsActivities');
-            if (container) {
-                const newActivity = document.createElement('div');
-                newActivity.className = 'psfs-activity';
-                newActivity.innerHTML = `
-                    <div class="activity-name">
-                        <input type="text" class="form-control" placeholder="Especifique la actividad" style="width: 100%; font-size: 13px;">
+   // Añadir evento al botón para añadir actividad PSFS
+const addPsfsBtn = document.getElementById('addPsfsActivityBtn');
+if (addPsfsBtn) {
+    addPsfsBtn.addEventListener('click', function() {
+        const container = document.getElementById('psfsActivities');
+        if (container) {
+            const newActivity = document.createElement('div');
+            newActivity.className = 'psfs-activity';
+            newActivity.innerHTML = `
+                <div class="activity-name" style="display: flex; align-items: center;">
+                    <input type="text" class="form-control" placeholder="Especifique la actividad" style="width: 100%; font-size: 13px;">
+                    <button type="button" class="delete-activity" style="margin-left: 8px; background: none; border: none; color: #F44336; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="activity-rating">
+                    <div class="rating-number">5</div>
+                    <div class="rating-bar">
+                        <div class="rating-value" style="width: 50%;"></div>
                     </div>
-                    <div class="activity-rating">
-                        <div class="rating-number">5</div>
-                        <div class="rating-bar">
-                            <div class="rating-value" style="width: 50%;"></div>
-                        </div>
-                        <div class="rating-number">10</div>
-                    </div>
-                `;
-                container.appendChild(newActivity);
+                    <div class="rating-number">10</div>
+                    <input type="range" min="0" max="10" value="5" class="activity-slider" style="width: 100%; margin-top: 5px;">
+                </div>
+            `;
+            container.appendChild(newActivity);
+            
+            // Añadir evento al slider para actualizar la barra visual
+            const slider = newActivity.querySelector('.activity-slider');
+            slider.addEventListener('input', function() {
+                const value = this.value;
+                const ratingNumber = this.parentElement.querySelector('.rating-number');
+                const ratingBar = this.parentElement.querySelector('.rating-value');
                 
-                // Añadir evento a la nueva entrada para actualizar al escribir
-                const input = newActivity.querySelector('input');
-                input.addEventListener('blur', function() {
-                    if (this.value.trim() === '') {
-                        this.value = 'Nueva actividad';
-                    }
-                    // Reemplazar el input por un texto normal
-                    const div = document.createElement('div');
-                    div.className = 'activity-name';
-                    div.textContent = this.value;
-                    this.parentNode.replaceChild(div, this);
+                ratingNumber.textContent = value;
+                ratingBar.style.width = (value * 10) + '%';
+            });
+            
+            // Añadir evento para eliminar actividad
+            const deleteBtn = newActivity.querySelector('.delete-activity');
+            deleteBtn.addEventListener('click', function() {
+                container.removeChild(newActivity);
+            });
+            
+            // Añadir evento para convertir input a texto al perder foco
+            const input = newActivity.querySelector('input');
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = 'Actividad sin nombre';
+                }
+                
+                const activityName = document.createElement('div');
+                activityName.className = 'activity-name';
+                activityName.style.display = 'flex';
+                activityName.style.alignItems = 'center';
+                activityName.style.justifyContent = 'space-between';
+                activityName.innerHTML = `
+                    <span>${this.value}</span>
+                    <button type="button" class="delete-activity" style="background: none; border: none; color: #F44336; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                this.parentNode.parentNode.replaceChild(activityName, this.parentNode);
+                
+                // Reconectar el evento para eliminar actividad
+                const newDeleteBtn = activityName.querySelector('.delete-activity');
+                newDeleteBtn.addEventListener('click', function() {
+                    container.removeChild(newActivity);
                 });
                 
-                // Dar foco al nuevo input
-                input.focus();
-            }
-        });
-    }
+                // Añadir evento para editar nombre al hacer clic
+                const nameSpan = activityName.querySelector('span');
+                nameSpan.style.cursor = 'pointer';
+                nameSpan.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control';
+                    input.value = this.textContent;
+                    input.style.width = '100%';
+                    input.style.fontSize = '13px';
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = 'activity-name';
+                    tempDiv.style.display = 'flex';
+                    tempDiv.style.alignItems = 'center';
+                    tempDiv.appendChild(input);
+                    tempDiv.innerHTML += `
+                        <button type="button" class="delete-activity" style="margin-left: 8px; background: none; border: none; color: #F44336; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    activityName.parentNode.replaceChild(tempDiv, activityName);
+                    
+                    // Dar foco al input
+                    input.focus();
+                    
+                    // Añadir evento para reconvertir a texto al perder foco
+                    input.addEventListener('blur', function() {
+                        if (this.value.trim() === '') {
+                            this.value = 'Actividad sin nombre';
+                        }
+                        
+                        const newActivityName = document.createElement('div');
+                        newActivityName.className = 'activity-name';
+                        newActivityName.style.display = 'flex';
+                        newActivityName.style.alignItems = 'center';
+                        newActivityName.style.justifyContent = 'space-between';
+                        newActivityName.innerHTML = `
+                            <span>${this.value}</span>
+                            <button type="button" class="delete-activity" style="background: none; border: none; color: #F44336; cursor: pointer;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        tempDiv.parentNode.replaceChild(newActivityName, tempDiv);
+                        
+                        // Reconectar el evento para eliminar actividad
+                        const newNewDeleteBtn = newActivityName.querySelector('.delete-activity');
+                        newNewDeleteBtn.addEventListener('click', function() {
+                            container.removeChild(newActivity);
+                        });
+                        
+                        // Reconectar evento para editar nombre
+                        const newNameSpan = newActivityName.querySelector('span');
+                        newNameSpan.style.cursor = 'pointer';
+                        newNameSpan.addEventListener('click', function() {
+                            // Recrear el input para editar
+                            const newInput = document.createElement('input');
+                            newInput.type = 'text';
+                            newInput.className = 'form-control';
+                            newInput.value = this.textContent;
+                            newInput.style.width = '100%';
+                            newInput.style.fontSize = '13px';
+                            
+                            const newTempDiv = document.createElement('div');
+                            newTempDiv.className = 'activity-name';
+                            newTempDiv.style.display = 'flex';
+                            newTempDiv.style.alignItems = 'center';
+                            newTempDiv.appendChild(newInput);
+                            newTempDiv.innerHTML += `
+                                <button type="button" class="delete-activity" style="margin-left: 8px; background: none; border: none; color: #F44336; cursor: pointer;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            `;
+                            
+                            newActivityName.parentNode.replaceChild(newTempDiv, newActivityName);
+                            newInput.focus();
+                            
+                            // Volver a añadir evento blur
+                            newInput.addEventListener('blur', arguments.callee);
+                            
+                            // Volver a añadir evento para eliminar
+                            const newestDeleteBtn = newTempDiv.querySelector('.delete-activity');
+                            newestDeleteBtn.addEventListener('click', function() {
+                                container.removeChild(newActivity);
+                            });
+                        });
+                    });
+                    
+                    // Reconectar el evento para eliminar actividad
+                    const newDeleteBtn = tempDiv.querySelector('.delete-activity');
+                    newDeleteBtn.addEventListener('click', function() {
+                        container.removeChild(newActivity);
+                    });
+                });
+            });
+            
+            // Dar foco al nuevo input
+            input.focus();
+        }
+    });
 }
 
+// Función para inicializar la pestaña de diagnóstico
 // Función para inicializar la pestaña de diagnóstico
 function initDiagnosisTab(patientId) {
     try {
@@ -3603,8 +3933,7 @@ function initDiagnosisTab(patientId) {
         if (diagnosisTimeline) {
             diagnosisTimeline.innerHTML = '<p>Cargando diagnósticos...</p>';
             
-            // Aquí iría la lógica para cargar diagnósticos desde Firebase
-            // Por ahora, mostraremos un ejemplo
+            // Ejemplo de diagnóstico para demostración
             setTimeout(() => {
                 diagnosisTimeline.innerHTML = `
                     <div class="timeline-item fade-in">
@@ -3612,65 +3941,415 @@ function initDiagnosisTab(patientId) {
                             <i class="fas fa-file-medical"></i>
                         </div>
                         <div class="timeline-content">
-                            <div class="timeline-date">Evaluación inicial - 21/10/2024</div>
-                            <h3 class="timeline-title">Tendinitis rotuliana</h3>
-                            <p>Paciente presenta dolor en región anterior de rodilla derecha, relacionado con actividad deportiva...</p>
+                            <div class="timeline-date">Evaluación inicial - ${formatDate(new Date())}</div>
+                            <h3 class="timeline-title">Diagnóstico demo</h3>
+                            <p>Este es un ejemplo de diagnóstico. Puede añadir diagnósticos reales utilizando el botón de "Nuevo diagnóstico".</p>
                         </div>
                     </div>
                 `;
             }, 1000);
         }
         
-        // Inicializar botones de la pestaña de diagnóstico
+        // Agregar funcionalidad a "Añadir diagnóstico"
         const addDiagnosisBtn = document.getElementById('addDiagnosisBtn');
         if (addDiagnosisBtn) {
             addDiagnosisBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
+                // Crear modal de diagnóstico
+                const diagnosisModal = document.createElement('div');
+                diagnosisModal.className = 'modal-overlay';
+                diagnosisModal.id = 'diagnosisFormModal';
+                
+                diagnosisModal.innerHTML = `
+                    <div class="modal">
+                        <div class="modal-header">
+                            <h2 class="modal-title">Nuevo diagnóstico kinesiológico</h2>
+                            <button class="modal-close" id="closeDiagnosisModal">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="diagnosisForm">
+                                <div class="form-group">
+                                    <label class="form-label">Fecha de evaluación</label>
+                                    <input type="date" class="form-control" id="diagnosisDate" value="${new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Diagnóstico médico (CIE-10)</label>
+                                    <input type="text" class="form-control" id="diagnosisCIE" placeholder="Ej: M54.5 Lumbago" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Diagnóstico kinesiológico</label>
+                                    <textarea class="form-control" id="diagnosisText" rows="5" placeholder="Ingrese el diagnóstico kinesiológico detallado" required></textarea>
+                                </div>
+                                <div class="form-group" style="margin-top: 20px; text-align: right;">
+                                    <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelDiagnosisBtn">Cancelar</button>
+                                    <button type="submit" class="action-btn btn-primary">Guardar diagnóstico</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(diagnosisModal);
+                setTimeout(() => diagnosisModal.classList.add('active'), 50);
+                
+                // Eventos para el modal
+                document.getElementById('closeDiagnosisModal').addEventListener('click', function() {
+                    diagnosisModal.classList.remove('active');
+                    setTimeout(() => document.body.removeChild(diagnosisModal), 300);
+                });
+                
+                document.getElementById('cancelDiagnosisBtn').addEventListener('click', function() {
+                    diagnosisModal.classList.remove('active');
+                    setTimeout(() => document.body.removeChild(diagnosisModal), 300);
+                });
+                
+                document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Obtener datos del formulario
+                    const diagnosisDate = document.getElementById('diagnosisDate').value;
+                    const diagnosisCIE = document.getElementById('diagnosisCIE').value;
+                    const diagnosisText = document.getElementById('diagnosisText').value;
+                    
+                    // Añadir diagnóstico a la línea de tiempo
+                    const newDiagnosis = document.createElement('div');
+                    newDiagnosis.className = 'timeline-item fade-in';
+                    newDiagnosis.innerHTML = `
+                        <div class="timeline-dot">
+                            <i class="fas fa-file-medical"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
+                            <h3 class="timeline-title">${diagnosisCIE}</h3>
+                            <p>${diagnosisText}</p>
+                        </div>
+                    `;
+                    
+                    // Añadir al inicio de la lista para que aparezca primero
+                    if (diagnosisTimeline.firstChild) {
+                        diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
+                    } else {
+                        diagnosisTimeline.appendChild(newDiagnosis);
+                    }
+                    
+                    // Mostrar mensaje de éxito
+                    showToast("Diagnóstico guardado correctamente", "success");
+                    
+                    // Cerrar modal
+                    diagnosisModal.classList.remove('active');
+                    setTimeout(() => document.body.removeChild(diagnosisModal), 300);
+                });
             });
         }
         
-        const addCifFunctionBtn = document.getElementById('addCifFunctionBtn');
-        if (addCifFunctionBtn) {
-            addCifFunctionBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
+        // Implementar selección básica de códigos CIF
+        function setupCifCategory(buttonId, containerId, items) {
+            const addBtn = document.getElementById(buttonId);
+            const container = document.getElementById(containerId);
+            
+            if (addBtn && container) {
+                // Mostrar elementos de ejemplo
+                container.innerHTML = items.map(item => `
+                    <div class="cif-item">
+                        <div class="cif-code">
+                            ${item.code}: ${item.name}
+                            <button class="scale-value active">${item.value}</button>
+                        </div>
+                        <div class="cif-desc">${item.description}</div>
+                        <div class="cif-scale">
+                            Escala:
+                            <div class="scale-values">
+                                <button class="scale-value ${item.value === 0 ? 'active' : ''}">0</button>
+                                <button class="scale-value ${item.value === 1 ? 'active' : ''}">1</button>
+                                <button class="scale-value ${item.value === 2 ? 'active' : ''}">2</button>
+                                <button class="scale-value ${item.value === 3 ? 'active' : ''}">3</button>
+                                <button class="scale-value ${item.value === 4 ? 'active' : ''}">4</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Añadir interactividad a los botones de escala
+                container.querySelectorAll('.scale-value').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Desactivar otros botones del mismo grupo
+                        const scaleValues = this.closest('.scale-values');
+                        if (scaleValues) {
+                            scaleValues.querySelectorAll('.scale-value').forEach(btn => {
+                                btn.classList.remove('active');
+                            });
+                            this.classList.add('active');
+                            
+                            // Actualizar valor en el título
+                            const cifCode = this.closest('.cif-item').querySelector('.cif-code');
+                            const valueBtn = cifCode.querySelector('.scale-value');
+                            valueBtn.textContent = this.textContent;
+                        }
+                    });
+                });
+                
+                // Implementar funcionalidad del botón para añadir nuevos elementos
+                addBtn.addEventListener('click', function() {
+                    // Crear modal para añadir nuevo elemento CIF
+                    showCifSelectorModal(containerId);
+                });
+            }
+        }
+        
+        // Configurar categorías CIF con datos de ejemplo
+        const cifFunctions = [
+            { code: "b280", name: "Sensación de dolor", description: "Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.", value: 2 },
+            { code: "b730", name: "Funciones de fuerza muscular", description: "Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.", value: 1 }
+        ];
+        
+        const cifStructures = [
+            { code: "s750", name: "Estructura extremidad inferior", description: "Estructura de la pierna y el pie.", value: 1 }
+        ];
+        
+        const cifActivities = [
+            { code: "d450", name: "Caminar", description: "Andar sobre una superficie a pie, paso a paso.", value: 2 }
+        ];
+        
+        const cifFactors = [
+            { code: "e110", name: "Productos para consumo personal", description: "Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.", value: 1 }
+        ];
+        
+        // Inicializar categorías CIF
+        setupCifCategory('addCifFunctionBtn', 'cifFunctions', cifFunctions);
+        setupCifCategory('addCifStructureBtn', 'cifStructures', cifStructures);
+        setupCifCategory('addCifActivityBtn', 'cifActivities', cifActivities);
+        setupCifCategory('addCifFactorBtn', 'cifFactors', cifFactors);
+        
+        // Inicializar factores personales
+        const cifPersonalFactors = document.getElementById('cifPersonalFactors');
+        if (cifPersonalFactors) {
+            cifPersonalFactors.value = "Paciente de 35 años, deportista amateur, trabaja en oficina con postura sedentaria prolongada.";
+        }
+        
+        // Función para mostrar modal selector de CIF
+        function showCifSelectorModal(targetContainerId) {
+            // Crear modal
+            const cifModal = document.createElement('div');
+            cifModal.className = 'modal-overlay';
+            cifModal.id = 'cifSelectorModal';
+            
+            cifModal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Seleccionar código CIF</h2>
+                        <button class="modal-close" id="closeCifModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">Código CIF</label>
+                            <input type="text" class="form-control" id="cifCodeInput" placeholder="Ej: b280">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="cifNameInput" placeholder="Ej: Sensación de dolor">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="cifDescInput" rows="3" placeholder="Descripción detallada..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Calificador (0-4)</label>
+                            <select class="form-control" id="cifValueInput">
+                                <option value="0">0 - No hay problema (0-4%)</option>
+                                <option value="1">1 - Problema ligero (5-24%)</option>
+                                <option value="2" selected>2 - Problema moderado (25-49%)</option>
+                                <option value="3">3 - Problema grave (50-95%)</option>
+                                <option value="4">4 - Problema completo (96-100%)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelCifBtn">Cancelar</button>
+                            <button type="button" class="action-btn btn-primary" id="saveCifBtn">Añadir</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(cifModal);
+            setTimeout(() => cifModal.classList.add('active'), 50);
+            
+            // Eventos para el modal
+            document.getElementById('closeCifModal').addEventListener('click', function() {
+                cifModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(cifModal), 300);
+            });
+            
+            document.getElementById('cancelCifBtn').addEventListener('click', function() {
+                cifModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(cifModal), 300);
+            });
+            
+            document.getElementById('saveCifBtn').addEventListener('click', function() {
+                // Obtener datos del formulario
+                const code = document.getElementById('cifCodeInput').value;
+                const name = document.getElementById('cifNameInput').value;
+                const description = document.getElementById('cifDescInput').value;
+                const value = parseInt(document.getElementById('cifValueInput').value);
+                
+                if (!code || !name) {
+                    showToast("Código y nombre son obligatorios", "error");
+                    return;
+                }
+                
+                // Añadir nuevo elemento CIF
+                const container = document.getElementById(targetContainerId);
+                if (container) {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'cif-item';
+                    newItem.innerHTML = `
+                        <div class="cif-code">
+                            ${code}: ${name}
+                            <button class="scale-value active">${value}</button>
+                        </div>
+                        <div class="cif-desc">${description}</div>
+                        <div class="cif-scale">
+                            Escala:
+                            <div class="scale-values">
+                                <button class="scale-value ${value === 0 ? 'active' : ''}">0</button>
+                                <button class="scale-value ${value === 1 ? 'active' : ''}">1</button>
+                                <button class="scale-value ${value === 2 ? 'active' : ''}">2</button>
+                                <button class="scale-value ${value === 3 ? 'active' : ''}">3</button>
+                                <button class="scale-value ${value === 4 ? 'active' : ''}">4</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Añadir interactividad a los botones de escala
+                    newItem.querySelectorAll('.scale-value').forEach(button => {
+                        button.addEventListener('click', function() {
+                            // Desactivar otros botones del mismo grupo
+                            const scaleValues = this.closest('.scale-values');
+                            if (scaleValues) {
+                                scaleValues.querySelectorAll('.scale-value').forEach(btn => {
+                                    btn.classList.remove('active');
+                                });
+                                this.classList.add('active');
+                                
+                                // Actualizar valor en el título
+                                const cifCode = this.closest('.cif-item').querySelector('.cif-code');
+                                const valueBtn = cifCode.querySelector('.scale-value');
+                                valueBtn.textContent = this.textContent;
+                            }
+                        });
+                    });
+                    
+                    container.appendChild(newItem);
+                }
+                
+                // Mostrar mensaje de éxito
+                showToast("Elemento CIF añadido correctamente", "success");
+                
+                // Cerrar modal
+                cifModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(cifModal), 300);
             });
         }
         
-        const addCifStructureBtn = document.getElementById('addCifStructureBtn');
-        if (addCifStructureBtn) {
-            addCifStructureBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
-            });
-        }
-        
-        const addCifActivityBtn = document.getElementById('addCifActivityBtn');
-        if (addCifActivityBtn) {
-            addCifActivityBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
-            });
-        }
-        
-        const addCifFactorBtn = document.getElementById('addCifFactorBtn');
-        if (addCifFactorBtn) {
-            addCifFactorBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
-            });
-        }
-        
+        // Implementación básica de Objetivos SMART
         const addObjectiveBtn = document.getElementById('addObjectiveBtn');
         if (addObjectiveBtn) {
             addObjectiveBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
+                // Crear ejemplo de objetivo
+                const objectivesList = document.getElementById('objectivesList');
+                if (objectivesList) {
+                    const newObjective = document.createElement('div');
+                    newObjective.className = 'objective-card fade-in';
+                    newObjective.innerHTML = `
+                        <div class="objective-header">
+                            <div class="objective-type">
+                                <i class="fas fa-bullseye"></i>
+                                Objetivo Funcional
+                            </div>
+                            <div class="objective-status status-inprogress">
+                                <i class="fas fa-spinner"></i> En progreso
+                            </div>
+                        </div>
+                        <div class="objective-desc">
+                            Aumentar el rango de movimiento de flexión de rodilla en 20° en 4 semanas, para permitir subir y bajar escaleras sin dolor.
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-circle">
+                                <svg width="60" height="60" viewBox="0 0 60 60">
+                                    <circle cx="30" cy="30" r="25" fill="none" stroke="#E0E0E0" stroke-width="5"/>
+                                    <circle cx="30" cy="30" r="25" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="157" stroke-dashoffset="78.5" transform="rotate(-90 30 30)"/>
+                                    <text x="30" y="30" text-anchor="middle" dy=".3em" font-size="14" font-weight="bold" fill="#1E88E5">50%</text>
+                                </svg>
+                            </div>
+                            <div class="progress-info">
+                                <div class="progress-date">
+                                    <span>Inicio: ${formatDate(new Date())}</span>
+                                    <span>Fin: ${formatDate(new Date(Date.now() + 28 * 24 * 60 * 60 * 1000))}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-value" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    objectivesList.appendChild(newObjective);
+                    showToast("Objetivo añadido como ejemplo", "success");
+                }
             });
         }
         
+        // Implementación básica de Plan de Tratamiento
         const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
         if (addTreatmentPlanBtn) {
             addTreatmentPlanBtn.addEventListener('click', function() {
-                showToast("Funcionalidad en desarrollo", "info");
+                // Crear ejemplo de plan de tratamiento
+                const treatmentPlanList = document.getElementById('treatmentPlanList');
+                if (treatmentPlanList) {
+                    const newPlan = document.createElement('div');
+                    newPlan.className = 'plan-card fade-in';
+                    newPlan.innerHTML = `
+                        <div class="plan-header">
+                            <div class="plan-title">
+                                <i class="fas fa-clipboard-list"></i>
+                                Plan de Tratamiento
+                            </div>
+                            <div class="plan-date">${formatDate(new Date())}</div>
+                        </div>
+                        <div class="plan-details">
+                            <div class="plan-row">
+                                <div class="plan-label">Frecuencia:</div>
+                                <div class="plan-value">3 sesiones por semana durante 4 semanas</div>
+                            </div>
+                            <div class="plan-row">
+                                <div class="plan-label">Técnicas:</div>
+                                <div class="plan-value">
+                                    <div class="techniques-list">
+                                        <div class="technique-tag">Terapia manual</div>
+                                        <div class="technique-tag">Fortalecimiento muscular</div>
+                                        <div class="technique-tag">Ejercicios propioceptivos</div>
+                                        <div class="technique-tag">Educación al paciente</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="plan-row">
+                                <div class="plan-label">Observaciones:</div>
+                                <div class="plan-value">
+                                    Evitar ejercicios de alto impacto. Aplicar hielo post-sesión.
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    treatmentPlanList.appendChild(newPlan);
+                    showToast("Plan de tratamiento añadido como ejemplo", "success");
+                }
             });
         }
         
+        // Inicializar botón de guardar diagnóstico
         const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
         if (saveDiagnosisBtn) {
             saveDiagnosisBtn.addEventListener('click', function() {
@@ -3930,23 +4609,33 @@ if (evolutionForm) {
             const formData = new FormData(this);
             
             // Capturar datos de actividades PSFS
-            const psfsActivities = [];
-            document.querySelectorAll('#psfsActivities .psfs-activity').forEach(activity => {
-                const nameElement = activity.querySelector('.activity-name');
-                const ratingElement = activity.querySelector('.rating-number');
-                
-                if (nameElement && ratingElement) {
-                    const name = nameElement.textContent;
-                    const rating = parseInt(ratingElement.textContent);
-                    
-                    if (name && !isNaN(rating)) {
-                        psfsActivities.push({
-                            name: name,
-                            rating: rating
-                        });
-                    }
-                }
-            });
+const psfsActivities = [];
+document.querySelectorAll('#psfsActivities .psfs-activity').forEach(activity => {
+    const nameElement = activity.querySelector('.activity-name span') || activity.querySelector('.activity-name');
+    const sliderElement = activity.querySelector('.activity-slider');
+    
+    let name = "Actividad";
+    if (nameElement) {
+        name = nameElement.textContent || nameElement.innerText || "Actividad";
+    }
+    
+    let rating = 5;
+    if (sliderElement) {
+        rating = parseInt(sliderElement.value);
+    } else {
+        const ratingNumber = activity.querySelector('.rating-number');
+        if (ratingNumber) {
+            rating = parseInt(ratingNumber.textContent);
+        }
+    }
+    
+    if (name) {
+        psfsActivities.push({
+            name: name,
+            rating: isNaN(rating) ? 5 : rating
+        });
+    }
+});
             
             // Obtener datos del formulario
             const evolutionData = {
@@ -3960,6 +4649,7 @@ if (evolutionForm) {
                     eva: parseInt(formData.get('eva')),
                     groc: parseInt(formData.get('groc')),
                     sane: parseInt(formData.get('sane')),
+                    saneText: document.getElementById('saneCustomText').value,
                     psfs: psfsActivities
                 },
                 trainingPlan: formData.get('trainingPlan') || '',
@@ -4022,6 +4712,133 @@ if (evolutionForm) {
         console.error("Error durante la inicialización:", error);
         showToast("Error de inicialización: " + error.message, "error");
     }
+
+    // Configurar la tabla de ejercicios
+const addExerciseBtn = document.getElementById('addExerciseBtn');
+if (addExerciseBtn) {
+    addExerciseBtn.addEventListener('click', function() {
+        addExerciseRow();
+    });
+}
+
+// Configurar plantillas de ejercicios
+const templateBtns = document.querySelectorAll('.template-btn');
+if (templateBtns) {
+    templateBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const template = this.getAttribute('data-template');
+            loadExerciseTemplate(template);
+        });
+    });
+}
+
+// Función para añadir una fila de ejercicio
+function addExerciseRow(exercise = {}) {
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (!tableBody) return;
+    
+    const newRow = document.createElement('tr');
+    newRow.style.borderBottom = '1px solid var(--border)';
+    
+    newRow.innerHTML = `
+        <td style="padding: 10px; border: 1px solid var(--border);">
+            <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
+                   value="${exercise.name || ''}" style="width: 100%;">
+        </td>
+        <td style="padding: 10px; border: 1px solid var(--border);">
+            <input type="number" class="form-control" placeholder="Series" min="1" 
+                   value="${exercise.sets || '3'}" style="width: 60px; text-align: center;">
+        </td>
+        <td style="padding: 10px; border: 1px solid var(--border);">
+            <input type="number" class="form-control" placeholder="Reps" min="1" 
+                   value="${exercise.reps || '10'}" style="width: 60px; text-align: center;">
+        </td>
+        <td style="padding: 10px; border: 1px solid var(--border);">
+            <select class="form-control" style="width: 100px;">
+                <option value="Baja" ${exercise.intensity === 'Baja' ? 'selected' : ''}>Baja</option>
+                <option value="Media" ${exercise.intensity === 'Media' || !exercise.intensity ? 'selected' : ''}>Media</option>
+                <option value="Alta" ${exercise.intensity === 'Alta' ? 'selected' : ''}>Alta</option>
+            </select>
+        </td>
+        <td style="padding: 10px; border: 1px solid var(--border);">
+            <input type="text" class="form-control" placeholder="Observaciones" 
+                   value="${exercise.notes || ''}" style="width: 100%;">
+        </td>
+        <td style="padding: 10px; text-align: center; border: 1px solid var(--border);">
+            <button type="button" class="delete-exercise" style="background: none; border: none; color: var(--accent2); cursor: pointer;">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+    
+    // Añadir evento para eliminar ejercicio
+    const deleteBtn = newRow.querySelector('.delete-exercise');
+    deleteBtn.addEventListener('click', function() {
+        tableBody.removeChild(newRow);
+    });
+    
+    tableBody.appendChild(newRow);
+}
+
+// Función para cargar plantilla de ejercicios
+function loadExerciseTemplate(template) {
+    // Limpiar tabla actual
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (!tableBody) return;
+    
+    // Confirmar antes de reemplazar ejercicios existentes
+    if (tableBody.children.length > 0) {
+        if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+            return;
+        }
+        tableBody.innerHTML = '';
+    }
+    
+    // Plantillas predefinidas
+    const templates = {
+        mmss: [
+            { name: 'Elevaciones laterales con mancuernas', sets: 3, reps: 12, intensity: 'Media', notes: 'Movimiento controlado' },
+            { name: 'Curl de bíceps con barra', sets: 3, reps: 10, intensity: 'Media', notes: 'Extensión completa' },
+            { name: 'Press de hombro', sets: 3, reps: 12, intensity: 'Media', notes: 'No bloquear codos' }
+        ],
+        mmii: [
+            { name: 'Sentadillas', sets: 3, reps: 15, intensity: 'Media', notes: 'Rodillas no sobrepasan punta de pies' },
+            { name: 'Estocadas frontales', sets: 3, reps: 10, intensity: 'Media', notes: 'Alternar piernas' },
+            { name: 'Elevación de talones', sets: 3, reps: 20, intensity: 'Baja', notes: 'Mantener piernas extendidas' }
+        ],
+        core: [
+            { name: 'Plancha frontal', sets: 3, reps: '30 seg', intensity: 'Media', notes: 'Mantener posición neutra columna' },
+            { name: 'Crunch abdominal', sets: 3, reps: 15, intensity: 'Media', notes: 'Movimiento controlado' },
+            { name: 'Puente glúteo', sets: 3, reps: 12, intensity: 'Media', notes: 'Apretar glúteos al subir' }
+        ],
+        estiramiento: [
+            { name: 'Estiramiento de isquiotibiales', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'No rebotar' },
+            { name: 'Estiramiento de cuádriceps', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'Mantener cadera alineada' },
+            { name: 'Estiramiento de pectorales', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'Sentir tensión sin dolor' }
+        ]
+    };
+    
+    // Cargar la plantilla seleccionada
+    if (templates[template]) {
+        templates[template].forEach(exercise => {
+            addExerciseRow(exercise);
+        });
+        showToast(`Plantilla de ${getTemplateName(template)} cargada`, 'success');
+    } else {
+        showToast('Plantilla no encontrada', 'error');
+    }
+}
+
+// Obtener nombre de plantilla
+function getTemplateName(template) {
+    switch(template) {
+        case 'mmss': return 'miembros superiores';
+        case 'mmii': return 'miembros inferiores';
+        case 'core': return 'core';
+        case 'estiramiento': return 'estiramientos';
+        default: return template;
+    }
+}
 }
 
 // Inicializar la aplicación cuando el DOM esté cargado
