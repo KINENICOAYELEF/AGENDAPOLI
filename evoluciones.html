@@ -2319,12 +2319,23 @@
         }
         
         // Add new patient to Firebase
+        // Modifica la función addPatient en el script de Firebase
         async function addPatient(patientData) {
             try {
                 showLoading();
                 
+                // Verifica que los campos obligatorios estén presentes
+                if (!patientData.name || !patientData.rut) {
+                    hideLoading();
+                    showToast("Error: Nombre y RUT son obligatorios", "error");
+                    return null;
+                }
+                
+                // Añade logs para depuración
+                console.log("Intentando añadir paciente:", patientData);
+                
                 // Add created_at timestamp
-                patientData.created_at = serverTimestamp();
+                patientData.created_at = new Date().toISOString(); // Cambiado de serverTimestamp()
                 patientData.registerDate = formatDate(new Date());
                 patientData.progress = 0;
                 
@@ -2338,9 +2349,9 @@
                 showToast("Paciente registrado correctamente", "success");
                 return docRef.id;
             } catch (e) {
-                console.error("Error adding patient: ", e);
+                console.error("Error detallado al registrar paciente:", e);
                 hideLoading();
-                showToast("Error al registrar paciente", "error");
+                showToast(`Error al registrar paciente: ${e.message}`, "error");
                 return null;
             }
         }
@@ -3317,6 +3328,32 @@
             
             // Load patients
             await getPatients();
+        
+                // Añadir eventos para la navegación del menú lateral
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevenir el comportamiento predeterminado
+                
+                // Remover clase active de todos los items
+                document.querySelectorAll('.menu-item').forEach(menuItem => {
+                    menuItem.classList.remove('active');
+                });
+                
+                // Añadir clase active al item clicado
+                this.classList.add('active');
+                
+                // Obtener el texto del menú seleccionado
+                const menuText = this.querySelector('.menu-item-text').textContent;
+                
+                // Mostrar un mensaje indicando la navegación
+                showToast(`Navegando a: ${menuText}`, "info");
+                
+                // Aquí implementarías la lógica real para cambiar de vista
+                // Por ahora solo mostraremos un mensaje
+            });
+        });
+
+
         }
         
         // Initialize app when DOM is loaded
