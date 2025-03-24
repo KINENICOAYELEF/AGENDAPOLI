@@ -2162,7 +2162,7 @@
 
     <!-- Script for Firebase -->
     <script type="module">
- // Import the functions you need from the SDKs you need
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
@@ -2179,10 +2179,15 @@ const firebaseConfig = {
 
 // Inicializar Firebase (simplificado)
 console.log("Inicializando Firebase...");
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
-console.log("Firebase inicializado correctamente");
+let app, db, storage;
+try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    console.log("Firebase inicializado correctamente");
+} catch (error) {
+    console.error("Error inicializando Firebase:", error);
+}
 
 // Definir vistas globalmente para que sean accesibles en todo el script
 const views = {
@@ -2462,6 +2467,15 @@ async function addPatient(patientData) {
         };
         
         console.log("Datos del paciente a registrar:", patientDoc);
+        
+        // Añadir otros campos si existen
+        if (patientData.birthDate) patientDoc.birthDate = patientData.birthDate;
+        if (patientData.phone) patientDoc.phone = patientData.phone;
+        if (patientData.email) patientDoc.email = patientData.email;
+        if (patientData.address) patientDoc.address = patientData.address;
+        if (patientData.medicalHistory) patientDoc.medicalHistory = patientData.medicalHistory;
+        if (patientData.medications) patientDoc.medications = patientData.medications;
+        if (patientData.student) patientDoc.student = patientData.student;
         
         // Usar addDoc que ya está importado
         const patientsRef = collection(db, "patients");
@@ -2917,6 +2931,97 @@ function renderAttachments(attachments) {
     }
 }
 
+// Renderizar pacientes en una vista específica
+function renderPatientsInView(containerId, patients) {
+    try {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.error(`Contenedor ${containerId} no encontrado`);
+            return;
+        }
+        
+        // Limpiar contenedor
+        container.innerHTML = '';
+        
+        if (patients.length === 0) {
+            container.innerHTML = `
+                <div class="patient-card">
+                    <div class="patient-avatar">
+                        <i class="fas fa-user-injured"></i>
+                    </div>
+                    <h3 class="patient-name">No hay pacientes registrados</h3>
+                    <div class="patient-rut">Agregue un nuevo paciente para comenzar</div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Añadir pacientes
+        patients.forEach(patient => {
+            const progress = calculatePatientProgress(patient);
+            const statusClass = getStatusClass(progress);
+            
+            const patientCard = document.createElement('div');
+            patientCard.classList.add('patient-card');
+            patientCard.setAttribute('data-id', patient.id);
+            
+            const initials = getInitials(patient.name);
+            
+            patientCard.innerHTML = `
+                <div class="patient-status ${statusClass}"></div>
+                <div class="patient-avatar">${initials}</div>
+                <h3 class="patient-name">${patient.name}</h3>
+                <div class="patient-rut">${patient.rut}</div>
+                <div class="patient-info">
+                    <div>
+                        <div class="patient-label">Última sesión</div>
+                        <div>${patient.lastSession || 'Ninguna'}</div>
+                    </div>
+                    <div>
+                        <div class="patient-label">Progreso</div>
+                        <div>${progress}%</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(patientCard);
+            
+            // Añadir evento para abrir modal de paciente
+            patientCard.addEventListener('click', () => openPatientModal(patient.id));
+        });
+    } catch (error) {
+        console.error("Error renderizando pacientes en vista:", error);
+        showToast("Error al mostrar pacientes: " + error.message, "error");
+    }
+}
+
+// Actualizar estadísticas de reportes
+async function updateReportStatistics() {
+    try {
+        // Obtener todos los pacientes
+        const patients = await getPatients();
+        const totalElement = document.getElementById('totalPatientsReport');
+        if (totalElement) {
+            totalElement.textContent = patients.length;
+        }
+        
+        // Contar todas las evoluciones
+        let totalEvolutions = 0;
+        for (const patient of patients) {
+            const evolutions = await getEvolutions(patient.id);
+            totalEvolutions += evolutions.length;
+        }
+        
+        const evolutionsElement = document.getElementById('totalEvolutionsReport');
+        if (evolutionsElement) {
+            evolutionsElement.textContent = totalEvolutions;
+        }
+    } catch (error) {
+        console.error('Error actualizando estadísticas de reportes:', error);
+        showToast("Error al cargar estadísticas: " + error.message, "error");
+    }
+}
+
 // Change view function - función mejorada para navegación
 function changeView(viewName) {
     try {
@@ -3009,6 +3114,595 @@ function changeView(viewName) {
         showToast(`Error al cambiar de vista: ${error.message}`, "error");
     }
 }
+
+// Configurar navegación
+function setupNavigation() {
+    try {
+        // Configurar eventos de navegación para el menú lateral
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Eliminar clase active de todos los items
+                document.querySelectorAll('.menu-item').forEach(menuItem => {
+                    menuItem.classList.remove('active');
+                });
+                
+                // Añadir clase active al item clicado
+                this.classList.add('active');
+                
+                // Cambiar la vista según el ítem seleccionado
+                const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
+                changeView(viewName);
+            });
+        });
+        
+        // Manejar el toggle del sidebar
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (toggleSidebarBtn && sidebar && mainContent) {
+            toggleSidebarBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-content-expanded');
+            });
+        }
+    } catch (error) {
+        console.error("Error configurando navegación:", error);
+        showToast("Error al configurar navegación: " + error.message, "error");
+    }
+}
+
+// Export PDF function
+async function exportToPDF(patientId) {
+    try {
+        showLoading();
+        
+        // Get patient data
+        const patient = await getPatient(patientId);
+        if (!patient) {
+            hideLoading();
+            return;
+        }
+        
+        // Get evolutions
+        const evolutions = await getEvolutions(patientId);
+        
+        // Create a new PDF using jsPDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(22);
+        doc.setTextColor(30, 136, 229);
+        doc.text('EVOLUCIONES POLIDEPORTIVO', 105, 20, null, null, 'center');
+        
+        // Add patient info
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Paciente: ${patient.name}`, 14, 40);
+        doc.setFontSize(12);
+        doc.text(`RUT: ${patient.rut}`, 14, 50);
+        doc.text(`Teléfono: ${patient.phone || 'No registrado'}`, 14, 60);
+        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 14, 70);
+        
+        // Add evolutions
+        doc.setFontSize(16);
+        doc.setTextColor(30, 136, 229);
+        doc.text('Historial de Evoluciones', 14, 90);
+        
+        let yPos = 100;
+        
+        if (evolutions.length === 0) {
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text('No hay evoluciones registradas para este paciente.', 14, yPos);
+        } else {
+            for (let i = 0; i < evolutions.length; i++) {
+                const evolution = evolutions[i];
+                
+                // Check if we need a new page
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                // Add evolution date
+                doc.setFontSize(14);
+                doc.setTextColor(30, 136, 229);
+                doc.text(`${formatDate(new Date(evolution.date))} - ${evolution.time || ''}`, 14, yPos);
+                yPos += 10;
+                
+                // Add student
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 14, yPos);
+                yPos += 10;
+                
+                // Add evolution details
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                
+                if (evolution.patientState) {
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Estado del paciente:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    const patientStateLines = doc.splitTextToSize(evolution.patientState, 180);
+                    doc.text(patientStateLines, 14, yPos);
+                    yPos += patientStateLines.length * 7 + 5;
+                }
+                
+                if (evolution.treatment) {
+                    // Check if we need a new page
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Tratamiento realizado:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    const treatmentLines = doc.splitTextToSize(evolution.treatment, 180);
+                    doc.text(treatmentLines, 14, yPos);
+                    yPos += treatmentLines.length * 7 + 5;
+                }
+                
+                if (evolution.response) {
+                    // Check if we need a new page
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Respuesta al tratamiento:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    const responseLines = doc.splitTextToSize(evolution.response, 180);
+                    doc.text(responseLines, 14, yPos);
+                    yPos += responseLines.length * 7 + 5;
+                }
+                
+                // Add scales
+                if (evolution.scales) {
+                    // Check if we need a new page
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Escalas de evaluación:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    
+                    if (evolution.scales.eva !== undefined) {
+                        doc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 14, yPos);
+                        yPos += 7;
+                    }
+                    
+                    if (evolution.scales.groc !== undefined) {
+                        doc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 14, yPos);
+                        yPos += 7;
+                    }
+                    
+                    if (evolution.scales.sane !== undefined) {
+                        doc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 14, yPos);
+                        yPos += 7;
+                    }
+                    
+                    yPos += 5;
+                }
+                
+                if (evolution.trainingPlan) {
+                    // Check if we need a new page
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Plan de entrenamiento:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    const planLines = doc.splitTextToSize(evolution.trainingPlan, 180);
+                    doc.text(planLines, 14, yPos);
+                    yPos += planLines.length * 7 + 5;
+                }
+                
+                if (evolution.observations) {
+                    // Check if we need a new page
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 136, 229);
+                    doc.text('Observaciones adicionales:', 14, yPos);
+                    yPos += 7;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    const observationsLines = doc.splitTextToSize(evolution.observations, 180);
+                    doc.text(observationsLines, 14, yPos);
+                    yPos += observationsLines.length * 7 + 5;
+                }
+                
+                // Add separator line
+                doc.setDrawColor(200, 200, 200);
+                doc.line(14, yPos, 196, yPos);
+                yPos += 10;
+            }
+        }
+        
+        // Save the PDF
+        doc.save(`Evoluciones_${patient.name.replace(/\s+/g, '_')}.pdf`);
+        
+        hideLoading();
+        showToast('PDF generado correctamente', 'success');
+    } catch (error) {
+        console.error('Error generando PDF:', error);
+        hideLoading();
+        showToast('Error al generar PDF: ' + error.message, 'error');
+    }
+}
+
+// Inicializar la aplicación
+async function initApp() {
+    try {
+        console.log("Inicializando aplicación...");
+        
+        // Guardar el contenido original del dashboard
+        const originalContent = document.querySelector('.content');
+        if (originalContent) {
+            views.dashboard = originalContent.outerHTML;
+        }
+        
+        // Establecer fecha actual para nuevas evoluciones
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        
+        // Verificar conexión a Firebase
+        const connected = await testFirebase();
+        if (!connected) {
+            showToast("Advertencia: Problemas de conexión con Firebase", "error");
+        }
+        
+        // Establecer valores por defecto en el formulario de evolución
+        if (document.getElementById('evolutionDate')) {
+            document.getElementById('evolutionDate').value = today;
+        }
+        
+        if (document.getElementById('evolutionTime')) {
+            document.getElementById('evolutionTime').value = now;
+        }
+        
+        // Añadir event listener para formulario de nuevo paciente
+        const patientForm = document.getElementById('patientForm');
+        if (patientForm) {
+            patientForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const patientData = {};
+                
+                for (const [key, value] of formData.entries()) {
+                    patientData[key] = value;
+                }
+                
+                // Añadir paciente a Firebase
+                await addPatient(patientData);
+                
+                // Cerrar modal
+                document.getElementById('newPatientModal').classList.remove('active');
+                
+                // Limpiar formulario
+                this.reset();
+            });
+        }
+        
+        // Añadir event listener para formulario de nueva evolución
+        const evolutionForm = document.getElementById('evolutionForm');
+        if (evolutionForm) {
+            evolutionForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!currentPatientId) {
+                    showToast("Error: No hay paciente seleccionado", "error");
+                    return;
+                }
+                
+                const formData = new FormData(this);
+                
+                // Obtener datos del formulario
+                const evolutionData = {
+                    date: formData.get('date'),
+                    time: formData.get('time'),
+                    student: formData.get('student'),
+                    patientState: formData.get('patientState'),
+                    treatment: formData.get('treatment'),
+                    response: formData.get('response'),
+                    scales: {
+                        eva: parseInt(formData.get('eva')),
+                        groc: parseInt(formData.get('groc')),
+                        sane: parseInt(formData.get('sane')),
+                        psfs: [
+                            { name: "Caminar 30 min", rating: 6 },
+                            { name: "Subir escaleras", rating: 5 },
+                            { name: "Ponerse de pie desde sentado", rating: 8 }
+                        ]
+                    },
+                    trainingPlan: formData.get('trainingPlan') || '',
+                    observations: formData.get('observations') || '',
+                    attachments: []
+                };
+                
+                // Añadir evolución a Firebase
+                await addEvolution(currentPatientId, evolutionData);
+                
+                // Cerrar modal
+                document.getElementById('newEvolutionModal').classList.remove('active');
+                
+                // Limpiar formulario
+                this.reset();
+                
+                // Restablecer campos con valores por defecto
+                document.getElementById('evolutionDate').value = today;
+                document.getElementById('evolutionTime').value = now;
+                document.getElementById('evaRange').value = 5;
+                document.getElementById('evaValue').textContent = '5/10';
+                document.getElementById('grocRange').value = 3;
+                document.getElementById('grocValue').textContent = '+3';
+                document.getElementById('saneRange').value = 70;
+                document.getElementById('saneValue').textContent = '70%';
+                
+                // Refrescar evoluciones
+                if (document.getElementById('patientModal').classList.contains('active')) {
+                    const evolutions = await getEvolutions(currentPatientId);
+                    fillEvolutionsTab(evolutions);
+                }
+                
+                // Refrescar lista de pacientes
+                await getPatients();
+            });
+        }
+        
+        // Añadir event listener para guardar datos del paciente
+        const savePatientBtn = document.getElementById('savePatientBtn');
+        if (savePatientBtn) {
+            savePatientBtn.addEventListener('click', async function() {
+                if (!currentPatientId) {
+                    showToast("Error: No hay paciente seleccionado", "error");
+                    return;
+                }
+                
+                // Obtener datos del paciente del formulario
+                const patientData = {
+                    name: document.getElementById('patientName').value,
+                    rut: document.getElementById('patientRut').value,
+                    birthDate: document.getElementById('patientBirthDate').value,
+                    phone: document.getElementById('patientPhone').value,
+                    email: document.getElementById('patientEmail').value || '',
+                    address: document.getElementById('patientAddress').value || '',
+                    medicalHistory: document.getElementById('patientMedicalHistory').value || '',
+                    medications: document.getElementById('patientMedications').value || '',
+                    allergies: document.getElementById('patientAllergies').value || '',
+                    emergencyContact: document.getElementById('patientEmergencyContact').value || '',
+                    emergencyPhone: document.getElementById('patientEmergencyPhone').value || ''
+                };
+                
+                // Actualizar datos del paciente
+                await updatePatient(currentPatientId, patientData);
+                
+                // Refrescar lista de pacientes
+                await getPatients();
+            });
+        }
+        
+        // Añadir event listener para búsqueda
+        const searchInput = document.getElementById('searchPatient');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const patientCards = document.querySelectorAll('.patient-card');
+                
+                patientCards.forEach(card => {
+                    const name = card.querySelector('.patient-name').textContent.toLowerCase();
+                    const rut = card.querySelector('.patient-rut').textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || rut.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Añadir event listener para botón de exportar PDF
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', function() {
+                if (!currentPatientId) {
+                    showToast("Error: No hay paciente seleccionado", "error");
+                    return;
+                }
+                
+                exportToPDF(currentPatientId);
+            });
+        }
+        
+        // Añadir event listener para botones de cancelar
+        const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
+        if (cancelEvolutionBtn) {
+            cancelEvolutionBtn.addEventListener('click', function() {
+                document.getElementById('newEvolutionModal').classList.remove('active');
+            });
+        }
+        
+        const cancelPatientBtn = document.getElementById('cancelPatientBtn');
+        if (cancelPatientBtn) {
+            cancelPatientBtn.addEventListener('click', function() {
+                document.getElementById('newPatientModal').classList.remove('active');
+            });
+        }
+        
+        // Añadir event listener para botones de cerrar modal
+        const closePatientModal = document.getElementById('closePatientModal');
+        if (closePatientModal) {
+            closePatientModal.addEventListener('click', function() {
+                document.getElementById('patientModal').classList.remove('active');
+                currentPatientId = null;
+            });
+        }
+        
+        const closeEvolutionModal = document.getElementById('closeEvolutionModal');
+        if (closeEvolutionModal) {
+            closeEvolutionModal.addEventListener('click', function() {
+                document.getElementById('newEvolutionModal').classList.remove('active');
+            });
+        }
+        
+        const closePatientModalNew = document.getElementById('closePatientModalNew');
+        if (closePatientModalNew) {
+            closePatientModalNew.addEventListener('click', function() {
+                document.getElementById('newPatientModal').classList.remove('active');
+            });
+        }
+        
+        // Añadir event listener para botón de añadir paciente
+        const addPatientBtn = document.getElementById('addPatientBtn');
+        if (addPatientBtn) {
+            addPatientBtn.addEventListener('click', function() {
+                document.getElementById('newPatientModal').classList.add('active');
+            });
+        }
+        
+        // Añadir event listener para botón de añadir evolución
+        const addEvolutionBtn = document.getElementById('addEvolutionBtn');
+        if (addEvolutionBtn) {
+            addEvolutionBtn.addEventListener('click', function() {
+                if (!currentPatientId) {
+                    showToast("Primero seleccione un paciente", "info");
+                    return;
+                }
+                
+                // Establecer fecha y hora actuales
+                document.getElementById('evolutionDate').value = today;
+                document.getElementById('evolutionTime').value = now;
+                
+                // Actualizar título del modal
+                document.getElementById('evolutionModalTitle').textContent = 
+                    'Nueva evolución - ' + document.getElementById('patientModalTitle').textContent;
+                
+                // Mostrar modal
+                document.getElementById('newEvolutionModal').classList.add('active');
+            });
+        }
+        
+        // Añadir event listeners para inputs de rango
+        const evaRange = document.getElementById('evaRange');
+        const evaValue = document.getElementById('evaValue');
+        if (evaRange && evaValue) {
+            evaRange.addEventListener('input', function() {
+                evaValue.textContent = this.value + '/10';
+                const percentage = (this.value / 10) * 100;
+                document.querySelector('.eva-scale .scale-marker').style.left = percentage + '%';
+            });
+        }
+        
+        const grocRange = document.getElementById('grocRange');
+        const grocValue = document.getElementById('grocValue');
+        if (grocRange && grocValue) {
+            grocRange.addEventListener('input', function() {
+                grocValue.textContent = this.value > 0 ? '+' + this.value : this.value;
+                const percentage = ((parseFloat(this.value) + 7) / 14) * 100;
+                document.querySelector('.groc-marker').style.left = percentage + '%';
+            });
+        }
+        
+        const saneRange = document.getElementById('saneRange');
+        const saneValue = document.getElementById('saneValue');
+        if (saneRange && saneValue) {
+            saneRange.addEventListener('input', function() {
+                saneValue.textContent = this.value + '%';
+                const saneCircle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+                const saneText = document.querySelector('.sane-circle svg text');
+                const saneBar = document.querySelector('.sane-bar');
+                
+                // Actualizar círculo
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * this.value / 100);
+                saneCircle.setAttribute('stroke-dashoffset', offset);
+                
+                // Actualizar texto
+                saneText.textContent = this.value + '%';
+                
+                // Actualizar barra
+                saneBar.style.width = this.value + '%';
+            });
+        }
+        
+        // Añadir event listener para pestañas
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remover clase activa de todas las pestañas y contenidos
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                // Añadir clase activa a la pestaña clicada y su contenido correspondiente
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId + 'Tab').classList.add('active');
+            });
+        });
+        
+        // Añadir event listener para cabeceras de acordeón
+        const accordions = document.querySelectorAll('.accordion-header');
+        
+        accordions.forEach(accordion => {
+            accordion.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+            });
+        });
+        
+        // Configurar navegación
+        setupNavigation();
+        
+        // Cargar pacientes
+        await getPatients();
+        
+        console.log("Inicialización completada correctamente");
+        showToast("Sistema iniciado correctamente", "success");
+    } catch (error) {
+        console.error("Error durante la inicialización:", error);
+        showToast("Error de inicialización: " + error.message, "error");
+    }
+}
+
+// Inicializar la aplicación cuando el DOM esté cargado
+document.addEventListener('DOMContentLoaded', function() {
+    initApp().catch(error => {
+        console.error("Error al inicializar la aplicación:", error);
+        showToast("Error crítico de inicialización: " + error.message, "error");
+    });
+});
     </script>
 </body>
 </html>
