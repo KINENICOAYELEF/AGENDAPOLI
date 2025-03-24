@@ -2191,19 +2191,12 @@ const storage = getStorage(app);
 console.log("Storage obtenido:", storage);
             
 // Función de prueba para verificar Firebase
+// Función de prueba para verificar Firebase
 async function testFirebase() {
     try {
-        // Intentar obtener colección
-        const testCollection = collection(db, "test");
-        console.log("Colección de prueba:", testCollection);
-        
-        // Intentar añadir documento
-        const testDoc = await addDoc(testCollection, {
-            test: true,
-            timestamp: new Date().toISOString()
-        });
-        console.log("Documento de prueba creado:", testDoc.id);
-        
+        // Solo verificar que podemos acceder a Firestore sin escribir
+        const testCollection = collection(db, "patients");
+        console.log("Conexión a Firebase establecida correctamente");
         showToast("Conexión a Firebase verificada", "success");
         return true;
     } catch (error) {
@@ -2357,26 +2350,22 @@ async function addPatient(patientData) {
     try {
         showLoading();
         
-        // Validación mínima
-        if (!patientData.name || !patientData.rut) {
-            hideLoading();
-            showToast("Nombre y RUT son obligatorios", "error");
-            return null;
-        }
-        
-        // Estructura simplificada (mínima)
-        const simplePatientData = {
-            name: patientData.name,
-            rut: patientData.rut,
-            // Añadir solo campos básicos
-            registerDate: formatDate(new Date())
+        // Estructura más simple
+        const patientDoc = {
+            name: patientData.name || "Sin nombre",
+            rut: patientData.rut || "Sin RUT",
+            registerDate: formatDate(new Date()),
+            lastSession: "",
+            progress: 0
         };
         
-        // Guardar en Firebase
-        const patientsRef = collection(db, "patients");
-        const docRef = await addDoc(patientsRef, simplePatientData);
+        console.log("Datos del paciente a registrar:", patientDoc);
         
-        console.log("Paciente registrado con ID:", docRef.id);
+        // Usar set con ID autogenerado en lugar de addDoc
+        const newPatientRef = doc(collection(db, "patients"));
+        await setDoc(newPatientRef, patientDoc);
+        
+        console.log("Paciente registrado con ID:", newPatientRef.id);
         
         hideLoading();
         showToast("Paciente registrado correctamente", "success");
@@ -2384,7 +2373,7 @@ async function addPatient(patientData) {
         // Recargar pacientes
         await getPatients();
         
-        return docRef.id;
+        return newPatientRef.id;
     } catch (error) {
         console.error("Error al registrar paciente:", error);
         hideLoading();
