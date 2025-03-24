@@ -2177,46 +2177,41 @@
             appId: "1:265927768586:web:c7e37e6a561bd996687df3"
         };
 
-                    // Añade este código al inicio de la inicialización de Firebase
-            console.log("Configuración de Firebase:", firebaseConfig);
+                    // Inicialización de Firebase
+console.log("Configuración de Firebase:", firebaseConfig);
             
-            // Verificar que Firebase está inicializado correctamente
-            const app = initializeApp(firebaseConfig);
-            console.log("Firebase inicializado:", app);
+// Inicializar Firebase solo una vez
+const app = initializeApp(firebaseConfig);
+console.log("Firebase inicializado:", app);
             
-            const db = getFirestore(app);
-            console.log("Firestore obtenido:", db);
+const db = getFirestore(app);
+console.log("Firestore obtenido:", db);
             
-            // Función de prueba para verificar Firebase
-            async function testFirebase() {
-                try {
-                    // Intentar obtener colección
-                    const testCollection = collection(db, "test");
-                    console.log("Colección de prueba:", testCollection);
-                    
-                    // Intentar añadir documento
-                    const testDoc = await addDoc(testCollection, {
-                        test: true,
-                        timestamp: new Date().toISOString()
-                    });
-                    console.log("Documento de prueba creado:", testDoc.id);
-                    
-                    showToast("Conexión a Firebase verificada", "success");
-                    return true;
-                } catch (error) {
-                    console.error("Error en prueba de Firebase:", error);
-                    showToast("Error de conexión a Firebase: " + error.message, "error");
-                    return false;
-                }
-            }
+const storage = getStorage(app);
+console.log("Storage obtenido:", storage);
             
-            // Llama a esta función en initApp
-            await testFirebase();
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+// Función de prueba para verificar Firebase
+async function testFirebase() {
+    try {
+        // Intentar obtener colección
+        const testCollection = collection(db, "test");
+        console.log("Colección de prueba:", testCollection);
+        
+        // Intentar añadir documento
+        const testDoc = await addDoc(testCollection, {
+            test: true,
+            timestamp: new Date().toISOString()
+        });
+        console.log("Documento de prueba creado:", testDoc.id);
+        
+        showToast("Conexión a Firebase verificada", "success");
+        return true;
+    } catch (error) {
+        console.error("Error en prueba de Firebase:", error);
+        showToast("Error de conexión a Firebase: " + error.message, "error");
+        return false;
+    }
+}
 
         // Initialize global variables
         let currentPatientId = null;
@@ -2361,12 +2356,25 @@ async function addPatient(patientData) {
     try {
         showLoading();
         
+        // Validar datos obligatorios
+        if (!patientData.name || patientData.name.trim() === '') {
+            hideLoading();
+            showToast("Error: El nombre del paciente es obligatorio", "error");
+            return null;
+        }
+        
+        if (!patientData.rut || patientData.rut.trim() === '') {
+            hideLoading();
+            showToast("Error: El RUT del paciente es obligatorio", "error");
+            return null;
+        }
+        
         console.log("Intentando registrar paciente con datos:", patientData);
         
         // Simplificar la estructura de datos
         const simplePatientData = {
-            name: patientData.name || '',
-            rut: patientData.rut || '',
+            name: patientData.name,
+            rut: patientData.rut,
             phone: patientData.phone || '',
             email: patientData.email || '',
             birthDate: patientData.birthDate || '',
@@ -2375,7 +2383,7 @@ async function addPatient(patientData) {
             progress: 0
         };
         
-        // Intenta usar addDoc directo
+        // Intentar usar addDoc directo
         const patientsRef = collection(db, "patients");
         const docRef = await addDoc(patientsRef, simplePatientData);
         
@@ -2391,7 +2399,13 @@ async function addPatient(patientData) {
     } catch (error) {
         console.error("Error completo:", error);
         hideLoading();
-        showToast(`Error: ${error.message}`, "error");
+        
+        // Mensajes específicos según el error
+        if (error.code === 'permission-denied') {
+            showToast("Error: No tienes permisos para registrar pacientes", "error");
+        } else {
+            showToast(`Error: ${error.message}`, "error");
+        }
         return null;
     }
 }
@@ -3053,6 +3067,7 @@ async function addPatient(patientData) {
             // Set current date for new evolutions
             const today = new Date().toISOString().split('T')[0];
             const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
+            await testFirebase(); // Verificar conexión a Firebase
             
             if (document.getElementById('evolutionDate')) {
                 document.getElementById('evolutionDate').value = today;
@@ -3392,6 +3407,8 @@ async function addPatient(patientData) {
                 // Por ahora solo mostraremos un mensaje
             });
         });
+
+            setupNavigation();
 
 
         }
