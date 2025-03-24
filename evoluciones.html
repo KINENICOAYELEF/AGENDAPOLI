@@ -2162,38 +2162,141 @@
 
     <!-- Script for Firebase -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-       // Actualiza estas importaciones
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyA8fY-L1r3nBq61CFPOAFRI6TlS9A5GNTA",
-            authDomain: "agendapoli-13963.firebaseapp.com",
-            projectId: "agendapoli-13963",
-            storageBucket: "agendapoli-13963.firebasestorage.app",
-            messagingSenderId: "265927768586",
-            appId: "1:265927768586:web:c7e37e6a561bd996687df3"
-        };
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
-                    // Inicialización de Firebase
-console.log("Configuración de Firebase:", firebaseConfig);
-            
-// Inicializar Firebase solo una vez
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA8fY-L1r3nBq61CFPOAFRI6TlS9A5GNTA",
+    authDomain: "agendapoli-13963.firebaseapp.com",
+    projectId: "agendapoli-13963",
+    storageBucket: "agendapoli-13963.appspot.com", // Corregido el formato de storage bucket
+    messagingSenderId: "265927768586",
+    appId: "1:265927768586:web:c7e37e6a561bd996687df3"
+};
+
+// Inicializar Firebase (simplificado)
+console.log("Inicializando Firebase...");
 const app = initializeApp(firebaseConfig);
-console.log("Firebase inicializado:", app);
-            
 const db = getFirestore(app);
-console.log("Firestore obtenido:", db);
-            
 const storage = getStorage(app);
-console.log("Storage obtenido:", storage);
-            
-// Función de prueba para verificar Firebase
-// Función de prueba para verificar Firebase
+console.log("Firebase inicializado correctamente");
+
+// Definir vistas globalmente para que sean accesibles en todo el script
+const views = {
+    dashboard: null, // Se establecerá durante la inicialización
+    pacientes: `
+        <div class="content">
+            <h1 class="page-title">Gestión de Pacientes</h1>
+            <div class="section-header">
+                <h2 class="section-title">Listado de Pacientes</h2>
+                <button class="action-btn btn-primary" id="addPatientBtnView">
+                    <i class="fas fa-plus"></i> Nuevo paciente
+                </button>
+            </div>
+            <div class="patient-list" id="patientListView"></div>
+        </div>
+    `,
+    evoluciones: `
+        <div class="content">
+            <h1 class="page-title">Registro de Evoluciones</h1>
+            <div class="section-header">
+                <h2 class="section-title">Seleccione un paciente para registrar evoluciones</h2>
+            </div>
+            <div class="patient-list" id="patientEvolutionsView"></div>
+        </div>
+    `,
+    reportes: `
+        <div class="content">
+            <h1 class="page-title">Reportes y Estadísticas</h1>
+            <div class="dashboard">
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="dashboard-info">
+                        <div class="dashboard-title">Total pacientes</div>
+                        <div class="dashboard-value" id="totalPatientsReport">0</div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="dashboard-info">
+                        <div class="dashboard-title">Total evoluciones</div>
+                        <div class="dashboard-value" id="totalEvolutionsReport">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    configuracion: `
+        <div class="content">
+            <h1 class="page-title">Configuración del Sistema</h1>
+            <div class="form-group">
+                <label class="form-label">Nombre del centro</label>
+                <input type="text" class="form-control" id="centerName" value="Polideportivo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Logo del centro</label>
+                <input type="file" class="form-control" id="centerLogo">
+            </div>
+            <button class="action-btn btn-primary" id="saveConfigBtn">
+                <i class="fas fa-save"></i> Guardar configuración
+            </button>
+        </div>
+    `
+};
+
+// Initialize global variables
+let currentPatientId = null;
+
+// Show loading spinner
+function showLoading() {
+    document.getElementById('loadingSpinner').classList.add('show');
+}
+
+// Hide loading spinner
+function hideLoading() {
+    document.getElementById('loadingSpinner').classList.remove('show');
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.classList.add('toast', `toast-${type}`);
+    toast.innerHTML = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
+
+// Format date helper
+function formatDate(date) {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// Test Firebase connection
 async function testFirebase() {
     try {
-        // Solo verificar que podemos acceder a Firestore sin escribir
+        // Simplemente verificar que podemos acceder a Firestore sin escribir
         const testCollection = collection(db, "patients");
         console.log("Conexión a Firebase establecida correctamente");
         showToast("Conexión a Firebase verificada", "success");
@@ -2205,157 +2308,157 @@ async function testFirebase() {
     }
 }
 
-        // Initialize global variables
-        let currentPatientId = null;
+// Get patients from Firebase
+async function getPatients() {
+    try {
+        showLoading();
+        const patientsCollection = collection(db, "patients");
+        const patientSnapshot = await getDocs(patientsCollection);
+        const patientList = patientSnapshot.docs.map(doc => {
+            return { id: doc.id, ...doc.data() };
+        });
         
-        // Show loading spinner
-        function showLoading() {
-            document.getElementById('loadingSpinner').classList.add('show');
-        }
+        // Ordenar pacientes por fecha de última sesión (más reciente primero)
+        patientList.sort((a, b) => {
+            if (!a.lastSession) return 1;
+            if (!b.lastSession) return -1;
+            return new Date(b.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1')) - 
+                   new Date(a.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1'));
+        });
+        
+        // Renderizar pacientes en la UI
+        renderPatients(patientList);
+        
+        // Actualizar estadísticas del dashboard
+        updateDashboardStats(patientList);
+        
+        hideLoading();
+        return patientList;
+    } catch (error) {
+        console.error("Error obteniendo pacientes: ", error);
+        showToast("Error al cargar pacientes: " + error.message, "error");
+        hideLoading();
+        return [];
+    }
+}
 
-        // Hide loading spinner
-        function hideLoading() {
-            document.getElementById('loadingSpinner').classList.remove('show');
-        }
+// Render patients in the main patient list
+function renderPatients(patients) {
+    const patientListContainer = document.getElementById('patientList');
+    if (!patientListContainer) {
+        console.log("Contenedor de lista de pacientes no encontrado");
+        return;
+    }
+    
+    // Limpiar pacientes existentes
+    patientListContainer.innerHTML = '';
+    
+    if (patients.length === 0) {
+        patientListContainer.innerHTML = `
+            <div class="patient-card">
+                <div class="patient-avatar">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+                <h3 class="patient-name">No hay pacientes registrados</h3>
+                <div class="patient-rut">Agregue un nuevo paciente para comenzar</div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Añadir pacientes
+    patients.forEach(patient => {
+        const progress = calculatePatientProgress(patient);
+        const statusClass = getStatusClass(progress);
         
-        // Get patients from Firebase and render in UI
-        async function getPatients() {
-            try {
-                showLoading();
-                const patientsCollection = collection(db, "patients");
-                const patientSnapshot = await getDocs(patientsCollection);
-                const patientList = patientSnapshot.docs.map(doc => {
-                    return { id: doc.id, ...doc.data() };
-                });
-                
-                // Sort patients by last session date (most recent first)
-                patientList.sort((a, b) => {
-                    if (!a.lastSession) return 1;
-                    if (!b.lastSession) return -1;
-                    return new Date(b.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1')) - 
-                           new Date(a.lastSession.replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1'));
-                });
-                
-                // Render patients in UI
-                renderPatients(patientList);
-                
-                // Update dashboard statistics
-                updateDashboardStats(patientList);
-                
-                hideLoading();
-                return patientList;
-            } catch (error) {
-                console.error("Error getting patients: ", error);
-                showToast("Error al cargar pacientes. Intente nuevamente.", "error");
-                hideLoading();
-                return [];
-            }
-        }
+        const patientCard = document.createElement('div');
+        patientCard.classList.add('patient-card');
+        patientCard.setAttribute('data-id', patient.id);
         
-        // Render patients in UI
-        function renderPatients(patients) {
-            const patientListContainer = document.getElementById('patientList');
-            if (!patientListContainer) return;
-            
-            // Clear existing patients
-            patientListContainer.innerHTML = '';
-            
-            if (patients.length === 0) {
-                patientListContainer.innerHTML = `
-                    <div class="patient-card">
-                        <div class="patient-avatar">
-                            <i class="fas fa-user-injured"></i>
-                        </div>
-                        <h3 class="patient-name">No hay pacientes registrados</h3>
-                        <div class="patient-rut">Agregue un nuevo paciente para comenzar</div>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Add patients
-            patients.forEach(patient => {
-                const progress = calculatePatientProgress(patient);
-                const statusClass = getStatusClass(progress);
-                
-                const patientCard = document.createElement('div');
-                patientCard.classList.add('patient-card');
-                patientCard.setAttribute('data-id', patient.id);
-                
-                const initials = getInitials(patient.name);
-                
-                patientCard.innerHTML = `
-                    <div class="patient-status ${statusClass}"></div>
-                    <div class="patient-avatar">${initials}</div>
-                    <h3 class="patient-name">${patient.name}</h3>
-                    <div class="patient-rut">${patient.rut}</div>
-                    <div class="patient-info">
-                        <div>
-                            <div class="patient-label">Última sesión</div>
-                            <div>${patient.lastSession || 'Ninguna'}</div>
-                        </div>
-                        <div>
-                            <div class="patient-label">Progreso</div>
-                            <div>${progress}%</div>
-                        </div>
-                    </div>
-                `;
-                
-                patientListContainer.appendChild(patientCard);
-                
-                // Add event listener to open patient modal
-                patientCard.addEventListener('click', () => openPatientModal(patient.id));
-            });
-        }
+        const initials = getInitials(patient.name);
         
-        // Calculate patient progress
-        function calculatePatientProgress(patient) {
-            // For now, we'll just return a random value
-            // In a real app, you would calculate this based on objectives completed
-            return patient.progress || Math.floor(Math.random() * 70) + 20;
-        }
+        patientCard.innerHTML = `
+            <div class="patient-status ${statusClass}"></div>
+            <div class="patient-avatar">${initials}</div>
+            <h3 class="patient-name">${patient.name}</h3>
+            <div class="patient-rut">${patient.rut}</div>
+            <div class="patient-info">
+                <div>
+                    <div class="patient-label">Última sesión</div>
+                    <div>${patient.lastSession || 'Ninguna'}</div>
+                </div>
+                <div>
+                    <div class="patient-label">Progreso</div>
+                    <div>${progress}%</div>
+                </div>
+            </div>
+        `;
         
-        // Get status class based on progress
-        function getStatusClass(progress) {
-            if (progress >= 80) return 'status-active';
-            if (progress >= 30) return 'status-pending';
-            return 'status-inactive';
-        }
+        patientListContainer.appendChild(patientCard);
         
-        // Get initials from name
-        function getInitials(name) {
-            if (!name) return 'NA';
-            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        }
-        
-        // Update dashboard statistics
-        function updateDashboardStats(patients) {
-            // Count active patients
-            const activePatients = patients.filter(p => calculatePatientProgress(p) >= 50).length;
-            document.getElementById('activePatients').textContent = activePatients;
-            
-            // Other stats would be calculated from actual data
-            // For now we'll set some reasonable values
-            document.getElementById('monthlyEvolutions').textContent = patients.length * 2;
-            document.getElementById('completedObjectives').textContent = '65%';
-            document.getElementById('activeStudents').textContent = '12';
-        }
-        
-        // Add new patient to Firebase
-        // Modifica la función addPatient en el script de Firebase
-        // Reemplaza la función addPatient
-// Busca esta función en el código (alrededor de la línea 1070)
+        // Añadir event listener para abrir modal de paciente
+        patientCard.addEventListener('click', () => openPatientModal(patient.id));
+    });
+}
+
+// Calculate patient progress
+function calculatePatientProgress(patient) {
+    // Por ahora, utilizamos un valor aleatorio o el progreso existente
+    return patient.progress || Math.floor(Math.random() * 70) + 20;
+}
+
+// Get status class based on progress
+function getStatusClass(progress) {
+    if (progress >= 80) return 'status-active';
+    if (progress >= 30) return 'status-pending';
+    return 'status-inactive';
+}
+
+// Get initials from name
+function getInitials(name) {
+    if (!name) return 'NA';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+}
+
+// Update dashboard statistics
+function updateDashboardStats(patients) {
+    // Contar pacientes activos
+    const activePatients = patients.filter(p => calculatePatientProgress(p) >= 50).length;
+    const activeElement = document.getElementById('activePatients');
+    if (activeElement) {
+        activeElement.textContent = activePatients;
+    }
+    
+    // Establecer valores razonables para otras estadísticas
+    const monthlyElement = document.getElementById('monthlyEvolutions');
+    if (monthlyElement) {
+        monthlyElement.textContent = patients.length * 2;
+    }
+    
+    const objectivesElement = document.getElementById('completedObjectives');
+    if (objectivesElement) {
+        objectivesElement.textContent = '65%';
+    }
+    
+    const studentsElement = document.getElementById('activeStudents');
+    if (studentsElement) {
+        studentsElement.textContent = '12';
+    }
+}
+
+// Add new patient to Firebase - simplified version
 async function addPatient(patientData) {
     try {
         showLoading();
         
-        // Estructura más simple
+        // Crear un documento de paciente simple
         const patientDoc = {
             name: patientData.name || "Sin nombre",
             rut: patientData.rut || "Sin RUT",
             registerDate: formatDate(new Date()),
             lastSession: "",
-            progress: 0
+            progress: 0,
+            createdAt: new Date().toISOString() // Añadir timestamp
         };
         
         console.log("Datos del paciente a registrar:", patientDoc);
@@ -2381,347 +2484,385 @@ async function addPatient(patientData) {
     }
 }
 
-        // Get patient by ID
-        async function getPatient(patientId) {
-            try {
-                showLoading();
-                const patientRef = doc(db, "patients", patientId);
-                const patientSnap = await getDoc(patientRef);
-                
-                if (patientSnap.exists()) {
-                    hideLoading();
-                    return { id: patientSnap.id, ...patientSnap.data() };
-                } else {
-                    hideLoading();
-                    showToast("Paciente no encontrado", "error");
-                    return null;
-                }
-            } catch (error) {
-                console.error("Error getting patient: ", error);
-                hideLoading();
-                showToast("Error al cargar datos del paciente", "error");
-                return null;
-            }
-        }
+// Get patient by ID
+async function getPatient(patientId) {
+    try {
+        showLoading();
+        const patientRef = doc(db, "patients", patientId);
+        const patientSnap = await getDoc(patientRef);
         
-        // Update patient
-        async function updatePatient(patientId, patientData) {
-            try {
-                showLoading();
-                
-                // Add updated_at timestamp
-                patientData.updated_at = serverTimestamp();
-                
-                const patientRef = doc(db, "patients", patientId);
-                await updateDoc(patientRef, patientData);
-                
-                hideLoading();
-                showToast("Paciente actualizado correctamente", "success");
-                return true;
-            } catch (error) {
-                console.error("Error updating patient: ", error);
-                hideLoading();
-                showToast("Error al actualizar paciente", "error");
-                return false;
-            }
+        if (patientSnap.exists()) {
+            hideLoading();
+            return { id: patientSnap.id, ...patientSnap.data() };
+        } else {
+            hideLoading();
+            showToast("Paciente no encontrado", "error");
+            return null;
         }
-        
-        // Add evolution to patient
-        async function addEvolution(patientId, evolutionData) {
-            try {
-                showLoading();
-                
-                // Add created_at timestamp
-                evolutionData.created_at = serverTimestamp();
-                
-                const evolutionsRef = collection(db, "patients", patientId, "evolutions");
-                const docRef = await addDoc(evolutionsRef, evolutionData);
-                
-                // Update patient's lastSession
-                const formattedDate = formatDate(new Date(evolutionData.date));
-                await updateDoc(doc(db, "patients", patientId), {
-                    lastSession: formattedDate
-                });
-                
-                hideLoading();
-                showToast("Evolución registrada correctamente", "success");
-                return docRef.id;
-            } catch (e) {
-                console.error("Error adding evolution: ", e);
-                hideLoading();
-                showToast("Error al registrar evolución", "error");
-                return null;
-            }
-        }
-        
-        // Get patient evolutions
-        async function getEvolutions(patientId) {
-            try {
-                showLoading();
-                const evolutionsRef = collection(db, "patients", patientId, "evolutions");
-                const evolutionsQuery = query(evolutionsRef, orderBy("date", "desc"));
-                const evolutionsSnapshot = await getDocs(evolutionsQuery);
-                
-                const evolutionsList = evolutionsSnapshot.docs.map(doc => {
-                    return { id: doc.id, ...doc.data() };
-                });
-                
-                hideLoading();
-                return evolutionsList;
-            } catch (error) {
-                console.error("Error getting evolutions: ", error);
-                hideLoading();
-                showToast("Error al cargar evoluciones", "error");
-                return [];
-            }
-        }
-        
-        // Upload file to Firebase Storage
-        async function uploadFile(file, patientId, folder) {
-            try {
-                const fileRef = ref(storage, `patients/${patientId}/${folder}/${file.name}`);
-                await uploadBytes(fileRef, file);
-                const downloadURL = await getDownloadURL(fileRef);
-                return downloadURL;
-            } catch (error) {
-                console.error("Error uploading file: ", error);
-                showToast("Error al subir archivo", "error");
-                return null;
-            }
-        }
+    } catch (error) {
+        console.error("Error obteniendo paciente: ", error);
+        hideLoading();
+        showToast("Error al cargar datos del paciente: " + error.message, "error");
+        return null;
+    }
+}
 
-        // Añadir justo después de obtener storage (cerca de línea 900)
-        console.log("Revisando configuración Firebase. Permisos:", firebaseConfig.apiKey ? "OK" : "Error");
+// Update patient
+async function updatePatient(patientId, patientData) {
+    try {
+        showLoading();
         
-        // Format date
-        function formatDate(date) {
-            const d = new Date(date);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
+        // Añadir timestamp de actualización
+        patientData.updatedAt = new Date().toISOString();
+        
+        const patientRef = doc(db, "patients", patientId);
+        await updateDoc(patientRef, patientData);
+        
+        hideLoading();
+        showToast("Paciente actualizado correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error actualizando paciente: ", error);
+        hideLoading();
+        showToast("Error al actualizar paciente: " + error.message, "error");
+        return false;
+    }
+}
+
+// Add evolution to patient
+async function addEvolution(patientId, evolutionData) {
+    try {
+        showLoading();
+        
+        // Añadir timestamp de creación
+        evolutionData.createdAt = new Date().toISOString();
+        
+        const evolutionsRef = collection(db, "patients", patientId, "evolutions");
+        const docRef = await addDoc(evolutionsRef, evolutionData);
+        
+        // Actualizar lastSession del paciente
+        const formattedDate = formatDate(new Date(evolutionData.date));
+        await updateDoc(doc(db, "patients", patientId), {
+            lastSession: formattedDate,
+            updatedAt: new Date().toISOString()
+        });
+        
+        hideLoading();
+        showToast("Evolución registrada correctamente", "success");
+        return docRef.id;
+    } catch (error) {
+        console.error("Error añadiendo evolución: ", error);
+        hideLoading();
+        showToast("Error al registrar evolución: " + error.message, "error");
+        return null;
+    }
+}
+
+// Get patient evolutions
+async function getEvolutions(patientId) {
+    try {
+        showLoading();
+        const evolutionsRef = collection(db, "patients", patientId, "evolutions");
+        const evolutionsQuery = query(evolutionsRef, orderBy("date", "desc"));
+        const evolutionsSnapshot = await getDocs(evolutionsQuery);
+        
+        const evolutionsList = evolutionsSnapshot.docs.map(doc => {
+            return { id: doc.id, ...doc.data() };
+        });
+        
+        hideLoading();
+        return evolutionsList;
+    } catch (error) {
+        console.error("Error obteniendo evoluciones: ", error);
+        hideLoading();
+        showToast("Error al cargar evoluciones: " + error.message, "error");
+        return [];
+    }
+}
+
+// Upload file to Firebase Storage
+async function uploadFile(file, patientId, folder) {
+    try {
+        const fileRef = ref(storage, `patients/${patientId}/${folder}/${file.name}`);
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+        return downloadURL;
+    } catch (error) {
+        console.error("Error subiendo archivo: ", error);
+        showToast("Error al subir archivo: " + error.message, "error");
+        return null;
+    }
+}
+
+// Open patient modal
+async function openPatientModal(patientId) {
+    try {
+        currentPatientId = patientId;
+        
+        // Obtener datos del paciente
+        const patient = await getPatient(patientId);
+        if (!patient) return;
+        
+        // Actualizar título del modal
+        const titleElement = document.getElementById('patientModalTitle');
+        if (titleElement) {
+            titleElement.textContent = patient.name;
         }
         
-        // Show toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.classList.add('toast', `toast-${type}`);
-            toast.innerHTML = message;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 300);
-            }, 3000);
-        }
+        // Llenar datos personales
+        fillPersonalData(patient);
         
-        // Open patient modal
-        async function openPatientModal(patientId) {
-            currentPatientId = patientId;
-            
-            // Get patient data
-            const patient = await getPatient(patientId);
-            if (!patient) return;
-            
-            // Update modal title
-            document.getElementById('patientModalTitle').textContent = patient.name;
-            
-            // Fill personal data
-            fillPersonalData(patient);
-            
-            // Get evolutions
-            const evolutions = await getEvolutions(patientId);
-            
-            // Fill evolutions tab
-            fillEvolutionsTab(evolutions);
-            
-            // Open modal
-            document.getElementById('patientModal').classList.add('active');
-        }
+        // Obtener evoluciones
+        const evolutions = await getEvolutions(patientId);
         
-        // Fill personal data tab
-        function fillPersonalData(patient) {
-            // Set avatar
-            const avatar = document.getElementById('patientAvatar');
+        // Llenar pestaña de evoluciones
+        fillEvolutionsTab(evolutions);
+        
+        // Abrir modal
+        document.getElementById('patientModal').classList.add('active');
+    } catch (error) {
+        console.error("Error al abrir modal de paciente:", error);
+        showToast("Error al abrir ficha del paciente: " + error.message, "error");
+    }
+}
+
+// Fill personal data tab
+function fillPersonalData(patient) {
+    try {
+        // Establecer avatar
+        const avatar = document.getElementById('patientAvatar');
+        if (avatar) {
             avatar.textContent = getInitials(patient.name);
-            
-            // Fill form fields
-            document.getElementById('patientName').value = patient.name || '';
-            document.getElementById('patientRut').value = patient.rut || '';
-            
-            if (patient.birthDate) {
-                document.getElementById('patientBirthDate').value = patient.birthDate;
-            }
-            
-            if (patient.phone) {
-                document.getElementById('patientPhone').value = patient.phone;
-            }
-            
-            if (patient.email) {
-                document.getElementById('patientEmail').value = patient.email;
-            }
-            
-            if (patient.address) {
-                document.getElementById('patientAddress').value = patient.address;
-            }
-            
-            // Medical info
-            if (patient.medicalHistory) {
-                document.getElementById('patientMedicalHistory').value = patient.medicalHistory;
-            }
-            
-            if (patient.medications) {
-                document.getElementById('patientMedications').value = patient.medications;
-            }
-            
-            if (patient.allergies) {
-                document.getElementById('patientAllergies').value = patient.allergies;
-            }
-            
-            if (patient.emergencyContact) {
-                document.getElementById('patientEmergencyContact').value = patient.emergencyContact;
-            }
-            
-            if (patient.emergencyPhone) {
-                document.getElementById('patientEmergencyPhone').value = patient.emergencyPhone;
-            }
         }
         
-        // Fill evolutions tab
-        function fillEvolutionsTab(evolutions) {
-            const timelineContainer = document.getElementById('evolutionTimeline');
-            if (!timelineContainer) return;
-            
-            // Clear existing evolutions
-            timelineContainer.innerHTML = '';
-            
-            // Add evolutions
-            if (evolutions.length === 0) {
-                timelineContainer.innerHTML = '<p>No hay evoluciones registradas para este paciente.</p>';
-                return;
+        // Llenar campos del formulario
+        const fields = {
+            'patientName': patient.name || '',
+            'patientRut': patient.rut || '',
+            'patientBirthDate': patient.birthDate || '',
+            'patientPhone': patient.phone || '',
+            'patientEmail': patient.email || '',
+            'patientAddress': patient.address || '',
+            'patientMedicalHistory': patient.medicalHistory || '',
+            'patientMedications': patient.medications || '',
+            'patientAllergies': patient.allergies || '',
+            'patientEmergencyContact': patient.emergencyContact || '',
+            'patientEmergencyPhone': patient.emergencyPhone || ''
+        };
+        
+        // Establecer cada campo si el elemento existe
+        for (const [id, value] of Object.entries(fields)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value;
             }
-            
-            evolutions.forEach(evolution => {
-                const evolutionItem = document.createElement('div');
-                evolutionItem.classList.add('evolution-item', 'fade-in');
-                
-                const formattedDate = formatDate(new Date(evolution.date));
-                const formattedTime = evolution.time || '10:00';
-                
-                evolutionItem.innerHTML = `
-                    <div class="evolution-dot">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-                    <div class="evolution-content">
-                        <div class="evolution-header">
-                            <div class="evolution-date">
-                                <i class="far fa-calendar-alt"></i>
-                                ${formattedDate} - ${formattedTime}
-                            </div>
-                            <div class="evolution-student">Realizado por: ${evolution.student || 'No registrado'}</div>
-                        </div>
-                        ${evolution.patientState ? `
-                        <div class="evolution-section">
-                            <div class="evolution-section-title">Estado del paciente</div>
-                            <p>${evolution.patientState}</p>
-                        </div>
-                        ` : ''}
-                        ${evolution.treatment ? `
-                        <div class="evolution-section">
-                            <div class="evolution-section-title">Tratamiento realizado</div>
-                            <p>${evolution.treatment}</p>
-                        </div>
-                        ` : ''}
-                        ${evolution.response ? `
-                        <div class="evolution-section">
-                            <div class="evolution-section-title">Respuesta al tratamiento</div>
-                            <p>${evolution.response}</p>
-                        </div>
-                        ` : ''}
-                        ${evolution.scales ? renderScales(evolution.scales) : ''}
-                        ${evolution.trainingPlan ? `
-                        <div class="evolution-section">
-                            <div class="evolution-section-title">Plan de entrenamiento</div>
-                            <p>${evolution.trainingPlan}</p>
-                        </div>
-                        ` : ''}
-                        ${evolution.observations ? `
-                        <div class="evolution-section">
-                            <div class="evolution-section-title">Observaciones adicionales</div>
-                            <p>${evolution.observations}</p>
-                        </div>
-                        ` : ''}
-                        ${evolution.attachments && evolution.attachments.length > 0 ? renderAttachments(evolution.attachments) : ''}
-                    </div>
-                `;
-                
-                timelineContainer.appendChild(evolutionItem);
-            });
+        }
+    } catch (error) {
+        console.error("Error llenando datos personales:", error);
+        showToast("Error al cargar datos personales", "error");
+    }
+}
+
+// Fill evolutions tab
+function fillEvolutionsTab(evolutions) {
+    try {
+        const timelineContainer = document.getElementById('evolutionTimeline');
+        if (!timelineContainer) {
+            console.error("Contenedor de timeline de evoluciones no encontrado");
+            return;
         }
         
-        // Render scales
-        function renderScales(scales) {
-            if (!scales) return '';
+        // Limpiar evoluciones existentes
+        timelineContainer.innerHTML = '';
+        
+        // Añadir evoluciones
+        if (evolutions.length === 0) {
+            timelineContainer.innerHTML = '<p>No hay evoluciones registradas para este paciente.</p>';
+            return;
+        }
+        
+        evolutions.forEach(evolution => {
+            const evolutionItem = document.createElement('div');
+            evolutionItem.classList.add('evolution-item', 'fade-in');
             
-            let scalesHTML = `
-                <div class="evolution-section">
-                    <div class="evolution-section-title">Escalas de evaluación</div>
-                    <div class="scales-container">
+            const formattedDate = formatDate(new Date(evolution.date));
+            const formattedTime = evolution.time || '10:00';
+            
+            evolutionItem.innerHTML = `
+                <div class="evolution-dot">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="evolution-content">
+                    <div class="evolution-header">
+                        <div class="evolution-date">
+                            <i class="far fa-calendar-alt"></i>
+                            ${formattedDate} - ${formattedTime}
+                        </div>
+                        <div class="evolution-student">Realizado por: ${evolution.student || 'No registrado'}</div>
+                    </div>
+                    ${evolution.patientState ? `
+                    <div class="evolution-section">
+                        <div class="evolution-section-title">Estado del paciente</div>
+                        <p>${evolution.patientState}</p>
+                    </div>
+                    ` : ''}
+                    ${evolution.treatment ? `
+                    <div class="evolution-section">
+                        <div class="evolution-section-title">Tratamiento realizado</div>
+                        <p>${evolution.treatment}</p>
+                    </div>
+                    ` : ''}
+                    ${evolution.response ? `
+                    <div class="evolution-section">
+                        <div class="evolution-section-title">Respuesta al tratamiento</div>
+                        <p>${evolution.response}</p>
+                    </div>
+                    ` : ''}
+                    ${evolution.scales ? renderScales(evolution.scales) : ''}
+                    ${evolution.trainingPlan ? `
+                    <div class="evolution-section">
+                        <div class="evolution-section-title">Plan de entrenamiento</div>
+                        <p>${evolution.trainingPlan}</p>
+                    </div>
+                    ` : ''}
+                    ${evolution.observations ? `
+                    <div class="evolution-section">
+                        <div class="evolution-section-title">Observaciones adicionales</div>
+                        <p>${evolution.observations}</p>
+                    </div>
+                    ` : ''}
+                    ${evolution.attachments && evolution.attachments.length > 0 ? renderAttachments(evolution.attachments) : ''}
+                </div>
             `;
             
-            // EVA Scale
-            if (scales.eva !== undefined) {
+            timelineContainer.appendChild(evolutionItem);
+        });
+    } catch (error) {
+        console.error("Error llenando pestaña de evoluciones:", error);
+        showToast("Error al cargar evoluciones: " + error.message, "error");
+    }
+}
+
+// Render scales
+function renderScales(scales) {
+    try {
+        if (!scales) return '';
+        
+        let scalesHTML = `
+            <div class="evolution-section">
+                <div class="evolution-section-title">Escalas de evaluación</div>
+                <div class="scales-container">
+        `;
+        
+        // EVA Scale
+        if (scales.eva !== undefined) {
+            scalesHTML += `
+                <div class="scale-card eva-scale">
+                    <div class="scale-header">
+                        <div class="scale-name">EVA (Dolor)</div>
+                        <div>${scales.eva}/10</div>
+                    </div>
+                    <div class="scale-bar">
+                        <div class="scale-marker" style="left: ${scales.eva * 10}%;"></div>
+                    </div>
+                    <div class="scale-values">
+                        <span>0</span>
+                        <span>5</span>
+                        <span>10</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // PSFS Scale
+        if (scales.psfs && scales.psfs.length > 0) {
+            scalesHTML += `
+                <div class="scale-card">
+                    <div class="scale-header">
+                        <div class="scale-name">PSFS (Funcionalidad)</div>
+                    </div>
+                    <div class="psfs-activities">
+            `;
+            
+            scales.psfs.forEach(activity => {
                 scalesHTML += `
-                    <div class="scale-card eva-scale">
-                        <div class="scale-header">
-                            <div class="scale-name">EVA (Dolor)</div>
-                            <div>${scales.eva}/10</div>
-                        </div>
-                        <div class="scale-bar">
-                            <div class="scale-marker" style="left: ${scales.eva * 10}%;"></div>
-                        </div>
-                        <div class="scale-values">
-                            <span>0</span>
-                            <span>5</span>
-                            <span>10</span>
+                    <div class="psfs-activity">
+                        <div class="activity-name">${activity.name}</div>
+                        <div class="activity-rating">
+                            <div class="rating-number">${activity.rating}</div>
+                            <div class="rating-bar">
+                                <div class="rating-value" style="width: ${activity.rating * 10}%;"></div>
+                            </div>
+                            <div class="rating-number">10</div>
                         </div>
                     </div>
                 `;
-            }
+            });
             
-            // PSFS Scale
-            if (scales.psfs && scales.psfs.length > 0) {
+            scalesHTML += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        scalesHTML += `
+            </div>
+        `;
+        
+        // GROC & SANE Scales
+        if (scales.groc !== undefined || scales.sane !== undefined) {
+            scalesHTML += `
+                <div class="scales-container">
+            `;
+            
+            // GROC Scale
+            if (scales.groc !== undefined) {
+                const grocPercentage = ((parseInt(scales.groc) + 7) / 14) * 100;
                 scalesHTML += `
                     <div class="scale-card">
                         <div class="scale-header">
-                            <div class="scale-name">PSFS (Funcionalidad)</div>
+                            <div class="scale-name">GROC (Cambio global)</div>
+                            <div>${scales.groc > 0 ? '+' + scales.groc : scales.groc}</div>
                         </div>
-                        <div class="psfs-activities">
+                        <div class="groc-scale">
+                            <div class="groc-bar"></div>
+                            <div class="groc-marker" style="left: ${grocPercentage}%;"></div>
+                        </div>
+                        <div class="groc-labels">
+                            <span>-7</span>
+                            <span>-3</span>
+                            <span>0</span>
+                            <span>+3</span>
+                            <span>+7</span>
+                        </div>
+                    </div>
                 `;
-                
-                scales.psfs.forEach(activity => {
-                    scalesHTML += `
-                        <div class="psfs-activity">
-                            <div class="activity-name">${activity.name}</div>
-                            <div class="activity-rating">
-                                <div class="rating-number">${activity.rating}</div>
-                                <div class="rating-bar">
-                                    <div class="rating-value" style="width: ${activity.rating * 10}%;"></div>
-                                </div>
-                                <div class="rating-number">10</div>
-                            </div>
-                        </div>
-                    `;
-                });
+            }
+            
+            // SANE Scale
+            if (scales.sane !== undefined) {
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * scales.sane / 100);
                 
                 scalesHTML += `
+                    <div class="scale-card">
+                        <div class="scale-header">
+                            <div class="scale-name">SANE (Evaluación numérica)</div>
+                        </div>
+                        <div class="sane-scale">
+                            <div class="sane-circle">
+                                <svg width="80" height="80" viewBox="0 0 80 80">
+                                    <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
+                                    <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="${offset}" transform="rotate(-90 40 40)"/>
+                                    <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">${scales.sane}%</text>
+                                </svg>
+                            </div>
+                            <div class="sane-info">
+                                <div class="sane-label">¿Cómo evaluaría la función actual de su tobillo?</div>
+                                <div class="sane-progress">
+                                    <div class="sane-bar" style="width: ${scales.sane}%;"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2730,781 +2871,110 @@ async function addPatient(patientData) {
             scalesHTML += `
                 </div>
             `;
-            
-            // GROC & SANE Scales
-            if (scales.groc !== undefined || scales.sane !== undefined) {
-                scalesHTML += `
-                    <div class="scales-container">
-                `;
-                
-                // GROC Scale
-                if (scales.groc !== undefined) {
-                    const grocPercentage = ((parseInt(scales.groc) + 7) / 14) * 100;
-                    scalesHTML += `
-                        <div class="scale-card">
-                            <div class="scale-header">
-                                <div class="scale-name">GROC (Cambio global)</div>
-                                <div>${scales.groc > 0 ? '+' + scales.groc : scales.groc}</div>
-                            </div>
-                            <div class="groc-scale">
-                                <div class="groc-bar"></div>
-                                <div class="groc-marker" style="left: ${grocPercentage}%;"></div>
-                            </div>
-                            <div class="groc-labels">
-                                <span>-7</span>
-                                <span>-3</span>
-                                <span>0</span>
-                                <span>+3</span>
-                                <span>+7</span>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // SANE Scale
-                if (scales.sane !== undefined) {
-                    const circumference = 2 * Math.PI * 35;
-                    const offset = circumference - (circumference * scales.sane / 100);
-                    
-                    scalesHTML += `
-                        <div class="scale-card">
-                            <div class="scale-header">
-                                <div class="scale-name">SANE (Evaluación numérica)</div>
-                            </div>
-                            <div class="sane-scale">
-                                <div class="sane-circle">
-                                    <svg width="80" height="80" viewBox="0 0 80 80">
-                                        <circle cx="40" cy="40" r="35" fill="none" stroke="#E0E0E0" stroke-width="5"/>
-                                        <circle cx="40" cy="40" r="35" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="220" stroke-dashoffset="${offset}" transform="rotate(-90 40 40)"/>
-                                        <text x="40" y="40" text-anchor="middle" dy=".3em" font-size="18" font-weight="bold" fill="#1E88E5">${scales.sane}%</text>
-                                    </svg>
-                                </div>
-                                <div class="sane-info">
-                                    <div class="sane-label">¿Cómo evaluaría la función actual de su tobillo?</div>
-                                    <div class="sane-progress">
-                                        <div class="sane-bar" style="width: ${scales.sane}%;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                scalesHTML += `
-                    </div>
-                `;
-            }
-            
-            return scalesHTML;
         }
         
-        // Render attachments
-        function renderAttachments(attachments) {
-            if (!attachments || attachments.length === 0) return '';
-            
-            let attachmentsHTML = `
-                <div class="evolution-section">
-                    <div class="evolution-section-title">Adjuntos</div>
-                    <div class="attachments">
-            `;
-            
-            attachments.forEach(attachment => {
-                const isImage = attachment.type === 'image';
-                
-                attachmentsHTML += `
-                    <div class="attachment">
-                        ${isImage 
-                            ? `<img src="${attachment.url}" alt="${attachment.name}">`
-                            : `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=PDF" alt="${attachment.name}">`
-                        }
-                        <div class="attachment-type">${isImage ? 'Foto' : attachment.type.toUpperCase()}</div>
-                    </div>
-                `;
-            });
+        return scalesHTML;
+    } catch (error) {
+        console.error("Error renderizando escalas:", error);
+        return '<div class="evolution-section">Error al renderizar escalas</div>';
+    }
+}
+
+// Render attachments
+function renderAttachments(attachments) {
+    try {
+        if (!attachments || attachments.length === 0) return '';
+        
+        let attachmentsHTML = `
+            <div class="evolution-section">
+                <div class="evolution-section-title">Adjuntos</div>
+                <div class="attachments">
+        `;
+        
+        attachments.forEach(attachment => {
+            const isImage = attachment.type === 'image';
             
             attachmentsHTML += `
-                    </div>
+                <div class="attachment">
+                    ${isImage 
+                        ? `<img src="${attachment.url}" alt="${attachment.name}">`
+                        : `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=PDF" alt="${attachment.name}">`
+                    }
+                    <div class="attachment-type">${isImage ? 'Foto' : attachment.type.toUpperCase()}</div>
                 </div>
             `;
-            
-            return attachmentsHTML;
-        }
-        
-        // Export to PDF
-        async function exportToPDF(patientId) {
-            try {
-                showLoading();
-                
-                // Get patient data
-                const patient = await getPatient(patientId);
-                if (!patient) {
-                    hideLoading();
-                    return;
-                }
-                
-                // Get evolutions
-                const evolutions = await getEvolutions(patientId);
-                
-                // Create a new PDF using jsPDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                // Add title
-                doc.setFontSize(22);
-                doc.setTextColor(30, 136, 229);
-                doc.text('EVOLUCIONES POLIDEPORTIVO', 105, 20, null, null, 'center');
-                
-                // Add patient info
-                doc.setFontSize(16);
-                doc.setTextColor(0, 0, 0);
-                doc.text(`Paciente: ${patient.name}`, 14, 40);
-                doc.setFontSize(12);
-                doc.text(`RUT: ${patient.rut}`, 14, 50);
-                doc.text(`Teléfono: ${patient.phone || 'No registrado'}`, 14, 60);
-                doc.text(`Fecha del informe: ${formatDate(new Date())}`, 14, 70);
-                
-                // Add evolutions
-                doc.setFontSize(16);
-                doc.setTextColor(30, 136, 229);
-                doc.text('Historial de Evoluciones', 14, 90);
-                
-                let yPos = 100;
-                
-                if (evolutions.length === 0) {
-                    doc.setFontSize(12);
-                    doc.setTextColor(0, 0, 0);
-                    doc.text('No hay evoluciones registradas para este paciente.', 14, yPos);
-                } else {
-                    for (let i = 0; i < evolutions.length; i++) {
-                        const evolution = evolutions[i];
-                        
-                        // Check if we need a new page
-                        if (yPos > 270) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        // Add evolution date
-                        doc.setFontSize(14);
-                        doc.setTextColor(30, 136, 229);
-                        doc.text(`${formatDate(new Date(evolution.date))} - ${evolution.time || ''}`, 14, yPos);
-                        yPos += 10;
-                        
-                        // Add student
-                        doc.setFontSize(12);
-                        doc.setTextColor(100, 100, 100);
-                        doc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 14, yPos);
-                        yPos += 10;
-                        
-                        // Add evolution details
-                        doc.setFontSize(12);
-                        doc.setTextColor(0, 0, 0);
-                        
-                        if (evolution.patientState) {
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Estado del paciente:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            const patientStateLines = doc.splitTextToSize(evolution.patientState, 180);
-                            doc.text(patientStateLines, 14, yPos);
-                            yPos += patientStateLines.length * 7 + 5;
-                        }
-                        
-                        if (evolution.treatment) {
-                            // Check if we need a new page
-                            if (yPos > 270) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Tratamiento realizado:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            const treatmentLines = doc.splitTextToSize(evolution.treatment, 180);
-                            doc.text(treatmentLines, 14, yPos);
-                            yPos += treatmentLines.length * 7 + 5;
-                        }
-                        
-                        if (evolution.response) {
-                            // Check if we need a new page
-                            if (yPos > 270) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Respuesta al tratamiento:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            const responseLines = doc.splitTextToSize(evolution.response, 180);
-                            doc.text(responseLines, 14, yPos);
-                            yPos += responseLines.length * 7 + 5;
-                        }
-                        
-                        // Add scales
-                        if (evolution.scales) {
-                            // Check if we need a new page
-                            if (yPos > 270) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Escalas de evaluación:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            
-                            if (evolution.scales.eva !== undefined) {
-                                doc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 14, yPos);
-                                yPos += 7;
-                            }
-                            
-                            if (evolution.scales.groc !== undefined) {
-                                doc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 14, yPos);
-                                yPos += 7;
-                            }
-                            
-                            if (evolution.scales.sane !== undefined) {
-                                doc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 14, yPos);
-                                yPos += 7;
-                            }
-                            
-                            yPos += 5;
-                        }
-                        
-                        if (evolution.trainingPlan) {
-                            // Check if we need a new page
-                            if (yPos > 270) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Plan de entrenamiento:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            const planLines = doc.splitTextToSize(evolution.trainingPlan, 180);
-                            doc.text(planLines, 14, yPos);
-                            yPos += planLines.length * 7 + 5;
-                        }
-                        
-                        if (evolution.observations) {
-                            // Check if we need a new page
-                            if (yPos > 270) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.setFontSize(12);
-                            doc.setTextColor(30, 136, 229);
-                            doc.text('Observaciones adicionales:', 14, yPos);
-                            yPos += 7;
-                            
-                            doc.setTextColor(0, 0, 0);
-                            const observationsLines = doc.splitTextToSize(evolution.observations, 180);
-                            doc.text(observationsLines, 14, yPos);
-                            yPos += observationsLines.length * 7 + 5;
-                        }
-                        
-                        // Add separator line
-                        doc.setDrawColor(200, 200, 200);
-                        doc.line(14, yPos, 196, yPos);
-                        yPos += 10;
-                    }
-                }
-                
-                // Save the PDF
-                doc.save(`Evoluciones_${patient.name.replace(/\s+/g, '_')}.pdf`);
-                
-                hideLoading();
-                showToast('PDF generado correctamente', 'success');
-            } catch (error) {
-                console.error('Error generating PDF:', error);
-                hideLoading();
-                showToast('Error al generar PDF', 'error');
-            }
-        }
-        
-        // Initialize the app
-        async function initApp() {
-            // Set current date for new evolutions
-            const today = new Date().toISOString().split('T')[0];
-            const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
-            await testFirebase(); // Verificar conexión a Firebase
-            
-            if (document.getElementById('evolutionDate')) {
-                document.getElementById('evolutionDate').value = today;
-            }
-            
-            if (document.getElementById('evolutionTime')) {
-                document.getElementById('evolutionTime').value = now;
-            }
-            
-            // Add event listener for new patient form
-            const patientForm = document.getElementById('patientForm');
-            if (patientForm) {
-                patientForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(this);
-                    const patientData = {};
-                    
-                    for (const [key, value] of formData.entries()) {
-                        patientData[key] = value;
-                    }
-                    
-                    // Add patient to Firebase
-                    await addPatient(patientData);
-                    
-                    // Close modal
-                    document.getElementById('newPatientModal').classList.remove('active');
-                    
-                    // Clear form
-                    this.reset();
-                });
-            }
-            
-            // Add event listener for new evolution form
-            const evolutionForm = document.getElementById('evolutionForm');
-            if (evolutionForm) {
-                evolutionForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    if (!currentPatientId) {
-                        showToast("Error: No hay paciente seleccionado", "error");
-                        return;
-                    }
-                    
-                    const formData = new FormData(this);
-                    
-                    // Get form data
-                    const evolutionData = {
-                        date: formData.get('date'),
-                        time: formData.get('time'),
-                        student: formData.get('student'),
-                        patientState: formData.get('patientState'),
-                        treatment: formData.get('treatment'),
-                        response: formData.get('response'),
-                        scales: {
-                            eva: parseInt(formData.get('eva')),
-                            groc: parseInt(formData.get('groc')),
-                            sane: parseInt(formData.get('sane')),
-                            psfs: [
-                                { name: "Caminar 30 min", rating: 6 },
-                                { name: "Subir escaleras", rating: 5 },
-                                { name: "Ponerse de pie desde sentado", rating: 8 }
-                            ]
-                        },
-                        trainingPlan: formData.get('trainingPlan') || '',
-                        observations: formData.get('observations') || '',
-                        attachments: []
-                    };
-                    
-                    // Add evolution to Firebase
-                    await addEvolution(currentPatientId, evolutionData);
-                    
-                    // Close modal
-                    document.getElementById('newEvolutionModal').classList.remove('active');
-                    
-                    // Clear form
-                    this.reset();
-                    
-                    // Reset form fields with default values
-                    document.getElementById('evolutionDate').value = today;
-                    document.getElementById('evolutionTime').value = now;
-                    document.getElementById('evaRange').value = 5;
-                    document.getElementById('evaValue').textContent = '5/10';
-                    document.getElementById('grocRange').value = 3;
-                    document.getElementById('grocValue').textContent = '+3';
-                    document.getElementById('saneRange').value = 70;
-                    document.getElementById('saneValue').textContent = '70%';
-                    
-                    // Refresh evolutions
-                    if (document.getElementById('patientModal').classList.contains('active')) {
-                        const evolutions = await getEvolutions(currentPatientId);
-                        fillEvolutionsTab(evolutions);
-                    }
-                    
-                    // Refresh patients list
-                    await getPatients();
-                });
-            }
-            
-            // Add event listener for save patient data
-            const savePatientBtn = document.getElementById('savePatientBtn');
-            if (savePatientBtn) {
-                savePatientBtn.addEventListener('click', async function() {
-                    if (!currentPatientId) {
-                        showToast("Error: No hay paciente seleccionado", "error");
-                        return;
-                    }
-                    
-                    // Get patient data from form
-                    const patientData = {
-                        name: document.getElementById('patientName').value,
-                        rut: document.getElementById('patientRut').value,
-                        birthDate: document.getElementById('patientBirthDate').value,
-                        phone: document.getElementById('patientPhone').value,
-                        email: document.getElementById('patientEmail').value || '',
-                        address: document.getElementById('patientAddress').value || '',
-                        medicalHistory: document.getElementById('patientMedicalHistory').value || '',
-                        medications: document.getElementById('patientMedications').value || '',
-                        allergies: document.getElementById('patientAllergies').value || '',
-                        emergencyContact: document.getElementById('patientEmergencyContact').value || '',
-                        emergencyPhone: document.getElementById('patientEmergencyPhone').value || ''
-                    };
-                    
-                    // Update patient data
-                    await updatePatient(currentPatientId, patientData);
-                    
-                    // Refresh patients list
-                    await getPatients();
-                });
-            }
-            
-            // Add event listener for search
-            const searchInput = document.getElementById('searchPatient');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const patientCards = document.querySelectorAll('.patient-card');
-                    
-                    patientCards.forEach(card => {
-                        const name = card.querySelector('.patient-name').textContent.toLowerCase();
-                        const rut = card.querySelector('.patient-rut').textContent.toLowerCase();
-                        
-                        if (name.includes(searchTerm) || rut.includes(searchTerm)) {
-                            card.style.display = 'block';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                });
-            }
-            
-            // Add event listener for export PDF button
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
-            if (exportPdfBtn) {
-                exportPdfBtn.addEventListener('click', function() {
-                    if (!currentPatientId) {
-                        showToast("Error: No hay paciente seleccionado", "error");
-                        return;
-                    }
-                    
-                    exportToPDF(currentPatientId);
-                });
-            }
-            
-            // Add event listener for cancel buttons
-            const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
-            if (cancelEvolutionBtn) {
-                cancelEvolutionBtn.addEventListener('click', function() {
-                    document.getElementById('newEvolutionModal').classList.remove('active');
-                });
-            }
-            
-            const cancelPatientBtn = document.getElementById('cancelPatientBtn');
-            if (cancelPatientBtn) {
-                cancelPatientBtn.addEventListener('click', function() {
-                    document.getElementById('newPatientModal').classList.remove('active');
-                });
-            }
-            
-            // Add event listener for close modal buttons
-            const closePatientModal = document.getElementById('closePatientModal');
-            if (closePatientModal) {
-                closePatientModal.addEventListener('click', function() {
-                    document.getElementById('patientModal').classList.remove('active');
-                    currentPatientId = null;
-                });
-            }
-            
-            const closeEvolutionModal = document.getElementById('closeEvolutionModal');
-            if (closeEvolutionModal) {
-                closeEvolutionModal.addEventListener('click', function() {
-                    document.getElementById('newEvolutionModal').classList.remove('active');
-                });
-            }
-            
-            const closePatientModalNew = document.getElementById('closePatientModalNew');
-            if (closePatientModalNew) {
-                closePatientModalNew.addEventListener('click', function() {
-                    document.getElementById('newPatientModal').classList.remove('active');
-                });
-            }
-            
-            // Add event listener for add patient button
-            const addPatientBtn = document.getElementById('addPatientBtn');
-            if (addPatientBtn) {
-                addPatientBtn.addEventListener('click', function() {
-                    document.getElementById('newPatientModal').classList.add('active');
-                });
-            }
-            
-            // Add event listener for add evolution button
-            const addEvolutionBtn = document.getElementById('addEvolutionBtn');
-            if (addEvolutionBtn) {
-                addEvolutionBtn.addEventListener('click', function() {
-                    if (!currentPatientId) {
-                        showToast("Primero seleccione un paciente", "info");
-                        return;
-                    }
-                    
-                    // Set current date and time
-                    document.getElementById('evolutionDate').value = today;
-                    document.getElementById('evolutionTime').value = now;
-                    
-                    // Update modal title
-                    document.getElementById('evolutionModalTitle').textContent = 
-                        'Nueva evolución - ' + document.getElementById('patientModalTitle').textContent;
-                    
-                    // Show modal
-                    document.getElementById('newEvolutionModal').classList.add('active');
-                });
-            }
-            
-            // Add event listeners for range inputs
-            const evaRange = document.getElementById('evaRange');
-            const evaValue = document.getElementById('evaValue');
-            if (evaRange && evaValue) {
-                evaRange.addEventListener('input', function() {
-                    evaValue.textContent = this.value + '/10';
-                    const percentage = (this.value / 10) * 100;
-                    document.querySelector('.eva-scale .scale-marker').style.left = percentage + '%';
-                });
-            }
-            
-            const grocRange = document.getElementById('grocRange');
-            const grocValue = document.getElementById('grocValue');
-            if (grocRange && grocValue) {
-                grocRange.addEventListener('input', function() {
-                    grocValue.textContent = this.value > 0 ? '+' + this.value : this.value;
-                    const percentage = ((parseFloat(this.value) + 7) / 14) * 100;
-                    document.querySelector('.groc-marker').style.left = percentage + '%';
-                });
-            }
-            
-            const saneRange = document.getElementById('saneRange');
-            const saneValue = document.getElementById('saneValue');
-            if (saneRange && saneValue) {
-                saneRange.addEventListener('input', function() {
-                    saneValue.textContent = this.value + '%';
-                    const saneCircle = document.querySelector('.sane-circle svg circle:nth-child(2)');
-                    const saneText = document.querySelector('.sane-circle svg text');
-                    const saneBar = document.querySelector('.sane-bar');
-                    
-                    // Update circle
-                    const circumference = 2 * Math.PI * 35;
-                    const offset = circumference - (circumference * this.value / 100);
-                    saneCircle.setAttribute('stroke-dashoffset', offset);
-                    
-                    // Update text
-                    saneText.textContent = this.value + '%';
-                    
-                    // Update bar
-                    saneBar.style.width = this.value + '%';
-                });
-            }
-            
-            // Add event listener for tabs
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and contents
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    
-                    // Add active class to clicked tab and corresponding content
-                    this.classList.add('active');
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId + 'Tab').classList.add('active');
-                });
-            });
-            
-            // Add event listener for accordion headers
-            const accordions = document.querySelectorAll('.accordion-header');
-            
-            accordions.forEach(accordion => {
-                accordion.addEventListener('click', function() {
-                    this.parentElement.classList.toggle('active');
-                });
-            });
-            
-            // Add event listener for toggle sidebar
-            const toggleSidebarBtn = document.getElementById('toggleSidebar');
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            
-            if (toggleSidebarBtn && sidebar && mainContent) {
-                toggleSidebarBtn.addEventListener('click', function() {
-                    sidebar.classList.toggle('sidebar-collapsed');
-                    mainContent.classList.toggle('main-content-expanded');
-                });
-            }
-            
-            // Load patients
-            await getPatients();
-        
-                // Añadir eventos para la navegación del menú lateral
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevenir el comportamiento predeterminado
-                
-                // Remover clase active de todos los items
-                document.querySelectorAll('.menu-item').forEach(menuItem => {
-                    menuItem.classList.remove('active');
-                });
-                
-                // Añadir clase active al item clicado
-                this.classList.add('active');
-                
-                // Obtener el texto del menú seleccionado
-                const menuText = this.querySelector('.menu-item-text').textContent;
-                
-                // Mostrar un mensaje indicando la navegación
-                showToast(`Navegando a: ${menuText}`, "info");
-                
-                // Aquí implementarías la lógica real para cambiar de vista
-                // Por ahora solo mostraremos un mensaje
-            });
         });
+        
+        attachmentsHTML += `
+                </div>
+            </div>
+        `;
+        
+        return attachmentsHTML;
+    } catch (error) {
+        console.error("Error renderizando adjuntos:", error);
+        return '<div class="evolution-section">Error al renderizar adjuntos</div>';
+    }
+}
 
-            setupNavigation();
-
-
+// Change view function - función mejorada para navegación
+function changeView(viewName) {
+    try {
+        console.log(`Cambiando a vista: ${viewName}`);
+        
+        // Validar el nombre de la vista
+        if (!views.hasOwnProperty(viewName)) {
+            console.error(`Nombre de vista inválido: ${viewName}`);
+            showToast(`Error: Vista "${viewName}" no encontrada`, "error");
+            return;
         }
         
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
-
-        // Añade esta función al script principal
-function setupNavigation() {
-    // Contenido de las diferentes vistas
-    const views = {
-        'dashboard': document.querySelector('.content').outerHTML, // Guardar HTML original
-        'pacientes': `
-            <div class="content">
-                <h1 class="page-title">Gestión de Pacientes</h1>
-                <div class="section-header">
-                    <h2 class="section-title">Listado de Pacientes</h2>
-                    <button class="action-btn btn-primary" id="addPatientBtnView">
-                        <i class="fas fa-plus"></i> Nuevo paciente
-                    </button>
-                </div>
-                <div class="patient-list" id="patientListView"></div>
-            </div>
-        `,
-        'evoluciones': `
-            <div class="content">
-                <h1 class="page-title">Registro de Evoluciones</h1>
-                <div class="section-header">
-                    <h2 class="section-title">Seleccione un paciente para registrar evoluciones</h2>
-                </div>
-                <div class="patient-list" id="patientEvolutionsView"></div>
-            </div>
-        `,
-        'reportes': `
-            <div class="content">
-                <h1 class="page-title">Reportes y Estadísticas</h1>
-                <div class="dashboard">
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="dashboard-info">
-                            <div class="dashboard-title">Total pacientes</div>
-                            <div class="dashboard-value" id="totalPatientsReport">0</div>
-                        </div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="dashboard-icon">
-                            <i class="fas fa-clipboard-check"></i>
-                        </div>
-                        <div class="dashboard-info">
-                            <div class="dashboard-title">Total evoluciones</div>
-                            <div class="dashboard-value" id="totalEvolutionsReport">0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `,
-        'configuracion': `
-            <div class="content">
-                <h1 class="page-title">Configuración del Sistema</h1>
-                <div class="form-group">
-                    <label class="form-label">Nombre del centro</label>
-                    <input type="text" class="form-control" id="centerName" value="Polideportivo">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Logo del centro</label>
-                    <input type="file" class="form-control" id="centerLogo">
-                </div>
-                <button class="action-btn btn-primary" id="saveConfigBtn">
-                    <i class="fas fa-save"></i> Guardar configuración
-                </button>
-            </div>
-        `
-    };
-
-    // Configurar eventos de navegación
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
+        const mainContent = document.getElementById('mainContent');
+        if (!mainContent) {
+            console.error("Contenedor principal no encontrado");
+            return;
+        }
+        
+        // Encontrar el elemento header para mantenerlo
+        const header = mainContent.querySelector('.header');
+        if (!header) {
+            console.error("Elemento header no encontrado");
+            return;
+        }
+        
+        // Eliminar contenido actual
+        const currentContent = mainContent.querySelector('.content');
+        if (currentContent) {
+            currentContent.remove();
+        }
+        
+        // Manejar vista dashboard de forma especial para preservar el contenido original
+        if (viewName === 'dashboard' && views.dashboard) {
+            // Crear div temporal para contener el HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = views.dashboard;
             
-            // Eliminar clase active de todos los items
-            document.querySelectorAll('.menu-item').forEach(menuItem => {
-                menuItem.classList.remove('active');
+            // Insertar después del header
+            header.after(tempDiv.firstElementChild);
+            
+            // Cargar pacientes para el dashboard
+            getPatients().then(patients => {
+                renderPatients(patients);
             });
-            
-            // Añadir clase active al item clicado
-            this.classList.add('active');
-            
-            // Obtener el nombre de la vista seleccionada
-            const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
-            
-            // Reemplazar contenido
-            const mainContent = document.getElementById('mainContent');
-            const header = mainContent.querySelector('.header');
-            const currentContent = mainContent.querySelector('.content');
-            
-            if (currentContent) {
-                currentContent.remove();
-            }
-            
-            // Crear nuevo contenido
+        } else {
+            // Para otras vistas, usar la plantilla
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = views[viewName];
             
             // Insertar después del header
             header.after(tempDiv.firstElementChild);
             
-            // Mostrar un mensaje
-            showToast(`Navegando a: ${viewName}`, "info");
-            
-            // Cargar datos según la vista
-            if (viewName === 'dashboard') {
-                getPatients();
-            } 
-            else if (viewName === 'pacientes') {
+            // Manejar lógica específica de cada vista
+            if (viewName === 'pacientes') {
                 getPatients().then(patients => {
                     renderPatientsInView('patientListView', patients);
                     
-                    // Añadir evento al botón
+                    // Añadir evento al botón de nuevo paciente
                     const addBtn = document.getElementById('addPatientBtnView');
                     if (addBtn) {
                         addBtn.addEventListener('click', function() {
@@ -3512,7 +2982,7 @@ function setupNavigation() {
                         });
                     }
                 });
-            }
+            } 
             else if (viewName === 'evoluciones') {
                 getPatients().then(patients => {
                     renderPatientsInView('patientEvolutionsView', patients);
@@ -3521,171 +2991,24 @@ function setupNavigation() {
             else if (viewName === 'reportes') {
                 updateReportStatistics();
             }
-        });
-    });
-}
-
-    // Función para cambiar la vista
-  // Busca esta función en setupNavigation() (cerca de la línea 2700)
-function changeView(viewName) {
-    const mainContent = document.getElementById('mainContent');
-    const viewContent = document.querySelector('.content');
-    
-    // Eliminar el contenido actual
-    if (viewContent) {
-        viewContent.remove();
-    }
-    
-    // Crear y añadir el nuevo contenido
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = views[viewName];
-    
-    // Añadir la nueva vista
-    mainContent.appendChild(tempDiv.firstElementChild);
-    
-    // Manejar casos específicos para cada vista
-    if (viewName === 'dashboard') {
-        // Para dashboard, cargar pacientes y actualizar estadísticas
-        getPatients().then(patients => {
-            // Renderizar pacientes en el dashboard
-            renderPatients(patients);
-            
-            // Actualizar estadísticas del dashboard
-            updateDashboardStats(patients);
-            
-            // Añadir evento al botón de nuevo paciente
-            const addBtn = document.getElementById('addPatientBtn');
-            if (addBtn) {
-                addBtn.addEventListener('click', function() {
-                    document.getElementById('newPatientModal').classList.add('active');
-                });
+            else if (viewName === 'configuracion') {
+                // Configurar evento para guardar configuración
+                const saveBtn = document.getElementById('saveConfigBtn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function() {
+                        showToast("Configuración guardada correctamente", "success");
+                    });
+                }
             }
-        });
-    }
-    else if (viewName === 'pacientes') {
-        getPatients().then(patients => {
-            renderPatientsInView('patientListView', patients);
-            
-            // Añadir evento al botón de nuevo paciente
-            const addBtn = document.getElementById('addPatientBtnView');
-            if (addBtn) {
-                addBtn.addEventListener('click', function() {
-                    document.getElementById('newPatientModal').classList.add('active');
-                });
-            }
-        });
-    }
-    else if (viewName === 'evoluciones') {
-        getPatients().then(patients => {
-            renderPatientsInView('patientEvolutionsView', patients);
-        });
-    }
-    else if (viewName === 'reportes') {
-        updateReportStatistics();
-    }
-}
-
-    // Renderizar pacientes en una vista específica
-    function renderPatientsInView(containerId, patients) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        
-        // Limpiar contenedor
-        container.innerHTML = '';
-        
-        if (patients.length === 0) {
-            container.innerHTML = `
-                <div class="patient-card">
-                    <div class="patient-avatar">
-                        <i class="fas fa-user-injured"></i>
-                    </div>
-                    <h3 class="patient-name">No hay pacientes registrados</h3>
-                    <div class="patient-rut">Agregue un nuevo paciente para comenzar</div>
-                </div>
-            `;
-            return;
         }
         
-        // Añadir pacientes
-        patients.forEach(patient => {
-            const progress = calculatePatientProgress(patient);
-            const statusClass = getStatusClass(progress);
-            
-            const patientCard = document.createElement('div');
-            patientCard.classList.add('patient-card');
-            patientCard.setAttribute('data-id', patient.id);
-            
-            const initials = getInitials(patient.name);
-            
-            patientCard.innerHTML = `
-                <div class="patient-status ${statusClass}"></div>
-                <div class="patient-avatar">${initials}</div>
-                <h3 class="patient-name">${patient.name}</h3>
-                <div class="patient-rut">${patient.rut}</div>
-                <div class="patient-info">
-                    <div>
-                        <div class="patient-label">Última sesión</div>
-                        <div>${patient.lastSession || 'Ninguna'}</div>
-                    </div>
-                    <div>
-                        <div class="patient-label">Progreso</div>
-                        <div>${progress}%</div>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(patientCard);
-            
-            // Añadir evento para abrir modal de paciente
-            patientCard.addEventListener('click', () => openPatientModal(patient.id));
-        });
+        // Mostrar mensaje
+        showToast(`Navegando a: ${viewName}`, "info");
+    } catch (error) {
+        console.error(`Error cambiando a vista ${viewName}:`, error);
+        showToast(`Error al cambiar de vista: ${error.message}`, "error");
     }
-
-    // Actualizar estadísticas de reportes
-    async function updateReportStatistics() {
-        try {
-            // Obtener todos los pacientes
-            const patients = await getPatients();
-            document.getElementById('totalPatientsReport').textContent = patients.length;
-            
-            // Contar todas las evoluciones
-            let totalEvolutions = 0;
-            for (const patient of patients) {
-                const evolutions = await getEvolutions(patient.id);
-                totalEvolutions += evolutions.length;
-            }
-            document.getElementById('totalEvolutionsReport').textContent = totalEvolutions;
-        } catch (error) {
-            console.error('Error updating report statistics:', error);
-        }
-    }
-
-    // Configurar eventos de navegación
-    document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Eliminar clase active de todos los items
-            document.querySelectorAll('.menu-item').forEach(menuItem => {
-                menuItem.classList.remove('active');
-            });
-            
-            // Añadir clase active al item clicado
-            this.classList.add('active');
-            
-            // Cambiar la vista según el ítem seleccionado
-            const viewName = this.querySelector('.menu-item-text').textContent.toLowerCase();
-            changeView(viewName);
-            
-            // Mostrar un mensaje
-            showToast(`Navegando a: ${viewName}`, "info");
-        });
-    });
 }
-
-// Llamar a esta función al final de initApp()
-setupNavigation();
-
     </script>
 </body>
 </html>
