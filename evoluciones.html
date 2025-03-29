@@ -1990,6 +1990,81 @@
             font-size: 12px;
             color: var(--text-secondary);
         }
+
+        /* Mejoras de responsividad */
+@media (max-width: 768px) {
+    .exercise-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-col {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .modal {
+        width: 95%;
+        max-width: 95%;
+    }
+}
+
+/* Estilos para modales de plantillas y ejemplos */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 80%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
+}
+
+/* Estilos para los botones de ejemplo */
+.btn-example {
+    padding: 3px 8px;
+    font-size: 12px;
+    background: none;
+    border: none;
+    color: #1E88E5;
+    cursor: pointer;
+}
+
+.btn-example:hover {
+    text-decoration: underline;
+}
     </style>
 </head>
 <body>
@@ -2656,7 +2731,7 @@
                                             Estiramientos
                                         </button>
                                     </div>
-                                    <button type="button" id="manageTemplatesBtn" class="action-btn btn-secondary" style="white-space: nowrap;">
+                                    <button type="button" id="manageCustomTemplatesBtn" class="action-btn btn-secondary">
                                         <i class="fas fa-save"></i> Mis plantillas
                                     </button>
                                 </div>
@@ -5575,15 +5650,22 @@ function setupScalesControls() {
 
         // Función para añadir una fila de ejercicio
         // Función para añadir una fila de ejercicio
+// Función para añadir una fila de ejercicio
 function addExerciseRow(exercise = {}) {
+    // Obtener la tabla de ejercicios
     const tableBody = document.getElementById('exerciseTableBody');
-    if (!tableBody) return;
+    if (!tableBody) {
+        console.error("No se encontró la tabla de ejercicios");
+        return;
+    }
     
+    // Crear una nueva fila
     const row = document.createElement('tr');
     
+    // Definir el HTML de la fila con todos los campos
     row.innerHTML = `
         <td>
-            <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
+            <input type="text" class="form-control" placeholder="Nombre" 
                    value="${exercise.name || ''}" style="width: 100%;">
         </td>
         <td>
@@ -5609,7 +5691,7 @@ function addExerciseRow(exercise = {}) {
                    value="${exercise.load || ''}" style="width: 100%; text-align: center;">
         </td>
         <td>
-            <div style="display: flex; gap: 5px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 5px;">
                 <select class="form-control" style="flex: 1;">
                     <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
                     <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
@@ -5619,7 +5701,7 @@ function addExerciseRow(exercise = {}) {
             </div>
         </td>
         <td>
-            <input type="text" class="form-control" placeholder="Observaciones" 
+            <input type="text" class="form-control" placeholder="Notas" 
                    value="${exercise.notes || ''}" style="width: 100%;">
         </td>
         <td style="text-align: center;">
@@ -5631,11 +5713,17 @@ function addExerciseRow(exercise = {}) {
     
     // Añadir evento para eliminar ejercicio
     const deleteBtn = row.querySelector('.exercise-delete-btn');
-    deleteBtn.addEventListener('click', function() {
-        tableBody.removeChild(row);
-    });
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            tableBody.removeChild(row);
+        });
+    }
     
+    // Añadir la fila a la tabla
     tableBody.appendChild(row);
+    
+    // Mostrar mensaje de confirmación
+    console.log("Ejercicio añadido a la tabla");
 }
 
         // Función para cargar plantilla de ejercicios
@@ -7584,14 +7672,208 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 });
+
+        // Funciones para los botones de ejemplo
+function showPatientStateExample() {
+    alert("Ejemplo de Estado del Paciente:\n\nPaciente refiere dolor lumbar de intensidad 6/10 en región L4-L5, con irradiación hacia MID. Reporta mejoría desde última sesión (antes 8/10). Limitación para inclinarse hacia adelante y dificultad para permanecer sentado >30 minutos.");
+}
+
+function showTreatmentExample() {
+    alert("Ejemplo de Tratamiento:\n\nTerapia manual: Movilización de segmentos L4-L5, técnicas de liberación miofascial en paravertebrales.\nEjercicios: Estabilización core (3x10), puente glúteo (3x15).\nAgente físico: Compresas húmedo-calientes 15 min previo a manipulación.\nEducación: Pautas ergonómicas para posición sentada.");
+}
+
+function showResponseExample() {
+    alert("Ejemplo de Respuesta al Tratamiento:\n\nRespuesta favorable durante sesión. Dolor disminuyó de 6/10 a 3/10 post-tratamiento. Mejoró ROM lumbar en flexión. Sin eventos adversos. Paciente refiere mayor sensación de estabilidad al caminar.");
+}
+
+        // Sistema de plantillas de ejercicios personalizadas
+let customTemplates = [];
+
+// Función para mostrar el modal de plantillas personalizadas
+function showCustomTemplatesModal() {
+    const modal = document.getElementById('customTemplatesModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+    
+    // Cargar plantillas guardadas
+    loadCustomTemplates();
+}
+
+// Cargar plantillas personalizadas desde localStorage
+function loadCustomTemplates() {
+    try {
+        const saved = localStorage.getItem('exerciseTemplates');
+        if (saved) {
+            customTemplates = JSON.parse(saved);
+            renderSavedTemplatesList();
+        }
+    } catch (error) {
+        console.error("Error al cargar plantillas:", error);
+        showToast("Error al cargar plantillas guardadas", "error");
+    }
+}
+
+// Renderizar lista de plantillas guardadas
+function renderSavedTemplatesList() {
+    const container = document.getElementById('savedTemplatesList');
+    if (!container) return;
+    
+    if (customTemplates.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay plantillas personalizadas guardadas</p>';
+        return;
+    }
+    
+    let html = '<table class="exercise-table" style="width: 100%;">';
+    html += '<thead><tr><th>Nombre</th><th>Categoría</th><th>Ejercicios</th><th>Acciones</th></tr></thead><tbody>';
+    
+    customTemplates.forEach(template => {
+        html += `
+            <tr>
+                <td>${template.name}</td>
+                <td>${template.category || '-'}</td>
+                <td>${template.exercises.length}</td>
+                <td>
+                    <button type="button" class="action-btn btn-secondary" style="padding: 5px 10px; margin-right: 5px;" 
+                            onclick="loadCustomTemplate('${template.id}')">
+                        <i class="fas fa-play"></i> Usar
+                    </button>
+                    <button type="button" class="action-btn btn-secondary" style="padding: 5px 10px; background-color: var(--accent2-light);" 
+                            onclick="deleteCustomTemplate('${template.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+// Cargar una plantilla personalizada
+function loadCustomTemplate(templateId) {
+    const template = customTemplates.find(t => t.id === templateId);
+    if (!template) return;
+    
+    // Limpiar tabla actual de ejercicios
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = '';
+        
+        // Añadir ejercicios de la plantilla
+        template.exercises.forEach(exercise => {
+            addExerciseRow(exercise);
+        });
+        
+        // Cerrar modal
+        const modal = document.getElementById('customTemplatesModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+        
+        showToast(`Plantilla "${template.name}" cargada`, "success");
+    }
+}
+
+// Eliminar una plantilla personalizada
+function deleteCustomTemplate(templateId) {
+    if (confirm('¿Está seguro de eliminar esta plantilla?')) {
+        customTemplates = customTemplates.filter(t => t.id !== templateId);
+        localStorage.setItem('exerciseTemplates', JSON.stringify(customTemplates));
+        renderSavedTemplatesList();
+        showToast("Plantilla eliminada correctamente", "success");
+    }
+}
+
+// Guardar ejercicios actuales como plantilla
+function saveCurrentExercisesAsTemplate() {
+    const exercises = getExercisesData();
+    if (exercises.length === 0) {
+        showToast("No hay ejercicios para guardar", "error");
+        return;
+    }
+    
+    document.getElementById('saveTemplateForm').style.display = 'block';
+    document.getElementById('templateNameInput').focus();
+}
+
+// Confirmar guardado de plantilla
+function confirmSaveTemplate() {
+    const name = document.getElementById('templateNameInput').value.trim();
+    if (!name) {
+        showToast("Ingrese un nombre para la plantilla", "error");
+        return;
+    }
+    
+    const category = document.getElementById('templateCategoryInput').value.trim();
+    const exercises = getExercisesData();
+    
+    const newTemplate = {
+        id: 'template_' + Date.now(),
+        name: name,
+        category: category,
+        exercises: exercises,
+        createdAt: new Date().toISOString()
+    };
+    
+    customTemplates.push(newTemplate);
+    localStorage.setItem('exerciseTemplates', JSON.stringify(customTemplates));
+    
+    document.getElementById('saveTemplateForm').style.display = 'none';
+    document.getElementById('templateNameInput').value = '';
+    document.getElementById('templateCategoryInput').value = '';
+    
+    renderSavedTemplatesList();
+    showToast("Plantilla guardada correctamente", "success");
+}
+
+// Inicializar los manejadores de eventos una vez que se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Botón para abrir modal de plantillas personalizadas
+    const manageTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
+    if (manageTemplatesBtn) {
+        manageTemplatesBtn.addEventListener('click', showCustomTemplatesModal);
+    }
+    
+    // Botón para cerrar modal
+    const closeCustomTemplatesModalBtn = document.getElementById('closeCustomTemplatesModal');
+    if (closeCustomTemplatesModalBtn) {
+        closeCustomTemplatesModalBtn.addEventListener('click', function() {
+            document.getElementById('customTemplatesModal').classList.remove('active');
+        });
+    }
+    
+    // Botón para guardar ejercicios actuales como plantilla
+    const saveCurrentAsTemplateBtn = document.getElementById('saveCurrentAsTemplateBtn');
+    if (saveCurrentAsTemplateBtn) {
+        saveCurrentAsTemplateBtn.addEventListener('click', saveCurrentExercisesAsTemplate);
+    }
+    
+    // Botón para confirmar guardado de plantilla
+    const confirmSaveTemplateBtn = document.getElementById('confirmSaveTemplateBtn');
+    if (confirmSaveTemplateBtn) {
+        confirmSaveTemplateBtn.addEventListener('click', confirmSaveTemplate);
+    }
+    
+    // Botón para cancelar guardado de plantilla
+    const cancelSaveTemplateBtn = document.getElementById('cancelSaveTemplateBtn');
+    if (cancelSaveTemplateBtn) {
+        cancelSaveTemplateBtn.addEventListener('click', function() {
+            document.getElementById('saveTemplateForm').style.display = 'none';
+        });
+    }
+});
+
+        
     </script>
 
     <!-- Modal para gestionar plantillas personalizadas -->
-<div class="modal-overlay" id="templatesModal" style="display: none;">
+<div class="modal-overlay" id="customTemplatesModal">
     <div class="modal">
         <div class="modal-header">
             <h2 class="modal-title">Gestionar plantillas de ejercicios</h2>
-            <button class="modal-close" id="closeTemplatesModal">
+            <button class="modal-close" id="closeCustomTemplatesModal">
                 <i class="fas fa-times"></i>
             </button>
         </div>
