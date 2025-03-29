@@ -2619,11 +2619,13 @@
                                     <table class="exercise-table" id="exerciseTable">
                                         <thead>
                                             <tr>
-                                                <th style="width: 30%;">Ejercicio</th>
-                                                <th style="width: 10%;">Series</th>
-                                                <th style="width: 15%;">Repeticiones</th>
-                                                <th style="width: 15%;">Intensidad</th>
-                                                <th style="width: 20%;">Observaciones</th>
+                                                <th style="width: 20%;">Ejercicio</th>
+                                                <th style="width: 10%;">Implemento</th>
+                                                <th style="width: 8%;">Series</th>
+                                                <th style="width: 8%;">Reps</th>
+                                                <th style="width: 8%;">Carga (kg)</th>
+                                                <th style="width: 8%;">RPE/RIR</th>
+                                                <th style="width: 18%;">Observaciones</th>
                                                 <th style="width: 10%;">Acciones</th>
                                             </tr>
                                         </thead>
@@ -2639,19 +2641,27 @@
                             
                             <div class="form-group" style="margin-top: 15px;">
                                 <label class="form-label">Plantillas de ejercicios</label>
-                                <div class="exercise-templates" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                                    <button type="button" class="template-btn" data-template="mmss" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
-                                        Miembros superiores
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <div class="exercise-templates" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                        <button type="button" class="template-btn" data-template="mmss" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                                            Miembros superiores
+                                        </button>
+                                        <button type="button" class="template-btn" data-template="mmii" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                                            Miembros inferiores
+                                        </button>
+                                        <button type="button" class="template-btn" data-template="core" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                                            Core
+                                        </button>
+                                        <button type="button" class="template-btn" data-template="estiramiento" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+                                            Estiramientos
+                                        </button>
+                                    </div>
+                                    <button type="button" id="manageTemplatesBtn" class="action-btn btn-secondary" style="white-space: nowrap;">
+                                        <i class="fas fa-save"></i> Mis plantillas
                                     </button>
-                                    <button type="button" class="template-btn" data-template="mmii" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
-                                        Miembros inferiores
-                                    </button>
-                                    <button type="button" class="template-btn" data-template="core" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
-                                        Core
-                                    </button>
-                                    <button type="button" class="template-btn" data-template="estiramiento" style="padding: 8px 15px; background-color: var(--background-alt); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
-                                        Estiramientos
-                                    </button>
+                                </div>
+                                <div id="customTemplatesContainer" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                                    <!-- Aquí se cargarán las plantillas personalizadas -->
                                 </div>
                             </div>
                         </div>
@@ -3847,53 +3857,80 @@
         }
 
         // Función para renderizar ejercicios
-        function renderExercises(exercises) {
-            if (!exercises || exercises.length === 0) return '';
-            
-            let exercisesHTML = `
-                <div class="evolution-section">
-                    <div class="evolution-section-title">Ejercicios prescritos</div>
-                    <div class="exercise-table-container" style="margin-top: 10px; overflow-x: auto;">
-                        <table class="exercise-table">
-                            <thead>
-                                <tr>
-                                    <th>Ejercicio</th>
-                                    <th>Series</th>
-                                    <th>Reps</th>
-                                    <th>Intensidad</th>
-                                    <th>Observaciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-            `;
-            
-            exercises.forEach(exercise => {
-                const intensityClass = getIntensityClass(exercise.intensity);
-                
-                exercisesHTML += `
-                    <tr>
-                        <td>${exercise.name || 'Ejercicio sin nombre'}</td>
-                        <td>${exercise.sets || '3'}</td>
-                        <td>${exercise.reps || '10'}</td>
-                        <td>
-                            <span class="intensity-badge ${intensityClass}">
-                                ${exercise.intensity || 'Media'}
-                            </span>
-                        </td>
-                        <td>${exercise.notes || ''}</td>
-                    </tr>
-                `;
-            });
-            
-            exercisesHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            return exercisesHTML;
+function renderExercises(exercises) {
+    if (!exercises || exercises.length === 0) return '';
+    
+    let exercisesHTML = `
+        <div class="evolution-section">
+            <div class="evolution-section-title">Ejercicios prescritos</div>
+            <div class="exercise-table-container" style="margin-top: 10px; overflow-x: auto;">
+                <table class="exercise-table">
+                    <thead>
+                        <tr>
+                            <th>Ejercicio</th>
+                            <th>Implemento</th>
+                            <th>Series x Reps</th>
+                            <th>Carga</th>
+                            <th>Esfuerzo</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    exercises.forEach(exercise => {
+        // Compatibilidad con versiones anteriores y nuevas
+        let implementStr = exercise.implement || '-';
+        let loadStr = exercise.load ? exercise.load + ' kg' : '-';
+        let effortStr = '';
+        
+        if (exercise.effortType && exercise.effortValue) {
+            effortStr = `${exercise.effortType} ${exercise.effortValue}`;
+        } else if (exercise.intensity) {
+            // Parsear la intensidad para retrocompatibilidad
+            if (exercise.intensity === 'Baja' || exercise.intensity === 'Media' || exercise.intensity === 'Alta') {
+                effortStr = exercise.intensity;
+            } else {
+                effortStr = exercise.intensity;
+            }
         }
+        
+        // Si effortStr está vacío, usar un valor por defecto
+        if (!effortStr) effortStr = '-';
+        
+        // Determinar la clase de intensidad para colores
+        let intensityClass = 'intensity-medium';
+        if (exercise.intensity === 'Baja' || (exercise.effortValue && exercise.effortValue <= 4)) {
+            intensityClass = 'intensity-low';
+        } else if (exercise.intensity === 'Alta' || (exercise.effortValue && exercise.effortValue >= 8)) {
+            intensityClass = 'intensity-high';
+        }
+        
+        exercisesHTML += `
+            <tr>
+                <td>${exercise.name || 'Ejercicio sin nombre'}</td>
+                <td>${implementStr}</td>
+                <td>${exercise.sets || '3'} x ${exercise.reps || '10'}</td>
+                <td>${loadStr}</td>
+                <td>
+                    <span class="intensity-badge ${intensityClass}">
+                        ${effortStr}
+                    </span>
+                </td>
+                <td>${exercise.notes || ''}</td>
+            </tr>
+        `;
+    });
+    
+    exercisesHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return exercisesHTML;
+}
 
         // Obtener clase CSS según intensidad
         function getIntensityClass(intensity) {
@@ -5349,60 +5386,112 @@
         }
 
         // Setup scales controls
-        function setupScalesControls() {
-            // EVA Range
-            const evaRange = document.getElementById('evaRange');
-            const evaValue = document.getElementById('evaValue');
-            if (evaRange && evaValue) {
-                evaRange.addEventListener('input', function() {
-                    evaValue.textContent = this.value + '/10';
-                    const percentage = (this.value / 10) * 100;
-                    document.querySelector('.eva-scale .scale-marker').style.left = percentage + '%';
-                });
+function setupScalesControls() {
+    // EVA Range
+    const evaRange = document.getElementById('evaRange');
+    const evaValue = document.getElementById('evaValue');
+    const evaMarker = document.querySelector('.eva-scale .scale-marker');
+    
+    if (evaRange && evaValue && evaMarker) {
+        evaRange.addEventListener('input', function() {
+            const value = this.value;
+            evaValue.textContent = value + '/10';
+            const percentage = (value / 10) * 100;
+            evaMarker.style.left = percentage + '%';
+        });
+    }
+    
+    // GROC Range
+    const grocRange = document.getElementById('grocRange');
+    const grocValue = document.getElementById('grocValue');
+    const grocMarker = document.querySelector('.groc-marker');
+    
+    if (grocRange && grocValue && grocMarker) {
+        grocRange.addEventListener('input', function() {
+            const value = this.value;
+            grocValue.textContent = value > 0 ? '+' + value : value;
+            const percentage = ((parseFloat(value) + 7) / 14) * 100;
+            grocMarker.style.left = percentage + '%';
+        });
+    }
+    
+    // SANE Range
+    const saneRange = document.getElementById('saneRange');
+    const saneValue = document.getElementById('saneValue');
+    const saneCircleValue = document.querySelector('.sane-value');
+    const saneBar = document.querySelector('.sane-bar');
+    
+    if (saneRange && saneValue && saneCircleValue && saneBar) {
+        saneRange.addEventListener('input', function() {
+            const value = this.value;
+            saneValue.textContent = value + '%';
+            saneCircleValue.textContent = value + '%';
+            
+            // Actualizar barra de progreso
+            saneBar.style.width = value + '%';
+            
+            // Actualizar círculo SVG
+            const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+            if (circle) {
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * value / 100);
+                circle.setAttribute('stroke-dashoffset', offset);
             }
+        });
+    }
+    
+    // Asegurar que las actualizaciones de escala funcionen también cuando se cambia el valor programáticamente
+    function updateScaleDisplays() {
+        // EVA
+        if (evaRange && evaValue && evaMarker) {
+            const value = evaRange.value;
+            evaValue.textContent = value + '/10';
+            const percentage = (value / 10) * 100;
+            evaMarker.style.left = percentage + '%';
+        }
+        
+        // GROC
+        if (grocRange && grocValue && grocMarker) {
+            const value = grocRange.value;
+            grocValue.textContent = value > 0 ? '+' + value : value;
+            const percentage = ((parseFloat(value) + 7) / 14) * 100;
+            grocMarker.style.left = percentage + '%';
+        }
+        
+        // SANE
+        if (saneRange && saneValue && saneCircleValue && saneBar) {
+            const value = saneRange.value;
+            saneValue.textContent = value + '%';
+            saneCircleValue.textContent = value + '%';
+            saneBar.style.width = value + '%';
             
-            // GROC Range
-            const grocRange = document.getElementById('grocRange');
-            const grocValue = document.getElementById('grocValue');
-            if (grocRange && grocValue) {
-                grocRange.addEventListener('input', function() {
-                    grocValue.textContent = this.value > 0 ? '+' + this.value : this.value;
-                    const percentage = ((parseFloat(this.value) + 7) / 14) * 100;
-                    document.querySelector('.groc-marker').style.left = percentage + '%';
-                });
-            }
-            
-            // SANE Range
-            const saneRange = document.getElementById('saneRange');
-            const saneValue = document.getElementById('saneValue');
-            const saneCircleValue = document.querySelector('.sane-value');
-            const saneBar = document.querySelector('.sane-bar');
-            
-            if (saneRange && saneValue && saneCircleValue && saneBar) {
-                saneRange.addEventListener('input', function() {
-                    const value = this.value;
-                    saneValue.textContent = value + '%';
-                    saneCircleValue.textContent = value + '%';
-                    
-                    // Actualizar barra de progreso
-                    saneBar.style.width = value + '%';
-                    
-                    // Actualizar círculo SVG
-                    const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
-                    if (circle) {
-                        const circumference = 2 * Math.PI * 35;
-                        const offset = circumference - (circumference * value / 100);
-                        circle.setAttribute('stroke-dashoffset', offset);
-                    }
-                });
-            }
-            
-            // Añadir evento al botón para añadir actividad PSFS
-            const addPsfsBtn = document.getElementById('addPsfsActivityBtn');
-            if (addPsfsBtn) {
-                addPsfsBtn.addEventListener('click', addPsfsActivity);
+            const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+            if (circle) {
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * value / 100);
+                circle.setAttribute('stroke-dashoffset', offset);
             }
         }
+    }
+    
+    // Ejecutar una actualización inicial para asegurar que todo esté sincronizado
+    updateScaleDisplays();
+    
+    // Añadir evento al botón para añadir actividad PSFS
+    const addPsfsBtn = document.getElementById('addPsfsActivityBtn');
+    if (addPsfsBtn) {
+        addPsfsBtn.addEventListener('click', addPsfsActivity);
+    }
+    
+    // También actualizar cuando se abre el modal
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('transitionend', function() {
+            if (this.classList.contains('active')) {
+                setTimeout(updateScaleDisplays, 100);
+            }
+        });
+    });
+}
         
         // Función para añadir una actividad PSFS
         function addPsfsActivity() {
@@ -5485,100 +5574,118 @@
         }
 
         // Función para añadir una fila de ejercicio
-        function addExerciseRow(exercise = {}) {
-            const tableBody = document.getElementById('exerciseTableBody');
-            if (!tableBody) return;
-            
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
-                <td>
-                    <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
-                           value="${exercise.name || ''}" style="width: 100%;">
-                </td>
-                <td>
-                    <input type="number" class="form-control" placeholder="Series" min="1" 
-                           value="${exercise.sets || '3'}" style="width: 60px; text-align: center;">
-                </td>
-                <td>
-                    <input type="text" class="form-control" placeholder="Reps" 
-                           value="${exercise.reps || '10'}" style="width: 100%; text-align: center;">
-                </td>
-                <td>
-                    <select class="form-control" style="width: 100%;">
-                        <option value="Baja" ${exercise.intensity === 'Baja' ? 'selected' : ''}>Baja</option>
-                        <option value="Media" ${exercise.intensity === 'Media' || !exercise.intensity ? 'selected' : ''}>Media</option>
-                        <option value="Alta" ${exercise.intensity === 'Alta' ? 'selected' : ''}>Alta</option>
-                    </select>
-                </td>
-                <td>
-                    <input type="text" class="form-control" placeholder="Observaciones" 
-                           value="${exercise.notes || ''}" style="width: 100%;">
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="exercise-delete-btn">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </td>
-            `;
-            
-            // Añadir evento para eliminar ejercicio
-            const deleteBtn = row.querySelector('.exercise-delete-btn');
-            deleteBtn.addEventListener('click', function() {
-                tableBody.removeChild(row);
-            });
-            
-            tableBody.appendChild(row);
-        }
+        // Función para añadir una fila de ejercicio
+function addExerciseRow(exercise = {}) {
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (!tableBody) return;
+    
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
+                   value="${exercise.name || ''}" style="width: 100%;">
+        </td>
+        <td>
+            <select class="form-control" style="width: 100%;">
+                <option value="" ${!exercise.implement ? 'selected' : ''}>Ninguno</option>
+                <option value="Mancuernas" ${exercise.implement === 'Mancuernas' ? 'selected' : ''}>Mancuernas</option>
+                <option value="Bandas" ${exercise.implement === 'Bandas' ? 'selected' : ''}>Bandas</option>
+                <option value="Máquina" ${exercise.implement === 'Máquina' ? 'selected' : ''}>Máquina</option>
+                <option value="Peso corporal" ${exercise.implement === 'Peso corporal' ? 'selected' : ''}>Peso corporal</option>
+                <option value="Otros" ${exercise.implement === 'Otros' ? 'selected' : ''}>Otros</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control" placeholder="Series" min="1" 
+                   value="${exercise.sets || '3'}" style="width: 100%; text-align: center;">
+        </td>
+        <td>
+            <input type="text" class="form-control" placeholder="Reps" 
+                   value="${exercise.reps || '10'}" style="width: 100%; text-align: center;">
+        </td>
+        <td>
+            <input type="number" class="form-control" placeholder="kg" min="0" step="0.5"
+                   value="${exercise.load || ''}" style="width: 100%; text-align: center;">
+        </td>
+        <td>
+            <div style="display: flex; gap: 5px; align-items: center;">
+                <select class="form-control" style="flex: 1;">
+                    <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
+                    <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+                </select>
+                <input type="number" class="form-control" min="0" max="10" step="1"
+                       value="${exercise.effortValue || ''}" style="flex: 1; text-align: center;">
+            </div>
+        </td>
+        <td>
+            <input type="text" class="form-control" placeholder="Observaciones" 
+                   value="${exercise.notes || ''}" style="width: 100%;">
+        </td>
+        <td style="text-align: center;">
+            <button type="button" class="exercise-delete-btn">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+    
+    // Añadir evento para eliminar ejercicio
+    const deleteBtn = row.querySelector('.exercise-delete-btn');
+    deleteBtn.addEventListener('click', function() {
+        tableBody.removeChild(row);
+    });
+    
+    tableBody.appendChild(row);
+}
 
         // Función para cargar plantilla de ejercicios
-        function loadExerciseTemplate(template) {
-            // Limpiar tabla actual
-            const tableBody = document.getElementById('exerciseTableBody');
-            if (!tableBody) return;
-            
-            // Confirmar antes de reemplazar ejercicios existentes
-            if (tableBody.children.length > 0) {
-                if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
-                    return;
-                }
-                tableBody.innerHTML = '';
-            }
-            
-            // Plantillas predefinidas
-            const templates = {
-                mmss: [
-                    { name: 'Elevaciones laterales con mancuernas', sets: 3, reps: '12', intensity: 'Media', notes: 'Movimiento controlado' },
-                    { name: 'Curl de bíceps con barra', sets: 3, reps: '10', intensity: 'Media', notes: 'Extensión completa' },
-                    { name: 'Press de hombro', sets: 3, reps: '12', intensity: 'Media', notes: 'No bloquear codos' }
-                ],
-                mmii: [
-                    { name: 'Sentadillas', sets: 3, reps: '15', intensity: 'Media', notes: 'Rodillas no sobrepasan punta de pies' },
-                    { name: 'Estocadas frontales', sets: 3, reps: '10', intensity: 'Media', notes: 'Alternar piernas' },
-                    { name: 'Elevación de talones', sets: 3, reps: '20', intensity: 'Baja', notes: 'Mantener piernas extendidas' }
-                ],
-                core: [
-                    { name: 'Plancha frontal', sets: 3, reps: '30 seg', intensity: 'Media', notes: 'Mantener posición neutra columna' },
-                    { name: 'Crunch abdominal', sets: 3, reps: '15', intensity: 'Media', notes: 'Movimiento controlado' },
-                    { name: 'Puente glúteo', sets: 3, reps: '12', intensity: 'Media', notes: 'Apretar glúteos al subir' }
-                ],
-                estiramiento: [
-                    { name: 'Estiramiento de isquiotibiales', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'No rebotar' },
-                    { name: 'Estiramiento de cuádriceps', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'Mantener cadera alineada' },
-                    { name: 'Estiramiento de pectorales', sets: 2, reps: '30 seg', intensity: 'Baja', notes: 'Sentir tensión sin dolor' }
-                ]
-            };
-            
-            // Cargar la plantilla seleccionada
-            if (templates[template]) {
-                templates[template].forEach(exercise => {
-                    addExerciseRow(exercise);
-                });
-                showToast(`Plantilla de ${getTemplateName(template)} cargada`, 'success');
-            } else {
-                showToast('Plantilla no encontrada', 'error');
-            }
+function loadExerciseTemplate(template) {
+    // Limpiar tabla actual
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (!tableBody) return;
+    
+    // Confirmar antes de reemplazar ejercicios existentes
+    if (tableBody.children.length > 0) {
+        if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+            return;
         }
+        tableBody.innerHTML = '';
+    }
+    
+    // Plantillas predefinidas actualizadas con los nuevos campos
+    const templates = {
+        mmss: [
+            { name: 'Elevaciones laterales', implement: 'Mancuernas', sets: 3, reps: '12', load: '2', effortType: 'RPE', effortValue: '7', notes: 'Movimiento controlado' },
+            { name: 'Curl de bíceps', implement: 'Bandas', sets: 3, reps: '10', load: '', effortType: 'RIR', effortValue: '2', notes: 'Extensión completa' },
+            { name: 'Press de hombro', implement: 'Mancuernas', sets: 3, reps: '12', load: '4', effortType: 'RPE', effortValue: '8', notes: 'No bloquear codos' }
+        ],
+        mmii: [
+            { name: 'Sentadillas', implement: 'Peso corporal', sets: 3, reps: '15', load: '', effortType: 'RPE', effortValue: '6', notes: 'Rodillas no sobrepasan punta de pies' },
+            { name: 'Estocadas frontales', implement: 'Mancuernas', sets: 3, reps: '10', load: '3', effortType: 'RIR', effortValue: '3', notes: 'Alternar piernas' },
+            { name: 'Elevación de talones', implement: 'Peso corporal', sets: 3, reps: '20', load: '', effortType: 'RPE', effortValue: '5', notes: 'Mantener piernas extendidas' }
+        ],
+        core: [
+            { name: 'Plancha frontal', implement: 'Peso corporal', sets: 3, reps: '30 seg', load: '', effortType: 'RPE', effortValue: '7', notes: 'Mantener posición neutra columna' },
+            { name: 'Crunch abdominal', implement: 'Peso corporal', sets: 3, reps: '15', load: '', effortType: 'RIR', effortValue: '2', notes: 'Movimiento controlado' },
+            { name: 'Puente glúteo', implement: 'Peso corporal', sets: 3, reps: '12', load: '', effortType: 'RPE', effortValue: '6', notes: 'Apretar glúteos al subir' }
+        ],
+        estiramiento: [
+            { name: 'Estiramiento de isquiotibiales', implement: 'Ninguno', sets: 2, reps: '30 seg', load: '', effortType: 'RPE', effortValue: '3', notes: 'No rebotar' },
+            { name: 'Estiramiento de cuádriceps', implement: 'Ninguno', sets: 2, reps: '30 seg', load: '', effortType: 'RPE', effortValue: '3', notes: 'Mantener cadera alineada' },
+            { name: 'Estiramiento de pectorales', implement: 'Ninguno', sets: 2, reps: '30 seg', load: '', effortType: 'RPE', effortValue: '3', notes: 'Sentir tensión sin dolor' }
+        ]
+    };
+    
+    // Cargar la plantilla seleccionada
+    if (templates[template]) {
+        templates[template].forEach(exercise => {
+            addExerciseRow(exercise);
+        });
+        showToast(`Plantilla de ${getTemplateName(template)} cargada`, 'success');
+    } else {
+        showToast('Plantilla no encontrada', 'error');
+    }
+}
 
         // Obtener nombre de plantilla
         function getTemplateName(template) {
@@ -5592,30 +5699,54 @@
         }
 
         // Recopilar datos de ejercicios para guardar
-        function getExercisesData() {
-            const exercises = [];
-            const rows = document.querySelectorAll('#exerciseTableBody tr');
+        // Recopilar datos de ejercicios para guardar
+function getExercisesData() {
+    const exercises = [];
+    const rows = document.querySelectorAll('#exerciseTableBody tr');
+    
+    rows.forEach(row => {
+        const nameInput = row.querySelector('td:nth-child(1) input');
+        const implementSelect = row.querySelector('td:nth-child(2) select');
+        const setsInput = row.querySelector('td:nth-child(3) input');
+        const repsInput = row.querySelector('td:nth-child(4) input');
+        const loadInput = row.querySelector('td:nth-child(5) input');
+        const effortTypeSelect = row.querySelector('td:nth-child(6) select');
+        const effortValueInput = row.querySelector('td:nth-child(6) input[type="number"]');
+        const notesInput = row.querySelector('td:nth-child(7) input');
+        
+        if (nameInput && nameInput.value.trim() !== '') {
+            // Construir cadena de intensidad combinando carga y esfuerzo
+            let intensityStr = '';
+            if (loadInput && loadInput.value) {
+                intensityStr = loadInput.value + 'kg';
+            }
             
-            rows.forEach(row => {
-                const nameInput = row.querySelector('td:nth-child(1) input');
-                const setsInput = row.querySelector('td:nth-child(2) input');
-                const repsInput = row.querySelector('td:nth-child(3) input');
-                const intensitySelect = row.querySelector('td:nth-child(4) select');
-                const notesInput = row.querySelector('td:nth-child(5) input');
-                
-                if (nameInput && nameInput.value.trim() !== '') {
-                    exercises.push({
-                        name: nameInput.value,
-                        sets: setsInput ? setsInput.value : '3',
-                        reps: repsInput ? repsInput.value : '10',
-                        intensity: intensitySelect ? intensitySelect.value : 'Media',
-                        notes: notesInput ? notesInput.value : ''
-                    });
-                }
+            if (effortTypeSelect && effortValueInput && effortValueInput.value) {
+                if (intensityStr) intensityStr += ' - ';
+                intensityStr += effortTypeSelect.value + ' ' + effortValueInput.value;
+            }
+            
+            // Si no hay intensidad especificada, usar valor legacy
+            if (!intensityStr) {
+                intensityStr = 'Media';
+            }
+            
+            exercises.push({
+                name: nameInput.value,
+                implement: implementSelect ? implementSelect.value : '',
+                sets: setsInput ? setsInput.value : '3',
+                reps: repsInput ? repsInput.value : '10',
+                intensity: intensityStr, // Para compatibilidad con versiones anteriores
+                load: loadInput ? loadInput.value : '',
+                effortType: effortTypeSelect ? effortTypeSelect.value : 'RPE',
+                effortValue: effortValueInput ? effortValueInput.value : '',
+                notes: notesInput ? notesInput.value : ''
             });
-            
-            return exercises;
         }
+    });
+    
+    return exercises;
+}
 
         // Recopilar datos de PSFS para guardar
         function getPsfsActivities() {
@@ -7120,6 +7251,379 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 });
+
+
+        // Sistema de plantillas personalizadas
+let customTemplates = [];
+
+// Cargar plantillas personalizadas desde localStorage
+function loadCustomTemplates() {
+    try {
+        const savedTemplates = localStorage.getItem('exerciseTemplates');
+        if (savedTemplates) {
+            customTemplates = JSON.parse(savedTemplates);
+            
+            // Renderizar botones para plantillas personalizadas
+            renderCustomTemplateButtons();
+            
+            // Renderizar lista en el modal
+            renderSavedTemplatesList();
+        }
+    } catch (error) {
+        console.error("Error cargando plantillas personalizadas:", error);
+        showToast("Error al cargar plantillas guardadas", "error");
+    }
+}
+
+// Guardar plantillas personalizadas en localStorage
+function saveCustomTemplates() {
+    try {
+        localStorage.setItem('exerciseTemplates', JSON.stringify(customTemplates));
+        
+        // Actualizar interfaz
+        renderCustomTemplateButtons();
+        renderSavedTemplatesList();
+        
+        showToast("Plantillas guardadas correctamente", "success");
+    } catch (error) {
+        console.error("Error guardando plantillas personalizadas:", error);
+        showToast("Error al guardar plantillas", "error");
+    }
+}
+
+// Renderizar botones para plantillas personalizadas
+function renderCustomTemplateButtons() {
+    const container = document.getElementById('customTemplatesContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (customTemplates.length === 0) {
+        return;
+    }
+    
+    // Agrupar por categoría
+    const categorized = {};
+    customTemplates.forEach(template => {
+        const category = template.category || 'Otras';
+        if (!categorized[category]) {
+            categorized[category] = [];
+        }
+        categorized[category].push(template);
+    });
+    
+    // Crear secciones por categoría
+    Object.keys(categorized).forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.style.marginBottom = '10px';
+        categoryDiv.style.width = '100%';
+        
+        if (Object.keys(categorized).length > 1) {
+            categoryDiv.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.9em; margin-bottom: 5px;">${category}</div>`;
+        }
+        
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.display = 'flex';
+        buttonsDiv.style.flexWrap = 'wrap';
+        buttonsDiv.style.gap = '10px';
+        
+        categorized[category].forEach(template => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'template-btn';
+            btn.setAttribute('data-template-id', template.id);
+            btn.innerHTML = `<i class="fas fa-dumbbell"></i> ${template.name}`;
+            btn.style.padding = '8px 15px';
+            btn.style.backgroundColor = 'var(--primary-light)';
+            btn.style.color = 'white';
+            btn.style.border = '1px solid var(--primary)';
+            btn.style.borderRadius = '4px';
+            btn.style.cursor = 'pointer';
+            
+            btn.addEventListener('click', function() {
+                loadCustomTemplate(template.id);
+            });
+            
+            buttonsDiv.appendChild(btn);
+        });
+        
+        categoryDiv.appendChild(buttonsDiv);
+        container.appendChild(categoryDiv);
+    });
+}
+
+// Renderizar lista de plantillas guardadas en el modal
+function renderSavedTemplatesList() {
+    const container = document.getElementById('savedTemplatesList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (customTemplates.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay plantillas personalizadas guardadas</p>';
+        return;
+    }
+    
+    // Crear tabla de plantillas
+    const table = document.createElement('table');
+    table.className = 'exercise-table';
+    table.style.width = '100%';
+    
+    // Cabecera
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th style="width: 35%;">Nombre</th>
+            <th style="width: 20%;">Categoría</th>
+            <th style="width: 15%;">Ejercicios</th>
+            <th style="width: 30%;">Acciones</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // Cuerpo de la tabla
+    const tbody = document.createElement('tbody');
+    customTemplates.forEach(template => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${template.name}</td>
+            <td>${template.category || '-'}</td>
+            <td>${template.exercises.length}</td>
+            <td>
+                <button type="button" class="action-btn btn-secondary" style="padding: 5px 10px; margin-right: 5px;" onclick="loadCustomTemplate('${template.id}', true)">
+                    <i class="fas fa-play"></i> Usar
+                </button>
+                <button type="button" class="action-btn btn-secondary" style="padding: 5px 10px; margin-right: 5px;" onclick="editCustomTemplate('${template.id}')">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button type="button" class="action-btn btn-secondary" style="padding: 5px 10px; background-color: var(--accent2-light);" onclick="deleteCustomTemplate('${template.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    
+    container.appendChild(table);
+}
+
+// Cargar plantilla personalizada
+function loadCustomTemplate(templateId, closeModal = false) {
+    const template = customTemplates.find(t => t.id === templateId);
+    if (!template) {
+        showToast("Plantilla no encontrada", "error");
+        return;
+    }
+    
+    // Limpiar tabla actual
+    const tableBody = document.getElementById('exerciseTableBody');
+    if (!tableBody) return;
+    
+    // Confirmar antes de reemplazar ejercicios existentes
+    if (tableBody.children.length > 0) {
+        if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+            return;
+        }
+        tableBody.innerHTML = '';
+    }
+    
+    // Cargar ejercicios de la plantilla
+    template.exercises.forEach(exercise => {
+        addExerciseRow(exercise);
+    });
+    
+    showToast(`Plantilla "${template.name}" cargada`, "success");
+    
+    // Cerrar modal si es necesario
+    if (closeModal) {
+        document.getElementById('templatesModal').classList.remove('active');
+        setTimeout(() => {
+            document.getElementById('templatesModal').style.display = 'none';
+        }, 300);
+    }
+}
+
+// Guardar ejercicios actuales como plantilla
+function saveCurrentExercisesAsTemplate() {
+    const exercises = getExercisesData();
+    
+    if (exercises.length === 0) {
+        showToast("No hay ejercicios para guardar como plantilla", "error");
+        return;
+    }
+    
+    // Mostrar formulario de guardado
+    document.getElementById('saveTemplateForm').style.display = 'block';
+    document.getElementById('templateNameInput').focus();
+}
+
+// Confirmar guardado de plantilla
+function confirmSaveTemplate() {
+    const name = document.getElementById('templateNameInput').value.trim();
+    const category = document.getElementById('templateCategoryInput').value.trim();
+    
+    if (!name) {
+        showToast("Debe ingresar un nombre para la plantilla", "error");
+        return;
+    }
+    
+    const exercises = getExercisesData();
+    
+    // Generar ID único
+    const templateId = 'template_' + Date.now();
+    
+    // Crear objeto de plantilla
+    const newTemplate = {
+        id: templateId,
+        name: name,
+        category: category,
+        exercises: exercises,
+        createdAt: new Date().toISOString()
+    };
+    
+    // Añadir a la lista de plantillas
+    customTemplates.push(newTemplate);
+    
+    // Guardar en localStorage
+    saveCustomTemplates();
+    
+    // Ocultar formulario
+    document.getElementById('saveTemplateForm').style.display = 'none';
+    document.getElementById('templateNameInput').value = '';
+    document.getElementById('templateCategoryInput').value = '';
+    
+    showToast("Plantilla guardada correctamente", "success");
+}
+
+// Eliminar plantilla personalizada
+function deleteCustomTemplate(templateId) {
+    if (confirm('¿Está seguro que desea eliminar esta plantilla? Esta acción no se puede deshacer.')) {
+        customTemplates = customTemplates.filter(t => t.id !== templateId);
+        saveCustomTemplates();
+        showToast("Plantilla eliminada correctamente", "success");
+    }
+}
+
+// Editar plantilla personalizada (cargar y preparar para editar)
+function editCustomTemplate(templateId) {
+    // Primero cargar la plantilla
+    loadCustomTemplate(templateId, true);
+    
+    // Luego mostrar el formulario para guardar con los datos precargados
+    const template = customTemplates.find(t => t.id === templateId);
+    if (template) {
+        // Eliminar la plantilla original (será reemplazada)
+        customTemplates = customTemplates.filter(t => t.id !== templateId);
+        saveCustomTemplates();
+        
+        // Mostrar formulario con datos precargados
+        document.getElementById('templateNameInput').value = template.name;
+        document.getElementById('templateCategoryInput').value = template.category || '';
+        document.getElementById('saveTemplateForm').style.display = 'block';
+        
+        showToast("Plantilla cargada para editar", "info");
+    }
+}
+
+// Configurar eventos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar el sistema de plantillas personalizadas
+    const originalInitApp = initApp;
+    initApp = function() {
+        originalInitApp.apply(this, arguments).then(() => {
+            loadCustomTemplates();
+            
+            // Botón para abrir modal de plantillas
+            const manageTemplatesBtn = document.getElementById('manageTemplatesBtn');
+            if (manageTemplatesBtn) {
+                manageTemplatesBtn.addEventListener('click', function() {
+                    const modal = document.getElementById('templatesModal');
+                    if (modal) {
+                        modal.style.display = 'block';
+                        setTimeout(() => modal.classList.add('active'), 50);
+                    }
+                });
+            }
+            
+            // Botón para cerrar modal
+            const closeTemplatesModalBtn = document.getElementById('closeTemplatesModal');
+            if (closeTemplatesModalBtn) {
+                closeTemplatesModalBtn.addEventListener('click', function() {
+                    const modal = document.getElementById('templatesModal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.style.display = 'none', 300);
+                    }
+                });
+            }
+            
+            // Botón para guardar ejercicios actuales como plantilla
+            const saveCurrentAsTemplateBtn = document.getElementById('saveCurrentAsTemplateBtn');
+            if (saveCurrentAsTemplateBtn) {
+                saveCurrentAsTemplateBtn.addEventListener('click', saveCurrentExercisesAsTemplate);
+            }
+            
+            // Botón para confirmar guardado de plantilla
+            const confirmSaveTemplateBtn = document.getElementById('confirmSaveTemplateBtn');
+            if (confirmSaveTemplateBtn) {
+                confirmSaveTemplateBtn.addEventListener('click', confirmSaveTemplate);
+            }
+            
+            // Botón para cancelar guardado de plantilla
+            const cancelSaveTemplateBtn = document.getElementById('cancelSaveTemplateBtn');
+            if (cancelSaveTemplateBtn) {
+                cancelSaveTemplateBtn.addEventListener('click', function() {
+                    document.getElementById('saveTemplateForm').style.display = 'none';
+                    document.getElementById('templateNameInput').value = '';
+                    document.getElementById('templateCategoryInput').value = '';
+                });
+            }
+            
+            console.log("Sistema de plantillas personalizadas inicializado");
+        });
+    };
+});
     </script>
+
+    <!-- Modal para gestionar plantillas personalizadas -->
+<div class="modal-overlay" id="templatesModal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Gestionar plantillas de ejercicios</h2>
+            <button class="modal-close" id="closeTemplatesModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Mis plantillas guardadas</h3>
+                <button type="button" id="saveCurrentAsTemplateBtn" class="action-btn btn-primary">
+                    <i class="fas fa-plus"></i> Guardar ejercicios actuales
+                </button>
+            </div>
+            
+            <div id="savedTemplatesList" style="margin-bottom: 20px;">
+                <p style="color: var(--text-secondary); font-style: italic;">No hay plantillas personalizadas guardadas</p>
+            </div>
+            
+            <div id="saveTemplateForm" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 6px; margin-top: 20px;">
+                <h4 style="margin-top: 0;">Guardar como plantilla</h4>
+                <div class="form-group">
+                    <label class="form-label">Nombre de la plantilla</label>
+                    <input type="text" class="form-control" id="templateNameInput" placeholder="Ej: Mi rutina de hombro">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoría (opcional)</label>
+                    <input type="text" class="form-control" id="templateCategoryInput" placeholder="Ej: Rehabilitación, Fortalecimiento, etc.">
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button type="button" id="cancelSaveTemplateBtn" class="action-btn btn-secondary" style="margin-right: 10px;">Cancelar</button>
+                    <button type="button" id="confirmSaveTemplateBtn" class="action-btn btn-primary">Guardar plantilla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
