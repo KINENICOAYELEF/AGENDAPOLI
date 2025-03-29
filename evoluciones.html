@@ -3550,7 +3550,9 @@ async function testFirebase() {
     try {
         // Probar lectura intentando obtener colección
         const testCollection = collection(db, "patients");
-        const snapshot = await getDocs(query(testCollection, orderBy("createdAt", "desc"), orderBy("updatedAt", "desc")));
+        
+        // Simplificar consulta para evitar la necesidad de un índice compuesto
+        const snapshot = await getDocs(testCollection);
         
         console.log("Test de Firebase completado: Permisos de lectura OK");
         return true;
