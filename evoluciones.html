@@ -2489,16 +2489,31 @@
                         <input type="text" class="form-control" name="student" id="evolutionStudent" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Estado del paciente</label>
-                        <textarea class="form-control" rows="3" name="patientState" id="evolutionPatientState" required placeholder="Describa el estado actual del paciente, síntomas, molestias, etc."></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <label class="form-label required">Estado del paciente</label>
+                            <button type="button" class="btn-example" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px;" onclick="showPatientStateExample()">
+                                <i class="fas fa-lightbulb"></i> Ver ejemplo
+                            </button>
+                        </div>
+                        <textarea class="form-control" rows="3" name="patientState" id="evolutionPatientState" required placeholder="Describa síntomas actuales, localización e intensidad del dolor (0-10), cambios desde última sesión (mejor/igual/peor), actividades limitadas..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Tratamiento realizado</label>
-                        <textarea class="form-control" rows="3" name="treatment" id="evolutionTreatment" required placeholder="Detalle las técnicas y ejercicios realizados en la sesión"></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <label class="form-label required">Tratamiento realizado</label>
+                            <button type="button" class="btn-example" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px;" onclick="showTreatmentExample()">
+                                <i class="fas fa-lightbulb"></i> Ver ejemplo
+                            </button>
+                        </div>
+                        <textarea class="form-control" rows="3" name="treatment" id="evolutionTreatment" required placeholder="Especifique técnicas de terapia manual, ejercicios, agentes físicos, educación proporcionada..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label required">Respuesta al tratamiento</label>
-                        <textarea class="form-control" rows="3" name="response" id="evolutionResponse" required placeholder="Describa cómo respondió el paciente durante y después del tratamiento"></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <label class="form-label required">Respuesta al tratamiento</label>
+                            <button type="button" class="btn-example" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px;" onclick="showResponseExample()">
+                                <i class="fas fa-lightbulb"></i> Ver ejemplo
+                            </button>
+                        </div>
+                        <textarea class="form-control" rows="3" name="response" id="evolutionResponse" required placeholder="Describa respuesta inmediata, cambios en dolor/función, eventos adversos si hubiera..."></textarea>
                     </div>
 
                     <div class="accordion active">
@@ -6953,6 +6968,158 @@
                 showToast("Error crítico de inicialización: " + error.message, "error");
             });
         });
+
+
+        // Funciones para mostrar ejemplos
+function showPatientStateExample() {
+    const example = "Paciente refiere dolor lumbar de intensidad 6/10 en región L4-L5, con irradiación hacia EID°. Reporta mejoría desde última sesión (antes 8/10). Limitación para inclinarse hacia adelante y dificultad para permanecer sentado >30 minutos. Dolor aumenta al final del día y con actividades que implican flexión lumbar.";
+    
+    // Mostrar ejemplo en un modal pequeño
+    showExampleModal("Ejemplo de Estado del Paciente", example, "evolutionPatientState");
+}
+
+function showTreatmentExample() {
+    const example = "Terapia manual: Movilización de segmentos L4-L5, técnicas de presión isquémica en paravertebrales y piramidal derecho. Educación: posiciones durante el trabajo para el manejo sintomátologico.";
+    
+    showExampleModal("Ejemplo de Tratamiento", example, "evolutionTreatment");
+}
+
+function showResponseExample() {
+    const example = "Respuesta favorable durante sesión. Dolor disminuyó de 6/10 a 3/10 post-tratamiento. Mejoró ROM lumbar en flexión. Sin eventos adversos. Paciente refiere mayor sensación de estabilidad al caminar. Se observa disminución de tensión en musculatura paravertebral. Persistente limitación leve para movimientos rotacionales.";
+    
+    showExampleModal("Ejemplo de Respuesta al Tratamiento", example, "evolutionResponse");
+}
+
+// Función para mostrar el modal con ejemplo
+function showExampleModal(title, text, targetFieldId) {
+    // Crear modal para mostrar ejemplo
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'modal-overlay';
+    modalDiv.id = 'exampleModal';
+    modalDiv.style.zIndex = '2000';
+    
+    modalDiv.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">${title}</h2>
+                <button class="modal-close" onclick="document.getElementById('exampleModal').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>${text}</p>
+                <div style="margin-top: 15px; text-align: right;">
+                    <button class="action-btn btn-secondary" onclick="document.getElementById('exampleModal').remove()">Cerrar</button>
+                    <button class="action-btn btn-primary" onclick="useExample('${text}', '${targetFieldId}')">Usar este ejemplo</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modalDiv);
+    setTimeout(() => modalDiv.classList.add('active'), 50);
+}
+
+// Función para usar el ejemplo
+function useExample(text, fieldId) {
+    document.getElementById(fieldId).value = text;
+    document.getElementById('exampleModal').remove();
+}
+
+// Implementar comandos rápidos con "/texto"
+function setupCommandShortcuts() {
+    const fieldsToWatch = ['evolutionPatientState', 'evolutionTreatment', 'evolutionResponse'];
+    
+    fieldsToWatch.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+        
+        field.addEventListener('input', function(e) {
+            const text = this.value;
+            const cursorPosition = this.selectionStart;
+            
+            // Verificar si hay un comando "/" reciente
+            if (cursorPosition > 1 && text.charAt(cursorPosition - 1) === ' ' && text.substring(0, cursorPosition).includes('/')) {
+                // Encontrar el último comando
+                const lastCommandStart = text.substring(0, cursorPosition).lastIndexOf('/');
+                const command = text.substring(lastCommandStart, cursorPosition).trim();
+                
+                // Si el comando termina con espacio, procesar
+                if (command.length > 1 && text.charAt(cursorPosition - 1) === ' ') {
+                    const commandText = command.substring(1); // quitar el "/"
+                    let replacement = '';
+                    
+                    // Comandos para Estado del Paciente
+                    if (fieldId === 'evolutionPatientState') {
+                        switch(commandText) {
+                            case 'dolor':
+                                replacement = 'Dolor de intensidad [X]/10 en [región], caracterizado por [descripción]. ';
+                                break;
+                            case 'avance':
+                                replacement = 'Paciente refiere [mejoría/mantenimiento/empeoramiento] desde última sesión en [aspecto específico]. ';
+                                break;
+                            case 'limitacion':
+                                replacement = 'Presenta limitación funcional para [actividades específicas]. ';
+                                break;
+                        }
+                    }
+                    
+                    // Comandos para Tratamiento
+                    else if (fieldId === 'evolutionTreatment') {
+                        switch(commandText) {
+                            case 'manual':
+                                replacement = 'Terapia manual: [técnicas específicas aplicadas en región]. ';
+                                break;
+                            case 'agentes':
+                                replacement = 'Agentes físicos: [tipo] aplicado en [región] durante [tiempo] minutos. ';
+                                break;
+                            case 'educacion':
+                                replacement = 'Educación al paciente: [contenido específico enseñado]. ';
+                                break;
+                        }
+                    }
+                    
+                    // Comandos para Respuesta al tratamiento
+                    else if (fieldId === 'evolutionResponse') {
+                        switch(commandText) {
+                            case 'inmediata':
+                                replacement = 'Respuesta inmediata durante sesión: [descripción]. ';
+                                break;
+                            case 'eva':
+                                replacement = 'Dolor pre-tratamiento: [X]/10, post-tratamiento: [Y]/10. ';
+                                break;
+                            case 'adm':
+                                replacement = 'Amplitud de movimiento [aumentó/se mantuvo/disminuyó] en [dirección/plano]. ';
+                                break;
+                        }
+                    }
+                    
+                    // Si hay un reemplazo, aplicarlo
+                    if (replacement) {
+                        const newText = text.substring(0, lastCommandStart) + replacement + text.substring(cursorPosition);
+                        this.value = newText;
+                        // Posicionar cursor después del reemplazo
+                        const newPosition = lastCommandStart + replacement.length;
+                        this.setSelectionRange(newPosition, newPosition);
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Ejecutar la configuración cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Llamar a setupCommandShortcuts después de que se inicialice la app
+    const originalInitApp = initApp;
+    initApp = function() {
+        originalInitApp.apply(this, arguments).then(() => {
+            setupCommandShortcuts();
+            console.log("Comandos rápidos configurados");
+        });
+    };
+});
     </script>
 </body>
 </html>
