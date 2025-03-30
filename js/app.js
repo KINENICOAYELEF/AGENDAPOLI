@@ -2,6 +2,7 @@
 
 // app.js (actualizado)
 // Importar todos los módulos que necesitamos
+import './utils.js';
 import './firebase-config.js';
 import './data-services.js';
 import './ui-patients.js';
@@ -9,7 +10,6 @@ import './ui-evolutions.js';
 import './ui-diagnosis.js';
 import './ui-exercises.js';
 import './pdf-export.js';
-import './utils.js';
 import './navigation.js';
 
 // Continuar con el resto del código de app.js...
