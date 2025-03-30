@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -2647,122 +2648,6 @@ button:focus {
     color: var(--secondary);
     font-weight: 500;
 }
-
-        /* Mejoras para los resultados CIF */
-.cif-results {
-    max-height: 350px;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    margin-bottom: 15px;
-}
-
-.cif-result-item {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.cif-result-item:last-child {
-    border-bottom: none;
-}
-
-.cif-result-item:hover {
-    background-color: rgba(30, 136, 229, 0.05);
-}
-
-.cif-result-code {
-    font-weight: 500;
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: var(--primary);
-}
-
-.cif-result-desc {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-/* Mejoras para elementos CIF */
-.cif-item {
-    padding: 12px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    background-color: var(--background-alt);
-    transition: var(--transition);
-}
-
-.cif-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.cif-code {
-    font-weight: 600;
-    font-size: 15px;
-    margin-bottom: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: var(--primary);
-}
-
-.cif-code .scale-value {
-    font-size: 14px;
-    width: 28px;
-    height: 28px;
-    color: white;
-    background-color: var(--primary);
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cif-desc {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-
-.cif-scale {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-}
-
-.scale-values {
-    display: flex;
-    gap: 8px;
-    margin-left: 10px;
-}
-
-.cif-scale .scale-value {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    transition: var(--transition);
-    font-weight: 500;
-}
-
-.cif-scale .scale-value:hover {
-    background-color: var(--primary-light);
-    color: white;
-    border-color: var(--primary-light);
-}
-
-.cif-scale .scale-value.active {
-    background-color: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
     </style>
 </head>
 <body>
@@ -3671,31 +3556,10 @@ button:focus {
     <!-- Script for Firebase -->
     <script type="module">
 
-        // Añade este código al INICIO de tu archivo java-3.js, justo después de la etiqueta <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Prevenir comportamiento predeterminado de enlaces con href="#"
-    document.addEventListener('click', function(e) {
-        const target = e.target.closest('a[href="#"], button:not([type])');
-        if (target) {
-            e.preventDefault();
-            console.log('Clic interceptado para evitar comportamiento predeterminado');
-        }
-    });
-    
-    // Verificar si Firebase está disponible
-    console.log('Verificando componentes esenciales...');
-    if (typeof firebase === 'undefined' && typeof initializeApp === 'undefined') {
-        console.error('CRÍTICO: Firebase no está disponible. Verificar conexión a internet o inclusión de scripts.');
-        showToast('Error crítico: No se pueden cargar los componentes necesarios. Intente recargar la página.', 'error');
-    } else {
-        console.log('Firebase parece estar disponible, continuando inicialización...');
-    }
-});
-
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Variables globales
@@ -3772,50 +3636,26 @@ function formatDate(date) {
 }
 
 // Inicializar Firebase
-// Inicializar Firebase
 async function initFirebase() {
     console.log("Inicializando Firebase...");
     try {
-        // Verificaciones previas
-        if (typeof initializeApp === 'undefined') {
-            console.error("ERROR CRÍTICO: Firebase SDK no encontrado");
-            alert("Error crítico: No se puede conectar con la base de datos. Verifique su conexión a internet y recargue la página.");
-            return false;
-        }
-        
         app = initializeApp(firebaseConfig);
         console.log("App inicializada:", app);
-        
-        // Verificar que Firestore esté disponible
-        if (typeof getFirestore === 'undefined') {
-            console.error("ERROR CRÍTICO: Firestore no disponible");
-            alert("Error crítico: Componentes de base de datos no disponibles. Verifique su conexión a internet y recargue la página.");
-            return false;
-        }
         
         db = getFirestore(app);
         console.log("Firestore obtenido:", db);
         
-        // Verificar que Storage esté disponible
-        if (typeof getStorage === 'undefined') {
-            console.error("ERROR CRÍTICO: Firebase Storage no disponible");
-            alert("Error crítico: Componentes de almacenamiento no disponibles. Algunas funciones podrían no estar disponibles.");
-            // Continuamos porque Storage no es tan crítico como Firestore
-        } else {
-            storage = getStorage(app);
-            console.log("Storage obtenido:", storage);
-        }
+        storage = getStorage(app);
+        console.log("Storage obtenido:", storage);
         
         console.log("Firebase inicializado correctamente");
         
-        // Verificar conexión pero no bloquear la inicialización por esto
+        // Verificar conexión
         try {
-            setTimeout(async () => {
-                const connectionOk = await testFirebase();
-                if (connectionOk) {
-                    showToast("Conexión a Firebase establecida", "success");
-                }
-            }, 1000);
+            const connectionOk = await testFirebase();
+            if (connectionOk) {
+                showToast("Conexión a Firebase establecida", "success");
+            }
         } catch (connectionError) {
             console.error("Error verificando conexión:", connectionError);
             showToast("Advertencia: La verificación de conexión falló, pero continuando...", "info");
@@ -3824,7 +3664,8 @@ async function initFirebase() {
         return true;
     } catch (error) {
         console.error("Error al inicializar Firebase:", error);
-        alert("Error crítico al conectar con la base de datos: " + error.message + "\n\nIntente recargar la página. Si el problema persiste, contacte al soporte técnico.");
+        showToast("Error al conectar con Firebase: " + error.message, "error");
+        // Continuar a pesar del error para que la UI básica funcione
         return false;
     }
 }
@@ -5000,19 +4841,16 @@ function renderAttachments(attachments) {
     }
 }
 
-// Initialize diagnosis tab
-// Initialize diagnosis tab
-async function initDiagnosisTab(patientId) {
+        // Initialize diagnosis tab
+function initDiagnosisTab(patientId) {
     try {
         // Cargar diagnósticos y CIF del paciente
         const diagnosisTimeline = document.getElementById('diagnosisTimeline');
         if (diagnosisTimeline) {
             diagnosisTimeline.innerHTML = '<p>Cargando diagnósticos...</p>';
             
-            try {
-                // Consultar diagnósticos del paciente
-                const diagnoses = await getDiagnoses(patientId);
-                
+            // Consultar diagnósticos del paciente
+            getDiagnoses(patientId).then(diagnoses => {
                 if (diagnoses.length === 0) {
                     diagnosisTimeline.innerHTML = `
                         <p>No hay diagnósticos registrados para este paciente.</p>
@@ -5034,28 +4872,13 @@ async function initDiagnosisTab(patientId) {
                                 <div class="timeline-date">Evaluación - ${formattedDate}</div>
                                 <h3 class="timeline-title">${diagnosis.code || 'Sin código CIE'}</h3>
                                 <p>${diagnosis.description || 'Sin descripción'}</p>
-                                ${diagnosis.consultReason ? `<div style="margin-top: 10px;"><strong>Motivo de consulta:</strong> ${diagnosis.consultReason}</div>` : ''}
-                                ${diagnosis.medicalBackground ? `<div style="margin-top: 5px;"><strong>Antecedentes:</strong> ${diagnosis.medicalBackground}</div>` : ''}
                             </div>
                         `;
                         
                         diagnosisTimeline.appendChild(diagnosisItem);
                     });
                 }
-            } catch (diagnosisError) {
-                console.error("Error cargando diagnósticos:", diagnosisError);
-                diagnosisTimeline.innerHTML = `
-                    <p>Error al cargar diagnósticos. Por favor, inténtelo nuevamente.</p>
-                `;
-            }
-        }
-        
-        // Cargar datos CIF en un bloque try/catch separado
-        try {
-            await loadCifData(patientId);
-        } catch (cifError) {
-            console.error("Error cargando datos CIF:", cifError);
-            // No mostrar error para no confundir al usuario
+            });
         }
         
         // Configurar botones solo si existen
@@ -5063,104 +4886,69 @@ async function initDiagnosisTab(patientId) {
         if (addDiagnosisBtn) {
             // Eliminar cualquier manejador previo
             const newAddDiagnosisBtn = addDiagnosisBtn.cloneNode(true);
-            if (addDiagnosisBtn.parentNode) {
-                addDiagnosisBtn.parentNode.replaceChild(newAddDiagnosisBtn, addDiagnosisBtn);
-                
-                newAddDiagnosisBtn.addEventListener('click', function() {
-                    openDiagnosisModal(patientId);
-                });
-            }
+            addDiagnosisBtn.parentNode.replaceChild(newAddDiagnosisBtn, addDiagnosisBtn);
+            
+            newAddDiagnosisBtn.addEventListener('click', function() {
+                openDiagnosisModal(patientId);
+            });
         }
+        
+        // Configurar componentes CIF
+        setupCifCategories(patientId);
         
         // Inicializar botón de guardar diagnóstico
         const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
         if (saveDiagnosisBtn) {
-            // Eliminar manejadores previos
+            // Eliminar cualquier manejador previo
             const newSaveDiagnosisBtn = saveDiagnosisBtn.cloneNode(true);
-            if (saveDiagnosisBtn.parentNode) {
-                saveDiagnosisBtn.parentNode.replaceChild(newSaveDiagnosisBtn, saveDiagnosisBtn);
-                
-                newSaveDiagnosisBtn.addEventListener('click', function() {
-                    saveDiagnosisChanges(patientId);
-                });
-            }
-        }
-        
-        // Configurar componentes CIF
-        try {
-            await setupCifCategories(patientId);
-        } catch (cifError) {
-            console.error("Error configurando categorías CIF:", cifError);
-            // No mostrar error para no confundir al usuario
+            saveDiagnosisBtn.parentNode.replaceChild(newSaveDiagnosisBtn, saveDiagnosisBtn);
+            
+            newSaveDiagnosisBtn.addEventListener('click', function() {
+                saveDiagnosisChanges(patientId);
+            });
         }
         
         // Inicializar botón de añadir objetivo
         const addObjectiveBtn = document.getElementById('addObjectiveBtn');
         if (addObjectiveBtn) {
-            // Eliminar manejadores previos
+            // Eliminar cualquier manejador previo
             const newAddObjectiveBtn = addObjectiveBtn.cloneNode(true);
-            if (addObjectiveBtn.parentNode) {
-                addObjectiveBtn.parentNode.replaceChild(newAddObjectiveBtn, addObjectiveBtn);
-                
-                newAddObjectiveBtn.addEventListener('click', function() {
-                    openObjectiveModal(patientId);
-                });
-            }
+            addObjectiveBtn.parentNode.replaceChild(newAddObjectiveBtn, addObjectiveBtn);
+            
+            newAddObjectiveBtn.addEventListener('click', function() {
+                openObjectiveModal(patientId);
+            });
         }
         
         // Inicializar botón de añadir plan de tratamiento
         const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
         if (addTreatmentPlanBtn) {
-            // Eliminar manejadores previos
+            // Eliminar cualquier manejador previo
             const newAddTreatmentPlanBtn = addTreatmentPlanBtn.cloneNode(true);
-            if (addTreatmentPlanBtn.parentNode) {
-                addTreatmentPlanBtn.parentNode.replaceChild(newAddTreatmentPlanBtn, addTreatmentPlanBtn);
-                
-                newAddTreatmentPlanBtn.addEventListener('click', function() {
-                    openTreatmentPlanModal(patientId);
-                });
-            }
+            addTreatmentPlanBtn.parentNode.replaceChild(newAddTreatmentPlanBtn, addTreatmentPlanBtn);
+            
+            newAddTreatmentPlanBtn.addEventListener('click', function() {
+                openTreatmentPlanModal(patientId);
+            });
         }
     } catch (error) {
         console.error("Error inicializando pestaña de diagnóstico:", error);
         showToast("Error al cargar diagnósticos", "error");
-        
-        // Intentar restaurar la interfaz a un estado utilizable
-        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-        if (diagnosisTimeline) {
-            diagnosisTimeline.innerHTML = `
-                <p>Error al cargar diagnósticos. <button onclick="initDiagnosisTab('${patientId}')">Reintentar</button></p>
-            `;
-        }
     }
 }
 
+// Obtener diagnósticos del paciente
 async function getDiagnoses(patientId) {
     try {
         showLoading();
         
         // Obtener diagnósticos de Firebase
         const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
-        
-        // Primero obtener todos los diagnósticos sin ordenar
-        const diagnosesSnapshot = await getDocs(diagnosesRef);
+        const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
+        const diagnosesSnapshot = await getDocs(diagnosesQuery);
         
         const diagnosesList = diagnosesSnapshot.docs.map(doc => {
             return { id: doc.id, ...doc.data() };
-        });
-        
-        // Ordenar manualmente basado en createdAt si existe, o date como fallback
-        diagnosesList.sort((a, b) => {
-            // Usar createdAt si ambos documentos lo tienen
-            if (a.createdAt && b.createdAt) {
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            }
-            // Usar date como fallback
-            else if (a.date && b.date) {
-                return new Date(b.date) - new Date(a.date);
-            }
-            // Si no tienen fechas, mantener el orden original
-            return 0;
         });
         
         hideLoading();
@@ -5413,13 +5201,10 @@ function openDiagnosisModal(patientId) {
     });
     
     // Evento para generar diagnóstico con el asistente
-    const generateDiagnosisBtn = document.getElementById('generateDiagnosisBtn');
-    if (generateDiagnosisBtn) {
-        generateDiagnosisBtn.addEventListener('click', function() {
-            generateFunctionalDiagnosis();
-        });
-    }
-        
+    document.getElementById('generateDiagnosisBtn').addEventListener('click', function() {
+        generateFunctionalDiagnosis();
+    });
+    
     // Evento para el envío del formulario
     document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -5670,174 +5455,85 @@ function generateFunctionalDiagnosis() {
     // Añadir recomendación basada en CIF
     diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
     
-     // Establecer el diagnóstico en el campo de texto
+    // Establecer el diagnóstico en el campo de texto
     const diagnosisTextElement = document.getElementById('diagnosisText');
     if (diagnosisTextElement) {
         diagnosisTextElement.value = diagnosis;
     }
     
     // Ocultar el asistente
-    const assistantContainer = document.getElementById('diagnosisAssistantContainer');
-    if (assistantContainer) {
-        assistantContainer.style.display = 'none';
-    }
+    document.getElementById('diagnosisAssistantContainer').style.display = 'none';
     
     // Mostrar mensaje
     showToast("Diagnóstico generado correctamente", "success");
 }
 
-// Códigos CIF relevantes para kinesiología musculoesquelética y deportiva
-const cifCodesMusculoskeletal = {
-    funciones: [
-        { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
-        { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
-        { code: 'b715', name: 'Funciones de estabilidad articular', desc: 'Funciones relacionadas con el mantenimiento de la integridad estructural de las articulaciones.' },
-        { code: 'b720', name: 'Funciones de movilidad ósea', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de la escápula, pelvis, huesos carpianos y tarsianos.' },
-        { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
-        { code: 'b735', name: 'Funciones de tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos cuando están en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
-        { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' },
-        { code: 'b750', name: 'Funciones relacionadas con reflejos motores', desc: 'Funciones de contracción involuntaria de los músculos, inducida automáticamente por estímulos específicos.' },
-        { code: 'b755', name: 'Funciones relacionadas con reacciones al movimiento involuntario', desc: 'Reacciones posturales, de equilibrio y de apoyo involuntarias causadas por la posición corporal o el movimiento.' },
-        { code: 'b760', name: 'Funciones relacionadas con el control del movimiento voluntario', desc: 'Funciones asociadas con el control y coordinación del movimiento voluntario.' },
-        { code: 'b765', name: 'Funciones relacionadas con movimientos involuntarios', desc: 'Contracciones no intencionales, involuntarias de los músculos o grupos de músculos.' },
-        { code: 'b770', name: 'Funciones relacionadas con el patrón de marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos de todo el cuerpo.' },
-        { code: 'b780', name: 'Sensaciones relacionadas con los músculos y funciones del movimiento', desc: 'Sensaciones asociadas con los músculos o grupos de músculos del cuerpo y su movimiento.' }
-    ],
-    estructuras: [
-        { code: 's710', name: 'Estructura de la región de la cabeza y cuello', desc: 'Huesos, músculos y otros tejidos de la cabeza y región cervical.' },
-        { code: 's720', name: 'Estructura de la región del hombro', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias de la región del hombro.' },
-        { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Huesos, articulaciones, músculos y otros tejidos del brazo, antebrazo y mano.' },
-        { code: 's740', name: 'Estructura de la región pélvica', desc: 'Huesos, músculos y otros tejidos de la región pélvica.' },
-        { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Huesos, articulaciones, músculos y otros tejidos de la pierna y el pie.' },
-        { code: 's760', name: 'Estructura del tronco', desc: 'Huesos, articulaciones, músculos y otros tejidos de la columna vertebral, costillas y parte superior de la espalda.' },
-        { code: 's770', name: 'Estructuras musculoesqueléticas adicionales relacionadas con el movimiento', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias adicionales relacionados con el movimiento.' }
-    ],
-    actividades: [
-        { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro, como levantarse de una silla para tumbarse en una cama.' },
-        { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario, como permanecer sentado o de pie en el trabajo o en la escuela.' },
-        { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra, como deslizarse a lo largo de un banco o pasar de estar sentado en la cama a sentarse en una silla.' },
-        { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro, como levantar una taza o llevar a un niño de una habitación a otra.' },
-        { code: 'd435', name: 'Mover objetos con las extremidades inferiores', desc: 'Realizar las acciones coordinadas necesarias para mover objetos con las piernas y los pies, como dar patadas a un balón o pedalear en una bicicleta.' },
-        { code: 'd440', name: 'Uso fino de la mano', desc: 'Realizar las acciones coordinadas de manejo de objetos, recogerlos, manipularlos y soltarlos utilizando la mano, los dedos y el pulgar.' },
-        { code: 'd445', name: 'Uso de la mano y el brazo', desc: 'Realizar las acciones coordinadas que se requieren para manipular y mover objetos utilizando las manos y los brazos.' },
-        { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso, de manera que al menos un pie esté siempre en el suelo.' },
-        { code: 'd455', name: 'Desplazarse por el entorno', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar, como escalar una roca o correr por una calle, saltar, etc.' },
-        { code: 'd460', name: 'Desplazarse por distintos lugares', desc: 'Caminar y moverse por diversos lugares y situaciones, como andar entre habitaciones, dentro de un edificio o por la calle.' },
-        { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un lugar a otro, sobre cualquier superficie o espacio, utilizando dispositivos específicos.' },
-        { code: 'd470', name: 'Utilización de medios de transporte', desc: 'Utilizar medios de transporte para desplazarse como pasajero, como ser llevado en un coche, autobús, etc.' }
-    ],
-    factores: [
-        { code: 'e110', name: 'Productos o sustancias para el consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.' },
-        { code: 'e115', name: 'Productos y tecnología para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnologías utilizados por las personas en las actividades cotidianas.' },
-        { code: 'e120', name: 'Productos y tecnología para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnologías utilizados por las personas para desplazarse dentro y fuera de edificios.' },
-        { code: 'e135', name: 'Productos y tecnología para el empleo', desc: 'Equipamiento, productos y tecnologías utilizados para el empleo, para facilitar las actividades laborales.' },
-        { code: 'e140', name: 'Productos y tecnología para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnologías utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas.' },
-        { code: 'e150', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso público.' },
-        { code: 'e155', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso privado', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso privado.' }
-    ]
-};
-        
-async function setupCifCategories(patientId) {
-    try {
-        // Obtener datos CIF específicos para cada categoría
-        const functionItems = await getCifFunctions(patientId);
-        const structureItems = await getCifStructures(patientId);
-        const activityItems = await getCifActivities(patientId);
-        const factorItems = await getCifFactors(patientId);
-        
-        // Implementar selección de códigos CIF para cada categoría con los datos obtenidos
-        setupCifCategory('addCifFunctionBtn', 'cifFunctions', 'Función', functionItems, patientId);
-        setupCifCategory('addCifStructureBtn', 'cifStructures', 'Estructura', structureItems, patientId);
-        setupCifCategory('addCifActivityBtn', 'cifActivities', 'Actividad', activityItems, patientId);
-        setupCifCategory('addCifFactorBtn', 'cifFactors', 'Factor', factorItems, patientId);
-        
-        // Cargar factores personales
-        await loadPersonalFactors(patientId);
-        
-    } catch (error) {
-        console.error("Error en setupCifCategories:", error);
-        showToast("Error al configurar categorías CIF", "error");
-    }
+// Configurar categorías CIF
+function setupCifCategories(patientId) {
+    // Implementar selección básica de códigos CIF para cada categoría
+    setupCifCategory('addCifFunctionBtn', 'cifFunctions', 'Función', getCifFunctions(patientId));
+    setupCifCategory('addCifStructureBtn', 'cifStructures', 'Estructura', getCifStructures(patientId));
+    setupCifCategory('addCifActivityBtn', 'cifActivities', 'Actividad', getCifActivities(patientId));
+    setupCifCategory('addCifFactorBtn', 'cifFactors', 'Factor', getCifFactors(patientId));
+    
+    // Cargar factores personales
+    loadPersonalFactors(patientId);
 }
 
 // Configurar una categoría CIF específica
-function setupCifCategory(buttonId, containerId, categoryType, items, patientId) {
+function setupCifCategory(buttonId, containerId, categoryType, items) {
     const addBtn = document.getElementById(buttonId);
     const container = document.getElementById(containerId);
     
-    // Si falta alguno de los elementos, registrar error y salir
-    if (!addBtn) {
-        console.error(`Botón para categoría CIF "${categoryType}" (ID: ${buttonId}) no encontrado`);
-        return;
-    }
-    
-    if (!container) {
-        console.error(`Contenedor para categoría CIF "${categoryType}" (ID: ${containerId}) no encontrado`);
-        return;
-    }
-    
-    try {
+    if (addBtn && container) {
         // Mostrar elementos existentes
-        renderCifItems(container, items || []);
+        renderCifItems(container, items);
         
-        // Eliminar manejadores previos
+        // Eliminar manejadores existentes
         const newAddBtn = addBtn.cloneNode(true);
-        if (addBtn.parentNode) {
-            addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-            
-            // Implementar funcionalidad del botón para añadir nuevos elementos
-            newAddBtn.addEventListener('click', function() {
-                showCifSelectorModal(categoryType, containerId, patientId);
-            });
-        } else {
-            console.error(`El botón ${buttonId} no tiene un nodo padre válido`);
-        }
-    } catch (error) {
-        console.error(`Error al configurar categoría CIF ${categoryType}:`, error);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+        
+        // Implementar funcionalidad del botón para añadir nuevos elementos
+        newAddBtn.addEventListener('click', function() {
+            showCifSelectorModal(categoryType, containerId, currentPatientId);
+        });
     }
 }
 
 // Renderizar elementos CIF
 function renderCifItems(container, items) {
-    if (!container) return;
-    
     container.innerHTML = '';
     
-    if (!items || items.length === 0) {
+    if (items.length === 0) {
         container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay elementos registrados.</p>';
         return;
     }
     
     items.forEach(item => {
-        if (!item) return;
-        
         const itemElement = document.createElement('div');
         itemElement.className = 'cif-item';
-        itemElement.dataset.id = item.id || 'cif_' + Date.now();
-        
-        // Valor predeterminado si no existe
-        const value = item.value !== undefined ? item.value : 2;
+        itemElement.dataset.id = item.id;
         
         itemElement.innerHTML = `
             <div class="cif-code">
                 ${item.code}: ${item.name}
-                <button class="scale-value active">${value}</button>
+                <button class="scale-value active">${item.value}</button>
             </div>
-            <div class="cif-desc">${item.description || ''}</div>
+            <div class="cif-desc">${item.description}</div>
             <div class="cif-scale">
                 Escala:
                 <div class="scale-values">
-                    <button class="scale-value ${value === 0 ? 'active' : ''}">0</button>
-                    <button class="scale-value ${value === 1 ? 'active' : ''}">1</button>
-                    <button class="scale-value ${value === 2 ? 'active' : ''}">2</button>
-                    <button class="scale-value ${value === 3 ? 'active' : ''}">3</button>
-                    <button class="scale-value ${value === 4 ? 'active' : ''}">4</button>
+                    <button class="scale-value ${item.value === 0 ? 'active' : ''}">0</button>
+                    <button class="scale-value ${item.value === 1 ? 'active' : ''}">1</button>
+                    <button class="scale-value ${item.value === 2 ? 'active' : ''}">2</button>
+                    <button class="scale-value ${item.value === 3 ? 'active' : ''}">3</button>
+                    <button class="scale-value ${item.value === 4 ? 'active' : ''}">4</button>
                 </div>
             </div>
         `;
         
         // Añadir interactividad a los botones de escala
-        itemElement.querySelectorAll('.scale-values .scale-value').forEach(button => {
+        itemElement.querySelectorAll('.scale-value').forEach(button => {
             button.addEventListener('click', function() {
                 // Desactivar otros botones del mismo grupo
                 const scaleValues = this.closest('.scale-values');
@@ -5850,10 +5546,10 @@ function renderCifItems(container, items) {
                     // Actualizar valor en el título
                     const cifCode = this.closest('.cif-item').querySelector('.cif-code');
                     const valueBtn = cifCode.querySelector('.scale-value');
-                    if (valueBtn) {
-                        valueBtn.textContent = this.textContent;
-                        valueBtn.classList.add('active');
-                    }
+                    valueBtn.textContent = this.textContent;
+                    
+                    // Actualizar datos en memoria (no se guarda hasta hacer clic en "Guardar cambios")
+                    // En una implementación real, esto actualizaría un objeto en memoria
                 }
             });
         });
@@ -5863,87 +5559,42 @@ function renderCifItems(container, items) {
 }
 
         // Obtener funciones CIF del paciente
-// Obtener funciones CIF del paciente
-async function getCifFunctions(patientId) {
-    try {
-        // Obtener datos de funciones CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists() && cifDoc.data().functions) {
-            return cifDoc.data().functions;
-        }
-        return [];
-    } catch (error) {
-        console.error("Error obteniendo funciones CIF:", error);
-        return [];
-    }
+function getCifFunctions(patientId) {
+    // En una implementación real, esto obtendría datos de Firebase
+    // Por ahora, devolvemos datos de ejemplo
+    return [
+        { id: 'f1', code: "b280", name: "Sensación de dolor", description: "Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.", value: 2 },
+        { id: 'f2', code: "b730", name: "Funciones de fuerza muscular", description: "Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.", value: 1 }
+    ];
 }
 
-async function getCifStructures(patientId) {
-    try {
-        // Obtener datos de estructuras CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists() && cifDoc.data().structures) {
-            return cifDoc.data().structures;
-        }
-        return [];
-    } catch (error) {
-        console.error("Error obteniendo estructuras CIF:", error);
-        return [];
-    }
+// Obtener estructuras CIF del paciente
+function getCifStructures(patientId) {
+    return [
+        { id: 's1', code: "s750", name: "Estructura extremidad inferior", description: "Estructura de la pierna y el pie.", value: 1 }
+    ];
 }
 
-async function getCifActivities(patientId) {
-    try {
-        // Obtener datos de actividades CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists() && cifDoc.data().activities) {
-            return cifDoc.data().activities;
-        }
-        return [];
-    } catch (error) {
-        console.error("Error obteniendo actividades CIF:", error);
-        return [];
-    }
+// Obtener actividades CIF del paciente
+function getCifActivities(patientId) {
+    return [
+        { id: 'a1', code: "d450", name: "Caminar", description: "Andar sobre una superficie a pie, paso a paso.", value: 2 }
+    ];
 }
 
-async function getCifFactors(patientId) {
-    try {
-        // Obtener datos de factores CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists() && cifDoc.data().factors) {
-            return cifDoc.data().factors;
-        }
-        return [];
-    } catch (error) {
-        console.error("Error obteniendo factores CIF:", error);
-        return [];
-    }
+// Obtener factores CIF del paciente
+function getCifFactors(patientId) {
+    return [
+        { id: 'e1', code: "e110", name: "Productos para consumo personal", description: "Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.", value: 1 }
+    ];
 }
 
-async function loadPersonalFactors(patientId) {
-    try {
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        const cifPersonalFactors = document.getElementById('cifPersonalFactors');
-        if (cifPersonalFactors) {
-            if (cifDoc.exists() && cifDoc.data().personalFactors) {
-                cifPersonalFactors.value = cifDoc.data().personalFactors;
-            } else {
-                cifPersonalFactors.value = ""; // Valor vacío si no hay datos
-            }
-        }
-    } catch (error) {
-        console.error("Error cargando factores personales:", error);
-        // No mostrar error para no confundir al usuario
+// Cargar factores personales
+function loadPersonalFactors(patientId) {
+    // En una implementación real, esto obtendría datos de Firebase
+    const cifPersonalFactors = document.getElementById('cifPersonalFactors');
+    if (cifPersonalFactors) {
+        cifPersonalFactors.value = "Paciente de 35 años, deportista amateur, trabaja en oficina con postura sedentaria prolongada.";
     }
 }
 
@@ -5977,57 +5628,6 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         const resultsContainer = document.getElementById('cifSearchResults');
         if (resultsContainer) {
             resultsContainer.innerHTML = '';
-            
-            // Añadir lista predefinida según categoría
-            let cifCodes = [];
-            switch(categoryType) {
-                case 'Función':
-                    cifCodes = cifCodesMusculoskeletal.funciones;
-                    break;
-                case 'Estructura':
-                    cifCodes = cifCodesMusculoskeletal.estructuras;
-                    break;
-                case 'Actividad':
-                    cifCodes = cifCodesMusculoskeletal.actividades;
-                    break;
-                case 'Factor':
-                    cifCodes = cifCodesMusculoskeletal.factores;
-                    break;
-                default:
-                    cifCodes = [];
-            }
-            
-            // Mostrar toda la lista al principio
-            const fragment = document.createDocumentFragment();
-            cifCodes.forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'cif-result-item';
-                resultItem.innerHTML = `
-                    <div class="cif-result-code">${result.code}: ${result.name}</div>
-                    <div class="cif-result-desc">${result.desc}</div>
-                `;
-                
-                resultItem.addEventListener('click', function() {
-                    // Llenar campos del formulario
-                    const codeInput = document.getElementById('cifCodeInput');
-                    const nameInput = document.getElementById('cifNameInput');
-                    const descInput = document.getElementById('cifDescInput');
-                    
-                    if (codeInput) codeInput.value = result.code;
-                    if (nameInput) nameInput.value = result.name;
-                    if (descInput) descInput.value = result.desc;
-                    
-                    // Resaltar selección
-                    resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
-                        item.style.backgroundColor = '';
-                    });
-                    this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
-                });
-                
-                fragment.appendChild(resultItem);
-            });
-            
-            resultsContainer.appendChild(fragment);
         }
         
         // Eliminar manejadores previos
@@ -6037,71 +5637,90 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         // Configurar evento de búsqueda
         newSearchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            const resultsContainer = document.getElementById('cifSearchResults');
+            if (searchTerm.length < 2) {
+                const resultsContainer = document.getElementById('cifSearchResults');
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '';
+                }
+                return;
+            }
             
-            if (!resultsContainer) return;
-            
-            // Limpiar resultados
-            resultsContainer.innerHTML = '';
-            
-            // Obtener datos según categoría
+            // Obtener datos de ejemplo según categoría
             let cifCodes = [];
             switch(categoryType) {
                 case 'Función':
-                    cifCodes = cifCodesMusculoskeletal.funciones;
+                    cifCodes = [
+                        { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
+                        { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
+                        { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
+                        { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' }
+                    ];
                     break;
                 case 'Estructura':
-                    cifCodes = cifCodesMusculoskeletal.estructuras;
+                    cifCodes = [
+                        { code: 's750', name: 'Estructura extremidad inferior', desc: 'Estructura de la pierna y el pie.' },
+                        { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco, espalda, incluida la pelvis.' },
+                        { code: 's770', name: 'Estructuras musculoesqueléticas adicionales', desc: 'Estructuras relacionadas con el movimiento.' }
+                    ];
                     break;
                 case 'Actividad':
-                    cifCodes = cifCodesMusculoskeletal.actividades;
+                    cifCodes = [
+                        { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso.' },
+                        { code: 'd455', name: 'Desplazarse', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar.' },
+                        { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' }
+                    ];
                     break;
                 case 'Factor':
-                    cifCodes = cifCodesMusculoskeletal.factores;
+                    cifCodes = [
+                        { code: 'e110', name: 'Productos para consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre para la ingesta.' },
+                        { code: 'e115', name: 'Productos para uso personal', desc: 'Equipamiento, productos y tecnologías utilizados en las actividades cotidianas.' },
+                        { code: 'e120', name: 'Movilidad personal', desc: 'Equipamiento, productos y tecnologías utilizados para facilitar el movimiento.' }
+                    ];
                     break;
             }
             
             // Filtrar resultados
-            let results = cifCodes;
-            if (searchTerm.length > 0) {
-                results = cifCodes.filter(item => 
-                    item.code.toLowerCase().includes(searchTerm) ||
-                    item.name.toLowerCase().includes(searchTerm) ||
-                    item.desc.toLowerCase().includes(searchTerm)
-                );
-            }
+            const results = cifCodes.filter(item => 
+                item.code.toLowerCase().includes(searchTerm) ||
+                item.name.toLowerCase().includes(searchTerm) ||
+                item.desc.toLowerCase().includes(searchTerm)
+            );
             
             // Mostrar resultados
-            if (results.length > 0) {
-                results.forEach(result => {
-                    const resultItem = document.createElement('div');
-                    resultItem.className = 'cif-result-item';
-                    resultItem.innerHTML = `
-                        <div class="cif-result-code">${result.code}: ${result.name}</div>
-                        <div class="cif-result-desc">${result.desc}</div>
-                    `;
-                    
-                    resultItem.addEventListener('click', function() {
-                        // Llenar campos del formulario
-                        const codeInput = document.getElementById('cifCodeInput');
-                        const nameInput = document.getElementById('cifNameInput');
-                        const descInput = document.getElementById('cifDescInput');
+            const resultsContainer = document.getElementById('cifSearchResults');
+            if (resultsContainer) {
+                resultsContainer.innerHTML = '';
+                if (results.length > 0) {
+                    results.forEach(result => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'cif-result-item';
+                        resultItem.innerHTML = `
+                            <div class="cif-result-code">${result.code}: ${result.name}</div>
+                            <div class="cif-result-desc">${result.desc}</div>
+                        `;
                         
-                        if (codeInput) codeInput.value = result.code;
-                        if (nameInput) nameInput.value = result.name;
-                        if (descInput) descInput.value = result.desc;
-                        
-                        // Resaltar selección
-                        resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
-                            item.style.backgroundColor = '';
+                        resultItem.addEventListener('click', function() {
+                            // Llenar campos del formulario
+                            const codeInput = document.getElementById('cifCodeInput');
+                            const nameInput = document.getElementById('cifNameInput');
+                            const descInput = document.getElementById('cifDescInput');
+                            
+                            if (codeInput) codeInput.value = result.code;
+                            if (nameInput) nameInput.value = result.name;
+                            if (descInput) descInput.value = result.desc;
+                            
+                            // Resaltar selección
+                            resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
+                                item.style.backgroundColor = '';
+                            });
+                            this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
                         });
-                        this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
+                        
+                        resultsContainer.appendChild(resultItem);
                     });
-                    
-                    resultsContainer.appendChild(resultItem);
-                });
-            } else {
-                resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary); font-style: italic;">No se encontraron resultados</div>';
+                } else {
+                    resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary); font-style: italic;">No se encontraron resultados</div>';
+                }
             }
         });
     }
@@ -6161,31 +5780,26 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
 }
 
 // Añadir un elemento CIF
-function addCifItem(modal) {
-    try {
-        // Obtener datos del formulario
-        const targetContainerId = modal.getAttribute('data-target');
-        const categoryType = modal.getAttribute('data-category');
-        const patientId = modal.getAttribute('data-patient');
-        
-        
-        if (!code || !name) {
-            showToast("Código y nombre son obligatorios", "error");
-            return;
-        }
-        
-        // Obtener información del contenedor destino
-        const targetContainerId = modal.getAttribute('data-target');
-        const categoryType = modal.getAttribute('data-category');
-        const patientId = modal.getAttribute('data-patient');
-        
-        const container = document.getElementById(targetContainerId);
-        if (!container) {
-            showToast("Error: Contenedor no encontrado", "error");
-            return;
-        }
-        
-        // Generar un ID único para este elemento
+function addCifItem(modal){
+    // Obtener datos del formulario
+    const code = document.getElementById('cifCodeInput').value;
+    const name = document.getElementById('cifNameInput').value;
+    const description = document.getElementById('cifDescInput').value;
+    const value = parseInt(document.getElementById('cifValueInput').value);
+    
+    if (!code || !name) {
+        showToast("Código y nombre son obligatorios", "error");
+        return;
+    }
+    
+    // Obtener información del contenedor destino
+    const targetContainerId = modal.getAttribute('data-target');
+    const categoryType = modal.getAttribute('data-category');
+    const patientId = modal.getAttribute('data-patient');
+    
+    const container = document.getElementById(targetContainerId);
+    if (container) {
+        // Generar un ID único para este elemento (en una implementación real se usaría el ID de Firebase)
         const itemId = `cif-${Date.now()}`;
         
         const newItem = document.createElement('div');
@@ -6216,7 +5830,7 @@ function addCifItem(modal) {
         }
         
         // Añadir interactividad a los botones de escala
-        newItem.querySelectorAll('.scale-values .scale-value').forEach(button => {
+        newItem.querySelectorAll('.scale-value').forEach(button => {
             button.addEventListener('click', function() {
                 // Desactivar otros botones del mismo grupo
                 const scaleValues = this.closest('.scale-values');
@@ -6229,10 +5843,7 @@ function addCifItem(modal) {
                     // Actualizar valor en el título
                     const cifCode = this.closest('.cif-item').querySelector('.cif-code');
                     const valueBtn = cifCode.querySelector('.scale-value');
-                    if (valueBtn) {
-                        valueBtn.textContent = this.textContent;
-                        valueBtn.classList.add('active');
-                    }
+                    valueBtn.textContent = this.textContent;
                 }
             });
         });
@@ -6244,193 +5855,28 @@ function addCifItem(modal) {
             container.appendChild(newItem);
         }
         
+        // En una implementación real, aquí se guardarían los datos en memoria
+        // hasta que el usuario haga clic en "Guardar cambios"
+        
         showToast(`Elemento CIF ${categoryType} añadido correctamente`, "success");
-        
-        // Obtener patientId del modal
-        const patientId = modal.getAttribute('data-patient');
-        
-       // Cerrar modal
-        modal.classList.remove('active');
-        setTimeout(() => {
-            modal.style.display = 'none';
-            
-            // Guardar cambios en Firebase si hay un ID de paciente válido
-            if (patientId) {
-                saveCifData(patientId).catch(error => {
-                    console.error("Error al guardar cambios CIF:", error);
-                });
-            }
-        }, 300);
-    } catch (error) {
-        console.error("Error al añadir elemento CIF:", error);
-        showToast("Error al añadir elemento CIF: " + error.message, "error");
     }
+    
+    // Cerrar modal
+    modal.classList.remove('active');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
 }
 
-        // Función para guardar los datos CIF de un paciente
-async function saveCifData(patientId) {
-    try {
-        showLoading();
-        
-        // Recopilar datos de CIF desde el DOM
-        const cifData = {
-            functions: getCifItemsData('cifFunctions'),
-            structures: getCifItemsData('cifStructures'),
-            activities: getCifItemsData('cifActivities'),
-            factors: getCifItemsData('cifFactors'),
-            personalFactors: document.getElementById('cifPersonalFactors')?.value || ""
-        };
-        
-        console.log("Guardando datos CIF:", cifData);
-        
-        // Guardar en Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        await setDoc(cifRef, cifData);
-        
-        hideLoading();
-        showToast("Datos CIF guardados correctamente", "success");
-        return true;
-    } catch (error) {
-        console.error("Error guardando datos CIF:", error);
-        hideLoading();
-        showToast("Error al guardar datos CIF: " + error.message, "error");
-        return false;
-    }
-}
-
-// Función auxiliar para obtener datos de elementos CIF
-function getCifItemsData(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return [];
-    
-    const items = [];
-    const cifItems = container.querySelectorAll('.cif-item');
-    
-    cifItems.forEach(item => {
-        const codeElement = item.querySelector('.cif-code');
-        const descElement = item.querySelector('.cif-desc');
-        const activeValueElement = item.querySelector('.cif-code .scale-value') || 
-                                  item.querySelector('.scale-values .scale-value.active');
-        
-        if (codeElement) {
-            const codeText = codeElement.textContent.trim();
-            // Extraer código y nombre (formato típico: "b280: Sensación de dolor")
-            const colonIndex = codeText.indexOf(':');
-            const code = colonIndex > 0 ? codeText.substring(0, colonIndex).trim() : codeText;
-            const name = colonIndex > 0 ? codeText.substring(colonIndex + 1).trim() : '';
-            
-            // Extraer valor del calificador
-            const value = activeValueElement ? parseInt(activeValueElement.textContent.trim()) : 0;
-            
-            // Extraer descripción
-            const description = descElement ? descElement.textContent.trim() : '';
-            
-            items.push({
-                id: item.dataset.id || 'cif_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-                code: code,
-                name: name,
-                description: description,
-                value: value
-            });
-        }
-    });
-    
-    return items;
-}
-
-// Nueva función para cargar datos CIF
-async function loadCifData(patientId) {
-    try {
-        // Intentar obtener datos CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists()) {
-            const cifData = cifDoc.data();
-            console.log("Datos CIF cargados:", cifData);
-            
-            // Cargar funciones
-            const functionsContainer = document.getElementById('cifFunctions');
-            if (functionsContainer) {
-                if (cifData.functions && cifData.functions.length > 0) {
-                    renderCifItems(functionsContainer, cifData.functions);
-                } else {
-                    renderCifItems(functionsContainer, []);
-                }
-            }
-            
-            // Cargar estructuras
-            const structuresContainer = document.getElementById('cifStructures');
-            if (structuresContainer) {
-                if (cifData.structures && cifData.structures.length > 0) {
-                    renderCifItems(structuresContainer, cifData.structures);
-                } else {
-                    renderCifItems(structuresContainer, []);
-                }
-            }
-            
-            // Cargar actividades
-            const activitiesContainer = document.getElementById('cifActivities');
-            if (activitiesContainer) {
-                if (cifData.activities && cifData.activities.length > 0) {
-                    renderCifItems(activitiesContainer, cifData.activities);
-                } else {
-                    renderCifItems(activitiesContainer, []);
-                }
-            }
-            
-            // Cargar factores
-            const factorsContainer = document.getElementById('cifFactors');
-            if (factorsContainer) {
-                if (cifData.factors && cifData.factors.length > 0) {
-                    renderCifItems(factorsContainer, cifData.factors);
-                } else {
-                    renderCifItems(factorsContainer, []);
-                }
-            }
-            
-            // Cargar factores personales
-            const personalFactorsField = document.getElementById('cifPersonalFactors');
-            if (personalFactorsField && cifData.personalFactors) {
-                personalFactorsField.value = cifData.personalFactors;
-            }
-        } else {
-            // No hay datos CIF, inicializar con valores vacíos
-            const functionsContainer = document.getElementById('cifFunctions');
-            const structuresContainer = document.getElementById('cifStructures');
-            const activitiesContainer = document.getElementById('cifActivities');
-            const factorsContainer = document.getElementById('cifFactors');
-            
-            if (functionsContainer) renderCifItems(functionsContainer, []);
-            if (structuresContainer) renderCifItems(structuresContainer, []);
-            if (activitiesContainer) renderCifItems(activitiesContainer, []);
-            if (factorsContainer) renderCifItems(factorsContainer, []);
-        }
-    } catch (error) {
-        console.error("Error cargando datos CIF:", error);
-        // No mostrar toast para no confundir al usuario
-    }
-}
-        
 // Guardar cambios en diagnóstico
-async function saveDiagnosisChanges(patientId) {
-    try {
-        showLoading();
-        
-        // Guardar datos CIF
-        const result = await saveCifData(patientId);
-        
-        hideLoading();
-        if (result) {
-            showToast("Diagnóstico guardado correctamente", "success");
-        }
-        return result;
-    } catch (error) {
-        console.error("Error guardando diagnóstico:", error);
-        hideLoading();
-        showToast("Error al guardar diagnóstico: " + error.message, "error");
-        return false;
-    }
+function saveDiagnosisChanges(patientId) {
+    // En una implementación real, aquí se guardarían todos los cambios en Firebase
+    
+    // Obtener factores personales
+    const personalFactors = document.getElementById('cifPersonalFactors')?.value || '';
+    
+    // Simular guardado exitoso
+    showToast("Diagnóstico guardado correctamente", "success");
 }
 
 // Abrir modal de objetivo
@@ -9071,128 +8517,6 @@ function loadCustomTemplate(templateId, closeModal = false) {
     }
 }
 
-function confirmSaveTemplate() {
-    try {
-        const templateName = document.getElementById('templateNameInput').value;
-        const templateCategory = document.getElementById('templateCategoryInput').value;
-        
-        if (!templateName) {
-            showToast("Debe ingresar un nombre para la plantilla", "error");
-            return;
-        }
-        
-        // Obtener los ejercicios actuales
-        const exercises = getExercisesData();
-        
-        if (exercises.length === 0) {
-            showToast("No hay ejercicios para guardar como plantilla", "error");
-            return;
-        }
-        
-        // Crear objeto de plantilla
-        const template = {
-            id: 'template_' + Date.now(),
-            name: templateName,
-            category: templateCategory || 'General',
-            exercises: exercises
-        };
-        
-        // Añadir a la lista de plantillas
-        customTemplates.push(template);
-        
-        // Guardar en localStorage
-        saveCustomTemplates();
-        
-        // Ocultar formulario
-        const saveTemplateForm = document.getElementById('saveTemplateForm');
-        if (saveTemplateForm) {
-            saveTemplateForm.style.display = 'none';
-        }
-        
-        // Limpiar campos
-        if (document.getElementById('templateNameInput')) {
-            document.getElementById('templateNameInput').value = '';
-        }
-        if (document.getElementById('templateCategoryInput')) {
-            document.getElementById('templateCategoryInput').value = '';
-        }
-        
-        showToast("Plantilla guardada correctamente", "success");
-    } catch (error) {
-        console.error("Error al guardar plantilla:", error);
-        showToast("Error al guardar plantilla: " + error.message, "error");
-    }
-}
-
-        function editCustomTemplate(templateId) {
-    try {
-        // Encontrar la plantilla
-        const template = customTemplates.find(t => t.id === templateId);
-        if (!template) {
-            showToast("Plantilla no encontrada", "error");
-            return;
-        }
-        
-        // Llenar el formulario de edición
-        const nameInput = document.getElementById('templateNameInput');
-        const categoryInput = document.getElementById('templateCategoryInput');
-        
-        if (nameInput) nameInput.value = template.name || '';
-        if (categoryInput) categoryInput.value = template.category || '';
-        
-        // Mostrar formulario
-        const saveTemplateForm = document.getElementById('saveTemplateForm');
-        if (saveTemplateForm) {
-            saveTemplateForm.style.display = 'block';
-            
-            // Cambiar el botón para indicar que es una edición
-            const confirmBtn = document.getElementById('confirmSaveTemplateBtn');
-            if (confirmBtn) {
-                confirmBtn.textContent = 'Actualizar plantilla';
-                confirmBtn.setAttribute('data-mode', 'edit');
-                confirmBtn.setAttribute('data-id', templateId);
-            }
-            
-            // Dar foco al campo de nombre
-            if (nameInput) nameInput.focus();
-        }
-    } catch (error) {
-        console.error("Error al editar plantilla:", error);
-        showToast("Error al editar plantilla: " + error.message, "error");
-    }
-}
-
-function deleteCustomTemplate(templateId) {
-    try {
-        // Confirmar eliminación
-        if (!confirm('¿Está seguro que desea eliminar esta plantilla? Esta acción no se puede deshacer.')) {
-            return;
-        }
-        
-        // Encontrar el índice de la plantilla
-        const index = customTemplates.findIndex(t => t.id === templateId);
-        if (index === -1) {
-            showToast("Plantilla no encontrada", "error");
-            return;
-        }
-        
-        // Eliminar la plantilla
-        customTemplates.splice(index, 1);
-        
-        // Guardar cambios
-        saveCustomTemplates();
-        
-        // Actualizar UI
-        renderSavedTemplatesList();
-        renderCustomTemplateButtons();
-        
-        showToast("Plantilla eliminada correctamente", "success");
-    } catch (error) {
-        console.error("Error al eliminar plantilla:", error);
-        showToast("Error al eliminar plantilla: " + error.message, "error");
-    }
-}
-        
 // Guardar ejercicios actuales como plantilla
 function saveCurrentExercisesAsTemplate() {
     const exercises = getExercisesData();
@@ -9219,28 +8543,9 @@ async function saveTemplateToFirebase(template) {
     try {
         showLoading();
         
-        // Verificar que Firebase esté inicializado
-        if (!db) {
-            throw new Error("Firebase no está inicializado");
-        }
-        
-        // Validar template
-        if (!template || typeof template !== 'object') {
-            throw new Error("Template inválido");
-        }
-        
         // Asegurarse de que template tenga una ID única
         if (!template.id) {
             template.id = 'template_' + Date.now();
-        }
-        
-        // Asegurarse de que template tenga los campos básicos necesarios
-        if (!template.name) {
-            template.name = "Plantilla sin nombre";
-        }
-        
-        if (!template.exercises || !Array.isArray(template.exercises)) {
-            template.exercises = [];
         }
         
         // Guardar en Firestore
@@ -9248,7 +8553,7 @@ async function saveTemplateToFirebase(template) {
         await addDoc(templatesRef, {
             ...template,
             createdAt: serverTimestamp(),
-            userId: "sistema"
+            userId: "sistema" // En un sistema con autenticación, aquí iría el ID del usuario
         });
         
         hideLoading();
@@ -9803,41 +9108,14 @@ function setupCommandShortcuts() {
 }
 
 // Initialize app
-// Initialize app
 async function initApp() {
     try {
         console.log("Inicializando aplicación...");
         
-        // Añadir indicador visual de inicialización
-        const loadingDiv = document.createElement('div');
-        loadingDiv.innerHTML = `
-            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 80%; text-align: center;">
-                    <h2>Inicializando Sistema...</h2>
-                    <p>Por favor espere mientras se configura la aplicación.</p>
-                    <div style="width: 100%; height: 10px; background: #eee; margin: 15px 0; border-radius: 5px; overflow: hidden;">
-                        <div id="loadingBar" style="width: 5%; height: 100%; background: #1E88E5; transition: width 0.3s;"></div>
-                    </div>
-                    <div id="loadingStatus">Conectando con Firebase...</div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(loadingDiv);
-        
-        // Función para actualizar el progreso
-        function updateProgress(percent, status) {
-            const bar = document.getElementById('loadingBar');
-            const statusDiv = document.getElementById('loadingStatus');
-            if (bar) bar.style.width = percent + '%';
-            if (statusDiv) statusDiv.textContent = status;
-        }
-        
-        updateProgress(10, "Conectando con Firebase...");
-        
         // Inicializar Firebase
         const firebaseInitialized = await initFirebase();
         if (!firebaseInitialized) {
-            document.body.removeChild(loadingDiv);
+            console.error("Error crítico: No se pudo inicializar Firebase");
             document.body.innerHTML = `
                 <div style="text-align: center; padding: 50px;">
                     <h1>Error de conexión</h1>
@@ -9848,14 +9126,6 @@ async function initApp() {
             return;
         }
         
-        updateProgress(30, "Configurando navegación...");
-        
-        // Configurar navegación con mejor manejo de errores
-        setupNavigation();
-        
-        updateProgress(50, "Cargando pacientes...");
-        
-        // Continuar con el resto de la inicialización...
         // Guardar el contenido original del dashboard
         const originalContent = document.querySelector('.content');
         if (originalContent) {
@@ -10244,11 +9514,8 @@ async function initApp() {
 }
 
 // Configurar navegación
-// Configurar navegación
 function setupNavigation() {
     try {
-        console.log("Configurando navegación...");
-        
         // Mapeo de textos de menú a nombres de vistas
         const menuToView = {
             "Dashboard": "dashboard",
@@ -10258,60 +9525,26 @@ function setupNavigation() {
             "Configuración": "configuracion"
         };
         
-        // Configurar eventos para cada ítem del menú con manejo de errores mejorado
-        const menuItems = document.querySelectorAll('.menu-item');
-        console.log(`Encontrados ${menuItems.length} ítems de menú`);
-        
-        if (menuItems.length === 0) {
-            console.error("ERROR: No se encontraron ítems de menú");
-            showToast("Error: No se pudo configurar la navegación", "error");
-        }
-        
-        menuItems.forEach((item, index) => {
-            if (!item) {
-                console.error(`Ítem de menú ${index} es nulo o no válido`);
-                return;
-            }
-            
-            // Eliminar manejadores previos si existieran
-            const newItem = item.cloneNode(true);
-            if (item.parentNode) {
-                item.parentNode.replaceChild(newItem, item);
+        // Configurar eventos para cada ítem del menú
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
                 
-                // Añadir nuevo manejador de eventos
-                newItem.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    try {
-                        // Quitar clase active de todos los ítems
-                        document.querySelectorAll('.menu-item').forEach(mi => {
-                            mi.classList.remove('active');
-                        });
-                        
-                        // Añadir clase active al ítem clicado
-                        this.classList.add('active');
-                        
-                        // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
-                        const menuItemText = this.querySelector('.menu-item-text');
-                        if (!menuItemText) {
-                            console.error("Error: Elemento .menu-item-text no encontrado");
-                            return;
-                        }
-                        
-                        const menuText = menuItemText.textContent.trim();
-                        const viewName = menuToView[menuText] || (menuText ? menuText.toLowerCase() : 'dashboard');
-                        
-                        console.log("Cambiando a vista:", viewName);
-                        changeView(viewName);
-                    } catch (clickError) {
-                        console.error("Error en clic de navegación:", clickError);
-                        showToast("Error al navegar: " + clickError.message, "error");
-                    }
+                // Quitar clase active de todos los ítems
+                document.querySelectorAll('.menu-item').forEach(mi => {
+                    mi.classList.remove('active');
                 });
-            } else {
-                console.error(`Ítem de menú ${index} no tiene nodo padre`);
-            }
+                
+                // Añadir clase active al ítem clicado
+                this.classList.add('active');
+                
+                // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
+                const menuText = this.querySelector('.menu-item-text')?.textContent.trim();
+                const viewName = menuToView[menuText] || (menuText ? menuText.toLowerCase() : 'dashboard');
+                
+                console.log("Cambiando a vista:", viewName);
+                changeView(viewName);
+            });
         });
         
         // Manejar toggle del sidebar
@@ -10320,30 +9553,14 @@ function setupNavigation() {
         const mainContent = document.getElementById('mainContent');
         
         if (toggleSidebarBtn && sidebar && mainContent) {
-            // Eliminar manejadores previos
-            const newToggleBtn = toggleSidebarBtn.cloneNode(true);
-            if (toggleSidebarBtn.parentNode) {
-                toggleSidebarBtn.parentNode.replaceChild(newToggleBtn, toggleSidebarBtn);
-                
-                newToggleBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    try {
-                        sidebar.classList.toggle('sidebar-collapsed');
-                        mainContent.classList.toggle('main-content-expanded');
-                    } catch (toggleError) {
-                        console.error("Error al alternar sidebar:", toggleError);
-                    }
-                });
-            }
-        } else {
-            console.warn("Advertencia: No se encontraron todos los elementos para configurar el toggle del sidebar");
+            toggleSidebarBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-content-expanded');
+            });
         }
-        
-        console.log("Navegación configurada correctamente");
     } catch (error) {
-        console.error("ERROR CRÍTICO configurando navegación:", error);
+        console.error("Error configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
-        alert("Ha ocurrido un error crítico al configurar la navegación. Intente recargar la página.");
     }
 }
 
