@@ -1,74 +1,58 @@
-// firebase-config.js
-// Configuración e inicialización de Firebase
-
-// Exportar variables de Firebase para usarlas en otros módulos
-export let app, db, storage;
-
-// Configuración de Firebase
-export const firebaseConfig = {
-    apiKey: "AIzaSyDD1kjbOr566240HrDtWi5egah47kGZLvQ",
-    authDomain: "evoluciones-poli.firebaseapp.com",
-    projectId: "evoluciones-poli",
-    storageBucket: "evoluciones-poli.appspot.com",
-    messagingSenderId: "771046852975",
-    appId: "1:771046852975:web:ceedc5c0e5d22ea039809a"
-};
-
 // Inicializar Firebase
 export async function initFirebase() {
-    console.log("Inicializando Firebase...");
     try {
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js");
-        const { getFirestore } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
-        const { getStorage } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js");
-        
-        app = initializeApp(firebaseConfig);
-        console.log("App inicializada:", app);
-        
-        db = getFirestore(app);
-        console.log("Firestore obtenido:", db);
-        
-        storage = getStorage(app);
-        console.log("Storage obtenido:", storage);
-        
-        console.log("Firebase inicializado correctamente");
-        
-        // Verificar conexión
-        try {
-            const connectionOk = await testFirebase();
-            if (connectionOk) {
-                showToast("Conexión a Firebase establecida", "success");
-            }
-        } catch (connectionError) {
-            console.error("Error verificando conexión:", connectionError);
-            showToast("Advertencia: La verificación de conexión falló, pero continuando...", "info");
+        // Verificar si Firebase ya está inicializado
+        if (window.firebase && window.firebase.apps && window.firebase.apps.length > 0) {
+            console.log("Firebase ya inicializado, omitiendo...");
+            return true;
         }
+
+        console.log("Inicializando Firebase...");
         
-        return true;
+        // Configuración de Firebase desde las variables globales
+        const firebaseConfig = {
+            apiKey: "AIzaSyDD1kjbOr566240HrDtWi5egah47kGZLvQ",
+            authDomain: "evoluciones-poli.firebaseapp.com",
+            projectId: "evoluciones-poli",
+            storageBucket: "evoluciones-poli.appspot.com",
+            messagingSenderId: "771046852975",
+            appId: "1:771046852975:web:ceedc5c0e5d22ea039809a"
+        };
+        
+        // Intentar inicializar mediante import dinámico para evitar errores de sintaxis
+        try {
+            const firebase = await import('https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js');
+            const { initializeApp } = firebase;
+            window.app = initializeApp(firebaseConfig);
+            console.log("App inicializada:", window.app);
+            
+            const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js');
+            window.db = firestoreModule.getFirestore(window.app);
+            console.log("Firestore obtenido:", window.db);
+            
+            const storageModule = await import('https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js');
+            window.storage = storageModule.getStorage(window.app);
+            console.log("Storage obtenido:", window.storage);
+            
+            console.log("Firebase inicializado correctamente");
+            return true;
+        } catch (importError) {
+            console.error("Error con import dinámico:", importError);
+            
+            // Fallback a la inicialización global (versión anterior)
+            if (typeof firebase !== 'undefined') {
+                window.app = firebase.initializeApp(firebaseConfig);
+                window.db = firebase.firestore();
+                window.storage = firebase.storage();
+                console.log("Firebase inicializado por fallback");
+                return true;
+            } else {
+                throw new Error("Firebase no disponible");
+            }
+        }
     } catch (error) {
         console.error("Error al inicializar Firebase:", error);
-        showToast("Error al conectar con Firebase: " + error.message, "error");
-        // Continuar a pesar del error para que la UI básica funcione
-        return false;
-    }
-}
-
-// Probar conexión con Firebase
-export async function testFirebase() {
-    try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
-        
-        // Probar lectura intentando obtener colección
-        const testCollection = collection(db, "patients");
-        
-        // Simplificar consulta para evitar la necesidad de un índice compuesto
-        const snapshot = await getDocs(testCollection);
-        
-        console.log("Test de Firebase completado: Permisos de lectura OK");
-        return true;
-    } catch (error) {
-        console.error("Error en prueba de Firebase:", error);
-        showToast("Error de conexión a Firebase: " + error.message, "error");
+        window.showToast("Error al conectar con Firebase: " + error.message, "error");
         return false;
     }
 }
