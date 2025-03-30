@@ -1,18 +1,4 @@
 // app.js
-
-// app.js (actualizado)
-// Importar todos los módulos que necesitamos
-import './utils.js';
-import './firebase-config.js';
-import './data-services.js';
-import './ui-patients.js';
-import './ui-evolutions.js';
-import './ui-diagnosis.js';
-import './ui-exercises.js';
-import './pdf-export.js';
-import './navigation.js';
-
-// app.js
 // Inicialización y control principal de la aplicación
 
 // Inicializar la aplicación cuando el DOM esté cargado
