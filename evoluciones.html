@@ -2647,6 +2647,122 @@ button:focus {
     color: var(--secondary);
     font-weight: 500;
 }
+
+        /* Mejoras para los resultados CIF */
+.cif-results {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.cif-result-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.cif-result-item:last-child {
+    border-bottom: none;
+}
+
+.cif-result-item:hover {
+    background-color: rgba(30, 136, 229, 0.05);
+}
+
+.cif-result-code {
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: var(--primary);
+}
+
+.cif-result-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Mejoras para elementos CIF */
+.cif-item {
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background-color: var(--background-alt);
+    transition: var(--transition);
+}
+
+.cif-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.cif-code {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--primary);
+}
+
+.cif-code .scale-value {
+    font-size: 14px;
+    width: 28px;
+    height: 28px;
+    color: white;
+    background-color: var(--primary);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cif-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.cif-scale {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.scale-values {
+    display: flex;
+    gap: 8px;
+    margin-left: 10px;
+}
+
+.cif-scale .scale-value {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.cif-scale .scale-value:hover {
+    background-color: var(--primary-light);
+    color: white;
+    border-color: var(--primary-light);
+}
+
+.cif-scale .scale-value.active {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
     </style>
 </head>
 <body>
@@ -3558,7 +3674,7 @@ button:focus {
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Variables globales
@@ -4898,7 +5014,7 @@ async function initDiagnosisTab(patientId) {
         // Inicializar botón de guardar diagnóstico
         const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
         if (saveDiagnosisBtn) {
-            // Eliminar cualquier manejador previo
+            // Eliminar manejadores previos
             const newSaveDiagnosisBtn = saveDiagnosisBtn.cloneNode(true);
             saveDiagnosisBtn.parentNode.replaceChild(newSaveDiagnosisBtn, saveDiagnosisBtn);
             
@@ -4907,7 +5023,32 @@ async function initDiagnosisTab(patientId) {
             });
         }
         
-        // Resto del código para inicializar otros botones...
+        // Configurar componentes CIF
+        setupCifCategories(patientId);
+        
+        // Inicializar botón de añadir objetivo
+        const addObjectiveBtn = document.getElementById('addObjectiveBtn');
+        if (addObjectiveBtn) {
+            // Eliminar manejadores previos
+            const newAddObjectiveBtn = addObjectiveBtn.cloneNode(true);
+            addObjectiveBtn.parentNode.replaceChild(newAddObjectiveBtn, addObjectiveBtn);
+            
+            newAddObjectiveBtn.addEventListener('click', function() {
+                openObjectiveModal(patientId);
+            });
+        }
+        
+        // Inicializar botón de añadir plan de tratamiento
+        const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
+        if (addTreatmentPlanBtn) {
+            // Eliminar manejadores previos
+            const newAddTreatmentPlanBtn = addTreatmentPlanBtn.cloneNode(true);
+            addTreatmentPlanBtn.parentNode.replaceChild(newAddTreatmentPlanBtn, addTreatmentPlanBtn);
+            
+            newAddTreatmentPlanBtn.addEventListener('click', function() {
+                openTreatmentPlanModal(patientId);
+            });
+        }
     } catch (error) {
         console.error("Error inicializando pestaña de diagnóstico:", error);
         showToast("Error al cargar diagnósticos", "error");
@@ -5501,6 +5642,57 @@ function generateFunctionalDiagnosis() {
     showToast("Diagnóstico generado correctamente", "success");
 }
 
+// Códigos CIF relevantes para kinesiología musculoesquelética y deportiva
+const cifCodesMusculoskeletal = {
+    funciones: [
+        { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
+        { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
+        { code: 'b715', name: 'Funciones de estabilidad articular', desc: 'Funciones relacionadas con el mantenimiento de la integridad estructural de las articulaciones.' },
+        { code: 'b720', name: 'Funciones de movilidad ósea', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de la escápula, pelvis, huesos carpianos y tarsianos.' },
+        { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
+        { code: 'b735', name: 'Funciones de tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos cuando están en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
+        { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' },
+        { code: 'b750', name: 'Funciones relacionadas con reflejos motores', desc: 'Funciones de contracción involuntaria de los músculos, inducida automáticamente por estímulos específicos.' },
+        { code: 'b755', name: 'Funciones relacionadas con reacciones al movimiento involuntario', desc: 'Reacciones posturales, de equilibrio y de apoyo involuntarias causadas por la posición corporal o el movimiento.' },
+        { code: 'b760', name: 'Funciones relacionadas con el control del movimiento voluntario', desc: 'Funciones asociadas con el control y coordinación del movimiento voluntario.' },
+        { code: 'b765', name: 'Funciones relacionadas con movimientos involuntarios', desc: 'Contracciones no intencionales, involuntarias de los músculos o grupos de músculos.' },
+        { code: 'b770', name: 'Funciones relacionadas con el patrón de marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos de todo el cuerpo.' },
+        { code: 'b780', name: 'Sensaciones relacionadas con los músculos y funciones del movimiento', desc: 'Sensaciones asociadas con los músculos o grupos de músculos del cuerpo y su movimiento.' }
+    ],
+    estructuras: [
+        { code: 's710', name: 'Estructura de la región de la cabeza y cuello', desc: 'Huesos, músculos y otros tejidos de la cabeza y región cervical.' },
+        { code: 's720', name: 'Estructura de la región del hombro', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias de la región del hombro.' },
+        { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Huesos, articulaciones, músculos y otros tejidos del brazo, antebrazo y mano.' },
+        { code: 's740', name: 'Estructura de la región pélvica', desc: 'Huesos, músculos y otros tejidos de la región pélvica.' },
+        { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Huesos, articulaciones, músculos y otros tejidos de la pierna y el pie.' },
+        { code: 's760', name: 'Estructura del tronco', desc: 'Huesos, articulaciones, músculos y otros tejidos de la columna vertebral, costillas y parte superior de la espalda.' },
+        { code: 's770', name: 'Estructuras musculoesqueléticas adicionales relacionadas con el movimiento', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias adicionales relacionados con el movimiento.' }
+    ],
+    actividades: [
+        { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro, como levantarse de una silla para tumbarse en una cama.' },
+        { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario, como permanecer sentado o de pie en el trabajo o en la escuela.' },
+        { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra, como deslizarse a lo largo de un banco o pasar de estar sentado en la cama a sentarse en una silla.' },
+        { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro, como levantar una taza o llevar a un niño de una habitación a otra.' },
+        { code: 'd435', name: 'Mover objetos con las extremidades inferiores', desc: 'Realizar las acciones coordinadas necesarias para mover objetos con las piernas y los pies, como dar patadas a un balón o pedalear en una bicicleta.' },
+        { code: 'd440', name: 'Uso fino de la mano', desc: 'Realizar las acciones coordinadas de manejo de objetos, recogerlos, manipularlos y soltarlos utilizando la mano, los dedos y el pulgar.' },
+        { code: 'd445', name: 'Uso de la mano y el brazo', desc: 'Realizar las acciones coordinadas que se requieren para manipular y mover objetos utilizando las manos y los brazos.' },
+        { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso, de manera que al menos un pie esté siempre en el suelo.' },
+        { code: 'd455', name: 'Desplazarse por el entorno', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar, como escalar una roca o correr por una calle, saltar, etc.' },
+        { code: 'd460', name: 'Desplazarse por distintos lugares', desc: 'Caminar y moverse por diversos lugares y situaciones, como andar entre habitaciones, dentro de un edificio o por la calle.' },
+        { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un lugar a otro, sobre cualquier superficie o espacio, utilizando dispositivos específicos.' },
+        { code: 'd470', name: 'Utilización de medios de transporte', desc: 'Utilizar medios de transporte para desplazarse como pasajero, como ser llevado en un coche, autobús, etc.' }
+    ],
+    factores: [
+        { code: 'e110', name: 'Productos o sustancias para el consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.' },
+        { code: 'e115', name: 'Productos y tecnología para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnologías utilizados por las personas en las actividades cotidianas.' },
+        { code: 'e120', name: 'Productos y tecnología para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnologías utilizados por las personas para desplazarse dentro y fuera de edificios.' },
+        { code: 'e135', name: 'Productos y tecnología para el empleo', desc: 'Equipamiento, productos y tecnologías utilizados para el empleo, para facilitar las actividades laborales.' },
+        { code: 'e140', name: 'Productos y tecnología para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnologías utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas.' },
+        { code: 'e150', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso público.' },
+        { code: 'e155', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso privado', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso privado.' }
+    ]
+};
+        
 // Configurar categorías CIF
 function setupCifCategories(patientId) {
     // Implementar selección básica de códigos CIF para cada categoría
@@ -5594,34 +5786,25 @@ function renderCifItems(container, items) {
 }
 
         // Obtener funciones CIF del paciente
+// Obtener funciones CIF del paciente
 function getCifFunctions(patientId) {
     // En una implementación real, esto obtendría datos de Firebase
-    // Por ahora, devolvemos datos de ejemplo
-    return [
-        { id: 'f1', code: "b280", name: "Sensación de dolor", description: "Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.", value: 2 },
-        { id: 'f2', code: "b730", name: "Funciones de fuerza muscular", description: "Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.", value: 1 }
-    ];
+    return [];
 }
 
 // Obtener estructuras CIF del paciente
 function getCifStructures(patientId) {
-    return [
-        { id: 's1', code: "s750", name: "Estructura extremidad inferior", description: "Estructura de la pierna y el pie.", value: 1 }
-    ];
+    return [];
 }
 
 // Obtener actividades CIF del paciente
 function getCifActivities(patientId) {
-    return [
-        { id: 'a1', code: "d450", name: "Caminar", description: "Andar sobre una superficie a pie, paso a paso.", value: 2 }
-    ];
+    return [];
 }
 
 // Obtener factores CIF del paciente
 function getCifFactors(patientId) {
-    return [
-        { id: 'e1', code: "e110", name: "Productos para consumo personal", description: "Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.", value: 1 }
-    ];
+    return [];
 }
 
 // Cargar factores personales
@@ -5663,6 +5846,55 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         const resultsContainer = document.getElementById('cifSearchResults');
         if (resultsContainer) {
             resultsContainer.innerHTML = '';
+            
+            // Añadir lista predefinida según categoría
+            let cifCodes = [];
+            switch(categoryType) {
+                case 'Función':
+                    cifCodes = cifCodesMusculoskeletal.funciones;
+                    break;
+                case 'Estructura':
+                    cifCodes = cifCodesMusculoskeletal.estructuras;
+                    break;
+                case 'Actividad':
+                    cifCodes = cifCodesMusculoskeletal.actividades;
+                    break;
+                case 'Factor':
+                    cifCodes = cifCodesMusculoskeletal.factores;
+                    break;
+            }
+            
+            // Mostrar toda la lista al principio
+            const fragment = document.createDocumentFragment();
+            cifCodes.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'cif-result-item';
+                resultItem.innerHTML = `
+                    <div class="cif-result-code">${result.code}: ${result.name}</div>
+                    <div class="cif-result-desc">${result.desc}</div>
+                `;
+                
+                resultItem.addEventListener('click', function() {
+                    // Llenar campos del formulario
+                    const codeInput = document.getElementById('cifCodeInput');
+                    const nameInput = document.getElementById('cifNameInput');
+                    const descInput = document.getElementById('cifDescInput');
+                    
+                    if (codeInput) codeInput.value = result.code;
+                    if (nameInput) nameInput.value = result.name;
+                    if (descInput) descInput.value = result.desc;
+                    
+                    // Resaltar selección
+                    resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
+                        item.style.backgroundColor = '';
+                    });
+                    this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
+                });
+                
+                fragment.appendChild(resultItem);
+            });
+            
+            resultsContainer.appendChild(fragment);
         }
         
         // Eliminar manejadores previos
@@ -5672,90 +5904,71 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         // Configurar evento de búsqueda
         newSearchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            if (searchTerm.length < 2) {
-                const resultsContainer = document.getElementById('cifSearchResults');
-                if (resultsContainer) {
-                    resultsContainer.innerHTML = '';
-                }
-                return;
-            }
+            const resultsContainer = document.getElementById('cifSearchResults');
             
-            // Obtener datos de ejemplo según categoría
+            if (!resultsContainer) return;
+            
+            // Limpiar resultados
+            resultsContainer.innerHTML = '';
+            
+            // Obtener datos según categoría
             let cifCodes = [];
             switch(categoryType) {
                 case 'Función':
-                    cifCodes = [
-                        { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
-                        { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
-                        { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
-                        { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' }
-                    ];
+                    cifCodes = cifCodesMusculoskeletal.funciones;
                     break;
                 case 'Estructura':
-                    cifCodes = [
-                        { code: 's750', name: 'Estructura extremidad inferior', desc: 'Estructura de la pierna y el pie.' },
-                        { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco, espalda, incluida la pelvis.' },
-                        { code: 's770', name: 'Estructuras musculoesqueléticas adicionales', desc: 'Estructuras relacionadas con el movimiento.' }
-                    ];
+                    cifCodes = cifCodesMusculoskeletal.estructuras;
                     break;
                 case 'Actividad':
-                    cifCodes = [
-                        { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso.' },
-                        { code: 'd455', name: 'Desplazarse', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar.' },
-                        { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' }
-                    ];
+                    cifCodes = cifCodesMusculoskeletal.actividades;
                     break;
                 case 'Factor':
-                    cifCodes = [
-                        { code: 'e110', name: 'Productos para consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre para la ingesta.' },
-                        { code: 'e115', name: 'Productos para uso personal', desc: 'Equipamiento, productos y tecnologías utilizados en las actividades cotidianas.' },
-                        { code: 'e120', name: 'Movilidad personal', desc: 'Equipamiento, productos y tecnologías utilizados para facilitar el movimiento.' }
-                    ];
+                    cifCodes = cifCodesMusculoskeletal.factores;
                     break;
             }
             
             // Filtrar resultados
-            const results = cifCodes.filter(item => 
-                item.code.toLowerCase().includes(searchTerm) ||
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.desc.toLowerCase().includes(searchTerm)
-            );
+            let results = cifCodes;
+            if (searchTerm.length > 0) {
+                results = cifCodes.filter(item => 
+                    item.code.toLowerCase().includes(searchTerm) ||
+                    item.name.toLowerCase().includes(searchTerm) ||
+                    item.desc.toLowerCase().includes(searchTerm)
+                );
+            }
             
             // Mostrar resultados
-            const resultsContainer = document.getElementById('cifSearchResults');
-            if (resultsContainer) {
-                resultsContainer.innerHTML = '';
-                if (results.length > 0) {
-                    results.forEach(result => {
-                        const resultItem = document.createElement('div');
-                        resultItem.className = 'cif-result-item';
-                        resultItem.innerHTML = `
-                            <div class="cif-result-code">${result.code}: ${result.name}</div>
-                            <div class="cif-result-desc">${result.desc}</div>
-                        `;
+            if (results.length > 0) {
+                results.forEach(result => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'cif-result-item';
+                    resultItem.innerHTML = `
+                        <div class="cif-result-code">${result.code}: ${result.name}</div>
+                        <div class="cif-result-desc">${result.desc}</div>
+                    `;
+                    
+                    resultItem.addEventListener('click', function() {
+                        // Llenar campos del formulario
+                        const codeInput = document.getElementById('cifCodeInput');
+                        const nameInput = document.getElementById('cifNameInput');
+                        const descInput = document.getElementById('cifDescInput');
                         
-                        resultItem.addEventListener('click', function() {
-                            // Llenar campos del formulario
-                            const codeInput = document.getElementById('cifCodeInput');
-                            const nameInput = document.getElementById('cifNameInput');
-                            const descInput = document.getElementById('cifDescInput');
-                            
-                            if (codeInput) codeInput.value = result.code;
-                            if (nameInput) nameInput.value = result.name;
-                            if (descInput) descInput.value = result.desc;
-                            
-                            // Resaltar selección
-                            resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
-                                item.style.backgroundColor = '';
-                            });
-                            this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
+                        if (codeInput) codeInput.value = result.code;
+                        if (nameInput) nameInput.value = result.name;
+                        if (descInput) descInput.value = result.desc;
+                        
+                        // Resaltar selección
+                        resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
+                            item.style.backgroundColor = '';
                         });
-                        
-                        resultsContainer.appendChild(resultItem);
+                        this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
                     });
-                } else {
-                    resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary); font-style: italic;">No se encontraron resultados</div>';
-                }
+                    
+                    resultsContainer.appendChild(resultItem);
+                });
+            } else {
+                resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary); font-style: italic;">No se encontraron resultados</div>';
             }
         });
     }
@@ -5971,6 +6184,134 @@ function getCifItemsData(containerId) {
     
     return items;
 }
+
+        // Función para guardar los datos CIF de un paciente
+async function saveCifData(patientId) {
+    try {
+        showLoading();
+        
+        // Recopilar datos de CIF desde el DOM
+        const cifData = {
+            functions: getCifItemsData('cifFunctions'),
+            structures: getCifItemsData('cifStructures'),
+            activities: getCifItemsData('cifActivities'),
+            factors: getCifItemsData('cifFactors'),
+            personalFactors: document.getElementById('cifPersonalFactors')?.value || ""
+        };
+        
+        console.log("Guardando datos CIF:", cifData);
+        
+        // Guardar en Firebase
+        const cifRef = doc(db, "patients", patientId, "cif", "data");
+        await setDoc(cifRef, cifData);
+        
+        hideLoading();
+        showToast("Datos CIF guardados correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error guardando datos CIF:", error);
+        hideLoading();
+        showToast("Error al guardar datos CIF: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función auxiliar para obtener datos de elementos CIF
+function getCifItemsData(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    
+    const items = [];
+    const cifItems = container.querySelectorAll('.cif-item');
+    
+    cifItems.forEach(item => {
+        const codeElement = item.querySelector('.cif-code');
+        const descElement = item.querySelector('.cif-desc');
+        const activeValueElement = item.querySelector('.cif-code .scale-value') || 
+                                  item.querySelector('.scale-values .scale-value.active');
+        
+        if (codeElement) {
+            const codeText = codeElement.textContent.trim();
+            // Extraer código y nombre (formato típico: "b280: Sensación de dolor")
+            const colonIndex = codeText.indexOf(':');
+            const code = colonIndex > 0 ? codeText.substring(0, colonIndex).trim() : codeText;
+            const name = colonIndex > 0 ? codeText.substring(colonIndex + 1).trim() : '';
+            
+            // Extraer valor del calificador
+            const value = activeValueElement ? parseInt(activeValueElement.textContent.trim()) : 0;
+            
+            // Extraer descripción
+            const description = descElement ? descElement.textContent.trim() : '';
+            
+            items.push({
+                id: item.dataset.id || 'cif_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                code: code,
+                name: name,
+                description: description,
+                value: value
+            });
+        }
+    });
+    
+    return items;
+}
+
+// Nueva función para cargar datos CIF
+async function loadCifData(patientId) {
+    try {
+        // Intentar obtener datos CIF de Firebase
+        const cifRef = doc(db, "patients", patientId, "cif", "data");
+        const cifDoc = await getDoc(cifRef);
+        
+        if (cifDoc.exists()) {
+            const cifData = cifDoc.data();
+            console.log("Datos CIF cargados:", cifData);
+            
+            // Cargar funciones
+            if (cifData.functions && cifData.functions.length > 0) {
+                renderCifItems(document.getElementById('cifFunctions'), cifData.functions);
+            } else {
+                renderCifItems(document.getElementById('cifFunctions'), []);
+            }
+            
+            // Cargar estructuras
+            if (cifData.structures && cifData.structures.length > 0) {
+                renderCifItems(document.getElementById('cifStructures'), cifData.structures);
+            } else {
+                renderCifItems(document.getElementById('cifStructures'), []);
+            }
+            
+            // Cargar actividades
+            if (cifData.activities && cifData.activities.length > 0) {
+                renderCifItems(document.getElementById('cifActivities'), cifData.activities);
+            } else {
+                renderCifItems(document.getElementById('cifActivities'), []);
+            }
+            
+            // Cargar factores
+            if (cifData.factors && cifData.factors.length > 0) {
+                renderCifItems(document.getElementById('cifFactors'), cifData.factors);
+            } else {
+                renderCifItems(document.getElementById('cifFactors'), []);
+            }
+            
+            // Cargar factores personales
+            const personalFactorsField = document.getElementById('cifPersonalFactors');
+            if (personalFactorsField && cifData.personalFactors) {
+                personalFactorsField.value = cifData.personalFactors;
+            }
+        } else {
+            // No hay datos CIF, inicializar con valores vacíos
+            renderCifItems(document.getElementById('cifFunctions'), []);
+            renderCifItems(document.getElementById('cifStructures'), []);
+            renderCifItems(document.getElementById('cifActivities'), []);
+            renderCifItems(document.getElementById('cifFactors'), []);
+        }
+    } catch (error) {
+        console.error("Error cargando datos CIF:", error);
+        // No mostrar toast para no confundir al usuario
+    }
+}
         
 // Guardar cambios en diagnóstico
 async function saveDiagnosisChanges(patientId) {
@@ -5983,7 +6324,6 @@ async function saveDiagnosisChanges(patientId) {
         // Guardar datos CIF
         await saveCifData(patientId);
         
-        // Simular guardado exitoso
         hideLoading();
         showToast("Diagnóstico guardado correctamente", "success");
         return true;
