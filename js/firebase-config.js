@@ -1,7 +1,7 @@
 // firebase-config.js
 // Configuración e inicialización de Firebase
 
-// Exportar variables de Firebase para usarlas en otros módulos
+// Variables para Firebase que se exportarán
 export let app, db, storage;
 
 // Configuración de Firebase
@@ -14,88 +14,92 @@ export const firebaseConfig = {
     appId: "1:771046852975:web:ceedc5c0e5d22ea039809a"
 };
 
+// Importaciones estáticas para Firebase (pre-cargar los módulos)
+let firebaseApp, firestore, firebaseStorage, firebaseCollection, firebaseGetDocs;
+
+// Función para pre-cargar módulos Firebase
+async function preloadFirebaseModules() {
+    try {
+        const appModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js");
+        const firestoreModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        const storageModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js");
+
+        firebaseApp = appModule.initializeApp;
+        firestore = firestoreModule.getFirestore;
+        firebaseStorage = storageModule.getStorage;
+        firebaseCollection = firestoreModule.collection;
+        firebaseGetDocs = firestoreModule.getDocs;
+        
+        return true;
+    } catch (error) {
+        console.error("Error pre-cargando módulos Firebase:", error);
+        return false;
+    }
+}
+
+// Pre-cargar módulos al inicio
+preloadFirebaseModules();
+
 // Inicializar Firebase
 export async function initFirebase() {
     console.log("Inicializando Firebase...");
     try {
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js");
-        const { getFirestore } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
-        const { getStorage } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js");
+        // Asegurarnos que los módulos estén cargados
+        if (!firebaseApp) {
+            await preloadFirebaseModules();
+        }
         
-        app = initializeApp(firebaseConfig);
+        app = firebaseApp(firebaseConfig);
         console.log("App inicializada:", app);
         
-        db = getFirestore(app);
+        db = firestore(app);
         console.log("Firestore obtenido:", db);
         
-        storage = getStorage(app);
+        storage = firebaseStorage(app);
         console.log("Storage obtenido:", storage);
         
         console.log("Firebase inicializado correctamente");
         
-        // Verificar conexión
+        // Verificar conexión sin dependencia circular
         try {
             const connectionOk = await testFirebase();
             if (connectionOk) {
-                showToast("Conexión a Firebase establecida", "success");
+                // Usamos console.log en lugar de showToast para evitar dependencia circular
+                console.log("Conexión a Firebase establecida");
+                // La función que llama a initFirebase debería mostrar el toast
+                return { success: true, message: "Conexión a Firebase establecida" };
             }
         } catch (connectionError) {
             console.error("Error verificando conexión:", connectionError);
-            showToast("Advertencia: La verificación de conexión falló, pero continuando...", "info");
+            return { success: false, message: "La verificación de conexión falló, pero continuando..." };
         }
         
-        return true;
+        return { success: true };
     } catch (error) {
         console.error("Error al inicializar Firebase:", error);
-        showToast("Error al conectar con Firebase: " + error.message, "error");
-        // Continuar a pesar del error para que la UI básica funcione
-        return false;
+        return { success: false, message: "Error al conectar con Firebase: " + error.message };
     }
 }
 
 // Probar conexión con Firebase
 export async function testFirebase() {
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        if (!firebaseCollection || !firebaseGetDocs) {
+            const firestoreModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+            firebaseCollection = firestoreModule.collection;
+            firebaseGetDocs = firestoreModule.getDocs;
+        }
         
         // Probar lectura intentando obtener colección
-        const testCollection = collection(db, "patients");
+        const testCollection = firebaseCollection(db, "patients");
         
         // Simplificar consulta para evitar la necesidad de un índice compuesto
-        const snapshot = await getDocs(testCollection);
+        const snapshot = await firebaseGetDocs(testCollection);
         
         console.log("Test de Firebase completado: Permisos de lectura OK");
         return true;
     } catch (error) {
         console.error("Error en prueba de Firebase:", error);
-        showToast("Error de conexión a Firebase: " + error.message, "error");
         return false;
     }
-}
-
-function showToast(message, type = 'info') {
-    // Versión simplificada solo para este módulo
-    console.log(`[${type}] ${message}`);
-    
-    // Si ya existe un elemento toast en el DOM, úsalo
-    const toastContainer = document.getElementById('toastContainer') || document.body;
-    
-    const toast = document.createElement('div');
-    toast.classList.add('toast', `toast-${type}`);
-    toast.innerHTML = message;
-    
-    toastContainer.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
 }
