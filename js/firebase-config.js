@@ -73,5 +73,29 @@ export async function testFirebase() {
     }
 }
 
-// Importar función showToast desde utils.js
-import { showToast } from './utils.js';
+function showToast(message, type = 'info') {
+    // Versión simplificada solo para este módulo
+    console.log(`[${type}] ${message}`);
+    
+    // Si ya existe un elemento toast en el DOM, úsalo
+    const toastContainer = document.getElementById('toastContainer') || document.body;
+    
+    const toast = document.createElement('div');
+    toast.classList.add('toast', `toast-${type}`);
+    toast.innerHTML = message;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
