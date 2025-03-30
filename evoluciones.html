@@ -5055,62 +5055,6 @@ async function initDiagnosisTab(patientId) {
     }
 }
 
-// Nueva función para cargar datos CIF
-async function loadCifData(patientId) {
-    try {
-        // Intentar obtener datos CIF de Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        const cifDoc = await getDoc(cifRef);
-        
-        if (cifDoc.exists()) {
-            const cifData = cifDoc.data();
-            
-            // Cargar funciones
-            if (cifData.functions && cifData.functions.length > 0) {
-                renderCifItems(document.getElementById('cifFunctions'), cifData.functions);
-            } else {
-                renderCifItems(document.getElementById('cifFunctions'), []);
-            }
-            
-            // Cargar estructuras
-            if (cifData.structures && cifData.structures.length > 0) {
-                renderCifItems(document.getElementById('cifStructures'), cifData.structures);
-            } else {
-                renderCifItems(document.getElementById('cifStructures'), []);
-            }
-            
-            // Cargar actividades
-            if (cifData.activities && cifData.activities.length > 0) {
-                renderCifItems(document.getElementById('cifActivities'), cifData.activities);
-            } else {
-                renderCifItems(document.getElementById('cifActivities'), []);
-            }
-            
-            // Cargar factores
-            if (cifData.factors && cifData.factors.length > 0) {
-                renderCifItems(document.getElementById('cifFactors'), cifData.factors);
-            } else {
-                renderCifItems(document.getElementById('cifFactors'), []);
-            }
-            
-            // Cargar factores personales
-            const personalFactorsField = document.getElementById('cifPersonalFactors');
-            if (personalFactorsField && cifData.personalFactors) {
-                personalFactorsField.value = cifData.personalFactors;
-            }
-        } else {
-            // No hay datos CIF, inicializar con valores vacíos
-            renderCifItems(document.getElementById('cifFunctions'), []);
-            renderCifItems(document.getElementById('cifStructures'), []);
-            renderCifItems(document.getElementById('cifActivities'), []);
-            renderCifItems(document.getElementById('cifFactors'), []);
-        }
-    } catch (error) {
-        console.error("Error cargando datos CIF:", error);
-        // No mostrar toast para no confundir al usuario
-    }
-}
-
 // Obtener diagnósticos del paciente
 async function getDiagnoses(patientId) {
     try {
@@ -6115,36 +6059,7 @@ function addCifItem(modal){
         modal.style.display = 'none';
     }, 300);
 }
-
-// Función para guardar los datos CIF de un paciente
-async function saveCifData(patientId) {
-    try {
-        showLoading();
         
-        // Recopilar datos de CIF desde el DOM
-        const cifData = {
-            functions: getCifItemsData('cifFunctions'),
-            structures: getCifItemsData('cifStructures'),
-            activities: getCifItemsData('cifActivities'),
-            factors: getCifItemsData('cifFactors'),
-            personalFactors: document.getElementById('cifPersonalFactors')?.value || ""
-        };
-        
-        // Guardar en Firebase
-        const cifRef = doc(db, "patients", patientId, "cif", "data");
-        await setDoc(cifRef, cifData);
-        
-        hideLoading();
-        showToast("Datos CIF guardados correctamente", "success");
-        return true;
-    } catch (error) {
-        console.error("Error guardando datos CIF:", error);
-        hideLoading();
-        showToast("Error al guardar datos CIF: " + error.message, "error");
-        return false;
-    }
-}
-
 // Función auxiliar para obtener datos de elementos CIF
 function getCifItemsData(containerId) {
     const container = document.getElementById(containerId);
