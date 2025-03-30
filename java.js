@@ -1,4 +1,5 @@
- <script type="module">
+ <!-- Script for Firebase -->
+    <script type="module">
 
 
         // Import the functions you need from the SDKs you need
@@ -5210,6 +5211,128 @@ function loadCustomTemplate(templateId, closeModal = false) {
     }
 }
 
+function confirmSaveTemplate() {
+    try {
+        const templateName = document.getElementById('templateNameInput').value;
+        const templateCategory = document.getElementById('templateCategoryInput').value;
+        
+        if (!templateName) {
+            showToast("Debe ingresar un nombre para la plantilla", "error");
+            return;
+        }
+        
+        // Obtener los ejercicios actuales
+        const exercises = getExercisesData();
+        
+        if (exercises.length === 0) {
+            showToast("No hay ejercicios para guardar como plantilla", "error");
+            return;
+        }
+        
+        // Crear objeto de plantilla
+        const template = {
+            id: 'template_' + Date.now(),
+            name: templateName,
+            category: templateCategory || 'General',
+            exercises: exercises
+        };
+        
+        // Añadir a la lista de plantillas
+        customTemplates.push(template);
+        
+        // Guardar en localStorage
+        saveCustomTemplates();
+        
+        // Ocultar formulario
+        const saveTemplateForm = document.getElementById('saveTemplateForm');
+        if (saveTemplateForm) {
+            saveTemplateForm.style.display = 'none';
+        }
+        
+        // Limpiar campos
+        if (document.getElementById('templateNameInput')) {
+            document.getElementById('templateNameInput').value = '';
+        }
+        if (document.getElementById('templateCategoryInput')) {
+            document.getElementById('templateCategoryInput').value = '';
+        }
+        
+        showToast("Plantilla guardada correctamente", "success");
+    } catch (error) {
+        console.error("Error al guardar plantilla:", error);
+        showToast("Error al guardar plantilla: " + error.message, "error");
+    }
+}
+
+        function editCustomTemplate(templateId) {
+    try {
+        // Encontrar la plantilla
+        const template = customTemplates.find(t => t.id === templateId);
+        if (!template) {
+            showToast("Plantilla no encontrada", "error");
+            return;
+        }
+        
+        // Llenar el formulario de edición
+        const nameInput = document.getElementById('templateNameInput');
+        const categoryInput = document.getElementById('templateCategoryInput');
+        
+        if (nameInput) nameInput.value = template.name || '';
+        if (categoryInput) categoryInput.value = template.category || '';
+        
+        // Mostrar formulario
+        const saveTemplateForm = document.getElementById('saveTemplateForm');
+        if (saveTemplateForm) {
+            saveTemplateForm.style.display = 'block';
+            
+            // Cambiar el botón para indicar que es una edición
+            const confirmBtn = document.getElementById('confirmSaveTemplateBtn');
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Actualizar plantilla';
+                confirmBtn.setAttribute('data-mode', 'edit');
+                confirmBtn.setAttribute('data-id', templateId);
+            }
+            
+            // Dar foco al campo de nombre
+            if (nameInput) nameInput.focus();
+        }
+    } catch (error) {
+        console.error("Error al editar plantilla:", error);
+        showToast("Error al editar plantilla: " + error.message, "error");
+    }
+}
+
+function deleteCustomTemplate(templateId) {
+    try {
+        // Confirmar eliminación
+        if (!confirm('¿Está seguro que desea eliminar esta plantilla? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        // Encontrar el índice de la plantilla
+        const index = customTemplates.findIndex(t => t.id === templateId);
+        if (index === -1) {
+            showToast("Plantilla no encontrada", "error");
+            return;
+        }
+        
+        // Eliminar la plantilla
+        customTemplates.splice(index, 1);
+        
+        // Guardar cambios
+        saveCustomTemplates();
+        
+        // Actualizar UI
+        renderSavedTemplatesList();
+        renderCustomTemplateButtons();
+        
+        showToast("Plantilla eliminada correctamente", "success");
+    } catch (error) {
+        console.error("Error al eliminar plantilla:", error);
+        showToast("Error al eliminar plantilla: " + error.message, "error");
+    }
+}
+        
 // Guardar ejercicios actuales como plantilla
 function saveCurrentExercisesAsTemplate() {
     const exercises = getExercisesData();
@@ -5236,9 +5359,28 @@ async function saveTemplateToFirebase(template) {
     try {
         showLoading();
         
+        // Verificar que Firebase esté inicializado
+        if (!db) {
+            throw new Error("Firebase no está inicializado");
+        }
+        
+        // Validar template
+        if (!template || typeof template !== 'object') {
+            throw new Error("Template inválido");
+        }
+        
         // Asegurarse de que template tenga una ID única
         if (!template.id) {
             template.id = 'template_' + Date.now();
+        }
+        
+        // Asegurarse de que template tenga los campos básicos necesarios
+        if (!template.name) {
+            template.name = "Plantilla sin nombre";
+        }
+        
+        if (!template.exercises || !Array.isArray(template.exercises)) {
+            template.exercises = [];
         }
         
         // Guardar en Firestore
@@ -5246,7 +5388,7 @@ async function saveTemplateToFirebase(template) {
         await addDoc(templatesRef, {
             ...template,
             createdAt: serverTimestamp(),
-            userId: "sistema" // En un sistema con autenticación, aquí iría el ID del usuario
+            userId: "sistema"
         });
         
         hideLoading();
