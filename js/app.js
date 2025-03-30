@@ -1,18 +1,27 @@
+// app.js
 // Inicialización y control principal de la aplicación
-import { initFirebase, testFirebase } from './firebase-config.js';
-import { getPatients } from './data-services.js';
+import { initFirebase } from './firebase-config.js';
+import { getPatients, setCurrentPatientId } from './data-services.js';
 import { renderPatients } from './ui-patients.js';
 import { exportToPDF } from './pdf-export.js';
-import { setupExerciseTable, loadCustomTemplates } from './ui-exercises.js';
+import { setupExerciseTable, loadCustomTemplates, showCustomTemplatesModal } from './ui-exercises.js';
 import { 
     showToast, showLoading, hideLoading, setupScalesControls, 
     setupCommandShortcuts, loadConfiguration, saveConfiguration, 
-    resetConfiguration, applyColorTheme
+    resetConfiguration, applyColorTheme, getPsfsActivities, getExercisesData
 } from './utils.js';
 import { 
     setupNavigation, changeView, showNewEvolutionModal, 
-    generatePatientReport, generateStatisticsReport, currentPatientId
+    generatePatientReport, generateStatisticsReport
 } from './navigation.js';
+
+// Almacenar referencia global para el ID de paciente activo
+let currentPatientId = null;
+
+// Actualizar currentPatientId cuando cambie en data-services
+document.addEventListener('currentPatientChanged', (event) => {
+    currentPatientId = event.detail;
+});
 
 // Inicializar la aplicación cuando el DOM esté cargado
 document.addEventListener('DOMContentLoaded', function() {
@@ -53,8 +62,8 @@ async function initApp() {
         console.log("Inicializando aplicación...");
         
         // Inicializar Firebase
-        const firebaseInitialized = await initFirebase();
-        if (!firebaseInitialized) {
+        const firebaseResult = await initFirebase();
+        if (!firebaseResult.success) {
             console.error("Error crítico: No se pudo inicializar Firebase");
             document.body.innerHTML = `
                 <div style="text-align: center; padding: 50px;">
@@ -64,6 +73,8 @@ async function initApp() {
                 </div>
             `;
             return;
+        } else if (firebaseResult.message) {
+            showToast(firebaseResult.message, firebaseResult.success ? "success" : "info");
         }
         
         // Guardar el contenido original del dashboard
@@ -125,7 +136,8 @@ async function initApp() {
         loadCustomTemplates();
         
         // Cargar pacientes iniciales
-        await getPatients();
+        const patients = await getPatients();
+        renderPatients(patients);
         
         console.log("Inicialización completada correctamente");
         showToast("Sistema iniciado correctamente", "success");
@@ -254,8 +266,9 @@ function setupNewPatientForm() {
                 patientData[key] = value;
             }
             
-            // Importar función de manera dinámica para evitar dependencias circulares
-            const { addPatient, openPatientModal } = await import('./ui-patients.js');
+            // Importar función para evitar dependencias circulares
+            const { addPatient } = await import('./data-services.js');
+            const { openPatientModal } = await import('./ui-patients.js');
             
             // Añadir paciente a Firebase
             const patientId = await addPatient(patientData);
@@ -291,7 +304,9 @@ function setupMainButtons() {
     // Añadir event listener para botón de añadir evolución en página principal
     const addEvolutionBtn = document.getElementById('addEvolutionBtn');
     if (addEvolutionBtn) {
-        addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+        addEvolutionBtn.addEventListener('click', function() {
+            showNewEvolutionModal();
+        });
     }
     
     // Botones de cerrar modales
@@ -346,7 +361,7 @@ function setupMainButtons() {
                 emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
             };
             
-            // Importar función de manera dinámica para evitar dependencias circulares
+            // Importar función
             const { updatePatient } = await import('./data-services.js');
             
             // Actualizar datos del paciente
@@ -412,11 +427,6 @@ function setupNewEvolutionForm() {
             try {
                 showLoading();
                 
-                // Importar funciones necesarias dinámicamente
-                const { getPsfsActivities, getExercisesData } = await import('./utils.js');
-                const { addEvolution, getEvolutions } = await import('./data-services.js');
-                const { fillEvolutionsTab } = await import('./ui-evolutions.js');
-                
                 // Recopilar datos de actividades PSFS
                 const psfsActivities = getPsfsActivities();
                 
@@ -445,6 +455,10 @@ function setupNewEvolutionForm() {
                 };
                 
                 console.log("Datos de evolución a guardar:", evolutionData);
+                
+                // Importar funciones necesarias
+                const { addEvolution, getEvolutions } = await import('./data-services.js');
+                const { fillEvolutionsTab } = await import('./ui-evolutions.js');
                 
                 // Añadir evolución a Firebase
                 const evolutionId = await addEvolution(currentPatientId, evolutionData);
@@ -515,17 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (manageCustomTemplatesBtn) {
         manageCustomTemplatesBtn.addEventListener('click', function() {
             try {
-                // Importar función dinámica
-                import('./ui-exercises.js').then(module => {
-                    if (typeof module.showCustomTemplatesModal === 'function') {
-                        module.showCustomTemplatesModal();
-                    } else {
-                        showToast("Error: Función no encontrada", "error");
-                    }
-                }).catch(error => {
-                    console.error("Error al importar módulo:", error);
-                    showToast("Error al cargar gestor de plantillas", "error");
-                });
+                showCustomTemplatesModal();
             } catch (error) {
                 console.error("Error al mostrar gestor de plantillas:", error);
                 showToast("Error al abrir gestor de plantillas", "error");
@@ -534,10 +538,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Exportar funciones para acceso global
+// Exportar funciones para el acceso global requerido desde HTML
 window.showNewEvolutionModal = showNewEvolutionModal;
 window.generatePatientReport = generatePatientReport;
 window.generateStatisticsReport = generateStatisticsReport;
 window.saveConfiguration = saveConfiguration;
 window.resetConfiguration = resetConfiguration;
 window.applyColorTheme = applyColorTheme;
+window.changeView = changeView; // Necesario para enlaces de navegación en HTML
+window.showCustomTemplatesModal = showCustomTemplatesModal; // Para botón de plantillas
