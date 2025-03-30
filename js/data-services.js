@@ -4,18 +4,61 @@
 import { db, storage } from './firebase-config.js';
 import { showToast, hideLoading, showLoading, formatDate } from './utils.js';
 
+// Pre-cargar módulos Firebase que usaremos frecuentemente
+let firebaseCollection, firebaseDoc, firebaseAddDoc, firebaseGetDoc, 
+    firebaseUpdateDoc, firebaseGetDocs, firebaseQuery, firebaseOrderBy, 
+    firebaseServerTimestamp, firebaseDeleteDoc, firebaseRef, 
+    firebaseUploadBytes, firebaseGetDownloadURL;
+
+// Cargar los módulos Firebase al inicio
+async function loadFirebaseModules() {
+    try {
+        const firestoreModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        firebaseCollection = firestoreModule.collection;
+        firebaseDoc = firestoreModule.doc;
+        firebaseAddDoc = firestoreModule.addDoc;
+        firebaseGetDoc = firestoreModule.getDoc;
+        firebaseUpdateDoc = firestoreModule.updateDoc;
+        firebaseGetDocs = firestoreModule.getDocs;
+        firebaseQuery = firestoreModule.query;
+        firebaseOrderBy = firestoreModule.orderBy;
+        firebaseServerTimestamp = firestoreModule.serverTimestamp;
+        firebaseDeleteDoc = firestoreModule.deleteDoc;
+        
+        const storageModule = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js");
+        firebaseRef = storageModule.ref;
+        firebaseUploadBytes = storageModule.uploadBytes;
+        firebaseGetDownloadURL = storageModule.getDownloadURL;
+        
+        return true;
+    } catch (error) {
+        console.error("Error cargando módulos Firebase:", error);
+        return false;
+    }
+}
+
+// Iniciar carga inmediatamente
+loadFirebaseModules();
+
 // Variables globales compartidas
 let patientsCache = []; // Para almacenar pacientes y reducir consultas
 export let currentPatientId = null;
 
+// Función auxiliar para asegurar que los módulos estén cargados
+async function ensureModulesLoaded() {
+    if (!firebaseCollection) {
+        await loadFirebaseModules();
+    }
+}
+
 // Get patients from Firebase
 export async function getPatients() {
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
-        const patientsCollection = collection(db, "patients");
-        const patientSnapshot = await getDocs(patientsCollection);
+        const patientsCollection = firebaseCollection(db, "patients");
+        const patientSnapshot = await firebaseGetDocs(patientsCollection);
         const patientList = patientSnapshot.docs.map(doc => {
             return { id: doc.id, ...doc.data() };
         });
@@ -54,7 +97,7 @@ export async function getPatients() {
 // Add new patient to Firebase
 export async function addPatient(patientData) {
     try {
-        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
@@ -84,8 +127,8 @@ export async function addPatient(patientData) {
         console.log("Registrando paciente:", patientDoc);
         
         // Usar colección de pacientes
-        const patientsRef = collection(db, "patients");
-        const docRef = await addDoc(patientsRef, patientDoc);
+        const patientsRef = firebaseCollection(db, "patients");
+        const docRef = await firebaseAddDoc(patientsRef, patientDoc);
         
         console.log("Paciente registrado con ID:", docRef.id);
         
@@ -107,7 +150,7 @@ export async function addPatient(patientData) {
 // Get patient by ID
 export async function getPatient(patientId) {
     try {
-        const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
@@ -119,8 +162,8 @@ export async function getPatient(patientId) {
         }
         
         // Si no está en caché, buscarlo en Firebase
-        const patientRef = doc(db, "patients", patientId);
-        const patientSnap = await getDoc(patientRef);
+        const patientRef = firebaseDoc(db, "patients", patientId);
+        const patientSnap = await firebaseGetDoc(patientRef);
         
         if (patientSnap.exists()) {
             const patient = { id: patientSnap.id, ...patientSnap.data() };
@@ -151,15 +194,15 @@ export async function getPatient(patientId) {
 // Update patient
 export async function updatePatient(patientId, patientData) {
     try {
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
         // Añadir timestamp de actualización
         patientData.updatedAt = new Date().toISOString();
         
-        const patientRef = doc(db, "patients", patientId);
-        await updateDoc(patientRef, patientData);
+        const patientRef = firebaseDoc(db, "patients", patientId);
+        await firebaseUpdateDoc(patientRef, patientData);
         
         // Actualizar también en la caché
         const cachedIndex = patientsCache.findIndex(p => p.id === patientId);
@@ -184,19 +227,19 @@ export async function updatePatient(patientId, patientData) {
 // Add evolution to patient
 export async function addEvolution(patientId, evolutionData) {
     try {
-        const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
         // Añadir timestamp de creación
         evolutionData.createdAt = new Date().toISOString();
         
-        const evolutionsRef = collection(db, "patients", patientId, "evolutions");
-        const docRef = await addDoc(evolutionsRef, evolutionData);
+        const evolutionsRef = firebaseCollection(db, "patients", patientId, "evolutions");
+        const docRef = await firebaseAddDoc(evolutionsRef, evolutionData);
         
         // Actualizar lastSession del paciente
         const formattedDate = formatDate(new Date(evolutionData.date));
-        await updateDoc(doc(db, "patients", patientId), {
+        await firebaseUpdateDoc(firebaseDoc(db, "patients", patientId), {
             lastSession: formattedDate,
             updatedAt: new Date().toISOString()
         });
@@ -222,12 +265,12 @@ export async function addEvolution(patientId, evolutionData) {
 // Get patient evolutions
 export async function getEvolutions(patientId) {
     try {
-        const { collection, query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
-        const evolutionsRef = collection(db, "patients", patientId, "evolutions");
-        const evolutionsQuery = query(evolutionsRef, orderBy("date", "desc"));
-        const evolutionsSnapshot = await getDocs(evolutionsQuery);
+        const evolutionsRef = firebaseCollection(db, "patients", patientId, "evolutions");
+        const evolutionsQuery = firebaseQuery(evolutionsRef, firebaseOrderBy("date", "desc"));
+        const evolutionsSnapshot = await firebaseGetDocs(evolutionsQuery);
         
         const evolutionsList = evolutionsSnapshot.docs.map(doc => {
             return { id: doc.id, ...doc.data() };
@@ -246,10 +289,10 @@ export async function getEvolutions(patientId) {
 // Get total evolutions count for a patient
 export async function getEvolutionsCount(patientId) {
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
-        const evolutionsRef = collection(db, "patients", patientId, "evolutions");
-        const evolutionsSnapshot = await getDocs(evolutionsRef);
+        const evolutionsRef = firebaseCollection(db, "patients", patientId, "evolutions");
+        const evolutionsSnapshot = await firebaseGetDocs(evolutionsRef);
         return evolutionsSnapshot.size;
     } catch (error) {
         console.error("Error obteniendo conteo de evoluciones: ", error);
@@ -260,11 +303,11 @@ export async function getEvolutionsCount(patientId) {
 // Upload file to Firebase Storage
 export async function uploadFile(file, patientId, folder) {
     try {
-        const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js");
+        await ensureModulesLoaded();
         
-        const fileRef = ref(storage, `patients/${patientId}/${folder}/${file.name}`);
-        await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(fileRef);
+        const fileRef = firebaseRef(storage, `patients/${patientId}/${folder}/${file.name}`);
+        await firebaseUploadBytes(fileRef, file);
+        const downloadURL = await firebaseGetDownloadURL(fileRef);
         return downloadURL;
     } catch (error) {
         console.error("Error subiendo archivo: ", error);
@@ -276,14 +319,14 @@ export async function uploadFile(file, patientId, folder) {
 // Obtener diagnósticos del paciente
 export async function getDiagnoses(patientId) {
     try {
-        const { collection, query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
         // Obtener diagnósticos de Firebase
-        const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
-        const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
-        const diagnosesSnapshot = await getDocs(diagnosesQuery);
+        const diagnosesRef = firebaseCollection(db, "patients", patientId, "diagnoses");
+        const diagnosesQuery = firebaseQuery(diagnosesRef, firebaseOrderBy("createdAt", "desc"));
+        const diagnosesSnapshot = await firebaseGetDocs(diagnosesQuery);
         
         const diagnosesList = diagnosesSnapshot.docs.map(doc => {
             return { id: doc.id, ...doc.data() };
@@ -301,7 +344,7 @@ export async function getDiagnoses(patientId) {
 // Guardar una plantilla en Firebase
 export async function saveTemplateToFirebase(template) {
     try {
-        const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
@@ -311,10 +354,10 @@ export async function saveTemplateToFirebase(template) {
         }
         
         // Guardar en Firestore
-        const templatesRef = collection(db, "exerciseTemplates");
-        await addDoc(templatesRef, {
+        const templatesRef = firebaseCollection(db, "exerciseTemplates");
+        await firebaseAddDoc(templatesRef, {
             ...template,
-            createdAt: serverTimestamp(),
+            createdAt: firebaseServerTimestamp(),
             userId: "sistema" // En un sistema con autenticación, aquí iría el ID del usuario
         });
         
@@ -332,12 +375,12 @@ export async function saveTemplateToFirebase(template) {
 // Obtener todas las plantillas de Firebase
 export async function getTemplatesFromFirebase() {
     try {
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
-        const templatesRef = collection(db, "exerciseTemplates");
-        const querySnapshot = await getDocs(templatesRef);
+        const templatesRef = firebaseCollection(db, "exerciseTemplates");
+        const querySnapshot = await firebaseGetDocs(templatesRef);
         
         const templates = [];
         querySnapshot.forEach((doc) => {
@@ -360,11 +403,11 @@ export async function getTemplatesFromFirebase() {
 // Eliminar una plantilla de Firebase
 export async function deleteTemplateFromFirebase(templateId) {
     try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        await ensureModulesLoaded();
         
         showLoading();
         
-        await deleteDoc(doc(db, "exerciseTemplates", templateId));
+        await firebaseDeleteDoc(firebaseDoc(db, "exerciseTemplates", templateId));
         
         hideLoading();
         showToast("Plantilla eliminada correctamente", "success");
@@ -385,4 +428,6 @@ export function getPatientsCache() {
 // Establecer el ID del paciente actual
 export function setCurrentPatientId(patientId) {
     currentPatientId = patientId;
+    // Disparar un evento personalizado para notificar del cambio
+    document.dispatchEvent(new CustomEvent('currentPatientChanged', { detail: patientId }));
 }
