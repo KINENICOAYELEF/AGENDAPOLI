@@ -4853,16 +4853,6 @@ function initDiagnosisTab(patientId) {
                 if (diagnoses.length === 0) {
                     diagnosisTimeline.innerHTML = `
                         <p>No hay diagnósticos registrados para este paciente.</p>
-                        <div class="timeline-item fade-in">
-                            <div class="timeline-dot">
-                                <i class="fas fa-file-medical"></i>
-                            </div>
-                            <div class="timeline-content">
-                                <div class="timeline-date">Ejemplo - ${formatDate(new Date())}</div>
-                                <h3 class="timeline-title">Diagnóstico demo</h3>
-                                <p>Este es un ejemplo de diagnóstico. Puede añadir diagnósticos reales utilizando el botón de "Nuevo diagnóstico".</p>
-                            </div>
-                        </div>
                     `;
                 } else {
                     diagnosisTimeline.innerHTML = '';
