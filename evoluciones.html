@@ -2530,6 +2530,123 @@ button:focus {
         scroll-behavior: auto !important;
     }
 }
+
+        /* Estilos para tooltips informativos */
+.tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.tooltip-icon {
+    margin-left: 5px;
+    color: var(--primary);
+    font-size: 14px;
+    cursor: help;
+}
+
+.tooltip-content {
+    position: absolute;
+    z-index: 100;
+    width: 250px;
+    background-color: var(--primary-dark);
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 13px;
+    font-weight: normal;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.tooltip-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--primary-dark) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Estilos para la nueva organización de ejercicios en dos filas */
+.exercise-two-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.exercise-column {
+    background-color: var(--background);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 15px;
+}
+
+.exercise-column h4 {
+    margin-top: 0;
+    color: var(--primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.exercise-column h4 i {
+    margin-right: 8px;
+}
+
+.exercise-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.exercise-detail-item {
+    margin-bottom: 10px;
+}
+
+.exercise-detail-label {
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+}
+
+.exercise-detail-value {
+    font-size: 15px;
+}
+
+/* Estilo especial para valor de intensidad alta */
+.intensity-high-value {
+    color: var(--accent2);
+    font-weight: 500;
+}
+
+/* Estilo especial para valor de intensidad media */
+.intensity-medium-value {
+    color: var(--accent1);
+    font-weight: 500;
+}
+
+/* Estilo especial para valor de intensidad baja */
+.intensity-low-value {
+    color: var(--secondary);
+    font-weight: 500;
+}
     </style>
 </head>
 <body>
@@ -4283,23 +4400,172 @@ function fillEvolutionsTab(evolutions) {
     }
 }
 
-// Función para renderizar ejercicios
+// Función mejorada para renderizar ejercicios con tooltips y 2 columnas
 function renderExercises(exercises) {
     if (!exercises || exercises.length === 0) return '';
     
+    // Información para tooltips
+    const tooltips = {
+        rpe: "RPE (Rating of Perceived Exertion): Escala de 0-10 que indica qué tan duro fue el ejercicio. 1 = muy fácil, 10 = máximo esfuerzo posible.",
+        rir: "RIR (Repeticiones en Reserva): Número de repeticiones que podrías haber hecho pero no hiciste. RIR 2 significa que podrías haber hecho 2 reps más.",
+        series: "Número de veces que se realiza el conjunto completo de repeticiones.",
+        reps: "Número de movimientos completos o repeticiones por serie.",
+        carga: "Peso o resistencia utilizada durante el ejercicio."
+    };
+    
     let exercisesHTML = `
         <div class="evolution-section">
-            <div class="evolution-section-title">Ejercicios prescritos</div>
-            <div class="exercise-table-container" style="margin-top: 10px; overflow-x: auto;">
+            <div class="evolution-section-title">
+                <div class="tooltip-container">
+                    Ejercicios prescritos
+                    <i class="fas fa-info-circle tooltip-icon"></i>
+                    <div class="tooltip-content">
+                        <p><strong>Ejercicios personalizados para la rehabilitación y/o entrenamiento del paciente.</strong></p>
+                        <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
+                        <p><strong>RIR:</strong> Repeticiones en Reserva</p>
+                    </div>
+                </div>
+            </div>
+    `;
+    
+    // Crear vista en dos columnas
+    exercisesHTML += `<div class="exercise-two-columns">`;
+    
+    exercises.forEach((exercise, index) => {
+        // Determinar valores para mostrar
+        const implementStr = exercise.implement || '-';
+        const loadStr = exercise.load ? exercise.load + ' kg' : '-';
+        let effortStr = '';
+        let effortType = exercise.effortType || 'RPE';
+        let effortValue = exercise.effortValue || '';
+        
+        if (exercise.effortType && exercise.effortValue) {
+            effortStr = `${exercise.effortType} ${exercise.effortValue}`;
+        } else if (exercise.intensity) {
+            // Parsear la intensidad para retrocompatibilidad
+            if (exercise.intensity === 'Baja' || exercise.intensity === 'Media' || exercise.intensity === 'Alta') {
+                effortStr = exercise.intensity;
+            } else {
+                effortStr = exercise.intensity;
+            }
+        }
+        
+        // Si effortStr está vacío, usar un valor por defecto
+        if (!effortStr) effortStr = '-';
+        
+        // Determinar la clase de intensidad para colores
+        let intensityClass = 'intensity-medium-value';
+        if (effortType === 'RPE' && effortValue) {
+            if (effortValue <= 4) {
+                intensityClass = 'intensity-low-value';
+            } else if (effortValue >= 8) {
+                intensityClass = 'intensity-high-value';
+            }
+        } else if (effortType === 'RIR' && effortValue) {
+            if (effortValue >= 4) {
+                intensityClass = 'intensity-low-value';
+            } else if (effortValue <= 1) {
+                intensityClass = 'intensity-high-value';
+            }
+        } else if (exercise.intensity) {
+            if (exercise.intensity === 'Baja') {
+                intensityClass = 'intensity-low-value';
+            } else if (exercise.intensity === 'Alta') {
+                intensityClass = 'intensity-high-value';
+            }
+        }
+        
+        exercisesHTML += `
+            <div class="exercise-column">
+                <h4>
+                    <i class="fas fa-dumbbell"></i>
+                    ${exercise.name || 'Ejercicio sin nombre'}
+                </h4>
+                <div class="exercise-detail-grid">
+                    <div class="exercise-detail-item">
+                        <div class="exercise-detail-label">
+                            <div class="tooltip-container">
+                                Series
+                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                <div class="tooltip-content">${tooltips.series}</div>
+                            </div>
+                        </div>
+                        <div class="exercise-detail-value">${exercise.sets || '3'}</div>
+                    </div>
+                    <div class="exercise-detail-item">
+                        <div class="exercise-detail-label">
+                            <div class="tooltip-container">
+                                Repeticiones
+                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                <div class="tooltip-content">${tooltips.reps}</div>
+                            </div>
+                        </div>
+                        <div class="exercise-detail-value">${exercise.reps || '10'}</div>
+                    </div>
+                    <div class="exercise-detail-item">
+                        <div class="exercise-detail-label">
+                            <div class="tooltip-container">
+                                Implemento
+                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                <div class="tooltip-content">Material o equipo utilizado para realizar el ejercicio.</div>
+                            </div>
+                        </div>
+                        <div class="exercise-detail-value">${implementStr}</div>
+                    </div>
+                    <div class="exercise-detail-item">
+                        <div class="exercise-detail-label">
+                            <div class="tooltip-container">
+                                Carga
+                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                <div class="tooltip-content">${tooltips.carga}</div>
+                            </div>
+                        </div>
+                        <div class="exercise-detail-value">${loadStr}</div>
+                    </div>
+                    <div class="exercise-detail-item">
+                        <div class="exercise-detail-label">
+                            <div class="tooltip-container">
+                                Intensidad
+                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                <div class="tooltip-content">
+                                    ${effortType === 'RPE' ? tooltips.rpe : tooltips.rir}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="exercise-detail-value ${intensityClass}">${effortStr}</div>
+                    </div>
+                </div>
+                ${exercise.notes ? `
+                <div class="exercise-detail-item" style="margin-top: 10px;">
+                    <div class="exercise-detail-label">Observaciones</div>
+                    <div class="exercise-detail-value" style="font-size: 13px;">${exercise.notes}</div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    exercisesHTML += `</div>`;
+    
+    // Incluir la tabla tradicional como opción alternativa con un botón para cambiar la vista
+    exercisesHTML += `
+        <div class="tab-view-toggle" style="text-align: right; margin-top: 5px;">
+            <button type="button" class="btn-example toggle-exercise-view" onclick="toggleExerciseView(this)" data-view="column">
+                <i class="fas fa-table"></i> Cambiar a vista de tabla
+            </button>
+        </div>
+        
+        <div class="exercise-table-view" style="display: none; margin-top: 15px;">
+            <div class="exercise-table-container" style="margin-bottom: 15px; overflow-x: auto;">
                 <table class="exercise-table">
                     <thead>
                         <tr>
-                            <th>Ejercicio</th>
-                            <th>Implemento</th>
-                            <th>Series x Reps</th>
-                            <th>Carga</th>
-                            <th>Esfuerzo</th>
-                            <th>Observaciones</th>
+                            <th style="width: 25%;">Ejercicio</th>
+                            <th style="width: 15%;">Implemento</th>
+                            <th style="width: 10%;">Series x Reps</th>
+                            <th style="width: 10%;">Carga</th>
+                            <th style="width: 15%;">Intensidad</th>
+                            <th style="width: 25%;">Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -4314,12 +4580,7 @@ function renderExercises(exercises) {
         if (exercise.effortType && exercise.effortValue) {
             effortStr = `${exercise.effortType} ${exercise.effortValue}`;
         } else if (exercise.intensity) {
-            // Parsear la intensidad para retrocompatibilidad
-            if (exercise.intensity === 'Baja' || exercise.intensity === 'Media' || exercise.intensity === 'Alta') {
-                effortStr = exercise.intensity;
-            } else {
-                effortStr = exercise.intensity;
-            }
+            effortStr = exercise.intensity;
         }
         
         // Si effortStr está vacío, usar un valor por defecto
@@ -4353,8 +4614,33 @@ function renderExercises(exercises) {
                     </tbody>
                 </table>
             </div>
+            <div class="tab-view-toggle" style="text-align: right; margin-top: 5px;">
+                <button type="button" class="btn-example toggle-exercise-view" onclick="toggleExerciseView(this)" data-view="table">
+                    <i class="fas fa-columns"></i> Cambiar a vista de columnas
+                </button>
+            </div>
         </div>
+    </div>
     `;
+    
+    // Añadir función global para alternar entre vistas
+    if (typeof window.toggleExerciseView !== 'function') {
+        window.toggleExerciseView = function(button) {
+            const currentView = button.getAttribute('data-view');
+            const columnView = button.closest('.evolution-section').querySelector('.exercise-two-columns');
+            const tableView = button.closest('.evolution-section').querySelector('.exercise-table-view');
+            
+            if (currentView === 'column') {
+                // Cambiar a vista de tabla
+                columnView.style.display = 'none';
+                tableView.style.display = 'block';
+            } else {
+                // Cambiar a vista de columnas
+                columnView.style.display = 'grid';
+                tableView.style.display = 'none';
+            }
+        };
+    }
     
     return exercisesHTML;
 }
@@ -4674,7 +4960,7 @@ async function getDiagnoses(patientId) {
     }
 }
 
-// Abrir modal de nuevo diagnóstico
+// Función mejorada para abrir el modal de diagnóstico
 function openDiagnosisModal(patientId) {
     // Crear modal de diagnóstico
     const diagnosisModal = document.createElement('div');
@@ -4695,18 +4981,182 @@ function openDiagnosisModal(patientId) {
                         <label class="form-label">Fecha de evaluación</label>
                         <input type="date" class="form-control" id="diagnosisDate" value="${new Date().toISOString().split('T')[0]}" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Diagnóstico médico (CIE-10)</label>
-                        <div class="cif-search" style="margin-bottom: 10px;">
-                            <i class="fas fa-search"></i>
-                            <input type="text" class="form-control" id="cieSearchInput" placeholder="Buscar código CIE-10...">
+                    
+                    <div class="accordion active">
+                        <div class="accordion-header">
+                            <span>Información médica</span>
+                            <i class="fas fa-chevron-down accordion-icon"></i>
                         </div>
-                        <input type="text" class="form-control" id="diagnosisCIE" placeholder="Ej: M54.5 Lumbago" required>
+                        <div class="accordion-body">
+                            <div class="form-group">
+                                <label class="form-label">Diagnóstico médico</label>
+                                <input type="text" class="form-control" id="diagnosisCIE" placeholder="Ej: Lumbago, Cervicalgia, Tendinitis, etc." required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Motivo de consulta</label>
+                                <textarea class="form-control" id="consultReason" rows="2" placeholder="Descripción del motivo por el que el paciente acude a kinesiología"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Antecedentes relevantes</label>
+                                <textarea class="form-control" id="medicalBackground" rows="2" placeholder="Antecedentes médicos relevantes para el caso"></textarea>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Diagnóstico kinesiológico</label>
-                        <textarea class="form-control" id="diagnosisText" rows="5" placeholder="Ingrese el diagnóstico kinesiológico detallado" required></textarea>
+                    
+                    <div class="accordion active">
+                        <div class="accordion-header">
+                            <span>Diagnóstico kinesiológico funcional</span>
+                            <i class="fas fa-chevron-down accordion-icon"></i>
+                        </div>
+                        <div class="accordion-body">
+                            <div class="form-group">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <label class="form-label">Descripción funcional</label>
+                                    <button type="button" class="btn-example" style="font-size: 13px; color: var(--primary);" id="diagnosisAssistantBtn">
+                                        <i class="fas fa-magic"></i> Asistente de diagnóstico
+                                    </button>
+                                </div>
+                                <textarea class="form-control" id="diagnosisText" rows="5" placeholder="Ingrese el diagnóstico kinesiológico detallado en términos de limitación funcional, restricción de participación y alteraciones estructurales según el modelo CIF" required></textarea>
+                            </div>
+                            
+                            <div id="diagnosisAssistantContainer" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                <h4 style="margin-top: 0; color: var(--primary);">Asistente de Diagnóstico Funcional</h4>
+                                <p style="margin-bottom: 15px; font-size: 14px;">Seleccione las opciones que mejor describan al paciente para generar un diagnóstico funcional según el modelo CIF.</p>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Región anatómica principal</label>
+                                    <select class="form-control" id="assistantRegion">
+                                        <option value="">Seleccione región...</option>
+                                        <option value="cervical">Columna cervical</option>
+                                        <option value="dorsal">Columna dorsal</option>
+                                        <option value="lumbar">Columna lumbar</option>
+                                        <option value="hombro">Hombro</option>
+                                        <option value="codo">Codo</option>
+                                        <option value="muñeca">Muñeca y mano</option>
+                                        <option value="cadera">Cadera</option>
+                                        <option value="rodilla">Rodilla</option>
+                                        <option value="tobillo">Tobillo y pie</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-col">
+                                        <div class="form-group">
+                                            <label class="form-label">Intensidad del dolor (EVA)</label>
+                                            <select class="form-control" id="assistantPain">
+                                                <option value="">Seleccione...</option>
+                                                <option value="leve">Leve (1-3)</option>
+                                                <option value="moderado">Moderado (4-6)</option>
+                                                <option value="severo">Severo (7-10)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-col">
+                                        <div class="form-group">
+                                            <label class="form-label">Tipo de dolor</label>
+                                            <select class="form-control" id="assistantPainType">
+                                                <option value="">Seleccione...</option>
+                                                <option value="mecanico">Mecánico</option>
+                                                <option value="neuropatico">Neuropático</option>
+                                                <option value="inflamatorio">Inflamatorio</option>
+                                                <option value="miofascial">Miofascial</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Limitaciones funcionales</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitMovilidad" class="assistant-checkbox">
+                                            <label for="limitMovilidad">Movilidad</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitFuerza" class="assistant-checkbox">
+                                            <label for="limitFuerza">Fuerza</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitEstabilidad" class="assistant-checkbox">
+                                            <label for="limitEstabilidad">Estabilidad</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitPropiocepcion" class="assistant-checkbox">
+                                            <label for="limitPropiocepcion">Propiocepción</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitResistencia" class="assistant-checkbox">
+                                            <label for="limitResistencia">Resistencia</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="limitEquilibrio" class="assistant-checkbox">
+                                            <label for="limitEquilibrio">Equilibrio</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Estructuras anatómicas afectadas</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="estructuraMuscular" class="assistant-checkbox">
+                                            <label for="estructuraMuscular">Muscular</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="estructuraArticular" class="assistant-checkbox">
+                                            <label for="estructuraArticular">Articular</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="estructuraTendinosa" class="assistant-checkbox">
+                                            <label for="estructuraTendinosa">Tendinosa</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="estructuraNervio" class="assistant-checkbox">
+                                            <label for="estructuraNervio">Nerviosa</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="estructuraLigamento" class="assistant-checkbox">
+                                            <label for="estructuraLigamento">Ligamentosa</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Restricciones de participación</label>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="restriccionLaboral" class="assistant-checkbox">
+                                            <label for="restriccionLaboral">Laboral</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="restriccionDeportiva" class="assistant-checkbox">
+                                            <label for="restriccionDeportiva">Deportiva</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="restriccionAVD" class="assistant-checkbox">
+                                            <label for="restriccionAVD">Actividades cotidianas</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" id="restriccionSocial" class="assistant-checkbox">
+                                            <label for="restriccionSocial">Social</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                                    <button type="button" class="action-btn btn-secondary" id="cancelAssistantBtn">
+                                        Cancelar
+                                    </button>
+                                    <button type="button" class="action-btn btn-primary" id="generateDiagnosisBtn">
+                                        <i class="fas fa-magic"></i> Generar diagnóstico
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    
                     <div class="form-group" style="margin-top: 20px; text-align: right;">
                         <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelDiagnosisBtn">Cancelar</button>
                         <button type="submit" class="action-btn btn-primary">Guardar diagnóstico</button>
@@ -4719,6 +5169,13 @@ function openDiagnosisModal(patientId) {
     document.body.appendChild(diagnosisModal);
     setTimeout(() => diagnosisModal.classList.add('active'), 50);
     
+    // Eventos para los acordeones
+    diagnosisModal.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', function() {
+            this.parentElement.classList.toggle('active');
+        });
+    });
+    
     // Eventos para el modal
     document.getElementById('closeDiagnosisModal').addEventListener('click', function() {
         diagnosisModal.classList.remove('active');
@@ -4730,52 +5187,23 @@ function openDiagnosisModal(patientId) {
         setTimeout(() => document.body.removeChild(diagnosisModal), 300);
     });
     
-    // Añadir funcionalidad para búsqueda de códigos CIE
-    const cieSearchInput = document.getElementById('cieSearchInput');
-    if (cieSearchInput) {
-        cieSearchInput.addEventListener('input', function() {
-            // En una implementación real, esto buscaría en una base de datos de códigos CIE
-            const searchTerm = this.value.toLowerCase();
-            if (searchTerm.length < 2) return;
-            
-            // Códigos CIE de ejemplo
-            const cieCodes = [
-                { code: 'M54.5', desc: 'Lumbago' },
-                { code: 'M54.4', desc: 'Lumbago con ciática' },
-                { code: 'M54.1', desc: 'Radiculopatía' },
-                { code: 'M25.5', desc: 'Dolor articular' },
-                { code: 'M79.1', desc: 'Mialgia' }
-            ];
-            
-            const results = cieCodes.filter(item => 
-                item.code.toLowerCase().includes(searchTerm) ||
-                item.desc.toLowerCase().includes(searchTerm)
-            );
-            
-            // Mostrar resultados
-            let resultHTML = '';
-            if (results.length > 0) {
-                resultHTML = '<div style="border: 1px solid var(--border); border-radius: 4px; margin-top: 5px; max-height: 150px; overflow-y: auto;">';
-                results.forEach(result => {
-                    resultHTML += `<div style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border);" 
-                                   onclick="document.getElementById('diagnosisCIE').value = '${result.code} ${result.desc}'">
-                                   <strong>${result.code}</strong>: ${result.desc}
-                                  </div>`;
-                });
-                resultHTML += '</div>';
-            }
-            
-            // Añadir resultados debajo del input
-            const resultsContainer = document.getElementById('cieSearchResults');
-            if (!resultsContainer) {
-                const container = document.createElement('div');
-                container.id = 'cieSearchResults';
-                cieSearchInput.insertAdjacentElement('afterend', container);
-            }
-            
-            document.getElementById('cieSearchResults').innerHTML = resultHTML;
-        });
-    }
+    // Evento para mostrar/ocultar el asistente de diagnóstico
+    document.getElementById('diagnosisAssistantBtn').addEventListener('click', function() {
+        const container = document.getElementById('diagnosisAssistantContainer');
+        if (container) {
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        }
+    });
+    
+    // Evento para cancelar el asistente
+    document.getElementById('cancelAssistantBtn').addEventListener('click', function() {
+        document.getElementById('diagnosisAssistantContainer').style.display = 'none';
+    });
+    
+    // Evento para generar diagnóstico con el asistente
+    document.getElementById('generateDiagnosisBtn').addEventListener('click', function() {
+        generateFunctionalDiagnosis();
+    });
     
     document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -4784,6 +5212,8 @@ function openDiagnosisModal(patientId) {
         const diagnosisDate = document.getElementById('diagnosisDate').value;
         const diagnosisCIE = document.getElementById('diagnosisCIE').value;
         const diagnosisText = document.getElementById('diagnosisText').value;
+        const consultReason = document.getElementById('consultReason')?.value || '';
+        const medicalBackground = document.getElementById('medicalBackground')?.value || '';
         
         // En una implementación real, esto guardaría el diagnóstico en Firebase
         // Por ahora, solo actualizamos la interfaz
@@ -4807,6 +5237,8 @@ function openDiagnosisModal(patientId) {
                     <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
                     <h3 class="timeline-title">${diagnosisCIE}</h3>
                     <p>${diagnosisText}</p>
+                    ${consultReason ? `<div style="margin-top: 10px;"><strong>Motivo de consulta:</strong> ${consultReason}</div>` : ''}
+                    ${medicalBackground ? `<div style="margin-top: 5px;"><strong>Antecedentes:</strong> ${medicalBackground}</div>` : ''}
                 </div>
             `;
             
@@ -4825,6 +5257,176 @@ function openDiagnosisModal(patientId) {
         diagnosisModal.classList.remove('active');
         setTimeout(() => document.body.removeChild(diagnosisModal), 300);
     });
+}
+
+// Función para generar diagnóstico funcional basado en las selecciones del asistente
+function generateFunctionalDiagnosis() {
+    // Obtener valores seleccionados
+    const region = document.getElementById('assistantRegion').value;
+    const painIntensity = document.getElementById('assistantPain').value;
+    const painType = document.getElementById('assistantPainType').value;
+    
+    // Obtener limitaciones funcionales seleccionadas
+    const limitations = [];
+    document.querySelectorAll('[id^="limit"]:checked').forEach(el => {
+        limitations.push(el.id.replace('limit', '').toLowerCase());
+    });
+    
+    // Obtener estructuras afectadas seleccionadas
+    const structures = [];
+    document.querySelectorAll('[id^="estructura"]:checked').forEach(el => {
+        structures.push(el.id.replace('estructura', '').toLowerCase());
+    });
+    
+    // Obtener restricciones de participación seleccionadas
+    const restrictions = [];
+    document.querySelectorAll('[id^="restriccion"]:checked').forEach(el => {
+        restrictions.push(el.id.replace('restriccion', '').toLowerCase());
+    });
+    
+    // Verificar que se hayan seleccionado los campos mínimos necesarios
+    if (!region) {
+        showToast("Debe seleccionar la región anatómica", "error");
+        return;
+    }
+    
+    if (!painIntensity) {
+        showToast("Debe seleccionar la intensidad del dolor", "error");
+        return;
+    }
+    
+    if (limitations.length === 0) {
+        showToast("Debe seleccionar al menos una limitación funcional", "error");
+        return;
+    }
+    
+    if (structures.length === 0) {
+        showToast("Debe seleccionar al menos una estructura afectada", "error");
+        return;
+    }
+    
+    // Mapeo de valores para el texto
+    const regionMap = {
+        'cervical': 'región cervical',
+        'dorsal': 'región dorsal',
+        'lumbar': 'región lumbar',
+        'hombro': 'articulación del hombro',
+        'codo': 'articulación del codo',
+        'muñeca': 'articulación de la muñeca y mano',
+        'cadera': 'articulación de la cadera',
+        'rodilla': 'articulación de la rodilla',
+        'tobillo': 'complejo articular del tobillo y pie'
+    };
+    
+    const painMap = {
+        'leve': 'de intensidad leve (EVA 1-3/10)',
+        'moderado': 'de intensidad moderada (EVA 4-6/10)',
+        'severo': 'de intensidad severa (EVA 7-10/10)'
+    };
+    
+    const painTypeMap = {
+        'mecanico': 'de características mecánicas',
+        'neuropatico': 'de características neuropáticas',
+        'inflamatorio': 'de características inflamatorias',
+        'miofascial': 'de origen miofascial'
+    };
+    
+    // Mapeo de limitaciones
+    const limitationDescriptions = {
+        'movilidad': 'rango de movimiento articular',
+        'fuerza': 'fuerza muscular',
+        'estabilidad': 'estabilidad articular',
+        'propiocepcion': 'propiocepción',
+        'resistencia': 'resistencia muscular',
+        'equilibrio': 'equilibrio'
+    };
+    
+    // Mapeo de estructuras
+    const structureDescriptions = {
+        'muscular': 'musculatura',
+        'articular': 'componentes articulares',
+        'tendinosa': 'estructuras tendinosas',
+        'nervio': 'tejido nervioso',
+        'ligamento': 'estructuras ligamentosas'
+    };
+    
+    // Mapeo de restricciones
+    const restrictionDescriptions = {
+        'laboral': 'actividades laborales',
+        'deportiva': 'actividades deportivas',
+        'avd': 'actividades de la vida diaria',
+        'social': 'participación social'
+    };
+    
+    // Construir el diagnóstico
+    let diagnosis = `Paciente presenta disfunción ${regionMap[region] || region} con dolor ${painMap[painIntensity] || painIntensity}`;
+    
+    // Añadir tipo de dolor si está seleccionado
+    if (painType) {
+        diagnosis += ` ${painTypeMap[painType] || painType}`;
+    }
+    
+    // Añadir estructuras afectadas
+    if (structures.length > 0) {
+        diagnosis += `, asociado a compromiso de `;
+        const structureTexts = structures.map(s => structureDescriptions[s] || s);
+        
+        if (structureTexts.length === 1) {
+            diagnosis += structureTexts[0];
+        } else if (structureTexts.length === 2) {
+            diagnosis += `${structureTexts[0]} y ${structureTexts[1]}`;
+        } else {
+            const lastStructure = structureTexts.pop();
+            diagnosis += `${structureTexts.join(', ')} y ${lastStructure}`;
+        }
+    }
+    
+    // Añadir limitaciones funcionales
+    if (limitations.length > 0) {
+        diagnosis += `. Se evidencia alteración en `;
+        const limitationTexts = limitations.map(l => limitationDescriptions[l] || l);
+        
+        if (limitationTexts.length === 1) {
+            diagnosis += limitationTexts[0];
+        } else if (limitationTexts.length === 2) {
+            diagnosis += `${limitationTexts[0]} y ${limitationTexts[1]}`;
+        } else {
+            const lastLimitation = limitationTexts.pop();
+            diagnosis += `${limitationTexts.join(', ')} y ${lastLimitation}`;
+        }
+    }
+    
+    // Añadir restricciones de participación
+    if (restrictions.length > 0) {
+        diagnosis += `, generando restricción en `;
+        const restrictionTexts = restrictions.map(r => restrictionDescriptions[r] || r);
+        
+        if (restrictionTexts.length === 1) {
+            diagnosis += restrictionTexts[0];
+        } else if (restrictionTexts.length === 2) {
+            diagnosis += `${restrictionTexts[0]} y ${restrictionTexts[1]}`;
+        } else {
+            const lastRestriction = restrictionTexts.pop();
+            diagnosis += `${restrictionTexts.join(', ')} y ${lastRestriction}`;
+        }
+    }
+    
+    diagnosis += '.';
+    
+    // Añadir recomendación basada en CIF
+    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
+    
+    // Establecer el diagnóstico en el campo de texto
+    const diagnosisTextElement = document.getElementById('diagnosisText');
+    if (diagnosisTextElement) {
+        diagnosisTextElement.value = diagnosis;
+    }
+    
+    // Ocultar el asistente
+    document.getElementById('diagnosisAssistantContainer').style.display = 'none';
+    
+    // Mostrar mensaje
+    showToast("Diagnóstico generado correctamente", "success");
 }
 
 // Configurar categorías CIF
@@ -5721,14 +6323,14 @@ function showNewEvolutionModal() {
     }
 }
 
-// Change view function - función mejorada para navegación
+// Función mejorada para cambiar entre vistas
 function changeView(viewName) {
     try {
         console.log(`Cambiando a vista: ${viewName}`);
         
         // Validar el nombre de la vista
         const views = {
-            dashboard: null, // Se cargará desde el contenido original
+            dashboard: window.dashboardContent || null,
             pacientes: document.getElementById('pacientesView')?.innerHTML,
             evoluciones: document.getElementById('evolucionesView')?.innerHTML,
             reportes: document.getElementById('reportesView')?.innerHTML,
@@ -5784,39 +6386,138 @@ function changeView(viewName) {
         }
         
         // Manejar vista dashboard de forma especial
-        if (viewName === 'dashboard' && views.dashboard) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = views.dashboard;
-            
-            // Insertar después del header
-            header.after(tempDiv.firstElementChild);
-            
-            // Cargar pacientes para el dashboard
-            getPatients().then(patients => {
-                renderPatients(patients);
+        if (viewName === 'dashboard') {
+            if (window.dashboardContent) {
+                // Usar el contenido guardado del dashboard
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = window.dashboardContent;
                 
-                // Reconectar el botón de añadir paciente
-                const addBtn = document.getElementById('addPatientBtn');
-                if (addBtn) {
-                    // Eliminar manejadores previos
-                    const newAddBtn = addBtn.cloneNode(true);
-                    addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-                    
-                    newAddBtn.addEventListener('click', function() {
-                        const modal = document.getElementById('newPatientModal');
-                        if (modal) modal.classList.add('active');
-                    });
-                }
+                // Insertar después del header
+                header.after(tempDiv.firstElementChild);
                 
-                // Reconectar botón de añadir evolución
-                if (addEvolutionBtn) {
-                    // Eliminar manejadores previos
-                    const newAddEvolutionBtn = addEvolutionBtn.cloneNode(true);
-                    addEvolutionBtn.parentNode.replaceChild(newAddEvolutionBtn, addEvolutionBtn);
+                // Cargar pacientes para el dashboard
+                getPatients().then(patients => {
+                    renderPatients(patients);
                     
-                    newAddEvolutionBtn.addEventListener('click', showNewEvolutionModal);
-                }
-            });
+                    // Reconectar el botón de añadir paciente
+                    const addBtn = document.getElementById('addPatientBtn');
+                    if (addBtn) {
+                        // Eliminar manejadores previos
+                        const newAddBtn = addBtn.cloneNode(true);
+                        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+                        
+                        newAddBtn.addEventListener('click', function() {
+                            const modal = document.getElementById('newPatientModal');
+                            if (modal) modal.classList.add('active');
+                        });
+                    }
+                    
+                    // Reconectar botón de añadir evolución
+                    if (addEvolutionBtn) {
+                        // Eliminar manejadores previos
+                        const newAddEvolutionBtn = addEvolutionBtn.cloneNode(true);
+                        addEvolutionBtn.parentNode.replaceChild(newAddEvolutionBtn, addEvolutionBtn);
+                        
+                        newAddEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+                    }
+                });
+            } else {
+                // Si no hay contenido guardado, crear una estructura básica
+                const content = document.createElement('div');
+                content.className = 'content';
+                content.innerHTML = `
+                    <!-- Dashboard -->
+                    <div class="dashboard">
+                        <div class="dashboard-card">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="dashboard-info">
+                                <div class="dashboard-title">Pacientes activos</div>
+                                <div class="dashboard-value" id="activePatients">0</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="dashboard-info">
+                                <div class="dashboard-title">Evoluciones este mes</div>
+                                <div class="dashboard-value" id="monthlyEvolutions">0</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="dashboard-info">
+                                <div class="dashboard-title">Objetivos logrados</div>
+                                <div class="dashboard-value" id="completedObjectives">0%</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="dashboard-icon">
+                                <i class="fas fa-user-graduate"></i>
+                            </div>
+                            <div class="dashboard-info">
+                                <div class="dashboard-title">Estudiantes activos</div>
+                                <div class="dashboard-value" id="activeStudents">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient List -->
+                    <div class="section-header">
+                        <h2 class="section-title">Pacientes recientes</h2>
+                        <button class="action-btn btn-primary" id="addPatientBtn">
+                            <i class="fas fa-plus"></i> Nuevo paciente
+                        </button>
+                    </div>
+                    <div class="patient-list" id="patientList">
+                        <!-- Patient cards will be generated here -->
+                        <div class="patient-card" data-id="loading">
+                            <div class="patient-status status-active"></div>
+                            <div class="patient-avatar">...</div>
+                            <h3 class="patient-name">Cargando pacientes...</h3>
+                            <div class="patient-rut">Por favor espere</div>
+                            <div class="patient-info">
+                                <div>
+                                    <div class="patient-label">Última sesión</div>
+                                    <div>--/--/----</div>
+                                </div>
+                                <div>
+                                    <div class="patient-label">Progreso</div>
+                                    <div>--%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Insertar después del header
+                header.after(content);
+                
+                // Guardar para futuras referencias
+                window.dashboardContent = content.outerHTML;
+                
+                // Cargar datos
+                getPatients().then(patients => {
+                    renderPatients(patients);
+                    
+                    // Reconectar botones
+                    const addBtn = document.getElementById('addPatientBtn');
+                    if (addBtn) {
+                        addBtn.addEventListener('click', function() {
+                            const modal = document.getElementById('newPatientModal');
+                            if (modal) modal.classList.add('active');
+                        });
+                    }
+                    
+                    if (addEvolutionBtn) {
+                        addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+                    }
+                });
+            }
         } else {
             // Para otras vistas, crear un template HTML dinámico
             const tempContent = document.createElement('div');
@@ -7287,7 +7988,7 @@ function setupExerciseTable() {
     }
 }
 
-// Función para añadir una fila de ejercicio
+// Función mejorada para añadir una fila de ejercicio con tooltips
 function addExerciseRow(exercise = {}) {
     // Obtener la tabla de ejercicios
     const tableBody = document.getElementById('exerciseTableBody');
@@ -7299,7 +8000,13 @@ function addExerciseRow(exercise = {}) {
     // Crear una nueva fila
     const row = document.createElement('tr');
     
-    // Definir el HTML de la fila con todos los campos
+    // Información para tooltips
+    const tooltips = {
+        rpe: "RPE (Rating of Perceived Exertion): Escala de 0-10 que indica qué tan duro fue el ejercicio. 1 = muy fácil, 10 = máximo esfuerzo posible.",
+        rir: "RIR (Repeticiones en Reserva): Número de repeticiones que podrías haber hecho pero no hiciste. RIR 2 significa que podrías haber hecho 2 reps más."
+    };
+    
+    // Definir el HTML de la fila con todos los campos y tooltips
     row.innerHTML = `
         <td>
             <input type="text" class="form-control" placeholder="Nombre" 
@@ -7328,13 +8035,31 @@ function addExerciseRow(exercise = {}) {
                    value="${exercise.load || ''}" style="width: 100%; text-align: center;">
         </td>
         <td>
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <select class="form-control" style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 5px; position: relative;">
+                <select class="form-control effort-type-select" style="flex: 1;">
                     <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
                     <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
                 </select>
                 <input type="number" class="form-control" min="0" max="10" step="1"
                        value="${exercise.effortValue || ''}" style="flex: 1; text-align: center;">
+                <div class="tooltip-container" style="position: absolute; right: -20px; top: 50%; transform: translateY(-50%);">
+                    <i class="fas fa-info-circle tooltip-icon"></i>
+                    <div class="tooltip-content" style="width: 250px; right: 0; left: auto; transform: none;">
+                        <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
+                        <p>Escala de percepción del esfuerzo donde:</p>
+                        <p>1-3 = Muy fácil</p>
+                        <p>4-6 = Moderado</p>
+                        <p>7-8 = Difícil</p>
+                        <p>9-10 = Máximo esfuerzo</p>
+                        <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
+                        <p><strong>RIR:</strong> Repeticiones en Reserva</p>
+                        <p>Cuántas repeticiones más podría hacer:</p>
+                        <p>0 = No podría hacer más (fallo)</p>
+                        <p>1-2 = Cercano al fallo</p>
+                        <p>3-4 = Moderadamente difícil</p>
+                        <p>5+ = Fácil</p>
+                    </div>
+                </div>
             </div>
         </td>
         <td>
@@ -7347,6 +8072,44 @@ function addExerciseRow(exercise = {}) {
             </button>
         </td>
     `;
+    
+    // Añadir tooltip dinámico que cambia según el tipo de esfuerzo seleccionado
+    const effortTypeSelect = row.querySelector('.effort-type-select');
+    if (effortTypeSelect) {
+        effortTypeSelect.addEventListener('change', function() {
+            const tooltipIcon = row.querySelector('.tooltip-icon');
+            if (tooltipIcon) {
+                const tooltipContent = tooltipIcon.nextElementSibling;
+                if (tooltipContent) {
+                    if (this.value === 'RPE') {
+                        tooltipContent.innerHTML = `
+                            <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
+                            <p>Escala de percepción del esfuerzo donde:</p>
+                            <p>1-3 = Muy fácil</p>
+                            <p>4-6 = Moderado</p>
+                            <p>7-8 = Difícil</p>
+                            <p>9-10 = Máximo esfuerzo</p>
+                            <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
+                            <p><strong>RIR:</strong> Repeticiones en Reserva</p>
+                            <p>Cuántas repeticiones más podría hacer</p>
+                        `;
+                    } else {
+                        tooltipContent.innerHTML = `
+                            <p><strong>RIR:</strong> Repeticiones en Reserva</p>
+                            <p>Cuántas repeticiones más podría hacer:</p>
+                            <p>0 = No podría hacer más (fallo)</p>
+                            <p>1-2 = Cercano al fallo</p>
+                            <p>3-4 = Moderadamente difícil</p>
+                            <p>5+ = Fácil</p>
+                            <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
+                            <p><strong>RPE:</strong> Rating of Perceived Exertion</p>
+                            <p>Escala de percepción del esfuerzo (0-10)</p>
+                        `;
+                    }
+                }
+            }
+        });
+    }
     
     // Añadir evento para eliminar ejercicio
     const deleteBtn = row.querySelector('.exercise-delete-btn');
@@ -7736,6 +8499,214 @@ function saveCurrentExercisesAsTemplate() {
     }
 }
 
+        // Función para guardar una plantilla en Firebase
+async function saveTemplateToFirebase(template) {
+    try {
+        showLoading();
+        
+        // Asegurarse de que template tenga una ID única
+        if (!template.id) {
+            template.id = 'template_' + Date.now();
+        }
+        
+        // Guardar en Firestore
+        const templatesRef = collection(db, "exerciseTemplates");
+        await addDoc(templatesRef, {
+            ...template,
+            createdAt: serverTimestamp(),
+            userId: "sistema" // En un sistema con autenticación, aquí iría el ID del usuario
+        });
+        
+        hideLoading();
+        showToast("Plantilla guardada en la nube correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error al guardar plantilla en Firebase:", error);
+        hideLoading();
+        showToast("Error al guardar plantilla: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función para obtener todas las plantillas de Firebase
+async function getTemplatesFromFirebase() {
+    try {
+        showLoading();
+        
+        const templatesRef = collection(db, "exerciseTemplates");
+        const querySnapshot = await getDocs(templatesRef);
+        
+        const templates = [];
+        querySnapshot.forEach((doc) => {
+            templates.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        hideLoading();
+        return templates;
+    } catch (error) {
+        console.error("Error al obtener plantillas de Firebase:", error);
+        hideLoading();
+        showToast("Error al cargar plantillas: " + error.message, "error");
+        return [];
+    }
+}
+
+// Función para eliminar una plantilla de Firebase
+async function deleteTemplateFromFirebase(templateId) {
+    try {
+        showLoading();
+        
+        await deleteDoc(doc(db, "exerciseTemplates", templateId));
+        
+        hideLoading();
+        showToast("Plantilla eliminada correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error al eliminar plantilla de Firebase:", error);
+        hideLoading();
+        showToast("Error al eliminar plantilla: " + error.message, "error");
+        return false;
+    }
+}
+
+// Modificar la función existente para guardar plantilla
+async function confirmSaveTemplate() {
+    const nameInput = document.getElementById('templateNameInput');
+    const categoryInput = document.getElementById('templateCategoryInput');
+    
+    if (!nameInput || !categoryInput) {
+        showToast("Error: No se encontraron los campos del formulario", "error");
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const category = categoryInput.value.trim();
+    
+    if (!name) {
+        showToast("Debe ingresar un nombre para la plantilla", "error");
+        return;
+    }
+    
+    const exercises = getExercisesData();
+    
+    if (exercises.length === 0) {
+        showToast("No hay ejercicios para guardar en la plantilla", "error");
+        return;
+    }
+    
+    // Generar ID único
+    const templateId = 'template_' + Date.now();
+    
+    // Crear objeto de plantilla
+    const newTemplate = {
+        id: templateId,
+        name: name,
+        category: category,
+        exercises: exercises,
+        createdAt: new Date().toISOString()
+    };
+    
+    // Mostrar mensaje de guardado
+    showToast("Guardando plantilla...", "info");
+    
+    // Guardar en localStorage como respaldo
+    customTemplates.push(newTemplate);
+    saveCustomTemplates();
+    
+    // Guardar en Firebase
+    await saveTemplateToFirebase(newTemplate);
+    
+    // Ocultar formulario
+    const saveTemplateForm = document.getElementById('saveTemplateForm');
+    if (saveTemplateForm) {
+        saveTemplateForm.style.display = 'none';
+    }
+    
+    if (nameInput) nameInput.value = '';
+    if (categoryInput) categoryInput.value = '';
+}
+
+// Modificar la función para cargar plantillas personalizadas
+async function loadCustomTemplates() {
+    try {
+        // Primero intentar cargar del localStorage como respaldo
+        const savedTemplates = localStorage.getItem('exerciseTemplates');
+        if (savedTemplates) {
+            customTemplates = JSON.parse(savedTemplates);
+        }
+        
+        // Luego cargar desde Firebase
+        const firebaseTemplates = await getTemplatesFromFirebase();
+        
+        // Fusionar plantillas, priorizando las de Firebase
+        if (firebaseTemplates.length > 0) {
+            // Crear un mapa para identificar plantillas duplicadas por nombre
+            const templateMap = new Map();
+            
+            // Primero añadir todas las plantillas de Firebase
+            firebaseTemplates.forEach(template => {
+                templateMap.set(template.name.toLowerCase(), template);
+            });
+            
+            // Luego añadir las de localStorage que no están en Firebase
+            customTemplates.forEach(template => {
+                if (!templateMap.has(template.name.toLowerCase())) {
+                    templateMap.set(template.name.toLowerCase(), template);
+                }
+            });
+            
+            // Convertir el mapa de vuelta a un array
+            customTemplates = Array.from(templateMap.values());
+            
+            // Guardar la versión fusionada en localStorage
+            localStorage.setItem('exerciseTemplates', JSON.stringify(customTemplates));
+        }
+        
+        // Renderizar botones para plantillas personalizadas
+        renderCustomTemplateButtons();
+        
+        // Renderizar lista en el modal
+        renderSavedTemplatesList();
+        
+        showToast("Plantillas cargadas correctamente", "success");
+    } catch (error) {
+        console.error("Error cargando plantillas personalizadas:", error);
+        showToast("Error al cargar plantillas guardadas", "error");
+    }
+}
+
+// Modificar función para eliminar plantilla
+async function deleteCustomTemplate(templateId) {
+    if (confirm('¿Está seguro que desea eliminar esta plantilla? Esta acción no se puede deshacer.')) {
+        try {
+            // Comprobar si es un ID de Firebase (contiene "/")
+            if (templateId.includes("/") || templateId.length > 20) {
+                // Es un ID de Firebase
+                await deleteTemplateFromFirebase(templateId);
+            } else {
+                // Es un ID local
+                showToast("Eliminando plantilla local...", "info");
+            }
+            
+            // Eliminar de la lista local también
+            customTemplates = customTemplates.filter(t => t.id !== templateId);
+            saveCustomTemplates();
+            
+            showToast("Plantilla eliminada correctamente", "success");
+            
+            // Actualizar la interfaz
+            renderCustomTemplateButtons();
+            renderSavedTemplatesList();
+        } catch (error) {
+            console.error("Error al eliminar plantilla:", error);
+            showToast("Error al eliminar: " + error.message, "error");
+        }
+    }
+}
+
 // Confirmar guardado de plantilla
 function confirmSaveTemplate() {
     const nameInput = document.getElementById('templateNameInput');
@@ -7820,6 +8791,464 @@ function editCustomTemplate(templateId) {
         }
         
         showToast("Plantilla cargada para editar", "info");
+    }
+}
+
+        // Función para exportar todas las plantillas a un archivo JSON
+function exportTemplatesToJson() {
+    try {
+        if (customTemplates.length === 0) {
+            showToast("No hay plantillas para exportar", "error");
+            return;
+        }
+        
+        // Crear objeto con metadatos y las plantillas
+        const exportData = {
+            exportDate: new Date().toISOString(),
+            exportVersion: "1.0",
+            source: "SistemaKine",
+            templates: customTemplates
+        };
+        
+        // Convertir a JSON
+        const jsonData = JSON.stringify(exportData, null, 2);
+        
+        // Crear blob y link para descargar
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Crear link invisible y hacer clic en él
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `plantillas_ejercicios_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showToast("Plantillas exportadas correctamente", "success");
+    } catch (error) {
+        console.error("Error al exportar plantillas:", error);
+        showToast("Error al exportar plantillas: " + error.message, "error");
+    }
+}
+
+const manageCustomTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
+if (manageCustomTemplatesBtn) {
+    manageCustomTemplatesBtn.addEventListener('click', function() {
+        // Mostrar el nuevo gestor de plantillas en la nube
+        const modal = document.getElementById('cloudTemplatesModal');
+        if (modal) {
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('active'), 50);
+            
+            // Renderizar lista de plantillas en la nube
+            renderCloudTemplatesList();
+            
+            // Configurar pestañas dentro del modal
+            modal.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remover clase activa de todas las pestañas y contenidos
+                    modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Añadir clase activa a la pestaña clicada y su contenido correspondiente
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    const targetTab = document.getElementById(tabId + 'Tab');
+                    if (targetTab) targetTab.classList.add('active');
+                    
+                    // Si es la pestaña de plantillas locales, renderizar esa lista
+                    if (tabId === 'localTemplates') {
+                        renderSavedTemplatesList();
+                    }
+                });
+            });
+            
+            // Configurar evento para el botón de cerrar
+            const closeBtn = document.getElementById('closeCloudTemplatesModal');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                    }, 300);
+                });
+            }
+            
+            // Configurar evento para guardar en la nube
+            const saveToCloudBtn = document.getElementById('saveCurrentToCloudBtn');
+            if (saveToCloudBtn) {
+                saveToCloudBtn.addEventListener('click', function() {
+                    // Verificar si hay ejercicios
+                    const exercises = getExercisesData();
+                    if (exercises.length === 0) {
+                        showToast("No hay ejercicios para guardar como plantilla", "error");
+                        return;
+                    }
+                    
+                    // Mostrar formulario
+                    const saveForm = document.getElementById('cloudSaveTemplateForm');
+                    if (saveForm) {
+                        saveForm.style.display = 'block';
+                        
+                        // Dar foco al input de nombre
+                        const nameInput = document.getElementById('cloudTemplateNameInput');
+                        if (nameInput) {
+                            nameInput.focus();
+                        }
+                    }
+                });
+            }
+            
+            // Configurar evento para cancelar guardado
+            const cancelSaveBtn = document.getElementById('cancelCloudSaveTemplateBtn');
+            if (cancelSaveBtn) {
+                cancelSaveBtn.addEventListener('click', function() {
+                    const saveForm = document.getElementById('cloudSaveTemplateForm');
+                    if (saveForm) {
+                        saveForm.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Configurar evento para confirmar guardado
+            const confirmSaveBtn = document.getElementById('confirmCloudSaveTemplateBtn');
+            if (confirmSaveBtn) {
+                confirmSaveBtn.addEventListener('click', async function() {
+                    const nameInput = document.getElementById('cloudTemplateNameInput');
+                    const categoryInput = document.getElementById('cloudTemplateCategoryInput');
+                    const descInput = document.getElementById('cloudTemplateDescInput');
+                    
+                    if (!nameInput) {
+                        showToast("Error: No se encontró el campo de nombre", "error");
+                        return;
+                    }
+                    
+                    const name = nameInput.value.trim();
+                    
+                    if (!name) {
+                        showToast("Debe ingresar un nombre para la plantilla", "error");
+                        nameInput.focus();
+                        return;
+                    }
+                    
+                    // Obtener ejercicios
+                    const exercises = getExercisesData();
+                    
+                    if (exercises.length === 0) {
+                        showToast("No hay ejercicios para guardar", "error");
+                        return;
+                    }
+                    
+                    // Crear objeto de plantilla
+                    const newTemplate = {
+                        name: name,
+                        category: categoryInput ? categoryInput.value.trim() : '',
+                        description: descInput ? descInput.value.trim() : '',
+                        exercises: exercises,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Guardar en Firebase
+                    await saveTemplateToFirebase(newTemplate);
+                    
+                    // Ocultar formulario
+                    const saveForm = document.getElementById('cloudSaveTemplateForm');
+                    if (saveForm) {
+                        saveForm.style.display = 'none';
+                    }
+                    
+                    // Limpiar campos
+                    if (nameInput) nameInput.value = '';
+                    if (categoryInput) categoryInput.value = '';
+                    if (descInput) descInput.value = '';
+                    
+                    // Refrescar lista
+                    renderCloudTemplatesList();
+                });
+            }
+            
+            // Configurar evento para exportar plantillas
+            const exportBtn = document.getElementById('exportTemplatesBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportTemplatesToJson);
+            }
+            
+            // Configurar evento para importar plantillas
+            const importBtn = document.getElementById('importTemplatesBtn');
+            if (importBtn) {
+                importBtn.addEventListener('click', importTemplatesFromJson);
+            }
+        } else {
+            // Fallback al gestor antiguo si el nuevo no está disponible
+            showCustomTemplatesModal();
+        }
+    });
+}
+        
+// Función para importar plantillas desde un archivo JSON
+async function importTemplatesFromJson() {
+    try {
+        const fileInput = document.getElementById('importTemplatesFile');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            showToast("Por favor, seleccione un archivo JSON", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async (e) => {
+            try {
+                const jsonData = JSON.parse(e.target.result);
+                
+                // Validar formato
+                if (!jsonData.templates || !Array.isArray(jsonData.templates)) {
+                    throw new Error("Formato de archivo inválido");
+                }
+                
+                // Contador de plantillas importadas
+                let importedCount = 0;
+                let errorCount = 0;
+                
+                // Importar cada plantilla
+                for (const template of jsonData.templates) {
+                    if (!template.name || !template.exercises || !Array.isArray(template.exercises)) {
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    // Generar nuevo ID para evitar colisiones
+                    template.id = 'imported_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+                    
+                    // Agregar a las plantillas locales
+                    customTemplates.push(template);
+                    
+                    // Intentar guardar en Firebase si la plantilla es válida
+                    try {
+                        await saveTemplateToFirebase(template);
+                        importedCount++;
+                    } catch (err) {
+                        console.error("Error al guardar plantilla importada en Firebase:", err);
+                        errorCount++;
+                    }
+                }
+                
+                // Guardar en localStorage
+                saveCustomTemplates();
+                
+                // Actualizar la interfaz
+                renderCustomTemplateButtons();
+                renderSavedTemplatesList();
+                
+                // Limpiar input
+                fileInput.value = '';
+                
+                hideLoading();
+                
+                if (errorCount > 0) {
+                    showToast(`Importación parcial: ${importedCount} plantillas importadas, ${errorCount} con errores`, "info");
+                } else {
+                    showToast(`${importedCount} plantillas importadas correctamente`, "success");
+                }
+            } catch (error) {
+                hideLoading();
+                console.error("Error al procesar el archivo JSON:", error);
+                showToast("Error al importar plantillas: " + error.message, "error");
+            }
+        };
+        
+        reader.onerror = () => {
+            hideLoading();
+            showToast("Error al leer el archivo", "error");
+        };
+        
+        reader.readAsText(file);
+    } catch (error) {
+        hideLoading();
+        console.error("Error al importar plantillas:", error);
+        showToast("Error al importar plantillas: " + error.message, "error");
+    }
+}
+
+// Función para renderizar lista de plantillas en la nube
+async function renderCloudTemplatesList() {
+    const container = document.getElementById('cloudTemplatesList');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>';
+    
+    try {
+        // Obtener plantillas de Firebase
+        const templates = await getTemplatesFromFirebase();
+        
+        if (templates.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay plantillas guardadas en la nube</p>';
+            return;
+        }
+        
+        // Agrupar por categoría
+        const groupedTemplates = {};
+        templates.forEach(template => {
+            const category = template.category || 'Sin categoría';
+            if (!groupedTemplates[category]) {
+                groupedTemplates[category] = [];
+            }
+            groupedTemplates[category].push(template);
+        });
+        
+        // Crear contenido HTML
+        let html = '';
+        
+        // Crear acordeón por cada categoría
+        for (const [category, categoryTemplates] of Object.entries(groupedTemplates)) {
+            html += `
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <span>${category} (${categoryTemplates.length})</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="exercise-table-container">
+                            <table class="exercise-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Nombre</th>
+                                        <th style="width: 15%;">Ejercicios</th>
+                                        <th style="width: 35%;">Descripción</th>
+                                        <th style="width: 20%;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            // Añadir cada plantilla de la categoría
+            categoryTemplates.forEach(template => {
+                html += `
+                    <tr>
+                        <td>${template.name || 'Sin nombre'}</td>
+                        <td>${template.exercises?.length || 0} ejercicios</td>
+                        <td>${template.description || '-'}</td>
+                        <td>
+                            <button type="button" class="action-btn btn-secondary use-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; margin-right: 5px;">
+                                <i class="fas fa-play"></i> Usar
+                            </button>
+                            <button type="button" class="action-btn btn-secondary delete-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; background-color: var(--accent2-light);">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Configurar eventos para los acordeones
+        container.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+                const icon = this.querySelector('.accordion-icon');
+                if (icon) {
+                    icon.style.transform = this.parentElement.classList.contains('active') 
+                        ? 'rotate(180deg)' 
+                        : 'rotate(0deg)';
+                }
+            });
+        });
+        
+        // Configurar eventos para los botones
+        container.querySelectorAll('.use-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                loadTemplateFromFirebase(templateId);
+            });
+        });
+        
+        container.querySelectorAll('.delete-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                deleteTemplateFromFirebase(templateId);
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error al renderizar plantillas en la nube:", error);
+        container.innerHTML = `<p style="color: var(--accent2); font-style: italic;">Error al cargar plantillas: ${error.message}</p>`;
+    }
+}
+
+// Función para cargar una plantilla específica desde Firebase
+async function loadTemplateFromFirebase(templateId) {
+    try {
+        showLoading();
+        
+        const templateDoc = await getDoc(doc(db, "exerciseTemplates", templateId));
+        
+        if (!templateDoc.exists()) {
+            hideLoading();
+            showToast("Plantilla no encontrada", "error");
+            return;
+        }
+        
+        const template = {
+            id: templateDoc.id,
+            ...templateDoc.data()
+        };
+        
+        // Cargar ejercicios de la plantilla
+        const tableBody = document.getElementById('exerciseTableBody');
+        if (!tableBody) {
+            hideLoading();
+            showToast("No se encontró la tabla de ejercicios", "error");
+            return;
+        }
+        
+        // Confirmar antes de reemplazar ejercicios existentes
+        if (tableBody.children.length > 0) {
+            if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+                hideLoading();
+                return;
+            }
+            tableBody.innerHTML = '';
+        }
+        
+        // Cargar ejercicios de la plantilla
+        if (template.exercises && Array.isArray(template.exercises)) {
+            template.exercises.forEach(exercise => {
+                addExerciseRow(exercise);
+            });
+        }
+        
+        // Cerrar modal
+        const modal = document.getElementById('cloudTemplatesModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        hideLoading();
+        showToast(`Plantilla "${template.name}" cargada correctamente`, "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar plantilla desde Firebase:", error);
+        showToast("Error al cargar plantilla: " + error.message, "error");
     }
 }
 
@@ -8573,6 +10002,101 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="evolucionesView" style="display: none;"></div>
 <div id="reportesView" style="display: none;"></div>
 <div id="configuracionView" style="display: none;"></div>
+
+     <!-- Modal para gestionar plantillas de ejercicios -->
+<div class="modal-overlay" id="cloudTemplatesModal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Gestión de Plantillas de Ejercicios</h2>
+            <button class="modal-close" id="closeCloudTemplatesModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="tabs">
+                <div class="tab active" data-tab="cloudTemplates">Plantillas en la nube</div>
+                <div class="tab" data-tab="localTemplates">Plantillas locales</div>
+                <div class="tab" data-tab="importExport">Importar/Exportar</div>
+            </div>
+            
+            <!-- Plantillas en la nube -->
+            <div class="tab-content active" id="cloudTemplatesTab">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Plantillas guardadas en la nube</h3>
+                    <button type="button" id="saveCurrentToCloudBtn" class="action-btn btn-primary">
+                        <i class="fas fa-cloud-upload-alt"></i> Guardar en la nube
+                    </button>
+                </div>
+                
+                <div id="cloudTemplatesList" style="margin-bottom: 20px;">
+                    <p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas desde la nube...</p>
+                </div>
+            </div>
+            
+            <!-- Plantillas locales -->
+            <div class="tab-content" id="localTemplatesTab">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Plantillas guardadas localmente</h3>
+                    <button type="button" id="saveCurrentLocallyBtn" class="action-btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar localmente
+                    </button>
+                </div>
+                
+                <div id="localTemplatesList" style="margin-bottom: 20px;">
+                    <p style="color: var(--text-secondary); font-style: italic;">No hay plantillas locales guardadas</p>
+                </div>
+            </div>
+            
+            <!-- Importar/Exportar -->
+            <div class="tab-content" id="importExportTab">
+                <h3 style="margin-top: 0;">Importar/Exportar Plantillas</h3>
+                
+                <div style="background-color: var(--background-alt); padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <h4 style="margin-top: 0;">Exportar Plantillas</h4>
+                    <p style="margin-bottom: 15px;">Exporte todas sus plantillas en un archivo JSON que puede compartir o guardar como respaldo.</p>
+                    <button type="button" id="exportTemplatesBtn" class="action-btn btn-primary">
+                        <i class="fas fa-file-export"></i> Exportar todas las plantillas
+                    </button>
+                </div>
+                
+                <div style="background-color: var(--background-alt); padding: 15px; border-radius: 6px;">
+                    <h4 style="margin-top: 0;">Importar Plantillas</h4>
+                    <p style="margin-bottom: 15px;">Importe plantillas desde un archivo JSON previamente exportado.</p>
+                    <div class="form-group">
+                        <label class="form-label">Seleccionar archivo JSON</label>
+                        <input type="file" accept=".json" class="form-control" id="importTemplatesFile">
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" id="importTemplatesBtn" class="action-btn btn-primary">
+                            <i class="fas fa-file-import"></i> Importar plantillas
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Formulario para guardar plantilla -->
+            <div id="cloudSaveTemplateForm" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 6px; margin-top: 20px;">
+                <h4 style="margin-top: 0;">Guardar como plantilla en la nube</h4>
+                <div class="form-group">
+                    <label class="form-label">Nombre de la plantilla</label>
+                    <input type="text" class="form-control" id="cloudTemplateNameInput" placeholder="Ej: Mi rutina de hombro">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Categoría (opcional)</label>
+                    <input type="text" class="form-control" id="cloudTemplateCategoryInput" placeholder="Ej: Rehabilitación, Fortalecimiento, etc.">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción (opcional)</label>
+                    <textarea class="form-control" id="cloudTemplateDescInput" rows="3" placeholder="Añade una descripción para ayudarte a recordar el propósito de esta plantilla..."></textarea>
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button type="button" id="cancelCloudSaveTemplateBtn" class="action-btn btn-secondary" style="margin-right: 10px;">Cancelar</button>
+                    <button type="button" id="confirmCloudSaveTemplateBtn" class="action-btn btn-primary">Guardar en la nube</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     
 </body>
 </html>
