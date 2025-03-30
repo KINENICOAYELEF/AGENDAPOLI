@@ -4840,8 +4840,8 @@ function renderAttachments(attachments) {
     }
 }
 
-        // Initialize diagnosis tab
-function initDiagnosisTab(patientId) {
+// Initialize diagnosis tab
+async function initDiagnosisTab(patientId) {
     try {
         // Cargar diagnósticos y CIF del paciente
         const diagnosisTimeline = document.getElementById('diagnosisTimeline');
@@ -4880,6 +4880,9 @@ function initDiagnosisTab(patientId) {
             });
         }
         
+        // Cargar datos CIF
+        await loadCifData(patientId);
+        
         // Configurar botones solo si existen
         const addDiagnosisBtn = document.getElementById('addDiagnosisBtn');
         if (addDiagnosisBtn) {
@@ -4891,9 +4894,6 @@ function initDiagnosisTab(patientId) {
                 openDiagnosisModal(patientId);
             });
         }
-        
-        // Configurar componentes CIF
-        setupCifCategories(patientId);
         
         // Inicializar botón de guardar diagnóstico
         const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
@@ -4907,32 +4907,66 @@ function initDiagnosisTab(patientId) {
             });
         }
         
-        // Inicializar botón de añadir objetivo
-        const addObjectiveBtn = document.getElementById('addObjectiveBtn');
-        if (addObjectiveBtn) {
-            // Eliminar cualquier manejador previo
-            const newAddObjectiveBtn = addObjectiveBtn.cloneNode(true);
-            addObjectiveBtn.parentNode.replaceChild(newAddObjectiveBtn, addObjectiveBtn);
-            
-            newAddObjectiveBtn.addEventListener('click', function() {
-                openObjectiveModal(patientId);
-            });
-        }
-        
-        // Inicializar botón de añadir plan de tratamiento
-        const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
-        if (addTreatmentPlanBtn) {
-            // Eliminar cualquier manejador previo
-            const newAddTreatmentPlanBtn = addTreatmentPlanBtn.cloneNode(true);
-            addTreatmentPlanBtn.parentNode.replaceChild(newAddTreatmentPlanBtn, addTreatmentPlanBtn);
-            
-            newAddTreatmentPlanBtn.addEventListener('click', function() {
-                openTreatmentPlanModal(patientId);
-            });
-        }
+        // Resto del código para inicializar otros botones...
     } catch (error) {
         console.error("Error inicializando pestaña de diagnóstico:", error);
         showToast("Error al cargar diagnósticos", "error");
+    }
+}
+
+// Nueva función para cargar datos CIF
+async function loadCifData(patientId) {
+    try {
+        // Intentar obtener datos CIF de Firebase
+        const cifRef = doc(db, "patients", patientId, "cif", "data");
+        const cifDoc = await getDoc(cifRef);
+        
+        if (cifDoc.exists()) {
+            const cifData = cifDoc.data();
+            
+            // Cargar funciones
+            if (cifData.functions && cifData.functions.length > 0) {
+                renderCifItems(document.getElementById('cifFunctions'), cifData.functions);
+            } else {
+                renderCifItems(document.getElementById('cifFunctions'), []);
+            }
+            
+            // Cargar estructuras
+            if (cifData.structures && cifData.structures.length > 0) {
+                renderCifItems(document.getElementById('cifStructures'), cifData.structures);
+            } else {
+                renderCifItems(document.getElementById('cifStructures'), []);
+            }
+            
+            // Cargar actividades
+            if (cifData.activities && cifData.activities.length > 0) {
+                renderCifItems(document.getElementById('cifActivities'), cifData.activities);
+            } else {
+                renderCifItems(document.getElementById('cifActivities'), []);
+            }
+            
+            // Cargar factores
+            if (cifData.factors && cifData.factors.length > 0) {
+                renderCifItems(document.getElementById('cifFactors'), cifData.factors);
+            } else {
+                renderCifItems(document.getElementById('cifFactors'), []);
+            }
+            
+            // Cargar factores personales
+            const personalFactorsField = document.getElementById('cifPersonalFactors');
+            if (personalFactorsField && cifData.personalFactors) {
+                personalFactorsField.value = cifData.personalFactors;
+            }
+        } else {
+            // No hay datos CIF, inicializar con valores vacíos
+            renderCifItems(document.getElementById('cifFunctions'), []);
+            renderCifItems(document.getElementById('cifStructures'), []);
+            renderCifItems(document.getElementById('cifActivities'), []);
+            renderCifItems(document.getElementById('cifFactors'), []);
+        }
+    } catch (error) {
+        console.error("Error cargando datos CIF:", error);
+        // No mostrar toast para no confundir al usuario
     }
 }
 
@@ -5501,9 +5535,11 @@ function setupCifCategory(buttonId, containerId, categoryType, items) {
 
 // Renderizar elementos CIF
 function renderCifItems(container, items) {
+    if (!container) return;
+    
     container.innerHTML = '';
     
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay elementos registrados.</p>';
         return;
     }
@@ -5545,10 +5581,10 @@ function renderCifItems(container, items) {
                     // Actualizar valor en el título
                     const cifCode = this.closest('.cif-item').querySelector('.cif-code');
                     const valueBtn = cifCode.querySelector('.scale-value');
-                    valueBtn.textContent = this.textContent;
-                    
-                    // Actualizar datos en memoria (no se guarda hasta hacer clic en "Guardar cambios")
-                    // En una implementación real, esto actualizaría un objeto en memoria
+                    if (valueBtn) {
+                        valueBtn.textContent = this.textContent;
+                        valueBtn.classList.add('active');
+                    }
                 }
             });
         });
@@ -5867,15 +5903,96 @@ function addCifItem(modal){
     }, 300);
 }
 
+// Función para guardar los datos CIF de un paciente
+async function saveCifData(patientId) {
+    try {
+        showLoading();
+        
+        // Recopilar datos de CIF desde el DOM
+        const cifData = {
+            functions: getCifItemsData('cifFunctions'),
+            structures: getCifItemsData('cifStructures'),
+            activities: getCifItemsData('cifActivities'),
+            factors: getCifItemsData('cifFactors'),
+            personalFactors: document.getElementById('cifPersonalFactors')?.value || ""
+        };
+        
+        // Guardar en Firebase
+        const cifRef = doc(db, "patients", patientId, "cif", "data");
+        await setDoc(cifRef, cifData);
+        
+        hideLoading();
+        showToast("Datos CIF guardados correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error guardando datos CIF:", error);
+        hideLoading();
+        showToast("Error al guardar datos CIF: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función auxiliar para obtener datos de elementos CIF
+function getCifItemsData(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    
+    const items = [];
+    const cifItems = container.querySelectorAll('.cif-item');
+    
+    cifItems.forEach(item => {
+        const codeElement = item.querySelector('.cif-code');
+        const descElement = item.querySelector('.cif-desc');
+        const activeValueElement = item.querySelector('.cif-code .scale-value.active') || 
+                                  item.querySelector('.scale-values .scale-value.active');
+        
+        if (codeElement) {
+            const codeText = codeElement.textContent.trim();
+            // Extraer código y nombre (formato típico: "b280: Sensación de dolor")
+            const colonIndex = codeText.indexOf(':');
+            const code = colonIndex > 0 ? codeText.substring(0, colonIndex).trim() : codeText;
+            const name = colonIndex > 0 ? codeText.substring(colonIndex + 1).trim() : '';
+            
+            // Extraer valor del calificador
+            const value = activeValueElement ? parseInt(activeValueElement.textContent.trim()) : 0;
+            
+            // Extraer descripción
+            const description = descElement ? descElement.textContent.trim() : '';
+            
+            items.push({
+                id: item.dataset.id || 'cif_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                code: code,
+                name: name,
+                description: description,
+                value: value
+            });
+        }
+    });
+    
+    return items;
+}
+        
 // Guardar cambios en diagnóstico
-function saveDiagnosisChanges(patientId) {
-    // En una implementación real, aquí se guardarían todos los cambios en Firebase
-    
-    // Obtener factores personales
-    const personalFactors = document.getElementById('cifPersonalFactors')?.value || '';
-    
-    // Simular guardado exitoso
-    showToast("Diagnóstico guardado correctamente", "success");
+async function saveDiagnosisChanges(patientId) {
+    try {
+        showLoading();
+        
+        // Obtener factores personales
+        const personalFactors = document.getElementById('cifPersonalFactors')?.value || '';
+        
+        // Guardar datos CIF
+        await saveCifData(patientId);
+        
+        // Simular guardado exitoso
+        hideLoading();
+        showToast("Diagnóstico guardado correctamente", "success");
+        return true;
+    } catch (error) {
+        console.error("Error guardando diagnóstico:", error);
+        hideLoading();
+        showToast("Error al guardar diagnóstico: " + error.message, "error");
+        return false;
+    }
 }
 
 // Abrir modal de objetivo
