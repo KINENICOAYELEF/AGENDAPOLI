@@ -5251,9 +5251,19 @@ function openDiagnosisModal(patientId) {
         // Mostrar mensaje de éxito
         showToast("Diagnóstico guardado correctamente", "success");
         
-        // Cerrar modal
-        diagnosisModal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(diagnosisModal), 300);
+        // Cerrar modal - Versión mejorada para evitar el error
+        try {
+            diagnosisModal.classList.remove('active');
+            setTimeout(() => {
+                if (document.body.contains(diagnosisModal)) {
+                    document.body.removeChild(diagnosisModal);
+                }
+            }, 300);
+        } catch (error) {
+            console.error("Error al cerrar modal:", error);
+            // En caso de error, intentar ocultar el modal
+            diagnosisModal.style.display = 'none';
+        }
     });
 }
 
