@@ -1,18 +1,17 @@
-// Funciones de utilidad para el sistema kinesiológico
+// utils.js
+// Funciones de utilidad para toda la aplicación
 
-// Mostrar indicador de carga
+// Funciones de interfaz
 export function showLoading() {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) spinner.classList.add('show');
 }
 
-// Ocultar indicador de carga
 export function hideLoading() {
     const spinner = document.getElementById('loadingSpinner');
     if (spinner) spinner.classList.remove('show');
 }
 
-// Mostrar mensaje emergente
 export function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.classList.add('toast', `toast-${type}`);
@@ -32,12 +31,11 @@ export function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Formatear fecha
 export function formatDate(date) {
     if (!date) return 'No registrada';
     
     try {
-        let d = new Date(date);
+        let d = new Date(date); // Cambiado a let en lugar de const
         if (isNaN(d.getTime())) {
             // Intenta parsear formato dd/mm/yyyy
             const parts = date.split('/');
@@ -57,215 +55,6 @@ export function formatDate(date) {
     } catch (error) {
         console.error("Error al formatear fecha:", error);
         return 'Error de formato';
-    }
-}
-
-// Obtener iniciales de un nombre
-export function getInitials(name) {
-    if (!name) return 'NA';
-    
-    // Dividir por espacios y tomar la primera letra de cada palabra
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    
-    // Si solo hay una palabra, tomar las dos primeras letras
-    return name.substring(0, 2).toUpperCase();
-}
-
-// Calcular progreso del paciente
-export function calculatePatientProgress(patient) {
-    // Usar progreso existente si está disponible
-    if (patient.progress !== undefined) {
-        return patient.progress;
-    }
-    
-    // De lo contrario, generar un valor aleatorio pero consistente basado en el id del paciente
-    // Esto es temporal hasta que implementemos el cálculo real del progreso
-    let seed = 0;
-    if (patient.id) {
-        for (let i = 0; i < patient.id.length; i++) {
-            seed += patient.id.charCodeAt(i);
-        }
-    }
-    
-    // Generar un número entre 20 y 90 usando la semilla
-    return 20 + (seed % 70);
-}
-
-// Obtener clase CSS según progreso
-export function getStatusClass(progress) {
-    if (progress >= 80) return 'status-active';
-    if (progress >= 30) return 'status-pending';
-    return 'status-inactive';
-}
-
-// Obtener clase CSS según intensidad
-export function getIntensityClass(intensity) {
-    switch(intensity) {
-        case 'Baja': return 'intensity-low';
-        case 'Media': return 'intensity-medium';
-        case 'Alta': return 'intensity-high';
-        default: return 'intensity-medium';
-    }
-}
-
-// Obtener nombre de plantilla
-export function getTemplateName(template) {
-    switch(template) {
-        case 'mmss': return 'miembros superiores';
-        case 'mmii': return 'miembros inferiores';
-        case 'core': return 'core';
-        case 'estiramiento': return 'estiramientos';
-        default: return template;
-    }
-}
-
-// Aplicar tema de colores
-export function applyColorTheme(theme) {
-    const root = document.documentElement;
-    
-    // Definir colores según el tema seleccionado
-    switch (theme) {
-        case 'green':
-            root.style.setProperty('--primary', '#4CAF50');
-            root.style.setProperty('--primary-light', '#81C784');
-            root.style.setProperty('--primary-dark', '#2E7D32');
-            break;
-        case 'purple':
-            root.style.setProperty('--primary', '#673AB7');
-            root.style.setProperty('--primary-light', '#9575CD');
-            root.style.setProperty('--primary-dark', '#4527A0');
-            break;
-        case 'orange':
-            root.style.setProperty('--primary', '#FF9800');
-            root.style.setProperty('--primary-light', '#FFB74D');
-            root.style.setProperty('--primary-dark', '#EF6C00');
-            break;
-        case 'blue':
-        default:
-            root.style.setProperty('--primary', '#1E88E5');
-            root.style.setProperty('--primary-light', '#64B5F6');
-            root.style.setProperty('--primary-dark', '#1565C0');
-            break;
-    }
-}
-
-// Aplicar tamaño de fuente
-export function applyFontSize(size) {
-    const root = document.documentElement;
-    
-    switch (size) {
-        case 'small':
-            root.style.fontSize = '14px';
-            break;
-        case 'large':
-            root.style.fontSize = '18px';
-            break;
-        case 'medium':
-        default:
-            root.style.fontSize = '16px';
-            break;
-    }
-}
-
-// Mostrar modal con ejemplo
-export function showExampleModal(title, text, targetFieldId) {
-    try {
-        // Crear modal para mostrar ejemplo
-        const modalDiv = document.createElement('div');
-        modalDiv.className = 'modal-overlay';
-        modalDiv.id = 'exampleModal';
-        modalDiv.style.zIndex = '2000';
-        
-        modalDiv.innerHTML = `
-            <div class="modal" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h2 class="modal-title">${title}</h2>
-                    <button class="modal-close" id="closeExampleModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>${text}</p>
-                    <div style="margin-top: 15px; text-align: right;">
-                        <button class="action-btn btn-secondary" id="closeExampleBtn">Cerrar</button>
-                        <button class="action-btn btn-primary" id="useExampleBtn">Usar este ejemplo</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modalDiv);
-        setTimeout(() => modalDiv.classList.add('active'), 50);
-        
-        // Configurar botones
-        document.getElementById('closeExampleModal').addEventListener('click', function() {
-            modalDiv.classList.remove('active');
-            setTimeout(() => document.body.removeChild(modalDiv), 300);
-        });
-        
-        document.getElementById('closeExampleBtn').addEventListener('click', function() {
-            modalDiv.classList.remove('active');
-            setTimeout(() => document.body.removeChild(modalDiv), 300);
-        });
-        
-        document.getElementById('useExampleBtn').addEventListener('click', function() {
-            useExample(text, targetFieldId);
-        });
-    } catch (error) {
-        console.error("Error al mostrar ejemplo modal:", error);
-        alert("No se pudo mostrar el ejemplo. Error: " + error.message);
-    }
-}
-
-// Usar ejemplo en campo
-export function useExample(text, fieldId) {
-    try {
-        const field = document.getElementById(fieldId);
-        if (field) field.value = text;
-        
-        const modal = document.getElementById('exampleModal');
-        if (modal) {
-            modal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(modal), 300);
-        }
-    } catch (error) {
-        console.error("Error al usar ejemplo:", error);
-    }
-}
-
-// Alternar entre vistas de ejercicios
-export function toggleExerciseView(button) {
-    try {
-        const currentView = button.getAttribute('data-view');
-        const section = button.closest('.evolution-section');
-        
-        if (!section) {
-            console.error("No se encontró el contenedor de sección");
-            return;
-        }
-        
-        const columnView = section.querySelector('.exercise-two-columns');
-        const tableView = section.querySelector('.exercise-table-view');
-        
-        if (!columnView || !tableView) {
-            console.error("No se encontraron las vistas de columnas o tabla");
-            return;
-        }
-        
-        if (currentView === 'column') {
-            // Cambiar a vista de tabla
-            columnView.style.display = 'none';
-            tableView.style.display = 'block';
-        } else {
-            // Cambiar a vista de columnas
-            columnView.style.display = 'grid';
-            tableView.style.display = 'none';
-        }
-    } catch (error) {
-        console.error("Error al cambiar vista de ejercicios:", error);
     }
 }
 
@@ -324,6 +113,40 @@ export function setupScalesControls() {
         });
     }
     
+    // Asegurar que las actualizaciones de escala funcionen también cuando se cambia el valor programáticamente
+    function updateScaleDisplays() {
+        // EVA
+        if (evaRange && evaValue && evaMarker) {
+            const value = evaRange.value;
+            evaValue.textContent = value + '/10';
+            const percentage = (value / 10) * 100;
+            evaMarker.style.left = percentage + '%';
+        }
+        
+        // GROC
+        if (grocRange && grocValue && grocMarker) {
+            const value = grocRange.value;
+            grocValue.textContent = value > 0 ? '+' + value : value;
+            const percentage = ((parseFloat(value) + 7) / 14) * 100;
+            grocMarker.style.left = percentage + '%';
+        }
+        
+        // SANE
+        if (saneRange && saneValue && saneCircleValue && saneBar) {
+            const value = saneRange.value;
+            saneValue.textContent = value + '%';
+            saneCircleValue.textContent = value + '%';
+            saneBar.style.width = value + '%';
+            
+            const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+            if (circle) {
+                const circumference = 2 * Math.PI * 35;
+                const offset = circumference - (circumference * value / 100);
+                circle.setAttribute('stroke-dashoffset', offset);
+            }
+        }
+    }
+    
     // Ejecutar una actualización inicial para asegurar que todo esté sincronizado
     updateScaleDisplays();
     
@@ -347,54 +170,7 @@ export function setupScalesControls() {
     });
 }
 
-// Actualizar visualización de las escalas
-function updateScaleDisplays() {
-    // EVA
-    const evaRange = document.getElementById('evaRange');
-    const evaValue = document.getElementById('evaValue');
-    const evaMarker = document.querySelector('.eva-scale .scale-marker');
-    
-    if (evaRange && evaValue && evaMarker) {
-        const value = evaRange.value;
-        evaValue.textContent = value + '/10';
-        const percentage = (value / 10) * 100;
-        evaMarker.style.left = percentage + '%';
-    }
-    
-    // GROC
-    const grocRange = document.getElementById('grocRange');
-    const grocValue = document.getElementById('grocValue');
-    const grocMarker = document.querySelector('.groc-marker');
-    
-    if (grocRange && grocValue && grocMarker) {
-        const value = grocRange.value;
-        grocValue.textContent = value > 0 ? '+' + value : value;
-        const percentage = ((parseFloat(value) + 7) / 14) * 100;
-        grocMarker.style.left = percentage + '%';
-    }
-    
-    // SANE
-    const saneRange = document.getElementById('saneRange');
-    const saneValue = document.getElementById('saneValue');
-    const saneCircleValue = document.querySelector('.sane-value');
-    const saneBar = document.querySelector('.sane-bar');
-    
-    if (saneRange && saneValue && saneCircleValue && saneBar) {
-        const value = saneRange.value;
-        saneValue.textContent = value + '%';
-        saneCircleValue.textContent = value + '%';
-        saneBar.style.width = value + '%';
-        
-        const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
-        if (circle) {
-            const circumference = 2 * Math.PI * 35;
-            const offset = circumference - (circumference * value / 100);
-            circle.setAttribute('stroke-dashoffset', offset);
-        }
-    }
-}
-
-// Añadir actividad PSFS
+// Función para añadir una actividad PSFS
 export function addPsfsActivity() {
     const container = document.getElementById('psfsActivities');
     if (!container) return;
@@ -542,6 +318,34 @@ export function setupCommandShortcuts() {
     });
 }
 
+// Recopilar datos de actividades PSFS para guardar
+export function getPsfsActivities() {
+    const activities = [];
+    const activityElements = document.querySelectorAll('#psfsActivities .psfs-activity');
+    
+    activityElements.forEach(element => {
+        const nameInput = element.querySelector('.psfs-activity-input');
+        const nameSpan = element.querySelector('.activity-name span');
+        const slider = element.querySelector('.psfs-slider');
+        
+        let name = '';
+        if (nameInput && nameInput.value) {
+            name = nameInput.value;
+        } else if (nameSpan) {
+            name = nameSpan.textContent;
+        }
+        
+        if (name && name.trim() !== '') {
+            activities.push({
+                name: name,
+                rating: slider ? parseInt(slider.value) : 5
+            });
+        }
+    });
+    
+    return activities;
+}
+
 // Recopilar datos de ejercicios para guardar
 export function getExercisesData() {
     const exercises = [];
@@ -591,35 +395,7 @@ export function getExercisesData() {
     return exercises;
 }
 
-// Recopilar datos de PSFS para guardar
-export function getPsfsActivities() {
-    const activities = [];
-    const activityElements = document.querySelectorAll('#psfsActivities .psfs-activity');
-    
-    activityElements.forEach(element => {
-        const nameInput = element.querySelector('.psfs-activity-input');
-        const nameSpan = element.querySelector('.activity-name span');
-        const slider = element.querySelector('.psfs-slider');
-        
-        let name = '';
-        if (nameInput && nameInput.value) {
-            name = nameInput.value;
-        } else if (nameSpan) {
-            name = nameSpan.textContent;
-        }
-        
-        if (name && name.trim() !== '') {
-            activities.push({
-                name: name,
-                rating: slider ? parseInt(slider.value) : 5
-            });
-        }
-    });
-    
-    return activities;
-}
-
-// Cargar configuración
+// Funciones de configuración
 export function loadConfiguration() {
     try {
         // Intentar obtener configuración guardada en localStorage
@@ -664,7 +440,6 @@ export function loadConfiguration() {
     }
 }
 
-// Guardar configuración
 export function saveConfiguration() {
     try {
         const centerName = document.getElementById('centerName')?.value;
@@ -706,7 +481,6 @@ export function saveConfiguration() {
     }
 }
 
-// Restaurar configuración predeterminada
 export function resetConfiguration() {
     try {
         if (confirm("¿Está seguro que desea restaurar la configuración predeterminada? Se perderán todos los cambios.")) {
@@ -744,22 +518,58 @@ export function resetConfiguration() {
     }
 }
 
-// Establecer funciones globales para compatibilidad
-window.showPatientStateExample = function() {
-    const example = "Paciente refiere dolor lumbar de intensidad 6/10 en región L4-L5, con irradiación hacia EID°. Reporta mejoría desde última sesión (antes 8/10). Limitación para inclinarse hacia adelante y dificultad para permanecer sentado >30 minutos. Dolor aumenta al final del día y con actividades que implican flexión lumbar.";
-    showExampleModal("Ejemplo de Estado del Paciente", example, "evolutionPatientState");
-};
+export function applyColorTheme(theme) {
+    const root = document.documentElement;
+    
+    // Definir colores según el tema seleccionado
+    switch (theme) {
+        case 'green':
+            root.style.setProperty('--primary', '#4CAF50');
+            root.style.setProperty('--primary-light', '#81C784');
+            root.style.setProperty('--primary-dark', '#2E7D32');
+            break;
+        case 'purple':
+            root.style.setProperty('--primary', '#673AB7');
+            root.style.setProperty('--primary-light', '#9575CD');
+            root.style.setProperty('--primary-dark', '#4527A0');
+            break;
+        case 'orange':
+            root.style.setProperty('--primary', '#FF9800');
+            root.style.setProperty('--primary-light', '#FFB74D');
+            root.style.setProperty('--primary-dark', '#EF6C00');
+            break;
+        case 'blue':
+        default:
+            root.style.setProperty('--primary', '#1E88E5');
+            root.style.setProperty('--primary-light', '#64B5F6');
+            root.style.setProperty('--primary-dark', '#1565C0');
+            break;
+    }
+}
 
-window.showTreatmentExample = function() {
-    const example = "Terapia manual: Movilización de segmentos L4-L5, técnicas de presión isquémica en paravertebrales y piramidal derecho. Educación: posiciones durante el trabajo para el manejo sintomátologico.";
-    showExampleModal("Ejemplo de Tratamiento", example, "evolutionTreatment");
-};
+export function applyFontSize(size) {
+    const root = document.documentElement;
+    
+    switch (size) {
+        case 'small':
+            root.style.fontSize = '14px';
+            break;
+        case 'large':
+            root.style.fontSize = '18px';
+            break;
+        case 'medium':
+        default:
+            root.style.fontSize = '16px';
+            break;
+    }
+}
 
-window.showResponseExample = function() {
-    const example = "Respuesta favorable durante sesión. Dolor disminuyó de 6/10 a 3/10 post-tratamiento. Mejoró ROM lumbar en flexión. Sin eventos adversos. Paciente refiere mayor sensación de estabilidad al caminar. Se observa disminución de tensión en musculatura paravertebral. Persistente limitación leve para movimientos rotacionales.";
-    showExampleModal("Ejemplo de Respuesta al Tratamiento", example, "evolutionResponse");
-};
-
-window.showExampleModal = showExampleModal;
-window.useExample = useExample;
-window.toggleExerciseView = toggleExerciseView;
+// Hacer que las funciones esenciales estén disponibles globalmente
+window.showToast = showToast;
+window.formatDate = formatDate;
+window.applyColorTheme = applyColorTheme;
+window.applyFontSize = applyFontSize;
+window.saveConfiguration = saveConfiguration;
+window.resetConfiguration = resetConfiguration;
+window.getPsfsActivities = getPsfsActivities;
+window.getExercisesData = getExercisesData;
