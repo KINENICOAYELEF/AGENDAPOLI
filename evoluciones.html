@@ -4950,16 +4950,8 @@ function initDiagnosisTab(patientId) {
 async function getDiagnoses(patientId) {
     try {
         // En una implementación real, esto obtendría los diagnósticos de Firebase
-        // Por ahora, devolvemos datos de ejemplo
-        return [
-            {
-                id: '1',
-                date: new Date().toISOString(),
-                code: 'M54.5 Lumbago',
-                description: 'Paciente presenta dolor lumbar mecánico asociado a sobrecarga por actividad deportiva.',
-                createdAt: new Date().toISOString()
-            }
-        ];
+        // Por ahora, devolvemos un array vacío para que no aparezca el diagnóstico de ejemplo
+        return [];
     } catch (error) {
         console.error("Error obteniendo diagnósticos:", error);
         return [];
@@ -5211,59 +5203,68 @@ function openDiagnosisModal(patientId) {
         generateFunctionalDiagnosis();
     });
     
-    document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Obtener datos del formulario
-        const diagnosisDate = document.getElementById('diagnosisDate').value;
-        const diagnosisCIE = document.getElementById('diagnosisCIE').value;
-        const diagnosisText = document.getElementById('diagnosisText').value;
-        const consultReason = document.getElementById('consultReason')?.value || '';
-        const medicalBackground = document.getElementById('medicalBackground')?.value || '';
-        
-        // En una implementación real, esto guardaría el diagnóstico en Firebase
-        // Por ahora, solo actualizamos la interfaz
-        
-        // Añadir diagnóstico a la línea de tiempo
-        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-        if (diagnosisTimeline) {
-            // Remover mensaje "no hay diagnósticos"
-            const noDataMessage = diagnosisTimeline.querySelector('p');
-            if (noDataMessage) {
-                diagnosisTimeline.removeChild(noDataMessage);
-            }
-            
-            const newDiagnosis = document.createElement('div');
-            newDiagnosis.className = 'timeline-item fade-in';
-            newDiagnosis.innerHTML = `
-                <div class="timeline-dot">
-                    <i class="fas fa-file-medical"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
-                    <h3 class="timeline-title">${diagnosisCIE}</h3>
-                    <p>${diagnosisText}</p>
-                    ${consultReason ? `<div style="margin-top: 10px;"><strong>Motivo de consulta:</strong> ${consultReason}</div>` : ''}
-                    ${medicalBackground ? `<div style="margin-top: 5px;"><strong>Antecedentes:</strong> ${medicalBackground}</div>` : ''}
-                </div>
-            `;
-            
-            // Añadir al inicio de la lista para que aparezca primero
-            if (diagnosisTimeline.firstChild) {
-                diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
-            } else {
-                diagnosisTimeline.appendChild(newDiagnosis);
-            }
+document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Obtener datos del formulario
+    const diagnosisDate = document.getElementById('diagnosisDate').value;
+    const diagnosisCIE = document.getElementById('diagnosisCIE').value;
+    const diagnosisText = document.getElementById('diagnosisText').value;
+    const consultReason = document.getElementById('consultReason')?.value || '';
+    const medicalBackground = document.getElementById('medicalBackground')?.value || '';
+    
+    // En una implementación real, esto guardaría el diagnóstico en Firebase
+    // Por ahora, solo actualizamos la interfaz
+    
+    // Añadir diagnóstico a la línea de tiempo
+    const diagnosisTimeline = document.getElementById('diagnosisTimeline');
+    if (diagnosisTimeline) {
+        // Remover mensaje "no hay diagnósticos"
+        const noDataMessage = diagnosisTimeline.querySelector('p');
+        if (noDataMessage) {
+            diagnosisTimeline.removeChild(noDataMessage);
         }
         
-        // Mostrar mensaje de éxito
-        showToast("Diagnóstico guardado correctamente", "success");
+        const newDiagnosis = document.createElement('div');
+        newDiagnosis.className = 'timeline-item fade-in';
+        newDiagnosis.innerHTML = `
+            <div class="timeline-dot">
+                <i class="fas fa-file-medical"></i>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
+                <h3 class="timeline-title">${diagnosisCIE}</h3>
+                <p>${diagnosisText}</p>
+                ${consultReason ? `<div style="margin-top: 10px;"><strong>Motivo de consulta:</strong> ${consultReason}</div>` : ''}
+                ${medicalBackground ? `<div style="margin-top: 5px;"><strong>Antecedentes:</strong> ${medicalBackground}</div>` : ''}
+            </div>
+        `;
         
-        // Cerrar modal
+        // Añadir al inicio de la lista para que aparezca primero
+        if (diagnosisTimeline.firstChild) {
+            diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
+        } else {
+            diagnosisTimeline.appendChild(newDiagnosis);
+        }
+    }
+    
+    // Mostrar mensaje de éxito
+    showToast("Diagnóstico guardado correctamente", "success");
+    
+    // Cerrar modal - Versión mejorada para evitar el error
+    try {
         diagnosisModal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(diagnosisModal), 300);
-    });
-}
+        setTimeout(() => {
+            if (document.body.contains(diagnosisModal)) {
+                document.body.removeChild(diagnosisModal);
+            }
+        }, 300);
+    } catch (error) {
+        console.error("Error al cerrar modal:", error);
+        // En caso de error, intentar ocultar el modal
+        diagnosisModal.style.display = 'none';
+    }
+});
 
 // Función para generar diagnóstico funcional basado en las selecciones del asistente
 function generateFunctionalDiagnosis() {
