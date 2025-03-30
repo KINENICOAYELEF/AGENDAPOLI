@@ -3671,6 +3671,27 @@ button:focus {
     <!-- Script for Firebase -->
     <script type="module">
 
+        // Añade este código al INICIO de tu archivo java-3.js, justo después de la etiqueta <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevenir comportamiento predeterminado de enlaces con href="#"
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('a[href="#"], button:not([type])');
+        if (target) {
+            e.preventDefault();
+            console.log('Clic interceptado para evitar comportamiento predeterminado');
+        }
+    });
+    
+    // Verificar si Firebase está disponible
+    console.log('Verificando componentes esenciales...');
+    if (typeof firebase === 'undefined' && typeof initializeApp === 'undefined') {
+        console.error('CRÍTICO: Firebase no está disponible. Verificar conexión a internet o inclusión de scripts.');
+        showToast('Error crítico: No se pueden cargar los componentes necesarios. Intente recargar la página.', 'error');
+    } else {
+        console.log('Firebase parece estar disponible, continuando inicialización...');
+    }
+});
+
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
@@ -3751,26 +3772,50 @@ function formatDate(date) {
 }
 
 // Inicializar Firebase
+// Inicializar Firebase
 async function initFirebase() {
     console.log("Inicializando Firebase...");
     try {
+        // Verificaciones previas
+        if (typeof initializeApp === 'undefined') {
+            console.error("ERROR CRÍTICO: Firebase SDK no encontrado");
+            alert("Error crítico: No se puede conectar con la base de datos. Verifique su conexión a internet y recargue la página.");
+            return false;
+        }
+        
         app = initializeApp(firebaseConfig);
         console.log("App inicializada:", app);
+        
+        // Verificar que Firestore esté disponible
+        if (typeof getFirestore === 'undefined') {
+            console.error("ERROR CRÍTICO: Firestore no disponible");
+            alert("Error crítico: Componentes de base de datos no disponibles. Verifique su conexión a internet y recargue la página.");
+            return false;
+        }
         
         db = getFirestore(app);
         console.log("Firestore obtenido:", db);
         
-        storage = getStorage(app);
-        console.log("Storage obtenido:", storage);
+        // Verificar que Storage esté disponible
+        if (typeof getStorage === 'undefined') {
+            console.error("ERROR CRÍTICO: Firebase Storage no disponible");
+            alert("Error crítico: Componentes de almacenamiento no disponibles. Algunas funciones podrían no estar disponibles.");
+            // Continuamos porque Storage no es tan crítico como Firestore
+        } else {
+            storage = getStorage(app);
+            console.log("Storage obtenido:", storage);
+        }
         
         console.log("Firebase inicializado correctamente");
         
-        // Verificar conexión
+        // Verificar conexión pero no bloquear la inicialización por esto
         try {
-            const connectionOk = await testFirebase();
-            if (connectionOk) {
-                showToast("Conexión a Firebase establecida", "success");
-            }
+            setTimeout(async () => {
+                const connectionOk = await testFirebase();
+                if (connectionOk) {
+                    showToast("Conexión a Firebase establecida", "success");
+                }
+            }, 1000);
         } catch (connectionError) {
             console.error("Error verificando conexión:", connectionError);
             showToast("Advertencia: La verificación de conexión falló, pero continuando...", "info");
@@ -3779,8 +3824,7 @@ async function initFirebase() {
         return true;
     } catch (error) {
         console.error("Error al inicializar Firebase:", error);
-        showToast("Error al conectar con Firebase: " + error.message, "error");
-        // Continuar a pesar del error para que la UI básica funcione
+        alert("Error crítico al conectar con la base de datos: " + error.message + "\n\nIntente recargar la página. Si el problema persiste, contacte al soporte técnico.");
         return false;
     }
 }
@@ -9759,14 +9803,41 @@ function setupCommandShortcuts() {
 }
 
 // Initialize app
+// Initialize app
 async function initApp() {
     try {
         console.log("Inicializando aplicación...");
         
+        // Añadir indicador visual de inicialización
+        const loadingDiv = document.createElement('div');
+        loadingDiv.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 80%; text-align: center;">
+                    <h2>Inicializando Sistema...</h2>
+                    <p>Por favor espere mientras se configura la aplicación.</p>
+                    <div style="width: 100%; height: 10px; background: #eee; margin: 15px 0; border-radius: 5px; overflow: hidden;">
+                        <div id="loadingBar" style="width: 5%; height: 100%; background: #1E88E5; transition: width 0.3s;"></div>
+                    </div>
+                    <div id="loadingStatus">Conectando con Firebase...</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(loadingDiv);
+        
+        // Función para actualizar el progreso
+        function updateProgress(percent, status) {
+            const bar = document.getElementById('loadingBar');
+            const statusDiv = document.getElementById('loadingStatus');
+            if (bar) bar.style.width = percent + '%';
+            if (statusDiv) statusDiv.textContent = status;
+        }
+        
+        updateProgress(10, "Conectando con Firebase...");
+        
         // Inicializar Firebase
         const firebaseInitialized = await initFirebase();
         if (!firebaseInitialized) {
-            console.error("Error crítico: No se pudo inicializar Firebase");
+            document.body.removeChild(loadingDiv);
             document.body.innerHTML = `
                 <div style="text-align: center; padding: 50px;">
                     <h1>Error de conexión</h1>
@@ -9777,6 +9848,14 @@ async function initApp() {
             return;
         }
         
+        updateProgress(30, "Configurando navegación...");
+        
+        // Configurar navegación con mejor manejo de errores
+        setupNavigation();
+        
+        updateProgress(50, "Cargando pacientes...");
+        
+        // Continuar con el resto de la inicialización...
         // Guardar el contenido original del dashboard
         const originalContent = document.querySelector('.content');
         if (originalContent) {
@@ -10165,8 +10244,11 @@ async function initApp() {
 }
 
 // Configurar navegación
+// Configurar navegación
 function setupNavigation() {
     try {
+        console.log("Configurando navegación...");
+        
         // Mapeo de textos de menú a nombres de vistas
         const menuToView = {
             "Dashboard": "dashboard",
@@ -10176,26 +10258,60 @@ function setupNavigation() {
             "Configuración": "configuracion"
         };
         
-        // Configurar eventos para cada ítem del menú
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
+        // Configurar eventos para cada ítem del menú con manejo de errores mejorado
+        const menuItems = document.querySelectorAll('.menu-item');
+        console.log(`Encontrados ${menuItems.length} ítems de menú`);
+        
+        if (menuItems.length === 0) {
+            console.error("ERROR: No se encontraron ítems de menú");
+            showToast("Error: No se pudo configurar la navegación", "error");
+        }
+        
+        menuItems.forEach((item, index) => {
+            if (!item) {
+                console.error(`Ítem de menú ${index} es nulo o no válido`);
+                return;
+            }
+            
+            // Eliminar manejadores previos si existieran
+            const newItem = item.cloneNode(true);
+            if (item.parentNode) {
+                item.parentNode.replaceChild(newItem, item);
                 
-                // Quitar clase active de todos los ítems
-                document.querySelectorAll('.menu-item').forEach(mi => {
-                    mi.classList.remove('active');
+                // Añadir nuevo manejador de eventos
+                newItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                        // Quitar clase active de todos los ítems
+                        document.querySelectorAll('.menu-item').forEach(mi => {
+                            mi.classList.remove('active');
+                        });
+                        
+                        // Añadir clase active al ítem clicado
+                        this.classList.add('active');
+                        
+                        // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
+                        const menuItemText = this.querySelector('.menu-item-text');
+                        if (!menuItemText) {
+                            console.error("Error: Elemento .menu-item-text no encontrado");
+                            return;
+                        }
+                        
+                        const menuText = menuItemText.textContent.trim();
+                        const viewName = menuToView[menuText] || (menuText ? menuText.toLowerCase() : 'dashboard');
+                        
+                        console.log("Cambiando a vista:", viewName);
+                        changeView(viewName);
+                    } catch (clickError) {
+                        console.error("Error en clic de navegación:", clickError);
+                        showToast("Error al navegar: " + clickError.message, "error");
+                    }
                 });
-                
-                // Añadir clase active al ítem clicado
-                this.classList.add('active');
-                
-                // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
-                const menuText = this.querySelector('.menu-item-text')?.textContent.trim();
-                const viewName = menuToView[menuText] || (menuText ? menuText.toLowerCase() : 'dashboard');
-                
-                console.log("Cambiando a vista:", viewName);
-                changeView(viewName);
-            });
+            } else {
+                console.error(`Ítem de menú ${index} no tiene nodo padre`);
+            }
         });
         
         // Manejar toggle del sidebar
@@ -10204,14 +10320,30 @@ function setupNavigation() {
         const mainContent = document.getElementById('mainContent');
         
         if (toggleSidebarBtn && sidebar && mainContent) {
-            toggleSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-collapsed');
-                mainContent.classList.toggle('main-content-expanded');
-            });
+            // Eliminar manejadores previos
+            const newToggleBtn = toggleSidebarBtn.cloneNode(true);
+            if (toggleSidebarBtn.parentNode) {
+                toggleSidebarBtn.parentNode.replaceChild(newToggleBtn, toggleSidebarBtn);
+                
+                newToggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    try {
+                        sidebar.classList.toggle('sidebar-collapsed');
+                        mainContent.classList.toggle('main-content-expanded');
+                    } catch (toggleError) {
+                        console.error("Error al alternar sidebar:", toggleError);
+                    }
+                });
+            }
+        } else {
+            console.warn("Advertencia: No se encontraron todos los elementos para configurar el toggle del sidebar");
         }
+        
+        console.log("Navegación configurada correctamente");
     } catch (error) {
-        console.error("Error configurando navegación:", error);
+        console.error("ERROR CRÍTICO configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
+        alert("Ha ocurrido un error crítico al configurar la navegación. Intente recargar la página.");
     }
 }
 
