@@ -4950,16 +4950,8 @@ function initDiagnosisTab(patientId) {
 async function getDiagnoses(patientId) {
     try {
         // En una implementación real, esto obtendría los diagnósticos de Firebase
-        // Por ahora, devolvemos datos de ejemplo
-        return [
-            {
-                id: '1',
-                date: new Date().toISOString(),
-                code: 'M54.5 Lumbago',
-                description: 'Paciente presenta dolor lumbar mecánico asociado a sobrecarga por actividad deportiva.',
-                createdAt: new Date().toISOString()
-            }
-        ];
+        // Por ahora, devolvemos un array vacío para que no aparezca el diagnóstico de ejemplo
+        return [];
     } catch (error) {
         console.error("Error obteniendo diagnósticos:", error);
         return [];
