@@ -2912,11 +2912,13 @@ button:focus {
                     </div>
 
                     <div class="form-group" style="margin-top: 20px; text-align: right;">
+                        <button type="button" class="action-btn btn-secondary" style="margin-right: 10px; background-color: var(--accent2);" id="deletePatientBtn">
+                            <i class="fas fa-trash"></i> Eliminar paciente
+                        </button>
                         <button type="button" class="action-btn btn-primary" id="savePatientBtn">
                             <i class="fas fa-save"></i> Guardar cambios
                         </button>
                     </div>
-                </div>
 
                 <!-- Diagnosis Tab -->
                 <div class="tab-content" id="diagnosisTab">
@@ -3858,6 +3860,50 @@ async function updatePatient(patientId, patientData) {
     }
 }
 
+// Delete patient from Firebase
+async function deletePatient(patientId) {
+    try {
+        // Confirm deletion
+        if (!confirm("¿Está seguro que desea eliminar este paciente? Esta acción no se puede deshacer.")) {
+            return false;
+        }
+        
+        showLoading();
+        
+        // Delete patient document from Firebase
+        const patientRef = doc(db, "patients", patientId);
+        await deleteDoc(patientRef);
+        
+        // Update cache
+        const cachedIndex = patientsCache.findIndex(p => p.id === patientId);
+        if (cachedIndex >= 0) {
+            patientsCache.splice(cachedIndex, 1);
+        }
+        
+        hideLoading();
+        showToast("Paciente eliminado correctamente", "success");
+        
+        // Close patient modal if open
+        const patientModal = document.getElementById('patientModal');
+        if (patientModal && patientModal.classList.contains('active')) {
+            patientModal.classList.remove('active');
+        }
+        
+        // Reset currentPatientId
+        currentPatientId = null;
+        
+        // Refresh patient list
+        await getPatients();
+        
+        return true;
+    } catch (error) {
+        console.error("Error eliminando paciente: ", error);
+        hideLoading();
+        showToast("Error al eliminar paciente: " + error.message, "error");
+        return false;
+    }
+}
+        
 // Add evolution to patient
 async function addEvolution(patientId, evolutionData) {
     try {
@@ -9334,6 +9380,19 @@ async function initApp() {
                 await getPatients();
             });
         }
+
+                    // Añadir event listener para eliminar paciente
+            const deletePatientBtn = document.getElementById('deletePatientBtn');
+            if (deletePatientBtn) {
+                deletePatientBtn.addEventListener('click', function() {
+                    if (!currentPatientId) {
+                        showToast("Error: No hay paciente seleccionado", "error");
+                        return;
+                    }
+                    
+                    deletePatient(currentPatientId);
+                });
+            }
         
         // Añadir event listener para búsqueda
         const searchInput = document.getElementById('searchPatient');
