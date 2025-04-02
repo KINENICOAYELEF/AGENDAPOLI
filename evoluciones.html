@@ -4240,6 +4240,9 @@ async function selectPatient(patientId) {
 
         // AÑADIR ESTA LÍNEA: Cargar datos CIF del paciente
         await loadAllCifData(patientId);
+
+        // Asegurar que los datos CIF se cargan correctamente
+        setTimeout(() => loadAllCifData(patientId), 500);
         
         // Si estamos en la vista de evoluciones, actualizar selector
         const patientSelectorHeader = document.getElementById('patientSelectorHeader');
@@ -5731,36 +5734,45 @@ async function getCifFactors(patientId) {
 }
 
 // Cargar todos los datos CIF del paciente
-async function loadAllCifData(patientId) {
-    try {
-        if (!patientId) return;
-        
-        showLoading();
-        
-        // Cargar funciones
-        const functions = await getCifFunctions(patientId);
-        displayCifItems('cifFunctions', functions);
-        
-        // Cargar estructuras
-        const structures = await getCifStructures(patientId);
-        displayCifItems('cifStructures', structures);
-        
-        // Cargar actividades
-        const activities = await getCifActivities(patientId);
-        displayCifItems('cifActivities', activities);
-        
-        // Cargar factores
-        const factors = await getCifFactors(patientId);
-        displayCifItems('cifFactors', factors);
-        
-        // Cargar factores personales
-        await loadPersonalFactors(patientId);
-        
-        hideLoading();
-    } catch (error) {
-        console.error("Error al cargar datos CIF:", error);
-        hideLoading();
-    }
+function loadAllCifData(patientId) {
+  if (!patientId) {
+    console.error("ID de paciente no válido");
+    return;
+  }
+  
+  // Muestra un indicador de carga
+  document.getElementById('cif-data-container').innerHTML = '<p>Cargando datos CIF...</p>';
+  
+  try {
+    // Obtener datos CIF del servidor
+    fetch(`${baseUrl}/cif/patient/${patientId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error al cargar diagnósticos: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Procesar y mostrar datos
+        displayCifData(data);
+        // Habilitar botones CIF después de cargar datos
+        enableCifButtons();
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('cif-data-container').innerHTML = 
+          `<p class="text-danger">Error al cargar diagnósticos. Por favor intente nuevamente.</p>`;
+      });
+  } catch (e) {
+    console.error('Error en loadAllCifData:', e);
+  }
+}
+
+function enableCifButtons() {
+  // Habilitar todos los botones de CIF
+  document.querySelectorAll('.cif-action-button').forEach(button => {
+    button.disabled = false;
+  });
 }
 
 // Mostrar elementos CIF en la interfaz
