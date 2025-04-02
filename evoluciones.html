@@ -3591,6 +3591,16 @@ function hideLoading() {
     if (spinner) spinner.classList.remove('show');
 }
 
+        // Función para cerrar todos los modales
+function closeAllModals() {
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+}
+
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.classList.add('toast', `toast-${type}`);
@@ -6294,6 +6304,13 @@ function openTreatmentPlanModal(patientId) {
 // Show new evolution modal with proper validation
 function showNewEvolutionModal() {
     try {
+        // Cerrar cualquier modal abierto primero
+        document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+            if (modal.id !== 'newEvolutionModal') {
+                modal.classList.remove('active');
+            }
+        });
+        
         if (!currentPatientId) {
             // Si no hay paciente seleccionado, mostrar mensaje para seleccionar uno
             const patientCards = document.querySelectorAll('.patient-card');
@@ -6399,12 +6416,22 @@ function showNewEvolutionModal() {
         const attachmentPreview = document.getElementById('attachmentPreview');
         if (attachmentPreview) attachmentPreview.innerHTML = '';
         
-        // Mostrar modal
+        // Mostrar modal de forma segura
         const newEvolutionModal = document.getElementById('newEvolutionModal');
-        if (newEvolutionModal) newEvolutionModal.classList.add('active');
+        if (newEvolutionModal) {
+            // Asegurarse de que el modal sea visible primero
+            newEvolutionModal.style.display = 'block';
+            // Luego añadir la clase active que inicia la animación
+            setTimeout(() => {
+                newEvolutionModal.classList.add('active');
+            }, 50);
+        } else {
+            console.error("Error: No se encontró el elemento del modal de evolución");
+            showToast("Error: No se encontró el modal de evolución", "error");
+        }
     } catch (error) {
         console.error("Error al mostrar modal de nueva evolución:", error);
-        showToast("Error al abrir formulario de evolución", "error");
+        showToast("Error al abrir formulario de evolución: " + error.message, "error");
     }
 }
 
@@ -9011,58 +9038,92 @@ window.showResponseExample = function() {
 
 // Función para mostrar el modal con ejemplo
 window.showExampleModal = function(title, text, targetFieldId) {
-    // Crear modal para mostrar ejemplo
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'modal-overlay';
-    modalDiv.id = 'exampleModal';
-    modalDiv.style.zIndex = '2000';
-    
-    modalDiv.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2 class="modal-title">${title}</h2>
-                <button class="modal-close" id="closeExampleModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>${text}</p>
-                <div style="margin-top: 15px; text-align: right;">
-                    <button class="action-btn btn-secondary" id="closeExampleBtn">Cerrar</button>
-                    <button class="action-btn btn-primary" id="useExampleBtn">Usar este ejemplo</button>
+    try {
+        // Cerrar cualquier modal de ejemplo existente primero
+        const existingModal = document.getElementById('exampleModal');
+        if (existingModal) {
+            document.body.removeChild(existingModal);
+        }
+        
+        // Crear el nuevo modal
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal-overlay';
+        modalDiv.id = 'exampleModal';
+        modalDiv.style.zIndex = '2000';
+        
+        modalDiv.innerHTML = `
+            <div class="modal" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">${title}</h2>
+                    <button class="modal-close" id="closeExampleModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>${text}</p>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button class="action-btn btn-secondary" id="closeExampleBtn">Cerrar</button>
+                        <button class="action-btn btn-primary" id="useExampleBtn">Usar este ejemplo</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modalDiv);
-    setTimeout(() => modalDiv.classList.add('active'), 50);
-    
-    // Configurar botones
-    document.getElementById('closeExampleModal').addEventListener('click', function() {
-        modalDiv.classList.remove('active');
-        setTimeout(() => document.body.removeChild(modalDiv), 300);
-    });
-    
-    document.getElementById('closeExampleBtn').addEventListener('click', function() {
-        modalDiv.classList.remove('active');
-        setTimeout(() => document.body.removeChild(modalDiv), 300);
-    });
-    
-    document.getElementById('useExampleBtn').addEventListener('click', function() {
-        window.useExample(text, targetFieldId);
-    });
+        `;
+        
+        document.body.appendChild(modalDiv);
+        
+        // Asegurarse de que sea visible antes de añadir la clase active
+        modalDiv.style.display = 'block';
+        setTimeout(() => modalDiv.classList.add('active'), 50);
+        
+        // Configurar controladores de eventos de botones con stopPropagation
+        document.getElementById('closeExampleModal').addEventListener('click', function(e) {
+            e.stopPropagation();
+            modalDiv.classList.remove('active');
+            setTimeout(() => {
+                if (document.body.contains(modalDiv)) {
+                    document.body.removeChild(modalDiv);
+                }
+            }, 300);
+        });
+        
+        document.getElementById('closeExampleBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            modalDiv.classList.remove('active');
+            setTimeout(() => {
+                if (document.body.contains(modalDiv)) {
+                    document.body.removeChild(modalDiv);
+                }
+            }, 300);
+        });
+        
+        document.getElementById('useExampleBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            window.useExample(text, targetFieldId);
+        });
+    } catch (error) {
+        console.error("Error al mostrar ejemplo modal:", error);
+        alert("No se pudo mostrar el ejemplo. Error: " + error.message);
+    }
 };
 
 // Función para usar el ejemplo
 window.useExample = function(text, fieldId) {
-    const field = document.getElementById(fieldId);
-    if (field) field.value = text;
-    
-    const modal = document.getElementById('exampleModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(modal), 300);
+    try {
+        const field = document.getElementById(fieldId);
+        if (field) field.value = text;
+        
+        const modal = document.getElementById('exampleModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+            }, 300);
+        }
+    } catch (error) {
+        console.error("Error al usar ejemplo:", error);
+        showToast("Error al aplicar el ejemplo", "error");
     }
 };
 
@@ -9316,10 +9377,29 @@ async function initApp() {
         }
         
         // Añadir event listener para botón de añadir evolución en página principal
-        const addEvolutionBtn = document.getElementById('addEvolutionBtn');
-        if (addEvolutionBtn) {
-            addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
+const addEvolutionBtn = document.getElementById('addEvolutionBtn');
+if (addEvolutionBtn) {
+    // Eliminar cualquier evento existente clonando el nodo
+    const newAddEvolutionBtn = addEvolutionBtn.cloneNode(true);
+    addEvolutionBtn.parentNode.replaceChild(newAddEvolutionBtn, addEvolutionBtn);
+    
+    // Añadir un único event listener con manejo de errores adecuado
+    newAddEvolutionBtn.addEventListener('click', function(e) {
+        // Prevenir propagación de eventos
+        e.stopPropagation();
+        
+        try {
+            // Cerrar cualquier modal abierto primero
+            closeAllModals();
+            
+            // Mostrar el modal de evolución
+            showNewEvolutionModal();
+        } catch (error) {
+            console.error("Error al manejar clic en botón Nueva evolución:", error);
+            showToast("Error al abrir formulario de evolución: " + error.message, "error");
         }
+    });
+}
         
         // Botones de cerrar modales
         document.querySelectorAll('.modal-close').forEach(btn => {
