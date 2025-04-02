@@ -4237,6 +4237,9 @@ async function selectPatient(patientId) {
             showToast("Error: Paciente no encontrado", "error");
             return;
         }
+
+        // AÑADIR ESTA LÍNEA: Cargar datos CIF del paciente
+        await loadAllCifData(patientId);
         
         // Si estamos en la vista de evoluciones, actualizar selector
         const patientSelectorHeader = document.getElementById('patientSelectorHeader');
