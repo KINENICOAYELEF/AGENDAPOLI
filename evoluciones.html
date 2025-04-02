@@ -4288,9 +4288,6 @@ async function selectPatient(patientId) {
                 if (viewDetailsBtn) {
                     viewDetailsBtn.onclick = () => openPatientModal(patientId);
                 }
-
-                // Cargar datos CIF del paciente
-                loadAllCifData(patientId);
             }
         }
     } catch (error) {
