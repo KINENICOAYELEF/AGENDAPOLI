@@ -2648,6 +2648,32 @@ button:focus {
     color: var(--secondary);
     font-weight: 500;
 }
+
+        /* Estilos para el dropdown de CIF */
+#cifDropdown {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: var(--transition);
+    background-color: var(--background);
+}
+
+#cifDropdown:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
+}
+
+.cif-search i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    z-index: 1;
+}
     </style>
 </head>
 <body>
@@ -5606,7 +5632,7 @@ function renderCifItems(container, items) {
     });
 }
 
-        // Obtener funciones CIF del paciente
+    // Obtener funciones CIF del paciente
 function getCifFunctions(patientId) {
     // En una implementación real, esto obtendría datos de Firebase
     // Por ahora, devolvemos datos de ejemplo
@@ -5635,15 +5661,6 @@ function getCifFactors(patientId) {
     return [
         { id: 'e1', code: "e110", name: "Productos para consumo personal", description: "Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta.", value: 1 }
     ];
-}
-
-// Cargar factores personales
-function loadPersonalFactors(patientId) {
-    // En una implementación real, esto obtendría datos de Firebase
-    const cifPersonalFactors = document.getElementById('cifPersonalFactors');
-    if (cifPersonalFactors) {
-        cifPersonalFactors.value = "Paciente de 35 años, deportista amateur, trabaja en oficina con postura sedentaria prolongada.";
-    }
 }
 
 // Mostrar selector de CIF
