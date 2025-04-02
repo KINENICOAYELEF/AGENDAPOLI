@@ -5815,8 +5815,8 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
     // Cargar códigos según la categoría
     let allCifCodes = [];
     switch(categoryType) {
-            case 'Función':
-                cifCodes = [
+        case 'Función':
+            allCifCodes = [
                     // Funciones mentales
                     { code: 'b126', name: 'Funciones del temperamento y la personalidad', desc: 'Tendencia del individuo a reaccionar de una manera determinada ante situaciones, incluyendo el conjunto de características mentales que hace que una persona sea diferente de otra.' },
                     { code: 'b130', name: 'Funciones de la energía y los impulsos', desc: 'Funciones mentales generales de los mecanismos fisiológicos y psicológicos que empujan al individuo a moverse de manera persistente para satisfacer necesidades específicas.' },
@@ -5892,9 +5892,9 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
                     { code: 'b545', name: 'Funciones relacionadas con el balance hídrico, mineral y electrolítico', desc: 'Funciones relacionadas con la regulación del agua, minerales y electrolitos en el cuerpo.' }
                 ];
                 break;
-                
-            case 'Estructura':
-                cifCodes = [
+       
+        case 'Estructura':
+            allCifCodes = [
                     // Estructuras del sistema nervioso
                     { code: 's110', name: 'Estructura del cerebro', desc: 'Estructura del sistema nervioso central.' },
                     { code: 's120', name: 'Médula espinal y estructuras relacionadas', desc: 'Estructura del sistema nervioso central.' },
@@ -5961,7 +5961,7 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
                 break;
                 
             case 'Actividad':
-                cifCodes = [
+            allCifCodes = [
                     // Aprendizaje y aplicación del conocimiento
                     { code: 'd155', name: 'Adquisición de habilidades', desc: 'Desarrollar capacidades simples y complejas para integrar acciones o tareas coordinadas.' },
                     { code: 'd175', name: 'Resolver problemas', desc: 'Encontrar soluciones a problemas identificando y analizando los aspectos de una situación.' },
@@ -6075,7 +6075,7 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
                 break;
                 
             case 'Factor':
-                cifCodes = [
+            allCifCodes = [
                     // Productos y tecnología
                     { code: 'e110', name: 'Productos o sustancias para el consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta, consumo o uso personal.' },
                     { code: 'e1101', name: 'Medicamentos', desc: 'Sustancias naturales o artificiales, medicamentos recetados o de libre disposición, utilizados para tratar síntomas o enfermedades.' },
