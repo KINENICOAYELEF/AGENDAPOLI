@@ -3998,6 +3998,366 @@ async function getEvolutionsCount(patientId) {
     }
 }
 
+        // Función para editar evolución
+async function editEvolution(patientId, evolutionId) {
+    try {
+        showLoading();
+        
+        // Obtener datos de la evolución
+        const evolutionRef = doc(db, "patients", patientId, "evolutions", evolutionId);
+        const evolutionSnap = await getDoc(evolutionRef);
+        
+        if (!evolutionSnap.exists()) {
+            hideLoading();
+            showToast("Evolución no encontrada", "error");
+            return;
+        }
+        
+        const evolution = evolutionSnap.data();
+        
+        // Mostrar modal de evolución existente
+        const newEvolutionModal = document.getElementById('newEvolutionModal');
+        if (!newEvolutionModal) {
+            hideLoading();
+            showToast("Error: Modal de evolución no encontrado", "error");
+            return;
+        }
+        
+        // Actualizar título
+        const modalTitle = document.getElementById('evolutionModalTitle');
+        if (modalTitle) {
+            modalTitle.textContent = `Editar evolución - ${formatDate(new Date(evolution.date))}`;
+        }
+        
+        // Rellenar formulario con datos existentes
+        const dateInput = document.getElementById('evolutionDate');
+        const timeInput = document.getElementById('evolutionTime');
+        const studentInput = document.getElementById('evolutionStudent');
+        const stateInput = document.getElementById('evolutionPatientState');
+        const treatmentInput = document.getElementById('evolutionTreatment');
+        const responseInput = document.getElementById('evolutionResponse');
+        const planInput = document.getElementById('evolutionTrainingPlan');
+        const observationsInput = document.getElementById('evolutionObservations');
+        
+        if (dateInput) dateInput.value = evolution.date || '';
+        if (timeInput) timeInput.value = evolution.time || '';
+        if (studentInput) studentInput.value = evolution.student || '';
+        if (stateInput) stateInput.value = evolution.patientState || '';
+        if (treatmentInput) treatmentInput.value = evolution.treatment || '';
+        if (responseInput) responseInput.value = evolution.response || '';
+        if (planInput) planInput.value = evolution.trainingPlan || '';
+        if (observationsInput) observationsInput.value = evolution.observations || '';
+        
+        // Configurar escalas si existen
+        if (evolution.scales) {
+            // EVA
+            const evaRange = document.getElementById('evaRange');
+            const evaValue = document.getElementById('evaValue');
+            
+            if (evaRange && evolution.scales.eva !== undefined) {
+                evaRange.value = evolution.scales.eva;
+                if (evaValue) evaValue.textContent = evolution.scales.eva + '/10';
+                
+                // Actualizar posición del marcador
+                const evaMarker = document.querySelector('.eva-scale .scale-marker');
+                if (evaMarker) {
+                    const percentage = (evolution.scales.eva / 10) * 100;
+                    evaMarker.style.left = percentage + '%';
+                }
+            }
+            
+            // GROC
+            const grocRange = document.getElementById('grocRange');
+            const grocValue = document.getElementById('grocValue');
+            
+            if (grocRange && evolution.scales.groc !== undefined) {
+                grocRange.value = evolution.scales.groc;
+                if (grocValue) grocValue.textContent = evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc;
+                
+                // Actualizar posición del marcador
+                const grocMarker = document.querySelector('.groc-marker');
+                if (grocMarker) {
+                    const percentage = ((parseFloat(evolution.scales.groc) + 7) / 14) * 100;
+                    grocMarker.style.left = percentage + '%';
+                }
+            }
+            
+            // SANE
+            const saneRange = document.getElementById('saneRange');
+            const saneValue = document.getElementById('saneValue');
+            
+            if (saneRange && evolution.scales.sane !== undefined) {
+                saneRange.value = evolution.scales.sane;
+                if (saneValue) saneValue.textContent = evolution.scales.sane + '%';
+                
+                // Actualizar barra y círculo
+                const saneBar = document.querySelector('.sane-bar');
+                if (saneBar) saneBar.style.width = evolution.scales.sane + '%';
+                
+                const saneCircleValue = document.querySelector('.sane-value');
+                if (saneCircleValue) saneCircleValue.textContent = evolution.scales.sane + '%';
+                
+                const saneCircle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+                if (saneCircle) {
+                    const circumference = 2 * Math.PI * 35;
+                    const offset = circumference - (circumference * evolution.scales.sane / 100);
+                    saneCircle.setAttribute('stroke-dashoffset', offset);
+                }
+            }
+            
+            // SANE Text
+            const saneCustomText = document.getElementById('saneCustomText');
+            if (saneCustomText && evolution.scales.saneText) {
+                saneCustomText.value = evolution.scales.saneText;
+            }
+            
+            // PSFS
+            const psfsContainer = document.getElementById('psfsActivities');
+            if (psfsContainer && evolution.scales.psfs && evolution.scales.psfs.length > 0) {
+                psfsContainer.innerHTML = ''; // Limpiar contenedor
+                
+                evolution.scales.psfs.forEach(activity => {
+                    if (activity && activity.name) {
+                        const newActivity = document.createElement('div');
+                        newActivity.className = 'psfs-activity';
+                        newActivity.innerHTML = `
+                            <div class="activity-name" style="display: flex; align-items: center; gap: 5px;">
+                                <input type="text" class="psfs-activity-input" value="${activity.name}" style="flex-grow: 1;">
+                                <button type="button" class="delete-activity-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="activity-rating" style="margin-top: 5px;">
+                                <div class="rating-number">${activity.rating || 5}</div>
+                                <div class="rating-bar">
+                                    <div class="rating-value" style="width: ${(activity.rating || 5) * 10}%;"></div>
+                                </div>
+                                <div class="rating-number">10</div>
+                            </div>
+                            <input type="range" min="0" max="10" value="${activity.rating || 5}" class="psfs-slider">
+                        `;
+                        
+                        psfsContainer.appendChild(newActivity);
+                        
+                        // Configurar slider
+                        const slider = newActivity.querySelector('.psfs-slider');
+                        if (slider) {
+                            slider.addEventListener('input', function() {
+                                const value = this.value;
+                                const ratingNumber = newActivity.querySelector('.rating-number');
+                                const ratingBar = newActivity.querySelector('.rating-value');
+                                
+                                if (ratingNumber) ratingNumber.textContent = value;
+                                if (ratingBar) ratingBar.style.width = (value * 10) + '%';
+                            });
+                        }
+                        
+                        // Configurar botón de eliminar
+                        const deleteBtn = newActivity.querySelector('.delete-activity-btn');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', function() {
+                                psfsContainer.removeChild(newActivity);
+                            });
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Configurar ejercicios si existen
+        const exerciseTableBody = document.getElementById('exerciseTableBody');
+        if (exerciseTableBody && evolution.exercises && evolution.exercises.length > 0) {
+            exerciseTableBody.innerHTML = ''; // Limpiar tabla
+            
+            evolution.exercises.forEach(exercise => {
+                addExerciseRow(exercise);
+            });
+        }
+        
+        // Configurar formulario para actualizar en lugar de crear nueva evolución
+        const evolutionForm = document.getElementById('evolutionForm');
+        if (evolutionForm) {
+            // Remover handler anterior
+            const newForm = evolutionForm.cloneNode(true);
+            evolutionForm.parentNode.replaceChild(newForm, evolutionForm);
+            
+            // Añadir ID de evolución como dato oculto
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.id = 'evolutionId';
+            idInput.value = evolutionId;
+            newForm.appendChild(idInput);
+            
+            // Configurar envío para actualizar
+            newForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!currentPatientId) {
+                    showToast("Error: No hay paciente seleccionado", "error");
+                    return;
+                }
+                
+                try {
+                    showLoading();
+                    
+                    // Recopilar datos de actividades PSFS
+                    const psfsActivities = getPsfsActivities();
+                    
+                    // Recopilar datos de ejercicios
+                    const exercises = getExercisesData();
+
+                    // Recopilar y procesar adjuntos
+const attachments = [];
+const attachmentElements = document.querySelectorAll('#attachmentPreview .attachment');
+
+// Si hay adjuntos, procesarlos
+if (attachmentElements.length > 0) {
+    showLoading();
+    
+    for (const element of attachmentElements) {
+        try {
+            // Comprobar si el adjunto ya está subido (en caso de edición)
+            if (element.dataset.id && element.dataset.path && element.dataset.url) {
+                attachments.push({
+                    id: element.dataset.id,
+                    path: element.dataset.path,
+                    url: element.dataset.url,
+                    name: JSON.parse(element.dataset.file).name,
+                    type: JSON.parse(element.dataset.file).type
+                });
+                continue;
+            }
+            
+            // Si no está subido, subirlo ahora
+            const fileData = JSON.parse(element.dataset.file);
+            const fileInput = document.getElementById('evolutionAttachments');
+            
+            // Buscar el archivo en el input
+            let fileToUpload = null;
+            if (fileInput && fileInput.files) {
+                for (const file of fileInput.files) {
+                    if (file.name === fileData.name && file.size === fileData.size) {
+                        fileToUpload = file;
+                        break;
+                    }
+                }
+            }
+            
+            if (fileToUpload) {
+                // Generar ID temporal para la evolución si es nueva
+                const tempEvolutionId = evolutionId || `temp_${Date.now()}`;
+                
+                // Subir a Firebase Storage
+                const uploadedFile = await uploadFileToStorage(fileToUpload, currentPatientId, `evolutions/${tempEvolutionId}`);
+                
+                if (uploadedFile) {
+                    attachments.push(uploadedFile);
+                }
+            }
+        } catch (error) {
+            console.error("Error procesando adjunto:", error);
+        }
+    }
+}
+
+
+
+                    
+                    // Obtener valores de los controles de formulario
+                    const evolutionData = {
+                        date: document.getElementById('evolutionDate')?.value,
+                        time: document.getElementById('evolutionTime')?.value,
+                        student: document.getElementById('evolutionStudent')?.value,
+                        patientState: document.getElementById('evolutionPatientState')?.value,
+                        treatment: document.getElementById('evolutionTreatment')?.value,
+                        response: document.getElementById('evolutionResponse')?.value,
+                        scales: {
+                            eva: parseInt(document.getElementById('evaRange')?.value),
+                            groc: parseInt(document.getElementById('grocRange')?.value),
+                            sane: parseInt(document.getElementById('saneRange')?.value),
+                            saneText: document.getElementById('saneCustomText')?.value,
+                            psfs: psfsActivities
+                        },
+                        exercises: exercises,
+                        trainingPlan: document.getElementById('evolutionTrainingPlan')?.value || '',
+                        observations: document.getElementById('evolutionObservations')?.value || '',
+                        attachments: attachments,
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // Actualizar en Firebase
+                    const evolutionRef = doc(db, "patients", currentPatientId, "evolutions", evolutionId);
+                    await updateDoc(evolutionRef, evolutionData);
+                    
+                    // Cerrar modal
+                    const evolutionModal = document.getElementById('newEvolutionModal');
+                    if (evolutionModal) evolutionModal.classList.remove('active');
+                    
+                    // Refrescar evoluciones
+                    const evolutions = await getEvolutions(currentPatientId);
+                    fillEvolutionsTab(evolutions);
+                    
+                    // Mostrar mensaje de éxito
+                    showToast("Evolución actualizada correctamente", "success");
+                    
+                    hideLoading();
+                } catch (error) {
+                    hideLoading();
+                    console.error("Error al actualizar evolución:", error);
+                    showToast("Error al actualizar evolución: " + error.message, "error");
+                }
+            });
+        }
+        
+        // Mostrar modal
+        newEvolutionModal.classList.add('active');
+        
+        hideLoading();
+    } catch (error) {
+        console.error("Error al editar evolución:", error);
+        hideLoading();
+        showToast("Error al cargar evolución para editar: " + error.message, "error");
+    }
+}
+
+// Función para eliminar evolución
+async function deleteEvolution(patientId, evolutionId) {
+    try {
+        // Pedir confirmación
+        if (!confirm('¿Está seguro que desea eliminar esta evolución? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Eliminar de Firebase
+        const evolutionRef = doc(db, "patients", patientId, "evolutions", evolutionId);
+        await deleteDoc(evolutionRef);
+        
+        // Eliminar de la UI
+        const evolutionItem = document.querySelector(`.evolution-item[data-id="${evolutionId}"]`);
+        if (evolutionItem && evolutionItem.parentNode) {
+            evolutionItem.parentNode.removeChild(evolutionItem);
+        }
+        
+        // Verificar si quedan evoluciones
+        const evolutionTimeline = document.getElementById('evolutionTimeline');
+        if (evolutionTimeline && (!evolutionTimeline.children.length || evolutionTimeline.children.length === 0)) {
+            evolutionTimeline.innerHTML = '<p>No hay evoluciones registradas para este paciente.</p>';
+        }
+        
+        hideLoading();
+        showToast("Evolución eliminada correctamente", "success");
+        
+        // Refrescar lista de pacientes para actualizar lastSession si es necesario
+        getPatients();
+    } catch (error) {
+        console.error("Error al eliminar evolución:", error);
+        hideLoading();
+        showToast("Error al eliminar evolución: " + error.message, "error");
+    }
+}
+        
 // Upload file to Firebase Storage
 async function uploadFile(file, patientId, folder) {
     try {
@@ -4011,6 +4371,108 @@ async function uploadFile(file, patientId, folder) {
         return null;
     }
 }
+
+       // Función mejorada para subir archivos a Firebase Storage
+async function uploadFileToStorage(file, patientId, folder) {
+    try {
+        showLoading();
+        
+        // Importar funciones de Firebase Storage si no están disponibles
+        if (!storage) {
+            storage = getStorage(app);
+        }
+        
+        // Crear una referencia única para el archivo
+        const timestamp = new Date().getTime();
+        const fileName = `${timestamp}_${file.name}`;
+        const fileRef = ref(storage, `patients/${patientId}/${folder}/${fileName}`);
+        
+        // Subir el archivo
+        await uploadBytes(fileRef, file);
+        
+        // Obtener URL de descarga
+        const downloadURL = await getDownloadURL(fileRef);
+        
+        hideLoading();
+        return {
+            name: file.name,
+            path: `patients/${patientId}/${folder}/${fileName}`,
+            url: downloadURL,
+            type: file.type,
+            size: file.size,
+            uploadedAt: new Date().toISOString()
+        };
+    } catch (error) {
+        hideLoading();
+        console.error("Error subiendo archivo a Storage:", error);
+        showToast("Error al subir archivo: " + error.message, "error");
+        return null;
+    }
+}
+
+// Función para guardar referencia de archivo en Firestore
+async function saveFileReference(patientId, fileData, collection = "files") {
+    try {
+        // Guardar referencia en Firestore
+        const filesRef = collection === "files" 
+            ? collection(db, "patients", patientId, "files") 
+            : collection(db, "patients", patientId, "evolutions", collection, "files");
+        
+        const docRef = await addDoc(filesRef, fileData);
+        
+        return docRef.id;
+    } catch (error) {
+        console.error("Error guardando referencia de archivo:", error);
+        return null;
+    }
+}
+
+// Función para cargar archivos de un paciente
+async function loadPatientFiles(patientId, collection = "files") {
+    try {
+        const filesRef = collection === "files" 
+            ? collection(db, "patients", patientId, "files") 
+            : collection(db, "patients", patientId, "evolutions", collection, "files");
+        
+        const filesSnapshot = await getDocs(filesRef);
+        
+        return filesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error("Error cargando archivos del paciente:", error);
+        return [];
+    }
+}
+
+// Función para eliminar archivo
+async function deleteFile(patientId, fileId, storagePath, collection = "files") {
+    try {
+        showLoading();
+        
+        // Eliminar de Storage
+        if (storagePath) {
+            const fileRef = ref(storage, storagePath);
+            await deleteObject(fileRef);
+        }
+        
+        // Eliminar referencia de Firestore
+        const fileDocRef = collection === "files" 
+            ? doc(db, "patients", patientId, "files", fileId) 
+            : doc(db, "patients", patientId, "evolutions", collection, "files", fileId);
+        
+        await deleteDoc(fileDocRef);
+        
+        hideLoading();
+        return true;
+    } catch (error) {
+        hideLoading();
+        console.error("Error eliminando archivo:", error);
+        showToast("Error al eliminar archivo: " + error.message, "error");
+        return false;
+    }
+} 
 
         // Render patients in the main patient list
 function renderPatients(patients) {
@@ -4389,6 +4851,55 @@ function fillPersonalData(patient) {
             if (element) {
                 element.value = value;
             }
+
+            // Cargar archivos clínicos
+loadPatientFiles(patient.id).then(files => {
+    const filesContainer = document.getElementById('clinicalFiles');
+    if (filesContainer) {
+        filesContainer.innerHTML = '';
+        
+        if (files.length === 0) {
+            filesContainer.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay archivos clínicos adjuntos</p>';
+            return;
+        }
+        
+        files.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'attachment';
+            fileItem.dataset.id = file.id;
+            fileItem.dataset.path = file.path;
+            
+            const extension = file.name.split('.').pop().toUpperCase();
+            
+            fileItem.innerHTML = `
+                <img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${extension}" alt="${file.name}">
+                <div class="attachment-type">${extension}</div>
+                <button type="button" class="action-btn btn-secondary delete-file-btn" style="position: absolute; top: 5px; right: 5px; padding: 2px 5px; background-color: rgba(244, 67, 54, 0.8); color: white; border: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            // Configurar evento para eliminar
+            const deleteBtn = fileItem.querySelector('.delete-file-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Evitar que se abra el archivo
+                    deleteFile(patient.id, file.id, file.path);
+                    filesContainer.removeChild(fileItem);
+                });
+            }
+            
+            // Añadir evento para ver/descargar
+            fileItem.addEventListener('click', function(e) {
+                if (e.target !== deleteBtn && !deleteBtn.contains(e.target)) {
+                    window.open(file.url, '_blank');
+                }
+            });
+            
+            filesContainer.appendChild(fileItem);
+        });
+    }
+});
         }
     } catch (error) {
         console.error("Error llenando datos personales:", error);
@@ -4417,6 +4928,7 @@ function fillEvolutionsTab(evolutions) {
         evolutions.forEach(evolution => {
             const evolutionItem = document.createElement('div');
             evolutionItem.classList.add('evolution-item', 'fade-in');
+            evolutionItem.dataset.id = evolution.id; // Guardar ID para acciones
             
             const formattedDate = formatDate(new Date(evolution.date));
             const formattedTime = evolution.time || '10:00';
@@ -4426,12 +4938,20 @@ function fillEvolutionsTab(evolutions) {
                     <i class="fas fa-clipboard-check"></i>
                 </div>
                 <div class="evolution-content">
-                    <div class="evolution-header">
-                        <div class="evolution-date">
+                    <div class="evolution-header" style="flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
                             <i class="far fa-calendar-alt"></i>
                             ${formattedDate} - ${formattedTime}
                         </div>
-                        <div class="evolution-student">Realizado por: ${evolution.student || 'No registrado'}</div>
+                        <div style="display: flex; gap: 5px;">
+                            <div class="evolution-student" style="margin-right: 10px;">Realizado por: ${evolution.student || 'No registrado'}</div>
+                            <button type="button" class="action-btn btn-secondary edit-evolution-btn" style="padding: 3px 8px; font-size: 12px;" title="Editar evolución">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="action-btn btn-secondary delete-evolution-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);" title="Eliminar evolución">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                     ${evolution.patientState ? `
                     <div class="evolution-section">
@@ -4470,6 +4990,24 @@ function fillEvolutionsTab(evolutions) {
             `;
             
             timelineContainer.appendChild(evolutionItem);
+
+            // Añadir manejadores de eventos para los botones
+    const editEvolutionBtn = evolutionItem.querySelector('.edit-evolution-btn');
+    const deleteEvolutionBtn = evolutionItem.querySelector('.delete-evolution-btn');
+
+    if (editEvolutionBtn) {
+        editEvolutionBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que el clic se propague
+            editEvolution(currentPatientId, evolution.id);
+        });
+    }
+
+    if (deleteEvolutionBtn) {
+        deleteEvolutionBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que el clic se propague
+            deleteEvolution(currentPatientId, evolution.id);
+        });
+    }
         });
     } catch (error) {
         console.error("Error llenando pestaña de evoluciones:", error);
@@ -4932,6 +5470,7 @@ async function initDiagnosisTab(patientId) {
                 diagnoses.forEach(diagnosis => {
                     const diagnosisItem = document.createElement('div');
                     diagnosisItem.className = 'timeline-item fade-in';
+                    diagnosisItem.dataset.id = diagnosis.id; // Guardar el ID para acciones posteriores
                     
                     const formattedDate = formatDate(new Date(diagnosis.date));
                     
@@ -4940,13 +5479,48 @@ async function initDiagnosisTab(patientId) {
                             <i class="fas fa-file-medical"></i>
                         </div>
                         <div class="timeline-content">
-                            <div class="timeline-date">Evaluación - ${formattedDate}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="timeline-date">Evaluación - ${formattedDate}</div>
+                                <div class="timeline-actions" style="display: flex; gap: 5px;">
+                                    <button type="button" class="action-btn btn-secondary view-diagnosis-btn" style="padding: 3px 8px; font-size: 12px;" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="action-btn btn-secondary edit-diagnosis-btn" style="padding: 3px 8px; font-size: 12px;" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="action-btn btn-secondary delete-diagnosis-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <h3 class="timeline-title">${diagnosis.code || 'Sin código CIE'}</h3>
                             <p>${diagnosis.description || 'Sin descripción'}</p>
                         </div>
                     `;
                     
                     diagnosisTimeline.appendChild(diagnosisItem);
+                                        // Agregar manejadores de eventos para los botones
+                    const viewBtn = diagnosisItem.querySelector('.view-diagnosis-btn');
+                    const editBtn = diagnosisItem.querySelector('.edit-diagnosis-btn');
+                    const deleteBtn = diagnosisItem.querySelector('.delete-diagnosis-btn');
+                    
+                    if (viewBtn) {
+                        viewBtn.addEventListener('click', function() {
+                            viewDiagnosis(patientId, diagnosis.id);
+                        });
+                    }
+                    
+                    if (editBtn) {
+                        editBtn.addEventListener('click', function() {
+                            editDiagnosis(patientId, diagnosis.id);
+                        });
+                    }
+                    
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', function() {
+                            deleteDiagnosis(patientId, diagnosis.id);
+                        });
+                    }
                 });
             }
         }
@@ -5366,6 +5940,283 @@ function openDiagnosisModal(patientId) {
             showToast("Error al guardar diagnóstico: " + error.message, "error");
         }
     });
+}
+
+        // Función para ver detalles completos del diagnóstico
+async function viewDiagnosis(patientId, diagnosisId) {
+    try {
+        showLoading();
+        
+        // Obtener documento del diagnóstico
+        const diagnosisRef = doc(db, "patients", patientId, "diagnoses", diagnosisId);
+        const diagnosisSnap = await getDoc(diagnosisRef);
+        
+        if (!diagnosisSnap.exists()) {
+            hideLoading();
+            showToast("Diagnóstico no encontrado", "error");
+            return;
+        }
+        
+        const diagnosis = diagnosisSnap.data();
+        
+        // Crear modal para mostrar detalles
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'viewDiagnosisModal';
+        
+        modal.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Detalles del diagnóstico</h2>
+                    <button class="modal-close" id="closeViewDiagnosisModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Fecha de evaluación</label>
+                        <p>${formatDate(new Date(diagnosis.date))}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Diagnóstico médico</label>
+                        <p>${diagnosis.code || 'No registrado'}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Motivo de consulta</label>
+                        <p>${diagnosis.consultReason || 'No registrado'}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Antecedentes relevantes</label>
+                        <p>${diagnosis.medicalBackground || 'No registrado'}</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Diagnóstico kinesiológico funcional</label>
+                        <p>${diagnosis.description || 'No registrado'}</p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button type="button" class="action-btn btn-primary" id="closeViewDetailsBtn">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Configurar botones
+        document.getElementById('closeViewDiagnosisModal').addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => document.body.removeChild(modal), 300);
+        });
+        
+        document.getElementById('closeViewDetailsBtn').addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => document.body.removeChild(modal), 300);
+        });
+        
+        hideLoading();
+    } catch (error) {
+        console.error("Error al ver diagnóstico:", error);
+        hideLoading();
+        showToast("Error al cargar detalles del diagnóstico", "error");
+    }
+}
+
+// Función para editar diagnóstico
+async function editDiagnosis(patientId, diagnosisId) {
+    try {
+        showLoading();
+        
+        // Obtener documento del diagnóstico
+        const diagnosisRef = doc(db, "patients", patientId, "diagnoses", diagnosisId);
+        const diagnosisSnap = await getDoc(diagnosisRef);
+        
+        if (!diagnosisSnap.exists()) {
+            hideLoading();
+            showToast("Diagnóstico no encontrado", "error");
+            return;
+        }
+        
+        const diagnosis = diagnosisSnap.data();
+        
+        // Crear modal para editar
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'editDiagnosisModal';
+        
+        modal.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Editar diagnóstico</h2>
+                    <button class="modal-close" id="closeEditDiagnosisModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editDiagnosisForm">
+                        <div class="form-group">
+                            <label class="form-label">Fecha de evaluación</label>
+                            <input type="date" class="form-control" id="editDiagnosisDate" value="${diagnosis.date || ''}" required>
+                        </div>
+                        
+                        <div class="accordion active">
+                            <div class="accordion-header">
+                                <span>Información médica</span>
+                                <i class="fas fa-chevron-down accordion-icon"></i>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="form-group">
+                                    <label class="form-label">Diagnóstico médico</label>
+                                    <input type="text" class="form-control" id="editDiagnosisCIE" placeholder="Ej: Lumbago, Cervicalgia, Tendinitis, etc." value="${diagnosis.code || ''}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Motivo de consulta</label>
+                                    <textarea class="form-control" id="editConsultReason" rows="2" placeholder="Descripción del motivo por el que el paciente acude a kinesiología">${diagnosis.consultReason || ''}</textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Antecedentes relevantes</label>
+                                    <textarea class="form-control" id="editMedicalBackground" rows="2" placeholder="Antecedentes médicos relevantes para el caso">${diagnosis.medicalBackground || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion active">
+                            <div class="accordion-header">
+                                <span>Diagnóstico kinesiológico funcional</span>
+                                <i class="fas fa-chevron-down accordion-icon"></i>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="form-group">
+                                    <label class="form-label">Descripción funcional</label>
+                                    <textarea class="form-control" id="editDiagnosisText" rows="5" placeholder="Ingrese el diagnóstico kinesiológico detallado en términos de limitación funcional, restricción de participación y alteraciones estructurales según el modelo CIF" required>${diagnosis.description || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 20px; text-align: right;">
+                            <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelEditDiagnosisBtn">Cancelar</button>
+                            <button type="submit" class="action-btn btn-primary">Guardar cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Configurar acordeones
+        modal.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+            });
+        });
+        
+        // Configurar botones
+        document.getElementById('closeEditDiagnosisModal').addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => document.body.removeChild(modal), 300);
+        });
+        
+        document.getElementById('cancelEditDiagnosisBtn').addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => document.body.removeChild(modal), 300);
+        });
+        
+        // Configurar envío del formulario
+        document.getElementById('editDiagnosisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const updatedDiagnosis = {
+                date: document.getElementById('editDiagnosisDate').value,
+                code: document.getElementById('editDiagnosisCIE').value,
+                description: document.getElementById('editDiagnosisText').value,
+                consultReason: document.getElementById('editConsultReason').value || '',
+                medicalBackground: document.getElementById('editMedicalBackground').value || '',
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                showLoading();
+                
+                // Actualizar en Firebase
+                await updateDoc(diagnosisRef, updatedDiagnosis);
+                
+                // Cerrar modal
+                modal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(modal), 300);
+                
+                // Actualizar UI
+                const diagnosisItem = document.querySelector(`.timeline-item[data-id="${diagnosisId}"]`);
+                if (diagnosisItem) {
+                    const titleElement = diagnosisItem.querySelector('.timeline-title');
+                    const descElement = diagnosisItem.querySelector('p');
+                    const dateElement = diagnosisItem.querySelector('.timeline-date');
+                    
+                    if (titleElement) titleElement.textContent = updatedDiagnosis.code || 'Sin código CIE';
+                    if (descElement) descElement.textContent = updatedDiagnosis.description || 'Sin descripción';
+                    if (dateElement) dateElement.textContent = 'Evaluación - ' + formatDate(new Date(updatedDiagnosis.date));
+                }
+                
+                hideLoading();
+                showToast("Diagnóstico actualizado correctamente", "success");
+            } catch (error) {
+                hideLoading();
+                console.error("Error al actualizar diagnóstico:", error);
+                showToast("Error al actualizar diagnóstico: " + error.message, "error");
+            }
+        });
+        
+        hideLoading();
+    } catch (error) {
+        console.error("Error al editar diagnóstico:", error);
+        hideLoading();
+        showToast("Error al cargar formulario de edición", "error");
+    }
+}
+
+// Función para eliminar diagnóstico
+async function deleteDiagnosis(patientId, diagnosisId) {
+    try {
+        // Pedir confirmación
+        if (!confirm('¿Está seguro que desea eliminar este diagnóstico? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Eliminar de Firebase
+        const diagnosisRef = doc(db, "patients", patientId, "diagnoses", diagnosisId);
+        await deleteDoc(diagnosisRef);
+        
+        // Eliminar de la UI
+        const diagnosisItem = document.querySelector(`.timeline-item[data-id="${diagnosisId}"]`);
+        if (diagnosisItem && diagnosisItem.parentNode) {
+            diagnosisItem.parentNode.removeChild(diagnosisItem);
+        }
+        
+        // Verificar si quedan diagnósticos
+        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
+        if (diagnosisTimeline && diagnosisTimeline.children.length === 0) {
+            diagnosisTimeline.innerHTML = `
+                <p>No hay diagnósticos registrados para este paciente.</p>
+            `;
+        }
+        
+        hideLoading();
+        showToast("Diagnóstico eliminado correctamente", "success");
+    } catch (error) {
+        console.error("Error al eliminar diagnóstico:", error);
+        hideLoading();
+        showToast("Error al eliminar diagnóstico: " + error.message, "error");
+    }
 }
 
 // Función para generar diagnóstico funcional basado en las selecciones del asistente
@@ -9422,71 +10273,440 @@ async function loadTemplateFromFirebase(templateId) {
 }
 
 // Mostrar modal de plantillas personalizadas
+// Función mejorada para mostrar el gestor de plantillas
 function showCustomTemplatesModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.id = 'templatesModal';
-    
-    modal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Mis plantillas de ejercicios</h2>
-                <button class="modal-close" id="closeTemplatesModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">Plantillas guardadas</h3>
-                    <button type="button" id="saveCurrentAsTemplateBtn" class="action-btn btn-primary">
-                        <i class="fas fa-plus"></i> Guardar ejercicios actuales
+    try {
+        // Crear modal
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'templatesModal';
+        
+        modal.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Gestión de plantillas de ejercicios</h2>
+                    <button class="modal-close" id="closeTemplatesModal">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-                
-                <div id="savedTemplatesList" style="margin-bottom: 20px;">
-                    <p style="color: var(--text-secondary); font-style: italic;">No hay plantillas personalizadas guardadas</p>
-                </div>
-                
-                <div id="saveTemplateForm" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 6px; margin-top: 20px;">
-                    <h4 style="margin-top: 0;">Guardar como plantilla</h4>
-                    <div class="form-group">
-                        <label class="form-label">Nombre de la plantilla</label>
-                        <input type="text" class="form-control" id="templateNameInput" placeholder="Ej: Mi rutina de hombro">
+                <div class="modal-body">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="local">Plantillas locales</div>
+                        <div class="tab" data-tab="cloud">Plantillas en la nube</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Categoría (opcional)</label>
-                        <input type="text" class="form-control" id="templateCategoryInput" placeholder="Ej: Rehabilitación, Fortalecimiento, etc.">
+                    
+                    <div class="tab-content active" id="localTab">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">Mis plantillas guardadas</h3>
+                            <button type="button" id="saveCurrentAsTemplateBtn" class="action-btn btn-primary">
+                                <i class="fas fa-plus"></i> Guardar ejercicios actuales
+                            </button>
+                        </div>
+                        
+                        <div id="savedTemplatesList" style="margin-bottom: 20px;">
+                            <p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>
+                        </div>
+                        
+                        <div id="saveTemplateForm" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 6px; margin-top: 20px;">
+                            <h4 style="margin-top: 0;">Guardar como plantilla</h4>
+                            <div class="form-group">
+                                <label class="form-label">Nombre de la plantilla</label>
+                                <input type="text" class="form-control" id="templateNameInput" placeholder="Ej: Mi rutina de hombro">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Categoría (opcional)</label>
+                                <input type="text" class="form-control" id="templateCategoryInput" placeholder="Ej: Rehabilitación, Fortalecimiento, etc.">
+                            </div>
+                            <div style="text-align: right; margin-top: 15px;">
+                                <button type="button" id="cancelSaveTemplateBtn" class="action-btn btn-secondary" style="margin-right: 10px;">Cancelar</button>
+                                <button type="button" id="confirmSaveTemplateBtn" class="action-btn btn-primary">Guardar plantilla</button>
+                            </div>
+                        </div>
                     </div>
-                    <div style="text-align: right; margin-top: 15px;">
-                        <button type="button" id="cancelSaveTemplateBtn" class="action-btn btn-secondary" style="margin-right: 10px;">Cancelar</button>
-                        <button type="button" id="confirmSaveTemplateBtn" class="action-btn btn-primary">Guardar plantilla</button>
+                    
+                    <div class="tab-content" id="cloudTab">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">Plantillas en la nube</h3>
+                            <div>
+                                <button type="button" id="refreshCloudTemplatesBtn" class="action-btn btn-secondary" style="margin-right: 10px;">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                                <button type="button" id="saveToCloudBtn" class="action-btn btn-primary">
+                                    <i class="fas fa-cloud-upload-alt"></i> Guardar en la nube
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="cloudTemplatesList" style="margin-bottom: 20px;">
+                            <p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Configurar pestañas
+        const tabs = modal.querySelectorAll('.tab');
+        const tabContents = modal.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                const targetTab = document.getElementById(tabId + 'Tab');
+                if (targetTab) targetTab.classList.add('active');
+                
+                // Cargar plantillas según la pestaña
+                if (tabId === 'cloud') {
+                    renderCloudTemplatesList();
+                } else {
+                    renderSavedTemplatesList();
+                }
+            });
+        });
+        
+        // Renderizar lista de plantillas
+        renderSavedTemplatesList();
+        
+        // Configurar eventos
+        document.getElementById('closeTemplatesModal').addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                document.body.removeChild(modal);
+            }, 300);
+        });
+        
+        document.getElementById('saveCurrentAsTemplateBtn').addEventListener('click', saveCurrentExercisesAsTemplate);
+        
+        document.getElementById('confirmSaveTemplateBtn').addEventListener('click', confirmSaveTemplate);
+        
+        document.getElementById('cancelSaveTemplateBtn').addEventListener('click', function() {
+            document.getElementById('saveTemplateForm').style.display = 'none';
+        });
+        
+        document.getElementById('refreshCloudTemplatesBtn').addEventListener('click', function() {
+            renderCloudTemplatesList();
+        });
+        
+        document.getElementById('saveToCloudBtn').addEventListener('click', saveCurrentExercisesAsTemplate);
+        
+        return true;
+    } catch (error) {
+        console.error("Error al mostrar modal de plantillas:", error);
+        showToast("Error al abrir gestor de plantillas: " + error.message, "error");
+        return false;
+    }
+}
+
+        // Función para confirmar y guardar plantilla
+async function confirmSaveTemplate() {
+    try {
+        const templateName = document.getElementById('templateNameInput')?.value;
+        const templateCategory = document.getElementById('templateCategoryInput')?.value || '';
+        
+        if (!templateName) {
+            showToast("Debe ingresar un nombre para la plantilla", "error");
+            return;
+        }
+        
+        const exercises = getExercisesData();
+        
+        if (exercises.length === 0) {
+            showToast("No hay ejercicios para guardar como plantilla", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        // Crear objeto de plantilla
+        const template = {
+            id: 'template_' + Date.now(),
+            name: templateName,
+            category: templateCategory,
+            exercises: exercises,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Guardar en localStorage para compatibilidad
+        customTemplates.push(template);
+        saveCustomTemplates();
+        
+        // Guardar en Firebase
+        await saveTemplateToFirebase(template);
+        
+        // Ocultar formulario
+        const saveTemplateForm = document.getElementById('saveTemplateForm');
+        if (saveTemplateForm) saveTemplateForm.style.display = 'none';
+        
+        // Limpiar campos
+        if (document.getElementById('templateNameInput')) document.getElementById('templateNameInput').value = '';
+        if (document.getElementById('templateCategoryInput')) document.getElementById('templateCategoryInput').value = '';
+        
+        hideLoading();
+        showToast("Plantilla guardada correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al guardar plantilla:", error);
+        showToast("Error al guardar plantilla: " + error.message, "error");
+    }
+}
+
+// Función para guardar una plantilla en Firebase
+async function saveTemplateToFirebase(template) {
+    try {
+        // Guardar en Firestore
+        const templatesRef = collection(db, "exerciseTemplates");
+        await addDoc(templatesRef, {
+            name: template.name,
+            category: template.category,
+            exercises: template.exercises,
+            createdAt: serverTimestamp(),
+            userId: "sistema" // En un sistema con autenticación, aquí iría el ID del usuario
+        });
+        
+        return true;
+    } catch (error) {
+        console.error("Error al guardar plantilla en Firebase:", error);
+        showToast("Error al guardar plantilla en la nube: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función para renderizar lista de plantillas en la nube
+async function renderCloudTemplatesList() {
+    const container = document.getElementById('cloudTemplatesList');
+    if (!container) return;
     
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 50);
+    container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>';
     
-    // Renderizar lista de plantillas
-    renderSavedTemplatesList();
-    
-    // Configurar eventos
-    document.getElementById('closeTemplatesModal').addEventListener('click', function() {
-        modal.classList.remove('active');
-        setTimeout(() => {
-            document.body.removeChild(modal);
-        }, 300);
-    });
-    
-    document.getElementById('saveCurrentAsTemplateBtn').addEventListener('click', saveCurrentExercisesAsTemplate);
-    
-    document.getElementById('confirmSaveTemplateBtn').addEventListener('click', confirmSaveTemplate);
-    
-    document.getElementById('cancelSaveTemplateBtn').addEventListener('click', function() {
-        document.getElementById('saveTemplateForm').style.display = 'none';
-    });
+    try {
+        // Obtener plantillas de Firebase
+        const templates = await loadTemplatesFromFirebase();
+        
+        if (templates.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay plantillas guardadas en la nube</p>';
+            return;
+        }
+        
+        // Agrupar por categoría
+        const groupedTemplates = {};
+        templates.forEach(template => {
+            const category = template.category || 'Sin categoría';
+            if (!groupedTemplates[category]) {
+                groupedTemplates[category] = [];
+            }
+            groupedTemplates[category].push(template);
+        });
+        
+        // Crear contenido HTML
+        let html = '';
+        
+        // Crear acordeón por cada categoría
+        for (const [category, categoryTemplates] of Object.entries(groupedTemplates)) {
+            html += `
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <span>${category} (${categoryTemplates.length})</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="exercise-table-container">
+                            <table class="exercise-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Nombre</th>
+                                        <th style="width: 15%;">Ejercicios</th>
+                                        <th style="width: 35%;">Fecha creación</th>
+                                        <th style="width: 20%;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            // Añadir cada plantilla de la categoría
+            categoryTemplates.forEach(template => {
+                const createdAt = template.createdAt ? formatDate(template.createdAt.toDate ? template.createdAt.toDate() : new Date(template.createdAt)) : 'Desconocida';
+                
+                html += `
+                    <tr>
+                        <td>${template.name || 'Sin nombre'}</td>
+                        <td>${template.exercises?.length || 0} ejercicios</td>
+                        <td>${createdAt}</td>
+                        <td>
+                            <button type="button" class="action-btn btn-secondary use-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; margin-right: 5px;">
+                                <i class="fas fa-play"></i> Usar
+                            </button>
+                            <button type="button" class="action-btn btn-secondary delete-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; background-color: var(--accent2-light);">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Configurar eventos para los acordeones
+        container.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+                const icon = this.querySelector('.accordion-icon');
+                if (icon) {
+                    icon.style.transform = this.parentElement.classList.contains('active') 
+                        ? 'rotate(180deg)' 
+                        : 'rotate(0deg)';
+                }
+            });
+        });
+        
+        // Configurar eventos para los botones
+        container.querySelectorAll('.use-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                loadTemplateFromFirebase(templateId);
+            });
+        });
+        
+        container.querySelectorAll('.delete-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                deleteTemplateFromFirebase(templateId);
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error al renderizar plantillas en la nube:", error);
+        container.innerHTML = `<p style="color: var(--accent2); font-style: italic;">Error al cargar plantillas: ${error.message}</p>`;
+    }
+}
+
+// Función para cargar plantillas desde Firebase
+async function loadTemplatesFromFirebase() {
+    try {
+        showLoading();
+        
+        const templatesRef = collection(db, "exerciseTemplates");
+        const snapshot = await getDocs(templatesRef);
+        
+        const templates = [];
+        snapshot.forEach(doc => {
+            templates.push({ 
+                id: doc.id, 
+                ...doc.data() 
+            });
+        });
+        
+        hideLoading();
+        
+        return templates;
+    } catch (error) {
+        console.error("Error al cargar plantillas desde Firebase:", error);
+        hideLoading();
+        showToast("Error al cargar plantillas desde la nube: " + error.message, "error");
+        return [];
+    }
+}
+
+// Función para cargar una plantilla específica desde Firebase
+async function loadTemplateFromFirebase(templateId) {
+    try {
+        showLoading();
+        
+        const templateDoc = await getDoc(doc(db, "exerciseTemplates", templateId));
+        
+        if (!templateDoc.exists()) {
+            hideLoading();
+            showToast("Plantilla no encontrada", "error");
+            return;
+        }
+        
+        const template = {
+            id: templateDoc.id,
+            ...templateDoc.data()
+        };
+        
+        // Cargar ejercicios de la plantilla
+        const tableBody = document.getElementById('exerciseTableBody');
+        if (!tableBody) {
+            hideLoading();
+            showToast("No se encontró la tabla de ejercicios", "error");
+            return;
+        }
+        
+        // Confirmar antes de reemplazar ejercicios existentes
+        if (tableBody.children.length > 0) {
+            if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+                hideLoading();
+                return;
+            }
+            tableBody.innerHTML = '';
+        }
+        
+        // Cargar ejercicios de la plantilla
+        if (template.exercises && Array.isArray(template.exercises)) {
+            template.exercises.forEach(exercise => {
+                addExerciseRow(exercise);
+            });
+        }
+        
+        // Cerrar modal
+        const modal = document.getElementById('templatesModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+            }, 300);
+        }
+        
+        hideLoading();
+        showToast(`Plantilla "${template.name}" cargada correctamente`, "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar plantilla desde Firebase:", error);
+        showToast("Error al cargar plantilla: " + error.message, "error");
+    }
+}
+
+// Función para eliminar una plantilla de Firebase
+async function deleteTemplateFromFirebase(templateId) {
+    try {
+        // Confirmar antes de eliminar
+        if (!confirm('¿Está seguro que desea eliminar esta plantilla? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Eliminar de Firebase
+        await deleteDoc(doc(db, "exerciseTemplates", templateId));
+        
+        // Volver a cargar la lista
+        renderCloudTemplatesList();
+        
+        hideLoading();
+        showToast("Plantilla eliminada correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar plantilla de Firebase:", error);
+        showToast("Error al eliminar plantilla: " + error.message, "error");
+    }
 }
 
         // Funciones para ejemplos
@@ -9705,38 +10925,93 @@ async function initApp() {
             });
         }
         
-        // Configurar previsualización de archivos adjuntos
-        const evolutionAttachments = document.getElementById('evolutionAttachments');
-        if (evolutionAttachments) {
-            evolutionAttachments.addEventListener('change', function() {
-                const previewContainer = document.getElementById('attachmentPreview');
-                if (!previewContainer) return;
-                
-                previewContainer.innerHTML = '';
-                
-                Array.from(this.files).forEach(file => {
-                    const isImage = file.type.startsWith('image/');
-                    const attachment = document.createElement('div');
-                    attachment.className = 'attachment';
-                    
-                    if (isImage) {
-                        const img = document.createElement('img');
-                        img.src = URL.createObjectURL(file);
-                        img.alt = file.name;
-                        attachment.appendChild(img);
-                    } else {
-                        attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
-                    }
-                    
-                    const typeLabel = document.createElement('div');
-                    typeLabel.className = 'attachment-type';
-                    typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
-                    attachment.appendChild(typeLabel);
-                    
-                    previewContainer.appendChild(attachment);
-                });
-            });
+        // Configurar carga de adjuntos en evoluciones
+const evolutionAttachments = document.getElementById('evolutionAttachments');
+if (evolutionAttachments) {
+    // Eliminar eventos previos
+    const newAttachments = evolutionAttachments.cloneNode(true);
+    evolutionAttachments.parentNode.replaceChild(newAttachments, evolutionAttachments);
+    
+    newAttachments.addEventListener('change', async function() {
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
         }
+        
+        if (!this.files || this.files.length === 0) {
+            return;
+        }
+        
+        const previewContainer = document.getElementById('attachmentPreview');
+        if (!previewContainer) return;
+        
+        try {
+            showLoading();
+            
+            // Procesar cada archivo
+            for (const file of this.files) {
+                const isImage = file.type.startsWith('image/');
+                
+                // Añadir a la previsualización
+                const attachment = document.createElement('div');
+                attachment.className = 'attachment';
+                attachment.dataset.file = JSON.stringify({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size
+                });
+                
+                if (isImage) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.alt = file.name;
+                    attachment.appendChild(img);
+                } else {
+                    const extension = file.name.split('.').pop().toUpperCase();
+                    attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${extension}" alt="${file.name}">`;
+                }
+                
+                const typeLabel = document.createElement('div');
+                typeLabel.className = 'attachment-type';
+                typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
+                attachment.appendChild(typeLabel);
+                
+                // Añadir botón para eliminar
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'action-btn btn-secondary delete-file-btn';
+                deleteBtn.style = 'position: absolute; top: 5px; right: 5px; padding: 2px 5px; background-color: rgba(244, 67, 54, 0.8); color: white; border: none;';
+                deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                deleteBtn.addEventListener('click', function() {
+                    previewContainer.removeChild(attachment);
+                });
+                attachment.appendChild(deleteBtn);
+                
+                previewContainer.appendChild(attachment);
+                
+                // Si estamos editando una evolución, subir el archivo ahora
+                const evolutionId = document.getElementById('evolutionId')?.value;
+                if (evolutionId) {
+                    // Subir a Firebase Storage
+                    const fileData = await uploadFileToStorage(file, currentPatientId, `evolutions/${evolutionId}`);
+                    if (fileData) {
+                        // Guardar referencia
+                        const fileId = await saveFileReference(currentPatientId, fileData, evolutionId);
+                        attachment.dataset.id = fileId;
+                        attachment.dataset.path = fileData.path;
+                        attachment.dataset.url = fileData.url;
+                    }
+                }
+            }
+            
+            hideLoading();
+        } catch (error) {
+            hideLoading();
+            console.error("Error procesando adjuntos:", error);
+            showToast("Error al procesar adjuntos: " + error.message, "error");
+        }
+    });
+}
         
         // Configurar controles de escalas
         setupScalesControls();
@@ -10080,6 +11355,79 @@ if (deletePatientBtn) {
                 }
             });
         }
+
+        // Configurar carga de archivos clínicos
+const clinicalFileUpload = document.getElementById('clinicalFileUpload');
+if (clinicalFileUpload) {
+    // Eliminar eventos previos
+    const newUpload = clinicalFileUpload.cloneNode(true);
+    clinicalFileUpload.parentNode.replaceChild(newUpload, clinicalFileUpload);
+    
+    newUpload.addEventListener('change', async function() {
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        if (!this.files || this.files.length === 0) {
+            return;
+        }
+        
+        try {
+            showLoading();
+            
+            // Procesar cada archivo
+            for (const file of this.files) {
+                // Subir archivo a Storage
+                const fileData = await uploadFileToStorage(file, currentPatientId, "clinical_files");
+                
+                if (fileData) {
+                    // Guardar referencia en Firestore
+                    await saveFileReference(currentPatientId, fileData);
+                    
+                    // Añadir a la UI
+                    const filesContainer = document.getElementById('clinicalFiles');
+                    if (filesContainer) {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'attachment';
+                        fileItem.dataset.id = fileData.id;
+                        fileItem.dataset.path = fileData.path;
+                        
+                        const extension = fileData.name.split('.').pop().toUpperCase();
+                        
+                        fileItem.innerHTML = `
+                            <img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${extension}" alt="${fileData.name}">
+                            <div class="attachment-type">${extension}</div>
+                            <button type="button" class="action-btn btn-secondary delete-file-btn" style="position: absolute; top: 5px; right: 5px; padding: 2px 5px; background-color: rgba(244, 67, 54, 0.8); color: white; border: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        
+                        // Configurar evento para eliminar
+                        const deleteBtn = fileItem.querySelector('.delete-file-btn');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', function() {
+                                deleteFile(currentPatientId, fileData.id, fileData.path);
+                                filesContainer.removeChild(fileItem);
+                            });
+                        }
+                        
+                        filesContainer.appendChild(fileItem);
+                    }
+                }
+            }
+            
+            // Limpiar input
+            this.value = '';
+            
+            hideLoading();
+            showToast("Archivos subidos correctamente", "success");
+        } catch (error) {
+            hideLoading();
+            console.error("Error procesando archivos:", error);
+            showToast("Error al subir archivos: " + error.message, "error");
+        }
+    });
         
         // Cargar plantillas personalizadas
         loadCustomTemplates();
@@ -10185,7 +11533,14 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const manageCustomTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
     if (manageCustomTemplatesBtn) {
-        manageCustomTemplatesBtn.addEventListener('click', function() {
+        // Eliminar eventos previos
+        const newBtn = manageCustomTemplatesBtn.cloneNode(true);
+        manageCustomTemplatesBtn.parentNode.replaceChild(newBtn, manageCustomTemplatesBtn);
+        
+        newBtn.addEventListener('click', function() {
+            showCustomTemplatesModal();
+        });
+    }
             try {
                 // Intentar mostrar el modal de plantillas
                 const modal = document.getElementById('cloudTemplatesModal') || document.getElementById('templatesModal');
