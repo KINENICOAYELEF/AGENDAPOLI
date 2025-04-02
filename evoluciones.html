@@ -5811,10 +5811,10 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
     // Mostrar modal
     cifModal.style.display = 'block';
     setTimeout(() => cifModal.classList.add('active'), 50);
-        
-        // Cargar opciones según la categoría
-        let cifCodes = [];
-        switch(categoryType) {
+    
+    // Cargar códigos según la categoría
+    let allCifCodes = [];
+    switch(categoryType) {
             case 'Función':
                 cifCodes = [
                     // Funciones mentales
@@ -6163,29 +6163,74 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
                 break;
         }
         
-        // Configurar lista desplegable
-    const cifCodeSelect = document.getElementById('cifCodeSelect');
-    if (cifCodeSelect) {
-        // Limpiar opciones anteriores
-        cifCodeSelect.innerHTML = '<option value="">-- Seleccione un código --</option>';
+        // Guardamos los códigos en una variable del objeto window para accederlos globalmente
+    window.currentCifCodes = allCifCodes;
+    
+    // Función para actualizar el select basado en el texto de búsqueda
+    function updateCifSelect(searchText) {
+        const cifCodeSelect = document.getElementById('cifCodeSelect');
+        if (!cifCodeSelect) return;
         
-        // Añadir opciones a la lista desplegable
-        cifCodes.forEach(code => {
+        // Convertir texto de búsqueda a minúsculas y sin acentos
+        searchText = searchText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        // Limpiar select actual
+        cifCodeSelect.innerHTML = '';
+        
+        // Añadir opción por defecto
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Seleccione un código --";
+        cifCodeSelect.appendChild(defaultOption);
+        
+        // Filtrar códigos
+        const filteredCodes = searchText === "" 
+            ? window.currentCifCodes  // Si no hay búsqueda, mostrar todos
+            : window.currentCifCodes.filter(code => {
+                // Texto normalizado para búsqueda
+                const normalizedText = `${code.code} ${code.name} ${code.desc}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return normalizedText.includes(searchText);
+              });
+        
+        // Añadir opciones filtradas
+        filteredCodes.forEach(code => {
             const option = document.createElement('option');
             option.value = code.code;
             option.textContent = `${code.code} - ${code.name}`;
             option.dataset.name = code.name;
             option.dataset.desc = code.desc;
-            option.dataset.searchtext = `${code.code} ${code.name} ${code.desc}`.toLowerCase();
             cifCodeSelect.appendChild(option);
         });
         
-        // Eliminar manejadores previos
-        const newCifCodeSelect = cifCodeSelect.cloneNode(true);
-        cifCodeSelect.parentNode.replaceChild(newCifCodeSelect, cifCodeSelect);
+        console.log(`Filtrado completado: ${filteredCodes.length} resultados para "${searchText}"`);
+    }
+    
+    // Configurar campo de búsqueda
+    const searchFilter = document.getElementById('cifSearchFilter');
+    if (searchFilter) {
+        // Limpiar el campo
+        searchFilter.value = '';
         
-        // Configurar evento para selección
-        newCifCodeSelect.addEventListener('change', function() {
+        // Eliminar todos los listeners previos
+        const newSearchFilter = searchFilter.cloneNode(true);
+        searchFilter.parentNode.replaceChild(newSearchFilter, searchFilter);
+        
+        // Crear listener para el input
+        newSearchFilter.addEventListener('input', function() {
+            updateCifSelect(this.value);
+        });
+        
+        // Dar foco inicial
+        setTimeout(() => newSearchFilter.focus(), 200);
+    }
+    
+    // Inicializar select con todos los códigos
+    updateCifSelect("");
+    
+    // Configurar evento para selección en el select
+    const cifCodeSelect = document.getElementById('cifCodeSelect');
+    if (cifCodeSelect) {
+        cifCodeSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             
             // Actualizar campos del formulario
@@ -6197,50 +6242,6 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
             if (nameInput && selectedOption) nameInput.value = selectedOption.dataset.name || '';
             if (descInput && selectedOption) descInput.value = selectedOption.dataset.desc || '';
         });
-    }
-    
-    // Configurar campo de búsqueda
-    const searchFilter = document.getElementById('cifSearchFilter');
-    if (searchFilter) {
-        // Eliminar manejadores previos
-        const newSearchFilter = searchFilter.cloneNode(true);
-        searchFilter.parentNode.replaceChild(newSearchFilter, searchFilter);
-        
-        // Configurar evento para filtrado
-        newSearchFilter.addEventListener('input', function() {
-            const searchValue = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Normaliza y quita acentos
-            
-            // Si el select existe
-            if (cifCodeSelect) {
-                const options = cifCodeSelect.querySelectorAll('option');
-                
-                options.forEach(option => {
-                    if (option.value === "") {
-                        // Siempre mostrar la opción "Seleccione un código"
-                        option.style.display = "";
-                        return;
-                    }
-                    
-                    // Normalizar el texto para búsqueda sin acentos
-                    const searchText = option.dataset.searchtext || 
-                                      (option.textContent || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    
-                    if (searchValue === "" || searchText.includes(searchValue)) {
-                        option.style.display = "";
-                    } else {
-                        option.style.display = "none";
-                    }
-                });
-            }
-            
-            // Hacer foco en el select después de buscar
-            if (cifCodeSelect && searchValue.length > 2) {
-                setTimeout(() => cifCodeSelect.focus(), 100);
-            }
-        });
-        
-        // Dar foco inicial al campo de búsqueda
-        setTimeout(() => newSearchFilter.focus(), 200);
     }
     
     // Configurar campos de formulario
@@ -6296,6 +6297,7 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         });
     }
 }
+
 
 // Añadir un elemento CIF
 // Añadir un elemento CIF (versión actualizada)
