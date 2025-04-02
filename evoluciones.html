@@ -5800,45 +5800,348 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
         switch(categoryType) {
             case 'Función':
                 cifCodes = [
-                    { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
-                    { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
-                    { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
-                    { code: 'b735', name: 'Funciones de tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos cuando están en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
-                    { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' },
-                    { code: 'b760', name: 'Funciones de control de movimientos voluntarios', desc: 'Funciones asociadas con el control sobre los movimientos voluntarios y la coordinación de los mismos.' },
-                    { code: 'b770', name: 'Funciones relacionadas con el patrón de marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos del cuerpo entero.' }
+                    // Funciones mentales
+                    { code: 'b126', name: 'Funciones del temperamento y la personalidad', desc: 'Tendencia del individuo a reaccionar de una manera determinada ante situaciones, incluyendo el conjunto de características mentales que hace que una persona sea diferente de otra.' },
+                    { code: 'b130', name: 'Funciones de la energía y los impulsos', desc: 'Funciones mentales generales de los mecanismos fisiológicos y psicológicos que empujan al individuo a moverse de manera persistente para satisfacer necesidades específicas.' },
+                    { code: 'b134', name: 'Funciones del sueño', desc: 'Funciones mentales generales de desconexión física y mental periódica, reversible y selectiva del entorno inmediato, acompañada de cambios fisiológicos.' },
+                    { code: 'b140', name: 'Funciones de la atención', desc: 'Funciones mentales específicas que permiten centrarse en un estímulo externo o experiencia interna durante el periodo de tiempo necesario.' },
+                    { code: 'b152', name: 'Funciones emocionales', desc: 'Funciones mentales específicas relacionadas con los sentimientos y los componentes afectivos de los procesos mentales.' },
+                    { code: 'b180', name: 'Funciones de la experiencia del propio cuerpo e imagen corporal', desc: 'Conciencia relacionada con el propio cuerpo, incluyendo la experiencia psicológica relacionada con el propio cuerpo.' },
+                    
+                    // Funciones sensoriales y dolor
+                    { code: 'b210', name: 'Funciones visuales', desc: 'Funciones relacionadas con la percepción de la presencia de luz y la forma, tamaño y color de un estímulo visual.' },
+                    { code: 'b230', name: 'Funciones auditivas', desc: 'Funciones sensoriales relacionadas con la percepción de los sonidos y la discriminación de su localización, tono, volumen y calidad.' },
+                    { code: 'b235', name: 'Función vestibular', desc: 'Funciones sensoriales del oído interno relacionadas con la posición, el equilibrio y el movimiento.' },
+                    { code: 'b240', name: 'Sensaciones asociadas con el oído y la función vestibular', desc: 'Sensaciones de mareo, caída, tinnitus y vértigo.' },
+                    { code: 'b260', name: 'Función propioceptiva', desc: 'Funciones sensoriales relacionadas con sentir la posición relativa de las partes del cuerpo.' },
+                    { code: 'b265', name: 'Función táctil', desc: 'Funciones sensoriales relacionadas con sentir las superficies de los objetos y su textura o calidad.' },
+                    { code: 'b270', name: 'Funciones sensoriales relacionadas con la temperatura y otros estímulos', desc: 'Funciones sensoriales relacionadas con sentir la temperatura, la vibración, la presión y los estímulos nocivos.' },
+                    { code: 'b280', name: 'Sensación de dolor', desc: 'Sensación desagradable que indica daño potencial o real a alguna estructura corporal.' },
+                    { code: 'b2801', name: 'Dolor localizado', desc: 'Sensación de dolor experimentada en una o más partes del cuerpo.' },
+                    { code: 'b28010', name: 'Dolor en cabeza y cuello', desc: 'Sensación de dolor localizado en cabeza y cuello.' },
+                    { code: 'b28011', name: 'Dolor en el pecho', desc: 'Sensación de dolor localizado en el pecho.' },
+                    { code: 'b28012', name: 'Dolor en el estómago o abdomen', desc: 'Sensación de dolor localizado en el estómago o abdomen.' },
+                    { code: 'b28013', name: 'Dolor en la espalda', desc: 'Sensación de dolor localizado en la espalda.' },
+                    { code: 'b28014', name: 'Dolor en extremidad superior', desc: 'Sensación de dolor localizado en una o ambas extremidades superiores.' },
+                    { code: 'b28015', name: 'Dolor en extremidad inferior', desc: 'Sensación de dolor localizado en una o ambas extremidades inferiores.' },
+                    { code: 'b28016', name: 'Dolor en las articulaciones', desc: 'Sensación de dolor localizado en una o más articulaciones.' },
+                    { code: 'b2802', name: 'Dolor en múltiples partes del cuerpo', desc: 'Sensación de dolor localizado en varias partes del cuerpo.' },
+                    { code: 'b2803', name: 'Dolor irradiado en un dermatoma', desc: 'Sensación de dolor localizado en áreas de la piel inervadas por la misma raíz nerviosa.' },
+                    { code: 'b2804', name: 'Dolor irradiado en un segmento o región', desc: 'Sensación de dolor localizado en áreas de la piel inervadas por diferentes raíces nerviosas.' },
+                    
+                    // Funciones cardiovasculares y respiratorias (comorbilidades)
+                    { code: 'b410', name: 'Funciones del corazón', desc: 'Funciones relacionadas con el bombeo de sangre en una cantidad y presión adecuadas para el cuerpo.' },
+                    { code: 'b420', name: 'Funciones de la presión arterial', desc: 'Funciones relacionadas con el mantenimiento de la presión arterial dentro del cuerpo.' },
+                    { code: 'b430', name: 'Funciones del sistema hematológico', desc: 'Funciones relacionadas con la producción de sangre, transporte de oxígeno y metabolitos, y coagulación.' },
+                    { code: 'b440', name: 'Funciones respiratorias', desc: 'Funciones relacionadas con la inhalación de aire a los pulmones, el intercambio de gases y la exhalación.' },
+                    { code: 'b455', name: 'Funciones relacionadas con la tolerancia al ejercicio', desc: 'Funciones relacionadas con la capacidad respiratoria y cardiovascular necesaria para resistir el esfuerzo físico.' },
+                    { code: 'b4550', name: 'Resistencia física general', desc: 'Funciones relacionadas con el nivel general de tolerancia al ejercicio físico o vigor.' },
+                    { code: 'b4551', name: 'Capacidad aeróbica', desc: 'Funciones relacionadas con el grado en que una persona puede ejercitarse sin jadear.' },
+                    { code: 'b4552', name: 'Fatigabilidad', desc: 'Sensación de cansancio a cualquier nivel de esfuerzo.' },
+                    
+                    // Funciones neuromusculoesqueléticas - MUY RELEVANTES PARA KINESIOLOGÍA
+                    { code: 'b710', name: 'Funciones relacionadas con la movilidad de las articulaciones', desc: 'Funciones relacionadas con la amplitud y la facilidad de movimiento de una articulación.' },
+                    { code: 'b7100', name: 'Movilidad de una sola articulación', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
+                    { code: 'b7101', name: 'Movilidad de varias articulaciones', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de más de una articulación.' },
+                    { code: 'b7102', name: 'Movilidad generalizada de las articulaciones', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de las articulaciones en todo el cuerpo.' },
+                    { code: 'b715', name: 'Funciones relacionadas con la estabilidad de las articulaciones', desc: 'Funciones relacionadas con el mantenimiento de la integridad estructural de las articulaciones.' },
+                    { code: 'b720', name: 'Funciones relacionadas con la movilidad de los huesos', desc: 'Funciones relacionadas con la amplitud y facilidad de movimiento de la escápula, pelvis, huesos del carpo y tarso.' },
+                    { code: 'b730', name: 'Funciones relacionadas con la fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupos de músculos.' },
+                    { code: 'b7300', name: 'Fuerza de músculos aislados o grupos de músculos', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculos específicos aislados o grupos de músculos.' },
+                    { code: 'b7301', name: 'Fuerza de los músculos de una extremidad', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares de un brazo o pierna.' },
+                    { code: 'b7302', name: 'Fuerza de los músculos de un lado del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculos y grupos musculares del lado derecho o izquierdo del cuerpo.' },
+                    { code: 'b7303', name: 'Fuerza de los músculos de la mitad inferior del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares de la mitad inferior del cuerpo.' },
+                    { code: 'b7304', name: 'Fuerza de los músculos de todas las extremidades', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculo y grupos musculares de las cuatro extremidades.' },
+                    { code: 'b7305', name: 'Fuerza de los músculos del tronco', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares del tronco.' },
+                    { code: 'b7306', name: 'Fuerza de todos los músculos del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de todos los músculos y grupos musculares del cuerpo.' },
+                    { code: 'b735', name: 'Funciones relacionadas con el tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos cuando están en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
+                    { code: 'b740', name: 'Funciones relacionadas con la resistencia muscular', desc: 'Funciones relacionadas con el sostenimiento de la contracción muscular durante un periodo de tiempo determinado.' },
+                    { code: 'b750', name: 'Funciones relacionadas con los reflejos motores', desc: 'Funciones relacionadas con la contracción involuntaria de los músculos, inducida automáticamente por estímulos específicos.' },
+                    { code: 'b755', name: 'Funciones relacionadas con los reflejos de movimiento involuntario', desc: 'Funciones relacionadas con las contracciones involuntarias de grandes músculos o de todo el cuerpo inducidas por la posición del cuerpo, el equilibrio y los estímulos amenazantes.' },
+                    { code: 'b760', name: 'Funciones relacionadas con el control de los movimientos voluntarios', desc: 'Funciones asociadas con el control sobre los movimientos voluntarios y la coordinación de los mismos.' },
+                    { code: 'b7600', name: 'Control de movimientos voluntarios simples', desc: 'Funciones asociadas con el control y la coordinación de movimientos voluntarios simples o aislados.' },
+                    { code: 'b7601', name: 'Control de movimientos voluntarios complejos', desc: 'Funciones asociadas con el control y la coordinación de movimientos voluntarios complejos.' },
+                    { code: 'b7602', name: 'Coordinación de movimientos voluntarios', desc: 'Funciones asociadas con la coordinación de movimientos voluntarios simples y complejos, realizando movimientos de forma ordenada.' },
+                    { code: 'b7603', name: 'Funciones de apoyo del brazo o la pierna', desc: 'Funciones asociadas con el control y coordinación de movimientos voluntarios al colocar peso en los brazos o piernas.' },
+                    { code: 'b765', name: 'Funciones relacionadas con los movimientos involuntarios', desc: 'Funciones relacionadas con las contracciones no intencionadas, involuntarias sin propósito final o con algo de propósito final.' },
+                    { code: 'b770', name: 'Funciones relacionadas con el patrón de la marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos de todo el cuerpo.' },
+                    { code: 'b780', name: 'Sensaciones relacionadas con los músculos y las funciones del movimiento', desc: 'Sensaciones asociadas con los músculos o grupos de músculos del cuerpo y su movimiento.' },
+                    { code: 'b7800', name: 'Sensación de rigidez muscular', desc: 'Sensación de tensión o rigidez muscular.' },
+                    { code: 'b7801', name: 'Sensación de espasmo muscular', desc: 'Sensación de contracción involuntaria de un músculo o grupo de músculos.' },
+                    
+                    // Funciones relacionadas con el metabolismo (para poblaciones con comorbilidades)
+                    { code: 'b530', name: 'Funciones relacionadas con el mantenimiento del peso', desc: 'Funciones relacionadas con el mantenimiento del peso corporal apropiado, incluyendo ganancia de peso durante el desarrollo.' },
+                    { code: 'b540', name: 'Funciones metabólicas generales', desc: 'Funciones relacionadas con la regulación de los componentes esenciales del cuerpo como carbohidratos, proteínas y grasas, la conversión de los mismos en energía, y el metabolismo en general.' },
+                    { code: 'b545', name: 'Funciones relacionadas con el balance hídrico, mineral y electrolítico', desc: 'Funciones relacionadas con la regulación del agua, minerales y electrolitos en el cuerpo.' }
                 ];
                 break;
+                
             case 'Estructura':
                 cifCodes = [
-                    { code: 's720', name: 'Estructura de la región del hombro', desc: 'Huesos y articulaciones de la región del hombro.' },
-                    { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias del brazo, antebrazo y mano.' },
-                    { code: 's740', name: 'Estructura de la región pélvica', desc: 'Huesos y articulaciones de la región pélvica.' },
-                    { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Huesos, articulaciones, músculos, ligamentos y fascias del muslo, pierna y pie.' },
-                    { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco, espalda, incluida la pelvis.' },
-                    { code: 's770', name: 'Estructuras musculoesqueléticas adicionales', desc: 'Estructuras relacionadas con el movimiento.' }
+                    // Estructuras del sistema nervioso
+                    { code: 's110', name: 'Estructura del cerebro', desc: 'Estructura del sistema nervioso central.' },
+                    { code: 's120', name: 'Médula espinal y estructuras relacionadas', desc: 'Estructura del sistema nervioso central.' },
+                    { code: 's130', name: 'Estructura de las meninges', desc: 'Membranas que recubren el sistema nervioso central.' },
+                    { code: 's140', name: 'Estructura del sistema nervioso simpático', desc: 'Sistema nervioso que controla en gran medida funciones involuntarias.' },
+                    { code: 's150', name: 'Estructura del sistema nervioso parasimpático', desc: 'Sistema nervioso que estimula actividades corporales cuando el cuerpo está en reposo.' },
+                    
+                    // Estructuras relacionadas con el movimiento (muy relevantes para kinesiología)
+                    { code: 's710', name: 'Estructura de la región de la cabeza y del cuello', desc: 'Estructura de la cabeza y cuello, incluida la región craneal, facial y cervical.' },
+                    { code: 's7100', name: 'Huesos del cráneo', desc: 'Estructuras óseas de la cavidad craneal.' },
+                    { code: 's7101', name: 'Huesos de la cara', desc: 'Estructuras óseas de la cara.' },
+                    { code: 's7102', name: 'Huesos de la región del cuello', desc: 'Estructuras óseas de la región del cuello.' },
+                    { code: 's7103', name: 'Articulaciones de la cabeza y de la región del cuello', desc: 'Estructura de las articulaciones de la región cefálica y cervical.' },
+                    { code: 's7104', name: 'Músculos de la cabeza y de la región del cuello', desc: 'Músculos de la región cefálica y cervical.' },
+                    { code: 's7105', name: 'Ligamentos y fascias de la cabeza y de la región del cuello', desc: 'Ligamentos y fascias de la región cefálica y cervical.' },
+                    
+                    { code: 's720', name: 'Estructura de la región del hombro', desc: 'Estructuras del complejo del hombro.' },
+                    { code: 's7200', name: 'Huesos de la región del hombro', desc: 'Estructuras óseas de la región del hombro.' },
+                    { code: 's7201', name: 'Articulaciones de la región del hombro', desc: 'Estructuras articulares de la región del hombro.' },
+                    { code: 's7202', name: 'Músculos de la región del hombro', desc: 'Músculos de la región del hombro.' },
+                    { code: 's7203', name: 'Ligamentos y fascias de la región del hombro', desc: 'Ligamentos y fascias de la región del hombro.' },
+                    
+                    { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Estructuras del miembro superior.' },
+                    { code: 's7300', name: 'Estructura del brazo', desc: 'Estructuras del brazo (húmero y radio-cúbito).' },
+                    { code: 's7301', name: 'Estructura de la región del codo', desc: 'Estructura de la articulación del codo y las estructuras relacionadas.' },
+                    { code: 's7302', name: 'Estructura de la región de la muñeca', desc: 'Estructura de la articulación de la muñeca y las estructuras relacionadas.' },
+                    { code: 's7308', name: 'Estructura de la extremidad superior, otra especificada', desc: 'Otras estructuras del miembro superior no especificadas.' },
+                    
+                    { code: 's740', name: 'Estructura de la región pélvica', desc: 'Estructura de la pelvis.' },
+                    { code: 's7400', name: 'Huesos de la región pélvica', desc: 'Estructuras óseas de la región pélvica.' },
+                    { code: 's7401', name: 'Articulaciones de la región pélvica', desc: 'Articulaciones de la región pélvica.' },
+                    { code: 's7402', name: 'Músculos de la región pélvica', desc: 'Músculos de la región pélvica.' },
+                    { code: 's7403', name: 'Ligamentos y fascias de la región pélvica', desc: 'Ligamentos y fascias de la región pélvica.' },
+                    
+                    { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Estructura del miembro inferior.' },
+                    { code: 's7500', name: 'Estructura del muslo', desc: 'Estructuras del fémur y estructuras relacionadas.' },
+                    { code: 's7501', name: 'Estructura de la rodilla', desc: 'Estructuras de la articulación de la rodilla y estructuras relacionadas.' },
+                    { code: 's7502', name: 'Estructura de la región del tobillo y pie', desc: 'Estructuras del tobillo, pie y dedos del pie.' },
+                    { code: 's75020', name: 'Huesos del tobillo y del pie', desc: 'Huesos del tobillo y del pie.' },
+                    { code: 's75021', name: 'Articulaciones del tobillo y dedos del pie', desc: 'Articulaciones del tobillo y dedos del pie.' },
+                    { code: 's75022', name: 'Músculos del tobillo y pie', desc: 'Músculos del tobillo y pie.' },
+                    { code: 's75023', name: 'Ligamentos y fascias del tobillo y pie', desc: 'Ligamentos y fascias del tobillo y pie.' },
+                    
+                    { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco.' },
+                    { code: 's7600', name: 'Estructura de la columna vertebral', desc: 'Estructura de la columna vertebral.' },
+                    { code: 's76000', name: 'Columna vertebral cervical', desc: 'Estructura de las vértebras cervicales.' },
+                    { code: 's76001', name: 'Columna vertebral torácica', desc: 'Estructura de las vértebras torácicas.' },
+                    { code: 's76002', name: 'Columna vertebral lumbar', desc: 'Estructura de las vértebras lumbares.' },
+                    { code: 's76003', name: 'Columna vertebral sacra', desc: 'Estructura del sacro.' },
+                    { code: 's76004', name: 'Cóccix', desc: 'Estructura del cóccix.' },
+                    { code: 's7601', name: 'Musculatura del tronco', desc: 'Músculos del tronco.' },
+                    { code: 's7602', name: 'Ligamentos y fascias del tronco', desc: 'Ligamentos y fascias del tronco.' },
+                    
+                    { code: 's770', name: 'Estructuras musculoesqueléticas adicionales relacionadas con el movimiento', desc: 'Estructuras relacionadas con el movimiento adicionales a las ya especificadas.' },
+                    
+                    // Estructuras relacionadas con sistemas corporales (para comorbilidades)
+                    { code: 's410', name: 'Estructura del sistema cardiovascular', desc: 'Estructura del corazón y los vasos sanguíneos.' },
+                    { code: 's430', name: 'Estructura del sistema respiratorio', desc: 'Estructura de los pulmones y el árbol respiratorio.' },
+                    { code: 's530', name: 'Estructura del sistema digestivo', desc: 'Estructura del sistema digestivo desde la boca hasta el recto.' },
+                    { code: 's550', name: 'Estructura del páncreas', desc: 'Estructura del páncreas.' },
+                    { code: 's560', name: 'Estructura del sistema metabólico', desc: 'Estructura de las glándulas endocrinas.' },
+                    { code: 's580', name: 'Estructura de las glándulas endocrinas', desc: 'Estructura de las glándulas con función hormonal.' }
                 ];
                 break;
+                
             case 'Actividad':
                 cifCodes = [
-                    { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro.' },
-                    { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario.' },
-                    { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra sin cambiar la postura corporal.' },
+                    // Aprendizaje y aplicación del conocimiento
+                    { code: 'd155', name: 'Adquisición de habilidades', desc: 'Desarrollar capacidades simples y complejas para integrar acciones o tareas coordinadas.' },
+                    { code: 'd175', name: 'Resolver problemas', desc: 'Encontrar soluciones a problemas identificando y analizando los aspectos de una situación.' },
+                    { code: 'd177', name: 'Tomar decisiones', desc: 'Elegir una opción entre varias, llevar a cabo la elección y evaluar los efectos.' },
+                    
+                    // Tareas y demandas generales
+                    { code: 'd230', name: 'Llevar a cabo rutinas diarias', desc: 'Realizar acciones coordinadas para planificar, dirigir y completar los requerimientos de las obligaciones y tareas cotidianas.' },
+                    { code: 'd240', name: 'Manejo del estrés y otras demandas psicológicas', desc: 'Llevar a cabo acciones coordinadas para manejar el estrés provocado por tareas con demandas importantes o relacionadas con responsabilidades.' },
+                    
+                    // Movilidad - MUY RELEVANTES PARA KINESIOLOGÍA
+                    { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro, como levantarse de una silla para tumbarse en una cama.' },
+                    { code: 'd4100', name: 'Tumbarse', desc: 'Adoptar una posición tumbada o cambiar la posición del cuerpo de cualquier otra posición a tumbado.' },
+                    { code: 'd4101', name: 'Ponerse en cuclillas', desc: 'Adoptar una posición del cuerpo sentado o agachado sobre los talones.' },
+                    { code: 'd4102', name: 'Ponerse de rodillas', desc: 'Adoptar una posición donde el cuerpo está soportado por las rodillas con las piernas dobladas.' },
+                    { code: 'd4103', name: 'Sentarse', desc: 'Adoptar la posición de sentado y cambiar de postura.' },
+                    { code: 'd4104', name: 'Ponerse de pie', desc: 'Adoptar la posición de estar de pie o cambiar de postura de estar sentado o tumbado a estar de pie.' },
+                    { code: 'd4105', name: 'Inclinarse', desc: 'Inclinar el torso hacia abajo o hacia los lados.' },
+                    
+                    { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario, como permanecer sentado o de pie en el trabajo o en el colegio.' },
+                    { code: 'd4150', name: 'Permanecer tumbado', desc: 'Permanecer tumbado durante el tiempo necesario.' },
+                    { code: 'd4151', name: 'Permanecer en cuclillas', desc: 'Permanecer en cuclillas durante el tiempo necesario.' },
+                    { code: 'd4152', name: 'Permanecer de rodillas', desc: 'Permanecer de rodillas, soportado por las piernas dobladas durante el tiempo necesario.' },
+                    { code: 'd4153', name: 'Permanecer sentado', desc: 'Permanecer sentado, en un asiento o en el suelo, durante el tiempo necesario.' },
+                    { code: 'd4154', name: 'Permanecer de pie', desc: 'Permanecer de pie durante el tiempo necesario.' },
+                    
+                    { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra sin cambiar la posición del cuerpo.' },
+                    { code: 'd4200', name: 'Transferir el propio cuerpo estando sentado', desc: 'Moverse estando sentado, de un asiento a otro, en el mismo nivel o en un nivel diferente.' },
+                    { code: 'd4201', name: 'Transferir el propio cuerpo estando acostado', desc: 'Moverse estando acostado de un lugar a otro en el mismo nivel o a un nivel diferente.' },
+                    
                     { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' },
-                    { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso.' },
-                    { code: 'd455', name: 'Desplazarse', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar.' },
-                    { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un lugar a otro con equipamiento.' }
+                    { code: 'd4300', name: 'Levantar objetos', desc: 'Levantar un objeto para moverlo de un nivel bajo a uno más alto.' },
+                    { code: 'd4301', name: 'Llevar objetos en las manos', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando las manos.' },
+                    { code: 'd4302', name: 'Llevar objetos en brazos', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando los brazos y manos.' },
+                    { code: 'd4303', name: 'Llevar objetos en hombros, cadera y espalda', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando los hombros, cadera o espalda, o alguna combinación de ellas.' },
+                    { code: 'd4304', name: 'Llevar objetos en la cabeza', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando la cabeza.' },
+                    { code: 'd4305', name: 'Posar objetos', desc: 'Usar las manos, brazos u otra parte del cuerpo para posar un objeto en una superficie o lugar.' },
+                    
+                    { code: 'd435', name: 'Mover objetos con las extremidades inferiores', desc: 'Realizar acciones coordinadas para mover objetos utilizando las piernas y los pies.' },
+                    { code: 'd4350', name: 'Empujar con las extremidades inferiores', desc: 'Usar las piernas y pies para ejercer una fuerza sobre un objeto para moverlo de un lugar a otro.' },
+                    { code: 'd4351', name: 'Dar patadas', desc: 'Usar las piernas y pies para propulsar algo lejos.' },
+                    
+                    { code: 'd440', name: 'Uso fino de la mano', desc: 'Realizar acciones coordinadas de manejo de objetos, recogerlos, manipularlos y soltarlos utilizando la mano y los dedos incluyendo el dedo pulgar.' },
+                    { code: 'd4400', name: 'Recoger objetos', desc: 'Levantar o recoger objetos pequeños con las manos y los dedos.' },
+                    { code: 'd4401', name: 'Agarrar', desc: 'Sujetar o sostener algo utilizando las manos.' },
+                    { code: 'd4402', name: 'Manipular', desc: 'Utilizar los dedos y las manos para controlar, dirigir o guiar objetos.' },
+                    { code: 'd4403', name: 'Soltar', desc: 'Utilizar los dedos y las manos para soltar o liberar un objeto de manera que caiga o cambie de posición.' },
+                    
+                    { code: 'd445', name: 'Uso de la mano y el brazo', desc: 'Realizar las acciones coordinadas que se requieren para manipular y mover objetos utilizando las manos y los brazos.' },
+                    { code: 'd4450', name: 'Tirar', desc: 'Utilizar los dedos, manos y brazos para levantar un objeto y lanzarlo con alguna fuerza por el aire.' },
+                    { code: 'd4451', name: 'Empujar', desc: 'Utilizar los dedos, manos y brazos para mover algo desde uno mismo, o para moverlo de un lugar a otro.' },
+                    { code: 'd4452', name: 'Alcanzar', desc: 'Utilizar las manos y los brazos para estirarse, tocar y agarrar algo, como cuando se alcanza un libro por encima de la mesa.' },
+                    { code: 'd4453', name: 'Girar o torcer las manos o los brazos', desc: 'Utilizar los dedos, las manos y los brazos para girar, torcer o doblar un objeto.' },
+                    { code: 'd4454', name: 'Lanzar', desc: 'Utilizar los dedos, las manos y los brazos para levantar un objeto y moverlo con alguna fuerza por el aire.' },
+                    { code: 'd4455', name: 'Atrapar', desc: 'Utilizar los dedos, manos y brazos para agarrar un objeto en movimiento con el fin de pararlo y sujetarlo.' },
+                    
+                    { code: 'd450', name: 'Caminar', desc: 'Avanzar sobre una superficie a pie, paso a paso, de manera que una pierna siempre esté en el suelo.' },
+                    { code: 'd4500', name: 'Andar distancias cortas', desc: 'Andar menos de un kilómetro, como caminar alrededor de habitaciones, pasillos, dentro de un edificio o distancias cortas exteriores.' },
+                    { code: 'd4501', name: 'Andar distancias largas', desc: 'Andar más de un kilómetro, como caminar por un pueblo o ciudad, entre pueblos o a través de campo abierto.' },
+                    { code: 'd4502', name: 'Andar sobre diferentes superficies', desc: 'Caminar por superficies inclinadas, irregulares o que se mueven, como hierba, grava, hielo y nieve, o cruzar una calle.' },
+                    { code: 'd4503', name: 'Andar sorteando obstáculos', desc: 'Caminar de manera apropiada para evitar objetos tanto móviles como estáticos, personas, animales y vehículos.' },
+                    
+                    { code: 'd455', name: 'Desplazarse por el entorno', desc: 'Mover todo el cuerpo de un sitio a otro, sin caminar, como escalar, correr, saltar, nadar, etc.' },
+                    { code: 'd4550', name: 'Gatear', desc: 'Mover todo el cuerpo boca abajo de un sitio a otro utilizando las manos, las manos y los brazos, y las rodillas.' },
+                    { code: 'd4551', name: 'Subir/bajar', desc: 'Mover todo el cuerpo hacia arriba o hacia abajo sobre superficies u objetos como escalones, rocas, escaleras, escaleras de mano o bordes.' },
+                    { code: 'd4552', name: 'Correr', desc: 'Moverse con pasos rápidos de modo que ambos pies pueden estar simultáneamente sin contacto con el suelo.' },
+                    { code: 'd4553', name: 'Saltar', desc: 'Levantarse del suelo doblando y estirando las piernas, como saltar con uno o los dos pies, brincar, saltar y tirarse o bucear en el agua.' },
+                    { code: 'd4554', name: 'Nadar', desc: 'Propulsar el cuerpo propio a través del agua mediante el movimiento coordinado de las extremidades y todo el cuerpo sin apoyarse en el fondo.' },
+                    
+                    { code: 'd460', name: 'Desplazarse por distintos lugares', desc: 'Andar y moverse por varios lugares y situaciones, como andar entre habitaciones en una casa, dentro de un edificio o por la calle de un pueblo o ciudad.' },
+                    { code: 'd4600', name: 'Desplazarse dentro de la casa', desc: 'Andar y moverse dentro de la propia casa, en una habitación, entre habitaciones y alrededor de toda la casa o lugar donde se vive.' },
+                    { code: 'd4601', name: 'Desplazarse dentro de edificios que no son la propia vivienda', desc: 'Andar y desplazarse dentro de edificios que no son la propia residencia, como desplazarse alrededor de la casa de otras personas, otros edificios residenciales, edificios privados o públicos de la comunidad y áreas adyacentes.' },
+                    { code: 'd4602', name: 'Desplazarse fuera del hogar y de otros edificios', desc: 'Andar y moverse por las inmediaciones y zonas alejadas de la propia casa y de otros edificios, sin utilizar transporte, público o privado.' },
+                    
+                    { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un sitio a otro, sobre cualquier superficie o espacio, utilizando dispositivos específicos diseñados para facilitar el desplazamiento o crear métodos alternativos de desplazamiento.' },
+                    
+                    { code: 'd470', name: 'Utilización de medios de transporte', desc: 'Utilizar medios de transporte para desplazarse como pasajero, como ser llevado en un coche, autobús, bicicleta, etc.' },
+                    
+                    // Autocuidado - Importantes para geriatría
+                    { code: 'd510', name: 'Lavarse', desc: 'Lavarse y secarse todo el cuerpo, o partes del cuerpo, utilizando agua y materiales o métodos apropiados de lavado y secado.' },
+                    { code: 'd520', name: 'Cuidado de partes del cuerpo', desc: 'Cuidado de partes del cuerpo, como la piel, la cara, los dientes, el cuero cabelludo, las uñas, que requieren un nivel de cuidado mayor que el mero hecho de lavarse y secarse.' },
+                    { code: 'd530', name: 'Higiene personal relacionada con los procesos de excreción', desc: 'Planificación y realización de la eliminación de desechos humanos (menstruación, orinar y defecar) y la propia limpieza posterior.' },
+                    { code: 'd540', name: 'Vestirse', desc: 'Llevar a cabo las acciones y tareas coordinadas precisas para ponerse y quitarse ropa y calzado en secuencia y de acuerdo con las condiciones climáticas y sociales.' },
+                    { code: 'd550', name: 'Comer', desc: 'Llevar a cabo las tareas y acciones coordinadas relacionadas con comer los alimentos servidos, llevarlos a la boca y consumirlos de manera culturalmente aceptable.' },
+                    { code: 'd560', name: 'Beber', desc: 'Sujetar el vaso, llevarlo a la boca y beber de manera culturalmente aceptable.' },
+                    { code: 'd570', name: 'Cuidado de la propia salud', desc: 'Asegurarse de la salud física y mental propia, siguiendo consejos médicos, y evitando riesgos.' },
+                    
+                    // Vida doméstica
+                    { code: 'd620', name: 'Adquisición de bienes y servicios', desc: 'Seleccionar, comprar y transportar todos los bienes y servicios necesarios para la vida diaria.' },
+                    { code: 'd630', name: 'Preparar comidas', desc: 'Planear, organizar, cocinar y servir comidas sencillas y complejas para uno mismo y para otros.' },
+                    { code: 'd640', name: 'Realizar los quehaceres de la casa', desc: 'Organizar, limpiar y mantener la casa, cuidar de la ropa, los muebles y electrodomésticos.' },
+                    { code: 'd650', name: 'Cuidado de los objetos del hogar', desc: 'Mantener y reparar objetos del hogar y de uso personal.' },
+                    { code: 'd660', name: 'Ayudar a los demás', desc: 'Ayudar a miembros del hogar y a otras personas con el aprendizaje, comunicación, autocuidado o desplazamiento.' },
+                    
+                    // Interacciones y relaciones interpersonales (importantes para poblaciones geriátricas)
+                    { code: 'd710', name: 'Interacciones interpersonales básicas', desc: 'Interactuar con otras personas de manera adecuada para el contexto y el entorno social.' },
+                    { code: 'd720', name: 'Interacciones interpersonales complejas', desc: 'Mantener y manejar las interacciones con otras personas, de manera adecuada para el contexto y el entorno social.' },
+                    { code: 'd760', name: 'Relaciones familiares', desc: 'Crear y mantener relaciones de parentesco.' },
+                    { code: 'd770', name: 'Relaciones íntimas', desc: 'Crear y mantener relaciones cercanas o románticas entre individuos.' },
+                    
+                    // Áreas principales de la vida (trabajo, estudio, actividades deportivas)
+                    { code: 'd845', name: 'Conseguir, mantener y finalizar un trabajo', desc: 'Buscar, encontrar y elegir un trabajo, ser contratado y aceptar un empleo, mantener y avanzar en el trabajo.' },
+                    { code: 'd850', name: 'Trabajo remunerado', desc: 'Participar en todos los aspectos relacionados con un trabajo remunerado, como buscar empleo y conseguir un trabajo.' },
+                    { code: 'd855', name: 'Trabajo no remunerado', desc: 'Participar en todos los aspectos de un trabajo no remunerado, como voluntariado o caridad.' },
+                    { code: 'd920', name: 'Tiempo libre y ocio', desc: 'Participar en cualquier forma de juego, actividad recreativa o de ocio.' },
+                    { code: 'd9201', name: 'Deportes', desc: 'Participar en juegos o eventos deportivos competitivos e informales.' },
+                    { code: 'd9202', name: 'Arte y cultura', desc: 'Participar en eventos artísticos o culturales.' },
+                    { code: 'd9203', name: 'Manualidades', desc: 'Participar en manualidades, como cerámica o hacer punto.' },
+                    { code: 'd9204', name: 'Aficiones', desc: 'Participar en pasatiempos, como coleccionar sellos, monedas u antigüedades.' },
+                    { code: 'd9205', name: 'Socialización', desc: 'Participar en reuniones informales o casuales con otros, como visitar amigos o familiares.' }
                 ];
                 break;
+                
             case 'Factor':
                 cifCodes = [
-                    { code: 'e110', name: 'Productos para consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre para la ingesta.' },
-                    { code: 'e115', name: 'Productos para uso personal', desc: 'Equipamiento, productos y tecnologías utilizados en las actividades cotidianas.' },
-                    { code: 'e120', name: 'Productos para la movilidad', desc: 'Equipamiento, productos y tecnologías utilizados para facilitar el movimiento de las personas.' },
-                    { code: 'e150', name: 'Diseño y construcción de edificios', desc: 'Productos y tecnología para entornos interiores y exteriores planificados, diseñados y construidos.' },
-                    { code: 'e155', name: 'Diseño y construcción de edificios de uso privado', desc: 'Productos y tecnologías para la construcción y edificación de interiores y exteriores utilizados por personas en contextos privados.' },
+                    // Productos y tecnología
+                    { code: 'e110', name: 'Productos o sustancias para el consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta, consumo o uso personal.' },
+                    { code: 'e1101', name: 'Medicamentos', desc: 'Sustancias naturales o artificiales, medicamentos recetados o de libre disposición, utilizados para tratar síntomas o enfermedades.' },
+                    { code: 'e115', name: 'Productos y tecnología para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnología utilizados por las personas en las actividades cotidianas.' },
+                    { code: 'e1150', name: 'Productos y tecnología generales para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnología utilizados en la vida diaria, incluyendo aquellos adaptados o diseñados específicamente, situados en, sobre o cerca de la persona que los utiliza.' },
+                    { code: 'e1151', name: 'Productos y tecnología de ayuda para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas en su vida diaria.' },
+                    
+                    { code: 'e120', name: 'Productos y tecnología para la movilidad y transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnología utilizados por las personas para desplazarse dentro y fuera de edificios, incluyendo aquellos adaptados o diseñados específicamente.' },
+                    { code: 'e1200', name: 'Productos y tecnología generales para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnología utilizados por las personas para desplazarse dentro y fuera de los edificios.' },
+                    { code: 'e1201', name: 'Productos y tecnología de ayuda para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas a desplazarse dentro y fuera de los edificios.' },
+                    
+                    { code: 'e125', name: 'Productos y tecnología para la comunicación', desc: 'Equipamiento, productos y tecnología utilizados por las personas para transmitir y recibir información.' },
+                    { code: 'e1250', name: 'Productos y tecnología generales para la comunicación', desc: 'Equipamiento, productos y tecnología utilizados por las personas para transmitir y recibir información.' },
+                    { code: 'e1251', name: 'Productos y tecnología de ayuda para la comunicación', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas a transmitir y recibir información.' },
+                    
+                    { code: 'e130', name: 'Productos y tecnología para la educación', desc: 'Equipamiento, productos, métodos y tecnología utilizados para la adquisición de conocimiento, experiencia o habilidades.' },
+                    { code: 'e1300', name: 'Productos y tecnología generales para la educación', desc: 'Equipamiento, productos, métodos y tecnología utilizados para la adquisición de conocimiento, experiencia o habilidades.' },
+                    { code: 'e1301', name: 'Productos y tecnología de ayuda para la educación', desc: 'Equipamiento, productos, métodos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades de las personas con discapacidad para la adquisición de conocimiento, experiencia o habilidades.' },
+                    
+                    { code: 'e135', name: 'Productos y tecnología para el empleo', desc: 'Equipamiento, productos y tecnología utilizados para el trabajo, para prevenir discapacidades ocupacionales o aumentar las capacidades laborales.' },
+                    { code: 'e1350', name: 'Productos y tecnología generales para el empleo', desc: 'Equipamiento, productos y tecnología utilizados para el trabajo, no adaptados.' },
+                    { code: 'e1351', name: 'Productos y tecnología de ayuda para el empleo', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades laborales de las personas con discapacidad.' },
+                    
+                    { code: 'e140', name: 'Productos y tecnología para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnología utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas.' },
+                    { code: 'e1400', name: 'Productos y tecnología generales para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnología utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas, no adaptados.' },
+                    { code: 'e1401', name: 'Productos y tecnología de ayuda para la cultura, el ocio y el deporte', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades para realizar actividades culturales, recreativas y deportivas de las personas con discapacidad.' },
+                    
+                    { code: 'e145', name: 'Productos y tecnología para la práctica religiosa y la vida espiritual', desc: 'Productos y tecnología, únicos o producidos en masa, que tienen un significado simbólico en el contexto de la práctica religiosa o espiritual.' },
+                    
+                    { code: 'e150', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre, que ha sido planeado, diseñado y construido para edificios públicos.' },
+                    { code: 'e1500', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para entrar y salir de los edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente arquitectónico interior y exterior, planeado y construido para uso público y relacionado con la accesibilidad.' },
+                    { code: 'e1501', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer accesos a instalaciones en los edificios para uso público', desc: 'Productos y tecnología en relación con el diseño, planificación e instalación de elementos que facilitan el acceso a instalaciones dentro de edificios para uso público.' },
+                    { code: 'e1502', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer la ruta a seguir y señalizar las localizaciones en edificios de uso público', desc: 'Productos y tecnología en relación con el diseño, planificación y señalización tanto interno como externo de edificios para uso público que ayudan a encontrar la ruta a seguir dentro y la localización inmediata a áreas específicas.' },
+                    
+                    { code: 'e155', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso privado', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre, que ha sido planeado, diseñado y construido para edificios de uso privado.' },
+                    { code: 'e1550', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para entrar y salir de los edificios de uso privado', desc: 'Productos y tecnología relacionados con el diseño, planificación y construcción de entradas y salidas de edificios de uso privado.' },
+                    { code: 'e1551', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer accesos a instalaciones en los edificios para uso privado', desc: 'Productos y tecnología para espacios interiores y exteriores que constituyan elementos facilitadores del diseño, planificación y construcción de edificios para uso privado.' },
+                    { code: 'e1552', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer la ruta a seguir y señalizar las localizaciones en edificios de uso privado', desc: 'Productos y tecnología en relación con el diseño, planificación y construcción de la señalización interna y externa para orientar a las personas dentro de los edificios de uso privado y para localizar las zonas a las que se dirigen.' },
+                    
+                    // Entorno natural y cambios en el entorno derivados de la actividad humana
+                    { code: 'e210', name: 'Geografía física', desc: 'Características de las formas de la tierra y las extensiones de agua.' },
+                    { code: 'e225', name: 'Clima', desc: 'Características y eventos meteorológicos, como el tiempo.' },
+                    { code: 'e235', name: 'Desastres naturales', desc: 'Cambios en el entorno natural causados por fenómenos naturales como terremotos, inundaciones, etc.' },
+                    { code: 'e240', name: 'Luz', desc: 'Radiación electromagnética mediante la cual las cosas se hacen visibles, ya sea por luz solar o iluminación artificial.' },
+                    { code: 'e245', name: 'Cambios relacionados con el tiempo', desc: 'Cambio natural, regular o predecible en el tiempo.' },
+                    { code: 'e250', name: 'Sonido', desc: 'Fenómeno que es o puede ser oído, como ruido, zumbido, o sirenas.' },
+                    { code: 'e255', name: 'Vibración', desc: 'Oscilación regular o irregular, de alta o baja frecuencia, producida por un objeto o una persona.' },
+                    { code: 'e260', name: 'Calidad del aire', desc: 'Características de la atmósfera o del aire en espacios cerrados o abiertos.' },
+                    
+                    // Apoyo y relaciones (muy importantes para adultos mayores)
                     { code: 'e310', name: 'Familiares cercanos', desc: 'Personas emparentadas por el nacimiento, el matrimonio o cualquier relación reconocida por la cultura como familia cercana.' },
-                    { code: 'e355', name: 'Profesionales de la salud', desc: 'Todos los proveedores de servicios que trabajan en el contexto del sistema sanitario.' }
+                    { code: 'e315', name: 'Otros familiares', desc: 'Personas emparentadas mediante el nacimiento, el matrimonio o cualquier relación reconocida por la cultura como familia ampliada.' },
+                    { code: 'e320', name: 'Amigos', desc: 'Personas que son cercanas y que participan continuamente en relaciones caracterizadas por la confianza y el apoyo mutuo.' },
+                    { code: 'e325', name: 'Conocidos, compañeros, colegas, vecinos y miembros de la comunidad', desc: 'Personas que mantienen una relación de familiaridad, pero no de estrecha unión, unos con otros.' },
+                    { code: 'e330', name: 'Personas en cargos de autoridad', desc: 'Personas que tienen responsabilidades de tomar decisiones por otros y que ejercen influencia o poder socialmente definido.' },
+                    { code: 'e335', name: 'Personas en cargos subordinados', desc: 'Personas cuya vida cotidiana está influida por personas en cargos de autoridad en el trabajo, el colegio o en otros ambientes.' },
+                    { code: 'e340', name: 'Cuidadores y personal de ayuda', desc: 'Personas que proporcionan los servicios necesarios para el cuidado de otros en sus actividades cotidianas.' },
+                    { code: 'e345', name: 'Extraños', desc: 'Personas desconocidas o que no se han tratado antes, que no comparten una relación o rol específico con la persona.' },
+                    { code: 'e350', name: 'Animales domésticos', desc: 'Animales que proporcionan apoyo físico, emocional o psicológico.' },
+                    { code: 'e355', name: 'Profesionales de la salud', desc: 'Todos los proveedores de servicios que trabajan en el contexto del sistema sanitario.' },
+                    { code: 'e360', name: 'Otros profesionales', desc: 'Todos los proveedores de servicios que trabajan fuera del sistema sanitario, incluyendo trabajadores sociales, abogados, profesores, etc.' },
+                    
+                    // Actitudes (críticas para lograr adherencia a tratamiento)
+                    { code: 'e410', name: 'Actitudes individuales de miembros de la familia cercana', desc: 'Opiniones y creencias generales o específicas de miembros de la familia cercana sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e415', name: 'Actitudes individuales de otros familiares', desc: 'Opiniones y creencias generales o específicas de otros familiares sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e420', name: 'Actitudes individuales de amigos', desc: 'Opiniones y creencias generales o específicas de amigos sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e425', name: 'Actitudes individuales de conocidos, compañeros, colegas, vecinos y miembros de la comunidad', desc: 'Opiniones y creencias generales o específicas de conocidos, compañeros, colegas, vecinos y miembros de la comunidad sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e430', name: 'Actitudes individuales de personas en cargos de autoridad', desc: 'Opiniones y creencias generales o específicas de personas en cargos de autoridad sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e440', name: 'Actitudes individuales de cuidadores y personal de ayuda', desc: 'Opiniones y creencias generales o específicas de cuidadores y personal de ayuda sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e450', name: 'Actitudes individuales de profesionales de la salud', desc: 'Opiniones y creencias generales o específicas de profesionales de la salud sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e455', name: 'Actitudes individuales de profesionales relacionados con la salud', desc: 'Opiniones y creencias generales o específicas de profesionales relacionados con la salud sobre la persona o sobre otras cuestiones.' },
+                    { code: 'e460', name: 'Actitudes sociales', desc: 'Opiniones y creencias generales o específicas mantenidas habitualmente por personas de una cultura, sociedad u otro grupo social, sobre otras personas o sobre otras cuestiones sociales, políticas y económicas.' },
+                    { code: 'e465', name: 'Normas, costumbres e ideologías sociales', desc: 'Hábitos, costumbres, reglas, sistemas de valores abstractos, normas y creencias morales y religiosas, que surgen en contextos sociales.' },
+                    
+                    // Servicios, sistemas y políticas (importantes para acceso a tratamiento)
+                    { code: 'e570', name: 'Servicios, sistemas y políticas de seguridad social', desc: 'Servicios, sistemas y políticas destinados a proporcionar ayudas económicas a personas que debido a su edad, pobreza, desempleo, condición de salud o discapacidad, necesitan asistencia pública.' },
+                    { code: 'e575', name: 'Servicios, sistemas y políticas de apoyo social general', desc: 'Servicios, sistemas y políticas orientados a proporcionar apoyo a aquellos que necesitan asistencia en áreas tales como hacer la compra, las tareas del hogar, el transporte, el autocuidado y al cuidado de otras personas.' },
+                    { code: 'e580', name: 'Servicios, sistemas y políticas sanitarias', desc: 'Servicios, sistemas y políticas para prevenir y tratar problemas de salud, proporcionando rehabilitación médica y promoviendo un estilo de vida saludable.' },
+                    { code: 'e5800', name: 'Servicios sanitarios', desc: 'Servicios y programas cuyo objetivo es proporcionar intervenciones médicas y promover el bienestar de la persona.' },
+                    { code: 'e5801', name: 'Sistemas sanitarios', desc: 'Mecanismos de control administrativo y seguimiento, como son los regímenes sanitarios locales, regionales o nacionales.' },
+                    { code: 'e5802', name: 'Políticas sanitarias', desc: 'Legislación, regulaciones y normas que rigen el ámbito sanitario.' },
+                    { code: 'e585', name: 'Servicios, sistemas y políticas de educación y formación', desc: 'Servicios, sistemas y políticas para la adquisición, conservación y perfeccionamiento de conocimientos, experiencia y habilidades vocacionales o artísticas.' },
+                    { code: 'e590', name: 'Servicios, sistemas y políticas laborales y de empleo', desc: 'Servicios, sistemas y políticas relacionados con encontrar un trabajo adecuado para las personas desempleadas o que buscan un trabajo diferente, o para dar apoyo a aquellos que tienen trabajo.' }
                 ];
                 break;
         }
