@@ -2795,11 +2795,16 @@ button:focus {
     <div class="modal-overlay" id="patientModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="patientModalTitle">Detalles del Paciente</h2>
-                <button class="modal-close" id="closePatientModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+    <h2 class="modal-title" id="patientModalTitle">Detalles del Paciente</h2>
+    <div style="display: flex; gap: 10px;">
+        <button class="action-btn btn-secondary" id="deletePatientBtn" style="background-color: #F44336; color: white; border: none;">
+            <i class="fas fa-trash"></i> Eliminar
+        </button>
+        <button class="modal-close" id="closePatientModal">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
             <div class="modal-body">
                 <div class="tabs">
                     <div class="tab active" data-tab="personal">Datos personales</div>
@@ -3856,6 +3861,49 @@ async function updatePatient(patientId, patientData) {
         return false;
     }
 }
+
+ // Delete patient
+async function deletePatient(patientId) {
+    try {
+        showLoading();
+        
+        if (!patientId) {
+            hideLoading();
+            showToast("Error: ID de paciente no válido", "error");
+            return false;
+        }
+        
+        // Referencia al documento del paciente
+        const patientRef = doc(db, "patients", patientId);
+        
+        // Eliminar el paciente
+        await deleteDoc(patientRef);
+        
+        // Eliminar de la caché
+        const cachedIndex = patientsCache.findIndex(p => p.id === patientId);
+        if (cachedIndex >= 0) {
+            patientsCache.splice(cachedIndex, 1);
+        }
+        
+        // Si el paciente eliminado era el actual, resetear currentPatientId
+        if (currentPatientId === patientId) {
+            currentPatientId = null;
+        }
+        
+        hideLoading();
+        showToast("Paciente eliminado correctamente", "success");
+        
+        // Recargar la lista de pacientes
+        await getPatients();
+        
+        return true;
+    } catch (error) {
+        console.error("Error eliminando paciente: ", error);
+        hideLoading();
+        showToast("Error al eliminar paciente: " + error.message, "error");
+        return false;
+    }
+}       
 
 // Add evolution to patient
 async function addEvolution(patientId, evolutionData) {
@@ -9333,6 +9381,42 @@ async function initApp() {
                 await getPatients();
             });
         }
+
+        // Evento para el botón de eliminar paciente
+const deletePatientBtn = document.getElementById('deletePatientBtn');
+if (deletePatientBtn) {
+    deletePatientBtn.addEventListener('click', async function() {
+        if (!currentPatientId) {
+            showToast("No hay paciente seleccionado para eliminar", "error");
+            return;
+        }
+        
+        // Obtener datos del paciente para mostrar en la confirmación
+        const patient = await getPatient(currentPatientId);
+        if (!patient) {
+            showToast("Error: No se pudo obtener información del paciente", "error");
+            return;
+        }
+        
+        // Pedir confirmación
+        if (confirm(`¿Está seguro que desea eliminar al paciente ${patient.name}?\nEsta acción no se puede deshacer y se perderán todos los datos asociados.`)) {
+            // Cerrar el modal de paciente
+            const patientModal = document.getElementById('patientModal');
+            if (patientModal) {
+                patientModal.classList.remove('active');
+            }
+            
+            // Eliminar el paciente
+            const deleted = await deletePatient(currentPatientId);
+            if (deleted) {
+                // Recargar la lista de pacientes
+                await getPatients();
+            }
+        }
+    });
+}
+
+
         
         // Añadir event listener para búsqueda
         const searchInput = document.getElementById('searchPatient');
