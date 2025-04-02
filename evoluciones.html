@@ -3448,22 +3448,22 @@ button:focus {
     </div>
 
     <!-- CIF Selector Modal Template (will be used dynamically) -->
-    <div class="modal-overlay" id="cifSelectorModal" style="display: none;">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Seleccionar código CIF</h2>
+<div class="modal-overlay" id="cifSelectorModal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Seleccionar código CIF</h2>
                 <button class="modal-close" id="closeCifModal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="cif-search">
-                    <i class="fas fa-search"></i>
+        <div class="modal-body">
+    <div class="cif-search">
+<i class="fas fa-search"></i>
                     <input type="text" placeholder="Buscar por código o descripción..." id="cifSearchInput">
-                </div>
-                <div class="cif-results" id="cifSearchResults">
+                    </div>
+                    <div class="cif-results" id="cifSearchResults">
                     <!-- Results will be populated dynamically -->
-                </div>
+                    </div>
                 <div class="form-group">
                     <label class="form-label">Código CIF</label>
                     <input type="text" class="form-control" id="cifCodeInput" placeholder="Ej: b280">
@@ -5647,6 +5647,7 @@ function loadPersonalFactors(patientId) {
 }
 
 // Mostrar selector de CIF
+// Mostrar selector de CIF
 function showCifSelectorModal(categoryType, targetContainerId, patientId) {
     // Reconfigurar el modal existente
     const cifModal = document.getElementById('cifSelectorModal');
@@ -5666,111 +5667,47 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
     cifModal.style.display = 'block';
     setTimeout(() => cifModal.classList.add('active'), 50);
     
-    // Configurar campo de búsqueda
-    const searchInput = document.getElementById('cifSearchInput');
-    if (searchInput) {
-        searchInput.value = '';
-        searchInput.placeholder = `Buscar código CIF ${categoryType.toLowerCase()}...`;
+    // Obtener datos según categoría
+    let cifCodes = getCifCodesByCategory(categoryType);
+    
+    // Crear el dropdown en lugar del campo de búsqueda
+    const searchContainer = cifModal.querySelector('.cif-search');
+    if (searchContainer) {
+        searchContainer.innerHTML = `
+            <i class="fas fa-list"></i>
+            <select id="cifDropdown" class="form-control">
+                <option value="">Seleccione un código CIF...</option>
+                ${cifCodes.map(code => `<option value="${code.code}">${code.code}: ${code.name}</option>`).join('')}
+            </select>
+        `;
         
-        // Limpiar resultados anteriores
-        const resultsContainer = document.getElementById('cifSearchResults');
-        if (resultsContainer) {
-            resultsContainer.innerHTML = '';
+        // Configurar evento para el dropdown
+        const dropdown = document.getElementById('cifDropdown');
+        if (dropdown) {
+            dropdown.addEventListener('change', function() {
+                const selectedCode = this.value;
+                if (!selectedCode) return;
+                
+                // Encontrar el código seleccionado
+                const selectedItem = cifCodes.find(item => item.code === selectedCode);
+                if (selectedItem) {
+                    // Llenar campos del formulario
+                    const codeInput = document.getElementById('cifCodeInput');
+                    const nameInput = document.getElementById('cifNameInput');
+                    const descInput = document.getElementById('cifDescInput');
+                    
+                    if (codeInput) codeInput.value = selectedItem.code;
+                    if (nameInput) nameInput.value = selectedItem.name;
+                    if (descInput) descInput.value = selectedItem.desc;
+                }
+            });
         }
-        
-        // Eliminar manejadores previos
-        const newSearchInput = searchInput.cloneNode(true);
-        searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-        
-        // Configurar evento de búsqueda
-        newSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            if (searchTerm.length < 2) {
-                const resultsContainer = document.getElementById('cifSearchResults');
-                if (resultsContainer) {
-                    resultsContainer.innerHTML = '';
-                }
-                return;
-            }
-            
-            // Obtener datos de ejemplo según categoría
-            let cifCodes = [];
-            switch(categoryType) {
-                case 'Función':
-                    cifCodes = [
-                        { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
-                        { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
-                        { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
-                        { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' }
-                    ];
-                    break;
-                case 'Estructura':
-                    cifCodes = [
-                        { code: 's750', name: 'Estructura extremidad inferior', desc: 'Estructura de la pierna y el pie.' },
-                        { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco, espalda, incluida la pelvis.' },
-                        { code: 's770', name: 'Estructuras musculoesqueléticas adicionales', desc: 'Estructuras relacionadas con el movimiento.' }
-                    ];
-                    break;
-                case 'Actividad':
-                    cifCodes = [
-                        { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso.' },
-                        { code: 'd455', name: 'Desplazarse', desc: 'Mover todo el cuerpo de un sitio a otro sin caminar.' },
-                        { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' }
-                    ];
-                    break;
-                case 'Factor':
-                    cifCodes = [
-                        { code: 'e110', name: 'Productos para consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre para la ingesta.' },
-                        { code: 'e115', name: 'Productos para uso personal', desc: 'Equipamiento, productos y tecnologías utilizados en las actividades cotidianas.' },
-                        { code: 'e120', name: 'Movilidad personal', desc: 'Equipamiento, productos y tecnologías utilizados para facilitar el movimiento.' }
-                    ];
-                    break;
-            }
-            
-            // Filtrar resultados
-            const results = cifCodes.filter(item => 
-                item.code.toLowerCase().includes(searchTerm) ||
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.desc.toLowerCase().includes(searchTerm)
-            );
-            
-            // Mostrar resultados
-            const resultsContainer = document.getElementById('cifSearchResults');
-            if (resultsContainer) {
-                resultsContainer.innerHTML = '';
-                if (results.length > 0) {
-                    results.forEach(result => {
-                        const resultItem = document.createElement('div');
-                        resultItem.className = 'cif-result-item';
-                        resultItem.innerHTML = `
-                            <div class="cif-result-code">${result.code}: ${result.name}</div>
-                            <div class="cif-result-desc">${result.desc}</div>
-                        `;
-                        
-                        resultItem.addEventListener('click', function() {
-                            // Llenar campos del formulario
-                            const codeInput = document.getElementById('cifCodeInput');
-                            const nameInput = document.getElementById('cifNameInput');
-                            const descInput = document.getElementById('cifDescInput');
-                            
-                            if (codeInput) codeInput.value = result.code;
-                            if (nameInput) nameInput.value = result.name;
-                            if (descInput) descInput.value = result.desc;
-                            
-                            // Resaltar selección
-                            resultsContainer.querySelectorAll('.cif-result-item').forEach(item => {
-                                item.style.backgroundColor = '';
-                            });
-                            this.style.backgroundColor = 'rgba(30, 136, 229, 0.1)';
-                        });
-                        
-                        resultsContainer.appendChild(resultItem);
-                    });
-                } else {
-                    resultsContainer.innerHTML = '<div style="padding: 10px; color: var(--text-secondary); font-style: italic;">No se encontraron resultados</div>';
-                }
-            }
-        });
+    }
+    
+    // Limpiar resultados anteriores
+    const resultsContainer = document.getElementById('cifSearchResults');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = '';
     }
     
     // Configurar campos de formulario
@@ -5825,6 +5762,131 @@ function showCifSelectorModal(categoryType, targetContainerId, patientId) {
             addCifItem(cifModal);
         });
     }
+}
+
+        // Obtener códigos CIF por categoría
+function getCifCodesByCategory(categoryType) {
+    let cifCodes = [];
+    
+    switch(categoryType) {
+        case 'Función':
+            cifCodes = [
+                // Funciones musculoesqueléticas
+                { code: 'b280', name: 'Sensación de dolor', desc: 'Sensaciones desagradables que indican daño potencial o real en alguna estructura corporal.' },
+                { code: 'b710', name: 'Funciones de movilidad articular', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
+                { code: 'b715', name: 'Funciones de estabilidad articular', desc: 'Funciones relacionadas con el mantenimiento de la integridad estructural de las articulaciones.' },
+                { code: 'b720', name: 'Funciones de movilidad ósea', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de la escápula, pelvis, huesos carpianos y tarsianos.' },
+                { code: 'b730', name: 'Funciones de fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupo de músculos.' },
+                { code: 'b735', name: 'Funciones de tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
+                { code: 'b740', name: 'Funciones de resistencia muscular', desc: 'Funciones relacionadas con el mantenimiento de la contracción muscular durante un período de tiempo determinado.' },
+                { code: 'b750', name: 'Funciones de reflejos motores', desc: 'Funciones de contracción involuntaria de los músculos inducida automáticamente por estímulos específicos.' },
+                { code: 'b755', name: 'Funciones de reacciones motoras involuntarias', desc: 'Funciones de contracciones involuntarias de grandes músculos o de todo el cuerpo inducidas por la posición del cuerpo, el equilibrio y estímulos amenazadores.' },
+                { code: 'b760', name: 'Funciones de control del movimiento voluntario', desc: 'Funciones asociadas con el control sobre los movimientos voluntarios y la coordinación de los mismos.' },
+                { code: 'b765', name: 'Funciones de movimientos involuntarios', desc: 'Funciones de contracciones no intencionadas, involuntarias sin propósito final o con algo de propósito final.' },
+                { code: 'b770', name: 'Funciones relacionadas con el patrón de marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos de todo el cuerpo.' },
+                
+                // Funciones cardiovasculares y respiratorias (para deportistas)
+                { code: 'b410', name: 'Funciones del corazón', desc: 'Funciones relacionadas con el bombeo de sangre en la cantidad y presión adecuada para el cuerpo.' },
+                { code: 'b420', name: 'Funciones de la presión arterial', desc: 'Funciones relacionadas con el mantenimiento de la presión arterial.' },
+                { code: 'b440', name: 'Funciones respiratorias', desc: 'Funciones relacionadas con la inhalación de aire en los pulmones, el intercambio de gases y la exhalación.' },
+                { code: 'b455', name: 'Funciones de tolerancia al ejercicio', desc: 'Funciones relacionadas con la capacidad respiratoria y cardiovascular necesaria para resistir el ejercicio físico.' },
+                
+                // Funciones relacionadas con el envejecimiento activo
+                { code: 'b152', name: 'Funciones emocionales', desc: 'Funciones mentales específicas relacionadas con los sentimientos y los componentes afectivos de los procesos mentales.' },
+                { code: 'b210', name: 'Funciones visuales', desc: 'Funciones sensoriales relacionadas con percibir la presencia de luz y sentir la forma, tamaño y color de un estímulo visual.' },
+                { code: 'b230', name: 'Funciones auditivas', desc: 'Funciones sensoriales relacionadas con percibir la presencia de sonidos y discriminar la localización, tono, volumen y calidad de los sonidos.' },
+                { code: 'b235', name: 'Función vestibular', desc: 'Funciones sensoriales del oído interno relacionadas con la posición, el equilibrio y el movimiento.' },
+                { code: 'b260', name: 'Función propioceptiva', desc: 'Funciones sensoriales relacionadas con sentir la posición relativa de las partes del cuerpo.' },
+                { code: 'b530', name: 'Funciones relacionadas con el mantenimiento del peso', desc: 'Funciones relacionadas con el mantenimiento del peso corporal apropiado, incluyendo el aumento de peso durante el período de desarrollo.' }
+            ];
+            break;
+            
+        case 'Estructura':
+            cifCodes = [
+                // Estructuras musculoesqueléticas
+                { code: 's710', name: 'Estructura de la región de la cabeza y del cuello', desc: 'Estructura del cráneo, cara, y región del cuello.' },
+                { code: 's720', name: 'Estructura de la región del hombro', desc: 'Estructura de la región del hombro.' },
+                { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Estructura del brazo, antebrazo y mano.' },
+                { code: 's740', name: 'Estructura de la región pélvica', desc: 'Estructura de la región pélvica.' },
+                { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Estructura de la pierna, rodilla, tobillo y pie.' },
+                { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco, espalda, incluida la pelvis.' },
+                { code: 's770', name: 'Estructuras musculoesqueléticas adicionales', desc: 'Estructuras relacionadas con el movimiento.' },
+                
+                // Estructuras específicas para deportistas
+                { code: 's7500', name: 'Estructura del muslo', desc: 'Estructura del muslo, incluyendo el fémur y la musculatura.' },
+                { code: 's7501', name: 'Estructura de la pierna', desc: 'Estructura de la pierna, incluyendo tibia, peroné y musculatura.' },
+                { code: 's7502', name: 'Estructura del tobillo y pie', desc: 'Estructura del tobillo y pie, incluyendo tarso, metatarso, falanges y musculatura.' },
+                { code: 's7600', name: 'Estructura de la columna vertebral', desc: 'Estructura de la columna vertebral, incluyendo vértebras y discos intervertebrales.' },
+                { code: 's7700', name: 'Huesos', desc: 'Estructura de los huesos.' },
+                { code: 's7701', name: 'Articulaciones', desc: 'Estructura de las articulaciones.' },
+                { code: 's7702', name: 'Músculos', desc: 'Estructura de los músculos.' },
+                { code: 's7703', name: 'Ligamentos y fascias', desc: 'Estructura de los ligamentos, fascias, aponeurosis, tabiques, bolsas, no especificados.' },
+                { code: 's7704', name: 'Tendones', desc: 'Estructura de los tendones.' }
+            ];
+            break;
+            
+        case 'Actividad':
+            cifCodes = [
+                // Actividades básicas
+                { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro.' },
+                { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario.' },
+                { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra.' },
+                { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' },
+                { code: 'd435', name: 'Mover objetos con las extremidades inferiores', desc: 'Realizar acciones coordinadas para mover un objeto utilizando las piernas y los pies.' },
+                { code: 'd440', name: 'Uso fino de la mano', desc: 'Realizar acciones coordinadas relacionadas con manejar objetos, recogerlos, manipularlos y soltarlos utilizando la mano y los dedos.' },
+                { code: 'd445', name: 'Uso de la mano y el brazo', desc: 'Realizar las acciones coordinadas relacionadas con el movimiento de las manos y los brazos.' },
+                { code: 'd450', name: 'Caminar', desc: 'Andar sobre una superficie a pie, paso a paso.' },
+                { code: 'd455', name: 'Desplazarse por el entorno', desc: 'Mover todo el cuerpo de un sitio a otro siempre que no sea andando.' },
+                
+                // Actividades deportivas y recreativas
+                { code: 'd920', name: 'Tiempo libre y ocio', desc: 'Participar en cualquier tipo de juego, actividad recreativa o de ocio.' },
+                { code: 'd9200', name: 'Juegos', desc: 'Participar en juegos con reglas o sin estructurar o juegos no estructurados y recreativos.' },
+                { code: 'd9201', name: 'Deportes', desc: 'Participar en juegos competitivos e informales o deportes organizados, jugados en solitario o en grupo.' },
+                { code: 'd9202', name: 'Arte y cultura', desc: 'Participar en eventos artísticos o culturales.' },
+                { code: 'd9203', name: 'Manualidades', desc: 'Dedicarse a manualidades, como cerámica o hacer punto.' },
+                { code: 'd9204', name: 'Aficiones', desc: 'Dedicarse a aficiones, como coleccionismo.' },
+                { code: 'd9205', name: 'Socialización', desc: 'Reunirse con otras personas para realizar actividades informales o casuales.' },
+                
+                // Actividades para adultos mayores
+                { code: 'd460', name: 'Desplazarse por distintos lugares', desc: 'Andar y moverse por varios lugares y situaciones.' },
+                { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un lugar a otro utilizando dispositivos específicos.' },
+                { code: 'd470', name: 'Utilización de medios de transporte', desc: 'Utilizar medios de transporte para desplazarse como pasajero.' },
+                { code: 'd475', name: 'Conducción', desc: 'Dirigir un vehículo o el animal que tira de él, viajar según se desee o se tenga derecho.' },
+                { code: 'd510', name: 'Lavarse', desc: 'Lavarse y secarse todo el cuerpo, o partes del cuerpo.' },
+                { code: 'd540', name: 'Vestirse', desc: 'Ponerse y quitarse la ropa y el calzado.' },
+                { code: 'd570', name: 'Cuidado de la propia salud', desc: 'Asegurarse de la propia salud y bienestar físico y mental.' }
+            ];
+            break;
+            
+        case 'Factor':
+            cifCodes = [
+                // Factores ambientales generales
+                { code: 'e110', name: 'Productos para consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre para la ingesta.' },
+                { code: 'e115', name: 'Productos para uso personal', desc: 'Equipamiento, productos y tecnologías utilizados en las actividades cotidianas.' },
+                { code: 'e120', name: 'Movilidad personal', desc: 'Equipamiento, productos y tecnologías utilizados para facilitar el movimiento.' },
+                
+                // Factores para deportistas
+                { code: 'e1150', name: 'Productos y tecnología generales para uso personal', desc: 'Equipamiento, productos y tecnología utilizados en la vida diaria.' },
+                { code: 'e1151', name: 'Productos y tecnología de asistencia para uso personal', desc: 'Equipamiento adaptado o diseñado específicamente que ayudan a las personas en la vida diaria.' },
+                { code: 'e1200', name: 'Productos y tecnología generales para la movilidad', desc: 'Equipamiento, productos y tecnología utilizados por las personas para desplazarse.' },
+                { code: 'e1201', name: 'Productos y tecnología de asistencia para la movilidad', desc: 'Equipamiento adaptado o diseñado específicamente que ayudan a las personas a desplazarse.' },
+                { code: 'e135', name: 'Productos y tecnología para el empleo', desc: 'Equipamiento, productos y tecnología utilizados en el empleo para facilitar las actividades laborales.' },
+                { code: 'e140', name: 'Productos y tecnología para actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnología utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas.' },
+                
+                // Factores para adultos mayores
+                { code: 'e150', name: 'Diseño, construcción de edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso público.' },
+                { code: 'e155', name: 'Diseño, construcción de edificios de uso privado', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre y que ha sido planeado, diseñado y construido para uso privado.' },
+                { code: 'e310', name: 'Familiares cercanos', desc: 'Individuos emparentados por el nacimiento, el matrimonio o cualquier relación reconocida por la cultura como familia cercana.' },
+                { code: 'e320', name: 'Amigos', desc: 'Individuos que son cercanos y que participan continuamente en relaciones caracterizadas por la confianza y el apoyo mutuo.' },
+                { code: 'e355', name: 'Profesionales de la salud', desc: 'Todos los proveedores de servicios que trabajan en el contexto del sistema sanitario.' },
+                { code: 'e410', name: 'Actitudes individuales de miembros de la familia cercana', desc: 'Opiniones y creencias generales o específicas de miembros de la familia cercana.' },
+                { code: 'e450', name: 'Actitudes individuales de profesionales de la salud', desc: 'Opiniones y creencias generales o específicas de profesionales de la salud.' },
+                { code: 'e580', name: 'Servicios, sistemas y políticas sanitarias', desc: 'Servicios, sistemas y políticas para prevenir y tratar problemas de salud, proporcionando rehabilitación médica y promoviendo un estilo de vida saludable.' }
+            ];
+            break;
+    }
+    
+    return cifCodes;
 }
 
 // Añadir un elemento CIF
