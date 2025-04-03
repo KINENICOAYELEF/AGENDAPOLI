@@ -10809,6 +10809,340 @@ if (deletePatientBtn) {
     }
 }
 
+
+        // Función mejorada para guardar una plantilla en Firebase
+async function saveTemplateToFirebase(templateName, templateCategory, templateDescription) {
+    try {
+        showLoading();
+        
+        // Verificar que hay ejercicios para guardar
+        const exercises = getExercisesData();
+        
+        if (!exercises || exercises.length === 0) {
+            hideLoading();
+            showToast("No hay ejercicios para guardar como plantilla", "error");
+            return false;
+        }
+        
+        if (!templateName || templateName.trim() === '') {
+            hideLoading();
+            showToast("Debe ingresar un nombre para la plantilla", "error");
+            return false;
+        }
+        
+        // Crear objeto de plantilla
+        const template = {
+            name: templateName.trim(),
+            category: templateCategory || 'Otro',
+            description: templateDescription || '',
+            exercises: exercises,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Guardar en Firestore
+        const templatesRef = collection(db, "exerciseTemplates");
+        const docRef = await addDoc(templatesRef, template);
+        
+        hideLoading();
+        showToast("Plantilla guardada correctamente", "success");
+        
+        // Refrescar lista de plantillas
+        renderCloudTemplatesList();
+        
+        return true;
+    } catch (error) {
+        console.error("Error al guardar plantilla en Firebase:", error);
+        hideLoading();
+        showToast("Error al guardar plantilla: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función mejorada para obtener plantillas de Firebase
+async function renderCloudTemplatesList() {
+    const container = document.getElementById('cloudTemplatesList');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>';
+    
+    try {
+        showLoading();
+        // Obtener plantillas de Firebase
+        const templatesRef = collection(db, "exerciseTemplates");
+        const querySnapshot = await getDocs(templatesRef);
+        
+        const templates = [];
+        querySnapshot.forEach((doc) => {
+            templates.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        hideLoading();
+        
+        if (templates.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay plantillas guardadas</p>';
+            return;
+        }
+        
+        // Agrupar por categoría
+        const groupedTemplates = {};
+        templates.forEach(template => {
+            const category = template.category || 'Otro';
+            if (!groupedTemplates[category]) {
+                groupedTemplates[category] = [];
+            }
+            groupedTemplates[category].push(template);
+        });
+        
+        // Crear contenido HTML
+        let html = '';
+        
+        // Crear acordeón por cada categoría
+        for (const [category, categoryTemplates] of Object.entries(groupedTemplates)) {
+            html += `
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <span>${category} (${categoryTemplates.length})</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <div class="accordion-body">
+                        <div class="exercise-table-container">
+                            <table class="exercise-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Nombre</th>
+                                        <th style="width: 15%;">Ejercicios</th>
+                                        <th style="width: 35%;">Descripción</th>
+                                        <th style="width: 20%;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            // Añadir cada plantilla de la categoría
+            categoryTemplates.forEach(template => {
+                html += `
+                    <tr>
+                        <td>${template.name || 'Sin nombre'}</td>
+                        <td>${template.exercises?.length || 0} ejercicios</td>
+                        <td>${template.description || '-'}</td>
+                        <td>
+                            <button type="button" class="action-btn btn-secondary use-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; margin-right: 5px;">
+                                <i class="fas fa-play"></i> Usar
+                            </button>
+                            <button type="button" class="action-btn btn-secondary delete-cloud-template-btn" data-id="${template.id}" style="padding: 5px 10px; background-color: var(--accent2-light);">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Configurar eventos para los acordeones
+        container.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', function() {
+                this.parentElement.classList.toggle('active');
+                const icon = this.querySelector('.accordion-icon');
+                if (icon) {
+                    icon.style.transform = this.parentElement.classList.contains('active') 
+                        ? 'rotate(180deg)' 
+                        : 'rotate(0deg)';
+                }
+            });
+        });
+        
+        // Configurar eventos para los botones
+        container.querySelectorAll('.use-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                loadTemplateFromFirebase(templateId);
+            });
+        });
+        
+        container.querySelectorAll('.delete-cloud-template-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const templateId = this.getAttribute('data-id');
+                deleteTemplateFromFirebase(templateId);
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error al renderizar plantillas:", error);
+        container.innerHTML = `<p style="color: var(--accent2); font-style: italic;">Error al cargar plantillas: ${error.message}</p>`;
+        hideLoading();
+    }
+}
+
+// Función para cargar una plantilla desde Firebase
+async function loadTemplateFromFirebase(templateId) {
+    try {
+        showLoading();
+        
+        const templateRef = doc(db, "exerciseTemplates", templateId);
+        const templateSnap = await getDoc(templateRef);
+        
+        if (!templateSnap.exists()) {
+            hideLoading();
+            showToast("Plantilla no encontrada", "error");
+            return;
+        }
+        
+        const template = {
+            id: templateSnap.id,
+            ...templateSnap.data()
+        };
+        
+        // Limpiar tabla actual
+        const tableBody = document.getElementById('exerciseTableBody');
+        if (!tableBody) {
+            hideLoading();
+            showToast("No se encontró la tabla de ejercicios", "error");
+            return;
+        }
+        
+        // Confirmar antes de reemplazar ejercicios existentes
+        if (tableBody.children.length > 0) {
+            if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+                hideLoading();
+                return;
+            }
+            tableBody.innerHTML = '';
+        }
+        
+        // Cargar ejercicios de la plantilla
+        if (template.exercises && Array.isArray(template.exercises)) {
+            template.exercises.forEach(exercise => {
+                addExerciseRow(exercise);
+            });
+        }
+        
+        // Cerrar modal
+        const modal = document.getElementById('cloudTemplatesModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        hideLoading();
+        showToast(`Plantilla "${template.name}" cargada correctamente`, "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar plantilla:", error);
+        showToast("Error al cargar plantilla: " + error.message, "error");
+    }
+}
+
+// Función para eliminar una plantilla de Firebase
+async function deleteTemplateFromFirebase(templateId) {
+    try {
+        if (!confirm('¿Está seguro que desea eliminar esta plantilla?\nEsta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        const templateRef = doc(db, "exerciseTemplates", templateId);
+        await deleteDoc(templateRef);
+        
+        hideLoading();
+        showToast("Plantilla eliminada correctamente", "success");
+        
+        // Refrescar lista de plantillas
+        renderCloudTemplatesList();
+        
+        return true;
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar plantilla:", error);
+        showToast("Error al eliminar plantilla: " + error.message, "error");
+        return false;
+    }
+}
+
+// Función para mostrar el modal de plantillas
+function showCloudTemplatesModal() {
+    const modal = document.getElementById('cloudTemplatesModal');
+    if (!modal) {
+        showToast("Error: No se encontró el modal de plantillas", "error");
+        return;
+    }
+    
+    // Mostrar modal
+    modal.style.display = 'block';
+    setTimeout(() => modal.classList.add('active'), 50);
+    
+    // Cargar plantillas
+    renderCloudTemplatesList();
+    
+    // Configurar eventos
+    
+    // 1. Cerrar modal
+    const closeBtn = document.getElementById('closeCloudTemplatesModal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        });
+    }
+    
+    // 2. Manejar pestañas
+    const tabs = modal.querySelectorAll('.tab');
+    const tabContents = modal.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remover clase activa de todas las pestañas y contenidos
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Añadir clase activa a la pestaña clicada y su contenido correspondiente
+            this.classList.add('active');
+            const tabId = this.getAttribute('data-tab');
+            const targetTab = document.getElementById(tabId + 'Tab');
+            if (targetTab) targetTab.classList.add('active');
+        });
+    });
+    
+    // 3. Botón de guardar plantilla
+    const saveBtn = document.getElementById('saveNewTemplateBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            const name = document.getElementById('newTemplateName')?.value;
+            const category = document.getElementById('newTemplateCategory')?.value;
+            const description = document.getElementById('newTemplateDescription')?.value;
+            
+            const success = await saveTemplateToFirebase(name, category, description);
+            
+            if (success) {
+                // Limpiar campos
+                document.getElementById('newTemplateName').value = '';
+                document.getElementById('newTemplateDescription').value = '';
+                
+                // Cambiar a pestaña de plantillas
+                tabs[0].click();
+            }
+        });
+    }
+}
+
 // Configurar navegación
 function setupNavigation() {
     try {
@@ -10896,68 +11230,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         // Controlador para el botón de gestión de plantillas
+// Controlador para el botón de gestión de plantillas
 document.addEventListener('DOMContentLoaded', function() {
     const manageCustomTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
     if (manageCustomTemplatesBtn) {
         manageCustomTemplatesBtn.addEventListener('click', function() {
-            try {
-                // Intentar mostrar el modal de plantillas
-                const modal = document.getElementById('cloudTemplatesModal') || document.getElementById('templatesModal');
-                if (modal) {
-                    modal.style.display = 'block';
-                    setTimeout(() => modal.classList.add('active'), 50);
-                    
-                    // Intentar renderizar plantillas
-                    try {
-                        if (typeof renderCloudTemplatesList === 'function') {
-                            renderCloudTemplatesList();
-                        }
-                        if (typeof renderSavedTemplatesList === 'function') {
-                            renderSavedTemplatesList();
-                        }
-                    } catch (renderError) {
-                        console.error("Error al renderizar plantillas:", renderError);
-                    }
-                    
-                    // Configurar pestañas si existen
-                    const tabs = modal.querySelectorAll('.tab');
-                    if (tabs.length > 0) {
-                        tabs.forEach(tab => {
-                            tab.addEventListener('click', function() {
-                                // Gestionar pestañas
-                                modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                                modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                                
-                                this.classList.add('active');
-                                const tabId = this.getAttribute('data-tab');
-                                const targetTab = document.getElementById(tabId + 'Tab');
-                                if (targetTab) targetTab.classList.add('active');
-                            });
-                        });
-                    }
-                    
-                    // Configurar cierre del modal
-                    const closeBtn = modal.querySelector('.modal-close');
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function() {
-                            modal.classList.remove('active');
-                            setTimeout(() => {
-                                modal.style.display = 'none';
-                            }, 300);
-                        });
-                    }
-                } else {
-                    // Fallback a método antiguo
-                    if (typeof showCustomTemplatesModal === 'function') {
-                        showCustomTemplatesModal();
-                    } else {
-                        showToast("Error: No se encontró el modal de plantillas", "error");
-                    }
-                }
-            } catch (error) {
-                console.error("Error al mostrar gestor de plantillas:", error);
-                showToast("Error al abrir gestor de plantillas", "error");
-            }
+            showCloudTemplatesModal();
         });
     }
 });
@@ -11077,6 +11355,72 @@ window.useExample = function(text, fieldId) {
 };
 
         </script>
-    
+
+
+
+    <!-- Modal de Gestión de Plantillas en Firebase -->
+<div class="modal-overlay" id="cloudTemplatesModal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Gestión de Plantillas de Ejercicios</h2>
+            <button class="modal-close" id="closeCloudTemplatesModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="tabs">
+                <div class="tab active" data-tab="cloudTemplates">Plantillas disponibles</div>
+                <div class="tab" data-tab="saveTemplate">Guardar nueva plantilla</div>
+            </div>
+            
+            <!-- Pestaña de Plantillas en la Nube -->
+            <div class="tab-content active" id="cloudTemplatesTab">
+                <div style="margin-bottom: 15px;">
+                    <h3 style="margin-top: 5px;">Plantillas en la nube</h3>
+                    <p style="color: var(--text-secondary); font-size: 13px;">Estas plantillas están disponibles para todos los usuarios del sistema.</p>
+                </div>
+                
+                <div id="cloudTemplatesList">
+                    <p style="color: var(--text-secondary); font-style: italic;">Cargando plantillas...</p>
+                </div>
+            </div>
+            
+            <!-- Pestaña para Guardar Plantilla -->
+            <div class="tab-content" id="saveTemplateTab">
+                <div style="margin-bottom: 15px;">
+                    <h3 style="margin-top: 5px;">Guardar plantilla actual</h3>
+                    <p style="color: var(--text-secondary); font-size: 13px;">Guarda los ejercicios actuales como una plantilla reutilizable.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">Nombre de la plantilla</label>
+                    <input type="text" class="form-control" id="newTemplateName" placeholder="Ej: Ejercicios para hombro">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Categoría</label>
+                    <select class="form-control" id="newTemplateCategory">
+                        <option value="Rehabilitación">Rehabilitación</option>
+                        <option value="Fortalecimiento">Fortalecimiento</option>
+                        <option value="Entrenamiento">Entrenamiento</option>
+                        <option value="Estiramientos">Estiramientos</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Descripción (opcional)</label>
+                    <textarea class="form-control" id="newTemplateDescription" rows="3" placeholder="Breve descripción de esta plantilla..."></textarea>
+                </div>
+                
+                <div class="form-group" style="margin-top: 20px; text-align: right;">
+                    <button type="button" class="action-btn btn-primary" id="saveNewTemplateBtn">
+                        <i class="fas fa-save"></i> Guardar plantilla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
