@@ -8489,7 +8489,256 @@ function generateSmartObjectiveText(clinicalArea, objectiveType, parameters) {
                     break;
                     
                 case 'FuerzaMuscular':
-                    if (!parameters.grupoMuscular || !parameters.gradoActual ||
+    if (!parameters.grupoMuscular || !parameters.gradoActual || !parameters.gradoObjetivo) {
+        return null;
+    }
+    
+    const lateralidadFuerza = mapLateralidad(parameters.lateralidad);
+    
+    objectiveText = `Aumentar la fuerza muscular del ${parameters.grupoMuscular} ${lateralidadFuerza} de grado ${parameters.gradoActual} a grado ${parameters.gradoObjetivo} en la escala de Oxford en un plazo de 4 semanas, para mejorar el rendimiento funcional en actividades cotidianas.`;
+    break;
+    
+case 'ReduccionDolor':
+    if (!parameters.regionDolorosa || !parameters.intensidadActual || !parameters.intensidadObjetivo || !parameters.actividadRelacionada) {
+        return null;
+    }
+    
+    objectiveText = `Reducir el dolor en ${parameters.regionDolorosa} de ${parameters.intensidadActual}/10 a ${parameters.intensidadObjetivo}/10 en la escala EVA durante la actividad de ${parameters.actividadRelacionada} en un plazo de 4 semanas, para mejorar la calidad de vida y funcionalidad del paciente.`;
+    break;
+    
+case 'Funcionalidad':
+    if (!parameters.actividadFuncional || !parameters.limitacionActual || !parameters.funcionObjetivo) {
+        return null;
+    }
+    
+    const asistencia = parameters.usoAsistencia ? 
+        (parameters.usoAsistencia === 'sin_asistencia' ? 'sin necesidad de asistencia' : `con ${parameters.usoAsistencia.replace('_', ' ')}`) : '';
+    
+    objectiveText = `Mejorar la capacidad funcional para ${parameters.actividadFuncional} pasando de "${parameters.limitacionActual}" a "${parameters.funcionObjetivo}" ${asistencia} en un plazo de 4 semanas, evaluado mediante observación clínica directa.`;
+    break;
+    
+case 'ControlMotor':
+    if (!parameters.regionCorporal || !parameters.descripcionSituacionActual || !parameters.objetivoEspecifico) {
+        return null;
+    }
+    
+    objectiveText = `Mejorar el control motor de ${parameters.regionCorporal} pasando de "${parameters.descripcionSituacionActual}" a "${parameters.objetivoEspecifico}" durante ${parameters.contextoActividad} en un plazo de 4 semanas, evaluado mediante análisis observacional.`;
+    break;
+    
+case 'Propiocepcion':
+    if (!parameters.regionCorporal || !parameters.descripcionSituacionActual || !parameters.objetivoEspecifico) {
+        return null;
+    }
+    
+    objectiveText = `Mejorar la propiocepción y estabilidad de ${parameters.regionCorporal} pasando de "${parameters.descripcionSituacionActual}" a "${parameters.objetivoEspecifico}" durante ${parameters.contextoActividad} en un plazo de 4 semanas, evaluado mediante pruebas funcionales específicas.`;
+    break;
+}
+}
+else if (clinicalArea === 'deportiva') {
+switch (objectiveType) {
+    case 'RetornoDeporte':
+        if (!parameters.deporte || !parameters.lesionPrevia || !parameters.nivelActual || !parameters.nivelObjetivo) {
+            return null;
+        }
+        
+        const gestoDeportivo = parameters.gestoDeportivo ? 
+            `con énfasis en el gesto deportivo de ${parameters.gestoDeportivo}` : '';
+        
+        objectiveText = `Lograr un retorno seguro al ${parameters.deporte} tras ${parameters.lesionPrevia}, progresando del ${parameters.nivelActual}% al ${parameters.nivelObjetivo}% de capacidad funcional ${gestoDeportivo} en un plazo de 4 semanas, evaluado mediante pruebas funcionales específicas y capacidad de entrenamiento.`;
+        break;
+        
+    case 'RendimientoFisico':
+        if (!parameters.componenteFisico || !parameters.valorActual || !parameters.valorObjetivo || !parameters.deporteRelacionado) {
+            return null;
+        }
+        
+        objectiveText = `Mejorar el rendimiento en ${parameters.componenteFisico} para ${parameters.deporteRelacionado}, progresando de ${parameters.valorActual} a ${parameters.valorObjetivo} en un plazo de 4 semanas, evaluado mediante test específicos, para optimizar el desempeño deportivo.`;
+        break;
+        
+    case 'PrevencionLesiones':
+    case 'TecnicaDeportiva':
+    case 'ResistenciaEspecifica':
+        if (!parameters.deporte || !parameters.aspectoMejorar || !parameters.situacionActual || !parameters.resultadoEsperado) {
+            return null;
+        }
+        
+        const tipoObjetivo = objectiveType === 'PrevencionLesiones' ? 'Desarrollar estrategias de prevención de lesiones' :
+                             objectiveType === 'TecnicaDeportiva' ? 'Optimizar la técnica deportiva' :
+                             'Incrementar la resistencia específica';
+        
+        objectiveText = `${tipoObjetivo} en ${parameters.deporte} con foco en ${parameters.aspectoMejorar}, pasando de "${parameters.situacionActual}" a "${parameters.resultadoEsperado}" en un plazo de 4 semanas, evaluado mediante análisis de rendimiento específico.`;
+        break;
+}
+}
+else if (clinicalArea === 'geriatria') {
+switch (objectiveType) {
+    case 'Equilibrio':
+        if (!parameters.testUtilizado || !parameters.puntajeActual || !parameters.puntajeObjetivo || !parameters.tipoSuperficie) {
+            return null;
+        }
+        
+        const testName = mapTestEquilibrio(parameters.testUtilizado);
+        const historialCaidas = parameters.historialCaidas ? ' con historial de caídas previas' : '';
+        
+        objectiveText = `Mejorar el equilibrio${historialCaidas} de un puntaje de ${parameters.puntajeActual} a ${parameters.puntajeObjetivo} en el test ${testName} sobre ${mapTipoSuperficie(parameters.tipoSuperficie)} en un plazo de 4 semanas, para reducir el riesgo de caídas e incrementar la seguridad en la movilidad.`;
+        break;
+        
+    case 'MovilidadFuncional':
+        if (!parameters.actividadMovilidad || !parameters.limitacionActual || !parameters.objetivoEspecifico || !parameters.nivelAsistencia) {
+            return null;
+        }
+        
+        const actividadMov = mapActividadMovilidad(parameters.actividadMovilidad);
+        
+        objectiveText = `Mejorar la movilidad funcional en ${actividadMov} pasando de "${parameters.limitacionActual}" a "${parameters.objetivoEspecifico}" con nivel de asistencia ${mapNivelAsistencia(parameters.nivelAsistencia)} en un plazo de 4 semanas, evaluado mediante observación clínica y funcionalidad.`;
+        break;
+        
+    case 'Marcha':
+        if (!parameters.velocidadActual || !parameters.velocidadObjetivo || !parameters.distanciaActual || !parameters.distanciaObjetivo) {
+            return null;
+        }
+        
+        const ayudaMarcha = parameters.ayudaMarcha && parameters.ayudaMarcha !== 'ninguna' ? 
+            `con ${mapAyudaMarcha(parameters.ayudaMarcha)}` : 'sin ayudas técnicas';
+        
+        objectiveText = `Mejorar el patrón de marcha ${ayudaMarcha} incrementando la velocidad de ${parameters.velocidadActual} m/s a ${parameters.velocidadObjetivo} m/s y la distancia de ${parameters.distanciaActual} a ${parameters.distanciaObjetivo} metros en un plazo de 4 semanas, evaluado mediante test de marcha cronometrado.`;
+        break;
+        
+    case 'AVD':
+    case 'FuerzaFuncional':
+    case 'ParticipacionSocial':
+        if (!parameters.actividad || !parameters.limitacionActual || !parameters.nivelIndependencia || !parameters.objetivoEspecifico) {
+            return null;
+        }
+        
+        const tipoObjetivoGeriatria = objectiveType === 'AVD' ? 'Mejorar la independencia' :
+                                      objectiveType === 'FuerzaFuncional' ? 'Incrementar la fuerza funcional' :
+                                      'Aumentar la participación social';
+        
+        objectiveText = `${tipoObjetivoGeriatria} en ${parameters.actividad} pasando de "${parameters.limitacionActual}" con nivel ${mapNivelIndependencia(parameters.nivelIndependencia)} a nivel ${mapNivelIndependencia(parameters.objetivoEspecifico)} en un plazo de 4 semanas, evaluado mediante escalas funcionales y observación directa.`;
+        break;
+}
+}
+else if (clinicalArea === 'otro') {
+if (!parameters.situacionActual || !parameters.situacionObjetivo || !parameters.medicionProgreso) {
+    return null;
+}
+
+// En este caso usamos el tipo de objetivo directamente
+objectiveText = `${objectiveType}: Progresar de "${parameters.situacionActual}" a "${parameters.situacionObjetivo}" en un plazo de 4 semanas, evaluado mediante ${parameters.medicionProgreso}.`;
+}
+
+return objectiveText;
+}
+
+// Funciones auxiliares para mapeo de valores
+function mapArticulacion(articulacion) {
+const map = {
+    'hombro': 'articulación del hombro',
+    'codo': 'articulación del codo',
+    'muñeca': 'articulación de la muñeca',
+    'cadera': 'articulación de la cadera',
+    'rodilla': 'articulación de la rodilla',
+    'tobillo': 'articulación del tobillo',
+    'columna_cervical': 'columna cervical',
+    'columna_dorsal': 'columna dorsal',
+    'columna_lumbar': 'columna lumbar'
+};
+
+return map[articulacion] || articulacion;
+}
+
+function mapLateralidad(lateralidad) {
+const map = {
+    'derecho': 'derecho',
+    'izquierdo': 'izquierdo',
+    'bilateral': 'bilateral',
+    'no_aplica': ''
+};
+
+return map[lateralidad] || '';
+}
+
+function mapTestEquilibrio(test) {
+const map = {
+    'tinetti': 'de Tinetti',
+    'berg': 'de Berg',
+    'timed_up_go': 'Timed Up & Go',
+    'otro': 'específico'
+};
+
+return map[test] || test;
+}
+
+function mapTipoSuperficie(tipo) {
+const map = {
+    'firme': 'superficie firme',
+    'irregular': 'superficie irregular',
+    'ambas': 'diferentes tipos de superficies'
+};
+
+return map[tipo] || tipo;
+}
+
+function mapActividadMovilidad(actividad) {
+const map = {
+    'transferencias': 'transferencias',
+    'marcha': 'la marcha',
+    'subir_escaleras': 'subir escaleras',
+    'levantarse_silla': 'levantarse de una silla',
+    'otra': 'la actividad especificada'
+};
+
+return map[actividad] || actividad;
+}
+
+function mapNivelAsistencia(nivel) {
+const map = {
+    'independiente': 'independiente',
+    'supervision': 'de supervisión',
+    'asistencia_minima': 'de asistencia mínima',
+    'asistencia_moderada': 'de asistencia moderada',
+    'asistencia_maxima': 'de asistencia máxima'
+};
+
+return map[nivel] || nivel;
+}
+
+function mapAyudaMarcha(ayuda) {
+const map = {
+    'baston': 'bastón',
+    'andador': 'andador',
+    'otra': 'ayuda técnica'
+};
+
+return map[ayuda] || ayuda;
+}
+
+function mapNivelIndependencia(nivel) {
+const map = {
+    'dependiente': 'dependiente',
+    'asistencia_maxima': 'de asistencia máxima',
+    'asistencia_moderada': 'de asistencia moderada',
+    'asistencia_minima': 'de asistencia mínima',
+    'supervision': 'de supervisión',
+    'independiente': 'independiente'
+};
+
+return map[nivel] || nivel;
+}
+
+// Formatear fecha
+function formatDate(date) {
+if (!date || !(date instanceof Date) || isNaN(date)) {
+    return "Fecha inválida";
+}
+
+const day = String(date.getDate()).padStart(2, '0');
+const month = String(date.getMonth() + 1).padStart(2, '0');
+const year = date.getFullYear();
+
+return `${day}/${month}/${year}`;
+}
 
 // Guardar objetivo (versión mejorada)
 async function saveObjective(patientId, modal, objectiveId = null) {
