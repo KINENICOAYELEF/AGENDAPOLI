@@ -3964,6 +3964,8 @@ async function addEvolution(patientId, evolutionData) {
     }
 }
 
+
+        
 // Get patient evolutions
 async function getEvolutions(patientId) {
     try {
@@ -3986,6 +3988,90 @@ async function getEvolutions(patientId) {
     }
 }
 
+
+        // Función para eliminar una evolución
+async function deleteEvolution(patientId, evolutionId) {
+    if (!patientId || !evolutionId) {
+        showToast("Error: ID de paciente o evolución no válido", "error");
+        return false;
+    }
+    
+    // Pedir confirmación antes de eliminar
+    if (!confirm("¿Está seguro que desea eliminar esta evolución?\nEsta acción no se puede deshacer.")) {
+        return false;
+    }
+    
+    try {
+        showLoading();
+        
+        // Referencia al documento de la evolución
+        const evolutionRef = doc(db, "patients", patientId, "evolutions", evolutionId);
+        
+        // Eliminar la evolución
+        await deleteDoc(evolutionRef);
+        
+        // Eliminar visualmente de la interfaz
+        const evolutionItem = document.querySelector(`.evolution-item[data-id="${evolutionId}"]`);
+        if (evolutionItem && evolutionItem.parentNode) {
+            evolutionItem.parentNode.removeChild(evolutionItem);
+        }
+        
+        // Verificar si es la última evolución para actualizar el campo lastSession del paciente
+        const evolutions = await getEvolutions(patientId);
+        
+        if (evolutions.length > 0) {
+            // Ordenar por fecha (la más reciente primero)
+            evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            // Actualizar el campo lastSession con la fecha de la evolución más reciente
+            const formattedDate = formatDate(new Date(evolutions[0].date));
+            await updateDoc(doc(db, "patients", patientId), {
+                lastSession: formattedDate,
+                updatedAt: new Date().toISOString()
+            });
+            
+            // Actualizar caché
+            const cachedPatientIndex = patientsCache.findIndex(p => p.id === patientId);
+            if (cachedPatientIndex >= 0) {
+                patientsCache[cachedPatientIndex].lastSession = formattedDate;
+                patientsCache[cachedPatientIndex].updatedAt = new Date().toISOString();
+            }
+        } else {
+            // No hay más evoluciones, eliminar campo lastSession
+            await updateDoc(doc(db, "patients", patientId), {
+                lastSession: null,
+                updatedAt: new Date().toISOString()
+            });
+            
+            // Actualizar caché
+            const cachedPatientIndex = patientsCache.findIndex(p => p.id === patientId);
+            if (cachedPatientIndex >= 0) {
+                patientsCache[cachedPatientIndex].lastSession = null;
+                patientsCache[cachedPatientIndex].updatedAt = new Date().toISOString();
+            }
+            
+            // Actualizar interfaz si no quedan evoluciones
+            const timelineContainer = document.getElementById('evolutionTimeline');
+            if (timelineContainer && timelineContainer.children.length === 0) {
+                timelineContainer.innerHTML = '<p>No hay evoluciones registradas para este paciente.</p>';
+            }
+        }
+        
+        hideLoading();
+        showToast("Evolución eliminada correctamente", "success");
+        
+        // Actualizar lista de pacientes para reflejar los cambios
+        await getPatients();
+        
+        return true;
+    } catch (error) {
+        console.error("Error eliminando evolución:", error);
+        hideLoading();
+        showToast("Error al eliminar evolución: " + error.message, "error");
+        return false;
+    }
+}
+        
 // Get total evolutions count for a patient
 async function getEvolutionsCount(patientId) {
     try {
@@ -4417,22 +4503,38 @@ function fillEvolutionsTab(evolutions) {
         evolutions.forEach(evolution => {
             const evolutionItem = document.createElement('div');
             evolutionItem.classList.add('evolution-item', 'fade-in');
+            evolutionItem.dataset.id = evolution.id;
             
             const formattedDate = formatDate(new Date(evolution.date));
             const formattedTime = evolution.time || '10:00';
+            
+            // Añadir botones de acción
+            const actionButtons = `
+                <div class="evolution-actions" style="margin-left: 10px; display: flex; gap: 5px;">
+                    <button class="action-btn btn-secondary edit-evolution-btn" style="padding: 3px 8px; font-size: 12px;">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button class="action-btn btn-secondary delete-evolution-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
             
             evolutionItem.innerHTML = `
                 <div class="evolution-dot">
                     <i class="fas fa-clipboard-check"></i>
                 </div>
                 <div class="evolution-content">
-                    <div class="evolution-header">
-                        <div class="evolution-date">
-                            <i class="far fa-calendar-alt"></i>
-                            ${formattedDate} - ${formattedTime}
+                    <div class="evolution-header" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center;">
+                            <div class="evolution-date">
+                                <i class="far fa-calendar-alt"></i>
+                                ${formattedDate} - ${formattedTime}
+                            </div>
                         </div>
-                        <div class="evolution-student">Realizado por: ${evolution.student || 'No registrado'}</div>
+                        ${actionButtons}
                     </div>
+                    <div class="evolution-student">Realizado por: ${evolution.student || 'No registrado'}</div>
                     ${evolution.patientState ? `
                     <div class="evolution-section">
                         <div class="evolution-section-title">Estado del paciente</div>
@@ -4470,6 +4572,24 @@ function fillEvolutionsTab(evolutions) {
             `;
             
             timelineContainer.appendChild(evolutionItem);
+            
+            // Añadir event listeners a los botones
+            const editBtn = evolutionItem.querySelector('.edit-evolution-btn');
+            const deleteBtn = evolutionItem.querySelector('.delete-evolution-btn');
+            
+            if (editBtn) {
+                editBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Evitar propagación del evento
+                    editEvolution(currentPatientId, evolution);
+                });
+            }
+            
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Evitar propagación del evento
+                    deleteEvolution(currentPatientId, evolution.id);
+                });
+            }
         });
     } catch (error) {
         console.error("Error llenando pestaña de evoluciones:", error);
@@ -7203,6 +7323,259 @@ function showNewEvolutionModal() {
     } catch (error) {
         console.error("Error al mostrar modal de nueva evolución:", error);
         showToast("Error al abrir formulario de evolución", "error");
+    }
+}
+
+        // Función para editar una evolución existente
+function editEvolution(patientId, evolution) {
+    try {
+        if (!patientId || !evolution) {
+            showToast("Error: Datos de evolución incompletos", "error");
+            return;
+        }
+        
+        // Usando la misma modal pero con datos prellenados
+        const modal = document.getElementById('newEvolutionModal');
+        if (!modal) {
+            showToast("Error: Modal de evolución no encontrada", "error");
+            return;
+        }
+        
+        // Cambiar título para indicar edición
+        const modalTitle = document.getElementById('evolutionModalTitle');
+        if (modalTitle) {
+            modalTitle.textContent = `Editar evolución - ${formatDate(new Date(evolution.date))}`;
+        }
+        
+        // Llenar formulario con datos existentes
+        const dateInput = document.getElementById('evolutionDate');
+        const timeInput = document.getElementById('evolutionTime');
+        const studentInput = document.getElementById('evolutionStudent');
+        const stateInput = document.getElementById('evolutionPatientState');
+        const treatmentInput = document.getElementById('evolutionTreatment');
+        const responseInput = document.getElementById('evolutionResponse');
+        const trainPlanInput = document.getElementById('evolutionTrainingPlan');
+        const observationsInput = document.getElementById('evolutionObservations');
+        
+        if (dateInput) dateInput.value = evolution.date || '';
+        if (timeInput) timeInput.value = evolution.time || '';
+        if (studentInput) studentInput.value = evolution.student || '';
+        if (stateInput) stateInput.value = evolution.patientState || '';
+        if (treatmentInput) treatmentInput.value = evolution.treatment || '';
+        if (responseInput) responseInput.value = evolution.response || '';
+        if (trainPlanInput) trainPlanInput.value = evolution.trainingPlan || '';
+        if (observationsInput) observationsInput.value = evolution.observations || '';
+        
+        // Configurar escalas si existen
+        if (evolution.scales) {
+            // EVA (dolor)
+            const evaRange = document.getElementById('evaRange');
+            const evaValue = document.getElementById('evaValue');
+            const evaMarker = document.querySelector('.eva-scale .scale-marker');
+            
+            if (evaRange && evolution.scales.eva !== undefined) {
+                evaRange.value = evolution.scales.eva;
+                if (evaValue) evaValue.textContent = `${evolution.scales.eva}/10`;
+                if (evaMarker) evaMarker.style.left = `${evolution.scales.eva * 10}%`;
+            }
+            
+            // GROC (cambio global)
+            const grocRange = document.getElementById('grocRange');
+            const grocValue = document.getElementById('grocValue');
+            const grocMarker = document.querySelector('.groc-marker');
+            
+            if (grocRange && evolution.scales.groc !== undefined) {
+                grocRange.value = evolution.scales.groc;
+                if (grocValue) grocValue.textContent = evolution.scales.groc > 0 ? `+${evolution.scales.groc}` : `${evolution.scales.groc}`;
+                const percentage = ((parseFloat(evolution.scales.groc) + 7) / 14) * 100;
+                if (grocMarker) grocMarker.style.left = `${percentage}%`;
+            }
+            
+            // SANE (evaluación numérica)
+            const saneRange = document.getElementById('saneRange');
+            const saneValue = document.getElementById('saneValue');
+            const saneCircleValue = document.querySelector('.sane-value');
+            const saneBar = document.querySelector('.sane-bar');
+            
+            if (saneRange && evolution.scales.sane !== undefined) {
+                saneRange.value = evolution.scales.sane;
+                if (saneValue) saneValue.textContent = `${evolution.scales.sane}%`;
+                if (saneCircleValue) saneCircleValue.textContent = `${evolution.scales.sane}%`;
+                if (saneBar) saneBar.style.width = `${evolution.scales.sane}%`;
+                
+                // Actualizar círculo SVG
+                const circle = document.querySelector('.sane-circle svg circle:nth-child(2)');
+                if (circle) {
+                    const circumference = 2 * Math.PI * 35;
+                    const offset = circumference - (circumference * evolution.scales.sane / 100);
+                    circle.setAttribute('stroke-dashoffset', offset);
+                }
+            }
+            
+            // PSFS (actividades)
+            const psfsContainer = document.getElementById('psfsActivities');
+            if (psfsContainer && evolution.scales.psfs && evolution.scales.psfs.length > 0) {
+                // Limpiar actividades existentes
+                psfsContainer.innerHTML = '';
+                
+                // Añadir actividades de la evolución
+                evolution.scales.psfs.forEach(activity => {
+                    if (!activity || !activity.name) return;
+                    
+                    const newActivity = document.createElement('div');
+                    newActivity.className = 'psfs-activity';
+                    
+                    newActivity.innerHTML = `
+                        <div class="activity-name" style="display: flex; align-items: center; gap: 5px;">
+                            <input type="text" class="psfs-activity-input" value="${activity.name}" style="flex-grow: 1;">
+                            <button type="button" class="delete-activity-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="activity-rating" style="margin-top: 5px;">
+                            <div class="rating-number">${activity.rating || 5}</div>
+                            <div class="rating-bar">
+                                <div class="rating-value" style="width: ${(activity.rating || 5) * 10}%;"></div>
+                            </div>
+                            <div class="rating-number">10</div>
+                        </div>
+                        <input type="range" min="0" max="10" value="${activity.rating || 5}" class="psfs-slider">
+                    `;
+                    
+                    psfsContainer.appendChild(newActivity);
+                    
+                    // Añadir evento al slider
+                    const slider = newActivity.querySelector('.psfs-slider');
+                    if (slider) {
+                        slider.addEventListener('input', function() {
+                            const value = this.value;
+                            const ratingNumber = newActivity.querySelector('.rating-number');
+                            const ratingBar = newActivity.querySelector('.rating-value');
+                            
+                            if (ratingNumber) ratingNumber.textContent = value;
+                            if (ratingBar) ratingBar.style.width = (value * 10) + '%';
+                        });
+                    }
+                    
+                    // Añadir evento para eliminar actividad
+                    const deleteBtn = newActivity.querySelector('.delete-activity-btn');
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', function() {
+                            psfsContainer.removeChild(newActivity);
+                        });
+                    }
+                });
+            }
+        }
+        
+        // Cargar ejercicios si existen
+        const exerciseTableBody = document.getElementById('exerciseTableBody');
+        if (exerciseTableBody && evolution.exercises && evolution.exercises.length > 0) {
+            // Limpiar tabla de ejercicios
+            exerciseTableBody.innerHTML = '';
+            
+            // Añadir ejercicios existentes
+            evolution.exercises.forEach(exercise => {
+                addExerciseRow(exercise);
+            });
+        } else if (exerciseTableBody) {
+            // Limpiar tabla si no hay ejercicios
+            exerciseTableBody.innerHTML = '';
+        }
+        
+        // Modificar evento de envío del formulario para actualizar en lugar de crear
+        const form = document.getElementById('evolutionForm');
+        if (form) {
+            // Clonar y reemplazar para eliminar event listeners anteriores
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Añadir nuevo event listener
+            newForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    showLoading();
+                    
+                    // Recopilar datos
+                    const psfsActivities = getPsfsActivities();
+                    const exercises = getExercisesData();
+                    
+                    // Construir datos actualizados
+                    const updatedData = {
+                        date: document.getElementById('evolutionDate')?.value || evolution.date,
+                        time: document.getElementById('evolutionTime')?.value || evolution.time,
+                        student: document.getElementById('evolutionStudent')?.value || evolution.student,
+                        patientState: document.getElementById('evolutionPatientState')?.value || evolution.patientState,
+                        treatment: document.getElementById('evolutionTreatment')?.value || evolution.treatment,
+                        response: document.getElementById('evolutionResponse')?.value || evolution.response,
+                        scales: {
+                            eva: parseInt(document.getElementById('evaRange')?.value || evolution.scales?.eva || 5),
+                            groc: parseInt(document.getElementById('grocRange')?.value || evolution.scales?.groc || 0),
+                            sane: parseInt(document.getElementById('saneRange')?.value || evolution.scales?.sane || 70),
+                            saneText: document.getElementById('saneCustomText')?.value || evolution.scales?.saneText || '',
+                            psfs: psfsActivities
+                        },
+                        exercises: exercises,
+                        trainingPlan: document.getElementById('evolutionTrainingPlan')?.value || evolution.trainingPlan || '',
+                        observations: document.getElementById('evolutionObservations')?.value || evolution.observations || '',
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    // Actualizar en Firebase
+                    const evolutionRef = doc(db, "patients", patientId, "evolutions", evolution.id);
+                    await updateDoc(evolutionRef, updatedData);
+                    
+                    // Verificar si la fecha cambió y es la última evolución
+                    if (updatedData.date !== evolution.date) {
+                        const evolutions = await getEvolutions(patientId);
+                        
+                        if (evolutions.length > 0) {
+                            // Ordenar por fecha (la más reciente primero)
+                            evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            
+                            // Actualizar lastSession si esta evolución es ahora la más reciente
+                            const formattedDate = formatDate(new Date(evolutions[0].date));
+                            await updateDoc(doc(db, "patients", patientId), {
+                                lastSession: formattedDate,
+                                updatedAt: new Date().toISOString()
+                            });
+                            
+                            // Actualizar caché
+                            const cachedPatientIndex = patientsCache.findIndex(p => p.id === patientId);
+                            if (cachedPatientIndex >= 0) {
+                                patientsCache[cachedPatientIndex].lastSession = formattedDate;
+                                patientsCache[cachedPatientIndex].updatedAt = new Date().toISOString();
+                            }
+                        }
+                    }
+                    
+                    // Actualizar la interfaz
+                    const updatedEvolutions = await getEvolutions(patientId);
+                    fillEvolutionsTab(updatedEvolutions);
+                    
+                    // Cerrar modal
+                    modal.classList.remove('active');
+                    
+                    // Refrescar lista de pacientes
+                    await getPatients();
+                    
+                    hideLoading();
+                    showToast("Evolución actualizada correctamente", "success");
+                } catch (error) {
+                    hideLoading();
+                    console.error("Error al actualizar evolución:", error);
+                    showToast("Error al actualizar evolución: " + error.message, "error");
+                }
+            });
+        }
+        
+        // Mostrar modal
+        modal.classList.add('active');
+        
+    } catch (error) {
+        console.error("Error al editar evolución:", error);
+        showToast("Error al abrir formulario de edición: " + error.message, "error");
     }
 }
 
@@ -10132,12 +10505,55 @@ async function initApp() {
         
         // Botones de cancelar específicos
         const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
-        if (cancelEvolutionBtn) {
-            cancelEvolutionBtn.addEventListener('click', function() {
-                const modal = document.getElementById('newEvolutionModal');
-                if (modal) modal.classList.remove('active');
-            });
+if (cancelEvolutionBtn) {
+    // Eliminar manejadores previos
+    const newCancelEvolutionBtn = cancelEvolutionBtn.cloneNode(true);
+    cancelEvolutionBtn.parentNode.replaceChild(newCancelEvolutionBtn, cancelEvolutionBtn);
+    
+    newCancelEvolutionBtn.addEventListener('click', function() {
+        const modal = document.getElementById('newEvolutionModal');
+        if (modal) {
+            modal.classList.remove('active');
+            
+            // Recargar el formulario después de un breve retraso para que se limpie
+            setTimeout(() => {
+                const form = document.getElementById('evolutionForm');
+                if (form) form.reset();
+                
+                // Restablecer el título
+                const modalTitle = document.getElementById('evolutionModalTitle');
+                if (modalTitle) modalTitle.textContent = 'Nueva evolución';
+                
+                // Restablecer valores predeterminados de escalas
+                const evaRange = document.getElementById('evaRange');
+                const evaValue = document.getElementById('evaValue');
+                
+                if (evaRange) evaRange.value = 5;
+                if (evaValue) evaValue.textContent = '5/10';
+                
+                const grocRange = document.getElementById('grocRange');
+                const grocValue = document.getElementById('grocValue');
+                
+                if (grocRange) grocRange.value = 3;
+                if (grocValue) grocValue.textContent = '+3';
+                
+                const saneRange = document.getElementById('saneRange');
+                const saneValue = document.getElementById('saneValue');
+                
+                if (saneRange) saneRange.value = 70;
+                if (saneValue) saneValue.textContent = '70%';
+                
+                // Limpiar actividades PSFS
+                const psfsContainer = document.getElementById('psfsActivities');
+                if (psfsContainer) psfsContainer.innerHTML = '';
+                
+                // Limpiar ejercicios
+                const exerciseTableBody = document.getElementById('exerciseTableBody');
+                if (exerciseTableBody) exerciseTableBody.innerHTML = '';
+            }, 300);
         }
+    });
+}
         
         const cancelPatientBtn = document.getElementById('cancelPatientBtn');
         if (cancelPatientBtn) {
