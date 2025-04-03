@@ -10896,69 +10896,246 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
         // Controlador para el botón de gestión de plantillas
-document.addEventListener('DOMContentLoaded', function() {
-    const manageCustomTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
-    if (manageCustomTemplatesBtn) {
-        manageCustomTemplatesBtn.addEventListener('click', function() {
-            try {
-                // Intentar mostrar el modal de plantillas
-                const modal = document.getElementById('cloudTemplatesModal') || document.getElementById('templatesModal');
-                if (modal) {
-                    modal.style.display = 'block';
-                    setTimeout(() => modal.classList.add('active'), 50);
-                    
-                    // Intentar renderizar plantillas
-                    try {
-                        if (typeof renderCloudTemplatesList === 'function') {
-                            renderCloudTemplatesList();
-                        }
-                        if (typeof renderSavedTemplatesList === 'function') {
-                            renderSavedTemplatesList();
-                        }
-                    } catch (renderError) {
-                        console.error("Error al renderizar plantillas:", renderError);
-                    }
-                    
-                    // Configurar pestañas si existen
-                    const tabs = modal.querySelectorAll('.tab');
-                    if (tabs.length > 0) {
-                        tabs.forEach(tab => {
-                            tab.addEventListener('click', function() {
-                                // Gestionar pestañas
-                                modal.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                                modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                                
-                                this.classList.add('active');
-                                const tabId = this.getAttribute('data-tab');
-                                const targetTab = document.getElementById(tabId + 'Tab');
-                                if (targetTab) targetTab.classList.add('active');
-                            });
-                        });
-                    }
-                    
-                    // Configurar cierre del modal
-                    const closeBtn = modal.querySelector('.modal-close');
-                    if (closeBtn) {
-                        closeBtn.addEventListener('click', function() {
-                            modal.classList.remove('active');
-                            setTimeout(() => {
-                                modal.style.display = 'none';
-                            }, 300);
-                        });
-                    }
-                } else {
-                    // Fallback a método antiguo
-                    if (typeof showCustomTemplatesModal === 'function') {
-                        showCustomTemplatesModal();
-                    } else {
-                        showToast("Error: No se encontró el modal de plantillas", "error");
-                    }
-                }
-            } catch (error) {
-                console.error("Error al mostrar gestor de plantillas:", error);
-                showToast("Error al abrir gestor de plantillas", "error");
+document.getElementById('manageCustomTemplatesBtn').addEventListener('click', function() {
+    // Crear modal para plantillas
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'templatesModal';
+    
+    modal.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Plantillas de ejercicios</h2>
+                <button class="modal-close" id="closeTemplatesModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="templatesList" style="margin-bottom: 20px;">
+                    <p>Cargando plantillas...</p>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h3>Guardar plantilla actual</h3>
+                    <div class="form-group">
+                        <label class="form-label">Nombre de la plantilla</label>
+                        <input type="text" class="form-control" id="templateNameInput">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-control" id="templateCategoryInput">
+                            <option value="Rehabilitación">Rehabilitación</option>
+                            <option value="Fortalecimiento">Fortalecimiento</option>
+                            <option value="Estiramiento">Estiramiento</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" id="saveTemplateBtn" class="action-btn btn-primary">Guardar plantilla</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.classList.add('active');
+    
+    // Cargar plantillas existentes
+    loadExistingTemplates();
+    
+    // Configurar eventos
+    document.getElementById('closeTemplatesModal').addEventListener('click', function() {
+        modal.classList.remove('active');
+        setTimeout(() => document.body.removeChild(modal), 300);
+    });
+    
+    document.getElementById('saveTemplateBtn').addEventListener('click', function() {
+        const name = document.getElementById('templateNameInput').value;
+        const category = document.getElementById('templateCategoryInput').value;
+        
+        if (!name) {
+            showToast("Debe ingresar un nombre para la plantilla", "error");
+            return;
+        }
+        
+        saveTemplate(name, category);
+    });
+    
+    // Función para cargar plantillas existentes
+    async function loadExistingTemplates() {
+        const templatesList = document.getElementById('templatesList');
+        if (!templatesList) return;
+        
+        try {
+            const templatesRef = collection(db, "exerciseTemplates");
+            const querySnapshot = await getDocs(templatesRef);
+            
+            let html = '<table class="exercise-table" style="width:100%">';
+            html += '<thead><tr><th>Nombre</th><th>Categoría</th><th>Acciones</th></tr></thead><tbody>';
+            
+            if (querySnapshot.empty) {
+                html += '<tr><td colspan="3">No hay plantillas guardadas</td></tr>';
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const template = doc.data();
+                    html += `
+                        <tr>
+                            <td>${template.name || 'Sin nombre'}</td>
+                            <td>${template.category || 'Sin categoría'}</td>
+                            <td>
+                                <button class="action-btn btn-secondary load-template-btn" data-id="${doc.id}" style="margin-right:5px">
+                                    <i class="fas fa-download"></i> Usar
+                                </button>
+                                <button class="action-btn btn-secondary delete-template-btn" data-id="${doc.id}" style="background-color: var(--accent2-light)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
             }
-        });
+            
+            html += '</tbody></table>';
+            templatesList.innerHTML = html;
+            
+            // Configurar eventos para botones de cargar y eliminar
+            document.querySelectorAll('.load-template-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const templateId = this.getAttribute('data-id');
+                    loadTemplate(templateId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-template-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const templateId = this.getAttribute('data-id');
+                    deleteTemplate(templateId);
+                });
+            });
+            
+        } catch (error) {
+            console.error("Error al cargar plantillas:", error);
+            templatesList.innerHTML = `<p style="color:red">Error al cargar plantillas: ${error.message}</p>`;
+        }
+    }
+    
+    // Función para guardar plantilla
+    async function saveTemplate(name, category) {
+        try {
+            showLoading();
+            
+            // Obtener ejercicios actuales
+            const exercises = getExercisesData();
+            
+            if (!exercises || exercises.length === 0) {
+                hideLoading();
+                showToast("No hay ejercicios para guardar", "error");
+                return;
+            }
+            
+            // Crear objeto de plantilla
+            const template = {
+                name: name,
+                category: category,
+                exercises: exercises,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Guardar en Firebase
+            const templatesRef = collection(db, "exerciseTemplates");
+            await addDoc(templatesRef, template);
+            
+            hideLoading();
+            showToast("Plantilla guardada correctamente", "success");
+            
+            // Recargar lista de plantillas
+            loadExistingTemplates();
+            
+            // Limpiar campos
+            document.getElementById('templateNameInput').value = '';
+            
+        } catch (error) {
+            hideLoading();
+            console.error("Error al guardar plantilla:", error);
+            showToast("Error al guardar plantilla: " + error.message, "error");
+        }
+    }
+    
+    // Función para cargar una plantilla
+    async function loadTemplate(templateId) {
+        try {
+            showLoading();
+            
+            const templateRef = doc(db, "exerciseTemplates", templateId);
+            const templateSnap = await getDoc(templateRef);
+            
+            if (templateSnap.exists()) {
+                const template = templateSnap.data();
+                
+                // Limpiar tabla actual
+                const tableBody = document.getElementById('exerciseTableBody');
+                if (!tableBody) {
+                    hideLoading();
+                    return;
+                }
+                
+                // Confirmar antes de reemplazar ejercicios existentes
+                if (tableBody.children.length > 0) {
+                    if (!confirm('¿Desea reemplazar los ejercicios actuales con la plantilla seleccionada?')) {
+                        hideLoading();
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                }
+                
+                // Cargar ejercicios de la plantilla
+                if (template.exercises && Array.isArray(template.exercises)) {
+                    template.exercises.forEach(exercise => {
+                        addExerciseRow(exercise);
+                    });
+                }
+                
+                // Cerrar modal
+                modal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(modal), 300);
+                
+                hideLoading();
+                showToast(`Plantilla "${template.name}" cargada correctamente`, "success");
+            } else {
+                hideLoading();
+                showToast("Plantilla no encontrada", "error");
+            }
+        } catch (error) {
+            hideLoading();
+            console.error("Error al cargar plantilla:", error);
+            showToast("Error al cargar plantilla: " + error.message, "error");
+        }
+    }
+    
+    // Función para eliminar una plantilla
+    async function deleteTemplate(templateId) {
+        try {
+            if (!confirm('¿Está seguro que desea eliminar esta plantilla?')) {
+                return;
+            }
+            
+            showLoading();
+            
+            const templateRef = doc(db, "exerciseTemplates", templateId);
+            await deleteDoc(templateRef);
+            
+            hideLoading();
+            showToast("Plantilla eliminada correctamente", "success");
+            
+            // Recargar lista de plantillas
+            loadExistingTemplates();
+            
+        } catch (error) {
+            hideLoading();
+            console.error("Error al eliminar plantilla:", error);
+            showToast("Error al eliminar plantilla: " + error.message, "error");
+        }
     }
 });
         
