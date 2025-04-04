@@ -13,6 +13,523 @@
     <!-- jsPDF for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+    <style type="text/css">
+/* Estilos para el Asistente de Objetivos SMART */
+.smart-assistant-header {
+    padding: 10px 15px;
+    background-color: var(--background-alt);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.smart-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.smart-tab {
+    padding: 10px 15px;
+    background-color: var(--background-alt);
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    flex: 1;
+    text-align: center;
+    font-size: 14px;
+}
+
+.smart-tab.active {
+    background-color: var(--primary);
+    color: white;
+}
+
+.smart-tab-content {
+    background-color: var(--background);
+    border-radius: 0 0 8px 8px;
+    min-height: 300px;
+}
+
+.smart-tab-pane {
+    display: none;
+    padding: 20px;
+}
+
+.smart-tab-pane.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.smart-section {
+    margin-bottom: 20px;
+}
+
+.smart-section h4 {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    color: var(--primary);
+    position: relative;
+}
+
+.smart-section h4 i {
+    margin-right: 8px;
+}
+
+.smart-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.smart-help-tooltip {
+    position: relative;
+    margin-left: auto;
+    cursor: pointer;
+}
+
+.smart-tooltip-content {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 300px;
+    background-color: var(--primary-dark);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 100;
+    display: none;
+}
+
+.smart-help-tooltip:hover .smart-tooltip-content {
+    display: block;
+}
+
+.smart-suggestion-container {
+    background-color: var(--background-alt);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 15px;
+}
+
+.smart-suggestions-header {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--primary);
+}
+
+.smart-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.smart-suggestion {
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.smart-suggestion:hover {
+    background-color: var(--primary-light);
+    color: white;
+    border-color: var(--primary);
+}
+
+.difficulty-selector {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.difficulty-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.difficulty-option.active {
+    background-color: var(--background-alt);
+}
+
+.difficulty-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-bottom: 5px;
+}
+
+.difficulty-option:nth-child(1) .difficulty-circle {
+    background-color: #4CAF50;
+}
+
+.difficulty-option:nth-child(2) .difficulty-circle {
+    background-color: #FFC107;
+}
+
+.difficulty-option:nth-child(3) .difficulty-circle {
+    background-color: #FF9800;
+}
+
+.difficulty-option:nth-child(4) .difficulty-circle {
+    background-color: #F44336;
+}
+
+.difficulty-option span {
+    font-size: 12px;
+}
+
+.timeline-visualization {
+    margin: 20px 0;
+}
+
+.timeline-bar {
+    position: relative;
+    height: 6px;
+    background-color: var(--background-alt);
+    border-radius: 3px;
+    margin: 30px 0 10px;
+}
+
+.timeline-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 50%;
+    background-color: var(--primary);
+    border-radius: 3px;
+}
+
+.timeline-marker {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    top: -5px;
+    transform: translateY(0);
+}
+
+.timeline-start {
+    left: 0;
+}
+
+.timeline-end {
+    right: 0;
+    background-color: var(--primary-light);
+}
+
+.timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.objective-preview-card {
+    background-color: var(--background-alt);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--primary);
+}
+
+.objective-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.objective-preview-header h3 {
+    margin: 0;
+    color: var(--primary);
+    font-size: 18px;
+}
+
+.objective-preview-type {
+    background-color: var(--primary);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.objective-preview-smart {
+    display: flex;
+    margin-bottom: 10px;
+    padding: 8px 0;
+}
+
+.smart-letter-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    background-color: var(--primary);
+    color: white;
+    border-radius: 50%;
+    margin-right: 15px;
+    font-weight: bold;
+}
+
+.smart-preview-content {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.objective-preview-footer {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.objective-preview-dates {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.progress-preview {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-preview-bar {
+    flex: 1;
+    height: 8px;
+    background-color: var(--background-alt);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-preview-value {
+    height: 100%;
+    background-color: var(--primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-preview-text {
+    font-weight: 500;
+    color: var(--primary);
+    min-width: 40px;
+    text-align: right;
+}
+
+.milestone-item {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    background-color: var(--background-alt);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.milestone-week {
+    width: 80px;
+}
+
+.milestone-desc {
+    flex: 1;
+}
+
+.milestone-delete {
+    cursor: pointer;
+    color: var(--accent2);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Estilos para la visualización mejorada de objetivos */
+.objectives-section {
+    background-color: var(--background);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.objective-card {
+    background-color: var(--background-alt);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 5px solid var(--primary);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.objective-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.objective-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.objective-type {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.objective-type i {
+    margin-right: 8px;
+    color: var(--primary);
+}
+
+.objective-status {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.objective-status i {
+    margin-right: 5px;
+}
+
+.status-pending {
+    background-color: #FFF8E1;
+    color: #FFA000;
+}
+
+.status-inprogress {
+    background-color: #E3F2FD;
+    color: #1976D2;
+}
+
+.status-completed {
+    background-color: #E8F5E9;
+    color: #388E3C;
+}
+
+.objective-desc {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.objective-desc-smart span {
+    font-weight: 500;
+    color: var(--primary);
+    margin-right: 5px;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.progress-circle {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.progress-circle svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.progress-info {
+    flex: 1;
+}
+
+.progress-date {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-value {
+    height: 100%;
+    background-color: var(--primary);
+    border-radius: 4px;
+}
+
+.objective-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+
+.objective-card:hover .objective-actions {
+    display: flex;
+}
+
+.objective-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 5px;
+}
+
+.objective-action-btn:hover {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.objective-action-btn.delete:hover {
+    background-color: var(--accent2);
+}
+</style>
 </head>
 <body>
     <!-- Loading Spinner -->
@@ -360,13 +877,27 @@
                     </div>
 
                     <div class="objectives-section">
-                        <h3 class="section-title">Objetivos terapéuticos</h3>
-                        <div id="objectivesList">
-                            <!-- Objectives will be loaded here -->
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 class="section-title"><i class="fas fa-bullseye"></i> Objetivos terapéuticos SMART</h3>
+                            <div>
+                                <button class="action-btn btn-secondary" id="viewObjectivesGuideBtn" style="margin-right: 10px;">
+                                    <i class="fas fa-question-circle"></i> Guía SMART
+                                </button>
+                                <button class="action-btn btn-primary" id="addObjectiveBtn">
+                                    <i class="fas fa-plus"></i> Nuevo objetivo
+                                </button>
+                            </div>
                         </div>
-                        <button class="action-btn btn-primary" style="margin-top: 15px;" id="addObjectiveBtn">
-                            <i class="fas fa-plus"></i> Añadir objetivo
-                        </button>
+                        <div class="objective-description">
+                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                                Los objetivos SMART son: <strong>S</strong>pecíficos, <strong>M</strong>edibles, <strong>A</strong>lcanzables, <strong>R</strong>elevantes y <strong>T</strong>emporales.
+                                Haga clic en "Nuevo objetivo" para crear un objetivo terapéutico con el asistente SMART.
+                            </p>
+                        </div>
+                        <div id="objectivesList" class="objectives-list">
+                            <!-- Objectives will be loaded here -->
+                            <p>No hay objetivos registrados para este paciente.</p>
+                        </div>
                     </div>
 
                     <div class="treatment-plan">
@@ -862,69 +1393,429 @@
     </div>
 </div>
 
-    <!-- Add Objective Modal Template -->
-    <div class="modal-overlay" id="objectiveModal" style="display: none;">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Nuevo objetivo terapéutico</h2>
-                <button class="modal-close" id="closeObjectiveModal">
-                    <i class="fas fa-times"></i>
-                </button>
+    <!-- Add Objective Modal Template - Versión mejorada -->
+<div class="modal-overlay" id="objectiveModal" style="display: none;">
+    <div class="modal" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Objetivo Terapéutico SMART</h2>
+            <button class="modal-close" id="closeObjectiveModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="smart-assistant-header">
+                <h3 style="margin-top: 0; color: var(--primary);"><i class="fas fa-brain"></i> Asistente de Objetivos SMART</h3>
+                <p style="color: var(--text-secondary);">Crea objetivos efectivos que sean: <strong>S</strong>pecíficos, <strong>M</strong>edibles, <strong>A</strong>lcanzables, <strong>R</strong>elevantes y <strong>T</strong>emporales.</p>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Tipo de objetivo</label>
-                    <select class="form-control" id="objectiveType">
-                        <option value="Funcional">Funcional</option>
-                        <option value="Analítico">Analítico</option>
-                        <option value="Participación">Participación</option>
-                        <option value="Educativo">Educativo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Descripción del objetivo (SMART)</label>
-                    <textarea class="form-control" id="objectiveDesc" rows="4" placeholder="Describa el objetivo de forma Específica, Medible, Alcanzable, Relevante y Temporal..."></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-col">
+
+            <!-- Tabs para guiar el proceso SMART -->
+            <div class="smart-tabs">
+                <div class="smart-tab active" data-tab="parameters">Parámetros</div>
+                <div class="smart-tab" data-tab="specific">Específico</div>
+                <div class="smart-tab" data-tab="measurable">Medible</div>
+                <div class="smart-tab" data-tab="achievable">Alcanzable</div>
+                <div class="smart-tab" data-tab="relevant">Relevante</div>
+                <div class="smart-tab" data-tab="time">Temporal</div>
+                <div class="smart-tab" data-tab="preview">Vista Previa</div>
+            </div>
+
+            <!-- Contenido de las pestañas -->
+            <div class="smart-tab-content">
+                <!-- Pestaña 1: Parámetros iniciales -->
+                <div class="smart-tab-pane active" id="parameters-tab">
+                    <div class="smart-section">
+                        <h4><i class="fas fa-cog"></i> Parámetros del Objetivo</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Área clínica</label>
+                                    <select class="form-control" id="objectiveArea">
+                                        <option value="musculoesqueletica">Musculoesquelética</option>
+                                        <option value="deportiva">Deportiva</option>
+                                        <option value="geriatria">Geriatría</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Tipo de objetivo</label>
+                                    <select class="form-control" id="objectiveType">
+                                        <option value="Funcional">Funcional</option>
+                                        <option value="Analítico">Analítico</option>
+                                        <option value="Participación">Participación</option>
+                                        <option value="Educativo">Educativo</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
-                            <label class="form-label">Fecha de inicio</label>
-                            <input type="date" class="form-control" id="objectiveStartDate">
+                            <label class="form-label">Nombre corto del objetivo</label>
+                            <input type="text" class="form-control" id="objectiveShortName" placeholder="Ej: Mejora de la marcha, Fortalecimiento lumbar, etc.">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Fecha de inicio</label>
+                                    <input type="date" class="form-control" id="objectiveStartDate">
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Fecha estimada de logro</label>
+                                    <input type="date" class="form-control" id="objectiveEndDate">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="action-btn btn-primary next-smart-tab" style="margin-top: 15px; float: right;">
+                            Siguiente <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pestaña 2: Específico -->
+                <div class="smart-tab-pane" id="specific-tab">
+                    <div class="smart-section">
+                        <h4>
+                            <span class="smart-letter">S</span>
+                            <i class="fas fa-bullseye"></i> Específico
+                            <div class="smart-help-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <div class="smart-tooltip-content">
+                                    <p>Un objetivo específico detalla exactamente qué quieres lograr, con quién, dónde y cómo.</p>
+                                    <p>Ejemplo: "Aumentar la fuerza del cuádriceps derecho mediante ejercicios de extensión de rodilla".</p>
+                                </div>
+                            </div>
+                        </h4>
+
+                        <div class="form-group">
+                            <label class="form-label">¿Qué quieres lograr específicamente?</label>
+                            <textarea class="form-control" id="objectiveSpecific" rows="3" placeholder="Describe con detalle qué se quiere lograr con este objetivo..."></textarea>
+                        </div>
+
+                        <div class="smart-suggestion-container">
+                            <div class="smart-suggestions-header">
+                                <i class="fas fa-lightbulb"></i> Sugerencias
+                            </div>
+                            <div class="smart-suggestions" id="specificSuggestions">
+                                <!-- Aquí se cargarán sugerencias dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary next-smart-tab">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="form-col">
+                </div>
+
+                <!-- Pestaña 3: Medible -->
+                <div class="smart-tab-pane" id="measurable-tab">
+                    <div class="smart-section">
+                        <h4>
+                            <span class="smart-letter">M</span>
+                            <i class="fas fa-chart-line"></i> Medible
+                            <div class="smart-help-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <div class="smart-tooltip-content">
+                                    <p>Un objetivo medible incluye criterios para medir el progreso y determinar cuándo se ha logrado.</p>
+                                    <p>Ejemplo: "Aumentar la fuerza muscular en 30% medido con dinamómetro" o "Reducir la escala EVA de 8/10 a 3/10".</p>
+                                </div>
+                            </div>
+                        </h4>
+
                         <div class="form-group">
-                            <label class="form-label">Fecha estimada de logro</label>
-                            <input type="date" class="form-control" id="objectiveEndDate">
+                            <label class="form-label">¿Cómo medirás el éxito?</label>
+                            <input type="text" class="form-control" id="objectiveMeasureTool" placeholder="Ej: dinamómetro, goniómetro, escala EVA, test funcional...">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Valor inicial</label>
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <input type="text" class="form-control" id="objectiveInitialValue" placeholder="Valor actual">
+                                        <input type="text" class="form-control" id="objectiveUnit" placeholder="Unidad" style="width: 80px;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-col">
+                                <div class="form-group">
+                                    <label class="form-label">Valor objetivo</label>
+                                    <input type="text" class="form-control" id="objectiveTargetValue" placeholder="Valor meta">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="smart-suggestion-container">
+                            <div class="smart-suggestions-header">
+                                <i class="fas fa-lightbulb"></i> Herramientas de medición sugeridas
+                            </div>
+                            <div class="smart-suggestions" id="measurableSuggestions">
+                                <!-- Aquí se cargarán sugerencias dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary next-smart-tab">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Estado actual</label>
-                    <select class="form-control" id="objectiveStatus">
-                        <option value="pending">Pendiente</option>
-                        <option value="inprogress" selected>En progreso</option>
-                        <option value="completed">Completado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Progreso actual (%)</label>
-                    <input type="range" min="0" max="100" value="50" class="form-control" id="objectiveProgress" style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);">
-                        <span>0%</span>
-                        <span>25%</span>
-                        <span>50%</span>
-                        <span>75%</span>
-                        <span>100%</span>
+
+                <!-- Pestaña 4: Alcanzable -->
+                <div class="smart-tab-pane" id="achievable-tab">
+                    <div class="smart-section">
+                        <h4>
+                            <span class="smart-letter">A</span>
+                            <i class="fas fa-check-circle"></i> Alcanzable
+                            <div class="smart-help-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <div class="smart-tooltip-content">
+                                    <p>Un objetivo alcanzable es realista y posible de lograr con los recursos disponibles y el tiempo establecido.</p>
+                                    <p>Considere factores como: condición actual del paciente, recursos disponibles, comorbilidades, etc.</p>
+                                </div>
+                            </div>
+                        </h4>
+
+                        <div class="form-group">
+                            <label class="form-label">¿Qué recursos o intervenciones necesitas?</label>
+                            <textarea class="form-control" id="objectiveResources" rows="2" placeholder="Ej: Bandas elásticas, equipamiento específico, entorno particular..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Potenciales barreras</label>
+                            <textarea class="form-control" id="objectiveBarriers" rows="2" placeholder="Limitaciones o desafíos que podrían dificultar el logro del objetivo..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Nivel de dificultad para el paciente</label>
+                            <div class="difficulty-selector">
+                                <div class="difficulty-option" data-value="1">
+                                    <div class="difficulty-circle"></div>
+                                    <span>Fácil</span>
+                                </div>
+                                <div class="difficulty-option" data-value="2">
+                                    <div class="difficulty-circle"></div>
+                                    <span>Moderado</span>
+                                </div>
+                                <div class="difficulty-option active" data-value="3">
+                                    <div class="difficulty-circle"></div>
+                                    <span>Desafiante</span>
+                                </div>
+                                <div class="difficulty-option" data-value="4">
+                                    <div class="difficulty-circle"></div>
+                                    <span>Muy Difícil</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="objectiveDifficulty" value="3">
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary next-smart-tab">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top: 20px; text-align: right;">
-                    <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelObjectiveBtn">Cancelar</button>
-                    <button type="button" class="action-btn btn-primary" id="saveObjectiveBtn">Guardar objetivo</button>
+
+                <!-- Pestaña 5: Relevante -->
+                <div class="smart-tab-pane" id="relevant-tab">
+                    <div class="smart-section">
+                        <h4>
+                            <span class="smart-letter">R</span>
+                            <i class="fas fa-star"></i> Relevante
+                            <div class="smart-help-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <div class="smart-tooltip-content">
+                                    <p>Un objetivo relevante está alineado con las necesidades del paciente y sus objetivos personales.</p>
+                                    <p>Debe tener sentido en el contexto del diagnóstico y ser importante para el paciente.</p>
+                                </div>
+                            </div>
+                        </h4>
+
+                        <div class="form-group">
+                            <label class="form-label">¿Por qué es importante para el paciente?</label>
+                            <textarea class="form-control" id="objectiveImportance" rows="3" placeholder="Describe cómo este objetivo beneficia al paciente en su vida diaria, trabajo, o actividades personales..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Relación con el diagnóstico</label>
+                            <textarea class="form-control" id="objectiveDiagnosisRelation" rows="2" placeholder="Explica cómo este objetivo se relaciona con el diagnóstico o problema principal..."></textarea>
+                        </div>
+
+                        <div class="smart-suggestion-container">
+                            <div class="smart-suggestions-header">
+                                <i class="fas fa-lightbulb"></i> Elementos clave para relevancia
+                            </div>
+                            <div class="smart-suggestions" id="relevantSuggestions">
+                                <!-- Aquí se cargarán sugerencias dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary next-smart-tab">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña 6: Temporal -->
+                <div class="smart-tab-pane" id="time-tab">
+                    <div class="smart-section">
+                        <h4>
+                            <span class="smart-letter">T</span>
+                            <i class="fas fa-clock"></i> Temporal
+                            <div class="smart-help-tooltip">
+                                <i class="fas fa-info-circle"></i>
+                                <div class="smart-tooltip-content">
+                                    <p>Un objetivo temporal tiene un plazo definido para su logro.</p>
+                                    <p>Especifica cuándo debe alcanzarse el objetivo y establece hitos intermedios si es necesario.</p>
+                                </div>
+                            </div>
+                        </h4>
+
+                        <div class="timeline-visualization">
+                            <div class="timeline-bar">
+                                <div class="timeline-marker timeline-start"></div>
+                                <div class="timeline-progress"></div>
+                                <div class="timeline-marker timeline-end"></div>
+                            </div>
+                            <div class="timeline-labels">
+                                <span id="timelineStartDate">Inicio</span>
+                                <span id="timelineDuration">X semanas</span>
+                                <span id="timelineEndDate">Fin</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Duración total (semanas)</label>
+                            <input type="number" class="form-control" id="objectiveDuration" min="1" value="4">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Hitos intermedios (opcional)</label>
+                            <div id="milestonesContainer">
+                                <!-- Contenedor para hitos -->
+                            </div>
+                            <button type="button" class="action-btn btn-secondary" id="addMilestoneBtn" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Añadir hito
+                            </button>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary next-smart-tab">
+                                Siguiente <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña 7: Vista Previa -->
+                <div class="smart-tab-pane" id="preview-tab">
+                    <div class="smart-section">
+                        <h4><i class="fas fa-eye"></i> Vista previa del objetivo SMART</h4>
+                        
+                        <div class="objective-preview-card">
+                            <div class="objective-preview-header">
+                                <h3 id="previewTitle">Título del objetivo</h3>
+                                <div class="objective-preview-type" id="previewType">Funcional</div>
+                            </div>
+                            
+                            <div class="objective-preview-smart">
+                                <div class="smart-letter-badge">S</div>
+                                <div class="smart-preview-content" id="previewSpecific">Contenido específico...</div>
+                            </div>
+                            
+                            <div class="objective-preview-smart">
+                                <div class="smart-letter-badge">M</div>
+                                <div class="smart-preview-content" id="previewMeasurable">Contenido medible...</div>
+                            </div>
+                            
+                            <div class="objective-preview-smart">
+                                <div class="smart-letter-badge">A</div>
+                                <div class="smart-preview-content" id="previewAchievable">Contenido alcanzable...</div>
+                            </div>
+                            
+                            <div class="objective-preview-smart">
+                                <div class="smart-letter-badge">R</div>
+                                <div class="smart-preview-content" id="previewRelevant">Contenido relevante...</div>
+                            </div>
+                            
+                            <div class="objective-preview-smart">
+                                <div class="smart-letter-badge">T</div>
+                                <div class="smart-preview-content" id="previewTime">Contenido temporal...</div>
+                            </div>
+                            
+                            <div class="objective-preview-footer">
+                                <div class="objective-preview-dates">
+                                    <span id="previewStartDate">Fecha inicio</span> → <span id="previewEndDate">Fecha fin</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Estado actual</label>
+                            <select class="form-control" id="objectiveStatus">
+                                <option value="pending">Pendiente</option>
+                                <option value="inprogress" selected>En progreso</option>
+                                <option value="completed">Completado</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Progreso actual (%)</label>
+                            <input type="range" min="0" max="100" value="0" class="form-control" id="objectiveProgress" style="margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                                <span>75%</span>
+                                <span>100%</span>
+                            </div>
+                            <div class="progress-preview">
+                                <div class="progress-preview-bar">
+                                    <div class="progress-preview-value" id="progressPreviewValue" style="width: 0%;"></div>
+                                </div>
+                                <div class="progress-preview-text" id="progressPreviewText">0%</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                            <button class="action-btn btn-secondary prev-smart-tab">
+                                <i class="fas fa-arrow-left"></i> Anterior
+                            </button>
+                            <button class="action-btn btn-primary" id="saveObjectiveBtn">
+                                <i class="fas fa-save"></i> Guardar objetivo
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Script for Firebase -->
     <script type="module">
@@ -2507,6 +3398,17 @@ async function initDiagnosisTab(patientId) {
     } catch (error) {
         console.error("Error inicializando pestaña de diagnóstico:", error);
         showToast("Error al cargar diagnósticos", "error");
+    
+        // Cargar objetivos terapéuticos
+        try {
+            await loadObjectives(patientId);
+        } catch (objError) {
+            console.error("Error al cargar objetivos:", objError);
+            const objectivesList = document.getElementById('objectivesList');
+            if (objectivesList) {
+                objectivesList.innerHTML = `<p>Error al cargar objetivos: ${objError.message}</p>`;
+            }
+        }
     }
 }
 
@@ -4190,6 +5092,7 @@ function saveDiagnosisChanges(patientId) {
 }
 
 // Abrir modal de objetivo
+// Abrir modal de objetivo - Versión mejorada con asistente SMART
 function openObjectiveModal(patientId) {
     // Utilizar el modal predefinido
     const objectiveModal = document.getElementById('objectiveModal');
@@ -4208,11 +5111,12 @@ function openObjectiveModal(patientId) {
     const startDateInput = document.getElementById('objectiveStartDate');
     if (startDateInput) startDateInput.value = today;
     
-    // Establecer fecha estimada en 4 semanas
-    const fourWeeksLater = new Date();
-    fourWeeksLater.setDate(fourWeeksLater.getDate() + 28);
-    const endDateInput = document.getElementById('objectiveEndDate');
-    if (endDateInput) endDateInput.value = fourWeeksLater.toISOString().split('T')[0];
+    // Establecer duración predeterminada (4 semanas)
+    const durationInput = document.getElementById('objectiveDuration');
+    if (durationInput) durationInput.value = "4";
+    
+    // Actualizar fecha de fin basada en la duración
+    updateTimelineVisualization();
     
     // Configurar eventos para botones
     const closeBtn = document.getElementById('closeObjectiveModal');
@@ -4229,20 +5133,26 @@ function openObjectiveModal(patientId) {
         });
     }
     
-    const cancelBtn = document.getElementById('cancelObjectiveBtn');
-    if (cancelBtn) {
+    // Inicializar navegación entre pestañas
+    initSmartTabs();
+    
+    // Generar sugerencias iniciales
+    generateSuggestions();
+    
+    // Inicializar controles de dificultad
+    initDifficultySelector();
+    
+    // Inicializar eventos para añadir hitos
+    const addMilestoneBtn = document.getElementById('addMilestoneBtn');
+    if (addMilestoneBtn) {
         // Eliminar manejadores previos
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        const newAddMilestoneBtn = addMilestoneBtn.cloneNode(true);
+        addMilestoneBtn.parentNode.replaceChild(newAddMilestoneBtn, addMilestoneBtn);
         
-        newCancelBtn.addEventListener('click', function() {
-            objectiveModal.classList.remove('active');
-            setTimeout(() => {
-                objectiveModal.style.display = 'none';
-            }, 300);
-        });
+        newAddMilestoneBtn.addEventListener('click', addMilestone);
     }
     
+    // Inicializar eventos para el botón de guardar
     const saveBtn = document.getElementById('saveObjectiveBtn');
     if (saveBtn) {
         // Eliminar manejadores previos
@@ -4250,11 +5160,11 @@ function openObjectiveModal(patientId) {
         saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
         
         newSaveBtn.addEventListener('click', function() {
-            saveObjective(patientId, objectiveModal);
+            saveSmartObjective(patientId, objectiveModal);
         });
     }
     
-    // Escuchar cambios en el slider para actualizar el SVG
+    // Inicializar eventos para el slider de progreso
     const progressSlider = document.getElementById('objectiveProgress');
     if (progressSlider) {
         // Eliminar manejadores previos
@@ -4262,8 +5172,179 @@ function openObjectiveModal(patientId) {
         progressSlider.parentNode.replaceChild(newProgressSlider, progressSlider);
         
         newProgressSlider.addEventListener('input', function() {
-            updateObjectiveProgressPreview(this.value);
+            updateProgressPreview(this.value);
         });
+    }
+    
+    // Inicializar eventos para cambios en campos que afectan a la vista previa
+    initPreviewUpdaters();
+}
+
+// Inicializar navegación entre pestañas SMART
+function initSmartTabs() {
+    try {
+        // Seleccionar todas las pestañas y sus contenidos
+        const tabs = document.querySelectorAll('.smart-tab');
+        const tabPanes = document.querySelectorAll('.smart-tab-pane');
+        
+        // Añadir evento de clic a cada pestaña
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Obtener el ID del contenido asociado a esta pestaña
+                const tabId = this.getAttribute('data-tab');
+                
+                // Quitar clase active de todas las pestañas y contenidos
+                tabs.forEach(t => t.classList.remove('active'));
+                tabPanes.forEach(p => p.classList.remove('active'));
+                
+                // Añadir clase active a la pestaña clicada
+                this.classList.add('active');
+                
+                // Añadir clase active al contenido asociado
+                const tabPane = document.getElementById(tabId + '-tab');
+                if (tabPane) {
+                    tabPane.classList.add('active');
+                }
+            });
+        });
+        
+        // Configurar botones de navegación entre pestañas
+        const nextButtons = document.querySelectorAll('.next-smart-tab');
+        const prevButtons = document.querySelectorAll('.prev-smart-tab');
+        
+        nextButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Encontrar la pestaña activa actual
+                const activeTab = document.querySelector('.smart-tab.active');
+                if (!activeTab) return;
+                
+                // Encontrar la siguiente pestaña
+                const nextTab = activeTab.nextElementSibling;
+                if (nextTab && nextTab.classList.contains('smart-tab')) {
+                    nextTab.click();
+                }
+            });
+        });
+        
+        prevButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Encontrar la pestaña activa actual
+                const activeTab = document.querySelector('.smart-tab.active');
+                if (!activeTab) return;
+                
+                // Encontrar la pestaña anterior
+                const prevTab = activeTab.previousElementSibling;
+                if (prevTab && prevTab.classList.contains('smart-tab')) {
+                    prevTab.click();
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error inicializando tabs SMART:", error);
+    }
+}
+
+// Inicializar selector de dificultad
+function initDifficultySelector() {
+    try {
+        const difficultyOptions = document.querySelectorAll('.difficulty-option');
+        const difficultyInput = document.getElementById('objectiveDifficulty');
+        
+        if (!difficultyOptions.length || !difficultyInput) return;
+        
+        // Establecer valor inicial
+        const activeOption = document.querySelector('.difficulty-option.active');
+        if (activeOption) {
+            difficultyInput.value = activeOption.getAttribute('data-value') || '3';
+        }
+        
+        // Añadir eventos para selección
+        difficultyOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Quitar active de todas las opciones
+                difficultyOptions.forEach(opt => opt.classList.remove('active'));
+                
+                // Añadir active a la opción seleccionada
+                this.classList.add('active');
+                
+                // Actualizar valor en el input hidden
+                const value = this.getAttribute('data-value') || '3';
+                difficultyInput.value = value;
+                
+                // Actualizar vista previa
+                updateObjectivePreview();
+            });
+        });
+        
+    } catch (error) {
+        console.error("Error inicializando selector de dificultad:", error);
+    }
+}
+
+// Inicializar actualizadores para vista previa
+function initPreviewUpdaters() {
+    try {
+        // Lista de IDs de campos que afectan a la vista previa
+        const fieldIds = [
+            'objectiveShortName',
+            'objectiveType',
+            'objectiveSpecific',
+            'objectiveMeasureTool',
+            'objectiveInitialValue',
+            'objectiveTargetValue',
+            'objectiveUnit',
+            'objectiveResources',
+            'objectiveBarriers',
+            'objectiveImportance',
+            'objectiveDiagnosisRelation',
+            'objectiveDuration',
+            'objectiveStartDate',
+            'objectiveEndDate'
+        ];
+        
+        // Añadir evento input a cada campo
+        fieldIds.forEach(id => {
+            const field = document.getElementById(id);
+            if (field) {
+                field.addEventListener('input', updateObjectivePreview);
+            }
+        });
+        
+        // Evento change para selects
+        const selectIds = ['objectiveType', 'objectiveArea'];
+        selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.addEventListener('change', function() {
+                    // Generar nuevas sugerencias cuando cambia el tipo o área
+                    generateSuggestions();
+                });
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error inicializando actualizadores de vista previa:", error);
+    }
+}
+
+// Actualizar vista previa de progreso
+function updateProgressPreview(value) {
+    try {
+        // Actualizar el valor en la barra de progreso
+        const progressValue = document.getElementById('progressPreviewValue');
+        const progressText = document.getElementById('progressPreviewText');
+        
+        if (progressValue) {
+            progressValue.style.width = value + '%';
+        }
+        
+        if (progressText) {
+            progressText.textContent = value + '%';
+        }
+        
+    } catch (error) {
+        console.error("Error actualizando vista previa de progreso:", error);
     }
 }
 
@@ -4274,111 +5355,796 @@ function updateObjectiveProgressPreview(progress) {
 }
 
 // Guardar objetivo
-function saveObjective(patientId, modal) {
-    // Obtener datos del formulario
+// Función para guardar objetivo en Firebase
+async function saveSmartObjective(patientId, modal) {
+    try {
+        if (!patientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+
+        showLoading();
+
+        // Recopilamos todos los datos del objetivo SMART
+        const smartData = {
+            // Datos básicos
+            name: document.getElementById('objectiveShortName').value,
+            type: document.getElementById('objectiveType').value,
+            area: document.getElementById('objectiveArea').value,
+            startDate: document.getElementById('objectiveStartDate').value,
+            endDate: document.getElementById('objectiveEndDate').value,
+            status: document.getElementById('objectiveStatus').value,
+            progress: parseInt(document.getElementById('objectiveProgress').value) || 0,
+            
+            // Componentes SMART
+            specific: document.getElementById('objectiveSpecific').value,
+            measurable: {
+                tool: document.getElementById('objectiveMeasureTool').value,
+                initialValue: document.getElementById('objectiveInitialValue').value,
+                targetValue: document.getElementById('objectiveTargetValue').value,
+                unit: document.getElementById('objectiveUnit').value
+            },
+            achievable: {
+                resources: document.getElementById('objectiveResources').value,
+                barriers: document.getElementById('objectiveBarriers').value,
+                difficulty: document.getElementById('objectiveDifficulty').value
+            },
+            relevant: {
+                importance: document.getElementById('objectiveImportance').value,
+                diagnosisRelation: document.getElementById('objectiveDiagnosisRelation').value
+            },
+            time: {
+                duration: document.getElementById('objectiveDuration').value
+            },
+            
+            // Información de seguimiento
+            milestones: getMilestones(),
+            
+            // Metadatos
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Validación básica de campos requeridos
+        if (!smartData.name || !smartData.specific || !smartData.startDate || !smartData.endDate) {
+            hideLoading();
+            showToast("Por favor, complete al menos el nombre, la descripción específica y las fechas", "error");
+            return;
+        }
+
+        // Guardar en Firebase
+        const objectiveRef = collection(db, "patients", patientId, "objectives");
+        const docRef = await addDoc(objectiveRef, smartData);
+        
+        // Actualizar la interfaz de usuario - añadiendo el objetivo a la lista
+        renderObjective(smartData, docRef.id);
+        
+        hideLoading();
+        showToast("Objetivo SMART guardado correctamente", "success");
+        
+        // Cerrar modal
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+        
+    } catch (error) {
+        hideLoading();
+        console.error("Error al guardar objetivo SMART:", error);
+        showToast("Error al guardar objetivo: " + error.message, "error");
+    }
+}
+
+// Obtener los milestones del formulario
+function getMilestones() {
+    const milestones = [];
+    const container = document.getElementById('milestonesContainer');
+    
+    if (container) {
+        const items = container.querySelectorAll('.milestone-item');
+        items.forEach(item => {
+            const week = item.querySelector('.milestone-week input').value;
+            const desc = item.querySelector('.milestone-desc input').value;
+            
+            if (week && desc) {
+                milestones.push({
+                    week: parseInt(week),
+                    description: desc
+                });
+            }
+        });
+    }
+    
+    return milestones;
+}
+
+// Renderizar un objetivo en la interfaz de usuario
+function renderObjective(objective, objectiveId) {
+    const objectivesList = document.getElementById('objectivesList');
+    if (!objectivesList) {
+        console.error("Contenedor de objetivos no encontrado");
+        return;
+    }
+    
+    // Eliminar mensaje de "no hay objetivos" si existe
+    const emptyMessage = objectivesList.querySelector('p');
+    if (emptyMessage) {
+        objectivesList.removeChild(emptyMessage);
+    }
+    
+    // Crear elemento para el objetivo
+    const objectiveCard = document.createElement('div');
+    objectiveCard.className = 'objective-card fade-in';
+    objectiveCard.dataset.id = objectiveId;
+    
+    // Determinar clase de estado
+    let statusClass = 'status-pending';
+    let statusText = 'Pendiente';
+    let statusIcon = 'fas fa-clock';
+    
+    switch(objective.status) {
+        case 'inprogress': 
+            statusClass = 'status-inprogress';
+            statusText = 'En progreso';
+            statusIcon = 'fas fa-spinner';
+            break;
+        case 'completed': 
+            statusClass = 'status-completed';
+            statusText = 'Completado';
+            statusIcon = 'fas fa-check';
+            break;
+    }
+    
+    // Calcular offset para el círculo SVG
+    const circumference = 2 * Math.PI * 25;
+    const progress = objective.progress || 0;
+    const offset = circumference - (circumference * progress / 100);
+    
+    // Preparar una descripción SMART más compacta para la tarjeta
+    const smartBrief = getSmartBrief(objective);
+    
+    // Construir el HTML del objetivo
+    objectiveCard.innerHTML = `
+        <div class="objective-header">
+            <div class="objective-type">
+                <i class="fas fa-bullseye"></i>
+                ${objective.name} (${objective.type})
+            </div>
+            <div class="objective-status ${statusClass}">
+                <i class="${statusIcon}"></i> ${statusText}
+            </div>
+        </div>
+        
+        <div class="objective-actions">
+            <button class="objective-action-btn edit" onclick="editObjective('${objectiveId}')">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="objective-action-btn delete" onclick="deleteObjective('${objectiveId}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="objective-desc">
+            ${smartBrief}
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-circle">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="25" fill="none" stroke="#E0E0E0" stroke-width="5"/>
+                    <circle cx="30" cy="30" r="25" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 30 30)"/>
+                    <text x="30" y="30" text-anchor="middle" dy=".3em" font-size="14" font-weight="bold" fill="#1E88E5">${progress}%</text>
+                </svg>
+            </div>
+            <div class="progress-info">
+                <div class="progress-date">
+                    <span>Inicio: ${formatDate(new Date(objective.startDate))}</span>
+                    <span>Fin: ${formatDate(new Date(objective.endDate))}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-value" style="width: ${progress}%;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Añadir al inicio de la lista para mayor visibilidad
+    if (objectivesList.firstChild) {
+        objectivesList.insertBefore(objectiveCard, objectivesList.firstChild);
+    } else {
+        objectivesList.appendChild(objectiveCard);
+    }
+}
+
+// Generar una descripción breve SMART para la tarjeta
+function getSmartBrief(objective) {
+    let smartText = '<div class="objective-desc-smart">';
+    
+    // Específico
+    if (objective.specific) {
+        const specificText = objective.specific.length > 100 
+            ? objective.specific.substring(0, 100) + '...' 
+            : objective.specific;
+        smartText += `<span>S:</span> ${specificText}<br>`;
+    }
+    
+    // Medible
+    if (objective.measurable && (objective.measurable.initialValue || objective.measurable.targetValue)) {
+        const unit = objective.measurable.unit || '';
+        smartText += `<span>M:</span> `;
+        
+        if (objective.measurable.tool) {
+            smartText += `Medido con: ${objective.measurable.tool}. `;
+        }
+        
+        if (objective.measurable.initialValue && objective.measurable.targetValue) {
+            smartText += `De ${objective.measurable.initialValue}${unit} a ${objective.measurable.targetValue}${unit}`;
+        } else if (objective.measurable.targetValue) {
+            smartText += `Meta: ${objective.measurable.targetValue}${unit}`;
+        }
+        
+        smartText += '<br>';
+    }
+    
+    // Temporal
+    if (objective.startDate && objective.endDate) {
+        const startDate = new Date(objective.startDate);
+        const endDate = new Date(objective.endDate);
+        const diffInDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        
+        smartText += `<span>T:</span> ${diffInDays} días (${Math.ceil(diffInDays / 7)} semanas)`;
+    }
+    
+    smartText += '</div>';
+    return smartText;
+}
+
+// Función para cargar objetivos existentes
+async function loadObjectives(patientId) {
+    try {
+        const objectivesList = document.getElementById('objectivesList');
+        if (!objectivesList) return;
+        
+        // Mostrar mensaje de carga
+        objectivesList.innerHTML = '<p>Cargando objetivos...</p>';
+        
+        // Consultar objetivos en Firebase
+        const objectivesRef = collection(db, "patients", patientId, "objectives");
+        const q = query(objectivesRef, orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        // Limpiar contenedor
+        objectivesList.innerHTML = '';
+        
+        if (querySnapshot.empty) {
+            objectivesList.innerHTML = '<p>No hay objetivos registrados para este paciente.</p>';
+            return;
+        }
+        
+        // Mostrar cada objetivo
+        querySnapshot.forEach(doc => {
+            const objective = doc.data();
+            renderObjective(objective, doc.id);
+        });
+        
+    } catch (error) {
+        console.error("Error al cargar objetivos:", error);
+        const objectivesList = document.getElementById('objectivesList');
+        if (objectivesList) {
+            objectivesList.innerHTML = `<p>Error al cargar objetivos: ${error.message}</p>`;
+        }
+    }
+}
+
+// Función para eliminar un objetivo
+async function deleteObjective(objectiveId) {
+    try {
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        if (!confirm("¿Está seguro que desea eliminar este objetivo? Esta acción no se puede deshacer.")) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Eliminar de Firebase
+        await deleteDoc(doc(db, "patients", currentPatientId, "objectives", objectiveId));
+        
+        // Eliminar de la interfaz
+        const objectiveCard = document.querySelector(`.objective-card[data-id="${objectiveId}"]`);
+        if (objectiveCard && objectiveCard.parentNode) {
+            objectiveCard.parentNode.removeChild(objectiveCard);
+        }
+        
+        // Verificar si no quedan objetivos
+        const objectivesList = document.getElementById('objectivesList');
+        if (objectivesList && objectivesList.children.length === 0) {
+            objectivesList.innerHTML = '<p>No hay objetivos registrados para este paciente.</p>';
+        }
+        
+        hideLoading();
+        showToast("Objetivo eliminado correctamente", "success");
+        
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar objetivo:", error);
+        showToast("Error al eliminar objetivo: " + error.message, "error");
+    }
+}
+
+// Función para mostrar sugerencias según el tipo y área
+function generateSuggestions() {
+    const type = document.getElementById('objectiveType').value;
+    const area = document.getElementById('objectiveArea').value;
+    
+    // Sugerencias para la sección Específico
+    const specificSuggestions = document.getElementById('specificSuggestions');
+    if (specificSuggestions) {
+        specificSuggestions.innerHTML = '';
+        
+        let suggestions = [];
+        
+        // Según el tipo de objetivo y área
+        if (type === 'Funcional') {
+            if (area === 'musculoesqueletica') {
+                suggestions = [
+                    "Mejorar la marcha normal por 10 minutos sin dolor",
+                    "Aumentar la capacidad para subir y bajar escaleras sin apoyo",
+                    "Realizar transferencias de sedente a bípedo sin compensaciones",
+                    "Mejorar el patrón de flexión lumbar durante actividades cotidianas"
+                ];
+            } else if (area === 'deportiva') {
+                suggestions = [
+                    "Retornar a la práctica deportiva de fútbol sin limitaciones",
+                    "Ejecutar saltos verticales manteniendo la estabilidad de rodilla",
+                    "Completar circuito de entrenamiento específico para su deporte",
+                    "Mejorar biomecánica de carrera previniendo recidivas"
+                ];
+            } else if (area === 'geriatria') {
+                suggestions = [
+                    "Caminar de forma independiente con andador por 200 metros",
+                    "Subir un tramo de escaleras utilizando el pasamanos",
+                    "Realizar transferencias sin asistencia de cama a silla",
+                    "Mejorar el equilibrio estático para prevenir caídas"
+                ];
+            }
+        } else if (type === 'Analítico') {
+            if (area === 'musculoesqueletica') {
+                suggestions = [
+                    "Aumentar el rango de movimiento en flexión de rodilla",
+                    "Fortalecer la musculatura abdominal profunda",
+                    "Reducir la tensión miofascial en región cervical",
+                    "Mejorar la activación de glúteo medio en cadena cinética cerrada"
+                ];
+            } else if (area === 'deportiva') {
+                suggestions = [
+                    "Aumentar la fuerza de cuádriceps en ejercicios excéntricos",
+                    "Mejorar estabilidad de CORE durante gestos deportivos",
+                    "Incrementar la potencia de miembros inferiores en gestos pliométricos",
+                    "Optimizar la flexibilidad de isquiotibiales"
+                ];
+            } else if (area === 'geriatria') {
+                suggestions = [
+                    "Aumentar la fuerza de extensores de cadera",
+                    "Mejorar la movilidad de hombro para actividades sobre cabeza",
+                    "Fortalecer musculatura estabilizadora de tobillo",
+                    "Normalizar patrón respiratorio durante esfuerzos moderados"
+                ];
+            }
+        } else if (type === 'Participación') {
+            if (area === 'musculoesqueletica') {
+                suggestions = [
+                    "Retornar a actividades laborales de oficina sin dolor lumbar",
+                    "Realizar tareas domésticas sin limitación por 30 minutos",
+                    "Reincorporarse a actividades recreativas previas",
+                    "Conducir vehículo sin molestias cervicales"
+                ];
+            } else if (area === 'deportiva') {
+                suggestions = [
+                    "Retornar al entrenamiento completo con equipo",
+                    "Participar en competiciones oficiales sin limitaciones",
+                    "Reincorporarse a entrenamientos de alta intensidad",
+                    "Completar sesiones de entrenamiento específico sin dolor"
+                ];
+            } else if (area === 'geriatria') {
+                suggestions = [
+                    "Participar en actividades sociales fuera del hogar 2 veces por semana",
+                    "Realizar compras de manera independiente",
+                    "Mantener autonomía en actividades básicas de la vida diaria",
+                    "Participar en programa de ejercicios grupales regularmente"
+                ];
+            }
+        } else if (type === 'Educativo') {
+            suggestions = [
+                "Aprender y aplicar técnicas de automovilización",
+                "Comprender principios de ergonomía laboral",
+                "Identificar y corregir posturas que agravan sintomatología",
+                "Aplicar estrategias de automanejo del dolor"
+            ];
+        }
+        
+        // Mostrar sugerencias
+        suggestions.forEach(text => {
+            const suggestionElement = document.createElement('div');
+            suggestionElement.className = 'smart-suggestion';
+            suggestionElement.textContent = text;
+            
+            suggestionElement.addEventListener('click', function() {
+                const specificInput = document.getElementById('objectiveSpecific');
+                if (specificInput) {
+                    specificInput.value = text;
+                    
+                    // Actualizar vista previa
+                    updateObjectivePreview();
+                }
+            });
+            
+            specificSuggestions.appendChild(suggestionElement);
+        });
+    }
+    
+    // Sugerencias para la sección Medible
+    const measurableSuggestions = document.getElementById('measurableSuggestions');
+    if (measurableSuggestions) {
+        measurableSuggestions.innerHTML = '';
+        
+        let toolSuggestions = [];
+        
+        // Según el tipo de objetivo y área
+        if (type === 'Funcional' || type === 'Participación') {
+            toolSuggestions = [
+                "Escala EVA (dolor)",
+                "Cuestionario PSFS (función específica)",
+                "Test timed up and go",
+                "Escala de Berg (equilibrio)",
+                "Test de 6 minutos marcha",
+                "Test sit-to-stand"
+            ];
+        } else if (type === 'Analítico') {
+            toolSuggestions = [
+                "Goniómetro (ROM)",
+                "Dinamómetro (fuerza)",
+                "Cinta métrica (perímetros)",
+                "Prueba de resistencia muscular (repeticiones)",
+                "Escala de Borg (esfuerzo percibido)",
+                "Test de flexibilidad sit and reach"
+            ];
+        } else if (type === 'Educativo') {
+            toolSuggestions = [
+                "Cuestionario de conocimientos",
+                "Demostración práctica (checklist)",
+                "Reporte de adherencia",
+                "Escala de automanejo",
+                "Registro de aplicación diaria"
+            ];
+        }
+        
+        // Mostrar sugerencias
+        toolSuggestions.forEach(tool => {
+            const suggestionElement = document.createElement('div');
+            suggestionElement.className = 'smart-suggestion';
+            suggestionElement.textContent = tool;
+            
+            suggestionElement.addEventListener('click', function() {
+                const toolInput = document.getElementById('objectiveMeasureTool');
+                if (toolInput) {
+                    toolInput.value = tool;
+                    
+                    // Sugerir unidades apropiadas según la herramienta
+                    const unitInput = document.getElementById('objectiveUnit');
+                    if (unitInput) {
+                        if (tool.includes("EVA")) {
+                            unitInput.value = "/10";
+                        } else if (tool.includes("Borg")) {
+                            unitInput.value = "/20";
+                        } else if (tool.includes("ROM") || tool.includes("Goniómetro")) {
+                            unitInput.value = "°";
+                        } else if (tool.includes("Dinamómetro")) {
+                            unitInput.value = "kg";
+                        } else if (tool.includes("marcha") || tool.includes("timed")) {
+                            unitInput.value = "seg";
+                        } else if (tool.includes("sit and reach")) {
+                            unitInput.value = "cm";
+                        }
+                    }
+                    
+                    // Actualizar vista previa
+                    updateObjectivePreview();
+                }
+            });
+            
+            measurableSuggestions.appendChild(suggestionElement);
+        });
+    }
+    
+    // Sugerencias para la sección Relevante
+    const relevantSuggestions = document.getElementById('relevantSuggestions');
+    if (relevantSuggestions) {
+        relevantSuggestions.innerHTML = '';
+        
+        // Aspectos de relevancia general
+        const relevanceAspects = [
+            "Actividades laborales/ocupacionales",
+            "Vida familiar y social",
+            "Autocuidado y autonomía",
+            "Calidad de vida",
+            "Rendimiento deportivo",
+            "Prevención de recidivas o complicaciones",
+            "Reducción de dolor con impacto funcional"
+        ];
+        
+        // Mostrar sugerencias
+        relevanceAspects.forEach(aspect => {
+            const suggestionElement = document.createElement('div');
+            suggestionElement.className = 'smart-suggestion';
+            suggestionElement.textContent = aspect;
+            
+            suggestionElement.addEventListener('click', function() {
+                const importanceInput = document.getElementById('objectiveImportance');
+                if (importanceInput) {
+                    const currentText = importanceInput.value;
+                    importanceInput.value = currentText 
+                        ? currentText + ". Relevante para: " + aspect.toLowerCase() 
+                        : "Este objetivo es relevante para: " + aspect.toLowerCase();
+                    
+                    // Actualizar vista previa
+                    updateObjectivePreview();
+                }
+            });
+            
+            relevantSuggestions.appendChild(suggestionElement);
+        });
+    }
+    
+    // Actualizar la vista previa
+    updateObjectivePreview();
+}
+
+// Función para actualizar la vista previa del objetivo
+function updateObjectivePreview() {
+    // Nombre/título del objetivo
+    const titleElement = document.getElementById('previewTitle');
+    const nameInput = document.getElementById('objectiveShortName');
+    if (titleElement && nameInput) {
+        titleElement.textContent = nameInput.value || "Título del objetivo";
+    }
+    
+    // Tipo de objetivo
+    const typeElement = document.getElementById('previewType');
     const typeSelect = document.getElementById('objectiveType');
-    const descTextarea = document.getElementById('objectiveDesc');
+    if (typeElement && typeSelect) {
+        typeElement.textContent = typeSelect.value;
+    }
+    
+    // Específico
+    const specificElement = document.getElementById('previewSpecific');
+    const specificInput = document.getElementById('objectiveSpecific');
+    if (specificElement && specificInput) {
+        specificElement.textContent = specificInput.value || "Pendiente de definir el objetivo específico";
+    }
+    
+    // Medible
+    const measurableElement = document.getElementById('previewMeasurable');
+    const toolInput = document.getElementById('objectiveMeasureTool');
+    const initialInput = document.getElementById('objectiveInitialValue');
+    const targetInput = document.getElementById('objectiveTargetValue');
+    const unitInput = document.getElementById('objectiveUnit');
+    
+    if (measurableElement) {
+        let measureText = "Pendiente de definir criterios de medición";
+        
+        if (toolInput && toolInput.value) {
+            measureText = `Medido con: ${toolInput.value}`;
+            
+            if (initialInput && initialInput.value && targetInput && targetInput.value) {
+                const unit = unitInput ? unitInput.value : '';
+                measureText += `. De ${initialInput.value}${unit} a ${targetInput.value}${unit}`;
+            } else if (targetInput && targetInput.value) {
+                const unit = unitInput ? unitInput.value : '';
+                measureText += `. Meta: ${targetInput.value}${unit}`;
+            }
+        }
+        
+        measurableElement.textContent = measureText;
+    }
+    
+    // Alcanzable
+    const achievableElement = document.getElementById('previewAchievable');
+    const resourcesInput = document.getElementById('objectiveResources');
+    const barriersInput = document.getElementById('objectiveBarriers');
+    const difficultyInput = document.getElementById('objectiveDifficulty');
+    
+    if (achievableElement) {
+        let achieveText = "Pendiente de evaluar factibilidad";
+        
+        if (resourcesInput && resourcesInput.value) {
+            achieveText = `Recursos: ${resourcesInput.value}`;
+        }
+        
+        if (barriersInput && barriersInput.value) {
+            achieveText += barriersInput.value ? `. Barreras: ${barriersInput.value}` : '';
+        }
+        
+        // Añadir nivel de dificultad si está definido
+        if (difficultyInput && difficultyInput.value) {
+            const difficultyLabels = ['', 'Fácil', 'Moderado', 'Desafiante', 'Muy Difícil'];
+            const difficultyValue = parseInt(difficultyInput.value);
+            
+            if (difficultyValue >= 1 && difficultyValue <= 4) {
+                achieveText += `. Nivel de dificultad: ${difficultyLabels[difficultyValue]}`;
+            }
+        }
+        
+        achievableElement.textContent = achieveText;
+    }
+    
+    // Relevante
+    const relevantElement = document.getElementById('previewRelevant');
+    const importanceInput = document.getElementById('objectiveImportance');
+    const diagnosisRelInput = document.getElementById('objectiveDiagnosisRelation');
+    
+    if (relevantElement) {
+        let relevantText = "Pendiente de explicar relevancia";
+        
+        if (importanceInput && importanceInput.value) {
+            relevantText = importanceInput.value;
+        }
+        
+        if (diagnosisRelInput && diagnosisRelInput.value) {
+            relevantText += diagnosisRelInput.value ? `. ${diagnosisRelInput.value}` : '';
+        }
+        
+        relevantElement.textContent = relevantText;
+    }
+    
+    // Temporal
+    const timeElement = document.getElementById('previewTime');
     const startDateInput = document.getElementById('objectiveStartDate');
     const endDateInput = document.getElementById('objectiveEndDate');
-    const statusSelect = document.getElementById('objectiveStatus');
-    const progressSlider = document.getElementById('objectiveProgress');
+    const durationInput = document.getElementById('objectiveDuration');
     
-    if (!typeSelect || !descTextarea || !startDateInput || !endDateInput || !statusSelect || !progressSlider) {
-        showToast("Error: No se encontraron los elementos del formulario", "error");
-        return;
-    }
-    
-    const type = typeSelect.value;
-    const description = descTextarea.value;
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-    const status = statusSelect.value;
-    const progress = progressSlider.value;
-    
-    if (!description || !startDate || !endDate) {
-        showToast("Todos los campos son obligatorios", "error");
-        return;
-    }
-    
-    // Añadir objetivo a la lista
-    const objectivesList = document.getElementById('objectivesList');
-    if (objectivesList) {
-        // Determinar clase de estado
-        let statusClass = 'status-pending';
-        let statusText = 'Pendiente';
-        let statusIcon = 'fas fa-clock';
+    if (timeElement) {
+        let timeText = "Pendiente de definir temporalidad";
         
-        switch(status) {
-            case 'inprogress': 
-                statusClass = 'status-inprogress';
-                statusText = 'En progreso';
-                statusIcon = 'fas fa-spinner';
-                break;
-            case 'completed': 
-                statusClass = 'status-completed';
-                statusText = 'Completado';
-                statusIcon = 'fas fa-check';
-                break;
+        if (startDateInput && startDateInput.value && endDateInput && endDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            // Calcular la diferencia en días
+            const diffTime = Math.abs(endDate - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            timeText = `Duración: ${diffDays} días (${Math.ceil(diffDays / 7)} semanas)`;
+            
+            // Añadir información sobre hitos si existen
+            const milestones = getMilestones();
+            if (milestones && milestones.length > 0) {
+                timeText += `. Con ${milestones.length} hitos intermedios`;
+            }
+        } else if (durationInput && durationInput.value) {
+            timeText = `Duración planificada: ${durationInput.value} semanas`;
         }
         
-        // Crear elemento del objetivo
-        const newObjective = document.createElement('div');
-        newObjective.className = 'objective-card fade-in';
-        
-        // Calcular offset para el círculo SVG
-        const circumference = 2 * Math.PI * 25;
-        const offset = circumference - (circumference * progress / 100);
-        
-        newObjective.innerHTML = `
-            <div class="objective-header">
-                <div class="objective-type">
-                    <i class="fas fa-bullseye"></i>
-                    Objetivo ${type}
-                </div>
-                <div class="objective-status ${statusClass}">
-                    <i class="${statusIcon}"></i> ${statusText}
-                </div>
-            </div>
-            <div class="objective-desc">
-                ${description}
-            </div>
-            <div class="progress-container">
-                <div class="progress-circle">
-                    <svg width="60" height="60" viewBox="0 0 60 60">
-                        <circle cx="30" cy="30" r="25" fill="none" stroke="#E0E0E0" stroke-width="5"/>
-                        <circle cx="30" cy="30" r="25" fill="none" stroke="#1E88E5" stroke-width="5" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 30 30)"/>
-                        <text x="30" y="30" text-anchor="middle" dy=".3em" font-size="14" font-weight="bold" fill="#1E88E5">${progress}%</text>
-                    </svg>
-                </div>
-                <div class="progress-info">
-                    <div class="progress-date">
-                        <span>Inicio: ${formatDate(new Date(startDate))}</span>
-                        <span>Fin: ${formatDate(new Date(endDate))}</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-value" style="width: ${progress}%;"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Añadir al inicio para mayor visibilidad
-        if (objectivesList.firstChild) {
-            objectivesList.insertBefore(newObjective, objectivesList.firstChild);
-        } else {
-            objectivesList.appendChild(newObjective);
-        }
-        
-        // En una implementación real, aquí se guardarían los datos en Firebase
-        
-        showToast("Objetivo añadido correctamente", "success");
+        timeElement.textContent = timeText;
     }
     
-    // Cerrar modal
-    modal.classList.remove('active');
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300);
+    // Fechas
+    const startDateElement = document.getElementById('previewStartDate');
+    const endDateElement = document.getElementById('previewEndDate');
+    
+    if (startDateElement && startDateInput && startDateInput.value) {
+        startDateElement.textContent = formatDate(new Date(startDateInput.value));
+    }
+    
+    if (endDateElement && endDateInput && endDateInput.value) {
+        endDateElement.textContent = formatDate(new Date(endDateInput.value));
+    }
+    
+    // Actualizar barra de progreso en la vista previa
+    const progressInput = document.getElementById('objectiveProgress');
+    const progressValue = document.getElementById('progressPreviewValue');
+    const progressText = document.getElementById('progressPreviewText');
+    
+    if (progressInput && progressValue && progressText) {
+        const progress = progressInput.value || 0;
+        progressValue.style.width = `${progress}%`;
+        progressText.textContent = `${progress}%`;
+    }
+}
+
+// Función para añadir un hito intermedio
+function addMilestone() {
+    const container = document.getElementById('milestonesContainer');
+    if (!container) return;
+    
+    const milestoneItem = document.createElement('div');
+    milestoneItem.className = 'milestone-item';
+    
+    milestoneItem.innerHTML = `
+        <div class="milestone-week">
+            <input type="number" class="form-control" placeholder="Semana" min="1" max="52" style="width: 70px;">
+        </div>
+        <div class="milestone-desc">
+            <input type="text" class="form-control" placeholder="Descripción del hito...">
+        </div>
+        <div class="milestone-delete">
+            <i class="fas fa-times"></i>
+        </div>
+    `;
+    
+    container.appendChild(milestoneItem);
+    
+    // Añadir evento para eliminar hito
+    const deleteBtn = milestoneItem.querySelector('.milestone-delete');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            container.removeChild(milestoneItem);
+            updateTimelineVisualization();
+        });
+    }
+    
+    // Añadir eventos para actualizar la visualización cuando cambien los valores
+    const weekInput = milestoneItem.querySelector('.milestone-week input');
+    if (weekInput) {
+        weekInput.addEventListener('input', updateTimelineVisualization);
+        weekInput.focus(); // Dar foco al campo de semana
+    }
+    
+    updateTimelineVisualization();
+}
+
+// Función para actualizar la visualización de la línea de tiempo
+function updateTimelineVisualization() {
+    try {
+        const durationInput = document.getElementById('objectiveDuration');
+        const startDateInput = document.getElementById('objectiveStartDate');
+        const endDateInput = document.getElementById('objectiveEndDate');
+        
+        if (!durationInput || !startDateInput || !endDateInput) return;
+        
+        const duration = parseInt(durationInput.value) || 4;
+        
+        // Actualizar fecha de fin basada en duración
+        if (startDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + (duration * 7));
+            
+            // Formatear fecha en formato YYYY-MM-DD para el input
+            const endDateString = endDate.toISOString().split('T')[0];
+            endDateInput.value = endDateString;
+        }
+        
+        // Actualizar etiquetas en la visualización
+        const timelineStartDate = document.getElementById('timelineStartDate');
+        const timelineDuration = document.getElementById('timelineDuration');
+        const timelineEndDate = document.getElementById('timelineEndDate');
+        
+        if (timelineStartDate && startDateInput.value) {
+            timelineStartDate.textContent = formatDate(new Date(startDateInput.value));
+        } else if (timelineStartDate) {
+            timelineStartDate.textContent = 'Inicio';
+        }
+        
+        if (timelineDuration) {
+            timelineDuration.textContent = `${duration} semanas`;
+        }
+        
+        if (timelineEndDate && endDateInput.value) {
+            timelineEndDate.textContent = formatDate(new Date(endDateInput.value));
+        } else if (timelineEndDate) {
+            timelineEndDate.textContent = 'Fin';
+        }
+        
+        // Actualizar vista previa
+        updateObjectivePreview();
+        
+    } catch (error) {
+        console.error("Error al actualizar visualización de línea de tiempo:", error);
+    }
 }
 
         // Abrir modal de plan de tratamiento
@@ -8153,6 +9919,36 @@ if (deletePatientBtn) {
         console.error("Error durante la inicialización:", error);
         showToast("Error de inicialización: " + error.message, "error");
     }
+
+    // Configurar botón de guía SMART
+        document.getElementById('viewObjectivesGuideBtn')?.addEventListener('click', function() {
+            const guideModal = document.getElementById('smartGuideModal');
+            if (guideModal) {
+                guideModal.style.display = 'block';
+                setTimeout(() => guideModal.classList.add('active'), 50);
+            }
+        });
+        
+        // Configurar cierre del modal de guía
+        document.getElementById('closeSmartGuideModal')?.addEventListener('click', function() {
+            const guideModal = document.getElementById('smartGuideModal');
+            if (guideModal) {
+                guideModal.classList.remove('active');
+                setTimeout(() => {
+                    guideModal.style.display = 'none';
+                }, 300);
+            }
+        });
+        
+        document.getElementById('closeGuideBtn')?.addEventListener('click', function() {
+            const guideModal = document.getElementById('smartGuideModal');
+            if (guideModal) {
+                guideModal.classList.remove('active');
+                setTimeout(() => {
+                    guideModal.style.display = 'none';
+                }, 300);
+            }
+        });
 }
 
 // Configurar navegación
@@ -8601,5 +10397,98 @@ window.useExample = function(text, fieldId) {
 
         </script>
     
+<!-- Modal de Guía SMART -->
+<div class="modal-overlay" id="smartGuideModal" style="display: none;">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Guía para crear Objetivos SMART</h2>
+            <button class="modal-close" id="closeSmartGuideModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="background-color: var(--primary); color: white; padding: 10px 15px; border-radius: 8px;">
+                <p style="margin: 0;">Los objetivos <strong>SMART</strong> son estructurados para optimizar la efectividad terapéutica y mejorar los resultados en el paciente.</p>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <div style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; margin-right: 20px;">S</div>
+                    <div>
+                        <h3 style="margin-top: 0;">Específico</h3>
+                        <p>El objetivo debe ser claro y específico, respondiendo a:</p>
+                        <ul>
+                            <li>¿Qué quiero lograr exactamente?</li>
+                            <li>¿Qué acciones específicas se realizarán?</li>
+                            <li>¿Dónde y cómo se llevará a cabo?</li>
+                        </ul>
+                        <p><strong>Ejemplo:</strong> "Mejorar la función del cuádriceps mediante ejercicios de extensión de rodilla"</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; margin-right: 20px;">M</div>
+                    <div>
+                        <h3 style="margin-top: 0;">Medible</h3>
+                        <p>Debe incluir criterios concretos para medir el progreso:</p>
+                        <ul>
+                            <li>¿Cuánto? ¿Qué cantidad?</li>
+                            <li>¿Cómo se medirá el éxito?</li>
+                            <li>¿Qué herramientas o escalas se utilizarán?</li>
+                        </ul>
+                        <p><strong>Ejemplo:</strong> "Aumentar la fuerza del cuádriceps en un 30% medido con dinamómetro"</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; margin-right: 20px;">A</div>
+                    <div>
+                        <h3 style="margin-top: 0;">Alcanzable</h3>
+                        <p>El objetivo debe ser realista y posible de lograr:</p>
+                        <ul>
+                            <li>¿Es factible considerando la condición del paciente?</li>
+                            <li>¿Se disponen de los recursos necesarios?</li>
+                            <li>¿Se han considerado las limitaciones o comorbilidades?</li>
+                        </ul>
+                        <p><strong>Ejemplo:</strong> "Considerando su condición actual, es factible con los recursos disponibles"</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; margin-right: 20px;">R</div>
+                    <div>
+                        <h3 style="margin-top: 0;">Relevante</h3>
+                        <p>El objetivo debe ser significativo para el paciente:</p>
+                        <ul>
+                            <li>¿Es importante para las necesidades del paciente?</li>
+                            <li>¿Se alinea con el diagnóstico kinesiológico?</li>
+                            <li>¿Mejora aspectos relevantes de su calidad de vida?</li>
+                        </ul>
+                        <p><strong>Ejemplo:</strong> "Mejorar la fuerza es relevante para su retorno a actividades laborales"</p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; margin-bottom: 20px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; margin-right: 20px;">T</div>
+                    <div>
+                        <h3 style="margin-top: 0;">Temporal</h3>
+                        <p>Debe tener un plazo de tiempo definido:</p>
+                        <ul>
+                            <li>¿Cuándo se espera lograr el objetivo?</li>
+                            <li>¿Hay hitos intermedios para evaluar el progreso?</li>
+                            <li>¿El plazo es realista?</li>
+                        </ul>
+                        <p><strong>Ejemplo:</strong> "En un plazo de 6 semanas, con evaluaciones intermedias cada 2 semanas"</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="action-btn btn-primary" id="closeGuideBtn">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
