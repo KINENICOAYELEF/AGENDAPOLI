@@ -361,14 +361,157 @@
                     </div>
 
                     <div class="objectives-section">
-                        <h3 class="section-title">Objetivos terapéuticos</h3>
-                        <div id="objectivesList">
-                            <!-- Objectives will be loaded here -->
+    <h3 class="section-title">Objetivos terapéuticos</h3>
+    <!-- Objetivo general -->
+    <div class="advanced-card" style="margin-bottom: 20px; background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; color: var(--primary);">Objetivo General</h4>
+            <button class="action-btn btn-secondary" id="editGeneralObjectiveBtn" style="padding: 5px 10px;">
+                <i class="fas fa-edit"></i> Editar
+            </button>
+        </div>
+        <div id="generalObjectiveContainer" style="margin-bottom: 15px; display: none;">
+            <!-- Cuando no hay objetivo general -->
+            <div id="noGeneralObjective" style="text-align: center; padding: 20px;">
+                <i class="fas fa-bullseye" style="font-size: 30px; color: var(--text-secondary); margin-bottom: 10px;"></i>
+                <p style="color: var(--text-secondary);">No se ha definido un objetivo general para este paciente.</p>
+            </div>
+            <!-- Cuando hay objetivo general -->
+            <div id="generalObjectiveContent" style="display: none;">
+                <div class="objective-card" style="background-color: var(--background-alt); border-left: 4px solid var(--primary); padding: 15px; border-radius: 5px;">
+                    <div class="objective-header" style="margin-bottom: 10px;">
+                        <div class="objective-title" id="generalObjectiveTitle" style="font-weight: bold; font-size: 16px; color: var(--primary);">Objetivo terapéutico principal</div>
+                        <div class="objective-meta" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; font-size: 14px; color: var(--text-secondary);">
+                            <div><i class="fas fa-calendar-alt"></i> Creado: <span id="generalObjectiveDate">--/--/----</span></div>
+                            <div><i class="fas fa-hourglass-half"></i> Plazo: <span id="generalObjectiveEndDate">--/--/----</span></div>
                         </div>
-                        <button class="action-btn btn-primary" style="margin-top: 15px;" id="addObjectiveBtn">
-                            <i class="fas fa-plus"></i> Añadir objetivo
-                        </button>
                     </div>
+                    <div class="objective-desc" id="generalObjectiveDesc" style="margin-bottom: 15px;">Descripción del objetivo general</div>
+                    <div class="objective-progress-container" style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <div>Progreso global</div>
+                            <div id="generalObjectiveProgressText">45%</div>
+                        </div>
+                        <div class="progress-bar-container" style="height: 10px; background-color: var(--background); border-radius: 5px; overflow: hidden;">
+                            <div id="generalObjectiveProgressBar" class="progress-bar" style="height: 100%; width: 45%; background-color: var(--primary); border-radius: 5px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de objetivos específicos -->
+    <div class="advanced-card" style="margin-bottom: 20px; background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; color: var(--primary);">Objetivos Específicos</h4>
+            <button class="action-btn btn-primary" id="addSpecificObjectiveBtn">
+                <i class="fas fa-plus"></i> Añadir objetivo específico
+            </button>
+        </div>
+        <div id="specificObjectivesList" style="margin-bottom: 15px;">
+            <!-- Los objetivos específicos se cargarán aquí -->
+            <div id="noSpecificObjectives" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                <i class="fas fa-tasks" style="font-size: 30px; margin-bottom: 10px;"></i>
+                <p>No hay objetivos específicos definidos.</p>
+                <p>Agregue objetivos específicos para detallar el plan terapéutico.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de estadísticas y seguimiento -->
+    <div class="advanced-card" id="objectivesStatsPanel" style="margin-bottom: 20px; background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin: 0; color: var(--primary);">Seguimiento de Objetivos</h4>
+            <button class="action-btn btn-secondary" id="exportObjectivesPdfBtn" style="padding: 5px 10px;">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 250px;">
+                <div style="background-color: var(--background-alt); border-radius: 8px; padding: 15px; height: 100%;">
+                    <h5 style="margin-top: 0; color: var(--primary); margin-bottom: 15px;">Estado de objetivos</h5>
+                    <div id="objectivesDonutChart" style="height: 200px; display: flex; justify-content: center; align-items: center;">
+                        <!-- Aquí se insertará el gráfico SVG dinámicamente -->
+                        <svg width="200" height="200" viewBox="0 0 200 200">
+                            <!-- Círculo de fondo -->
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#e0e0e0" stroke-width="20"/>
+                            
+                            <!-- Segmentos de progreso -->
+                            <!-- Completados (verde) -->
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#4CAF50" stroke-width="20" 
+                                    stroke-dasharray="50.24 502.4" stroke-dashoffset="0"/>
+                            
+                            <!-- En progreso (azul) -->
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#2196F3" stroke-width="20" 
+                                    stroke-dasharray="150.72 502.4" stroke-dashoffset="-50.24"/>
+                            
+                            <!-- Pendientes (gris) -->
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#9E9E9E" stroke-width="20" 
+                                    stroke-dasharray="301.44 502.4" stroke-dashoffset="-200.96"/>
+                            
+                            <!-- Texto central -->
+                            <text x="100" y="95" text-anchor="middle" font-size="16" font-weight="bold">3/10</text>
+                            <text x="100" y="115" text-anchor="middle" font-size="12">objetivos</text>
+                        </svg>
+                    </div>
+                    <div style="display: flex; justify-content: space-around; margin-top: 15px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: #4CAF50;" id="completedObjectivesCount">1</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Completados</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: #2196F3;" id="inProgressObjectivesCount">3</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">En progreso</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: #9E9E9E;" id="pendingObjectivesCount">6</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Pendientes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+                <div style="background-color: var(--background-alt); border-radius: 8px; padding: 15px; height: 100%;">
+                    <h5 style="margin-top: 0; color: var(--primary); margin-bottom: 15px;">Progreso general</h5>
+                    <div id="objectivesGaugeChart" style="height: 200px; display: flex; justify-content: center; align-items: center;">
+                        <!-- Velocímetro SVG -->
+                        <svg width="200" height="115" viewBox="0 0 200 115">
+                            <!-- Arco de fondo -->
+                            <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="#e0e0e0" stroke-width="10"/>
+                            
+                            <!-- Arco de progreso -->
+                            <path d="M 10 100 A 90 90 0 0 1 100 10" fill="none" stroke="#4CAF50" stroke-width="10"/>
+                            
+                            <!-- Aguja indicadora -->
+                            <line x1="100" y1="100" x2="50" y2="60" stroke="#333" stroke-width="2"/>
+                            <circle cx="100" cy="100" r="5" fill="#333"/>
+                            
+                            <!-- Texto de porcentaje -->
+                            <text x="100" y="130" text-anchor="middle" font-size="16" font-weight="bold" id="generalProgressText">45%</text>
+                        </svg>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;">Tiempo estimado restante</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--background); border-radius: 4px; padding: 10px;">
+                            <div>
+                                <i class="fas fa-calendar-day" style="margin-right: 5px; color: var(--primary);"></i>
+                                <span id="remainingTimeText">4 semanas y 2 días</span>
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 12px;" id="estimatedEndDateText">01/06/2025</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        <button class="action-btn btn-secondary" id="refreshObjectivesBtn" style="margin-right: 10px;">
+            <i class="fas fa-sync-alt"></i> Actualizar estado
+        </button>
+    </div>
+</div>
 
                     <div class="treatment-plan">
                         <h3 class="section-title">Plan de tratamiento</h3>
@@ -863,69 +1006,472 @@
     </div>
 </div>
 
-    <!-- Add Objective Modal Template -->
-    <div class="modal-overlay" id="objectiveModal" style="display: none;">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Nuevo objetivo terapéutico</h2>
-                <button class="modal-close" id="closeObjectiveModal">
-                    <i class="fas fa-times"></i>
-                </button>
+   <!-- NUEVO Modal para Objetivo General -->
+<div class="modal-overlay" id="generalObjectiveModal" style="display: none;">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Objetivo Terapéutico General</h2>
+            <button class="modal-close" id="closeGeneralObjectiveModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Descripción del objetivo general</label>
+                <textarea class="form-control" id="generalObjectiveDescInput" rows="3" placeholder="Describa el objetivo general del tratamiento..."></textarea>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Tipo de objetivo</label>
-                    <select class="form-control" id="objectiveType">
-                        <option value="Funcional">Funcional</option>
-                        <option value="Analítico">Analítico</option>
-                        <option value="Participación">Participación</option>
-                        <option value="Educativo">Educativo</option>
-                    </select>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Fecha estimada de logro</label>
+                        <input type="date" class="form-control" id="generalObjectiveEndDateInput">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Descripción del objetivo (SMART)</label>
-                    <textarea class="form-control" id="objectiveDesc" rows="4" placeholder="Describa el objetivo de forma Específica, Medible, Alcanzable, Relevante y Temporal..."></textarea>
+            </div>
+            
+            <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <i class="fas fa-lightbulb" style="color: var(--primary); margin-right: 10px; font-size: 18px;"></i>
+                    <h4 style="margin: 0; color: var(--primary);">Asistente de Objetivos SMART</h4>
                 </div>
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="form-label">Fecha de inicio</label>
-                            <input type="date" class="form-control" id="objectiveStartDate">
+                <p style="margin-bottom: 15px; font-size: 14px;">
+                    Un objetivo bien formulado debe ser <strong>Específico</strong>, <strong>Medible</strong>, <strong>Alcanzable</strong>, <strong>Relevante</strong> y <strong>Temporal</strong>.
+                </p>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <button type="button" class="smart-template-btn" data-template="msq-general">
+                        <i class="fas fa-walking"></i> Musculoesquelético
+                    </button>
+                    <button type="button" class="smart-template-btn" data-template="deportiva-general">
+                        <i class="fas fa-running"></i> Deportivo
+                    </button>
+                    <button type="button" class="smart-template-btn" data-template="geriatria-general">
+                        <i class="fas fa-user-friends"></i> Geriatría
+                    </button>
+                    <button type="button" class="smart-template-btn" data-template="piso-pelvico-general">
+                        <i class="fas fa-venus"></i> Piso Pélvico
+                    </button>
+                </div>
+                
+                <div id="generalObjectiveAssistant" style="display: none; background-color: white; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                    <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Construcción del objetivo</h5>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Paciente/Cliente</label>
+                        <select class="form-control" id="patientTypeSelect">
+                            <option value="paciente">Paciente</option>
+                            <option value="deportista">Deportista</option>
+                            <option value="adulto mayor">Adulto mayor</option>
+                            <option value="cliente">Cliente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Objetivo principal</label>
+                        <select class="form-control" id="mainGoalSelect">
+                            <option value="recuperar">Recuperar</option>
+                            <option value="mejorar">Mejorar</option>
+                            <option value="optimizar">Optimizar</option>
+                            <option value="mantener">Mantener</option>
+                            <option value="restaurar">Restaurar</option>
+                            <option value="desarrollar">Desarrollar</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Aspecto funcional</label>
+                        <select class="form-control" id="functionalAspectSelect">
+                            <option value="función">función</option>
+                            <option value="capacidad funcional">capacidad funcional</option>
+                            <option value="movilidad">movilidad</option>
+                            <option value="equilibrio">equilibrio</option>
+                            <option value="fuerza">fuerza</option>
+                            <option value="capacidad aeróbica">capacidad aeróbica</option>
+                            <option value="control motor">control motor</option>
+                            <option value="actividades de la vida diaria">actividades de la vida diaria</option>
+                            <option value="rendimiento deportivo">rendimiento deportivo</option>
+                            <option value="funcionalidad del piso pélvico">funcionalidad del piso pélvico</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Zona/Estructura</label>
+                        <input type="text" class="form-control" id="bodyAreaInput" placeholder="Ej: miembro inferior, hombro derecho, columna lumbar...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Plazo estimado</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" class="form-control" id="timeFrameInput" min="1" value="4" style="width: 80px;">
+                            <select class="form-control" id="timeUnitSelect">
+                                <option value="semanas">semanas</option>
+                                <option value="meses">meses</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="form-label">Fecha estimada de logro</label>
-                            <input type="date" class="form-control" id="objectiveEndDate">
+                    
+                    <div class="preview-box" style="background-color: var(--background-alt); padding: 15px; border-radius: 5px; margin-top: 15px;">
+                        <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Vista previa</h5>
+                        <p id="objectivePreview" style="font-style: italic;">El paciente recuperará la función del miembro inferior en un plazo de 4 semanas.</p>
+                    </div>
+                    
+                    <div style="text-align: right; margin-top: 15px;">
+                        <button type="button" class="action-btn btn-secondary" id="cancelAssistantBtn" style="margin-right: 10px;">Cancelar</button>
+                        <button type="button" class="action-btn btn-primary" id="useAssistantResultBtn">Usar este objetivo</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px; text-align: right;">
+                <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelGeneralObjectiveBtn">Cancelar</button>
+                <button type="button" class="action-btn btn-primary" id="saveGeneralObjectiveBtn">Guardar objetivo general</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO Modal para Objetivos Específicos -->
+<div class="modal-overlay" id="specificObjectiveModal" style="display: none;">
+    <div class="modal" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Objetivo Terapéutico Específico</h2>
+            <button class="modal-close" id="closeSpecificObjectiveModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <i class="fas fa-info-circle" style="color: var(--primary); margin-right: 10px; font-size: 18px;"></i>
+                    <h4 style="margin: 0; color: var(--primary);">Formulación paso a paso</h4>
+                </div>
+                <p style="margin-bottom: 15px; font-size: 14px;">
+                    Complete los siguientes campos para formular un objetivo específico, medible y con plazo definido.
+                </p>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Verbo de acción</label>
+                        <select class="form-control" id="actionVerbSelect">
+                            <option value="Aumentar">Aumentar</option>
+                            <option value="Disminuir">Disminuir</option>
+                            <option value="Mantener">Mantener</option>
+                            <option value="Modular">Modular</option>
+                            <option value="Optimizar">Optimizar</option>
+                            <option value="Reeducar">Reeducar</option>
+                            <option value="Controlar">Controlar</option>
+                            <option value="Reducir">Reducir</option>
+                            <option value="Incrementar">Incrementar</option>
+                            <option value="Restaurar">Restaurar</option>
+                            <option value="Desarrollar">Desarrollar</option>
+                            <option value="Reintegrar">Reintegrar</option>
+                            <option value="Normalizar">Normalizar</option>
+                            <option value="Educar">Educar</option>
+                            <option value="Estabilizar">Estabilizar</option>
+                            <option value="Activar">Activar</option>
+                            <option value="Integrar">Integrar</option>
+                            <option value="Coordinar">Coordinar</option>
+                            <option value="Adaptar">Adaptar</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-control" id="objectiveCategorySelect">
+                            <option value="Analítico">Analítico</option>
+                            <option value="Funcional">Funcional</option>
+                            <option value="Educativo">Educativo</option>
+                            <option value="Preventivo">Preventivo</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Estructura/Función</label>
+                <input type="text" class="form-control" id="structureInput" placeholder="Ej: abductores de hombro derecho, extensores de rodilla, equilibrio estático...">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Parámetro a medir</label>
+                        <select class="form-control" id="parameterSelect">
+                            <option value="Fuerza muscular">Fuerza muscular</option>
+                            <option value="Rango de movimiento">Rango de movimiento</option>
+                            <option value="Dolor">Dolor</option>
+                            <option value="Funcionalidad">Funcionalidad</option>
+                            <option value="Propiocepción">Propiocepción</option>
+                            <option value="Equilibrio">Equilibrio</option>
+                            <option value="Postura">Postura</option>
+                            <option value="Edema">Edema</option>
+                            <option value="Función piso pélvico">Función piso pélvico</option>
+                            <option value="custom">Personalizado...</option>
+                        </select>
+                        <input type="text" class="form-control" id="customParameterInput" placeholder="Ingrese parámetro personalizado" style="margin-top: 10px; display: none;">
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Método de evaluación</label>
+                        <select class="form-control" id="evaluationMethodSelect">
+                            <option value="">Seleccione un método...</option>
+                            <!-- Se llenará dinámicamente según el parámetro -->
+                        </select>
+                        <input type="text" class="form-control" id="customMethodInput" placeholder="Ingrese método personalizado" style="margin-top: 10px; display: none;">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Valor inicial</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" class="form-control" id="initialValueInput" style="flex-grow: 1;">
+                            <span id="unitLabel">unidad</span>
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Estado actual</label>
-                    <select class="form-control" id="objectiveStatus">
-                        <option value="pending">Pendiente</option>
-                        <option value="inprogress" selected>En progreso</option>
-                        <option value="completed">Completado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Progreso actual (%)</label>
-                    <input type="range" min="0" max="100" value="50" class="form-control" id="objectiveProgress" style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);">
-                        <span>0%</span>
-                        <span>25%</span>
-                        <span>50%</span>
-                        <span>75%</span>
-                        <span>100%</span>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Valor objetivo</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" class="form-control" id="targetValueInput" style="flex-grow: 1;">
+                            <span id="unitLabel2">unidad</span>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top: 20px; text-align: right;">
-                    <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelObjectiveBtn">Cancelar</button>
-                    <button type="button" class="action-btn btn-primary" id="saveObjectiveBtn">Guardar objetivo</button>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Duración estimada</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" class="form-control" id="durationInput" min="1" value="2" style="width: 80px;">
+                            <select class="form-control" id="durationUnitSelect">
+                                <option value="semanas">semanas</option>
+                                <option value="meses">meses</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label class="form-label">Frecuencia de evaluación</label>
+                        <select class="form-control" id="evaluationFrequencySelect">
+                            <option value="semanal">Semanal</option>
+                            <option value="quincenal" selected>Quincenal</option>
+                            <option value="mensual">Mensual</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Observaciones adicionales</label>
+                <textarea class="form-control" id="specificObjectiveNotes" rows="2" placeholder="Notas o detalles adicionales sobre este objetivo específico..."></textarea>
+            </div>
+            
+            <div class="preview-box" style="background-color: var(--background-alt); padding: 15px; border-radius: 5px; margin-top: 20px;">
+                <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Vista previa del objetivo</h5>
+                <p id="specificObjectivePreview" style="font-weight: bold;">Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.</p>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px; text-align: right;">
+                <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelSpecificObjectiveBtn">Cancelar</button>
+                <button type="button" class="action-btn btn-primary" id="saveSpecificObjectiveBtn">Guardar objetivo específico</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO Modal para la visualización detallada de objetivos específicos -->
+<div class="modal-overlay" id="viewSpecificObjectiveModal" style="display: none;">
+    <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Detalle de Objetivo Específico</h2>
+            <button class="modal-close" id="closeViewSpecificModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="objective-detail-card" style="background-color: var(--background-alt); border-radius: 8px; padding: 20px;">
+                <h3 id="viewObjectiveTitle" style="margin-top: 0; color: var(--primary); margin-bottom: 15px;">Aumentar fuerza de abductores de hombro</h3>
+                
+                <div class="objective-meta" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">
+                    <div><i class="fas fa-tag"></i> Categoría: <span id="viewObjectiveCategory">Analítico</span></div>
+                    <div><i class="fas fa-calendar-alt"></i> Creado: <span id="viewObjectiveDate">15/05/2025</span></div>
+                    <div><i class="fas fa-calendar-check"></i> Fecha objetivo: <span id="viewObjectiveEndDate">30/05/2025</span></div>
+                </div>
+                
+                <div class="details-section" style="margin-bottom: 20px;">
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Parámetro:</div>
+                        <div id="viewObjectiveParameter">Fuerza muscular</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Método de evaluación:</div>
+                        <div id="viewObjectiveMethod">Escala de Daniels</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Valor inicial:</div>
+                        <div id="viewObjectiveInitialValue">3/5</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Valor objetivo:</div>
+                        <div id="viewObjectiveTargetValue">4/5</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Frecuencia de evaluación:</div>
+                        <div id="viewObjectiveFrequency">Quincenal</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Observaciones:</div>
+                        <div id="viewObjectiveNotes">Trabajar también estabilizadores de escápula.</div>
+                    </div>
+                </div>
+                
+                <div class="progress-section" style="margin-bottom: 20px;">
+                    <h4 style="margin-top: 0; color: var(--primary); margin-bottom: 10px;">Progreso actual</h4>
+                    
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                        <div style="width: 80px; height: 80px; position: relative;">
+                            <!-- SVG para gráfico de progreso circular -->
+                            <svg width="80" height="80" viewBox="0 0 80 80">
+                                <!-- Círculo de fondo -->
+                                <circle cx="40" cy="40" r="35" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                                
+                                <!-- Círculo de progreso -->
+                                <circle cx="40" cy="40" r="35" fill="none" stroke="#4CAF50" stroke-width="8" 
+                                        stroke-dasharray="220" stroke-dashoffset="132" transform="rotate(-90 40 40)" id="viewProgressCircle"/>
+                                
+                                <!-- Texto de porcentaje -->
+                                <text x="40" y="45" text-anchor="middle" font-size="18" font-weight="bold" id="viewProgressText">40%</text>
+                            </svg>
+                        </div>
+                        
+                        <div style="flex-grow: 1;">
+                            <div id="viewProgressLabel" style="margin-bottom: 5px; display: flex; justify-content: space-between;">
+                                <span>Progreso hacia el objetivo</span>
+                                <span id="viewProgressValue">40%</span>
+                            </div>
+                            <div style="height: 10px; background-color: #e0e0e0; border-radius: 5px; overflow: hidden;">
+                                <div id="viewProgressBar" style="height: 100%; width: 40%; background-color: #4CAF50; border-radius: 5px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: var(--text-secondary);">
+                                <span id="viewCurrentValue">Actual: 3.5/5</span>
+                                <span id="viewObjectiveStatus">En progreso</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Última evaluación:</div>
+                        <div id="viewLastEvaluation">22/05/2025</div>
+                    </div>
+                    <div class="detail-item" style="display: flex; margin-bottom: 10px;">
+                        <div style="width: 180px; font-weight: bold;">Próxima evaluación:</div>
+                        <div id="viewNextEvaluation">05/06/2025</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: right;">
+                    <button type="button" class="action-btn btn-secondary" id="editSpecificObjectiveBtn" style="margin-right: 10px;">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                    <button type="button" class="action-btn btn-secondary" id="recordProgressBtn" style="margin-right: 10px; background-color: var(--primary);">
+                        <i class="fas fa-chart-line"></i> Registrar progreso
+                    </button>
+                    <button type="button" class="action-btn btn-secondary" id="deleteSpecificObjectiveBtn" style="background-color: #F44336;">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- NUEVO Modal para registrar progreso de objetivos específicos -->
+<div class="modal-overlay" id="recordProgressModal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Registrar Progreso</h2>
+            <button class="modal-close" id="closeRecordProgressModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 id="progressObjectiveTitle" style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Aumentar fuerza de abductores de hombro</h4>
+                <p id="progressObjectiveDetail" style="margin-bottom: 0;">Valor inicial: 3/5 → Valor objetivo: 4/5 (Escala de Daniels)</p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Fecha de evaluación</label>
+                <input type="date" class="form-control" id="progressDateInput">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Valor actual</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" class="form-control" id="currentValueInput" style="flex-grow: 1;">
+                    <span id="progressUnitLabel">unidad</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-control" id="progressNotes" rows="2" placeholder="Observaciones sobre el progreso..."></textarea>
+            </div>
+            
+            <div class="progress-preview" style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Progreso calculado</h5>
+                
+                <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 15px;">
+                    <div style="width: 80px; height: 80px; position: relative;">
+                        <!-- SVG para gráfico de progreso circular -->
+                        <svg width="80" height="80" viewBox="0 0 80 80">
+                            <!-- Círculo de fondo -->
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            
+                            <!-- Círculo de progreso -->
+                            <circle cx="40" cy="40" r="35" fill="none" stroke="#4CAF50" stroke-width="8" 
+                                    stroke-dasharray="220" stroke-dashoffset="132" transform="rotate(-90 40 40)" id="progressCircle"/>
+                            
+                            <!-- Texto de porcentaje -->
+                            <text x="40" y="45" text-anchor="middle" font-size="18" font-weight="bold" id="progressText">40%</text>
+                        </svg>
+                    </div>
+                    
+                    <div style="flex-grow: 1;">
+                        <div style="margin-bottom: 5px; display: flex; justify-content: space-between;">
+                            <span>Progreso hacia el objetivo</span>
+                            <span id="progressPercentage">40%</span>
+                        </div>
+                        <div style="height: 10px; background-color: #e0e0e0; border-radius: 5px; overflow: hidden;">
+                            <div id="progressBar" style="height: 100%; width: 40%; background-color: #4CAF50; border-radius: 5px;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 12px; color: var(--text-secondary);">
+                            <span id="progressIncrease">+10% desde última evaluación</span>
+                            <span id="progressStatus">En progreso</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px; text-align: right;">
+                <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelProgressBtn">Cancelar</button>
+                <button type="button" class="action-btn btn-primary" id="saveProgressBtn">Guardar progreso</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Script for Firebase -->
     <script type="module">
@@ -933,7 +1479,7 @@
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc, where, documentId } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Variables globales
@@ -941,6 +1487,22 @@ let app, db, storage;
 let currentPatientId = null;
 let patientsCache = []; // Para almacenar pacientes y reducir consultas
 let customTemplates = [];
+
+
+        // Variables para objetivos
+let currentObjectiveId = null;
+let objectivesCache = {};
+let objectiveParameters = {
+    "Fuerza muscular": ["Escala Daniels (0-5)", "Dinamometría (kg/N)", "Test manual (%)", "Test isocinético (Nm)", "Repetición máxima (RM)"],
+    "Rango de movimiento": ["Goniometría (grados)", "Porcentaje de rango normal (%)", "Test dedos-suelo (cm)"],
+    "Dolor": ["EVA (0-10)", "Escala numérica (0-10)", "Escala verbal (leve/moderado/severo)", "Cuestionario de dolor McGill", "Brief Pain Inventory"],
+    "Funcionalidad": ["Índice Barthel (0-100)", "Escala Berg (0-56)", "Timed Up and Go (segundos)", "Test 6 minutos (metros)", "WOMAC", "DASH", "FIM"],
+    "Propiocepción": ["Error en reposicionamiento (grados)", "Tiempo mantenimiento posición (segundos)"],
+    "Equilibrio": ["Apoyo unipodal (segundos)", "Escala Berg (0-56)", "Test Tinetti (0-28)", "Y-Balance Test (cm)", "Star Excursion Balance Test (cm)"],
+    "Postura": ["Ángulos posturales (grados)", "Desviaciones en cm", "Evaluación postural fotogramétrica"],
+    "Edema": ["Perímetro (cm)", "Volumetría (ml)", "Escala visual (0-4)"],
+    "Función piso pélvico": ["Escala Oxford (0-5)", "Perineometría (cmH₂O)", "EMG (μV)", "PERFECT", "Test pad (g)"]
+};
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -4190,83 +4752,2256 @@ function saveDiagnosisChanges(patientId) {
     showToast("Diagnóstico guardado correctamente", "success");
 }
 
-// Abrir modal de objetivo
-function openObjectiveModal(patientId) {
-    // Utilizar el modal predefinido
-    const objectiveModal = document.getElementById('objectiveModal');
+// Abrir modal de objetivo general
+function openGeneralObjectiveModal(patientId) {
+    try {
+        // Mostrar modal
+        const modal = document.getElementById('generalObjectiveModal');
+        if (!modal) {
+            console.error("Modal de objetivo general no encontrado");
+            return;
+        }
+        
+        // Mostrar modal
+        modal.style.display = 'block';
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Establecer fecha actual para el campo de fecha
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setMonth(today.getMonth() + 3); // Fecha estimada por defecto: 3 meses después
+        
+        // Convertir a formato YYYY-MM-DD para input type="date"
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        const endDateInput = document.getElementById('generalObjectiveEndDateInput');
+        if (endDateInput) endDateInput.value = endDateStr;
+        
+        // Limpiar campo de descripción
+        const descInput = document.getElementById('generalObjectiveDescInput');
+        if (descInput) descInput.value = '';
+        
+        // Cargar objetivo general existente si hay
+        loadGeneralObjective(patientId);
+        
+        // Configurar eventos de botones
+        const saveBtn = document.getElementById('saveGeneralObjectiveBtn');
+        if (saveBtn) {
+            // Eliminar manejadores previos
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                saveGeneralObjective(patientId);
+            });
+        }
+        
+        const cancelBtn = document.getElementById('cancelGeneralObjectiveBtn');
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        const closeBtn = document.getElementById('closeGeneralObjectiveModal');
+        if (closeBtn) {
+            // Eliminar manejadores previos
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Configurar botones de plantillas SMART
+        const templateBtns = document.querySelectorAll('.smart-template-btn');
+        templateBtns.forEach(btn => {
+            // Eliminar manejadores previos
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', function() {
+                const template = this.getAttribute('data-template');
+                if (template) {
+                    showGeneralObjectiveAssistant(template);
+                }
+            });
+        });
+        
+        // Configurar evento para botón de cancelar asistente
+        const cancelAssistantBtn = document.getElementById('cancelAssistantBtn');
+        if (cancelAssistantBtn) {
+            // Eliminar manejadores previos
+            const newCancelAssistantBtn = cancelAssistantBtn.cloneNode(true);
+            cancelAssistantBtn.parentNode.replaceChild(newCancelAssistantBtn, cancelAssistantBtn);
+            
+            newCancelAssistantBtn.addEventListener('click', function() {
+                const assistantPanel = document.getElementById('generalObjectiveAssistant');
+                if (assistantPanel) assistantPanel.style.display = 'none';
+            });
+        }
+        
+        // Configurar evento para usar resultado del asistente
+        const useResultBtn = document.getElementById('useAssistantResultBtn');
+        if (useResultBtn) {
+            // Eliminar manejadores previos
+            const newUseResultBtn = useResultBtn.cloneNode(true);
+            useResultBtn.parentNode.replaceChild(newUseResultBtn, useResultBtn);
+            
+            newUseResultBtn.addEventListener('click', function() {
+                const preview = document.getElementById('objectivePreview');
+                const descInput = document.getElementById('generalObjectiveDescInput');
+                
+                if (preview && descInput) {
+                    descInput.value = preview.textContent;
+                    
+                    // Actualizar fecha estimada basada en el plazo del asistente
+                    const timeFrame = parseInt(document.getElementById('timeFrameInput')?.value || 4);
+                    const timeUnit = document.getElementById('timeUnitSelect')?.value || 'semanas';
+                    
+                    const endDate = new Date();
+                    if (timeUnit === 'semanas') {
+                        endDate.setDate(endDate.getDate() + timeFrame * 7);
+                    } else {
+                        endDate.setMonth(endDate.getMonth() + timeFrame);
+                    }
+                    
+                    const endDateInput = document.getElementById('generalObjectiveEndDateInput');
+                    if (endDateInput) endDateInput.value = endDate.toISOString().split('T')[0];
+                    
+                    // Ocultar panel del asistente
+                    const assistantPanel = document.getElementById('generalObjectiveAssistant');
+                    if (assistantPanel) assistantPanel.style.display = 'none';
+                }
+            });
+        }
+        
+        // Configurar eventos para previsualización en tiempo real
+        configureGeneralObjectivePreview();
+        
+    } catch (error) {
+        console.error("Error al abrir modal de objetivo general:", error);
+        showToast("Error al abrir formulario de objetivo", "error");
+    }
+}
+
+// Cargar objetivo general existente
+async function loadGeneralObjective(patientId) {
+    try {
+        // Verificar si ya tenemos el objetivo en caché
+        if (objectivesCache[patientId] && objectivesCache[patientId].general) {
+            fillGeneralObjectiveForm(objectivesCache[patientId].general);
+            return;
+        }
+        
+        // Obtener de Firebase
+        const objectiveRef = doc(db, "patients", patientId, "objectives", "general");
+        const objectiveSnap = await getDoc(objectiveRef);
+        
+        if (objectiveSnap.exists()) {
+            const generalObjective = objectiveSnap.data();
+            
+            // Guardar en caché
+            if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+            objectivesCache[patientId].general = generalObjective;
+            
+            // Llenar formulario
+            fillGeneralObjectiveForm(generalObjective);
+        }
+    } catch (error) {
+        console.error("Error al cargar objetivo general:", error);
+    }
+}
+
+// Llenar formulario de objetivo general
+function fillGeneralObjectiveForm(objective) {
+    if (!objective) return;
     
-    if (!objectiveModal) {
-        console.error("Modal de objetivos no encontrado");
-        return;
+    const descInput = document.getElementById('generalObjectiveDescInput');
+    const endDateInput = document.getElementById('generalObjectiveEndDateInput');
+    
+    if (descInput) descInput.value = objective.description || '';
+    if (endDateInput && objective.endDate) endDateInput.value = objective.endDate;
+}
+
+// Configurar previsualización de objetivo general
+function configureGeneralObjectivePreview() {
+    // Obtener elementos del asistente
+    const patientTypeSelect = document.getElementById('patientTypeSelect');
+    const mainGoalSelect = document.getElementById('mainGoalSelect');
+    const functionalAspectSelect = document.getElementById('functionalAspectSelect');
+    const bodyAreaInput = document.getElementById('bodyAreaInput');
+    const timeFrameInput = document.getElementById('timeFrameInput');
+    const timeUnitSelect = document.getElementById('timeUnitSelect');
+    const previewElement = document.getElementById('objectivePreview');
+    
+    // Función para actualizar vista previa
+    function updatePreview() {
+        if (!previewElement) return;
+        
+        const patientType = patientTypeSelect?.value || 'paciente';
+        const mainGoal = mainGoalSelect?.value || 'recuperar';
+        const functionalAspect = functionalAspectSelect?.value || 'función';
+        const bodyArea = bodyAreaInput?.value || '';
+        const timeFrame = timeFrameInput?.value || '4';
+        const timeUnit = timeUnitSelect?.value || 'semanas';
+        
+        let previewText = `El ${patientType} ${mainGoal}á la ${functionalAspect}`;
+        
+        if (bodyArea) {
+            previewText += ` de ${bodyArea}`;
+        }
+        
+        previewText += ` en un plazo de ${timeFrame} ${timeUnit}.`;
+        
+        previewElement.textContent = previewText;
     }
     
-    // Mostrar modal
-    objectiveModal.style.display = 'block';
-    setTimeout(() => objectiveModal.classList.add('active'), 50);
+    // Configurar eventos para actualización en tiempo real
+    const inputs = [patientTypeSelect, mainGoalSelect, functionalAspectSelect, timeFrameInput, timeUnitSelect];
+    inputs.forEach(input => {
+        if (input) {
+            input.addEventListener('change', updatePreview);
+        }
+    });
     
-    // Establecer fecha actual
-    const today = new Date().toISOString().split('T')[0];
-    const startDateInput = document.getElementById('objectiveStartDate');
-    if (startDateInput) startDateInput.value = today;
+    if (bodyAreaInput) {
+        bodyAreaInput.addEventListener('input', updatePreview);
+    }
     
-    // Establecer fecha estimada en 4 semanas
-    const fourWeeksLater = new Date();
-    fourWeeksLater.setDate(fourWeeksLater.getDate() + 28);
-    const endDateInput = document.getElementById('objectiveEndDate');
-    if (endDateInput) endDateInput.value = fourWeeksLater.toISOString().split('T')[0];
+    // Actualización inicial
+    updatePreview();
+}
+
+// Mostrar asistente de objetivo general
+function showGeneralObjectiveAssistant(template) {
+    const assistantPanel = document.getElementById('generalObjectiveAssistant');
+    if (!assistantPanel) return;
     
-    // Configurar eventos para botones
-    const closeBtn = document.getElementById('closeObjectiveModal');
-    if (closeBtn) {
-        // Eliminar manejadores previos
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    // Mostrar panel
+    assistantPanel.style.display = 'block';
+    
+    // Configurar valores según la plantilla
+    const patientTypeSelect = document.getElementById('patientTypeSelect');
+    const mainGoalSelect = document.getElementById('mainGoalSelect');
+    const functionalAspectSelect = document.getElementById('functionalAspectSelect');
+    const bodyAreaInput = document.getElementById('bodyAreaInput');
+    const timeFrameInput = document.getElementById('timeFrameInput');
+    const timeUnitSelect = document.getElementById('timeUnitSelect');
+    
+    // Valores predeterminados según especialidad
+    switch(template) {
+        case 'msq-general': // Musculoesquelético
+            if (patientTypeSelect) patientTypeSelect.value = 'paciente';
+            if (mainGoalSelect) mainGoalSelect.value = 'recuperar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'función';
+            if (bodyAreaInput) bodyAreaInput.value = 'miembro afectado';
+            if (timeFrameInput) timeFrameInput.value = '4';
+            if (timeUnitSelect) timeUnitSelect.value = 'semanas';
+            break;
+        case 'deportiva-general': // Deportiva
+            if (patientTypeSelect) patientTypeSelect.value = 'deportista';
+            if (mainGoalSelect) mainGoalSelect.value = 'optimizar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'rendimiento deportivo';
+            if (bodyAreaInput) bodyAreaInput.value = '';
+            if (timeFrameInput) timeFrameInput.value = '6';
+            if (timeUnitSelect) timeUnitSelect.value = 'semanas';
+            break;
+        case 'geriatria-general': // Geriatría
+            if (patientTypeSelect) patientTypeSelect.value = 'adulto mayor';
+            if (mainGoalSelect) mainGoalSelect.value = 'mejorar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'capacidad funcional';
+            if (bodyAreaInput) bodyAreaInput.value = '';
+            if (timeFrameInput) timeFrameInput.value = '2';
+            if (timeUnitSelect) timeUnitSelect.value = 'meses';
+            break;
+        case 'piso-pelvico-general': // Piso pélvico
+            if (patientTypeSelect) patientTypeSelect.value = 'paciente';
+            if (mainGoalSelect) mainGoalSelect.value = 'mejorar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'funcionalidad del piso pélvico';
+            if (bodyAreaInput) bodyAreaInput.value = '';
+            if (timeFrameInput) timeFrameInput.value = '6';
+            if (timeUnitSelect) timeUnitSelect.value = 'semanas';
+            break;
+    }
+    
+    // Actualizar vista previa
+    const previewElement = document.getElementById('objectivePreview');
+    if (previewElement) {
+        const patientType = patientTypeSelect?.value || 'paciente';
+        const mainGoal = mainGoalSelect?.value || 'recuperar';
+        const functionalAspect = functionalAspectSelect?.value || 'función';
+        const bodyArea = bodyAreaInput?.value || '';
+        const timeFrame = timeFrameInput?.value || '4';
+        const timeUnit = timeUnitSelect?.value || 'semanas';
         
-        newCloseBtn.addEventListener('click', function() {
-            objectiveModal.classList.remove('active');
+        let previewText = `El ${patientType} ${mainGoal}á la ${functionalAspect}`;
+        
+        if (bodyArea) {
+            previewText += ` de ${bodyArea}`;
+        }
+        
+        previewText += ` en un plazo de ${timeFrame} ${timeUnit}.`;
+        
+        previewElement.textContent = previewText;
+    }
+}
+
+// Guardar objetivo general
+async function saveGeneralObjective(patientId) {
+    try {
+        // Verificar que hay un paciente seleccionado
+        if (!patientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        // Obtener valores del formulario
+        const description = document.getElementById('generalObjectiveDescInput')?.value;
+        const endDate = document.getElementById('generalObjectiveEndDateInput')?.value;
+        
+        if (!description) {
+            showToast("La descripción del objetivo es obligatoria", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        // Crear objeto con los datos
+        const objectiveData = {
+            description: description,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            endDate: endDate,
+            progress: 0
+        };
+        
+        // Guardar en Firebase
+        const objectiveRef = doc(db, "patients", patientId, "objectives", "general");
+        await setDoc(objectiveRef, objectiveData);
+        
+        // Actualizar caché
+        if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+        objectivesCache[patientId].general = objectiveData;
+        
+        // Actualizar UI
+        updateObjectivesUI(patientId);
+        
+        // Cerrar modal
+        const modal = document.getElementById('generalObjectiveModal');
+        if (modal) {
+            modal.classList.remove('active');
             setTimeout(() => {
-                objectiveModal.style.display = 'none';
+                modal.style.display = 'none';
             }, 300);
+        }
+        
+        hideLoading();
+        showToast("Objetivo general guardado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al guardar objetivo general:", error);
+        showToast("Error al guardar objetivo: " + error.message, "error");
+    }
+}
+
+// Abrir modal de objetivo específico
+function openSpecificObjectiveModal(patientId, objectiveId = null) {
+    try {
+        // Guardar referencia del ID del objetivo si se está editando
+        currentObjectiveId = objectiveId;
+        
+        // Mostrar modal
+        const modal = document.getElementById('specificObjectiveModal');
+        if (!modal) {
+            console.error("Modal de objetivo específico no encontrado");
+            return;
+        }
+        
+        // Resetear formulario
+        resetSpecificObjectiveForm();
+        
+        // Mostrar modal
+        modal.style.display = 'block';
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Si es edición, cargar los datos del objetivo
+        if (objectiveId) {
+            loadSpecificObjective(patientId, objectiveId);
+            
+            // Cambiar título del modal
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) modalTitle.textContent = "Editar Objetivo Terapéutico Específico";
+        } else {
+            // Es un nuevo objetivo, establecer fecha actual
+            const today = new Date();
+            
+            // Establecer duración predeterminada: 2 semanas
+            const endDate = new Date();
+            endDate.setDate(today.getDate() + 14);
+            
+            // Calcular fecha automáticamente al cambiar la duración
+            const durationInput = document.getElementById('durationInput');
+            const durationUnitSelect = document.getElementById('durationUnitSelect');
+            
+            if (durationInput && durationUnitSelect) {
+                const updateEndDate = function() {
+                    const duration = parseInt(durationInput.value) || 0;
+                    const unit = durationUnitSelect.value;
+                    
+                    const projectedEndDate = new Date();
+                    
+                    if (unit === 'semanas') {
+                        projectedEndDate.setDate(projectedEndDate.getDate() + (duration * 7));
+                    } else {
+                        projectedEndDate.setMonth(projectedEndDate.getMonth() + duration);
+                    }
+                    
+                    // No hay un input directo para la fecha final, ya que se calcula automáticamente
+                    console.log("Fecha final calculada:", projectedEndDate.toISOString().split('T')[0]);
+                };
+                
+                // Configurar eventos
+                durationInput.addEventListener('input', updateEndDate);
+                durationUnitSelect.addEventListener('change', updateEndDate);
+            }
+        }
+        
+        // Configurar eventos para el parámetro y método de evaluación
+        configureParameterEvents();
+        
+        // Configurar eventos para previsualización en tiempo real
+        configureSpecificObjectivePreview();
+        
+        // Configurar botones
+        const saveBtn = document.getElementById('saveSpecificObjectiveBtn');
+        const cancelBtn = document.getElementById('cancelSpecificObjectiveBtn');
+        const closeBtn = document.getElementById('closeSpecificObjectiveModal');
+        
+        if (saveBtn) {
+            // Eliminar manejadores previos
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                saveSpecificObjective(patientId);
+            });
+        }
+        
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        if (closeBtn) {
+            // Eliminar manejadores previos
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+    } catch (error) {
+        console.error("Error al abrir modal de objetivo específico:", error);
+        showToast("Error al abrir formulario de objetivo", "error");
+    }
+}
+
+// Resetear formulario de objetivo específico
+function resetSpecificObjectiveForm() {
+    // Limpiar campos del formulario
+    const actionVerbSelect = document.getElementById('actionVerbSelect');
+    const objectiveCategorySelect = document.getElementById('objectiveCategorySelect');
+    const structureInput = document.getElementById('structureInput');
+    const parameterSelect = document.getElementById('parameterSelect');
+    const evaluationMethodSelect = document.getElementById('evaluationMethodSelect');
+    const initialValueInput = document.getElementById('initialValueInput');
+    const targetValueInput = document.getElementById('targetValueInput');
+    const durationInput = document.getElementById('durationInput');
+    const durationUnitSelect = document.getElementById('durationUnitSelect');
+    const evaluationFrequencySelect = document.getElementById('evaluationFrequencySelect');
+    const specificObjectiveNotes = document.getElementById('specificObjectiveNotes');
+    
+    // Restablecer valores
+    if (actionVerbSelect) actionVerbSelect.value = 'Aumentar';
+    if (objectiveCategorySelect) objectiveCategorySelect.value = 'Analítico';
+    if (structureInput) structureInput.value = '';
+    if (parameterSelect) parameterSelect.value = 'Fuerza muscular';
+    // evaluationMethodSelect se actualizará al cambiar parameterSelect
+    if (initialValueInput) initialValueInput.value = '';
+    if (targetValueInput) targetValueInput.value = '';
+    if (durationInput) durationInput.value = '2';
+    if (durationUnitSelect) durationUnitSelect.value = 'semanas';
+    if (evaluationFrequencySelect) evaluationFrequencySelect.value = 'quincenal';
+    if (specificObjectiveNotes) specificObjectiveNotes.value = '';
+    
+    // Mostrar campo normal del parámetro, ocultar campo personalizado
+    const customParameterInput = document.getElementById('customParameterInput');
+    if (customParameterInput) customParameterInput.style.display = 'none';
+    
+    // Mostrar campo normal del método, ocultar campo personalizado
+    const customMethodInput = document.getElementById('customMethodInput');
+    if (customMethodInput) customMethodInput.style.display = 'none';
+    
+    // Restablecer ID del objetivo actual
+    currentObjectiveId = null;
+    
+    // Actualizar métodos de evaluación para el parámetro predeterminado
+    updateEvaluationMethods('Fuerza muscular');
+}
+
+// Configurar eventos para parámetro y método de evaluación
+function configureParameterEvents() {
+    const parameterSelect = document.getElementById('parameterSelect');
+    const customParameterInput = document.getElementById('customParameterInput');
+    const evaluationMethodSelect = document.getElementById('evaluationMethodSelect');
+    const customMethodInput = document.getElementById('customMethodInput');
+    
+    if (parameterSelect) {
+        // Eliminar manejadores previos
+        const newParameterSelect = parameterSelect.cloneNode(true);
+        parameterSelect.parentNode.replaceChild(newParameterSelect, parameterSelect);
+        
+        // Añadir nuevo manejador
+        newParameterSelect.addEventListener('change', function() {
+            const parameter = this.value;
+            
+            // Mostrar/ocultar campo personalizado
+            if (customParameterInput) {
+                customParameterInput.style.display = parameter === 'custom' ? 'block' : 'none';
+            }
+            
+            // Actualizar métodos de evaluación
+            updateEvaluationMethods(parameter);
         });
+        
+        // Disparar evento para inicializar
+        newParameterSelect.dispatchEvent(new Event('change'));
     }
     
-    const cancelBtn = document.getElementById('cancelObjectiveBtn');
-    if (cancelBtn) {
+    if (evaluationMethodSelect) {
         // Eliminar manejadores previos
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        const newMethodSelect = evaluationMethodSelect.cloneNode(true);
+        evaluationMethodSelect.parentNode.replaceChild(newMethodSelect, evaluationMethodSelect);
         
-        newCancelBtn.addEventListener('click', function() {
-            objectiveModal.classList.remove('active');
-            setTimeout(() => {
-                objectiveModal.style.display = 'none';
-            }, 300);
-        });
-    }
-    
-    const saveBtn = document.getElementById('saveObjectiveBtn');
-    if (saveBtn) {
-        // Eliminar manejadores previos
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        
-        newSaveBtn.addEventListener('click', function() {
-            saveObjective(patientId, objectiveModal);
-        });
-    }
-    
-    // Escuchar cambios en el slider para actualizar el SVG
-    const progressSlider = document.getElementById('objectiveProgress');
-    if (progressSlider) {
-        // Eliminar manejadores previos
-        const newProgressSlider = progressSlider.cloneNode(true);
-        progressSlider.parentNode.replaceChild(newProgressSlider, progressSlider);
-        
-        newProgressSlider.addEventListener('input', function() {
-            updateObjectiveProgressPreview(this.value);
+        // Añadir nuevo manejador
+        newMethodSelect.addEventListener('change', function() {
+            const method = this.value;
+            
+            // Mostrar/ocultar campo personalizado
+            if (customMethodInput) {
+                customMethodInput.style.display = method === 'custom' ? 'block' : 'none';
+            }
+            
+            // Actualizar unidades según el método
+            updateUnits(method);
         });
     }
 }
+
+// Actualizar métodos de evaluación según el parámetro
+function updateEvaluationMethods(parameter) {
+    const evaluationMethodSelect = document.getElementById('evaluationMethodSelect');
+    if (!evaluationMethodSelect) return;
+    
+    // Limpiar opciones actuales
+    evaluationMethodSelect.innerHTML = '';
+    
+    // Añadir opción por defecto
+    let option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Seleccione un método...';
+    evaluationMethodSelect.appendChild(option);
+    
+    // Si es parámetro personalizado, solo añadir opción personalizada
+    if (parameter === 'custom') {
+        option = document.createElement('option');
+        option.value = 'custom';
+        option.textContent = 'Método personalizado';
+        evaluationMethodSelect.appendChild(option);
+        evaluationMethodSelect.value = 'custom';
+        return;
+    }
+    
+    // Añadir métodos según el parámetro
+    const methods = objectiveParameters[parameter] || [];
+    
+    methods.forEach(method => {
+        option = document.createElement('option');
+        option.value = method;
+        option.textContent = method;
+        evaluationMethodSelect.appendChild(option);
+    });
+    
+    // Añadir opción personalizada
+    option = document.createElement('option');
+    option.value = 'custom';
+    option.textContent = 'Otro método...';
+    evaluationMethodSelect.appendChild(option);
+    
+    // Seleccionar primer método si hay
+    if (methods.length > 0) {
+        evaluationMethodSelect.value = methods[0];
+    }
+    
+    // Disparar evento para actualizar unidades
+    evaluationMethodSelect.dispatchEvent(new Event('change'));
+}
+
+// Actualizar unidades según el método
+function updateUnits(method) {
+    const unitLabel = document.getElementById('unitLabel');
+    const unitLabel2 = document.getElementById('unitLabel2');
+    
+    if (!unitLabel || !unitLabel2) return;
+    
+    let unit = '';
+    
+    // Extraer unidad del método (generalmente entre paréntesis)
+    if (method) {
+        const match = method.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            unit = match[1];
+        }
+    }
+    
+    // Si no se encontró unidad, usar texto genérico
+    if (!unit) unit = 'unidad';
+    
+    // Actualizar etiquetas
+    unitLabel.textContent = unit;
+    unitLabel2.textContent = unit;
+}
+
+// Configurar previsualización de objetivo específico
+function configureSpecificObjectivePreview() {
+    // Obtener elementos del formulario
+    const actionVerbSelect = document.getElementById('actionVerbSelect');
+    const structureInput = document.getElementById('structureInput');
+    const initialValueInput = document.getElementById('initialValueInput');
+    const targetValueInput = document.getElementById('targetValueInput');
+    const evaluationMethodSelect = document.getElementById('evaluationMethodSelect');
+    const customMethodInput = document.getElementById('customMethodInput');
+    const durationInput = document.getElementById('durationInput');
+    const durationUnitSelect = document.getElementById('durationUnitSelect');
+    const previewElement = document.getElementById('specificObjectivePreview');
+    
+    // Función para actualizar vista previa
+    function updatePreview() {
+        if (!previewElement) return;
+        
+        const verb = actionVerbSelect?.value || 'Aumentar';
+        const structure = structureInput?.value || '[estructura/función]';
+        const initialValue = initialValueInput?.value || '[valor inicial]';
+        const targetValue = targetValueInput?.value || '[valor objetivo]';
+        
+        let methodText = '';
+        if (evaluationMethodSelect?.value === 'custom') {
+            methodText = customMethodInput?.value || 'método personalizado';
+        } else {
+            methodText = evaluationMethodSelect?.value || 'método de evaluación';
+        }
+        
+        const duration = durationInput?.value || '2';
+        const durationUnit = durationUnitSelect?.value || 'semanas';
+        
+        let previewText = `${verb} ${structure} de ${initialValue} a ${targetValue} en ${methodText} en un plazo de ${duration} ${durationUnit}.`;
+        
+        previewElement.textContent = previewText;
+    }
+    
+    // Configurar eventos para actualización en tiempo real
+    const inputs = [
+        actionVerbSelect, evaluationMethodSelect, 
+        customMethodInput, durationInput, durationUnitSelect
+    ];
+    
+    inputs.forEach(input => {
+        if (input) {
+            input.addEventListener('change', updatePreview);
+        }
+    });
+    
+    // Campos de texto con evento input
+    const textInputs = [structureInput, initialValueInput, targetValueInput];
+    
+    textInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', updatePreview);
+        }
+    });
+    
+    // Actualización inicial
+    updatePreview();
+}
+
+// Cargar objetivo específico para edición
+async function loadSpecificObjective(patientId, objectiveId) {
+    try {
+        showLoading();
+        
+        // Verificar si ya tenemos el objetivo en caché
+        if (objectivesCache[patientId] && 
+            objectivesCache[patientId].specific && 
+            objectivesCache[patientId].specific[objectiveId]) {
+            
+            fillSpecificObjectiveForm(objectivesCache[patientId].specific[objectiveId]);
+            hideLoading();
+            return;
+        }
+        
+        // Obtener de Firebase
+        const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
+        const objectiveSnap = await getDoc(objectiveRef);
+        
+        if (objectiveSnap.exists()) {
+            const objective = objectiveSnap.data();
+            
+            // Guardar en caché
+            if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+            if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
+            objectivesCache[patientId].specific[objectiveId] = objective;
+            
+            // Llenar formulario
+            fillSpecificObjectiveForm(objective);
+        } else {
+            console.error("Objetivo específico no encontrado:", objectiveId);
+            showToast("Error: Objetivo no encontrado", "error");
+        }
+        
+        hideLoading();
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar objetivo específico:", error);
+        showToast("Error al cargar objetivo: " + error.message, "error");
+    }
+}
+
+// Llenar formulario de objetivo específico
+function fillSpecificObjectiveForm(objective) {
+    if (!objective) return;
+    
+    const actionVerbSelect = document.getElementById('actionVerbSelect');
+    const objectiveCategorySelect = document.getElementById('objectiveCategorySelect');
+    const structureInput = document.getElementById('structureInput');
+    const parameterSelect = document.getElementById('parameterSelect');
+    const evaluationMethodSelect = document.getElementById('evaluationMethodSelect');
+    const customParameterInput = document.getElementById('customParameterInput');
+    const customMethodInput = document.getElementById('customMethodInput');
+    const initialValueInput = document.getElementById('initialValueInput');
+    const targetValueInput = document.getElementById('targetValueInput');
+    const durationInput = document.getElementById('durationInput');
+    const durationUnitSelect = document.getElementById('durationUnitSelect');
+    const evaluationFrequencySelect = document.getElementById('evaluationFrequencySelect');
+    const specificObjectiveNotes = document.getElementById('specificObjectiveNotes');
+    
+    // Establecer valores
+    if (actionVerbSelect) actionVerbSelect.value = objective.verb || 'Aumentar';
+    if (objectiveCategorySelect) objectiveCategorySelect.value = objective.category || 'Analítico';
+    if (structureInput) structureInput.value = objective.structure || '';
+    
+    // Configurar parámetro y método
+    if (parameterSelect) {
+        if (objective.isCustomParameter) {
+            parameterSelect.value = 'custom';
+            if (customParameterInput) {
+                customParameterInput.style.display = 'block';
+                customParameterInput.value = objective.parameter || '';
+            }
+        } else {
+            parameterSelect.value = objective.parameter || 'Fuerza muscular';
+            if (customParameterInput) customParameterInput.style.display = 'none';
+        }
+        
+        // Actualizar métodos disponibles
+        updateEvaluationMethods(parameterSelect.value);
+    }
+    
+    // Establecer método de evaluación
+    if (evaluationMethodSelect) {
+        if (objective.isCustomMethod) {
+            evaluationMethodSelect.value = 'custom';
+            if (customMethodInput) {
+                customMethodInput.style.display = 'block';
+                customMethodInput.value = objective.evaluationMethod || '';
+            }
+        } else {
+            // Intentar encontrar el método en la lista
+            const methodExists = Array.from(evaluationMethodSelect.options).some(option => 
+                option.value === objective.evaluationMethod
+            );
+            
+            if (methodExists) {
+                evaluationMethodSelect.value = objective.evaluationMethod;
+            } else if (evaluationMethodSelect.options.length > 0) {
+                evaluationMethodSelect.selectedIndex = 1; // Primer método real
+            }
+            
+            if (customMethodInput) customMethodInput.style.display = 'none';
+        }
+        
+        // Actualizar unidades
+        updateUnits(evaluationMethodSelect.value);
+    }
+    
+    // Establecer valores iniciales y objetivo
+    if (initialValueInput) initialValueInput.value = objective.initialValue || '';
+    if (targetValueInput) targetValueInput.value = objective.targetValue || '';
+    
+    // Calcular duración desde fechas
+    if (durationInput && durationUnitSelect) {
+        if (objective.duration && objective.durationUnit) {
+            durationInput.value = objective.duration;
+            durationUnitSelect.value = objective.durationUnit;
+        } else {
+            // Valores predeterminados
+            durationInput.value = '2';
+            durationUnitSelect.value = 'semanas';
+        }
+    }
+    
+    if (evaluationFrequencySelect) evaluationFrequencySelect.value = objective.evaluationFrequency || 'quincenal';
+    if (specificObjectiveNotes) specificObjectiveNotes.value = objective.notes || '';
+    
+    // Actualizar vista previa
+    configureSpecificObjectivePreview();
+}
+
+// Guardar objetivo específico
+async function saveSpecificObjective(patientId) {
+    try {
+        // Verificar que hay un paciente seleccionado
+        if (!patientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        // Obtener valores del formulario
+        const verb = document.getElementById('actionVerbSelect')?.value;
+        const category = document.getElementById('objectiveCategorySelect')?.value;
+        const structure = document.getElementById('structureInput')?.value;
+        const parameter = document.getElementById('parameterSelect')?.value;
+        const customParameter = document.getElementById('customParameterInput')?.value;
+        const evaluationMethod = document.getElementById('evaluationMethodSelect')?.value;
+        const customMethod = document.getElementById('customMethodInput')?.value;
+        const initialValue = document.getElementById('initialValueInput')?.value;
+        const targetValue = document.getElementById('targetValueInput')?.value;
+        const duration = document.getElementById('durationInput')?.value;
+        const durationUnit = document.getElementById('durationUnitSelect')?.value;
+        const evaluationFrequency = document.getElementById('evaluationFrequencySelect')?.value;
+        const notes = document.getElementById('specificObjectiveNotes')?.value;
+        
+        // Validar campos requeridos
+        if (!structure) {
+            showToast("La estructura o función es obligatoria", "error");
+            return;
+        }
+        
+        if (!initialValue) {
+            showToast("El valor inicial es obligatorio", "error");
+            return;
+        }
+        
+        if (!targetValue) {
+            showToast("El valor objetivo es obligatorio", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        // Determinar si se están usando campos personalizados
+        const isCustomParameter = parameter === 'custom';
+        const isCustomMethod = evaluationMethod === 'custom';
+        
+        // Determinar el parámetro y método reales
+        const actualParameter = isCustomParameter ? customParameter : parameter;
+        const actualMethod = isCustomMethod ? customMethod : evaluationMethod;
+        
+        // Calcular fecha de inicio y fecha estimada de finalización
+        const startDate = new Date().toISOString().split('T')[0];
+        const endDate = new Date();
+        
+        if (durationUnit === 'semanas') {
+            endDate.setDate(endDate.getDate() + (parseInt(duration) * 7));
+        } else {
+            endDate.setMonth(endDate.getMonth() + parseInt(duration));
+        }
+        
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        // Crear objeto con los datos
+        const objectiveData = {
+            verb: verb,
+            category: category,
+            structure: structure,
+            parameter: actualParameter,
+            isCustomParameter: isCustomParameter,
+            evaluationMethod: actualMethod,
+            isCustomMethod: isCustomMethod,
+            initialValue: initialValue,
+            targetValue: targetValue,
+            currentValue: initialValue, // Al crear, el valor actual es igual al inicial
+            duration: duration,
+            durationUnit: durationUnit,
+            startDate: startDate,
+            endDate: endDateStr,
+            evaluationFrequency: evaluationFrequency,
+            notes: notes,
+            progress: 0,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            progressHistory: [
+                {
+                    date: startDate,
+                    value: initialValue,
+                    notes: "Valor inicial"
+                }
+            ]
+        };
+        
+        // ID del documento (nuevo o existente)
+        let objectiveId = currentObjectiveId;
+        
+        // Guardar en Firebase
+        if (objectiveId) {
+            // Actualizar objetivo existente
+            const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
+            await updateDoc(objectiveRef, objectiveData);
+        } else {
+            // Crear nuevo objetivo
+            const objectivesRef = collection(db, "patients", patientId, "objectives");
+            const docRef = await addDoc(objectivesRef, objectiveData);
+            objectiveId = docRef.id;
+        }
+        
+        // Actualizar caché
+        if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+        if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
+        objectivesCache[patientId].specific[objectiveId] = objectiveData;
+        
+        // Actualizar UI
+        updateObjectivesUI(patientId);
+        
+        // Cerrar modal
+        const modal = document.getElementById('specificObjectiveModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        hideLoading();
+        showToast("Objetivo específico guardado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al guardar objetivo específico:", error);
+        showToast("Error al guardar objetivo: " + error.message, "error");
+    }
+}
+
+// Actualizar interfaz de objetivos
+async function updateObjectivesUI(patientId) {
+    try {
+        if (!patientId) {
+            console.error("No hay paciente seleccionado para actualizar objetivos");
+            return;
+        }
+        
+        // Cargar objetivo general
+        await loadGeneralObjectiveDisplay(patientId);
+        
+        // Cargar objetivos específicos
+        await loadSpecificObjectivesDisplay(patientId);
+        
+        // Actualizar estadísticas
+        updateObjectivesStatistics(patientId);
+    } catch (error) {
+        console.error("Error al actualizar interfaz de objetivos:", error);
+        showToast("Error al actualizar objetivos: " + error.message, "error");
+    }
+}
+
+// Cargar objetivo general para mostrar
+async function loadGeneralObjectiveDisplay(patientId) {
+    try {
+        const noGeneralObjective = document.getElementById('noGeneralObjective');
+        const generalObjectiveContent = document.getElementById('generalObjectiveContent');
+        const generalObjectiveContainer = document.getElementById('generalObjectiveContainer');
+        
+        if (generalObjectiveContainer) {
+            generalObjectiveContainer.style.display = 'block';
+        }
+        
+        // Verificar si ya tenemos el objetivo en caché
+        if (objectivesCache[patientId] && objectivesCache[patientId].general) {
+            showGeneralObjectiveDisplay(objectivesCache[patientId].general);
+            return;
+        }
+        
+        // Obtener de Firebase
+        const objectiveRef = doc(db, "patients", patientId, "objectives", "general");
+        const objectiveSnap = await getDoc(objectiveRef);
+        
+        if (objectiveSnap.exists()) {
+            const generalObjective = objectiveSnap.data();
+            
+            // Guardar en caché
+            if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+            objectivesCache[patientId].general = generalObjective;
+            
+            // Mostrar en UI
+            showGeneralObjectiveDisplay(generalObjective);
+        } else {
+            // No hay objetivo general
+            if (noGeneralObjective) noGeneralObjective.style.display = 'block';
+            if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Error al cargar objetivo general:", error);
+        // Mostrar mensaje de error
+        if (noGeneralObjective) {
+            noGeneralObjective.style.display = 'block';
+            noGeneralObjective.innerHTML = `
+                <i class="fas fa-exclamation-triangle" style="font-size: 30px; color: var(--accent2); margin-bottom: 10px;"></i>
+                <p style="color: var(--accent2);">Error al cargar el objetivo general.</p>
+            `;
+        }
+        if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
+    }
+}
+
+// Mostrar objetivo general en la UI
+function showGeneralObjectiveDisplay(objective) {
+    const noGeneralObjective = document.getElementById('noGeneralObjective');
+    const generalObjectiveContent = document.getElementById('generalObjectiveContent');
+    const generalObjectiveTitle = document.getElementById('generalObjectiveTitle');
+    const generalObjectiveDesc = document.getElementById('generalObjectiveDesc');
+    const generalObjectiveDate = document.getElementById('generalObjectiveDate');
+    const generalObjectiveEndDate = document.getElementById('generalObjectiveEndDate');
+    const generalObjectiveProgressBar = document.getElementById('generalObjectiveProgressBar');
+    const generalObjectiveProgressText = document.getElementById('generalObjectiveProgressText');
+    
+    // Ocultar mensaje de "no hay objetivo"
+    if (noGeneralObjective) noGeneralObjective.style.display = 'none';
+    
+    // Mostrar contenido del objetivo
+    if (generalObjectiveContent) generalObjectiveContent.style.display = 'block';
+    
+    // Establecer título
+    if (generalObjectiveTitle) generalObjectiveTitle.textContent = 'Objetivo terapéutico principal';
+    
+    // Establecer descripción
+    if (generalObjectiveDesc) generalObjectiveDesc.textContent = objective.description || 'Sin descripción';
+    
+    // Establecer fechas
+    if (generalObjectiveDate) {
+        const createdDate = objective.createdAt ? new Date(objective.createdAt) : new Date();
+        generalObjectiveDate.textContent = formatDate(createdDate);
+    }
+    
+    if (generalObjectiveEndDate) {
+        const endDate = objective.endDate ? new Date(objective.endDate) : new Date();
+        generalObjectiveEndDate.textContent = formatDate(endDate);
+    }
+    
+    // Establecer progreso
+    const progress = objective.progress || 0;
+    if (generalObjectiveProgressBar) generalObjectiveProgressBar.style.width = `${progress}%`;
+    if (generalObjectiveProgressText) generalObjectiveProgressText.textContent = `${progress}%`;
+}
+
+// Cargar objetivos específicos para mostrar
+async function loadSpecificObjectivesDisplay(patientId) {
+    try {
+        const specificObjectivesList = document.getElementById('specificObjectivesList');
+        const noSpecificObjectives = document.getElementById('noSpecificObjectives');
+        const objectivesStatsPanel = document.getElementById('objectivesStatsPanel');
+        
+        if (!specificObjectivesList) return;
+        
+        // Limpiar lista actual (excepto el mensaje de "no hay objetivos")
+        Array.from(specificObjectivesList.children).forEach(child => {
+            if (child.id !== 'noSpecificObjectives') {
+                specificObjectivesList.removeChild(child);
+            }
+        });
+        
+        // Verificar si ya tenemos los objetivos en caché
+        let specificObjectives = [];
+        
+        if (objectivesCache[patientId] && objectivesCache[patientId].specific) {
+            specificObjectives = Object.entries(objectivesCache[patientId].specific).map(([id, obj]) => ({
+                id,
+                ...obj
+            }));
+        } else {
+            // Obtener de Firebase
+            const objectivesRef = collection(db, "patients", patientId, "objectives");
+            // No incluir el objetivo general
+            const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
+            const objectivesSnap = await getDocs(objectivesQuery);
+            
+            if (!objectivesSnap.empty) {
+                specificObjectives = objectivesSnap.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Guardar en caché
+                if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
+                if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
+                
+                specificObjectives.forEach(obj => {
+                    objectivesCache[patientId].specific[obj.id] = obj;
+                });
+            }
+        }
+        
+        // Mostrar/ocultar mensaje de "no hay objetivos"
+        if (noSpecificObjectives) {
+            noSpecificObjectives.style.display = specificObjectives.length === 0 ? 'block' : 'none';
+        }
+        
+        // Mostrar/ocultar panel de estadísticas
+        if (objectivesStatsPanel) {
+            objectivesStatsPanel.style.display = specificObjectives.length > 0 ? 'block' : 'none';
+        }
+        
+        // Ordenar objetivos: pendientes primero, luego en progreso, luego completados
+        specificObjectives.sort((a, b) => {
+            const statusOrder = { 'completed': 2, 'inprogress': 1, 'pending': 0 };
+            return statusOrder[a.status || 'pending'] - statusOrder[b.status || 'pending'];
+        });
+        
+        // Mostrar objetivos
+        specificObjectives.forEach(objective => {
+            const objectiveCard = createSpecificObjectiveCard(objective);
+            specificObjectivesList.appendChild(objectiveCard);
+        });
+    } catch (error) {
+        console.error("Error al cargar objetivos específicos:", error);
+        
+        // Mostrar mensaje de error
+        if (specificObjectivesList) {
+            specificObjectivesList.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--accent2);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 30px; margin-bottom: 10px;"></i>
+                    <p>Error al cargar los objetivos específicos.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// Crear tarjeta de objetivo específico
+function createSpecificObjectiveCard(objective) {
+    // Determinar clase y color según el estado
+    let statusClass = 'status-pending';
+    let statusText = 'Pendiente';
+    let statusIcon = 'fas fa-clock';
+    let borderColor = '#9E9E9E'; // Gris para pendientes
+    
+    switch(objective.status) {
+        case 'inprogress':
+            statusClass = 'status-inprogress';
+            statusText = 'En progreso';
+            statusIcon = 'fas fa-spinner';
+            borderColor = '#2196F3'; // Azul para en progreso
+            break;
+        case 'completed':
+            statusClass = 'status-completed';
+            statusText = 'Completado';
+            statusIcon = 'fas fa-check';
+            borderColor = '#4CAF50'; // Verde para completados
+            break;
+    }
+    
+    // Crear elemento
+    const card = document.createElement('div');
+    card.className = 'objective-card';
+    card.setAttribute('data-id', objective.id);
+    card.style.backgroundColor = 'var(--background-alt)';
+    card.style.borderLeft = `4px solid ${borderColor}`;
+    card.style.padding = '15px';
+    card.style.borderRadius = '5px';
+    card.style.marginBottom = '15px';
+    card.style.transition = 'all 0.3s ease';
+    card.style.boxShadow = 'var(--shadow-sm)';
+    card.style.cursor = 'pointer';
+    
+    // Hover effect
+    card.addEventListener('mouseenter', function() {
+        this.style.boxShadow = 'var(--shadow)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.boxShadow = 'var(--shadow-sm)';
+    });
+    
+    // Construir contenido
+    const title = `${objective.verb} ${objective.structure}`;
+    const details = `${objective.initialValue} → ${objective.targetValue} (${objective.evaluationMethod})`;
+    const progress = objective.progress || 0;
+    
+    card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+            <div style="flex-grow: 1;">
+                <h4 style="margin: 0; font-size: 16px; color: var(--text-primary);">${title}</h4>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 3px;">${details}</div>
+            </div>
+            <div class="objective-badge ${statusClass}" style="font-size: 12px; padding: 3px 8px; border-radius: 12px; display: flex; align-items: center; gap: 5px;">
+                <i class="${statusIcon}"></i>
+                ${statusText}
+            </div>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+                <div style="color: var(--text-secondary);">Progreso</div>
+                <div>${progress}%</div>
+            </div>
+            <div style="height: 6px; background-color: var(--background); border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; width: ${progress}%; background-color: ${borderColor}; border-radius: 3px;"></div>
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-secondary);">
+            <div>Categoría: ${objective.category}</div>
+            <div><i class="far fa-calendar-alt"></i> ${formatDate(new Date(objective.endDate))}</div>
+        </div>
+    `;
+    
+    // Añadir evento de clic para ver detalles
+    card.addEventListener('click', function() {
+        openViewSpecificObjectiveModal(objective);
+    });
+    
+    return card;
+}
+
+// Abrir modal para ver detalles de objetivo específico
+function openViewSpecificObjectiveModal(objective) {
+    try {
+        const modal = document.getElementById('viewSpecificObjectiveModal');
+        if (!modal) {
+            console.error("Modal de visualización de objetivo no encontrado");
+            return;
+        }
+        
+        // Llenar el modal con los datos del objetivo
+        fillViewSpecificObjectiveModal(objective);
+        
+        // Mostrar modal
+        modal.style.display = 'block';
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Configurar eventos para botones
+        const closeBtn = document.getElementById('closeViewSpecificModal');
+        if (closeBtn) {
+            // Eliminar manejadores previos
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Botón de editar
+        const editBtn = document.getElementById('editSpecificObjectiveBtn');
+        if (editBtn) {
+            // Eliminar manejadores previos
+            const newEditBtn = editBtn.cloneNode(true);
+            editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+            
+            newEditBtn.addEventListener('click', function() {
+                // Cerrar este modal primero
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // Abrir modal de edición
+                    openSpecificObjectiveModal(currentPatientId, objective.id);
+                }, 300);
+            });
+        }
+        
+        // Botón de eliminar
+        const deleteBtn = document.getElementById('deleteSpecificObjectiveBtn');
+        if (deleteBtn) {
+            // Eliminar manejadores previos
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            
+            newDeleteBtn.addEventListener('click', function() {
+                // Confirmar eliminación
+                if (confirm('¿Está seguro que desea eliminar este objetivo específico?')) {
+                    deleteSpecificObjective(currentPatientId, objective.id);
+                    // Cerrar modal
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                    }, 300);
+                }
+            });
+        }
+        
+        // Botón de registro de progreso
+        const recordBtn = document.getElementById('recordProgressBtn');
+        if (recordBtn) {
+            // Eliminar manejadores previos
+            const newRecordBtn = recordBtn.cloneNode(true);
+            recordBtn.parentNode.replaceChild(newRecordBtn, recordBtn);
+            
+            newRecordBtn.addEventListener('click', function() {
+                // Cerrar este modal primero
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // Abrir modal de registro de progreso
+                    openRecordProgressModal(currentPatientId, objective);
+                }, 300);
+            });
+        }
+    } catch (error) {
+        console.error("Error al abrir modal de detalle de objetivo:", error);
+        showToast("Error al mostrar detalles del objetivo", "error");
+    }
+}
+
+// Llenar modal de visualización de objetivo específico
+function fillViewSpecificObjectiveModal(objective) {
+    // Título y descripción
+    const titleElement = document.getElementById('viewObjectiveTitle');
+    if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
+    
+    // Metadatos
+    const categoryElement = document.getElementById('viewObjectiveCategory');
+    const dateElement = document.getElementById('viewObjectiveDate');
+    const endDateElement = document.getElementById('viewObjectiveEndDate');
+    
+    if (categoryElement) categoryElement.textContent = objective.category || 'No especificada';
+    if (dateElement) dateElement.textContent = formatDate(new Date(objective.createdAt));
+    if (endDateElement) endDateElement.textContent = formatDate(new Date(objective.endDate));
+    
+    // Detalles
+    const parameterElement = document.getElementById('viewObjectiveParameter');
+    const methodElement = document.getElementById('viewObjectiveMethod');
+    const initialValueElement = document.getElementById('viewObjectiveInitialValue');
+    const targetValueElement = document.getElementById('viewObjectiveTargetValue');
+    const frequencyElement = document.getElementById('viewObjectiveFrequency');
+    const notesElement = document.getElementById('viewObjectiveNotes');
+    
+    if (parameterElement) parameterElement.textContent = objective.parameter || 'No especificado';
+    if (methodElement) methodElement.textContent = objective.evaluationMethod || 'No especificado';
+    if (initialValueElement) initialValueElement.textContent = objective.initialValue || 'No especificado';
+    if (targetValueElement) targetValueElement.textContent = objective.targetValue || 'No especificado';
+    if (frequencyElement) frequencyElement.textContent = objective.evaluationFrequency || 'No especificada';
+    if (notesElement) notesElement.textContent = objective.notes || 'Sin observaciones';
+    
+    // Progreso
+    const progressCircle = document.getElementById('viewProgressCircle');
+    const progressText = document.getElementById('viewProgressText');
+    const progressBar = document.getElementById('viewProgressBar');
+    const progressValue = document.getElementById('viewProgressValue');
+    const currentValue = document.getElementById('viewCurrentValue');
+    const objectiveStatus = document.getElementById('viewObjectiveStatus');
+    
+    const progress = objective.progress || 0;
+    
+    if (progressCircle) {
+        // Calcular offset para el círculo SVG (el círculo tiene radio 35, así que la circunferencia es 2πr)
+        const circumference = 2 * Math.PI * 35;
+        const offset = circumference - (circumference * progress / 100);
+        progressCircle.setAttribute('stroke-dasharray', circumference);
+        progressCircle.setAttribute('stroke-dashoffset', offset);
+    }
+    
+    if (progressText) progressText.textContent = `${progress}%`;
+    if (progressBar) progressBar.style.width = `${progress}%`;
+    if (progressValue) progressValue.textContent = `${progress}%`;
+    
+    if (currentValue) {
+        const current = objective.currentValue || objective.initialValue || 'No disponible';
+        currentValue.textContent = `Actual: ${current}`;
+    }
+    
+    if (objectiveStatus) {
+        let statusText = 'Pendiente';
+        switch(objective.status) {
+            case 'inprogress': statusText = 'En progreso'; break;
+            case 'completed': statusText = 'Completado'; break;
+        }
+        objectiveStatus.textContent = statusText;
+    }
+    
+    // Fechas de evaluación
+    const lastEvaluationElement = document.getElementById('viewLastEvaluation');
+    const nextEvaluationElement = document.getElementById('viewNextEvaluation');
+    
+    if (lastEvaluationElement) {
+        let lastEvalDate = 'No evaluado';
+        if (objective.progressHistory && objective.progressHistory.length > 0) {
+            const lastEntry = objective.progressHistory[objective.progressHistory.length - 1];
+            lastEvalDate = formatDate(new Date(lastEntry.date));
+        }
+        lastEvaluationElement.textContent = lastEvalDate;
+    }
+    
+    if (nextEvaluationElement) {
+        // Calcular próxima fecha según frecuencia
+        let nextDate = new Date();
+        if (objective.progressHistory && objective.progressHistory.length > 0) {
+            const lastEntry = objective.progressHistory[objective.progressHistory.length - 1];
+            nextDate = new Date(lastEntry.date);
+        }
+        
+        switch(objective.evaluationFrequency) {
+            case 'semanal':
+                nextDate.setDate(nextDate.getDate() + 7);
+                break;
+            case 'quincenal':
+                nextDate.setDate(nextDate.getDate() + 14);
+                break;
+            case 'mensual':
+                nextDate.setMonth(nextDate.getMonth() + 1);
+                break;
+            default:
+                nextDate.setDate(nextDate.getDate() + 14); // Predeterminado: quincenal
+        }
+        
+        nextEvaluationElement.textContent = formatDate(nextDate);
+    }
+}
+
+// Abrir modal para registrar progreso
+function openRecordProgressModal(patientId, objective) {
+    try {
+        const modal = document.getElementById('recordProgressModal');
+        if (!modal) {
+            console.error("Modal de registro de progreso no encontrado");
+            return;
+        }
+        
+        // Llenar el modal con los datos del objetivo
+        fillRecordProgressModal(objective);
+        
+        // Mostrar modal
+        modal.style.display = 'block';
+        setTimeout(() => modal.classList.add('active'), 50);
+        
+        // Configurar eventos para botones
+        const closeBtn = document.getElementById('closeRecordProgressModal');
+        if (closeBtn) {
+            // Eliminar manejadores previos
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Cancelar
+        const cancelBtn = document.getElementById('cancelProgressBtn');
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Guardar progreso
+        const saveBtn = document.getElementById('saveProgressBtn');
+        if (saveBtn) {
+            // Eliminar manejadores previos
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                saveObjectiveProgress(patientId, objective.id);
+            });
+        }
+        
+        // Configurar eventos para calcular progreso en tiempo real
+        const currentValueInput = document.getElementById('currentValueInput');
+        if (currentValueInput) {
+            // Eliminar manejadores previos
+            const newCurrentValueInput = currentValueInput.cloneNode(true);
+            currentValueInput.parentNode.replaceChild(newCurrentValueInput, currentValueInput);
+            
+            newCurrentValueInput.addEventListener('input', function() {
+                calculateProgress(objective);
+            });
+            
+            // Disparar evento para inicializar
+            newCurrentValueInput.dispatchEvent(new Event('input'));
+        }
+    } catch (error) {
+        console.error("Error al abrir modal de registro de progreso:", error);
+        showToast("Error al abrir formulario de progreso", "error");
+    }
+}
+
+// Llenar modal de registro de progreso
+function fillRecordProgressModal(objective) {
+    // Título y detalles
+    const titleElement = document.getElementById('progressObjectiveTitle');
+    const detailElement = document.getElementById('progressObjectiveDetail');
+    
+    if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
+    if (detailElement) {
+        detailElement.textContent = `Valor inicial: ${objective.initialValue} → Valor objetivo: ${objective.targetValue} (${objective.evaluationMethod})`;
+    }
+    
+    // Fecha actual
+    const dateInput = document.getElementById('progressDateInput');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    
+    // Valor actual
+    const currentValueInput = document.getElementById('currentValueInput');
+    const unitLabel = document.getElementById('progressUnitLabel');
+    
+    if (currentValueInput) currentValueInput.value = objective.currentValue || objective.initialValue || '';
+    
+    if (unitLabel) {
+        // Extraer unidad del método (generalmente entre paréntesis)
+        let unit = '';
+        if (objective.evaluationMethod) {
+            const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
+            if (match && match[1]) {
+                unit = match[1];
+            }
+        }
+        
+        // Si no se encontró unidad, usar texto genérico
+        if (!unit) unit = 'unidad';
+        
+        unitLabel.textContent = unit;
+    }
+    
+    // Notas
+    const notesInput = document.getElementById('progressNotes');
+    if (notesInput) notesInput.value = '';
+}
+
+// Calcular progreso en tiempo real
+function calculateProgress(objective) {
+    try {
+        const currentValueInput = document.getElementById('currentValueInput');
+        if (!currentValueInput) return;
+        
+        const currentValue = currentValueInput.value;
+        if (!currentValue) return;
+        
+        // Obtener elementos de UI
+        const progressCircle = document.getElementById('progressCircle');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const progressIncrease = document.getElementById('progressIncrease');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        // Extraer valores numéricos
+        let initialNum = extractNumericValue(objective.initialValue);
+        let targetNum = extractNumericValue(objective.targetValue);
+        let currentNum = extractNumericValue(currentValue);
+        
+        if (initialNum === null || targetNum === null || currentNum === null) {
+            // No se pueden extraer valores numéricos, usar progreso manual
+            let manualProgress = 0;
+            
+            // Intentar identificar si es un valor de escala tipo "3/5"
+            const initialScale = parseScale(objective.initialValue);
+            const targetScale = parseScale(objective.targetValue);
+            const currentScale = parseScale(currentValue);
+            
+            if (initialScale && targetScale && currentScale) {
+                // Calcular progreso proporcional
+                const totalRange = targetScale - initialScale;
+                const currentProgress = currentScale - initialScale;
+                
+                if (totalRange !== 0) {
+                    manualProgress = (currentProgress / totalRange) * 100;
+                }
+            }
+            
+            // Limitar a valores entre 0 y 100
+            manualProgress = Math.max(0, Math.min(100, manualProgress));
+            
+            // Actualizar UI
+            updateProgressUI(manualProgress);
+            return;
+        }
+        
+        // Calcular progreso
+        let progress = 0;
+        
+        // Si el objetivo es aumentar un valor
+        if (targetNum > initialNum) {
+            progress = ((currentNum - initialNum) / (targetNum - initialNum)) * 100;
+        }
+        // Si el objetivo es disminuir un valor
+        else if (targetNum < initialNum) {
+            progress = ((initialNum - currentNum) / (initialNum - targetNum)) * 100;
+        }
+        // Si inicial y objetivo son iguales
+        else {
+            progress = currentNum >= targetNum ? 100 : 0;
+        }
+        
+        // Limitar a valores entre 0 y 100
+        progress = Math.max(0, Math.min(100, progress));
+        
+        // Redondear a entero
+        progress = Math.round(progress);
+        
+        // Actualizar UI
+        updateProgressUI(progress);
+        
+        // Determinar estado
+        const previousValue = objective.currentValue || objective.initialValue;
+        let previousNum = extractNumericValue(previousValue);
+        
+        if (previousNum === null) {
+            previousNum = parseScale(previousValue) || 0;
+        }
+        
+        // Calcular cambio desde la última evaluación
+        let change = 0;
+        
+        if (targetNum > initialNum) {
+            // El objetivo es aumentar
+            change = currentNum - previousNum;
+        } else {
+            // El objetivo es disminuir
+            change = previousNum - currentNum;
+        }
+        
+        // Actualizar texto de incremento
+        if (progressIncrease) {
+            if (change > 0) {
+                progressIncrease.textContent = `+${change.toFixed(1)} desde última evaluación`;
+                progressIncrease.style.color = '#4CAF50'; // Verde para mejora
+            } else if (change < 0) {
+                progressIncrease.textContent = `${change.toFixed(1)} desde última evaluación`;
+                progressIncrease.style.color = '#F44336'; // Rojo para retroceso
+            } else {
+                progressIncrease.textContent = 'Sin cambios desde última evaluación';
+                progressIncrease.style.color = '#9E9E9E'; // Gris para sin cambios
+            }
+        }
+        
+        // Actualizar estado
+        if (progressStatus) {
+            if (progress >= 100) {
+                progressStatus.textContent = 'Completado';
+                progressStatus.style.color = '#4CAF50'; // Verde para completado
+            } else if (progress > 0) {
+                progressStatus.textContent = 'En progreso';
+                progressStatus.style.color = '#2196F3'; // Azul para en progreso
+            } else {
+                progressStatus.textContent = 'Pendiente';
+                progressStatus.style.color = '#9E9E9E'; // Gris para pendiente
+            }
+        }
+    } catch (error) {
+        console.error("Error al calcular progreso:", error);
+    }
+}
+
+// Actualizar UI de progreso
+function updateProgressUI(progress) {
+    const progressCircle = document.getElementById('progressCircle');
+    const progressText = document.getElementById('progressText');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercentage = document.getElementById('progressPercentage');
+    
+    // Actualizar círculo de progreso
+    if (progressCircle) {
+        const circumference = 2 * Math.PI * 35;
+        const offset = circumference - (circumference * progress / 100);
+        progressCircle.setAttribute('stroke-dasharray', circumference);
+        progressCircle.setAttribute('stroke-dashoffset', offset);
+    }
+    
+    // Actualizar texto de porcentaje
+    if (progressText) progressText.textContent = `${progress}%`;
+    if (progressPercentage) progressPercentage.textContent = `${progress}%`;
+    
+    // Actualizar barra de progreso
+    if (progressBar) progressBar.style.width = `${progress}%`;
+}
+
+// Extraer valor numérico de un texto
+function extractNumericValue(text) {
+    if (!text) return null;
+    
+    // Intentar convertir directamente a número
+    const directNum = parseFloat(text);
+    if (!isNaN(directNum)) return directNum;
+    
+    // Buscar números en el texto
+    const numMatch = text.match(/-?\d+(\.\d+)?/);
+    if (numMatch) return parseFloat(numMatch[0]);
+    
+    return null;
+}
+
+// Analizar valor de escala (ej: "3/5" -> 3)
+function parseScale(text) {
+    if (!text) return null;
+    
+    // Buscar patrón de escala: número/número
+    const scaleMatch = text.match(/(\d+)\/(\d+)/);
+    if (scaleMatch) {
+        const numerator = parseInt(scaleMatch[1]);
+        return numerator;
+    }
+    
+    return null;
+}
+
+// Guardar progreso de objetivo
+async function saveObjectiveProgress(patientId, objectiveId) {
+    try {
+        if (!patientId || !objectiveId) {
+            showToast("Error: Faltan datos para guardar progreso", "error");
+            return;
+        }
+        
+        // Obtener valores del formulario
+        const progressDate = document.getElementById('progressDateInput')?.value;
+        const currentValue = document.getElementById('currentValueInput')?.value;
+        const notes = document.getElementById('progressNotes')?.value || '';
+        
+        if (!progressDate) {
+            showToast("La fecha de evaluación es obligatoria", "error");
+            return;
+        }
+        
+        if (!currentValue) {
+            showToast("El valor actual es obligatorio", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        // Obtener objetivo actual
+        const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
+        const objectiveSnap = await getDoc(objectiveRef);
+        
+        if (!objectiveSnap.exists()) {
+            hideLoading();
+            showToast("Error: Objetivo no encontrado", "error");
+            return;
+        }
+        
+        const objective = objectiveSnap.data();
+        
+        // Calcular progreso
+        const initialVal = objective.initialValue;
+        const targetVal = objective.targetValue;
+        
+        // Extraer valores numéricos
+        let initialNum = extractNumericValue(initialVal);
+        let targetNum = extractNumericValue(targetVal);
+        let currentNum = extractNumericValue(currentValue);
+        
+        let progress = 0;
+        let status = 'pending';
+        
+        if (initialNum !== null && targetNum !== null && currentNum !== null) {
+            // Si el objetivo es aumentar un valor
+            if (targetNum > initialNum) {
+                progress = ((currentNum - initialNum) / (targetNum - initialNum)) * 100;
+            }
+            // Si el objetivo es disminuir un valor
+            else if (targetNum < initialNum) {
+                progress = ((initialNum - currentNum) / (initialNum - targetNum)) * 100;
+            }
+            // Si inicial y objetivo son iguales
+            else {
+                progress = currentNum >= targetNum ? 100 : 0;
+            }
+        } else {
+            // Intentar con valores de escala
+            const initialScale = parseScale(initialVal);
+            const targetScale = parseScale(targetVal);
+            const currentScale = parseScale(currentValue);
+            
+            if (initialScale !== null && targetScale !== null && currentScale !== null) {
+                const totalRange = targetScale - initialScale;
+                const currentProgress = currentScale - initialScale;
+                
+                if (totalRange !== 0) {
+                    progress = (currentProgress / totalRange) * 100;
+                }
+            }
+        }
+        
+        // Limitar a valores entre 0 y 100
+        progress = Math.max(0, Math.min(100, Math.round(progress)));
+        
+        // Determinar estado
+        if (progress >= 100) {
+            status = 'completed';
+        } else if (progress > 0) {
+            status = 'inprogress';
+        }
+        
+        // Crear entrada de historial
+        const progressEntry = {
+            date: progressDate,
+            value: currentValue,
+            notes: notes
+        };
+        
+        // Actualizar objeto de objetivo
+        const progressHistory = objective.progressHistory || [];
+        progressHistory.push(progressEntry);
+        
+        const updatedData = {
+            currentValue: currentValue,
+            progress: progress,
+            status: status,
+            updatedAt: new Date().toISOString(),
+            progressHistory: progressHistory
+        };
+        
+        // Guardar en Firebase
+        await updateDoc(objectiveRef, updatedData);
+        
+        // Actualizar caché
+        if (objectivesCache[patientId] && 
+            objectivesCache[patientId].specific && 
+            objectivesCache[patientId].specific[objectiveId]) {
+            
+            objectivesCache[patientId].specific[objectiveId] = {
+                ...objectivesCache[patientId].specific[objectiveId],
+                ...updatedData
+            };
+        }
+        
+        // Actualizar progreso general
+        await updateGeneralObjectiveProgress(patientId);
+        
+        // Actualizar UI
+        updateObjectivesUI(patientId);
+        
+        // Cerrar modal
+        const modal = document.getElementById('recordProgressModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+        
+        hideLoading();
+        showToast("Progreso guardado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al guardar progreso:", error);
+        showToast("Error al guardar progreso: " + error.message, "error");
+    }
+}
+
+// Actualizar progreso del objetivo general
+async function updateGeneralObjectiveProgress(patientId) {
+    try {
+        if (!patientId) return;
+        
+        // Obtener todos los objetivos específicos
+        const objectivesRef = collection(db, "patients", patientId, "objectives");
+        // No incluir el objetivo general
+        const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
+        const objectivesSnap = await getDocs(objectivesQuery);
+        
+        if (objectivesSnap.empty) return;
+        
+        // Calcular progreso general
+        let totalProgress = 0;
+        let objectivesCount = 0;
+        
+        objectivesSnap.docs.forEach(doc => {
+            const obj = doc.data();
+            totalProgress += (obj.progress || 0);
+            objectivesCount++;
+        });
+        
+        // Calcular promedio
+        const avgProgress = objectivesCount > 0 ? Math.round(totalProgress / objectivesCount) : 0;
+        
+        // Actualizar objetivo general
+        const generalRef = doc(db, "patients", patientId, "objectives", "general");
+        const generalSnap = await getDoc(generalRef);
+        
+        if (generalSnap.exists()) {
+            await updateDoc(generalRef, {
+                progress: avgProgress,
+                updatedAt: new Date().toISOString()
+            });
+            
+            // Actualizar caché
+            if (objectivesCache[patientId] && objectivesCache[patientId].general) {
+                objectivesCache[patientId].general = {
+                    ...objectivesCache[patientId].general,
+                    progress: avgProgress,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+        }
+    } catch (error) {
+        console.error("Error al actualizar progreso general:", error);
+    }
+}
+
+// Eliminar objetivo específico
+async function deleteSpecificObjective(patientId, objectiveId) {
+    try {
+        if (!patientId || !objectiveId) {
+            showToast("Error: Faltan datos para eliminar objetivo", "error");
+            return;
+        }
+        
+        showLoading();
+        
+        // Eliminar de Firebase
+        const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
+        await deleteDoc(objectiveRef);
+        
+        // Eliminar de caché
+        if (objectivesCache[patientId] && 
+            objectivesCache[patientId].specific && 
+            objectivesCache[patientId].specific[objectiveId]) {
+            
+            delete objectivesCache[patientId].specific[objectiveId];
+        }
+        
+        // Actualizar progreso general
+        await updateGeneralObjectiveProgress(patientId);
+        
+        // Actualizar UI
+        updateObjectivesUI(patientId);
+        
+        hideLoading();
+        showToast("Objetivo eliminado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar objetivo:", error);
+        showToast("Error al eliminar objetivo: " + error.message, "error");
+    }
+}
+
+// Actualizar estadísticas de objetivos
+function updateObjectivesStatistics(patientId) {
+    try {
+        if (!patientId) return;
+        
+        // Verificar si hay objetivos en caché
+        if (!objectivesCache[patientId] || !objectivesCache[patientId].specific) return;
+        
+        const specificObjectives = Object.values(objectivesCache[patientId].specific);
+        if (specificObjectives.length === 0) return;
+        
+        // Contar objetivos por estado
+        let completed = 0;
+        let inProgress = 0;
+        let pending = 0;
+        
+        specificObjectives.forEach(obj => {
+            switch(obj.status) {
+                case 'completed': completed++; break;
+                case 'inprogress': inProgress++; break;
+                default: pending++; break;
+            }
+        });
+        
+        // Actualizar contadores
+        const completedElement = document.getElementById('completedObjectivesCount');
+        const inProgressElement = document.getElementById('inProgressObjectivesCount');
+        const pendingElement = document.getElementById('pendingObjectivesCount');
+        
+        if (completedElement) completedElement.textContent = completed;
+        if (inProgressElement) inProgressElement.textContent = inProgress;
+        if (pendingElement) pendingElement.textContent = pending;
+        
+        // Actualizar gráfico de dona
+        updateDonutChart(completed, inProgress, pending);
+        
+        // Actualizar velocímetro de progreso general
+        updateGaugeChart();
+        
+        // Actualizar tiempo restante estimado
+        updateRemainingTime(patientId);
+    } catch (error) {
+        console.error("Error al actualizar estadísticas:", error);
+    }
+}
+
+// Actualizar gráfico de dona
+function updateDonutChart(completed, inProgress, pending) {
+    try {
+        const container = document.getElementById('objectivesDonutChart');
+        if (!container) return;
+        
+        const total = completed + inProgress + pending;
+        if (total === 0) return;
+        
+        // Calcular porcentajes
+        const completedPerc = (completed / total) * 100;
+        const inProgressPerc = (inProgress / total) * 100;
+        const pendingPerc = (pending / total) * 100;
+        
+        // Calcular longitudes de arco (la circunferencia completa es 502.4 = 2 * PI * 80)
+        const circumference = 2 * Math.PI * 80;
+        const completedLength = (completedPerc / 100) * circumference;
+        const inProgressLength = (inProgressPerc / 100) * circumference;
+        const pendingLength = (pendingPerc / 100) * circumference;
+        
+        // Calcular offsets
+        const completedOffset = 0;
+        const inProgressOffset = -completedLength;
+        const pendingOffset = -(completedLength + inProgressLength);
+        
+        // Generar SVG
+        container.innerHTML = `
+            <svg width="200" height="200" viewBox="0 0 200 200">
+                <!-- Círculo de fondo -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#e0e0e0" stroke-width="20"/>
+                
+                <!-- Segmentos de progreso -->
+                ${completedPerc > 0 ? `
+                <!-- Completados (verde) -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#4CAF50" stroke-width="20" 
+                        stroke-dasharray="${completedLength} ${circumference}" stroke-dashoffset="${completedOffset}"
+                        transform="rotate(-90 100 100)"/>
+                ` : ''}
+                
+                ${inProgressPerc > 0 ? `
+                <!-- En progreso (azul) -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#2196F3" stroke-width="20" 
+                        stroke-dasharray="${inProgressLength} ${circumference}" stroke-dashoffset="${inProgressOffset}"
+                        transform="rotate(-90 100 100)"/>
+                ` : ''}
+                
+                ${pendingPerc > 0 ? `
+                <!-- Pendientes (gris) -->
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#9E9E9E" stroke-width="20" 
+                        stroke-dasharray="${pendingLength} ${circumference}" stroke-dashoffset="${pendingOffset}"
+                        transform="rotate(-90 100 100)"/>
+                ` : ''}
+                
+                <!-- Texto central -->
+                <text x="100" y="95" text-anchor="middle" font-size="16" font-weight="bold">${completed}/${total}</text>
+                <text x="100" y="115" text-anchor="middle" font-size="12">objetivos</text>
+            </svg>
+        `;
+    } catch (error) {
+        console.error("Error al actualizar gráfico de dona:", error);
+    }
+}
+
+// Actualizar gráfico de velocímetro
+function updateGaugeChart() {
+    try {
+        const container = document.getElementById('objectivesGaugeChart');
+        if (!container) return;
+        
+        // Obtener progreso general
+        let generalProgress = 0;
+        
+        if (objectivesCache[currentPatientId] && objectivesCache[currentPatientId].general) {
+            generalProgress = objectivesCache[currentPatientId].general.progress || 0;
+        }
+        
+        // Calcular ángulo para la aguja (el arco va de 0 a 180 grados)
+        const angle = (generalProgress / 100) * 180 - 90;
+        const radians = angle * Math.PI / 180;
+        const x = 100 + 70 * Math.cos(radians);
+        const y = 100 + 70 * Math.sin(radians);
+        
+        // Calcular longitud del arco (la circunferencia de medio círculo es PI * r)
+        const arcLength = Math.PI * 90;
+        const progressArcLength = (generalProgress / 100) * arcLength;
+        
+        // Determinar color según progreso
+        let progressColor = '#9E9E9E'; // Gris por defecto
+        
+        if (generalProgress >= 75) {
+            progressColor = '#4CAF50'; // Verde para buen progreso
+        } else if (generalProgress >= 25) {
+            progressColor = '#2196F3'; // Azul para progreso moderado
+        } else if (generalProgress > 0) {
+            progressColor = '#FFC107'; // Ámbar para progreso bajo
+        }
+        
+        // Generar SVG
+        container.innerHTML = `
+            <svg width="200" height="115" viewBox="0 0 200 115">
+                <!-- Arco de fondo -->
+                <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="#e0e0e0" stroke-width="10"/>
+                
+                <!-- Arco de progreso -->
+                <path d="M 10 100 A 90 90 0 0 1 ${generalProgress > 0 ? ((generalProgress >= 100 ? 190 : 10 + 180 * generalProgress/100)) : 10} 100" 
+                      fill="none" stroke="${progressColor}" stroke-width="10"/>
+                
+                <!-- Aguja indicadora -->
+                <line x1="100" y1="100" x2="${x}" y2="${y}" stroke="#333" stroke-width="2"/>
+                <circle cx="100" cy="100" r="5" fill="#333"/>
+                
+                <!-- Texto de porcentaje -->
+                <text x="100" y="130" text-anchor="middle" font-size="16" font-weight="bold" id="generalProgressText">${generalProgress}%</text>
+            </svg>
+        `;
+        
+        // Actualizar texto de progreso en otros lugares
+        const generalProgressText = document.getElementById('generalProgressText');
+        if (generalProgressText && generalProgressText.id !== 'generalProgressText') {
+            generalProgressText.textContent = `${generalProgress}%`;
+        }
+    } catch (error) {
+        console.error("Error al actualizar gráfico de velocímetro:", error);
+    }
+}
+
+// Calcular tiempo restante estimado
+function updateRemainingTime(patientId) {
+    try {
+        const remainingTimeText = document.getElementById('remainingTimeText');
+        const estimatedEndDateText = document.getElementById('estimatedEndDateText');
+        
+        if (!remainingTimeText || !estimatedEndDateText) return;
+        
+        // Verificar si hay objetivos específicos
+        if (!objectivesCache[patientId] || !objectivesCache[patientId].specific) {
+            remainingTimeText.textContent = 'No hay objetivos específicos';
+            estimatedEndDateText.textContent = '-';
+            return;
+        }
+        
+        const specificObjectives = Object.values(objectivesCache[patientId].specific);
+        if (specificObjectives.length === 0) {
+            remainingTimeText.textContent = 'No hay objetivos específicos';
+            estimatedEndDateText.textContent = '-';
+            return;
+        }
+        
+        // Encontrar la fecha de finalización más lejana
+        let latestEndDate = null;
+        
+        specificObjectives.forEach(obj => {
+            if (obj.status !== 'completed' && obj.endDate) {
+                const endDate = new Date(obj.endDate);
+                
+                if (!latestEndDate || endDate > latestEndDate) {
+                    latestEndDate = endDate;
+                }
+            }
+        });
+        
+        if (!latestEndDate) {
+            // No hay objetivos pendientes o en progreso con fecha de finalización
+            remainingTimeText.textContent = 'Todos los objetivos completados';
+            estimatedEndDateText.textContent = '-';
+            return;
+        }
+        
+        // Calcular tiempo restante
+        const today = new Date();
+        const diffTime = latestEndDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 0) {
+            remainingTimeText.textContent = 'Fecha objetivo vencida';
+            estimatedEndDateText.textContent = formatDate(latestEndDate);
+            remainingTimeText.style.color = '#F44336'; // Rojo para vencido
+            return;
+        }
+        
+        // Convertir días a formato legible
+        let timeText = '';
+        
+        if (diffDays >= 30) {
+            const months = Math.floor(diffDays / 30);
+            const remainingDays = diffDays % 30;
+            
+            timeText = `${months} ${months === 1 ? 'mes' : 'meses'}`;
+            
+            if (remainingDays > 0) {
+                timeText += ` y ${remainingDays} ${remainingDays === 1 ? 'día' : 'días'}`;
+            }
+        } else {
+            timeText = `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+        }
+        
+        remainingTimeText.textContent = timeText;
+        estimatedEndDateText.textContent = formatDate(latestEndDate);
+        remainingTimeText.style.color = ''; // Color por defecto
+    } catch (error) {
+        console.error("Error al calcular tiempo restante:", error);
+    }
+}
+
+// Botón para editar objetivo general
+document.getElementById('editGeneralObjectiveBtn').addEventListener('click', function() {
+    openGeneralObjectiveModal(currentPatientId);
+});
+
+// Botón para añadir objetivo específico
+document.getElementById('addSpecificObjectiveBtn').addEventListener('click', function() {
+    openSpecificObjectiveModal(currentPatientId);
+});
+
+// Botón para actualizar estado de objetivos
+document.getElementById('refreshObjectivesBtn').addEventListener('click', function() {
+    updateObjectivesUI(currentPatientId);
+    showToast("Objetivos actualizados", "info");
+});
+
+// Actualizar configuración inicial al cargar pestaña de diagnóstico
+const oldInitDiagnosisTab = initDiagnosisTab;
+initDiagnosisTab = async function(patientId) {
+    await oldInitDiagnosisTab(patientId);
+    updateObjectivesUI(patientId);
+};
 
 // Actualizar vista previa del progreso del objetivo
 function updateObjectiveProgressPreview(progress) {
