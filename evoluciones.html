@@ -4942,50 +4942,53 @@ function fillGeneralObjectiveForm(objective) {
 // Configurar previsualización de objetivo general
 function configureGeneralObjectivePreview() {
     // Obtener elementos del asistente
-    const patientTypeSelect = document.getElementById('patientTypeSelect');
     const mainGoalSelect = document.getElementById('mainGoalSelect');
     const functionalAspectSelect = document.getElementById('functionalAspectSelect');
     const bodyAreaInput = document.getElementById('bodyAreaInput');
+    const participationSelect = document.getElementById('participationSelect');
     const timeFrameInput = document.getElementById('timeFrameInput');
     const timeUnitSelect = document.getElementById('timeUnitSelect');
     const previewElement = document.getElementById('objectivePreview');
     
     // Función para actualizar vista previa
-    function updatePreview() {
+    function updateObjectivePreview() {
         if (!previewElement) return;
         
-        const patientType = patientTypeSelect?.value || 'paciente';
-        const mainGoal = mainGoalSelect?.value || 'recuperar';
-        const functionalAspect = functionalAspectSelect?.value || 'función';
-        const bodyArea = bodyAreaInput?.value || '';
+        const action = mainGoalSelect?.value || 'Mejorar';
+        const functionalAspect = functionalAspectSelect?.value || 'la capacidad funcional';
+        const bodyArea = bodyAreaInput?.value?.trim() || '';
+        const participation = participationSelect?.value || 'para la realización autónoma de actividades de la vida diaria';
         const timeFrame = timeFrameInput?.value || '4';
         const timeUnit = timeUnitSelect?.value || 'semanas';
         
-        let previewText = `El ${patientType} ${mainGoal}á la ${functionalAspect}`;
+        let previewText = `${action} ${functionalAspect}`;
         
         if (bodyArea) {
-            previewText += ` de ${bodyArea}`;
+            previewText += ` ${bodyArea}`;
         }
         
-        previewText += ` en un plazo de ${timeFrame} ${timeUnit}.`;
+        previewText += ` ${participation} en un plazo de ${timeFrame} ${timeUnit}.`;
         
         previewElement.textContent = previewText;
     }
     
     // Configurar eventos para actualización en tiempo real
-    const inputs = [patientTypeSelect, mainGoalSelect, functionalAspectSelect, timeFrameInput, timeUnitSelect];
+    const inputs = [mainGoalSelect, functionalAspectSelect, participationSelect, timeFrameInput, timeUnitSelect];
     inputs.forEach(input => {
         if (input) {
-            input.addEventListener('change', updatePreview);
+            input.addEventListener('change', updateObjectivePreview);
         }
     });
     
     if (bodyAreaInput) {
-        bodyAreaInput.addEventListener('input', updatePreview);
+        bodyAreaInput.addEventListener('input', updateObjectivePreview);
     }
     
+    // Añadir la función al objeto window para que esté disponible globalmente
+    window.updateObjectivePreview = updateObjectivePreview;
+    
     // Actualización inicial
-    updatePreview();
+    updateObjectivePreview();
 }
 
 // Mostrar asistente de objetivo general
