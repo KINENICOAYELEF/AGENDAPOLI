@@ -10410,6 +10410,16 @@ function setupCommandShortcuts() {
     });
 }
 
+        // Botón para exportar objetivos a PDF
+document.getElementById('exportObjectivesPdfBtn').addEventListener('click', function() {
+    if (!currentPatientId) {
+        showToast("Error: No hay paciente seleccionado", "error");
+        return;
+    }
+    
+    exportObjectivesToPDF(currentPatientId);
+});
+
 // Initialize app
 async function initApp() {
     try {
