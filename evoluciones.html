@@ -5209,6 +5209,13 @@ function openSpecificObjectiveModal(patientId, objectiveId = null) {
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
+
+        // Generar un ejemplo predeterminado en la vista previa
+        const previewElement = document.getElementById('specificObjectivePreview');
+        if (previewElement) {
+            const defaultExample = "Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.";
+            previewElement.textContent = defaultExample;
+        }
         
         // Si es edición, cargar los datos del objetivo
         if (objectiveId) {
@@ -5470,7 +5477,6 @@ function updateUnits(method) {
     unitLabel2.textContent = unit;
 }
 
-// Configurar previsualización de objetivo específico
 function configureSpecificObjectivePreview() {
     // Obtener elementos del formulario
     const actionVerbSelect = document.getElementById('actionVerbSelect');
@@ -5488,15 +5494,15 @@ function configureSpecificObjectivePreview() {
         if (!previewElement) return;
         
         const verb = actionVerbSelect?.value || 'Aumentar';
-        const structure = structureInput?.value || '[estructura/función]';
-        const initialValue = initialValueInput?.value || '[valor inicial]';
-        const targetValue = targetValueInput?.value || '[valor objetivo]';
+        const structure = structureInput?.value || 'la fuerza de abductores de hombro derecho';
+        const initialValue = initialValueInput?.value || '3/5';
+        const targetValue = targetValueInput?.value || '4/5';
         
         let methodText = '';
         if (evaluationMethodSelect?.value === 'custom') {
             methodText = customMethodInput?.value || 'método personalizado';
         } else {
-            methodText = evaluationMethodSelect?.value || 'método de evaluación';
+            methodText = evaluationMethodSelect?.value || 'escala de Daniels';
         }
         
         const duration = durationInput?.value || '2';
@@ -5505,6 +5511,9 @@ function configureSpecificObjectivePreview() {
         let previewText = `${verb} ${structure} de ${initialValue} a ${targetValue} en ${methodText} en un plazo de ${duration} ${durationUnit}.`;
         
         previewElement.textContent = previewText;
+        
+        // Guardar ejemplo en variable global para poder usarlo después
+        window.currentObjectivePreview = previewText;
     }
     
     // Configurar eventos para actualización en tiempo real
@@ -5530,6 +5539,30 @@ function configureSpecificObjectivePreview() {
     
     // Actualización inicial
     updatePreview();
+    
+    // Añadir botón para usar ejemplo en la descripción
+    const useExampleBtn = document.createElement('button');
+    useExampleBtn.type = 'button';
+    useExampleBtn.className = 'action-btn btn-secondary';
+    useExampleBtn.style.marginTop = '10px';
+    useExampleBtn.style.marginLeft = '10px';
+    useExampleBtn.innerHTML = '<i class="fas fa-check"></i> Usar este ejemplo';
+    
+    if (previewElement && previewElement.parentNode) {
+        // Asegurarnos de que no añadimos el botón dos veces
+        const existingBtn = previewElement.parentNode.querySelector('button.action-btn');
+        if (!existingBtn) {
+            previewElement.parentNode.appendChild(useExampleBtn);
+            
+            useExampleBtn.addEventListener('click', function() {
+                const descInput = document.getElementById('specificObjectiveNotes');
+                if (descInput && window.currentObjectivePreview) {
+                    descInput.value = window.currentObjectivePreview;
+                    showToast("Ejemplo copiado a observaciones", "success");
+                }
+            });
+        }
+    }
 }
 
 // Cargar objetivo específico para edición
@@ -12132,45 +12165,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Botón para eliminar objetivo general
-    const deleteGeneralObjectiveBtn = document.getElementById('deleteGeneralObjectiveBtn');
-    if (deleteGeneralObjectiveBtn) {
-        deleteGeneralObjectiveBtn.addEventListener('click', async function() {
-            if (!currentPatientId) {
-                showToast("Error: No hay paciente seleccionado", "error");
-                return;
-            }
-            
-            if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
-                try {
-                    showLoading();
-                    
-                    // Referencia al documento del paciente
-                    const patientRef = doc(db, "patients", currentPatientId);
-                    
-                    // Actualizar el documento para eliminar el objetivo general
-                    await updateDoc(patientRef, {
-                        generalObjective: null
-                    });
-                    
-                    // Actualizar la interfaz
-                    const generalObjectiveContainer = document.getElementById('generalObjectiveContainer');
-                    const noGeneralObjective = document.getElementById('noGeneralObjective');
-                    const generalObjectiveContent = document.getElementById('generalObjectiveContent');
-                    
-                    if (generalObjectiveContainer) generalObjectiveContainer.style.display = 'block';
-                    if (noGeneralObjective) noGeneralObjective.style.display = 'block';
-                    if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
-                    
-                    hideLoading();
-                    showToast("Objetivo general eliminado correctamente", "success");
-                } catch (error) {
-                    console.error("Error eliminando objetivo general:", error);
-                    hideLoading();
-                    showToast("Error al eliminar objetivo general: " + error.message, "error");
+const deleteGeneralObjectiveBtn = document.getElementById('deleteGeneralObjectiveBtn');
+if (deleteGeneralObjectiveBtn) {
+    // Clonar el botón para eliminar event listeners anteriores
+    const newBtn = deleteGeneralObjectiveBtn.cloneNode(true);
+    deleteGeneralObjectiveBtn.parentNode.replaceChild(newBtn, deleteGeneralObjectiveBtn);
+    
+    newBtn.addEventListener('click', async function() {
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
+            try {
+                showLoading();
+                
+                // Eliminar directamente el documento de objetivo general
+                const objectiveRef = doc(db, "patients", currentPatientId, "objectives", "general");
+                await deleteDoc(objectiveRef);
+                
+                // Limpiar caché
+                if (objectivesCache[currentPatientId] && objectivesCache[currentPatientId].general) {
+                    delete objectivesCache[currentPatientId].general;
                 }
+                
+                // Actualizar la interfaz
+                const noGeneralObjective = document.getElementById('noGeneralObjective');
+                const generalObjectiveContent = document.getElementById('generalObjectiveContent');
+                
+                if (noGeneralObjective) noGeneralObjective.style.display = 'block';
+                if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
+                
+                hideLoading();
+                showToast("Objetivo general eliminado correctamente", "success");
+            } catch (error) {
+                hideLoading();
+                console.error("Error eliminando objetivo general:", error);
+                showToast("Error al eliminar objetivo general: " + error.message, "error");
             }
-        });
-    }
+        }
+    });
+}
 
     // Manejar plantillas de objetivos específicos
     const templateBtns = document.querySelectorAll('.template-btn[data-template]');
