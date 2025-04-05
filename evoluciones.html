@@ -1033,10 +1033,10 @@
             <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin: 15px 0;">
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
                     <i class="fas fa-lightbulb" style="color: var(--primary); margin-right: 10px; font-size: 18px;"></i>
-                    <h4 style="margin: 0; color: var(--primary);">Asistente de Objetivos SMART</h4>
+                    <h4 style="margin: 0; color: var(--primary);">Asistente de Objetivos Biopsicosociales</h4>
                 </div>
                 <p style="margin-bottom: 15px; font-size: 14px;">
-                    Un objetivo bien formulado debe ser <strong>Específico</strong>, <strong>Medible</strong>, <strong>Alcanzable</strong>, <strong>Relevante</strong> y <strong>Temporal</strong>.
+                    Un objetivo general bien formulado debe seguir la estructura: <strong>Verbo de Acción + Capacidad Funcional Integradora + para/con el fin de + Actividad/Participación Deseada</strong>.
                 </p>
                 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
@@ -1055,53 +1055,57 @@
                 </div>
                 
                 <div id="generalObjectiveAssistant" style="display: none; background-color: white; padding: 15px; border-radius: 5px; margin-top: 10px;">
-                    <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Construcción del objetivo</h5>
+                    <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Construcción del objetivo biopsicosocial</h5>
                     
                     <div class="form-group">
-                        <label class="form-label">Paciente/Cliente</label>
-                        <select class="form-control" id="patientTypeSelect">
-                            <option value="paciente">Paciente</option>
-                            <option value="deportista">Deportista</option>
-                            <option value="adulto mayor">Adulto mayor</option>
-                            <option value="cliente">Cliente</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Objetivo principal</label>
+                        <label class="form-label">1. Verbo de acción</label>
                         <select class="form-control" id="mainGoalSelect">
-                            <option value="recuperar">Recuperar</option>
-                            <option value="mejorar">Mejorar</option>
-                            <option value="optimizar">Optimizar</option>
-                            <option value="mantener">Mantener</option>
-                            <option value="restaurar">Restaurar</option>
-                            <option value="desarrollar">Desarrollar</option>
+                            <option value="Recuperar">Recuperar</option>
+                            <option value="Mejorar">Mejorar</option>
+                            <option value="Optimizar">Optimizar</option>
+                            <option value="Mantener">Mantener</option>
+                            <option value="Restaurar">Restaurar</option>
+                            <option value="Desarrollar">Desarrollar</option>
+                            <option value="Reintegrar">Reintegrar</option>
+                            <option value="Aumentar">Aumentar</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Aspecto funcional</label>
+                        <label class="form-label">2. Capacidad funcional integradora</label>
                         <select class="form-control" id="functionalAspectSelect">
-                            <option value="función">función</option>
-                            <option value="capacidad funcional">capacidad funcional</option>
-                            <option value="movilidad">movilidad</option>
-                            <option value="equilibrio">equilibrio</option>
-                            <option value="fuerza">fuerza</option>
-                            <option value="capacidad aeróbica">capacidad aeróbica</option>
-                            <option value="control motor">control motor</option>
-                            <option value="actividades de la vida diaria">actividades de la vida diaria</option>
-                            <option value="rendimiento deportivo">rendimiento deportivo</option>
-                            <option value="funcionalidad del piso pélvico">funcionalidad del piso pélvico</option>
+                            <option value="la capacidad funcional">la capacidad funcional</option>
+                            <option value="la función">la función</option>
+                            <option value="la movilidad">la movilidad</option>
+                            <option value="la capacidad de carga progresiva">la capacidad de carga progresiva</option>
+                            <option value="la estabilidad postural durante transferencias y giros">la estabilidad postural durante transferencias y giros</option>
+                            <option value="la función de soporte y continencia activa del piso pélvico">la función de soporte y continencia activa del piso pélvico</option>
+                            <option value="el control motor">el control motor</option>
+                            <option value="el patrón de marcha">el patrón de marcha</option>
+                            <option value="el desempeño deportivo">el desempeño deportivo</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Zona/Estructura</label>
-                        <input type="text" class="form-control" id="bodyAreaInput" placeholder="Ej: miembro inferior, hombro derecho, columna lumbar...">
+                        <label class="form-label">3. Región específica (si aplica)</label>
+                        <input type="text" class="form-control" id="bodyAreaInput" placeholder="Ej: del hombro, de miembro inferior, lumbar...">
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Plazo estimado</label>
+                        <label class="form-label">4. Actividad o participación deseada</label>
+                        <select class="form-control" id="participationSelect">
+                            <option value="para la realización autónoma de actividades de la vida diaria">para la realización autónoma de actividades de la vida diaria</option>
+                            <option value="para la movilidad segura e independiente dentro del hogar">para la movilidad segura e independiente dentro del hogar</option>
+                            <option value="para la reincorporación progresiva a actividades laborales">para la reincorporación progresiva a actividades laborales</option>
+                            <option value="para el retorno seguro a la práctica deportiva">para el retorno seguro a la práctica deportiva</option>
+                            <option value="para la participación en actividades sociales sin limitaciones">para la participación en actividades sociales sin limitaciones</option>
+                            <option value="para la participación en actividades recreativas">para la participación en actividades recreativas</option>
+                            <option value="para la participación en actividades deportivas sin escapes de orina">para la participación en actividades deportivas sin escapes de orina</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">5. Plazo estimado</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="number" class="form-control" id="timeFrameInput" min="1" value="4" style="width: 80px;">
                             <select class="form-control" id="timeUnitSelect">
@@ -1113,7 +1117,7 @@
                     
                     <div class="preview-box" style="background-color: var(--background-alt); padding: 15px; border-radius: 5px; margin-top: 15px;">
                         <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Vista previa</h5>
-                        <p id="objectivePreview" style="font-style: italic;">El paciente recuperará la función del miembro inferior en un plazo de 4 semanas.</p>
+                        <p id="objectivePreview" style="font-style: italic;">Mejorar la capacidad funcional del miembro inferior para la realización autónoma de actividades de la vida diaria en un plazo de 4 semanas.</p>
                     </div>
                     
                     <div style="text-align: right; margin-top: 15px;">
@@ -4993,69 +4997,51 @@ function showGeneralObjectiveAssistant(template) {
     assistantPanel.style.display = 'block';
     
     // Configurar valores según la plantilla
-    const patientTypeSelect = document.getElementById('patientTypeSelect');
     const mainGoalSelect = document.getElementById('mainGoalSelect');
     const functionalAspectSelect = document.getElementById('functionalAspectSelect');
     const bodyAreaInput = document.getElementById('bodyAreaInput');
+    const participationSelect = document.getElementById('participationSelect');
     const timeFrameInput = document.getElementById('timeFrameInput');
     const timeUnitSelect = document.getElementById('timeUnitSelect');
     
     // Valores predeterminados según especialidad
     switch(template) {
         case 'msq-general': // Musculoesquelético
-            if (patientTypeSelect) patientTypeSelect.value = 'paciente';
-            if (mainGoalSelect) mainGoalSelect.value = 'recuperar';
-            if (functionalAspectSelect) functionalAspectSelect.value = 'función';
-            if (bodyAreaInput) bodyAreaInput.value = 'miembro afectado';
+            if (mainGoalSelect) mainGoalSelect.value = 'Recuperar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'la capacidad funcional';
+            if (bodyAreaInput) bodyAreaInput.value = 'del hombro';
+            if (participationSelect) participationSelect.value = 'para la realización autónoma de actividades de la vida diaria';
             if (timeFrameInput) timeFrameInput.value = '4';
             if (timeUnitSelect) timeUnitSelect.value = 'semanas';
             break;
         case 'deportiva-general': // Deportiva
-            if (patientTypeSelect) patientTypeSelect.value = 'deportista';
-            if (mainGoalSelect) mainGoalSelect.value = 'optimizar';
-            if (functionalAspectSelect) functionalAspectSelect.value = 'rendimiento deportivo';
+            if (mainGoalSelect) mainGoalSelect.value = 'Optimizar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'la capacidad de carga progresiva';
             if (bodyAreaInput) bodyAreaInput.value = '';
+            if (participationSelect) participationSelect.value = 'para el retorno seguro a la práctica deportiva';
             if (timeFrameInput) timeFrameInput.value = '6';
             if (timeUnitSelect) timeUnitSelect.value = 'semanas';
             break;
         case 'geriatria-general': // Geriatría
-            if (patientTypeSelect) patientTypeSelect.value = 'adulto mayor';
-            if (mainGoalSelect) mainGoalSelect.value = 'mejorar';
-            if (functionalAspectSelect) functionalAspectSelect.value = 'capacidad funcional';
+            if (mainGoalSelect) mainGoalSelect.value = 'Mejorar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'la estabilidad postural durante transferencias y giros';
             if (bodyAreaInput) bodyAreaInput.value = '';
+            if (participationSelect) participationSelect.value = 'para la movilidad segura e independiente dentro del hogar';
             if (timeFrameInput) timeFrameInput.value = '2';
             if (timeUnitSelect) timeUnitSelect.value = 'meses';
             break;
         case 'piso-pelvico-general': // Piso pélvico
-            if (patientTypeSelect) patientTypeSelect.value = 'paciente';
-            if (mainGoalSelect) mainGoalSelect.value = 'mejorar';
-            if (functionalAspectSelect) functionalAspectSelect.value = 'funcionalidad del piso pélvico';
+            if (mainGoalSelect) mainGoalSelect.value = 'Restaurar';
+            if (functionalAspectSelect) functionalAspectSelect.value = 'la función de soporte y continencia activa del piso pélvico';
             if (bodyAreaInput) bodyAreaInput.value = '';
+            if (participationSelect) participationSelect.value = 'para la participación en actividades deportivas sin escapes de orina';
             if (timeFrameInput) timeFrameInput.value = '6';
             if (timeUnitSelect) timeUnitSelect.value = 'semanas';
             break;
     }
     
     // Actualizar vista previa
-    const previewElement = document.getElementById('objectivePreview');
-    if (previewElement) {
-        const patientType = patientTypeSelect?.value || 'paciente';
-        const mainGoal = mainGoalSelect?.value || 'recuperar';
-        const functionalAspect = functionalAspectSelect?.value || 'función';
-        const bodyArea = bodyAreaInput?.value || '';
-        const timeFrame = timeFrameInput?.value || '4';
-        const timeUnit = timeUnitSelect?.value || 'semanas';
-        
-        let previewText = `El ${patientType} ${mainGoal}á la ${functionalAspect}`;
-        
-        if (bodyArea) {
-            previewText += ` de ${bodyArea}`;
-        }
-        
-        previewText += ` en un plazo de ${timeFrame} ${timeUnit}.`;
-        
-        previewElement.textContent = previewText;
-    }
+    updateObjectivePreview();
 }
 
 // Guardar objetivo general
@@ -5919,6 +5905,7 @@ async function loadSpecificObjectivesDisplay(patientId) {
 }
 
 // Crear tarjeta de objetivo específico
+// Crear tarjeta de objetivo específico
 function createSpecificObjectiveCard(objective) {
     // Determinar clase y color según el estado
     let statusClass = 'status-pending';
@@ -5957,16 +5944,33 @@ function createSpecificObjectiveCard(objective) {
     // Hover effect
     card.addEventListener('mouseenter', function() {
         this.style.boxShadow = 'var(--shadow)';
+        this.style.transform = 'translateY(-2px)';
     });
     
     card.addEventListener('mouseleave', function() {
         this.style.boxShadow = 'var(--shadow-sm)';
+        this.style.transform = 'translateY(0)';
     });
     
     // Construir contenido
     const title = `${objective.verb} ${objective.structure}`;
     const details = `${objective.initialValue} → ${objective.targetValue} (${objective.evaluationMethod})`;
     const progress = objective.progress || 0;
+    
+    // Calcular días restantes
+    let daysRemaining = "";
+    if (objective.endDate) {
+        const endDate = new Date(objective.endDate);
+        const today = new Date();
+        const diffTime = endDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 0) {
+            daysRemaining = `<div style="font-size: 12px; color: var(--text-secondary);"><i class="far fa-clock"></i> ${diffDays} días restantes</div>`;
+        } else if (diffDays < 0 && objective.status !== 'completed') {
+            daysRemaining = `<div style="font-size: 12px; color: #F44336;"><i class="fas fa-exclamation-circle"></i> Vencido hace ${Math.abs(diffDays)} días</div>`;
+        }
+    }
     
     card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
@@ -5991,8 +5995,8 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-secondary);">
-            <div>Categoría: ${objective.category}</div>
-            <div><i class="far fa-calendar-alt"></i> ${formatDate(new Date(objective.endDate))}</div>
+            <div>${objective.category}</div>
+            ${daysRemaining || `<div><i class="far fa-calendar-alt"></i> ${formatDate(new Date(objective.endDate))}</div>`}
         </div>
     `;
     
@@ -11334,6 +11338,361 @@ window.useExample = function(text, fieldId) {
         console.error("Error al usar ejemplo:", error);
     }
 };
+
+        // Función para exportar objetivos a PDF
+async function exportObjectivesToPDF(patientId) {
+    try {
+        showLoading();
+        
+        // Verificar que jsPDF esté disponible
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            showToast("Error: Librería jsPDF no disponible. Verifique la conexión a Internet.", "error");
+            hideLoading();
+            return;
+        }
+        
+        // Get patient data
+        const patient = await getPatient(patientId);
+        if (!patient) {
+            hideLoading();
+            return;
+        }
+        
+        // Obtener objetivo general
+        let generalObjective = null;
+        try {
+            const generalRef = doc(db, "patients", patientId, "objectives", "general");
+            const generalSnap = await getDoc(generalRef);
+            if (generalSnap.exists()) {
+                generalObjective = generalSnap.data();
+            }
+        } catch (error) {
+            console.error("Error al obtener objetivo general:", error);
+        }
+        
+        // Obtener objetivos específicos
+        const objectivesRef = collection(db, "patients", patientId, "objectives");
+        const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
+        const objectivesSnap = await getDocs(objectivesQuery);
+        
+        const specificObjectives = objectivesSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        
+        // Crear PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Obtener información del centro (desde la configuración)
+        let centerName = "Polideportivo";
+        let centerAddress = "";
+        let therapistName = "Nicolás Ayelef";
+        
+        try {
+            const savedConfig = localStorage.getItem('sistemakineConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                if (config.centerName) centerName = config.centerName;
+                if (config.centerAddress) centerAddress = config.centerAddress;
+                if (config.mainTherapistName) therapistName = config.mainTherapistName;
+            }
+        } catch (error) {
+            console.error("Error al cargar configuración para PDF:", error);
+        }
+        
+        // Header
+        doc.setFillColor(30, 136, 229);
+        doc.rect(0, 0, 210, 25, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text(`OBJETIVOS TERAPÉUTICOS - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
+        
+        // Información del paciente
+        doc.setFillColor(245, 247, 250);
+        doc.rect(10, 30, 190, 40, 'F');
+        
+        doc.setTextColor(30, 136, 229);
+        doc.setFontSize(14);
+        doc.text(`Paciente: ${patient.name || 'Sin nombre'}`, 15, 40);
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`RUT: ${patient.rut || 'No registrado'}`, 15, 50);
+        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 60);
+        
+        let yPos = 80;
+        
+        // Objetivo general
+        doc.setFillColor(30, 136, 229);
+        doc.rect(10, yPos, 190, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('OBJETIVO GENERAL', 105, yPos + 7, null, null, 'center');
+        
+        yPos += 20;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        
+        if (generalObjective) {
+            const description = generalObjective.description || "No se ha definido un objetivo general.";
+            const descLines = doc.splitTextToSize(description, 180);
+            doc.text(descLines, 15, yPos);
+            yPos += descLines.length * 7 + 5;
+            
+            // Agregar detalles adicionales
+            if (generalObjective.endDate) {
+                doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
+                yPos += 7;
+            }
+            
+            // Progreso
+            const progress = generalObjective.progress || 0;
+            doc.text(`Progreso actual: ${progress}%`, 15, yPos);
+            yPos += 7;
+            
+            // Barra de progreso
+            doc.setDrawColor(220, 220, 220);
+            doc.setFillColor(220, 220, 220);
+            doc.roundedRect(15, yPos, 180, 5, 1, 1, 'F');
+            
+            if (progress > 0) {
+                const progressWidth = (progress / 100) * 180;
+                doc.setDrawColor(30, 136, 229);
+                doc.setFillColor(30, 136, 229);
+                doc.roundedRect(15, yPos, progressWidth, 5, 1, 1, 'F');
+            }
+            
+            yPos += 15;
+        } else {
+            doc.text("No se ha definido un objetivo general para este paciente.", 15, yPos);
+            yPos += 10;
+        }
+        
+        // Nueva página si es necesario
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        
+        // Objetivos específicos
+        doc.setFillColor(30, 136, 229);
+        doc.rect(10, yPos, 190, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('OBJETIVOS ESPECÍFICOS', 105, yPos + 7, null, null, 'center');
+        
+        yPos += 20;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        
+        if (specificObjectives.length === 0) {
+            doc.text("No hay objetivos específicos definidos para este paciente.", 15, yPos);
+            yPos += 10;
+        } else {
+            // Agrupar por categoría
+            const categorized = {};
+            specificObjectives.forEach(obj => {
+                const category = obj.category || "Sin categoría";
+                if (!categorized[category]) {
+                    categorized[category] = [];
+                }
+                categorized[category].push(obj);
+            });
+            
+            // Mostrar por categoría
+            for (const [category, objectives] of Object.entries(categorized)) {
+                // Nueva página si es necesario
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFillColor(240, 240, 240);
+                doc.rect(10, yPos - 5, 190, 10, 'F');
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(30, 136, 229);
+                doc.text(`Categoría: ${category}`, 15, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 0);
+                
+                yPos += 10;
+                
+                // Mostrar cada objetivo
+                objectives.forEach((obj, index) => {
+                    // Nueva página si es necesario
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
+                    const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
+                    const progress = obj.progress || 0;
+                    
+                    // Estado
+                    let statusText = "Pendiente";
+                    if (obj.status === 'completed') statusText = "Completado";
+                    else if (obj.status === 'inprogress') statusText = "En progreso";
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`${index + 1}. ${title}`, 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Medida: ${details}`, 20, yPos);
+                    yPos += 7;
+                    
+                    doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                    yPos += 7;
+                    
+                    // Fechas
+                    const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'N/A';
+                    const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'N/A';
+                    doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                    yPos += 7;
+                    
+                    // Barra de progreso
+                    doc.setDrawColor(220, 220, 220);
+                    doc.setFillColor(220, 220, 220);
+                    doc.roundedRect(20, yPos, 170, 4, 1, 1, 'F');
+                    
+                    if (progress > 0) {
+                        const progressWidth = (progress / 100) * 170;
+                        
+                        // Color según estado
+                        if (obj.status === 'completed') {
+                            doc.setDrawColor(76, 175, 80);
+                            doc.setFillColor(76, 175, 80);
+                        } else if (obj.status === 'inprogress') {
+                            doc.setDrawColor(33, 150, 243);
+                            doc.setFillColor(33, 150, 243);
+                        } else {
+                            doc.setDrawColor(158, 158, 158);
+                            doc.setFillColor(158, 158, 158);
+                        }
+                        
+                        doc.roundedRect(20, yPos, progressWidth, 4, 1, 1, 'F');
+                    }
+                    
+                    yPos += 12;
+                });
+            }
+        }
+        
+        // Gráficos de estadísticas
+        if (specificObjectives.length > 0) {
+            // Nueva página para gráficos
+            doc.addPage();
+            yPos = 20;
+            
+            doc.setFillColor(30, 136, 229);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('RESUMEN DE OBJETIVOS', 105, yPos + 7, null, null, 'center');
+            
+            yPos += 20;
+            doc.setTextColor(0, 0, 0);
+            
+            // Contar objetivos por estado
+            let completed = 0;
+            let inProgress = 0;
+            let pending = 0;
+            
+            specificObjectives.forEach(obj => {
+                switch(obj.status) {
+                    case 'completed': completed++; break;
+                    case 'inprogress': inProgress++; break;
+                    default: pending++; break;
+                }
+            });
+            
+            const total = completed + inProgress + pending;
+            
+            // Crear gráfico de dona manualmente (sin canvas)
+            doc.setFont(undefined, 'bold');
+            doc.text('Estado de objetivos', 105, yPos, null, null, 'center');
+            yPos += 15;
+            
+            // Estadísticas de texto
+            doc.setFont(undefined, 'normal');
+            doc.text(`Total de objetivos: ${total}`, 65, yPos);
+            yPos += 7;
+            
+            doc.setFillColor(76, 175, 80); // Verde
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`Completados: ${completed} (${Math.round(completed/total*100)}%)`, 65, yPos);
+            yPos += 7;
+            
+            doc.setFillColor(33, 150, 243); // Azul
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`En progreso: ${inProgress} (${Math.round(inProgress/total*100)}%)`, 65, yPos);
+            yPos += 7;
+            
+            doc.setFillColor(158, 158, 158); // Gris
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`Pendientes: ${pending} (${Math.round(pending/total*100)}%)`, 65, yPos);
+            yPos += 20;
+            
+            // Información de progreso global
+            const overallProgress = specificObjectives.reduce((sum, obj) => sum + (obj.progress || 0), 0) / total;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text(`Progreso general: ${Math.round(overallProgress)}%`, 65, yPos);
+            yPos += 10;
+            
+            // Barra de progreso general
+            doc.setDrawColor(220, 220, 220);
+            doc.setFillColor(220, 220, 220);
+            doc.roundedRect(65, yPos, 100, 8, 1, 1, 'F');
+            
+            if (overallProgress > 0) {
+                const progressWidth = (overallProgress / 100) * 100;
+                doc.setDrawColor(33, 150, 243);
+                doc.setFillColor(33, 150, 243);
+                doc.roundedRect(65, yPos, progressWidth, 8, 1, 1, 'F');
+            }
+        }
+        
+        // Añadir pie de página
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
+            
+            // Añadir timestamp y profesional
+            const timestamp = new Date().toLocaleString();
+            doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
+        }
+        
+        // Guardar el PDF
+        try {
+            const patientName = patient.name || 'Paciente';
+            const sanitizedName = patientName.replace(/[^a-zA-Z0-9]/g, '_');
+            const today = new Date().toISOString().slice(0, 10);
+            
+            doc.save(`Objetivos_${sanitizedName}_${today}.pdf`);
+            
+            hideLoading();
+            showToast('PDF de objetivos generado correctamente', 'success');
+        } catch (error) {
+            hideLoading();
+            console.error('Error guardando PDF:', error);
+            showToast('Error al guardar PDF: ' + error.message, 'error');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Error generando PDF de objetivos:', error);
+        showToast('Error al generar PDF: ' + error.message, 'error');
+    }
+}
 
         </script>
     
