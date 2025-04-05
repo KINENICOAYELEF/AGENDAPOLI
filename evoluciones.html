@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5208,13 +5209,6 @@ function openSpecificObjectiveModal(patientId, objectiveId = null) {
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
-
-        // Generar un ejemplo predeterminado en la vista previa
-        const previewElement = document.getElementById('specificObjectivePreview');
-        if (previewElement) {
-            const defaultExample = "Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.";
-            previewElement.textContent = defaultExample;
-        }
         
         // Si es edición, cargar los datos del objetivo
         if (objectiveId) {
@@ -5494,15 +5488,15 @@ function configureSpecificObjectivePreview() {
         if (!previewElement) return;
         
         const verb = actionVerbSelect?.value || 'Aumentar';
-        const structure = structureInput?.value || 'la fuerza de abductores de hombro derecho';
-        const initialValue = initialValueInput?.value || '3/5';
-        const targetValue = targetValueInput?.value || '4/5';
+        const structure = structureInput?.value || '[estructura/función]';
+        const initialValue = initialValueInput?.value || '[valor inicial]';
+        const targetValue = targetValueInput?.value || '[valor objetivo]';
         
         let methodText = '';
         if (evaluationMethodSelect?.value === 'custom') {
             methodText = customMethodInput?.value || 'método personalizado';
         } else {
-            methodText = evaluationMethodSelect?.value || 'escala de Daniels';
+            methodText = evaluationMethodSelect?.value || 'método de evaluación';
         }
         
         const duration = durationInput?.value || '2';
@@ -5533,25 +5527,6 @@ function configureSpecificObjectivePreview() {
             input.addEventListener('input', updatePreview);
         }
     });
-    
-    // Añadir botón para usar ejemplo en la descripción
-    const useExampleBtn = document.createElement('button');
-    useExampleBtn.type = 'button';
-    useExampleBtn.className = 'action-btn btn-secondary';
-    useExampleBtn.style.marginTop = '10px';
-    useExampleBtn.innerHTML = '<i class="fas fa-check"></i> Usar este ejemplo';
-    
-    if (previewElement && previewElement.parentNode) {
-        previewElement.parentNode.appendChild(useExampleBtn);
-        
-        useExampleBtn.addEventListener('click', function() {
-            const descInput = document.getElementById('specificObjectiveNotes');
-            if (descInput && previewElement) {
-                descInput.value = previewElement.textContent;
-                showToast("Ejemplo copiado a observaciones", "success");
-            }
-        });
-    }
     
     // Actualización inicial
     updatePreview();
@@ -12274,239 +12249,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
-
-        // Plantillas de objetivos específicos por especialidad
-const objectiveTemplates = {
-    "deportiva": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza explosiva de cuádriceps",
-            parameter: "Fuerza muscular",
-            evaluationMethod: "Test de salto vertical (cm)",
-            initialValue: "30",
-            targetValue: "40",
-            duration: "6",
-            durationUnit: "semanas",
-            evaluationFrequency: "semanal",
-            notes: "Enfocarse en fase concéntrica explosiva"
-        },
-        {
-            verb: "Mejorar",
-            category: "Funcional",
-            structure: "estabilidad dinámica de rodilla",
-            parameter: "Equilibrio",
-            evaluationMethod: "Y-Balance Test (cm)",
-            initialValue: "75",
-            targetValue: "90",
-            duration: "4",
-            durationUnit: "semanas",
-            evaluationFrequency: "quincenal",
-            notes: "Trabajar control neuromuscular en planos múltiples"
-        }
-    ],
-    "geriatria": [
-        {
-            verb: "Aumentar",
-            category: "Funcional",
-            structure: "equilibrio estático y dinámico",
-            parameter: "Equilibrio",
-            evaluationMethod: "Escala Berg (0-56)",
-            initialValue: "35",
-            targetValue: "45",
-            duration: "8",
-            durationUnit: "semanas",
-            evaluationFrequency: "quincenal",
-            notes: "Priorizar seguridad y prevención de caídas"
-        },
-        {
-            verb: "Mejorar",
-            category: "Funcional",
-            structure: "patrón de marcha",
-            parameter: "Funcionalidad",
-            evaluationMethod: "Timed Up and Go (segundos)",
-            initialValue: "15",
-            targetValue: "10",
-            duration: "6",
-            durationUnit: "semanas",
-            evaluationFrequency: "quincenal",
-            notes: "Trabajar transferencias y cambios de dirección"
-        }
-    ],
-    "neurologica": [
-        {
-            verb: "Reeducar",
-            category: "Funcional",
-            structure: "control motor selectivo de miembro superior",
-            parameter: "Funcionalidad",
-            evaluationMethod: "Box and Block Test (bloques)",
-            initialValue: "20",
-            targetValue: "35",
-            duration: "8",
-            durationUnit: "semanas",
-            evaluationFrequency: "semanal",
-            notes: "Incorporar actividades de motricidad fina"
-        }
-    ],
-    "respiratoria": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza muscular inspiratoria",
-            parameter: "Fuerza muscular",
-            evaluationMethod: "Presión inspiratoria máxima (cmH₂O)",
-            initialValue: "60",
-            targetValue: "80",
-            duration: "6",
-            durationUnit: "semanas",
-            evaluationFrequency: "semanal",
-            notes: "Entrenamiento progresivo con válvula umbral"
-        }
-    ],
-    "piso-pelvico": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza de la musculatura del piso pélvico",
-            parameter: "Función piso pélvico",
-            evaluationMethod: "Escala Oxford (0-5)",
-            initialValue: "2",
-            targetValue: "4",
-            duration: "8",
-            durationUnit: "semanas",
-            evaluationFrequency: "semanal",
-            notes: "Combinar contracciones rápidas y sostenidas"
-        }
-    ]
-};
-
-        // Manejar plantillas de objetivos específicos
-document.addEventListener('DOMContentLoaded', function() {
-    // Función para explicaciones de verbos
-    const verbExplanations = {
-        "Aumentar": "Incrementar una capacidad o función que está disminuida.",
-        "Disminuir": "Reducir un síntoma o parámetro que está elevado (dolor, edema, etc).",
-        "Mantener": "Conservar el nivel actual de una función que podría deteriorarse.",
-        "Modular": "Regular o ajustar una función para optimizar su rendimiento.",
-        "Optimizar": "Mejorar la eficiencia de una función ya existente.",
-        "Reeducar": "Enseñar nuevamente un patrón de movimiento o función alterada.",
-        "Controlar": "Manejar o regular un síntoma o condición.",
-        "Reducir": "Disminuir la intensidad o frecuencia de un síntoma.",
-        "Incrementar": "Aumentar progresivamente una capacidad o función.",
-        "Restaurar": "Devolver a un estado funcional previo.",
-        "Desarrollar": "Generar una capacidad o habilidad nueva o poco desarrollada.",
-        "Reintegrar": "Incorporar nuevamente una función a un patrón global.",
-        "Normalizar": "Llevar a parámetros considerados normales.",
-        "Educar": "Enseñar al paciente sobre su condición o manejo.",
-        "Estabilizar": "Proporcionar mayor firmeza o control a una estructura.",
-        "Activar": "Iniciar o facilitar la contracción de un músculo inhibido.",
-        "Integrar": "Incorporar una función específica en patrones más complejos.",
-        "Coordinar": "Sincronizar diferentes componentes de un movimiento.",
-        "Adaptar": "Modificar una función para ajustarse a nuevas condiciones."
-    };
-
-    // Manejar plantillas de objetivos específicos
-    const templateBtns = document.querySelectorAll('.template-btn[data-template]');
-    if (templateBtns) {
-        templateBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const templateType = this.getAttribute('data-template');
-                const templates = objectiveTemplates[templateType];
-                
-                if (templates && templates.length > 0) {
-                    // Usar la primera plantilla de la categoría seleccionada
-                    const template = templates[0];
-                    
-                    // Llenar el formulario con los datos de la plantilla
-                    document.getElementById('actionVerbSelect').value = template.verb;
-                    document.getElementById('objectiveCategorySelect').value = template.category;
-                    document.getElementById('structureInput').value = template.structure;
-                    document.getElementById('parameterSelect').value = template.parameter;
-                    
-                    // Disparar evento change para actualizar métodos de evaluación
-                    const parameterEvent = new Event('change');
-                    document.getElementById('parameterSelect').dispatchEvent(parameterEvent);
-                    
-                    // Continuar llenando después de que se actualicen los métodos
-                    setTimeout(() => {
-                        if (document.getElementById('evaluationMethodSelect')) {
-                            document.getElementById('evaluationMethodSelect').value = template.evaluationMethod;
-                        }
-                        document.getElementById('initialValueInput').value = template.initialValue;
-                        document.getElementById('targetValueInput').value = template.targetValue;
-                        document.getElementById('durationInput').value = template.duration;
-                        document.getElementById('durationUnitSelect').value = template.durationUnit;
-                        document.getElementById('evaluationFrequencySelect').value = template.evaluationFrequency;
-                        document.getElementById('specificObjectiveNotes').value = template.notes;
-                        
-                        // Actualizar vista previa
-                        const previewElement = document.getElementById('specificObjectivePreview');
-                        if (previewElement) {
-                            const previewText = `${template.verb} ${template.structure} de ${template.initialValue} a ${template.targetValue} en ${template.evaluationMethod} en un plazo de ${template.duration} ${template.durationUnit}.`;
-                            previewElement.textContent = previewText;
-                        }
-                        
-                        // Mostrar explicación del verbo
-                        const verbExplanation = document.getElementById('verbExplanation');
-                        if (verbExplanation) {
-                            const explanation = verbExplanations[template.verb] || "Seleccione un verbo para ver su explicación.";
-                            verbExplanation.innerHTML = `<strong>${template.verb}:</strong> ${explanation}`;
-                        }
-                        
-                        showToast(`Plantilla de ${templateType} cargada correctamente`, "success");
-                    }, 500);
-                } else {
-                    showToast(`No hay plantillas disponibles para ${templateType}`, "error");
-                }
-            });
-        });
-    }
-});
-
-
-        // Botón para eliminar objetivo general
-document.getElementById('deleteGeneralObjectiveBtn').addEventListener('click', async function() {
-    if (!currentPatientId) {
-        showToast("Error: No hay paciente seleccionado", "error");
-        return;
-    }
-    
-    if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
-        try {
-            showLoading();
-            
-            // Referencia al documento del objetivo general
-            const objectiveRef = doc(db, "patients", currentPatientId, "objectives", "general");
-            
-            // Eliminar el documento del objetivo general
-            await deleteDoc(objectiveRef);
-            
-            // Actualizar caché
-            if (objectivesCache[currentPatientId]) {
-                delete objectivesCache[currentPatientId].general;
-            }
-            
-            // Actualizar la interfaz
-            const generalObjectiveContainer = document.getElementById('generalObjectiveContainer');
-            const noGeneralObjective = document.getElementById('noGeneralObjective');
-            const generalObjectiveContent = document.getElementById('generalObjectiveContent');
-            
-            if (generalObjectiveContainer) generalObjectiveContainer.style.display = 'block';
-            if (noGeneralObjective) noGeneralObjective.style.display = 'block';
-            if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
-            
-            hideLoading();
-            showToast("Objetivo general eliminado correctamente", "success");
-        } catch (error) {
-            console.error("Error eliminando objetivo general:", error);
-            hideLoading();
-            showToast("Error al eliminar objetivo general: " + error.message, "error");
-        }
-    }
-});
         </script>
     
 </body>
 </html>
-
