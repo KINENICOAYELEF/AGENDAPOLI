@@ -365,11 +365,16 @@
     <!-- Objetivo general -->
     <div class="advanced-card" style="margin-bottom: 20px; background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin: 0; color: var(--primary);">Objetivo General</h4>
-            <button class="action-btn btn-secondary" id="editGeneralObjectiveBtn" style="padding: 5px 10px;">
-                <i class="fas fa-edit"></i> Editar
-            </button>
-        </div>
+<h4 style="margin: 0; color: var(--primary);">Objetivo General</h4>
+<div>
+    <button class="action-btn btn-secondary" id="deleteGeneralObjectiveBtn" style="padding: 5px 10px; margin-right: 5px; background-color: #F44336; color: white;">
+        <i class="fas fa-trash"></i> Eliminar
+    </button>
+    <button class="action-btn btn-secondary" id="editGeneralObjectiveBtn" style="padding: 5px 10px;">
+        <i class="fas fa-edit"></i> Editar
+    </button>
+</div>
+</div>
         <div id="generalObjectiveContainer" style="margin-bottom: 15px; display: none;">
             <!-- Cuando no hay objetivo general -->
             <div id="noGeneralObjective" style="text-align: center; padding: 20px;">
@@ -1068,8 +1073,16 @@
                             <option value="Desarrollar">Desarrollar</option>
                             <option value="Reintegrar">Reintegrar</option>
                             <option value="Aumentar">Aumentar</option>
+                            <option value="Potenciar">Potenciar</option>
+                            <option value="Normalizar">Normalizar</option>
+                            <option value="Restablecer">Restablecer</option>
+                            <option value="Facilitar">Facilitar</option>
+                            <option value="Promover">Promover</option>
                         </select>
-                    </div>
+                        <div class="verb-explanation" style="margin-top: 5px; font-size: 12px; color: var(--text-secondary);">
+                            <strong>Recuperar:</strong> Volver a un estado funcional previo tras una lesión o enfermedad.
+                        </div>
+                        </div>
                     
                     <div class="form-group">
                         <label class="form-label">2. Capacidad funcional integradora</label>
@@ -1083,13 +1096,31 @@
                             <option value="el control motor">el control motor</option>
                             <option value="el patrón de marcha">el patrón de marcha</option>
                             <option value="el desempeño deportivo">el desempeño deportivo</option>
+                            <option value="la capacidad cardiorrespiratoria">la capacidad cardiorrespiratoria</option>
+                            <option value="la propiocepción y control neuromuscular">la propiocepción y control neuromuscular</option>
+                            <option value="la fuerza y resistencia muscular">la fuerza y resistencia muscular</option>
+                            <option value="el equilibrio y coordinación">el equilibrio y coordinación</option>
+                            <option value="la flexibilidad y amplitud articular">la flexibilidad y amplitud articular</option>
+                            <option value="la mecánica respiratoria">la mecánica respiratoria</option>
+                            <option value="la tolerancia al esfuerzo">la tolerancia al esfuerzo</option>
                         </select>
-                    </div>
+                        </div>
                     
                     <div class="form-group">
-                        <label class="form-label">3. Región específica (si aplica)</label>
+                        <label class="form-label">3. Región específica</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button type="button" class="action-btn btn-secondary" id="showStructuresBtn" style="flex: 1;">
+                                <i class="fas fa-bone"></i> Estructuras anatómicas
+                            </button>
+                            <button type="button" class="action-btn btn-secondary" id="showFunctionsBtn" style="flex: 1;">
+                                <i class="fas fa-running"></i> Funciones
+                            </button>
+                        </div>
+                        <div id="structuresFunctionsList" style="display: none; max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 5px; padding: 10px;">
+                            <!-- Aquí se mostrarán las estructuras o funciones -->
+                        </div>
                         <input type="text" class="form-control" id="bodyAreaInput" placeholder="Ej: del hombro, de miembro inferior, lumbar...">
-                    </div>
+                        </div>
                     
                     <div class="form-group">
                         <label class="form-label">4. Actividad o participación deseada</label>
@@ -1101,8 +1132,15 @@
                             <option value="para la participación en actividades sociales sin limitaciones">para la participación en actividades sociales sin limitaciones</option>
                             <option value="para la participación en actividades recreativas">para la participación en actividades recreativas</option>
                             <option value="para la participación en actividades deportivas sin escapes de orina">para la participación en actividades deportivas sin escapes de orina</option>
+                            <option value="para prevenir recidivas y mantener la funcionalidad a largo plazo">para prevenir recidivas y mantener la funcionalidad a largo plazo</option>
+                            <option value="para mejorar la calidad de vida relacionada con la salud">para mejorar la calidad de vida relacionada con la salud</option>
+                            <option value="para optimizar el rendimiento deportivo específico">para optimizar el rendimiento deportivo específico</option>
+                            <option value="para facilitar la independencia en el autocuidado">para facilitar la independencia en el autocuidado</option>
+                            <option value="para la integración comunitaria sin barreras funcionales">para la integración comunitaria sin barreras funcionales</option>
+                            <option value="para el manejo autónomo de las actividades instrumentales">para el manejo autónomo de las actividades instrumentales</option>
+                            <option value="para la participación plena en el entorno escolar/académico">para la participación plena en el entorno escolar/académico</option>
                         </select>
-                    </div>
+                        </div>
                     
                     <div class="form-group">
                         <label class="form-label">5. Plazo estimado</label>
@@ -1180,8 +1218,10 @@
                             <option value="Coordinar">Coordinar</option>
                             <option value="Adaptar">Adaptar</option>
                         </select>
+                        <div id="verbExplanation" style="margin-top: 5px; font-size: 12px; color: var(--text-secondary); padding: 5px; background-color: var(--background-alt); border-radius: 4px;">
+                            <strong>Aumentar:</strong> Incrementar una capacidad o función que está disminuida.
+                        </div>
                     </div>
-                </div>
                 <div class="form-col">
                     <div class="form-group">
                         <label class="form-label">Categoría</label>
@@ -1196,9 +1236,20 @@
             </div>
             
             <div class="form-group">
-                <label class="form-label">Estructura/Función</label>
-                <input type="text" class="form-control" id="structureInput" placeholder="Ej: abductores de hombro derecho, extensores de rodilla, equilibrio estático...">
-            </div>
+<label class="form-label">Estructura/Función</label>
+<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <button type="button" class="action-btn btn-secondary" id="showSpecificStructuresBtn" style="flex: 1;">
+        <i class="fas fa-bone"></i> Estructuras anatómicas
+    </button>
+    <button type="button" class="action-btn btn-secondary" id="showSpecificFunctionsBtn" style="flex: 1;">
+        <i class="fas fa-running"></i> Funciones
+    </button>
+</div>
+<div id="specificStructuresList" style="display: none; max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 5px; padding: 10px;">
+    <!-- Aquí se mostrarán las estructuras o funciones -->
+</div>
+<input type="text" class="form-control" id="structureInput" placeholder="Ej: abductores de hombro derecho, extensores de rodilla, equilibrio estático...">
+</div>
             
             <div class="form-row">
                 <div class="form-col">
@@ -1286,7 +1337,40 @@
                 <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Vista previa del objetivo</h5>
                 <p id="specificObjectivePreview" style="font-weight: bold;">Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.</p>
             </div>
-            
+
+
+                <div style="margin-top: 20px; background-color: var(--background-alt); padding: 15px; border-radius: 5px;">
+<h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Plantillas por especialidad</h5>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <button type="button" class="template-btn" data-template="deportiva" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-running"></i> Deportiva
+    </button>
+    <button type="button" class="template-btn" data-template="geriatria" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-user-friends"></i> Geriatría
+    </button>
+    <button type="button" class="template-btn" data-template="neurologica" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-brain"></i> Neurológica
+    </button>
+    <button type="button" class="template-btn" data-template="respiratoria" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-lungs"></i> Respiratoria
+    </button>
+    <button type="button" class="template-btn" data-template="piso-pelvico" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-venus"></i> Piso Pélvico
+    </button>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+    <button type="button" class="action-btn btn-secondary" id="saveTemplateBtn" style="padding: 5px 10px;">
+        <i class="fas fa-save"></i> Guardar como plantilla
+    </button>
+    <button type="button" class="action-btn btn-secondary" id="manageTemplatesBtn" style="padding: 5px 10px;">
+        <i class="fas fa-cog"></i> Gestionar plantillas
+    </button>
+</div>
+</div>
+
+
+
+                
             <div class="form-group" style="margin-top: 20px; text-align: right;">
                 <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelSpecificObjectiveBtn">Cancelar</button>
                 <button type="button" class="action-btn btn-primary" id="saveSpecificObjectiveBtn">Guardar objetivo específico</button>
@@ -6988,6 +7072,8 @@ function updateRemainingTime(patientId) {
     }
 }
 
+
+        
 // Botón para editar objetivo general
 document.getElementById('editGeneralObjectiveBtn').addEventListener('click', function() {
     openGeneralObjectiveModal(currentPatientId);
@@ -11707,6 +11793,460 @@ async function exportObjectivesToPDF(patientId) {
         showToast('Error al generar PDF: ' + error.message, 'error');
     }
 }
+
+
+
+        // Datos para estructuras anatómicas y funciones
+const anatomicalStructures = {
+    "Miembro superior": ["Hombro", "Codo", "Muñeca", "Mano", "Dedos", "Manguito rotador", "Bíceps", "Tríceps", "Deltoides", "Trapecio", "Serrato anterior", "Supraespinoso", "Infraespinoso", "Redondo menor", "Subescapular"],
+    "Miembro inferior": ["Cadera", "Rodilla", "Tobillo", "Pie", "Cuádriceps", "Isquiotibiales", "Glúteos", "Aductores", "Abductores", "Gastrocnemios", "Sóleo", "Tibial anterior", "Peroneos"],
+    "Columna": ["Cervical", "Dorsal", "Lumbar", "Sacro", "Coccix", "Paravertebrales", "Multífidos", "Transverso abdominal", "Oblicuos", "Recto abdominal"],
+    "Articulaciones": ["Glenohumeral", "Acromioclavicular", "Esternoclavicular", "Coxofemoral", "Femorotibial", "Tibioperonea", "Tibioperoneoastragalina", "Subastragalina", "Temporomandibular"]
+};
+
+const functionalCapabilities = {
+    "Movilidad": ["Flexibilidad", "Amplitud articular", "Movilidad activa", "Movilidad pasiva", "Deslizamiento articular"],
+    "Fuerza": ["Fuerza muscular", "Resistencia muscular", "Potencia", "Estabilidad", "Capacidad de carga"],
+    "Control motor": ["Coordinación", "Equilibrio", "Propiocepción", "Control postural", "Estabilidad dinámica", "Reclutamiento muscular"],
+    "Función cardiorrespiratoria": ["Capacidad aeróbica", "Resistencia", "Mecánica respiratoria", "Expansión torácica", "Patrón respiratorio"],
+    "Marcha y locomoción": ["Patrón de marcha", "Transferencias", "Subir/bajar escaleras", "Carrera", "Salto"]
+};
+
+// Plantillas de objetivos específicos por especialidad
+const objectiveTemplates = {
+    "deportiva": [
+        {
+            verb: "Aumentar",
+            category: "Analítico",
+            structure: "fuerza explosiva de cuádriceps",
+            parameter: "Fuerza muscular",
+            method: "Test de salto vertical (cm)",
+            initialValue: "30",
+            targetValue: "40",
+            duration: "6",
+            durationUnit: "semanas",
+            frequency: "semanal",
+            notes: "Enfocarse en fase concéntrica explosiva"
+        },
+        {
+            verb: "Mejorar",
+            category: "Funcional",
+            structure: "estabilidad dinámica de rodilla",
+            parameter: "Equilibrio",
+            method: "Y-Balance Test (cm)",
+            initialValue: "75",
+            targetValue: "90",
+            duration: "4",
+            durationUnit: "semanas",
+            frequency: "quincenal",
+            notes: "Trabajar control neuromuscular en planos múltiples"
+        }
+    ],
+    "geriatria": [
+        {
+            verb: "Aumentar",
+            category: "Funcional",
+            structure: "equilibrio estático y dinámico",
+            parameter: "Equilibrio",
+            method: "Escala Berg (0-56)",
+            initialValue: "35",
+            targetValue: "45",
+            duration: "8",
+            durationUnit: "semanas",
+            frequency: "quincenal",
+            notes: "Priorizar seguridad y prevención de caídas"
+        },
+        {
+            verb: "Mejorar",
+            category: "Funcional",
+            structure: "patrón de marcha",
+            parameter: "Funcionalidad",
+            method: "Timed Up and Go (segundos)",
+            initialValue: "15",
+            targetValue: "10",
+            duration: "6",
+            durationUnit: "semanas",
+            frequency: "quincenal",
+            notes: "Trabajar transferencias y cambios de dirección"
+        }
+    ],
+    "neurologica": [
+        {
+            verb: "Reeducar",
+            category: "Funcional",
+            structure: "control motor selectivo de miembro superior",
+            parameter: "Funcionalidad",
+            method: "Box and Block Test (bloques)",
+            initialValue: "20",
+            targetValue: "35",
+            duration: "8",
+            durationUnit: "semanas",
+            frequency: "semanal",
+            notes: "Incorporar actividades de motricidad fina"
+        }
+    ],
+    "respiratoria": [
+        {
+            verb: "Aumentar",
+            category: "Analítico",
+            structure: "fuerza muscular inspiratoria",
+            parameter: "Fuerza muscular",
+            method: "Presión inspiratoria máxima (cmH₂O)",
+            initialValue: "60",
+            targetValue: "80",
+            duration: "6",
+            durationUnit: "semanas",
+            frequency: "semanal",
+            notes: "Entrenamiento progresivo con válvula umbral"
+        }
+    ],
+    "piso-pelvico": [
+        {
+            verb: "Aumentar",
+            category: "Analítico",
+            structure: "fuerza de la musculatura del piso pélvico",
+            parameter: "Función piso pélvico",
+            method: "Escala Oxford (0-5)",
+            initialValue: "2",
+            targetValue: "4",
+            duration: "8",
+            durationUnit: "semanas",
+            frequency: "semanal",
+            notes: "Combinar contracciones rápidas y sostenidas"
+        }
+    ]
+};
+
+// Función para mostrar explicación del verbo seleccionado
+document.addEventListener('DOMContentLoaded', function() {
+    // Explicaciones de verbos para objetivos específicos
+    const verbExplanations = {
+        "Aumentar": "Incrementar una capacidad o función que está disminuida.",
+        "Disminuir": "Reducir un síntoma o parámetro que está elevado (dolor, edema, etc).",
+        "Mantener": "Conservar el nivel actual de una función que podría deteriorarse.",
+        "Modular": "Regular o ajustar una función para optimizar su rendimiento.",
+        "Optimizar": "Mejorar la eficiencia de una función ya existente.",
+        "Reeducar": "Enseñar nuevamente un patrón de movimiento o función alterada.",
+        "Controlar": "Manejar o regular un síntoma o condición.",
+        "Reducir": "Disminuir la intensidad o frecuencia de un síntoma.",
+        "Incrementar": "Aumentar progresivamente una capacidad o función.",
+        "Restaurar": "Devolver a un estado funcional previo.",
+        "Desarrollar": "Generar una capacidad o habilidad nueva o poco desarrollada.",
+        "Reintegrar": "Incorporar nuevamente una función a un patrón global.",
+        "Normalizar": "Llevar a parámetros considerados normales.",
+        "Educar": "Enseñar al paciente sobre su condición o manejo.",
+        "Estabilizar": "Proporcionar mayor firmeza o control a una estructura.",
+        "Activar": "Iniciar o facilitar la contracción de un músculo inhibido.",
+        "Integrar": "Incorporar una función específica en patrones más complejos.",
+        "Coordinar": "Sincronizar diferentes componentes de un movimiento.",
+        "Adaptar": "Modificar una función para ajustarse a nuevas condiciones."
+    };
+
+    // Mostrar explicación al seleccionar un verbo
+    const actionVerbSelect = document.getElementById('actionVerbSelect');
+    const verbExplanation = document.getElementById('verbExplanation');
+    
+    if (actionVerbSelect && verbExplanation) {
+        actionVerbSelect.addEventListener('change', function() {
+            const selectedVerb = this.value;
+            const explanation = verbExplanations[selectedVerb] || "Seleccione un verbo para ver su explicación.";
+            verbExplanation.innerHTML = `<strong>${selectedVerb}:</strong> ${explanation}`;
+        });
+    }
+
+    // Botones para mostrar estructuras y funciones en objetivo general
+    const showStructuresBtn = document.getElementById('showStructuresBtn');
+    const showFunctionsBtn = document.getElementById('showFunctionsBtn');
+    const structuresFunctionsList = document.getElementById('structuresFunctionsList');
+    const bodyAreaInput = document.getElementById('bodyAreaInput');
+    
+    if (showStructuresBtn && showFunctionsBtn && structuresFunctionsList && bodyAreaInput) {
+        showStructuresBtn.addEventListener('click', function() {
+            structuresFunctionsList.style.display = 'block';
+            structuresFunctionsList.innerHTML = '';
+            
+            // Crear lista de estructuras
+            for (const category in anatomicalStructures) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<strong>${category}:</strong>`;
+                structuresFunctionsList.appendChild(categoryDiv);
+                
+                const structuresList = document.createElement('div');
+                structuresList.style.display = 'flex';
+                structuresList.style.flexWrap = 'wrap';
+                structuresList.style.gap = '5px';
+                structuresList.style.marginBottom = '10px';
+                
+                anatomicalStructures[category].forEach(structure => {
+                    const structureBtn = document.createElement('button');
+                    structureBtn.type = 'button';
+                    structureBtn.className = 'structure-btn';
+                    structureBtn.textContent = structure;
+                    structureBtn.style.padding = '3px 8px';
+                    structureBtn.style.fontSize = '12px';
+                    structureBtn.style.backgroundColor = 'var(--background)';
+                    structureBtn.style.border = '1px solid var(--border)';
+                    structureBtn.style.borderRadius = '4px';
+                    structureBtn.style.cursor = 'pointer';
+                    
+                    structureBtn.addEventListener('click', function() {
+                        bodyAreaInput.value = structure.toLowerCase();
+                        structuresFunctionsList.style.display = 'none';
+                    });
+                    
+                    structuresList.appendChild(structureBtn);
+                });
+                
+                structuresFunctionsList.appendChild(structuresList);
+            }
+        });
+        
+        showFunctionsBtn.addEventListener('click', function() {
+            structuresFunctionsList.style.display = 'block';
+            structuresFunctionsList.innerHTML = '';
+            
+            // Crear lista de funciones
+            for (const category in functionalCapabilities) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<strong>${category}:</strong>`;
+                structuresFunctionsList.appendChild(categoryDiv);
+                
+                const functionsList = document.createElement('div');
+                functionsList.style.display = 'flex';
+                functionsList.style.flexWrap = 'wrap';
+                functionsList.style.gap = '5px';
+                functionsList.style.marginBottom = '10px';
+                
+                functionalCapabilities[category].forEach(func => {
+                    const funcBtn = document.createElement('button');
+                    funcBtn.type = 'button';
+                    funcBtn.className = 'function-btn';
+                    funcBtn.textContent = func;
+                    funcBtn.style.padding = '3px 8px';
+                    funcBtn.style.fontSize = '12px';
+                    funcBtn.style.backgroundColor = 'var(--background)';
+                    funcBtn.style.border = '1px solid var(--border)';
+                    funcBtn.style.borderRadius = '4px';
+                    funcBtn.style.cursor = 'pointer';
+                    
+                    funcBtn.addEventListener('click', function() {
+                        bodyAreaInput.value = func.toLowerCase();
+                        structuresFunctionsList.style.display = 'none';
+                    });
+                    
+                    functionsList.appendChild(funcBtn);
+                });
+                
+                structuresFunctionsList.appendChild(functionsList);
+            }
+        });
+    }
+
+    // Botones para mostrar estructuras y funciones en objetivo específico
+    const showSpecificStructuresBtn = document.getElementById('showSpecificStructuresBtn');
+    const showSpecificFunctionsBtn = document.getElementById('showSpecificFunctionsBtn');
+    const specificStructuresList = document.getElementById('specificStructuresList');
+    const structureInput = document.getElementById('structureInput');
+    
+    if (showSpecificStructuresBtn && showSpecificFunctionsBtn && specificStructuresList && structureInput) {
+        showSpecificStructuresBtn.addEventListener('click', function() {
+            specificStructuresList.style.display = 'block';
+            specificStructuresList.innerHTML = '';
+            
+            // Crear lista de estructuras
+            for (const category in anatomicalStructures) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<strong>${category}:</strong>`;
+                specificStructuresList.appendChild(categoryDiv);
+                
+                const structuresList = document.createElement('div');
+                structuresList.style.display = 'flex';
+                structuresList.style.flexWrap = 'wrap';
+                structuresList.style.gap = '5px';
+                structuresList.style.marginBottom = '10px';
+                
+                anatomicalStructures[category].forEach(structure => {
+                    const structureBtn = document.createElement('button');
+                    structureBtn.type = 'button';
+                    structureBtn.className = 'structure-btn';
+                    structureBtn.textContent = structure;
+                    structureBtn.style.padding = '3px 8px';
+                    structureBtn.style.fontSize = '12px';
+                    structureBtn.style.backgroundColor = 'var(--background)';
+                    structureBtn.style.border = '1px solid var(--border)';
+                    structureBtn.style.borderRadius = '4px';
+                    structureBtn.style.cursor = 'pointer';
+                    
+                    structureBtn.addEventListener('click', function() {
+                        structureInput.value = structure.toLowerCase();
+                        specificStructuresList.style.display = 'none';
+                    });
+                    
+                    structuresList.appendChild(structureBtn);
+                });
+                
+                specificStructuresList.appendChild(structuresList);
+            }
+        });
+        
+        showSpecificFunctionsBtn.addEventListener('click', function() {
+            specificStructuresList.style.display = 'block';
+            specificStructuresList.innerHTML = '';
+            
+            // Crear lista de funciones
+            for (const category in functionalCapabilities) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<strong>${category}:</strong>`;
+                specificStructuresList.appendChild(categoryDiv);
+                
+                const functionsList = document.createElement('div');
+                functionsList.style.display = 'flex';
+                functionsList.style.flexWrap = 'wrap';
+                functionsList.style.gap = '5px';
+                functionsList.style.marginBottom = '10px';
+                
+                functionalCapabilities[category].forEach(func => {
+                    const funcBtn = document.createElement('button');
+                    funcBtn.type = 'button';
+                    funcBtn.className = 'function-btn';
+                    funcBtn.textContent = func;
+                    funcBtn.style.padding = '3px 8px';
+                    funcBtn.style.fontSize = '12px';
+                    funcBtn.style.backgroundColor = 'var(--background)';
+                    funcBtn.style.border = '1px solid var(--border)';
+                    funcBtn.style.borderRadius = '4px';
+                    funcBtn.style.cursor = 'pointer';
+                    
+                    funcBtn.addEventListener('click', function() {
+                        structureInput.value = func.toLowerCase();
+                        specificStructuresList.style.display = 'none';
+                    });
+                    
+                    functionsList.appendChild(funcBtn);
+                });
+                
+                specificStructuresList.appendChild(functionsList);
+            }
+        });
+    }
+
+    // Botón para eliminar objetivo general
+    const deleteGeneralObjectiveBtn = document.getElementById('deleteGeneralObjectiveBtn');
+    if (deleteGeneralObjectiveBtn) {
+        deleteGeneralObjectiveBtn.addEventListener('click', async function() {
+            if (!currentPatientId) {
+                showToast("Error: No hay paciente seleccionado", "error");
+                return;
+            }
+            
+            if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
+                try {
+                    showLoading();
+                    
+                    // Referencia al documento del paciente
+                    const patientRef = doc(db, "patients", currentPatientId);
+                    
+                    // Actualizar el documento para eliminar el objetivo general
+                    await updateDoc(patientRef, {
+                        generalObjective: null
+                    });
+                    
+                    // Actualizar la interfaz
+                    const generalObjectiveContainer = document.getElementById('generalObjectiveContainer');
+                    const noGeneralObjective = document.getElementById('noGeneralObjective');
+                    const generalObjectiveContent = document.getElementById('generalObjectiveContent');
+                    
+                    if (generalObjectiveContainer) generalObjectiveContainer.style.display = 'block';
+                    if (noGeneralObjective) noGeneralObjective.style.display = 'block';
+                    if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
+                    
+                    hideLoading();
+                    showToast("Objetivo general eliminado correctamente", "success");
+                } catch (error) {
+                    console.error("Error eliminando objetivo general:", error);
+                    hideLoading();
+                    showToast("Error al eliminar objetivo general: " + error.message, "error");
+                }
+            }
+        });
+    }
+
+    // Manejar plantillas de objetivos específicos
+    const templateBtns = document.querySelectorAll('.template-btn[data-template]');
+    templateBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const templateType = this.getAttribute('data-template');
+            const templates = objectiveTemplates[templateType];
+            
+            if (templates && templates.length > 0) {
+                // Usar la primera plantilla de la categoría seleccionada
+                const template = templates[0];
+                
+                // Llenar el formulario con los datos de la plantilla
+                document.getElementById('actionVerbSelect').value = template.verb;
+                document.getElementById('objectiveCategorySelect').value = template.category;
+                document.getElementById('structureInput').value = template.structure;
+                document.getElementById('parameterSelect').value = template.parameter;
+                
+                // Disparar evento change para actualizar métodos de evaluación
+                const parameterEvent = new Event('change');
+                document.getElementById('parameterSelect').dispatchEvent(parameterEvent);
+                
+                // Continuar llenando después de que se actualicen los métodos
+                setTimeout(() => {
+                    document.getElementById('evaluationMethodSelect').value = template.method;
+                    document.getElementById('initialValueInput').value = template.initialValue;
+                    document.getElementById('targetValueInput').value = template.targetValue;
+                    document.getElementById('durationInput').value = template.duration;
+                    document.getElementById('durationUnitSelect').value = template.durationUnit;
+                    document.getElementById('evaluationFrequencySelect').value = template.frequency;
+                    document.getElementById('specificObjectiveNotes').value = template.notes;
+                    
+                    // Actualizar vista previa
+                    updateSpecificObjectivePreview();
+                    
+                    // Mostrar explicación del verbo
+                    const verbExplanation = document.getElementById('verbExplanation');
+                    if (verbExplanation) {
+                        const explanation = verbExplanations[template.verb] || "Seleccione un verbo para ver su explicación.";
+                        verbExplanation.innerHTML = `<strong>${template.verb}:</strong> ${explanation}`;
+                    }
+                }, 100);
+            }
+        });
+    });
+
+    // Función para actualizar la vista previa del objetivo específico
+    function updateSpecificObjectivePreview() {
+        const verb = document.getElementById('actionVerbSelect').value;
+        const structure = document.getElementById('structureInput').value;
+        const initialValue = document.getElementById('initialValueInput').value;
+        const targetValue = document.getElementById('targetValueInput').value;
+        const method = document.getElementById('evaluationMethodSelect').value;
+        const duration = document.getElementById('durationInput').value;
+        const durationUnit = document.getElementById('durationUnitSelect').value;
+        
+        const preview = document.getElementById('specificObjectivePreview');
+        if (preview) {
+            preview.textContent = `${verb} ${structure ? 'la ' + structure : 'la estructura/función'} de ${initialValue || 'valor inicial'} a ${targetValue || 'valor objetivo'} en ${method || 'método de evaluación'} en ${duration || '2'} ${durationUnit || 'semanas'}.`;
+        }
+    }
+
+    // Actualizar vista previa al cambiar cualquier campo
+    const specificObjectiveInputs = [
+        'actionVerbSelect', 'structureInput', 'initialValueInput', 
+        'targetValueInput', 'evaluationMethodSelect', 'durationInput', 
+        'durationUnitSelect'
+    ];
+    
+    specificObjectiveInputs.forEach(inputId => {
+        const element = document.getElementById(inputId);
+        if (element) {
+            element.addEventListener('input', updateSpecificObjectivePreview);
+            element.addEventListener('change', updateSpecificObjectivePreview);
+        }
+    });
+});
 
         </script>
     
