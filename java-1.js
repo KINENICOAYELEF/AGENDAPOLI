@@ -3644,6 +3644,13 @@ function openSpecificObjectiveModal(patientId, objectiveId = null) {
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
+
+        // Generar un ejemplo predeterminado en la vista previa
+        const previewElement = document.getElementById('specificObjectivePreview');
+        if (previewElement) {
+            const defaultExample = "Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.";
+            previewElement.textContent = defaultExample;
+        }
         
         // Si es edición, cargar los datos del objetivo
         if (objectiveId) {
@@ -3905,7 +3912,6 @@ function updateUnits(method) {
     unitLabel2.textContent = unit;
 }
 
-// Configurar previsualización de objetivo específico
 function configureSpecificObjectivePreview() {
     // Obtener elementos del formulario
     const actionVerbSelect = document.getElementById('actionVerbSelect');
@@ -3923,15 +3929,15 @@ function configureSpecificObjectivePreview() {
         if (!previewElement) return;
         
         const verb = actionVerbSelect?.value || 'Aumentar';
-        const structure = structureInput?.value || '[estructura/función]';
-        const initialValue = initialValueInput?.value || '[valor inicial]';
-        const targetValue = targetValueInput?.value || '[valor objetivo]';
+        const structure = structureInput?.value || 'la fuerza de abductores de hombro derecho';
+        const initialValue = initialValueInput?.value || '3/5';
+        const targetValue = targetValueInput?.value || '4/5';
         
         let methodText = '';
         if (evaluationMethodSelect?.value === 'custom') {
             methodText = customMethodInput?.value || 'método personalizado';
         } else {
-            methodText = evaluationMethodSelect?.value || 'método de evaluación';
+            methodText = evaluationMethodSelect?.value || 'escala de Daniels';
         }
         
         const duration = durationInput?.value || '2';
@@ -3962,6 +3968,27 @@ function configureSpecificObjectivePreview() {
             input.addEventListener('input', updatePreview);
         }
     });
+    
+    // Añadir botón para usar ejemplo si no existe ya
+    const previewContainer = previewElement?.parentNode;
+    if (previewContainer && !previewContainer.querySelector('.use-example-btn')) {
+        const useExampleBtn = document.createElement('button');
+        useExampleBtn.type = 'button';
+        useExampleBtn.className = 'action-btn btn-secondary use-example-btn';
+        useExampleBtn.style.marginTop = '10px';
+        useExampleBtn.innerHTML = '<i class="fas fa-check"></i> Usar este ejemplo';
+        
+        previewContainer.appendChild(useExampleBtn);
+        
+        useExampleBtn.addEventListener('click', function() {
+            // Usar el ejemplo en el campo de descripción específico, no en observaciones
+            const descInput = document.getElementById('specificObjectiveDescription');
+            if (descInput && previewElement) {
+                descInput.value = previewElement.textContent;
+                showToast("Ejemplo copiado a la descripción del objetivo", "success");
+            }
+        });
+    }
     
     // Actualización inicial
     updatePreview();
@@ -4091,6 +4118,9 @@ function fillSpecificObjectiveForm(objective) {
             durationUnitSelect.value = 'semanas';
         }
     }
+    // Añade esto donde se asignan los valores a los campos del formulario
+if (document.getElementById('specificObjectiveDescription')) 
+    document.getElementById('specificObjectiveDescription').value = objective.description || '';
     
     if (evaluationFrequencySelect) evaluationFrequencySelect.value = objective.evaluationFrequency || 'quincenal';
     if (specificObjectiveNotes) specificObjectiveNotes.value = objective.notes || '';
@@ -4162,35 +4192,36 @@ async function saveSpecificObjective(patientId) {
         const endDateStr = endDate.toISOString().split('T')[0];
         
         // Crear objeto con los datos
-        const objectiveData = {
-            verb: verb,
-            category: category,
-            structure: structure,
-            parameter: actualParameter,
-            isCustomParameter: isCustomParameter,
-            evaluationMethod: actualMethod,
-            isCustomMethod: isCustomMethod,
-            initialValue: initialValue,
-            targetValue: targetValue,
-            currentValue: initialValue, // Al crear, el valor actual es igual al inicial
-            duration: duration,
-            durationUnit: durationUnit,
-            startDate: startDate,
-            endDate: endDateStr,
-            evaluationFrequency: evaluationFrequency,
-            notes: notes,
-            progress: 0,
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            progressHistory: [
-                {
-                    date: startDate,
-                    value: initialValue,
-                    notes: "Valor inicial"
-                }
-            ]
-        };
+const objectiveData = {
+    verb: verb,
+    category: category,
+    structure: structure,
+    parameter: actualParameter,
+    isCustomParameter: isCustomParameter,
+    evaluationMethod: actualMethod,
+    isCustomMethod: isCustomMethod,
+    initialValue: initialValue,
+    targetValue: targetValue,
+    currentValue: initialValue, // Al crear, el valor actual es igual al inicial
+    duration: duration,
+    durationUnit: durationUnit,
+    startDate: startDate,
+    endDate: endDateStr,
+    evaluationFrequency: evaluationFrequency,
+    description: document.getElementById('specificObjectiveDescription')?.value || '',  // Añadir esta línea
+    notes: notes,
+    progress: 0,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    progressHistory: [
+        {
+            date: startDate,
+            value: initialValue,
+            notes: "Valor inicial"
+        }
+    ]
+};
         
         // ID del documento (nuevo o existente)
         let objectiveId = currentObjectiveId;
@@ -4481,6 +4512,9 @@ function createSpecificObjectiveCard(objective) {
     const details = `${objective.initialValue} → ${objective.targetValue} (${objective.evaluationMethod})`;
     const progress = objective.progress || 0;
     
+    // Mostrar la descripción si existe
+    const description = objective.description || title;
+    
     // Calcular días restantes
     let daysRemaining = "";
     if (objective.endDate) {
@@ -4499,7 +4533,7 @@ function createSpecificObjectiveCard(objective) {
     card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
             <div style="flex-grow: 1;">
-                <h4 style="margin: 0; font-size: 16px; color: var(--text-primary);">${title}</h4>
+                <h4 style="margin: 0; font-size: 16px; color: var(--text-primary);">${description}</h4>
                 <div style="font-size: 13px; color: var(--text-secondary); margin-top: 3px;">${details}</div>
             </div>
             <div class="objective-badge ${statusClass}" style="font-size: 12px; padding: 3px 8px; border-radius: 12px; display: flex; align-items: center; gap: 5px;">
@@ -4522,12 +4556,41 @@ function createSpecificObjectiveCard(objective) {
             <div>${objective.category}</div>
             ${daysRemaining || `<div><i class="far fa-calendar-alt"></i> ${formatDate(new Date(objective.endDate))}</div>`}
         </div>
+        
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
+            <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
+                <i class="fas fa-edit"></i> Editar
+            </button>
+            <button type="button" class="action-btn btn-secondary delete-objective-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
     `;
     
     // Añadir evento de clic para ver detalles
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function(e) {
+        // Ignorar si hicieron clic en un botón
+        if (e.target.closest('button')) return;
+        
         openViewSpecificObjectiveModal(objective);
     });
+    
+    // Añadir eventos para los botones
+    const editBtn = card.querySelector('.edit-objective-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que se abra el modal de detalles
+            openSpecificObjectiveModal(currentPatientId, objective.id);
+        });
+    }
+    
+    const deleteBtn = card.querySelector('.delete-objective-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que se abra el modal de detalles
+            deleteSpecificObjective(currentPatientId, objective.id);
+        });
+    }
     
     return card;
 }
@@ -10567,45 +10630,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Botón para eliminar objetivo general
-    const deleteGeneralObjectiveBtn = document.getElementById('deleteGeneralObjectiveBtn');
-    if (deleteGeneralObjectiveBtn) {
-        deleteGeneralObjectiveBtn.addEventListener('click', async function() {
-            if (!currentPatientId) {
-                showToast("Error: No hay paciente seleccionado", "error");
-                return;
-            }
-            
-            if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
-                try {
-                    showLoading();
-                    
-                    // Referencia al documento del paciente
-                    const patientRef = doc(db, "patients", currentPatientId);
-                    
-                    // Actualizar el documento para eliminar el objetivo general
-                    await updateDoc(patientRef, {
-                        generalObjective: null
-                    });
-                    
-                    // Actualizar la interfaz
-                    const generalObjectiveContainer = document.getElementById('generalObjectiveContainer');
-                    const noGeneralObjective = document.getElementById('noGeneralObjective');
-                    const generalObjectiveContent = document.getElementById('generalObjectiveContent');
-                    
-                    if (generalObjectiveContainer) generalObjectiveContainer.style.display = 'block';
-                    if (noGeneralObjective) noGeneralObjective.style.display = 'block';
-                    if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
-                    
-                    hideLoading();
-                    showToast("Objetivo general eliminado correctamente", "success");
-                } catch (error) {
-                    console.error("Error eliminando objetivo general:", error);
-                    hideLoading();
-                    showToast("Error al eliminar objetivo general: " + error.message, "error");
+const deleteGeneralObjectiveBtn = document.getElementById('deleteGeneralObjectiveBtn');
+if (deleteGeneralObjectiveBtn) {
+    // Clonar el botón para eliminar event listeners anteriores
+    const newBtn = deleteGeneralObjectiveBtn.cloneNode(true);
+    deleteGeneralObjectiveBtn.parentNode.replaceChild(newBtn, deleteGeneralObjectiveBtn);
+    
+    newBtn.addEventListener('click', async function() {
+        if (!currentPatientId) {
+            showToast("Error: No hay paciente seleccionado", "error");
+            return;
+        }
+        
+        if (confirm("¿Está seguro que desea eliminar el objetivo general? Esta acción no se puede deshacer.")) {
+            try {
+                showLoading();
+                
+                // Eliminar directamente el documento de objetivo general
+                const objectiveRef = doc(db, "patients", currentPatientId, "objectives", "general");
+                await deleteDoc(objectiveRef);
+                
+                // Limpiar caché
+                if (objectivesCache[currentPatientId] && objectivesCache[currentPatientId].general) {
+                    delete objectivesCache[currentPatientId].general;
                 }
+                
+                // Actualizar la interfaz
+                const noGeneralObjective = document.getElementById('noGeneralObjective');
+                const generalObjectiveContent = document.getElementById('generalObjectiveContent');
+                
+                if (noGeneralObjective) noGeneralObjective.style.display = 'block';
+                if (generalObjectiveContent) generalObjectiveContent.style.display = 'none';
+                
+                hideLoading();
+                showToast("Objetivo general eliminado correctamente", "success");
+            } catch (error) {
+                hideLoading();
+                console.error("Error eliminando objetivo general:", error);
+                showToast("Error al eliminar objetivo general: " + error.message, "error");
             }
-        });
-    }
+        }
+    });
+}
 
     // Manejar plantillas de objetivos específicos
     const templateBtns = document.querySelectorAll('.template-btn[data-template]');
@@ -10683,3 +10749,100 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+
+
+
+        // Habilitar reordenamiento de objetivos (drag and drop)
+function setupObjectiveReordering() {
+    const objectivesList = document.getElementById('specificObjectivesList');
+    if (!objectivesList) return;
+    
+    // Comprobar si ya se configuró antes para evitar duplicar
+    if (objectivesList.getAttribute('data-sortable-initialized') === 'true') return;
+    objectivesList.setAttribute('data-sortable-initialized', 'true');
+    
+    // Hacer que los elementos sean arrastrables
+    const cards = objectivesList.querySelectorAll('.objective-card');
+    cards.forEach(card => {
+        card.setAttribute('draggable', 'true');
+        
+        // Añadir indicador visual de "arrastrable"
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'drag-handle';
+        dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+        dragHandle.style.position = 'absolute';
+        dragHandle.style.top = '15px';
+        dragHandle.style.left = '5px';
+        dragHandle.style.color = 'var(--text-secondary)';
+        dragHandle.style.opacity = '0.5';
+        dragHandle.style.cursor = 'move';
+        
+        // Asegurar que la card tiene posición relativa para posicionar el handle
+        card.style.position = 'relative';
+        card.style.paddingLeft = '25px';
+        
+        card.appendChild(dragHandle);
+        
+        // Eventos de arrastrar
+        card.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
+            this.classList.add('dragging');
+            setTimeout(() => this.style.opacity = '0.4', 0);
+        });
+        
+        card.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            this.style.opacity = '1';
+        });
+    });
+    
+    // Eventos para la zona donde se sueltan
+    objectivesList.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const draggable = document.querySelector('.dragging');
+        if (!draggable) return;
+        
+        const afterElement = getDragAfterElement(objectivesList, e.clientY);
+        if (afterElement) {
+            objectivesList.insertBefore(draggable, afterElement);
+        } else {
+            objectivesList.appendChild(draggable);
+        }
+    });
+    
+    objectivesList.addEventListener('drop', function(e) {
+        e.preventDefault();
+        // Aquí podrías guardar el nuevo orden en la base de datos si es necesario
+    });
+    
+    // Función para determinar después de qué elemento insertar
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.objective-card:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+}
+
+// Llamar a esta función cuando se cargan los objetivos específicos
+document.addEventListener('DOMContentLoaded', function() {
+    // Añadir observer para detectar cuando se agregan objetivos a la lista
+    const objectivesList = document.getElementById('specificObjectivesList');
+    if (objectivesList) {
+        const observer = new MutationObserver(function(mutations) {
+            setupObjectiveReordering();
+        });
+        
+        observer.observe(objectivesList, { childList: true });
+    }
+});
+        </script>
