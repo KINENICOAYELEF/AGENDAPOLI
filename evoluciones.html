@@ -1592,7 +1592,7 @@ let imagekit = null;
 const imagekitConfig = {
     publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=", // Reemplaza con tu public key de ImageKit
     privateKey: "private_XNLSvEGgU7XKRFZGONvMFkgiX9E=", // Reemplaza con tu private key de ImageKit
-    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw", // Reemplaza con tu URL endpoint de ImageKit
+    urlEndpoint: "https://aesthetic-starship-0ab8c1.netlify.app/.netlify/functions/imagekit-auth", // Reemplaza con tu URL endpoint de ImageKit
 };
 
 // Función para generar la firma para ImageKit
@@ -1627,15 +1627,36 @@ function loadImageKitSDK() {
     return new Promise((resolve, reject) => {
         // Si ya existe el script, no lo volvemos a cargar
         if (document.getElementById('imagekitScript')) {
-            resolve();
+            if (window.ImageKit) {
+                resolve(window.ImageKit);
+            } else {
+                // El script está cargado pero ImageKit no está disponible aún
+                setTimeout(() => {
+                    if (window.ImageKit) {
+                        resolve(window.ImageKit);
+                    } else {
+                        reject(new Error('ImageKit no disponible después de cargar el script'));
+                    }
+                }, 500);
+            }
             return;
         }
         
         const script = document.createElement('script');
         script.id = 'imagekitScript';
         script.src = 'https://unpkg.com/imagekit-javascript/dist/imagekit.min.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('No se pudo cargar el SDK de ImageKit'));
+        script.onload = () => {
+            console.log("SDK de ImageKit cargado correctamente");
+            if (window.ImageKit) {
+                resolve(window.ImageKit);
+            } else {
+                reject(new Error('ImageKit no disponible después de cargar el script'));
+            }
+        };
+        script.onerror = (err) => {
+            console.error("No se pudo cargar el SDK de ImageKit", err);
+            reject(new Error('No se pudo cargar el SDK de ImageKit'));
+        };
         document.head.appendChild(script);
     });
 }
@@ -1762,16 +1783,33 @@ async function initFirebase() {
 
         // Inicializar ImageKit.io
 try {
-    console.log("Preparando sistema de archivos con ImageKit...");
-    // Cargar librería para manejo de firmas criptográficas
-    const scriptCrypto = document.createElement('script');
-    scriptCrypto.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js';
-    document.head.appendChild(scriptCrypto);
+    // Primero cargamos el SDK
+    await loadImageKitSDK();
     
-    console.log("ImageKit configurado correctamente para subida de archivos");
+    // Luego inicializamos ImageKit
+    if (window.ImageKit) {
+        imagekit = new window.ImageKit({
+            publicKey: imagekitConfig.publicKey,
+            urlEndpoint: imagekitConfig.urlEndpoint,
+            authenticationEndpoint: imagekitConfig.authenticationEndpoint
+        });
+        
+        console.log("ImageKit inicializado correctamente");
+        
+        // Verificar que la autenticación funciona
+        try {
+            await fetch(imagekitConfig.authenticationEndpoint);
+            console.log("Endpoint de autenticación de ImageKit funciona correctamente");
+        } catch (authError) {
+            console.error("Error validando endpoint de autenticación:", authError);
+            showToast("Advertencia: Problemas con la autenticación de ImageKit", "warning");
+        }
+    } else {
+        console.warn("SDK de ImageKit no está disponible. Se cargará cuando sea necesario.");
+    }
 } catch (imagekitError) {
-    console.error("Error al configurar ImageKit:", imagekitError);
-    showToast("Advertencia: Problemas con el sistema de archivos", "warning");
+    console.error("Error al inicializar ImageKit:", imagekitError);
+    showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
 }
         
         // Verificar conexión
@@ -2195,131 +2233,73 @@ async function uploadFile(file, patientId, folder) {
     }
 }
 
-// Upload file to ImageKit.io - Versión mejorada
+// Upload file to ImageKit.io - Versión completamente renovada
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
         
-        // Convertir el archivo a base64
+        // Paso 1: Cargar el SDK de ImageKit
+        await loadImageKitSDK();
+        
+        // Paso 2: Inicializar ImageKit si no está inicializado
+        if (!imagekit && window.ImageKit) {
+            imagekit = new window.ImageKit({
+                publicKey: imagekitConfig.publicKey,
+                urlEndpoint: imagekitConfig.urlEndpoint,
+                authenticationEndpoint: imagekitConfig.authenticationEndpoint
+            });
+            console.log("ImageKit inicializado al momento de subir archivo");
+        }
+        
+        if (!imagekit) {
+            throw new Error("No se pudo inicializar ImageKit");
+        }
+        
+        // Paso 3: Crear un nombre de archivo seguro y único
+        const fileName = `patients_${patientId}_${folder}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        
+        // Paso 4: Definir la carpeta de destino
+        const filePath = `patients/${patientId}/${folder}`;
+        
+        // Paso 5: Subir el archivo usando ImageKit SDK
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = async function(event) {
-                const base64data = event.target.result;
-                
-                // Crear nombre para el archivo seguro para URLs
-                const fileName = `patients_${patientId}_${folder}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-                
-                try {
-                    // Generar datos para la solicitud de carga
-                    const timestamp = Math.floor(Date.now() / 1000);
-                    const expire = timestamp + 3600; // Expira en 1 hora
-                    
-                    // Preparar los datos de la imagen para la carga
-                    const formData = new FormData();
-                    
-                    // Extraer datos binarios del base64
-                    const byteString = atob(base64data.split(',')[1]);
-                    const mimeType = base64data.split(',')[0].split(':')[1].split(';')[0];
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    
-                    for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                    }
-                    
-                    const blob = new Blob([ab], {type: mimeType});
-                    
-                    // Preparar la firma para autenticación
-                    const stringToSign = `${expire}`;
-                    const signature = await generateImageKitSignature(imagekitConfig.privateKey, stringToSign);
-                    
-                    // Preparar datos para la carga
-                    formData.append('file', blob, fileName);
-                    formData.append('publicKey', imagekitConfig.publicKey);
-                    formData.append('signature', signature);
-                    formData.append('expire', expire);
-                    formData.append('fileName', fileName);
-                    formData.append('folder', `patients/${patientId}/${folder}`);
-                    formData.append('useUniqueFileName', 'true');
-                    
-                    // Realizar la carga usando fetch API
-                    const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Error en la carga: ${errorData.message || response.statusText}`);
-                    }
-                    
-                    const result = await response.json();
-                    
-                    const resultado = {
-                        url: result.url,
-                        fileId: result.fileId,
-                        name: file.name,
-                        type: file.type.startsWith('image/') ? 'image' : 'document'
-                    };
-                    
-                    console.log("Archivo subido correctamente:", resultado);
-                    showToast("Archivo subido correctamente", "success");
-                    
-                    resolve(resultado);
-                } catch (error) {
-                    console.error("Error al subir a ImageKit:", error);
-                    
-                    // Plan B: Guardar localmente si falla la carga
-                    try {
-                        console.warn("Usando almacenamiento local como alternativa temporal");
-                        const localUrl = URL.createObjectURL(file);
-                        
-                        // Guardar metadatos en localStorage
-                        const fileKey = `local_file_${Date.now()}`;
-                        const storedFiles = JSON.parse(localStorage.getItem('localFiles') || '{}');
-                        storedFiles[fileKey] = {
-                            name: file.name,
-                            type: file.type,
-                            createdAt: new Date().toISOString(),
-                            patientId: patientId,
-                            folder: folder
-                        };
-                        localStorage.setItem('localFiles', JSON.stringify(storedFiles));
-                        
-                        const fallbackResult = {
-                            url: localUrl,
-                            fileId: fileKey,
-                            name: file.name,
-                            type: file.type.startsWith('image/') ? 'image' : 'document',
-                            isLocal: true
-                        };
-                        
-                        showToast("Archivo guardado localmente (podrías perderlo al cerrar la página)", "warning");
-                        resolve(fallbackResult);
-                    } catch (localError) {
-                        console.error("Error al intentar guardar localmente:", localError);
-                        showToast("No se pudo guardar el archivo", "error");
-                        reject(localError);
-                    }
-                } finally {
-                    hideLoading();
-                }
-            };
-            
-            reader.onerror = function(error) {
-                console.error("Error leyendo archivo:", error);
-                showToast("Error al leer el archivo", "error");
+            // Usar el método upload del SDK de ImageKit
+            imagekit.upload({
+                file: file,
+                fileName: fileName,
+                folder: filePath,
+                useUniqueFileName: true,
+                tags: [`patient-${patientId}`, folder],
+                responseFields: ["tags", "customCoordinates", "isPrivateFile", "metadata"]
+            }, function(err, result) {
                 hideLoading();
-                reject(error);
-            };
-            
-            reader.readAsDataURL(file);
+                
+                if (err) {
+                    console.error("Error al subir archivo a ImageKit:", err);
+                    showToast("Error al subir archivo: " + (err.message || "Error desconocido"), "error");
+                    reject(err);
+                    return;
+                }
+                
+                console.log("Archivo subido exitosamente a ImageKit:", result);
+                
+                // Preparar resultado para nuestro sistema
+                const uploadResult = {
+                    url: result.url,
+                    fileId: result.fileId,
+                    name: file.name,
+                    type: file.type.startsWith('image/') ? 'image' : 'document',
+                    thumbnailUrl: result.thumbnailUrl || result.url
+                };
+                
+                showToast("Archivo subido correctamente", "success");
+                resolve(uploadResult);
+            });
         });
     } catch (error) {
+        hideLoading();
         console.error("Error preparando archivo para ImageKit:", error);
         showToast("Error al preparar archivo: " + error.message, "error");
-        hideLoading();
         return null;
     }
 }
@@ -3222,7 +3202,7 @@ function renderScales(scales) {
     }
 }
 
-/// Render attachments - Versión mejorada
+// Función mejorada para mostrar archivos adjuntos
 function renderAttachments(attachments) {
     try {
         if (!attachments || attachments.length === 0) return '';
@@ -3236,28 +3216,32 @@ function renderAttachments(attachments) {
         attachments.forEach(attachment => {
             const isImage = attachment.type === 'image';
             const isPDF = attachment.name && attachment.name.toLowerCase().endsWith('.pdf');
-            const isLocal = attachment.isLocal === true;
             
-            // Alerta visual para archivos locales temporales
-            const localBadge = isLocal ? 
-                `<div style="position: absolute; top: 5px; left: 5px; background: rgba(255,193,7,0.8); color: black; padding: 2px 6px; border-radius: 10px; font-size: 10px;">Local</div>` : '';
-                
+            // Crear miniatura o icono
+            let contentHTML = '';
+            if (isImage) {
+                // Para imágenes, mostrar la thumbnail si está disponible
+                const imageUrl = attachment.thumbnailUrl || attachment.url;
+                contentHTML = `<img src="${imageUrl}" alt="${attachment.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else if (isPDF) {
+                // Para PDFs, mostrar icono PDF
+                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
+                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
+                </div>`;
+            } else {
+                // Para otros tipos de archivo, mostrar icono genérico
+                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
+                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
+                    <div style="font-weight: bold; margin-top: 3px;">${attachment.name ? attachment.name.split('.').pop().toUpperCase() : 'DOC'}</div>
+                </div>`;
+            }
+            
+            // Añadir elemento al HTML
             attachmentsHTML += `
                 <div class="attachment" style="position: relative; width: 150px; height: 150px; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background-color: #f8f9fa;">
-                    ${localBadge}
-                    ${isImage 
-                        ? `<img src="${attachment.url}" alt="${attachment.name}" style="width: 100%; height: 100%; object-fit: cover;">`
-                        : isPDF
-                          ? `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                               <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
-                               <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                             </div>`
-                          : `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                               <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
-                               <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                               <div style="font-weight: bold; margin-top: 3px;">${attachment.name ? attachment.name.split('.').pop().toUpperCase() : 'DOC'}</div>
-                             </div>`
-                    }
+                    ${contentHTML}
                     <div class="attachment-actions" style="position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: rgba(0,0,0,0.6); padding: 5px 0;">
                         <a href="${attachment.url}" target="_blank" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
                             <i class="fas fa-eye"></i>
@@ -13584,7 +13568,6 @@ async function loadPatientFiles(patientId) {
         patient.files.forEach(file => {
             const isImage = file.type === 'image';
             const isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-            const isLocal = file.isLocal === true;
             
             const attachment = document.createElement('div');
             attachment.className = 'attachment';
@@ -13597,24 +13580,9 @@ async function loadPatientFiles(patientId) {
             attachment.style.backgroundColor = '#f8f9fa';
             attachment.style.margin = '10px';
             
-            // Distintivo para archivos locales
-            if (isLocal) {
-                const localBadge = document.createElement('div');
-                localBadge.style.position = 'absolute';
-                localBadge.style.top = '5px';
-                localBadge.style.left = '5px';
-                localBadge.style.background = 'rgba(255,193,7,0.8)';
-                localBadge.style.color = 'black';
-                localBadge.style.padding = '2px 6px';
-                localBadge.style.borderRadius = '10px';
-                localBadge.style.fontSize = '10px';
-                localBadge.textContent = 'Local';
-                attachment.appendChild(localBadge);
-            }
-            
             if (isImage) {
                 const img = document.createElement('img');
-                img.src = file.url;
+                img.src = file.thumbnailUrl || file.url;
                 img.alt = file.name;
                 img.style.width = '100%';
                 img.style.height = '100%';
@@ -13643,7 +13611,6 @@ async function loadPatientFiles(patientId) {
                 });
                 attachment.appendChild(fileIconContainer);
             } else {
-                // Genérico para otros tipos de archivo
                 const fileIconContainer = document.createElement('div');
                 fileIconContainer.style.display = 'flex';
                 fileIconContainer.style.flexDirection = 'column';
