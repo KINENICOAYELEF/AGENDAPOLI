@@ -1595,6 +1595,35 @@ const imagekitConfig = {
     urlEndpoint: "https://aesthetic-starship-0ab8c1.netlify.app/.netlify/functions/imagekit-auth", // Reemplaza con tu URL endpoint de ImageKit
 };
 
+        // Función para subir archivos directamente a ImageKit usando upload API
+async function uploadToImageKitDirect(file, folder, fileName) {
+    try {
+        // Crear FormData para la subida
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('publicKey', imagekitConfig.publicKey);
+        formData.append('fileName', fileName);
+        formData.append('folder', folder);
+        formData.append('useUniqueFileName', 'true');
+        
+        // Realizar subida directa a ImageKit
+        const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error de carga');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error en subida directa a ImageKit:', error);
+        throw error;
+    }
+}
+
 // Función para generar la firma para ImageKit
 function generateImageKitSignature(privateKey, stringToSign) {
     // Esta función simula la generación de una firma HMAC-SHA1
@@ -1781,35 +1810,13 @@ async function initFirebase() {
         storage = getStorage(app);
         console.log("Storage obtenido:", storage);
 
-        // Inicializar ImageKit.io
+        // Inicializar sistema de archivos con ImageKit
 try {
-    // Primero cargamos el SDK
-    await loadImageKitSDK();
-    
-    // Luego inicializamos ImageKit
-    if (window.ImageKit) {
-        imagekit = new window.ImageKit({
-            publicKey: imagekitConfig.publicKey,
-            urlEndpoint: imagekitConfig.urlEndpoint,
-            authenticationEndpoint: imagekitConfig.authenticationEndpoint
-        });
-        
-        console.log("ImageKit inicializado correctamente");
-        
-        // Verificar que la autenticación funciona
-        try {
-            await fetch(imagekitConfig.authenticationEndpoint);
-            console.log("Endpoint de autenticación de ImageKit funciona correctamente");
-        } catch (authError) {
-            console.error("Error validando endpoint de autenticación:", authError);
-            showToast("Advertencia: Problemas con la autenticación de ImageKit", "warning");
-        }
-    } else {
-        console.warn("SDK de ImageKit no está disponible. Se cargará cuando sea necesario.");
-    }
-} catch (imagekitError) {
-    console.error("Error al inicializar ImageKit:", imagekitError);
-    showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
+    console.log("Sistema de archivos configurado para usar ImageKit directamente");
+    // No necesitamos inicializar nada más aquí
+} catch (error) {
+    console.error("Error al configurar sistema de archivos:", error);
+    showToast("Advertencia: Pueden haber problemas para subir archivos", "warning");
 }
         
         // Verificar conexión
@@ -2233,73 +2240,40 @@ async function uploadFile(file, patientId, folder) {
     }
 }
 
-// Upload file to ImageKit.io - Versión completamente renovada
+// Upload file to ImageKit.io - Versión directa simplificada
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
         
-        // Paso 1: Cargar el SDK de ImageKit
-        await loadImageKitSDK();
+        // 1. Crear un nombre de archivo único
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const fileName = `patients_${patientId}_${Date.now()}_${sanitizedName}`;
         
-        // Paso 2: Inicializar ImageKit si no está inicializado
-        if (!imagekit && window.ImageKit) {
-            imagekit = new window.ImageKit({
-                publicKey: imagekitConfig.publicKey,
-                urlEndpoint: imagekitConfig.urlEndpoint,
-                authenticationEndpoint: imagekitConfig.authenticationEndpoint
-            });
-            console.log("ImageKit inicializado al momento de subir archivo");
-        }
+        // 2. Definir carpeta de destino
+        const targetFolder = `patients/${patientId}/${folder}`;
         
-        if (!imagekit) {
-            throw new Error("No se pudo inicializar ImageKit");
-        }
+        // 3. Subir archivo directamente
+        console.log("Iniciando subida a ImageKit:", { fileName, folder: targetFolder });
+        const uploadResult = await uploadToImageKitDirect(file, targetFolder, fileName);
         
-        // Paso 3: Crear un nombre de archivo seguro y único
-        const fileName = `patients_${patientId}_${folder}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        console.log("Resultado de subida:", uploadResult);
         
-        // Paso 4: Definir la carpeta de destino
-        const filePath = `patients/${patientId}/${folder}`;
+        // 4. Preparar resultado para nuestra aplicación
+        const result = {
+            url: uploadResult.url,
+            thumbnailUrl: uploadResult.thumbnailUrl,
+            fileId: uploadResult.fileId,
+            name: file.name,
+            type: file.type.startsWith('image/') ? 'image' : 'document'
+        };
         
-        // Paso 5: Subir el archivo usando ImageKit SDK
-        return new Promise((resolve, reject) => {
-            // Usar el método upload del SDK de ImageKit
-            imagekit.upload({
-                file: file,
-                fileName: fileName,
-                folder: filePath,
-                useUniqueFileName: true,
-                tags: [`patient-${patientId}`, folder],
-                responseFields: ["tags", "customCoordinates", "isPrivateFile", "metadata"]
-            }, function(err, result) {
-                hideLoading();
-                
-                if (err) {
-                    console.error("Error al subir archivo a ImageKit:", err);
-                    showToast("Error al subir archivo: " + (err.message || "Error desconocido"), "error");
-                    reject(err);
-                    return;
-                }
-                
-                console.log("Archivo subido exitosamente a ImageKit:", result);
-                
-                // Preparar resultado para nuestro sistema
-                const uploadResult = {
-                    url: result.url,
-                    fileId: result.fileId,
-                    name: file.name,
-                    type: file.type.startsWith('image/') ? 'image' : 'document',
-                    thumbnailUrl: result.thumbnailUrl || result.url
-                };
-                
-                showToast("Archivo subido correctamente", "success");
-                resolve(uploadResult);
-            });
-        });
-    } catch (error) {
+        showToast("Archivo subido correctamente", "success");
         hideLoading();
-        console.error("Error preparando archivo para ImageKit:", error);
-        showToast("Error al preparar archivo: " + error.message, "error");
+        return result;
+    } catch (error) {
+        console.error("Error subiendo archivo a ImageKit:", error);
+        showToast("Error al subir archivo: " + error.message, "error");
+        hideLoading();
         return null;
     }
 }
