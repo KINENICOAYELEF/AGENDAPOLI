@@ -1576,7 +1576,7 @@
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc, where, documentId, writeBatch } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc, where, documentId } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Variables globales
@@ -6005,17 +6005,8 @@ async function loadSpecificObjectivesDisplay(patientId) {
             objectivesStatsPanel.style.display = specificObjectives.length > 0 ? 'block' : 'none';
         }
         
-        // Ordenar objetivos primero por el orden guardado, luego por estado si no hay orden
+        // Ordenar objetivos: pendientes primero, luego en progreso, luego completados
         specificObjectives.sort((a, b) => {
-            // Si ambos tienen displayOrder, usar ese
-            if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-                return a.displayOrder - b.displayOrder;
-            }
-            // Si solo uno tiene displayOrder, priorizarlo
-            if (a.displayOrder !== undefined) return -1;
-            if (b.displayOrder !== undefined) return 1;
-            
-            // Si ninguno tiene displayOrder, ordenar por estado
             const statusOrder = { 'completed': 2, 'inprogress': 1, 'pending': 0 };
             return statusOrder[a.status || 'pending'] - statusOrder[b.status || 'pending'];
         });
@@ -12393,41 +12384,10 @@ function setupObjectiveReordering() {
         }
     });
     
-    objectivesList.addEventListener('drop', async function(e) {
-    e.preventDefault();
-    const draggableId = e.dataTransfer.getData('text/plain');
-    if (!draggableId || !currentPatientId) return;
-    
-    // Guardar el nuevo orden en Firebase
-    try {
-        // Obtener todos los objetivos en el nuevo orden
-        const orderedObjectives = Array.from(objectivesList.querySelectorAll('.objective-card')).map((card, index) => ({
-            id: card.getAttribute('data-id'),
-            order: index
-        }));
-        
-        // Actualizar el orden de cada objetivo en Firebase
-        const batch = writeBatch(db);
-        
-        orderedObjectives.forEach(obj => {
-            const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
-            batch.update(objectiveRef, { displayOrder: obj.order });
-            
-            // También actualizar en la caché
-            if (objectivesCache[currentPatientId] && 
-                objectivesCache[currentPatientId].specific && 
-                objectivesCache[currentPatientId].specific[obj.id]) {
-                objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
-            }
-        });
-        
-        await batch.commit();
-        showToast("Orden de objetivos guardado", "success");
-    } catch (error) {
-        console.error("Error al guardar el orden de objetivos:", error);
-        showToast("Error al guardar el orden: " + error.message, "error");
-    }
-});
+    objectivesList.addEventListener('drop', function(e) {
+        e.preventDefault();
+        // Aquí podrías guardar el nuevo orden en la base de datos si es necesario
+    });
     
     // Función para determinar después de qué elemento insertar
     function getDragAfterElement(container, y) {
