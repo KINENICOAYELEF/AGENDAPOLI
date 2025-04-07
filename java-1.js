@@ -1672,7 +1672,7 @@ async function loadTreatmentPlans(patientId) {
         });
     } catch (error) {
         console.error("Error al cargar planes de tratamiento:", error);
-        showToast("Error al cargar planes de tratamiento", "error");
+        showToast("Error al cargar planes: " + error.message, "error");
     }
 }
 
@@ -6742,7 +6742,7 @@ function changeView(viewName) {
         // Manejar vista dashboard de forma especial
         if (viewName === 'dashboard') {
             if (window.dashboardContent) {
-                // Usar el contenido guardado del dashboard
+                // Crear un contenedor temporal para insertar el contenido
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = window.dashboardContent;
                 
@@ -6774,6 +6774,9 @@ function changeView(viewName) {
                         
                         newAddEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
+                }).catch(error => {
+                    console.error("Error al cargar pacientes:", error);
+                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             } else {
                 // Si no hay contenido guardado, crear una estructura básica
@@ -6870,6 +6873,9 @@ function changeView(viewName) {
                     if (addEvolutionBtn) {
                         addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
+                }).catch(error => {
+                    console.error("Error al cargar pacientes:", error);
+                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
         } else {
@@ -7167,6 +7173,9 @@ function changeView(viewName) {
                             if (modal) modal.classList.add('active');
                         });
                     }
+                }).catch(error => {
+                    console.error("Error al cargar pacientes:", error);
+                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             } 
             else if (viewName === 'evoluciones') {
@@ -7176,40 +7185,43 @@ function changeView(viewName) {
                     
                     // Mostrar pacientes en la vista principal
                     renderPatientsInView('patientEvolutionsView', patients);
+                }).catch(error => {
+                    console.error("Error al cargar pacientes:", error);
+                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
             else if (viewName === 'reportes') {
-    // Cargar estadísticas en tiempo real
-    showLoading();
-    
-    // Mostrar mensaje de carga
-    const statsElements = ['totalPatientsReport', 'totalEvolutionsReport', 'monthEvolutionsReport'];
-    statsElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = "Cargando...";
-        }
-    });
-    
-    // Actualizar estadísticas de forma asíncrona
-    updateReportStatistics().then(() => {
-        hideLoading();
-    }).catch(error => {
-        console.error("Error al actualizar estadísticas:", error);
-        hideLoading();
-        showToast("Error al cargar estadísticas: " + error.message, "error");
-    });
-    
-    // Cargar pacientes para el selector de informes
-    getPatients().then(patients => {
-        const reportSelect = document.getElementById('reportPatientSelect');
-        if (reportSelect) {
-            reportSelect.innerHTML = '<option value="">Seleccionar paciente...</option>';
-            
-            patients.forEach(patient => {
-                reportSelect.innerHTML += `<option value="${patient.id}">${patient.name} (${patient.rut})</option>`;
-            });
-        }
+                // Cargar estadísticas en tiempo real
+                showLoading();
+                
+                // Mostrar mensaje de carga
+                const statsElements = ['totalPatientsReport', 'totalEvolutionsReport', 'monthEvolutionsReport'];
+                statsElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = "Cargando...";
+                    }
+                });
+                
+                // Actualizar estadísticas de forma asíncrona
+                updateReportStatistics().then(() => {
+                    hideLoading();
+                }).catch(error => {
+                    console.error("Error al actualizar estadísticas:", error);
+                    hideLoading();
+                    showToast("Error al cargar estadísticas: " + error.message, "error");
+                });
+                
+                // Cargar pacientes para el selector de informes
+                getPatients().then(patients => {
+                    const reportSelect = document.getElementById('reportPatientSelect');
+                    if (reportSelect) {
+                        reportSelect.innerHTML = '<option value="">Seleccionar paciente...</option>';
+                        
+                        patients.forEach(patient => {
+                            reportSelect.innerHTML += `<option value="${patient.id}">${patient.name} (${patient.rut})</option>`;
+                        });
+                    }
                     
                     // Inicializar fechas para informe estadístico
                     const today = new Date();
@@ -7242,6 +7254,9 @@ function changeView(viewName) {
                         
                         newStatReportBtn.addEventListener('click', generateStatisticsReport);
                     }
+                }).catch(error => {
+                    console.error("Error al cargar pacientes para reportes:", error);
+                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
             else if (viewName === 'configuracion') {
@@ -7364,7 +7379,6 @@ async function updateReportStatistics() {
     }
 }
 
-// Generar informe de paciente
 function generatePatientReport() {
     const patientSelect = document.getElementById('reportPatientSelect');
     if (!patientSelect) {
@@ -7382,23 +7396,12 @@ function generatePatientReport() {
     // Mostrar indicador de carga
     showLoading();
     
-    // Redirigir al exportar PDF del paciente
+    // Configurar opciones y generar el PDF
     setTimeout(() => {
         // Guardar el ID del paciente para usar en exportToPDF
         currentPatientId = patientId;
         
-        // Configurar opciones por defecto
-        const pdfIncludeDiagnosis = document.getElementById('pdfIncludeDiagnosis');
-        const pdfIncludeEvolutions = document.getElementById('pdfIncludeEvolutions');
-        const pdfIncludeScales = document.getElementById('pdfIncludeScales');
-        const pdfIncludeExercises = document.getElementById('pdfIncludeExercises');
-        
-        if (pdfIncludeDiagnosis) pdfIncludeDiagnosis.checked = true;
-        if (pdfIncludeEvolutions) pdfIncludeEvolutions.checked = true;
-        if (pdfIncludeScales) pdfIncludeScales.checked = true;
-        if (pdfIncludeExercises) pdfIncludeExercises.checked = true;
-        
-        // Llamar a la función de exportación directamente
+        // Llamar a la función de exportación
         exportToPDF(patientId).then(() => {
             hideLoading();
         }).catch(error => {
@@ -11666,40 +11669,62 @@ function setupObjectiveReordering() {
     });
     
     objectivesList.addEventListener('drop', async function(e) {
-    e.preventDefault();
-    const draggableId = e.dataTransfer.getData('text/plain');
-    if (!draggableId || !currentPatientId) return;
-    
-    // Guardar el nuevo orden en Firebase
-    try {
-        // Obtener todos los objetivos en el nuevo orden
-        const orderedObjectives = Array.from(objectivesList.querySelectorAll('.objective-card')).map((card, index) => ({
-            id: card.getAttribute('data-id'),
-            order: index
-        }));
+        e.preventDefault();
+        const draggableId = e.dataTransfer.getData('text/plain');
+        if (!draggableId || !currentPatientId) return;
         
-        // Actualizar el orden de cada objetivo en Firebase
-        const batch = writeBatch(db);
-        
-        orderedObjectives.forEach(obj => {
-            const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
-            batch.update(objectiveRef, { displayOrder: obj.order });
+        // Guardar el nuevo orden en Firebase
+        try {
+            // Obtener todos los objetivos en el nuevo orden
+            const orderedObjectives = Array.from(objectivesList.querySelectorAll('.objective-card')).map((card, index) => ({
+                id: card.getAttribute('data-id'),
+                order: index
+            }));
             
-            // También actualizar en la caché
-            if (objectivesCache[currentPatientId] && 
-                objectivesCache[currentPatientId].specific && 
-                objectivesCache[currentPatientId].specific[obj.id]) {
-                objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
+            // Actualizar el orden de cada objetivo en Firebase
+            try {
+                const batch = writeBatch(db);
+                
+                orderedObjectives.forEach(obj => {
+                    if (obj && obj.id) {
+                        const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
+                        batch.update(objectiveRef, { displayOrder: obj.order });
+                        
+                        // También actualizar en la caché
+                        if (objectivesCache[currentPatientId] && 
+                            objectivesCache[currentPatientId].specific && 
+                            objectivesCache[currentPatientId].specific[obj.id]) {
+                            objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
+                        }
+                    }
+                });
+                
+                await batch.commit();
+                showToast("Orden de objetivos guardado", "success");
+            } catch (batchError) {
+                console.error("Error en la operación batch:", batchError);
+                
+                // Intento alternativo con operaciones individuales
+                for (const obj of orderedObjectives) {
+                    if (obj && obj.id) {
+                        const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
+                        await updateDoc(objectiveRef, { displayOrder: obj.order });
+                        
+                        // También actualizar en la caché
+                        if (objectivesCache[currentPatientId] && 
+                            objectivesCache[currentPatientId].specific && 
+                            objectivesCache[currentPatientId].specific[obj.id]) {
+                            objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
+                        }
+                    }
+                }
+                showToast("Orden de objetivos guardado (método alternativo)", "success");
             }
-        });
-        
-        await batch.commit();
-        showToast("Orden de objetivos guardado", "success");
-    } catch (error) {
-        console.error("Error al guardar el orden de objetivos:", error);
-        showToast("Error al guardar el orden: " + error.message, "error");
-    }
-});
+        } catch (error) {
+            console.error("Error al guardar el orden de objetivos:", error);
+            showToast("Error al guardar el orden: " + error.message, "error");
+        }
+    });
     
     // Función para determinar después de qué elemento insertar
     function getDragAfterElement(container, y) {
