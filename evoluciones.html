@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evoluciones Polideportivo - Kinesiólogo Nicolás Ayelef</title>
+    <!-- SDK de ImageKit.io -->
+    <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
@@ -250,13 +252,13 @@
 
                     <div class="accordion">
                         <div class="accordion-header">
-                            <span>Ficha clínica</span>
+                            <span>Ficha clínica y otros documentos</span>
                             <i class="fas fa-chevron-down accordion-icon"></i>
                         </div>
                         <div class="accordion-body">
                             <div class="form-group">
-                                <label class="form-label">Cargar ficha clínica (PDF)</label>
-                                <input type="file" accept=".pdf" class="form-control" id="clinicalFileUpload">
+                                <label class="form-label">Cargar ficha clínica (PDF) u otros documentos</label>
+                                <input type="file" id="patientFiles" multiple accept="image/*,application/pdf">
                             </div>
                             <div class="attachments" id="clinicalFiles">
                                 <!-- Medical files will be listed here -->
@@ -864,7 +866,7 @@
                         <div class="accordion-body">
                             <div class="form-group">
                                 <label class="form-label">Subir imágenes o documentos</label>
-                                <input type="file" multiple class="form-control" id="evolutionAttachments">
+                                <input type="file" id="evolutionAttachments" multiple accept="image/*,application/pdf">
                             </div>
                             <div class="attachments" id="attachmentPreview">
                                 <!-- Attachment previews will be shown here -->
@@ -11434,37 +11436,37 @@ async function initApp() {
         }
         
         // Configurar previsualización de archivos adjuntos
-        const evolutionAttachments = document.getElementById('evolutionAttachments');
-        if (evolutionAttachments) {
-            evolutionAttachments.addEventListener('change', function() {
-                const previewContainer = document.getElementById('attachmentPreview');
-                if (!previewContainer) return;
-                
-                previewContainer.innerHTML = '';
-                
-                Array.from(this.files).forEach(file => {
-                    const isImage = file.type.startsWith('image/');
-                    const attachment = document.createElement('div');
-                    attachment.className = 'attachment';
-                    
-                    if (isImage) {
-                        const img = document.createElement('img');
-                        img.src = URL.createObjectURL(file);
-                        img.alt = file.name;
-                        attachment.appendChild(img);
-                    } else {
-                        attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
-                    }
-                    
-                    const typeLabel = document.createElement('div');
-                    typeLabel.className = 'attachment-type';
-                    typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
-                    attachment.appendChild(typeLabel);
-                    
-                    previewContainer.appendChild(attachment);
-                });
-            });
-        }
+const evolutionAttachments = document.getElementById('evolutionAttachments');
+if (evolutionAttachments) {
+    evolutionAttachments.addEventListener('change', function() {
+        const previewContainer = document.getElementById('attachmentPreview');
+        if (!previewContainer) return;
+        
+        previewContainer.innerHTML = '';
+        
+        Array.from(this.files).forEach(file => {
+            const isImage = file.type.startsWith('image/');
+            const attachment = document.createElement('div');
+            attachment.className = 'attachment';
+            
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = file.name;
+                attachment.appendChild(img);
+            } else {
+                attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
+            }
+            
+            const typeLabel = document.createElement('div');
+            typeLabel.className = 'attachment-type';
+            typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
+            attachment.appendChild(typeLabel);
+            
+            previewContainer.appendChild(attachment);
+        });
+    });
+}
         
         // Configurar controles de escalas
         setupScalesControls();
