@@ -6,7 +6,8 @@
     <title>Evoluciones Polideportivo - Kinesiólogo Nicolás Ayelef</title>
     <!-- SDK de ImageKit.io -->
     <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>    <!-- Fonts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>    
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -1948,6 +1949,14 @@ async function getPatient(patientId) {
 async function updatePatient(patientId, patientData) {
     try {
         showLoading();
+
+// Antes de llamar a updateDoc, añade esta verificación
+Object.keys(patientData).forEach(key => {
+    if (patientData[key] === undefined) {
+        console.warn(`Valor undefined detectado en patientData.${key}, estableciendo a null`);
+        patientData[key] = null; // Firebase acepta null pero no undefined
+    }
+});
         
         // Añadir timestamp de actualización
         patientData.updatedAt = new Date().toISOString();
@@ -2188,7 +2197,7 @@ async function uploadFile(file, patientId, folder) {
     }
 }
 
-// Función para subir archivos a ImageKit - Versión directa
+// Función para subir archivos a ImageKit - Versión corregida
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
@@ -2198,9 +2207,15 @@ async function uploadFileToImageKit(file, patientId, folder) {
         const privateKey = "private_XNLSvEGgU7XKRFZGONvMFkgiX9E="; // Reemplaza con tu clave privada
         const urlEndpoint = "https://ik.imagekit.io/vbxofs9fw"; // Reemplaza con tu URL endpoint
         
-        // Generar token y fecha de expiración
+        // Generar token y fecha de expiración (30 minutos en el futuro)
         const token = Math.random().toString(36).substring(2);
-        const expire = Math.floor(Date.now() / 1000) + 3600; // Expira en 1 hora
+        const expire = Math.floor(Date.now() / 1000) + 1800; // 30 minutos
+        
+        console.log("Valores de autenticación:", {
+            token: token,
+            expire: expire,
+            expireFormatted: new Date(expire * 1000).toISOString()
+        });
         
         // Generar firma utilizando CryptoJS
         const stringToSign = token + expire;
@@ -2215,10 +2230,21 @@ async function uploadFileToImageKit(file, patientId, folder) {
         form.append('fileName', fileName);
         form.append('publicKey', publicKey);
         form.append('signature', signature);
-        form.append('expire', expire);
+        form.append('expire', expire.toString()); // Convertir a string explícitamente
         form.append('token', token);
         form.append('useUniqueFileName', 'true');
         form.append('folder', `patients/${patientId}/${folder}`);
+        
+        // Mostrar lo que estamos enviando (para depuración)
+        console.log("Enviando petición a ImageKit con los siguientes datos:");
+        for (const pair of form.entries()) {
+            // No mostrar el archivo completo para no saturar la consola
+            if (pair[0] === 'file') {
+                console.log('file:', pair[1].name, pair[1].type, pair[1].size + ' bytes');
+            } else {
+                console.log(pair[0] + ':', pair[1]);
+            }
+        }
         
         // Realizar la solicitud de carga
         const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
@@ -2228,8 +2254,19 @@ async function uploadFileToImageKit(file, patientId, folder) {
         
         // Verificar respuesta
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Error de carga: ${errorData.message || response.statusText}`);
+            const errorText = await response.text();
+            let errorMessage = "Error desconocido";
+            
+            try {
+                // Intentar parsear como JSON
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.message || errorData.error || "Error sin detalles";
+            } catch {
+                // Si no es JSON, usar el texto como está
+                errorMessage = errorText;
+            }
+            
+            throw new Error(`Error de carga: ${errorMessage}`);
         }
         
         // Procesar respuesta exitosa
@@ -2239,10 +2276,10 @@ async function uploadFileToImageKit(file, patientId, folder) {
         // Crear objeto de resultado para nuestra aplicación
         const uploadResult = {
             url: result.url,
-            fileId: result.fileId,
+            fileId: result.fileId || result.id || `file_${Date.now()}`,
             name: file.name,
             type: file.type.startsWith('image/') ? 'image' : 'document',
-            thumbnailUrl: result.thumbnailUrl
+            thumbnailUrl: result.thumbnailUrl || result.url
         };
         
         showToast("Archivo subido correctamente", "success");
@@ -11882,31 +11919,43 @@ if (cancelEvolutionBtn) {
                 };
 
                 // Procesar archivos de la ficha del paciente
-                const patientFilesInput = document.getElementById('patientFiles');
-                if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
-                    const files = Array.from(patientFilesInput.files);
-                    const filesPromises = files.map(file => 
-                        uploadFileToImageKit(file, currentPatientId, 'medical_records')
-                    );
-                    
-                    try {
-                        // Esperar a que se suban todos los archivos
-                        const uploadedFiles = await Promise.all(filesPromises);
-                        
-                        // Filtrar archivos que fallaron al subir (null)
-                        const validFiles = uploadedFiles.filter(file => file !== null);
-                        
-                        // Añadir los archivos al objeto patientData
-                        if (!patientData.files) patientData.files = [];
-                        patientData.files = [...patientData.files, ...validFiles];
-                        
-                        console.log("Archivos de ficha médica subidos:", validFiles);
-                        showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
-                    } catch (filesError) {
-                        console.error("Error al subir archivos de ficha médica:", filesError);
-                        showToast("Error al subir algunos archivos", "warning");
-                    }
-                }
+const patientFilesInput = document.getElementById('patientFiles');
+if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
+    const files = Array.from(patientFilesInput.files);
+    const filesPromises = files.map(file => 
+        uploadFileToImageKit(file, currentPatientId, 'medical_records')
+    );
+    
+    try {
+        // Esperar a que se suban todos los archivos
+        const uploadedFiles = await Promise.all(filesPromises);
+        
+        // Filtrar archivos que fallaron al subir (null)
+        const validFiles = uploadedFiles.filter(file => file !== null);
+        
+        // Añadir los archivos al objeto patientData
+        // AQUÍ ESTÁ EL PROBLEMA - Asegurar que no guardamos undefined
+        if (!patientData.files) {
+            patientData.files = [];
+        }
+        
+        // Si había archivos anteriores, conservarlos
+        if (patient && patient.files && Array.isArray(patient.files)) {
+            patientData.files = [...patient.files];
+        }
+        
+        // Añadir los nuevos archivos
+        if (validFiles && validFiles.length > 0) {
+            patientData.files = [...patientData.files, ...validFiles];
+        }
+        
+        console.log("Archivos de ficha médica subidos:", validFiles, "Total archivos:", patientData.files.length);
+        showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
+    } catch (filesError) {
+        console.error("Error al subir archivos de ficha médica:", filesError);
+        showToast("Error al subir algunos archivos", "warning");
+    }
+}
                 
                 // Actualizar datos del paciente
                 await updatePatient(currentPatientId, patientData);
