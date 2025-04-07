@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -3595,14 +3593,19 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
                         try {
                             diagnosisModal.classList.remove('active');
                             setTimeout(() => {
-                                if (document.body.contains(diagnosisModal)) {
-                                    document.body.removeChild(diagnosisModal);
+                                if (diagnosisModal && document.body.contains(diagnosisModal)) {
+                                    try {
+                                        document.body.removeChild(diagnosisModal);
+                                    } catch (e) {
+                                        console.log("Modal ya eliminado, ignorando operación");
+                                        diagnosisModal.style.display = 'none';
+                                    }
                                 }
                             }, 300);
                         } catch (error) {
                             console.error("Error al cerrar modal:", error);
                             // En caso de error, intentar ocultar el modal
-                            diagnosisModal.style.display = 'none';
+                            if (diagnosisModal) diagnosisModal.style.display = 'none';
                         }
                     })
                     .catch(error => {
@@ -3793,6 +3796,7 @@ async function viewDiagnosis(patientId, diagnosisId) {
         
 
 // Función para generar diagnóstico funcional basado en las selecciones del asistente
+// Función para generar diagnóstico funcional basado en las selecciones del asistente
 function generateFunctionalDiagnosis() {
     // Obtener valores seleccionados
     const region = document.getElementById('assistantRegion').value;
@@ -3816,6 +3820,42 @@ function generateFunctionalDiagnosis() {
     document.querySelectorAll('[id^="restriccion"]:checked').forEach(el => {
         restrictions.push(el.id.replace('restriccion', '').toLowerCase());
     });
+
+    // Integrar con CIF - Obtener categorías CIF seleccionadas
+    let cifFunctions = [];
+    let cifStructures = [];
+    let cifActivities = [];
+    
+    // Solo si el paciente actual está seleccionado
+    if (currentPatientId) {
+        try {
+            // Intentar obtener categorías CIF del caché si están disponibles
+            if (objectivesCache[currentPatientId]) {
+                // Obtener funciones corporales CIF
+                const functionItems = document.querySelectorAll('#cifFunctions .cif-item');
+                functionItems.forEach(item => {
+                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
+                    cifFunctions.push(code);
+                });
+                
+                // Obtener estructuras corporales CIF
+                const structureItems = document.querySelectorAll('#cifStructures .cif-item');
+                structureItems.forEach(item => {
+                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
+                    cifStructures.push(code);
+                });
+                
+                // Obtener actividades y participación CIF
+                const activityItems = document.querySelectorAll('#cifActivities .cif-item');
+                activityItems.forEach(item => {
+                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
+                    cifActivities.push(code);
+                });
+            }
+        } catch (error) {
+            console.error("Error al obtener categorías CIF:", error);
+        }
+    }
     
     // Verificar que se hayan seleccionado los campos mínimos necesarios
     if (!region) {
@@ -3946,8 +3986,47 @@ function generateFunctionalDiagnosis() {
     
     diagnosis += '.';
     
-    // Añadir recomendación basada en CIF
-    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
+    // Añadir recomendación basada en CIF - Ahora con códigos específicos si están disponibles
+    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en`;
+    
+    // Agregar códigos específicos si están disponibles
+    if (cifFunctions.length > 0 || cifStructures.length > 0 || cifActivities.length > 0) {
+        if (cifFunctions.length > 0) {
+            diagnosis += ` funciones corporales (${cifFunctions.slice(0, 3).join(', ')})`;
+            
+            if (cifStructures.length > 0 || cifActivities.length > 0) {
+                diagnosis += `,`;
+            }
+        } else {
+            diagnosis += ` funciones corporales (b)`;
+            if (cifStructures.length > 0 || cifActivities.length > 0) {
+                diagnosis += `,`;
+            }
+        }
+        
+        if (cifStructures.length > 0) {
+            diagnosis += ` estructuras corporales (${cifStructures.slice(0, 3).join(', ')})`;
+            
+            if (cifActivities.length > 0) {
+                diagnosis += ` y`;
+            }
+        } else {
+            diagnosis += ` estructuras corporales (s)`;
+            if (cifActivities.length > 0) {
+                diagnosis += ` y`;
+            }
+        }
+        
+        if (cifActivities.length > 0) {
+            diagnosis += ` actividades y participación (${cifActivities.slice(0, 3).join(', ')})`;
+        } else {
+            diagnosis += ` actividades y participación (d)`;
+        }
+    } else {
+        diagnosis += ` funciones corporales (b), estructuras corporales (s) y actividades y participación (d)`;
+    }
+    
+    diagnosis += `.`;
     
     // Establecer el diagnóstico en el campo de texto
     const diagnosisTextElement = document.getElementById('diagnosisText');
