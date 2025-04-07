@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -3443,178 +3445,179 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
     });
     
     // Evento para el envío del formulario
-document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+    document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    // Obtener datos del formulario
-    const diagnosisDate = document.getElementById('diagnosisDate').value;
-    const diagnosisCIE = document.getElementById('diagnosisCIE').value;
-    const diagnosisText = document.getElementById('diagnosisText').value;
-    const consultReason = document.getElementById('consultReason')?.value || '';
-    const medicalBackground = document.getElementById('medicalBackground')?.value || '';
+        // Obtener datos del formulario
+        const diagnosisDate = document.getElementById('diagnosisDate').value;
+        const diagnosisCIE = document.getElementById('diagnosisCIE').value;
+        const diagnosisText = document.getElementById('diagnosisText').value;
+        const consultReason = document.getElementById('consultReason')?.value || '';
+        const medicalBackground = document.getElementById('medicalBackground')?.value || '';
 
-    // Crear objeto de diagnóstico
-    const diagnosisData = {
-        date: diagnosisDate,
-        code: diagnosisCIE,
-        description: diagnosisText,
-        consultReason: consultReason,
-        medicalBackground: medicalBackground,
-        updatedAt: new Date().toISOString()
-    };
-    
-    // Si no estamos editando, añadir campo createdAt
-    if (!isEditing) {
-        diagnosisData.createdAt = new Date().toISOString();
-    }
+        // Crear objeto de diagnóstico
+        const diagnosisData = {
+            date: diagnosisDate,
+            code: diagnosisCIE,
+            description: diagnosisText,
+            consultReason: consultReason,
+            medicalBackground: medicalBackground,
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Si no estamos editando, añadir campo createdAt
+        if (!isEditing) {
+            diagnosisData.createdAt = new Date().toISOString();
+        }
 
-    // Mostrar loading mientras se guarda
-    showLoading();
+        // Mostrar loading mientras se guarda
+        showLoading();
 
-    try {
-        if (isEditing) {
-            // Actualizar diagnóstico existente
-            const diagnosisRef = doc(db, "patients", patientId, "diagnoses", existingDiagnosis.id);
-            updateDoc(diagnosisRef, diagnosisData)
-                .then(() => {
-                    hideLoading();
-                    
-                    // Actualizar la entrada en la línea de tiempo (interfaz visual)
-                    const diagnosisItem = document.querySelector(`.timeline-item[data-id="${existingDiagnosis.id}"]`);
-                    if (diagnosisItem) {
-                        const titleElement = diagnosisItem.querySelector('.timeline-title');
-                        const descElement = diagnosisItem.querySelector('.timeline-content p');
+        try {
+            if (isEditing) {
+                // Actualizar diagnóstico existente
+                const diagnosisRef = doc(db, "patients", patientId, "diagnoses", existingDiagnosis.id);
+                updateDoc(diagnosisRef, diagnosisData)
+                    .then(() => {
+                        hideLoading();
                         
-                        if (titleElement) titleElement.textContent = diagnosisCIE;
-                        if (descElement) descElement.textContent = diagnosisText;
-                    }
-                    
-                    // Mostrar mensaje de éxito
-                    showToast("Diagnóstico actualizado correctamente", "success");
-                    
-                    // Cerrar modal
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        if (document.body.contains(modal)) {
-                            document.body.removeChild(modal);
-                        }
-                    }, 300);
-                })
-                .catch(error => {
-                    hideLoading();
-                    console.error("Error al actualizar diagnóstico:", error);
-                    showToast("Error al actualizar diagnóstico: " + error.message, "error");
-                });
-        } else {
-            // Guardar nuevo diagnóstico
-            const diagnosisRef = collection(db, "patients", patientId, "diagnoses");
-            addDoc(diagnosisRef, diagnosisData)
-                .then(docRef => {
-                    hideLoading();
-                    
-                    // Añadir diagnóstico a la línea de tiempo (interfaz visual)
-                    const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-                    if (diagnosisTimeline) {
-                        // Remover mensaje "no hay diagnósticos" si existe
-                        const noDataMessage = diagnosisTimeline.querySelector('p');
-                        if (noDataMessage) {
-                            diagnosisTimeline.removeChild(noDataMessage);
+                        // Actualizar la entrada en la línea de tiempo (interfaz visual)
+                        const diagnosisItem = document.querySelector(`.timeline-item[data-id="${existingDiagnosis.id}"]`);
+                        if (diagnosisItem) {
+                            const titleElement = diagnosisItem.querySelector('.timeline-title');
+                            const descElement = diagnosisItem.querySelector('.timeline-content p');
+                            
+                            if (titleElement) titleElement.textContent = diagnosisCIE;
+                            if (descElement) descElement.textContent = diagnosisText;
                         }
                         
-                        // Crear nuevo elemento en la UI
-                        const newDiagnosis = document.createElement('div');
-                        newDiagnosis.className = 'timeline-item fade-in';
-                        newDiagnosis.dataset.id = docRef.id;
+                        // Mostrar mensaje de éxito
+                        showToast("Diagnóstico actualizado correctamente", "success");
                         
-                        newDiagnosis.innerHTML = `
-                            <div class="timeline-dot">
-                                <i class="fas fa-file-medical"></i>
-                            </div>
-                            <div class="timeline-content">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
-                                    <div class="timeline-actions">
-                                        <button class="action-btn btn-secondary view-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                        <button class="action-btn btn-secondary edit-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                            <i class="fas fa-edit"></i> Editar
-                                        </button>
-                                        <button class="action-btn btn-secondary delete-diagnosis-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <h3 class="timeline-title">${diagnosisCIE}</h3>
-                                <p>${diagnosisText}</p>
-                            </div>
-                        `;
-                        
-                        // Añadir event listeners para los botones
-                        const fullDiagnosis = {
-                            id: docRef.id,
-                            ...diagnosisData
-                        };
-                        
-                        const viewBtn = newDiagnosis.querySelector('.view-diagnosis-btn');
-                        const editBtn = newDiagnosis.querySelector('.edit-diagnosis-btn');
-                        const deleteBtn = newDiagnosis.querySelector('.delete-diagnosis-btn');
-                        
-                        if (viewBtn) {
-                            viewBtn.addEventListener('click', function() {
-                                viewDiagnosis(patientId, docRef.id);
-                            });
-                        }
-                        
-                        if (editBtn) {
-                            editBtn.addEventListener('click', function() {
-                                openDiagnosisModal(patientId, fullDiagnosis);
-                            });
-                        }
-                        
-                        if (deleteBtn) {
-                            deleteBtn.addEventListener('click', function() {
-                                deleteDiagnosis(patientId, docRef.id);
-                            });
-                        }
-                        
-                        // Añadir al inicio de la lista para que aparezca primero
-                        if (diagnosisTimeline.firstChild) {
-                            diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
-                        } else {
-                            diagnosisTimeline.appendChild(newDiagnosis);
-                        }
-                    }
-                    
-                    // Mostrar mensaje de éxito
-                    showToast("Diagnóstico guardado correctamente", "success");
-                    
-                    // Cerrar modal - Versión mejorada para evitar el error
-                    try {
-                        modal.classList.remove('active');
+                        // Cerrar modal
+                        diagnosisModal.classList.remove('active');
                         setTimeout(() => {
-                            if (document.body.contains(modal)) {
-                                document.body.removeChild(modal);
+                            if (document.body.contains(diagnosisModal)) {
+                                document.body.removeChild(diagnosisModal);
                             }
                         }, 300);
-                    } catch (error) {
-                        console.error("Error al cerrar modal:", error);
-                        // En caso de error, intentar ocultar el modal
-                        modal.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    hideLoading();
-                    console.error("Error al guardar diagnóstico:", error);
-                    showToast("Error al guardar diagnóstico: " + error.message, "error");
-                });
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error("Error al actualizar diagnóstico:", error);
+                        showToast("Error al actualizar diagnóstico: " + error.message, "error");
+                    });
+            } else {
+                // Guardar nuevo diagnóstico
+                const diagnosisRef = collection(db, "patients", patientId, "diagnoses");
+                addDoc(diagnosisRef, diagnosisData)
+                    .then(docRef => {
+                        hideLoading();
+                        
+                        // Añadir diagnóstico a la línea de tiempo (interfaz visual)
+                        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
+                        if (diagnosisTimeline) {
+                            // Remover mensaje "no hay diagnósticos"
+                            const noDataMessage = diagnosisTimeline.querySelector('p');
+                            if (noDataMessage) {
+                                diagnosisTimeline.removeChild(noDataMessage);
+                            }
+                            
+                            // Crear nuevo elemento con el mismo formato que usamos en initDiagnosisTab
+                            const newDiagnosis = document.createElement('div');
+                            newDiagnosis.className = 'timeline-item fade-in';
+                            newDiagnosis.dataset.id = docRef.id;
+                            
+                            newDiagnosis.innerHTML = `
+                                <div class="timeline-dot">
+                                    <i class="fas fa-file-medical"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
+                                        <div class="timeline-actions">
+                                            <button class="action-btn btn-secondary view-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
+                                                <i class="fas fa-eye"></i> Ver
+                                            </button>
+                                            <button class="action-btn btn-secondary edit-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </button>
+                                            <button class="action-btn btn-secondary delete-diagnosis-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h3 class="timeline-title">${diagnosisCIE}</h3>
+                                    <p>${diagnosisText}</p>
+                                </div>
+                            `;
+                            
+                            // Añadir event listeners para los botones
+                            const fullDiagnosis = {
+                                id: docRef.id,
+                                ...diagnosisData
+                            };
+                            
+                            const viewBtn = newDiagnosis.querySelector('.view-diagnosis-btn');
+                            const editBtn = newDiagnosis.querySelector('.edit-diagnosis-btn');
+                            const deleteBtn = newDiagnosis.querySelector('.delete-diagnosis-btn');
+                            
+                            if (viewBtn) {
+                                viewBtn.addEventListener('click', function() {
+                                    viewDiagnosis(patientId, docRef.id);
+                                });
+                            }
+                            
+                            if (editBtn) {
+                                editBtn.addEventListener('click', function() {
+                                    openDiagnosisModal(patientId, fullDiagnosis);
+                                });
+                            }
+                            
+                            if (deleteBtn) {
+                                deleteBtn.addEventListener('click', function() {
+                                    deleteDiagnosis(patientId, docRef.id);
+                                });
+                            }
+                            
+                            // Añadir al inicio de la lista para que aparezca primero
+                            if (diagnosisTimeline.firstChild) {
+                                diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
+                            } else {
+                                diagnosisTimeline.appendChild(newDiagnosis);
+                            }
+                        }
+                        
+                        // Mostrar mensaje de éxito
+                        showToast("Diagnóstico guardado correctamente", "success");
+                        
+                        // Cerrar modal - Versión mejorada para evitar el error
+                        try {
+                            diagnosisModal.classList.remove('active');
+                            setTimeout(() => {
+                                if (document.body.contains(diagnosisModal)) {
+                                    document.body.removeChild(diagnosisModal);
+                                }
+                            }, 300);
+                        } catch (error) {
+                            console.error("Error al cerrar modal:", error);
+                            // En caso de error, intentar ocultar el modal
+                            diagnosisModal.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error("Error al guardar diagnóstico:", error);
+                        showToast("Error al guardar diagnóstico: " + error.message, "error");
+                    });
+            }
+        } catch (error) {
+            hideLoading();
+            console.error("Error al guardar diagnóstico:", error);
+            showToast("Error al guardar diagnóstico: " + error.message, "error");
         }
-    } catch (error) {
-        hideLoading();
-        console.error("Error al guardar diagnóstico:", error);
-        showToast("Error al guardar diagnóstico: " + error.message, "error");
-    }
-});
+    });
+}
 
         // Función para eliminar un diagnóstico
 async function deleteDiagnosis(patientId, diagnosisId) {
