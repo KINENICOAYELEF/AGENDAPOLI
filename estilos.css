@@ -2652,3 +2652,40 @@ button:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.2);
 }
+
+
+/* Estilos para archivos PDF */
+.pdf-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.attachment-download {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.attachment-download:hover {
+    background-color: var(--primary);
+    transform: scale(1.1);
+}
+
+.attachment {
+    position: relative;
+}
