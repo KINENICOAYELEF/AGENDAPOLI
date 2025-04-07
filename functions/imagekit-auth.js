@@ -16,7 +16,7 @@ exports.handler = async function(event, context) {
 
   try {
     // Tus credenciales de ImageKit
-    const privateKey = 'TU_PRIVATE_KEY'; // REEMPLAZA con tu Private Key real
+    const privateKey = 'private_XNLSvEGgU7XKRFZGONvMFkgiX9E='; // REEMPLAZA con tu Private Key real
     
     // Generar token, expire y firma
     const token = crypto.randomBytes(16).toString('hex');
