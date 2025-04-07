@@ -3167,38 +3167,6 @@ async function initDiagnosisTab(patientId) {
         // Cargar planes de tratamiento existentes
         await loadTreatmentPlans(patientId);
 
-        
-
-        
-    } catch (error) {
-        console.error("Error inicializando pestaña de diagnóstico:", error);
-        showToast("Error al cargar diagnósticos", "error");
-    }
-}
-
-// Obtener diagnósticos del paciente
-async function getDiagnoses(patientId) {
-    try {
-        showLoading();
-        
-        // Obtener diagnósticos de Firebase
-        const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
-        const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
-        const diagnosesSnapshot = await getDocs(diagnosesQuery);
-        
-        const diagnosesList = diagnosesSnapshot.docs.map(doc => {
-            return { id: doc.id, ...doc.data() };
-        });
-        
-        hideLoading();
-        return diagnosesList;
-    } catch (error) {
-        console.error("Error obteniendo diagnósticos:", error);
-        hideLoading();
-        return [];
-    }
-}
-
         // Función para cargar planes de tratamiento existentes
 async function loadTreatmentPlans(patientId) {
     try {
@@ -3277,6 +3245,38 @@ async function loadTreatmentPlans(patientId) {
     } catch (error) {
         console.error("Error al cargar planes de tratamiento:", error);
         showToast("Error al cargar planes de tratamiento", "error");
+    }
+}
+
+        
+
+        
+    } catch (error) {
+        console.error("Error inicializando pestaña de diagnóstico:", error);
+        showToast("Error al cargar diagnósticos", "error");
+    }
+}
+
+// Obtener diagnósticos del paciente
+async function getDiagnoses(patientId) {
+    try {
+        showLoading();
+        
+        // Obtener diagnósticos de Firebase
+        const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
+        const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
+        const diagnosesSnapshot = await getDocs(diagnosesQuery);
+        
+        const diagnosesList = diagnosesSnapshot.docs.map(doc => {
+            return { id: doc.id, ...doc.data() };
+        });
+        
+        hideLoading();
+        return diagnosesList;
+    } catch (error) {
+        console.error("Error obteniendo diagnósticos:", error);
+        hideLoading();
+        return [];
     }
 }
         
