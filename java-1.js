@@ -1,4 +1,5 @@
- <script type="module">
+<!-- Script for Firebase -->
+    <script type="module">
 
 
         // Import the functions you need from the SDKs you need
@@ -11,6 +12,14 @@ let app, db, storage;
 let currentPatientId = null;
 let patientsCache = []; // Para almacenar pacientes y reducir consultas
 let customTemplates = [];
+
+// Configuración de ImageKit.io
+let imagekit = null;
+const imagekitConfig = {
+    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=", // Reemplaza con tu clave pública
+    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw", // Reemplaza con tu URL de endpoint
+    authenticationEndpoint: "" // Dejaremos esto en blanco por ahora
+};        
 
 
         // Variables para objetivos
@@ -107,6 +116,15 @@ async function initFirebase() {
         
         storage = getStorage(app);
         console.log("Storage obtenido:", storage);
+
+        // Inicializar ImageKit.io
+        try {
+            imagekit = new ImageKit(imagekitConfig);
+            console.log("ImageKit inicializado correctamente");
+        } catch (imagekitError) {
+            console.error("Error al inicializar ImageKit:", imagekitError);
+            showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
+        }
         
         console.log("Firebase inicializado correctamente");
         
@@ -527,6 +545,69 @@ async function uploadFile(file, patientId, folder) {
     } catch (error) {
         console.error("Error subiendo archivo: ", error);
         showToast("Error al subir archivo: " + error.message, "error");
+        return null;
+    }
+}
+
+        // Upload file to ImageKit.io
+async function uploadFileToImageKit(file, patientId, folder) {
+    try {
+        showLoading();
+        
+        // Convertir el archivo a base64
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = async function(event) {
+                const base64data = event.target.result;
+                
+                // Crear nombre para el archivo con formato: patients_patientId_folder_nombreOriginal
+                const fileName = `patients_${patientId}_${folder}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                
+                // Crear ruta para organizar los archivos
+                const filePath = `patients/${patientId}/${folder}`;
+                
+                try {
+                    // Subir el archivo a ImageKit
+                    const uploadResponse = await imagekit.upload({
+                        file: base64data,
+                        fileName: fileName,
+                        folder: filePath,
+                        useUniqueFileName: true,
+                        tags: [`patient_${patientId}`, folder]
+                    });
+                    
+                    console.log("Archivo subido a ImageKit:", uploadResponse);
+                    
+                    // Devolver la URL del archivo
+                    resolve({
+                        url: uploadResponse.url,
+                        fileId: uploadResponse.fileId,
+                        name: file.name,
+                        type: file.type.startsWith('image/') ? 'image' : 'document'
+                    });
+                } catch (error) {
+                    console.error("Error al subir a ImageKit:", error);
+                    showToast("Error al subir archivo: " + (error.message || "Error desconocido"), "error");
+                    reject(error);
+                } finally {
+                    hideLoading();
+                }
+            };
+            
+            reader.onerror = function(error) {
+                console.error("Error leyendo archivo:", error);
+                showToast("Error al leer el archivo", "error");
+                hideLoading();
+                reject(error);
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    } catch (error) {
+        console.error("Error preparando archivo para ImageKit:", error);
+        showToast("Error al preparar archivo: " + error.message, "error");
+        hideLoading();
         return null;
     }
 }
@@ -1428,6 +1509,7 @@ function renderScales(scales) {
 }
 
 // Render attachments
+// Render attachments
 function renderAttachments(attachments) {
     try {
         if (!attachments || attachments.length === 0) return '';
@@ -1440,14 +1522,20 @@ function renderAttachments(attachments) {
         
         attachments.forEach(attachment => {
             const isImage = attachment.type === 'image';
+            const isPDF = attachment.name.toLowerCase().endsWith('.pdf');
             
             attachmentsHTML += `
                 <div class="attachment">
                     ${isImage 
                         ? `<img src="${attachment.url}" alt="${attachment.name}">`
-                        : `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${attachment.name.split('.').pop().toUpperCase()}" alt="${attachment.name}">`
+                        : isPDF
+                          ? `<div class="pdf-icon"><i class="fas fa-file-pdf" style="font-size: 40px; color: #e74c3c;"></i></div>`
+                          : `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${attachment.name.split('.').pop().toUpperCase()}" alt="${attachment.name}">`
                     }
-                    <div class="attachment-type">${isImage ? 'Foto' : attachment.type.toUpperCase()}</div>
+                    <div class="attachment-type">${isImage ? 'Foto' : attachment.name.split('.').pop().toUpperCase()}</div>
+                    <a href="${attachment.url}" target="_blank" class="attachment-download" title="Abrir/Descargar archivo">
+                        <i class="fas fa-download"></i>
+                    </a>
                 </div>
             `;
         });
@@ -9776,37 +9864,37 @@ async function initApp() {
         }
         
         // Configurar previsualización de archivos adjuntos
-        const evolutionAttachments = document.getElementById('evolutionAttachments');
-        if (evolutionAttachments) {
-            evolutionAttachments.addEventListener('change', function() {
-                const previewContainer = document.getElementById('attachmentPreview');
-                if (!previewContainer) return;
-                
-                previewContainer.innerHTML = '';
-                
-                Array.from(this.files).forEach(file => {
-                    const isImage = file.type.startsWith('image/');
-                    const attachment = document.createElement('div');
-                    attachment.className = 'attachment';
-                    
-                    if (isImage) {
-                        const img = document.createElement('img');
-                        img.src = URL.createObjectURL(file);
-                        img.alt = file.name;
-                        attachment.appendChild(img);
-                    } else {
-                        attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
-                    }
-                    
-                    const typeLabel = document.createElement('div');
-                    typeLabel.className = 'attachment-type';
-                    typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
-                    attachment.appendChild(typeLabel);
-                    
-                    previewContainer.appendChild(attachment);
-                });
-            });
-        }
+const evolutionAttachments = document.getElementById('evolutionAttachments');
+if (evolutionAttachments) {
+    evolutionAttachments.addEventListener('change', function() {
+        const previewContainer = document.getElementById('attachmentPreview');
+        if (!previewContainer) return;
+        
+        previewContainer.innerHTML = '';
+        
+        Array.from(this.files).forEach(file => {
+            const isImage = file.type.startsWith('image/');
+            const attachment = document.createElement('div');
+            attachment.className = 'attachment';
+            
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.alt = file.name;
+                attachment.appendChild(img);
+            } else {
+                attachment.innerHTML = `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${file.name.split('.').pop().toUpperCase()}" alt="${file.name}">`;
+            }
+            
+            const typeLabel = document.createElement('div');
+            typeLabel.className = 'attachment-type';
+            typeLabel.textContent = isImage ? 'Foto' : file.name.split('.').pop().toUpperCase();
+            attachment.appendChild(typeLabel);
+            
+            previewContainer.appendChild(attachment);
+        });
+    });
+}
         
         // Configurar controles de escalas
         setupScalesControls();
@@ -9985,6 +10073,33 @@ if (cancelEvolutionBtn) {
                     emergencyContact: document.getElementById('patientEmergencyContact')?.value || '',
                     emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
                 };
+
+                // Procesar archivos de la ficha del paciente
+                const patientFilesInput = document.getElementById('patientFiles');
+                if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
+                    const files = Array.from(patientFilesInput.files);
+                    const filesPromises = files.map(file => 
+                        uploadFileToImageKit(file, currentPatientId, 'medical_records')
+                    );
+                    
+                    try {
+                        // Esperar a que se suban todos los archivos
+                        const uploadedFiles = await Promise.all(filesPromises);
+                        
+                        // Filtrar archivos que fallaron al subir (null)
+                        const validFiles = uploadedFiles.filter(file => file !== null);
+                        
+                        // Añadir los archivos al objeto patientData
+                        if (!patientData.files) patientData.files = [];
+                        patientData.files = [...patientData.files, ...validFiles];
+                        
+                        console.log("Archivos de ficha médica subidos:", validFiles);
+                        showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
+                    } catch (filesError) {
+                        console.error("Error al subir archivos de ficha médica:", filesError);
+                        showToast("Error al subir algunos archivos", "warning");
+                    }
+                }
                 
                 // Actualizar datos del paciente
                 await updatePatient(currentPatientId, patientData);
@@ -10129,6 +10244,28 @@ if (deletePatientBtn) {
                         observations: document.getElementById('evolutionObservations')?.value || '',
                         attachments: []
                     };
+
+                    // Procesar archivos adjuntos con ImageKit
+                    const attachmentInput = document.getElementById('evolutionAttachments');
+                    if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
+                        const files = Array.from(attachmentInput.files);
+                        const attachmentsPromises = files.map(file => 
+                            uploadFileToImageKit(file, currentPatientId, 'evolutions')
+                        );
+                        
+                        try {
+                            // Esperar a que se suban todos los archivos
+                            const attachments = await Promise.all(attachmentsPromises);
+                            
+                            // Filtrar archivos que fallaron al subir (null)
+                            evolutionData.attachments = attachments.filter(attachment => attachment !== null);
+                            
+                            console.log("Archivos adjuntos subidos:", evolutionData.attachments);
+                        } catch (attachmentError) {
+                            console.error("Error al subir archivos adjuntos:", attachmentError);
+                            showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
+                        }
+                    }
                     
                     console.log("Datos de evolución a guardar:", evolutionData);
                     
