@@ -9031,18 +9031,38 @@ function changeView(viewName) {
                 });
             }
             else if (viewName === 'reportes') {
-                updateReportStatistics();
-                
-                // Cargar pacientes para el selector de informes
-                getPatients().then(patients => {
-                    const reportSelect = document.getElementById('reportPatientSelect');
-                    if (reportSelect) {
-                        reportSelect.innerHTML = '<option value="">Seleccionar paciente...</option>';
-                        
-                        patients.forEach(patient => {
-                            reportSelect.innerHTML += `<option value="${patient.id}">${patient.name} (${patient.rut})</option>`;
-                        });
-                    }
+            else if (viewName === 'reportes') {
+    // Cargar estadísticas en tiempo real
+    showLoading();
+    
+    // Mostrar mensaje de carga
+    const statsElements = ['totalPatientsReport', 'totalEvolutionsReport', 'monthEvolutionsReport'];
+    statsElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = "Cargando...";
+        }
+    });
+    
+    // Actualizar estadísticas de forma asíncrona
+    updateReportStatistics().then(() => {
+        hideLoading();
+    }).catch(error => {
+        console.error("Error al actualizar estadísticas:", error);
+        hideLoading();
+        showToast("Error al cargar estadísticas: " + error.message, "error");
+    });
+    
+    // Cargar pacientes para el selector de informes
+    getPatients().then(patients => {
+        const reportSelect = document.getElementById('reportPatientSelect');
+        if (reportSelect) {
+            reportSelect.innerHTML = '<option value="">Seleccionar paciente...</option>';
+            
+            patients.forEach(patient => {
+                reportSelect.innerHTML += `<option value="${patient.id}">${patient.name} (${patient.rut})</option>`;
+            });
+        }
                     
                     // Inicializar fechas para informe estadístico
                     const today = new Date();
@@ -9139,7 +9159,7 @@ function changeView(viewName) {
     }
 }
 
-        // Actualizar estadísticas de reportes
+// Actualizar estadísticas de reportes
 async function updateReportStatistics() {
     try {
         // Obtener todos los pacientes
@@ -9183,10 +9203,13 @@ async function updateReportStatistics() {
             monthEvolutionsElement.textContent = monthEvolutions;
         }
         
-        // Mostrar número de estudiantes activos (simulado)
+        // Eliminar la sección de estudiantes activos del HTML
         const studentsElement = document.getElementById('activeStudentsReport');
         if (studentsElement) {
-            studentsElement.textContent = "12";
+            const cardContainer = studentsElement.closest('.dashboard-card');
+            if (cardContainer) {
+                cardContainer.style.display = 'none';
+            }
         }
     } catch (error) {
         console.error('Error actualizando estadísticas de reportes:', error);
@@ -9209,42 +9232,38 @@ function generatePatientReport() {
         return;
     }
     
-    // Redirigir al exportar PDF del paciente
-    currentPatientId = patientId;
+    // Mostrar indicador de carga
+    showLoading();
     
-    // Mostrar opciones de exportación
-    const pdfOptionsContainer = document.getElementById('pdfOptionsContainer');
-    if (pdfOptionsContainer) {
-        pdfOptionsContainer.style.display = 'block';
+    // Redirigir al exportar PDF del paciente
+    setTimeout(() => {
+        // Guardar el ID del paciente para usar en exportToPDF
+        currentPatientId = patientId;
         
-        // Configurar botones
-        const cancelBtn = document.getElementById('cancelPdfExport');
-        if (cancelBtn) {
-            // Eliminar manejadores previos
-            const newCancelBtn = cancelBtn.cloneNode(true);
-            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-            
-            newCancelBtn.addEventListener('click', function() {
-                pdfOptionsContainer.style.display = 'none';
-            });
-        }
+        // Configurar opciones por defecto
+        const pdfIncludeDiagnosis = document.getElementById('pdfIncludeDiagnosis');
+        const pdfIncludeEvolutions = document.getElementById('pdfIncludeEvolutions');
+        const pdfIncludeScales = document.getElementById('pdfIncludeScales');
+        const pdfIncludeExercises = document.getElementById('pdfIncludeExercises');
         
-        const generateBtn = document.getElementById('generatePdfBtn');
-        if (generateBtn) {
-            // Eliminar manejadores previos
-            const newGenerateBtn = generateBtn.cloneNode(true);
-            generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
-            
-            newGenerateBtn.addEventListener('click', function() {
-                exportToPDF(patientId);
-                pdfOptionsContainer.style.display = 'none';
-            });
-        }
-    }
+        if (pdfIncludeDiagnosis) pdfIncludeDiagnosis.checked = true;
+        if (pdfIncludeEvolutions) pdfIncludeEvolutions.checked = true;
+        if (pdfIncludeScales) pdfIncludeScales.checked = true;
+        if (pdfIncludeExercises) pdfIncludeExercises.checked = true;
+        
+        // Llamar a la función de exportación directamente
+        exportToPDF(patientId).then(() => {
+            hideLoading();
+        }).catch(error => {
+            console.error("Error al generar informe:", error);
+            hideLoading();
+            showToast("Error al generar informe: " + error.message, "error");
+        });
+    }, 100);
 }
 
 // Generar informe estadístico
-function generateStatisticsReport() {
+async function generateStatisticsReport() {
     const startDateInput = document.getElementById('reportStartDate');
     const endDateInput = document.getElementById('reportEndDate');
     
@@ -9261,11 +9280,383 @@ function generateStatisticsReport() {
         return;
     }
     
-    showToast("Generando informe estadístico...", "info");
-    // Aquí iría la lógica para generar un informe estadístico
-    setTimeout(() => {
+    try {
+        showLoading();
+        showToast("Generando informe estadístico...", "info");
+        
+        // Obtener estadísticas para el período
+        const stats = await getStatisticsForPeriod(startDate, endDate);
+        
+        // Generar PDF con las estadísticas
+        await generateStatisticsPDF(stats, startDate, endDate);
+        
+        hideLoading();
         showToast("Informe estadístico generado correctamente", "success");
-    }, 1500);
+    } catch (error) {
+        hideLoading();
+        console.error("Error al generar informe estadístico:", error);
+        showToast("Error al generar informe: " + error.message, "error");
+    }
+}
+
+// Obtener estadísticas para un período
+async function getStatisticsForPeriod(startDate, endDate) {
+    try {
+        // Convertir fechas a objetos Date para comparaciones
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Incluir todo el día final
+        
+        // Obtener todos los pacientes
+        const patients = await getPatients();
+        
+        // Estadísticas iniciales
+        const stats = {
+            totalPatients: patients.length,
+            activePatients: 0,
+            newPatients: 0,
+            totalEvolutions: 0,
+            evolutionsInPeriod: 0,
+            mostCommonTechniques: {},
+            evaluationsInPeriod: []
+        };
+        
+        // Para cada paciente, contar evoluciones en el período
+        for (const patient of patients) {
+            // Verificar si es un paciente nuevo en el período
+            if (patient.createdAt) {
+                const createdDate = new Date(patient.createdAt);
+                if (createdDate >= start && createdDate <= end) {
+                    stats.newPatients++;
+                }
+            }
+            
+            // Obtener evoluciones
+            const evolutions = await getEvolutions(patient.id);
+            
+            // Contar evoluciones totales
+            stats.totalEvolutions += evolutions.length;
+            
+            // Contar evoluciones en el período
+            const evolutionsInPeriod = evolutions.filter(ev => {
+                if (!ev.date) return false;
+                const evDate = new Date(ev.date);
+                return evDate >= start && evDate <= end;
+            });
+            
+            stats.evolutionsInPeriod += evolutionsInPeriod.length;
+            
+            // Si tiene evoluciones en el período, considerar paciente activo
+            if (evolutionsInPeriod.length > 0) {
+                stats.activePatients++;
+            }
+            
+            // Contar técnicas utilizadas
+            evolutionsInPeriod.forEach(ev => {
+                // Evolución contiene un objeto treatment con el texto del tratamiento
+                const treatmentText = ev.treatment || '';
+                
+                // Verificar técnicas comunes
+                const techniques = [
+                    "Terapia manual", "Ejercicio", "Agentes físicos", 
+                    "Electroterapia", "Ultrasonido", "Láser", 
+                    "Estiramientos", "Fortalecimiento", "Propiocepción"
+                ];
+                
+                techniques.forEach(technique => {
+                    if (treatmentText.toLowerCase().includes(technique.toLowerCase())) {
+                        stats.mostCommonTechniques[technique] = (stats.mostCommonTechniques[technique] || 0) + 1;
+                    }
+                });
+                
+                // Añadir datos de evaluación si hay escalas
+                if (ev.scales) {
+                    // Añadir al array de evaluaciones
+                    stats.evaluationsInPeriod.push({
+                        patientName: patient.name,
+                        date: ev.date,
+                        eva: ev.scales.eva,
+                        groc: ev.scales.groc,
+                        sane: ev.scales.sane
+                    });
+                }
+            });
+        }
+        
+        return stats;
+    } catch (error) {
+        console.error("Error obteniendo estadísticas:", error);
+        throw error;
+    }
+}
+
+// Generar PDF con estadísticas
+async function generateStatisticsPDF(stats, startDate, endDate) {
+    try {
+        // Verificar que jsPDF esté disponible
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            throw new Error("Librería jsPDF no disponible. Verifique la conexión a Internet.");
+        }
+        
+        // Formatear fechas para el título
+        const formattedStartDate = formatDate(new Date(startDate));
+        const formattedEndDate = formatDate(new Date(endDate));
+        
+        // Get center info from configuration
+        let centerName = "Polideportivo";
+        let centerAddress = "";
+        let therapistName = "Nicolás Ayelef";
+        
+        try {
+            const savedConfig = localStorage.getItem('sistemakineConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                if (config.centerName) centerName = config.centerName;
+                if (config.centerAddress) centerAddress = config.centerAddress;
+                if (config.mainTherapistName) therapistName = config.mainTherapistName;
+            }
+        } catch (error) {
+            console.error("Error al cargar configuración para PDF:", error);
+        }
+        
+        // Create a new PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add header
+        doc.setFillColor(30, 136, 229);
+        doc.rect(0, 0, 210, 25, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
+        doc.text(`INFORME ESTADÍSTICO - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
+        
+        // Add period info
+        doc.setFillColor(245, 247, 250);
+        doc.rect(10, 30, 190, 25, 'F');
+        
+        doc.setTextColor(30, 136, 229);
+        doc.setFontSize(14);
+        doc.text(`Período: ${formattedStartDate} - ${formattedEndDate}`, 15, 40);
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 50);
+        
+        let yPos = 70;
+        
+        // Estadísticas generales
+        doc.setFillColor(30, 136, 229);
+        doc.rect(10, yPos, 190, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('ESTADÍSTICAS GENERALES', 105, yPos + 7, null, null, 'center');
+        
+        yPos += 20;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        
+        // Mostrar estadísticas en una tabla
+        doc.text(`Total de pacientes: ${stats.totalPatients}`, 15, yPos);
+        yPos += 10;
+        doc.text(`Pacientes activos en el período: ${stats.activePatients}`, 15, yPos);
+        yPos += 10;
+        doc.text(`Pacientes nuevos en el período: ${stats.newPatients}`, 15, yPos);
+        yPos += 10;
+        doc.text(`Total de evoluciones: ${stats.totalEvolutions}`, 15, yPos);
+        yPos += 10;
+        doc.text(`Evoluciones en el período: ${stats.evolutionsInPeriod}`, 15, yPos);
+        yPos += 10;
+        
+        // Promedio de evoluciones por paciente activo
+        const avgEvolutionsPerPatient = stats.activePatients > 0 
+            ? (stats.evolutionsInPeriod / stats.activePatients).toFixed(1) 
+            : 0;
+        
+        doc.text(`Promedio de evoluciones por paciente activo: ${avgEvolutionsPerPatient}`, 15, yPos);
+        yPos += 20;
+        
+        // Técnicas más utilizadas
+        if (Object.keys(stats.mostCommonTechniques).length > 0) {
+            // Nueva página si es necesario
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(30, 136, 229);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('TÉCNICAS MÁS UTILIZADAS', 105, yPos + 7, null, null, 'center');
+            
+            yPos += 20;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            
+            // Ordenar técnicas por frecuencia
+            const sortedTechniques = Object.entries(stats.mostCommonTechniques)
+                .sort((a, b) => b[1] - a[1]);
+            
+            // Mostrar las técnicas más comunes
+            sortedTechniques.forEach(([technique, count], index) => {
+                if (index < 10) { // Limitar a las 10 más comunes
+                    doc.text(`${technique}: ${count} veces`, 15, yPos);
+                    yPos += 10;
+                }
+            });
+            
+            yPos += 10;
+        }
+        
+        // Resumen de evaluaciones
+        if (stats.evaluationsInPeriod.length > 0) {
+            // Nueva página si es necesario
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(30, 136, 229);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('RESUMEN DE EVALUACIONES', 105, yPos + 7, null, null, 'center');
+            
+            yPos += 20;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            
+            // Calcular promedios de escales
+            let totalEva = 0;
+            let evaCount = 0;
+            let totalGroc = 0;
+            let grocCount = 0;
+            let totalSane = 0;
+            let saneCount = 0;
+            
+            stats.evaluationsInPeriod.forEach(eval => {
+                if (eval.eva !== undefined) {
+                    totalEva += eval.eva;
+                    evaCount++;
+                }
+                if (eval.groc !== undefined) {
+                    totalGroc += eval.groc;
+                    grocCount++;
+                }
+                if (eval.sane !== undefined) {
+                    totalSane += eval.sane;
+                    saneCount++;
+                }
+            });
+            
+            // Promedios
+            const avgEva = evaCount > 0 ? (totalEva / evaCount).toFixed(1) : 'N/A';
+            const avgGroc = grocCount > 0 ? (totalGroc / grocCount).toFixed(1) : 'N/A';
+            const avgSane = saneCount > 0 ? (totalSane / saneCount).toFixed(1) : 'N/A';
+            
+            doc.text(`Promedio EVA (dolor): ${avgEva}/10`, 15, yPos);
+            yPos += 10;
+            doc.text(`Promedio GROC (cambio global): ${avgGroc}`, 15, yPos);
+            yPos += 10;
+            doc.text(`Promedio SANE (evaluación): ${avgSane}%`, 15, yPos);
+            yPos += 20;
+            
+            // Tabla de evaluaciones
+            if (stats.evaluationsInPeriod.length > 0) {
+                // Nueva página para la tabla
+                doc.addPage();
+                yPos = 20;
+                
+                doc.setFillColor(30, 136, 229);
+                doc.rect(10, yPos, 190, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('DETALLE DE EVALUACIONES', 105, yPos + 7, null, null, 'center');
+                
+                yPos += 20;
+                
+                // Encabezados de tabla
+                doc.setFillColor(220, 220, 220);
+                doc.rect(15, yPos - 5, 180, 10, 'F');
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
+                doc.text("Paciente", 20, yPos);
+                doc.text("Fecha", 80, yPos);
+                doc.text("EVA", 120, yPos);
+                doc.text("GROC", 140, yPos);
+                doc.text("SANE", 160, yPos);
+                
+                yPos += 10;
+                doc.setFont(undefined, 'normal');
+                
+                // Limitar a las primeras 20 evaluaciones para que no sea demasiado extenso
+                const limitedEvals = stats.evaluationsInPeriod.slice(0, 20);
+                
+                // Filas de la tabla
+                limitedEvals.forEach((eval, index) => {
+                    // Alternar colores de fondo para mejorar legibilidad
+                    if (index % 2 === 1) {
+                        doc.setFillColor(245, 247, 250);
+                        doc.rect(15, yPos - 5, 180, 10, 'F');
+                    }
+                    
+                    // Datos de la fila
+                    doc.text(eval.patientName || "-", 20, yPos);
+                    doc.text(formatDate(new Date(eval.date)) || "-", 80, yPos);
+                    doc.text(eval.eva !== undefined ? `${eval.eva}/10` : "-", 120, yPos);
+                    doc.text(eval.groc !== undefined ? `${eval.groc}` : "-", 140, yPos);
+                    doc.text(eval.sane !== undefined ? `${eval.sane}%` : "-", 160, yPos);
+                    
+                    yPos += 10;
+                    
+                    // Nueva página si es necesario
+                    if (yPos > 280) {
+                        doc.addPage();
+                        
+                        // Repetir encabezados
+                        yPos = 20;
+                        doc.setFillColor(220, 220, 220);
+                        doc.rect(15, yPos - 5, 180, 10, 'F');
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Paciente", 20, yPos);
+                        doc.text("Fecha", 80, yPos);
+                        doc.text("EVA", 120, yPos);
+                        doc.text("GROC", 140, yPos);
+                        doc.text("SANE", 160, yPos);
+                        
+                        yPos += 10;
+                        doc.setFont(undefined, 'normal');
+                    }
+                });
+            }
+        }
+        
+        // Añadir pie de página
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
+            
+            // Añadir timestamp y profesional
+            const timestamp = new Date().toLocaleString();
+            doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
+        }
+        
+        // Guardar el PDF
+        const today = new Date().toISOString().slice(0, 10);
+        doc.save(`Estadisticas_${formattedStartDate}_${formattedEndDate}_${today}.pdf`);
+        
+    } catch (error) {
+        console.error("Error generando PDF estadístico:", error);
+        throw error;
+    }
 }
 
 // Export PDF function (mejorada)
@@ -9290,13 +9681,23 @@ async function exportToPDF(patientId) {
         // Get evolutions
         const evolutions = await getEvolutions(patientId);
         
-        // Leer opciones del formulario
-        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis')?.checked || true;
-        const includeEvolutions = document.getElementById('pdfIncludeEvolutions')?.checked || true;
-        const includeScales = document.getElementById('pdfIncludeScales')?.checked || true;
-        const includeExercises = document.getElementById('pdfIncludeExercises')?.checked || true;
-        const includeLogo = document.getElementById('pdfIncludeLogo')?.checked || true;
-        const includeFooter = document.getElementById('pdfIncludeFooter')?.checked || true;
+        // Leer opciones del formulario - Versión corregida para asegurar que se manejen correctamente
+        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
+            document.getElementById('pdfIncludeDiagnosis').checked : true;
+        const includeEvolutions = document.getElementById('pdfIncludeEvolutions') ? 
+            document.getElementById('pdfIncludeEvolutions').checked : true;
+        const includeScales = document.getElementById('pdfIncludeScales') ? 
+            document.getElementById('pdfIncludeScales').checked : true;
+        const includeExercises = document.getElementById('pdfIncludeExercises') ? 
+            document.getElementById('pdfIncludeExercises').checked : true;
+        const includeLogo = document.getElementById('pdfIncludeLogo') ? 
+            document.getElementById('pdfIncludeLogo').checked : true;
+        const includeFooter = document.getElementById('pdfIncludeFooter') ? 
+            document.getElementById('pdfIncludeFooter').checked : true;
+        
+        console.log("Opciones de exportación:", {
+            includeDiagnosis, includeEvolutions, includeScales, includeExercises, includeLogo, includeFooter
+        });
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -12214,6 +12615,7 @@ window.useExample = function(text, fieldId) {
 };
 
         // Función para exportar objetivos a PDF
+// Función para exportar objetivos a PDF
 async function exportObjectivesToPDF(patientId) {
     try {
         showLoading();
@@ -12281,7 +12683,7 @@ async function exportObjectivesToPDF(patientId) {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
         doc.setFont(undefined, 'bold');
-        doc.text(`OBJETIVOS TERAPÉUTICOS - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
+        doc.text(`PLAN DE OBJETIVOS TERAPÉUTICOS`, 105, 15, null, null, 'center');
         
         // Información del paciente
         doc.setFillColor(245, 247, 250);
@@ -12384,6 +12786,7 @@ async function exportObjectivesToPDF(patientId) {
                     yPos = 20;
                 }
                 
+                // Encabezado de categoría
                 doc.setFillColor(240, 240, 240);
                 doc.rect(10, yPos - 5, 190, 10, 'F');
                 doc.setFont(undefined, 'bold');
@@ -12402,6 +12805,15 @@ async function exportObjectivesToPDF(patientId) {
                         yPos = 20;
                     }
                     
+                    // Determinar colores según estado
+                    let statusColor = [158, 158, 158]; // Gris para pendiente
+                    if (obj.status === 'completed') {
+                        statusColor = [76, 175, 80]; // Verde para completado
+                    } else if (obj.status === 'inprogress') {
+                        statusColor = [33, 150, 243]; // Azul para en progreso
+                    }
+                    
+                    // Título y detalles
                     const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
                     const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
                     const progress = obj.progress || 0;
@@ -12411,47 +12823,49 @@ async function exportObjectivesToPDF(patientId) {
                     if (obj.status === 'completed') statusText = "Completado";
                     else if (obj.status === 'inprogress') statusText = "En progreso";
                     
+                    // Tarjeta de objetivo
+                    doc.setFillColor(245, 247, 250);
+                    doc.roundedRect(15, yPos - 5, 180, 50, 2, 2, 'F');
+                    
+                    // Icono de estado (círculo con color según estado)
+                    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+                    doc.circle(25, yPos + 5, 3, 'F');
+                    
+                    // Título con numeral
                     doc.setFont(undefined, 'bold');
-                    doc.text(`${index + 1}. ${title}`, 15, yPos);
-                    yPos += 7;
+                    doc.text(`${index + 1}. ${title}`, 30, yPos + 5);
+                    yPos += 10;
                     
+                    // Detalles
                     doc.setFont(undefined, 'normal');
-                    doc.text(`Medida: ${details}`, 20, yPos);
+                    doc.text(`Medida: ${details}`, 30, yPos);
                     yPos += 7;
                     
-                    doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                    // Estado y progreso
+                    doc.text(`Estado: ${statusText}`, 30, yPos);
+                    doc.text(`Progreso: ${progress}%`, 120, yPos);
                     yPos += 7;
                     
                     // Fechas
                     const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'N/A';
                     const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'N/A';
-                    doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                    doc.text(`Inicio: ${startDate}`, 30, yPos);
+                    doc.text(`Objetivo: ${endDate}`, 120, yPos);
                     yPos += 7;
                     
                     // Barra de progreso
                     doc.setDrawColor(220, 220, 220);
                     doc.setFillColor(220, 220, 220);
-                    doc.roundedRect(20, yPos, 170, 4, 1, 1, 'F');
+                    doc.roundedRect(30, yPos, 150, 4, 1, 1, 'F');
                     
                     if (progress > 0) {
-                        const progressWidth = (progress / 100) * 170;
-                        
-                        // Color según estado
-                        if (obj.status === 'completed') {
-                            doc.setDrawColor(76, 175, 80);
-                            doc.setFillColor(76, 175, 80);
-                        } else if (obj.status === 'inprogress') {
-                            doc.setDrawColor(33, 150, 243);
-                            doc.setFillColor(33, 150, 243);
-                        } else {
-                            doc.setDrawColor(158, 158, 158);
-                            doc.setFillColor(158, 158, 158);
-                        }
-                        
-                        doc.roundedRect(20, yPos, progressWidth, 4, 1, 1, 'F');
+                        const progressWidth = (progress / 100) * 150;
+                        doc.setDrawColor(...statusColor);
+                        doc.setFillColor(...statusColor);
+                        doc.roundedRect(30, yPos, progressWidth, 4, 1, 1, 'F');
                     }
                     
-                    yPos += 12;
+                    yPos += 15;
                 });
             }
         }
@@ -12487,49 +12901,67 @@ async function exportObjectivesToPDF(patientId) {
             
             const total = completed + inProgress + pending;
             
-            // Crear gráfico de dona manualmente (sin canvas)
+            // Tabla de resumen con colores
+            doc.setFillColor(245, 247, 250);
+            doc.rect(20, yPos - 5, 170, 110, 'F');
+            
             doc.setFont(undefined, 'bold');
-            doc.text('Estado de objetivos', 105, yPos, null, null, 'center');
+            doc.text('Distribución de objetivos por estado', 105, yPos, null, null, 'center');
             yPos += 15;
             
-            // Estadísticas de texto
+            // Estadísticas de texto con mejor formato
             doc.setFont(undefined, 'normal');
-            doc.text(`Total de objetivos: ${total}`, 65, yPos);
-            yPos += 7;
+            doc.text(`Total de objetivos: ${total}`, 40, yPos);
+            yPos += 10;
             
+            // Sección completados
+            const completedPerc = total > 0 ? Math.round(completed/total*100) : 0;
             doc.setFillColor(76, 175, 80); // Verde
-            doc.circle(60, yPos, 3, 'F');
-            doc.text(`Completados: ${completed} (${Math.round(completed/total*100)}%)`, 65, yPos);
-            yPos += 7;
+            doc.rect(40, yPos, 15, 15, 'F');
+            doc.text(`Completados: ${completed} (${completedPerc}%)`, 60, yPos + 10);
+            yPos += 25;
             
+            // Sección en progreso
+            const inProgressPerc = total > 0 ? Math.round(inProgress/total*100) : 0;
             doc.setFillColor(33, 150, 243); // Azul
-            doc.circle(60, yPos, 3, 'F');
-            doc.text(`En progreso: ${inProgress} (${Math.round(inProgress/total*100)}%)`, 65, yPos);
-            yPos += 7;
+            doc.rect(40, yPos, 15, 15, 'F');
+            doc.text(`En progreso: ${inProgress} (${inProgressPerc}%)`, 60, yPos + 10);
+            yPos += 25;
             
+            // Sección pendientes
+            const pendingPerc = total > 0 ? Math.round(pending/total*100) : 0;
             doc.setFillColor(158, 158, 158); // Gris
-            doc.circle(60, yPos, 3, 'F');
-            doc.text(`Pendientes: ${pending} (${Math.round(pending/total*100)}%)`, 65, yPos);
-            yPos += 20;
+            doc.rect(40, yPos, 15, 15, 'F');
+            doc.text(`Pendientes: ${pending} (${pendingPerc}%)`, 60, yPos + 10);
+            yPos += 30;
             
             // Información de progreso global
             const overallProgress = specificObjectives.reduce((sum, obj) => sum + (obj.progress || 0), 0) / total;
             
             doc.setFont(undefined, 'bold');
-            doc.text(`Progreso general: ${Math.round(overallProgress)}%`, 65, yPos);
+            doc.text(`Progreso general: ${Math.round(overallProgress)}%`, 105, yPos, null, null, 'center');
             yPos += 10;
             
-            // Barra de progreso general
+            // Barra de progreso general más ancha y visible
             doc.setDrawColor(220, 220, 220);
             doc.setFillColor(220, 220, 220);
-            doc.roundedRect(65, yPos, 100, 8, 1, 1, 'F');
+            doc.roundedRect(40, yPos, 130, 10, 2, 2, 'F');
             
             if (overallProgress > 0) {
-                const progressWidth = (overallProgress / 100) * 100;
+                const progressWidth = (overallProgress / 100) * 130;
                 doc.setDrawColor(33, 150, 243);
                 doc.setFillColor(33, 150, 243);
-                doc.roundedRect(65, yPos, progressWidth, 8, 1, 1, 'F');
+                doc.roundedRect(40, yPos, progressWidth, 10, 2, 2, 'F');
             }
+            
+            // Añadir valor de porcentaje dentro de la barra
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.text(`${Math.round(overallProgress)}%`, 105, yPos + 7, null, null, 'center');
+            
+            // Resetear texto a negro
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
         }
         
         // Añadir pie de página
