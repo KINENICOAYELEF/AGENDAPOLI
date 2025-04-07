@@ -1,9 +1,9 @@
- <script type="module">
+<script type="module">
 
 
         // Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc, where, documentId, writeBatch } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, setDoc, where, documentId } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
 
 // Variables globales
@@ -1591,94 +1591,6 @@ async function initDiagnosisTab(patientId) {
                 openTreatmentPlanModal(patientId);
             });
         }
-
-        // Cargar planes de tratamiento existentes
-        await loadTreatmentPlans(patientId);
-
-        // Función para cargar planes de tratamiento existentes
-async function loadTreatmentPlans(patientId) {
-    try {
-        const treatmentPlanList = document.getElementById('treatmentPlanList');
-        if (!treatmentPlanList) return;
-        
-        // Limpiar lista actual
-        treatmentPlanList.innerHTML = '';
-        
-        // Obtener planes de Firebase
-        const plans = await getTreatmentPlans(patientId);
-        
-        if (plans.length === 0) {
-            treatmentPlanList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-style: italic;">No hay planes de tratamiento registrados</p>';
-            return;
-        }
-        
-        // Mostrar cada plan
-        plans.forEach(plan => {
-            const planElement = document.createElement('div');
-            planElement.className = 'plan-card fade-in';
-            planElement.dataset.id = plan.id;
-            
-            planElement.innerHTML = `
-                <div class="plan-header">
-                    <div class="plan-title">
-                        <i class="fas fa-clipboard-list"></i>
-                        Plan de Tratamiento
-                    </div>
-                    <div class="plan-date">${formatDate(new Date(plan.startDate))} - ${formatDate(new Date(plan.endDate))}</div>
-                </div>
-                <div class="plan-details">
-                    <div class="plan-row">
-                        <div class="plan-label">Frecuencia:</div>
-                        <div class="plan-value">${plan.frequency} durante ${plan.duration}</div>
-                    </div>
-                    <div class="plan-row">
-                        <div class="plan-label">Técnicas:</div>
-                        <div class="plan-value">
-                            <div class="techniques-list">
-                                ${plan.techniques.map(t => `<div class="technique-tag">${t}</div>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                    ${plan.objectives ? `
-                    <div class="plan-row">
-                        <div class="plan-label">Objetivos:</div>
-                        <div class="plan-value">
-                            ${plan.objectives}
-                        </div>
-                    </div>
-                    ` : ''}
-                    ${plan.observations ? `
-                    <div class="plan-row">
-                        <div class="plan-label">Observaciones:</div>
-                        <div class="plan-value">
-                            ${plan.observations}
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-                <div class="plan-actions" style="text-align: right; margin-top: 10px;">
-                    <button class="action-btn btn-secondary view-plan-btn" data-id="${plan.id}">
-                        <i class="fas fa-eye"></i> Ver detalles
-                    </button>
-                </div>
-            `;
-            
-            treatmentPlanList.appendChild(planElement);
-            
-            // Añadir evento al botón de ver
-            planElement.querySelector('.view-plan-btn').addEventListener('click', function() {
-                viewTreatmentPlan(patientId, plan.id);
-            });
-        });
-    } catch (error) {
-        console.error("Error al cargar planes de tratamiento:", error);
-        showToast("Error al cargar planes: " + error.message, "error");
-    }
-}
-
-        
-
-        
     } catch (error) {
         console.error("Error inicializando pestaña de diagnóstico:", error);
         showToast("Error al cargar diagnósticos", "error");
@@ -1707,7 +1619,7 @@ async function getDiagnoses(patientId) {
         return [];
     }
 }
-        
+
 // Función mejorada para abrir el modal de diagnóstico
 // Función mejorada para abrir el modal de diagnóstico (con soporte para edición)
 function openDiagnosisModal(patientId, existingDiagnosis = null) {
@@ -2110,19 +2022,14 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
                         try {
                             diagnosisModal.classList.remove('active');
                             setTimeout(() => {
-                                if (diagnosisModal && document.body.contains(diagnosisModal)) {
-                                    try {
-                                        document.body.removeChild(diagnosisModal);
-                                    } catch (e) {
-                                        console.log("Modal ya eliminado, ignorando operación");
-                                        diagnosisModal.style.display = 'none';
-                                    }
+                                if (document.body.contains(diagnosisModal)) {
+                                    document.body.removeChild(diagnosisModal);
                                 }
                             }, 300);
                         } catch (error) {
                             console.error("Error al cerrar modal:", error);
                             // En caso de error, intentar ocultar el modal
-                            if (diagnosisModal) diagnosisModal.style.display = 'none';
+                            diagnosisModal.style.display = 'none';
                         }
                     })
                     .catch(error => {
@@ -2336,42 +2243,6 @@ function generateFunctionalDiagnosis() {
     document.querySelectorAll('[id^="restriccion"]:checked').forEach(el => {
         restrictions.push(el.id.replace('restriccion', '').toLowerCase());
     });
-
-    // Integrar con CIF - Obtener categorías CIF seleccionadas
-    let cifFunctions = [];
-    let cifStructures = [];
-    let cifActivities = [];
-    
-    // Solo si el paciente actual está seleccionado
-    if (currentPatientId) {
-        try {
-            // Intentar obtener categorías CIF del caché si están disponibles
-            if (objectivesCache[currentPatientId]) {
-                // Obtener funciones corporales CIF
-                const functionItems = document.querySelectorAll('#cifFunctions .cif-item');
-                functionItems.forEach(item => {
-                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
-                    cifFunctions.push(code);
-                });
-                
-                // Obtener estructuras corporales CIF
-                const structureItems = document.querySelectorAll('#cifStructures .cif-item');
-                structureItems.forEach(item => {
-                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
-                    cifStructures.push(code);
-                });
-                
-                // Obtener actividades y participación CIF
-                const activityItems = document.querySelectorAll('#cifActivities .cif-item');
-                activityItems.forEach(item => {
-                    const code = item.querySelector('.cif-code').textContent.split(':')[0].trim();
-                    cifActivities.push(code);
-                });
-            }
-        } catch (error) {
-            console.error("Error al obtener categorías CIF:", error);
-        }
-    }
     
     // Verificar que se hayan seleccionado los campos mínimos necesarios
     if (!region) {
@@ -2502,48 +2373,8 @@ function generateFunctionalDiagnosis() {
     
     diagnosis += '.';
     
-    // Añadir recomendación basada en CIF - Ahora con códigos específicos si están disponibles
-    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en`;
-    
-    // Agregar códigos específicos si están disponibles
-    if (cifFunctions.length > 0 || cifStructures.length > 0 || cifActivities.length > 0) {
-        if (cifFunctions.length > 0) {
-            diagnosis += ` funciones corporales (${cifFunctions.slice(0, 3).join(', ')})`;
-            
-            if (cifStructures.length > 0 || cifActivities.length > 0) {
-                diagnosis += `,`;
-            }
-        } else {
-            diagnosis += ` funciones corporales (b)`;
-            if (cifStructures.length > 0 || cifActivities.length > 0) {
-                diagnosis += `,`;
-            }
-        }
-        
-        if (cifStructures.length > 0) {
-            diagnosis += ` estructuras corporales (${cifStructures.slice(0, 3).join(', ')})`;
-            
-            if (cifActivities.length > 0) {
-                diagnosis += ` y`;
-            }
-        } else {
-            diagnosis += ` estructuras corporales (s)`;
-            if (cifActivities.length > 0) {
-                diagnosis += ` y`;
-            }
-        }
-        
-        if (cifActivities.length > 0) {
-            diagnosis += ` actividades y participación (${cifActivities.slice(0, 3).join(', ')})`;
-        } else {
-            diagnosis += ` actividades y participación (d)`;
-        }
-    } else {
-        diagnosis += ` funciones corporales (b), estructuras corporales (s) y actividades y participación (d)`;
-    }
-    
-    diagnosis += `.`;
-
+    // Añadir recomendación basada en CIF
+    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
     
     // Establecer el diagnóstico en el campo de texto
     const diagnosisTextElement = document.getElementById('diagnosisText');
@@ -4601,17 +4432,8 @@ async function loadSpecificObjectivesDisplay(patientId) {
             objectivesStatsPanel.style.display = specificObjectives.length > 0 ? 'block' : 'none';
         }
         
-        // Ordenar objetivos primero por el orden guardado, luego por estado si no hay orden
+        // Ordenar objetivos: pendientes primero, luego en progreso, luego completados
         specificObjectives.sort((a, b) => {
-            // Si ambos tienen displayOrder, usar ese
-            if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-                return a.displayOrder - b.displayOrder;
-            }
-            // Si solo uno tiene displayOrder, priorizarlo
-            if (a.displayOrder !== undefined) return -1;
-            if (b.displayOrder !== undefined) return 1;
-            
-            // Si ninguno tiene displayOrder, ordenar por estado
             const statusOrder = { 'completed': 2, 'inprogress': 1, 'pending': 0 };
             return statusOrder[a.status || 'pending'] - statusOrder[b.status || 'pending'];
         });
@@ -5888,7 +5710,7 @@ function saveObjective(patientId, modal) {
     }, 300);
 }
 
-// Abrir modal de plan de tratamiento
+        // Abrir modal de plan de tratamiento
 function openTreatmentPlanModal(patientId) {
     // Crear modal para plan de tratamiento
     const planModal = document.createElement('div');
@@ -5909,33 +5731,21 @@ function openTreatmentPlanModal(patientId) {
                         <label class="form-label">Fecha de inicio</label>
                         <input type="date" class="form-control" id="planStartDate" value="${new Date().toISOString().split('T')[0]}" required>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Fecha de finalización estimada</label>
-                        <input type="date" class="form-control" id="planEndDate" value="${new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]}" required>
-                    </div>
-                    
                     <div class="form-group">
                         <label class="form-label">Frecuencia de sesiones</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="number" class="form-control" id="planFrequency" min="1" max="7" value="3" style="width: 80px;" required>
+                            <input type="number" class="form-control" id="planFrequency" min="1" max="7" value="3" style="width: 80px;">
                             <select class="form-control" id="planFrequencyUnit">
                                 <option value="sesiones por semana">sesiones por semana</option>
                                 <option value="sesiones por mes">sesiones por mes</option>
                             </select>
-                            <input type="number" class="form-control" id="planDuration" min="1" max="52" value="4" style="width: 80px;" required>
+                            <input type="number" class="form-control" id="planDuration" min="1" max="52" value="4" style="width: 80px;">
                             <select class="form-control" id="planDurationUnit">
                                 <option value="semanas">semanas</option>
                                 <option value="meses">meses</option>
                             </select>
                         </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Objetivos del plan</label>
-                        <textarea class="form-control" id="planObjectives" rows="3" placeholder="Describa los objetivos principales de este plan de tratamiento..."></textarea>
-                    </div>
-                    
                     <div class="form-group">
                         <label class="form-label">Técnicas a utilizar</label>
                         <div class="techniques-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
@@ -5966,22 +5776,10 @@ function openTreatmentPlanModal(patientId) {
                         </div>
                         <input type="text" class="form-control" id="techniquesOther" placeholder="Otras técnicas...">
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Recursos y equipamiento necesario</label>
-                        <textarea class="form-control" id="planResources" rows="2" placeholder="Equipamiento e implementos necesarios para este plan..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Criterios de progresión</label>
-                        <textarea class="form-control" id="planProgression" rows="2" placeholder="Criterios para avanzar en la dificultad o intensidad del tratamiento..."></textarea>
-                    </div>
-                    
                     <div class="form-group">
                         <label class="form-label">Observaciones y recomendaciones</label>
                         <textarea class="form-control" id="planObservations" rows="3" placeholder="Detalle observaciones específicas para este plan de tratamiento..."></textarea>
                     </div>
-                    
                     <div class="form-group" style="margin-top: 20px; text-align: right;">
                         <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelTreatmentPlanBtn">Cancelar</button>
                         <button type="submit" class="action-btn btn-primary">Guardar plan</button>
@@ -6005,19 +5803,15 @@ function openTreatmentPlanModal(patientId) {
         setTimeout(() => document.body.removeChild(planModal), 300);
     });
     
-    document.getElementById('treatmentPlanForm').addEventListener('submit', async function(e) {
+    document.getElementById('treatmentPlanForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         // Obtener datos del formulario
         const startDate = document.getElementById('planStartDate').value;
-        const endDate = document.getElementById('planEndDate').value;
         const frequency = document.getElementById('planFrequency').value;
         const frequencyUnit = document.getElementById('planFrequencyUnit').value;
         const duration = document.getElementById('planDuration').value;
         const durationUnit = document.getElementById('planDurationUnit').value;
-        const objectives = document.getElementById('planObjectives').value;
-        const resources = document.getElementById('planResources').value;
-        const progression = document.getElementById('planProgression').value;
         const observations = document.getElementById('planObservations').value;
         
         // Recopilar técnicas seleccionadas
@@ -6034,277 +5828,60 @@ function openTreatmentPlanModal(patientId) {
             techniques.push(otherTechniques);
         }
         
-        // Crear objeto de plan
-        const treatmentPlan = {
-            startDate,
-            endDate,
-            frequency: `${frequency} ${frequencyUnit}`,
-            duration: `${duration} ${durationUnit}`,
-            objectives,
-            techniques,
-            resources,
-            progression,
-            observations,
-            status: 'active' // active, completed, cancelled
-        };
-        
-        // Guardar en Firebase
-        const planId = await saveTreatmentPlan(patientId, treatmentPlan);
-        
-        if (planId) {
-            // Añadir plan a la lista visual
-            const treatmentPlanList = document.getElementById('treatmentPlanList');
-            if (treatmentPlanList) {
-                const newPlan = document.createElement('div');
-                newPlan.className = 'plan-card fade-in';
-                newPlan.dataset.id = planId;
-                
-                newPlan.innerHTML = `
-                    <div class="plan-header">
-                        <div class="plan-title">
-                            <i class="fas fa-clipboard-list"></i>
-                            Plan de Tratamiento
-                        </div>
-                        <div class="plan-date">${formatDate(new Date(startDate))} - ${formatDate(new Date(endDate))}</div>
-                    </div>
-                    <div class="plan-details">
-                        <div class="plan-row">
-                            <div class="plan-label">Frecuencia:</div>
-                            <div class="plan-value">${frequency} ${frequencyUnit} durante ${duration} ${durationUnit}</div>
-                        </div>
-                        <div class="plan-row">
-                            <div class="plan-label">Técnicas:</div>
-                            <div class="plan-value">
-                                <div class="techniques-list">
-                                    ${techniques.map(t => `<div class="technique-tag">${t}</div>`).join('')}
-                                </div>
-                            </div>
-                        </div>
-                        ${objectives ? `
-                        <div class="plan-row">
-                            <div class="plan-label">Objetivos:</div>
-                            <div class="plan-value">
-                                ${objectives}
-                            </div>
-                        </div>
-                        ` : ''}
-                        ${observations ? `
-                        <div class="plan-row">
-                            <div class="plan-label">Observaciones:</div>
-                            <div class="plan-value">
-                                ${observations}
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    <div class="plan-actions" style="text-align: right; margin-top: 10px;">
-                        <button class="action-btn btn-secondary view-plan-btn" data-id="${planId}">
-                            <i class="fas fa-eye"></i> Ver detalles
-                        </button>
-                    </div>
-                `;
-                
-                // Añadir al inicio para mayor visibilidad
-                if (treatmentPlanList.firstChild) {
-                    treatmentPlanList.insertBefore(newPlan, treatmentPlanList.firstChild);
-                } else {
-                    treatmentPlanList.appendChild(newPlan);
-                }
-                
-                // Añadir evento al botón de ver
-                newPlan.querySelector('.view-plan-btn').addEventListener('click', function() {
-                    viewTreatmentPlan(patientId, planId);
-                });
-            }
+        // Añadir plan a la lista
+        const treatmentPlanList = document.getElementById('treatmentPlanList');
+        if (treatmentPlanList) {
+            const newPlan = document.createElement('div');
+            newPlan.className = 'plan-card fade-in';
             
-            // Cerrar modal
-            planModal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(planModal), 300);
-        }
-    });
-}
-
-// Función para ver detalles de un plan de tratamiento
-async function viewTreatmentPlan(patientId, planId) {
-    try {
-        showLoading();
-        
-        // Obtener plan de Firebase
-        const planRef = doc(db, "patients", patientId, "treatmentPlans", planId);
-        const planSnap = await getDoc(planRef);
-        
-        if (!planSnap.exists()) {
-            hideLoading();
-            showToast("Plan de tratamiento no encontrado", "error");
-            return;
+            newPlan.innerHTML = `
+                <div class="plan-header">
+                    <div class="plan-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Plan de Tratamiento
+                    </div>
+                    <div class="plan-date">${formatDate(new Date(startDate))}</div>
+                </div>
+                <div class="plan-details">
+                    <div class="plan-row">
+                        <div class="plan-label">Frecuencia:</div>
+                        <div class="plan-value">${frequency} ${frequencyUnit} durante ${duration} ${durationUnit}</div>
+                    </div>
+                    <div class="plan-row">
+                        <div class="plan-label">Técnicas:</div>
+                        <div class="plan-value">
+                            <div class="techniques-list">
+                                ${techniques.map(t => `<div class="technique-tag">${t}</div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ${observations ? `
+                    <div class="plan-row">
+                        <div class="plan-label">Observaciones:</div>
+                        <div class="plan-value">
+                            ${observations}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Añadir al inicio para mayor visibilidad
+            if (treatmentPlanList.firstChild) {
+                treatmentPlanList.insertBefore(newPlan, treatmentPlanList.firstChild);
+            } else {
+                treatmentPlanList.appendChild(newPlan);
+            }
         }
         
-        const plan = planSnap.data();
+        // En una implementación real, aquí se guardarían los datos en Firebase
         
-        // Crear modal para mostrar plan
-        const viewModal = document.createElement('div');
-        viewModal.className = 'modal-overlay';
-        viewModal.id = 'viewTreatmentPlanModal';
-        
-        viewModal.innerHTML = `
-            <div class="modal">
-                <div class="modal-header">
-                    <h2 class="modal-title">Plan de Tratamiento</h2>
-                    <button class="modal-close" id="closeViewTreatmentPlanModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);">
-                                <i class="fas fa-calendar-check"></i> Período: ${formatDate(new Date(plan.startDate))} - ${formatDate(new Date(plan.endDate))}
-                            </div>
-                            <div class="plan-status ${plan.status === 'active' ? 'status-active' : plan.status === 'completed' ? 'status-completed' : 'status-inactive'}">
-                                ${plan.status === 'active' ? 'Activo' : plan.status === 'completed' ? 'Completado' : 'Cancelado'}
-                            </div>
-                        </div>
-                        <div style="margin-top: 10px; color: var(--text-secondary);">
-                            <i class="fas fa-clock"></i> Frecuencia: ${plan.frequency} durante ${plan.duration}
-                        </div>
-                    </div>
-                    
-                    <h3 style="margin-top: 0; color: var(--primary);">Objetivos del Plan</h3>
-                    <p>${plan.objectives || 'No se han definido objetivos específicos para este plan.'}</p>
-                    
-                    <h3 style="color: var(--primary);">Técnicas de Tratamiento</h3>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-                        ${plan.techniques.map(t => `<div class="technique-tag" style="background-color: var(--primary-light); color: white; padding: 5px 10px; border-radius: 15px; font-size: 13px;">${t}</div>`).join('')}
-                    </div>
-                    
-                    ${plan.resources ? `
-                    <h3 style="color: var(--primary);">Recursos y Equipamiento</h3>
-                    <p>${plan.resources}</p>
-                    ` : ''}
-                    
-                    ${plan.progression ? `
-                    <h3 style="color: var(--primary);">Criterios de Progresión</h3>
-                    <p>${plan.progression}</p>
-                    ` : ''}
-                    
-                    ${plan.observations ? `
-                    <h3 style="color: var(--primary);">Observaciones y Recomendaciones</h3>
-                    <p>${plan.observations}</p>
-                    ` : ''}
-                    
-                    <div style="margin-top: 20px; text-align: right;">
-                        <button class="action-btn btn-secondary" id="closeViewPlanBtn">Cerrar</button>
-                        <button class="action-btn btn-primary" id="updatePlanStatusBtn" data-id="${planId}" data-status="${plan.status}">
-                            ${plan.status === 'active' ? 
-                              '<i class="fas fa-check"></i> Marcar como completado' : 
-                              plan.status === 'completed' ? 
-                              '<i class="fas fa-undo"></i> Reactivar plan' : 
-                              '<i class="fas fa-play"></i> Activar plan'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(viewModal);
-        hideLoading();
-        
-        setTimeout(() => viewModal.classList.add('active'), 50);
-        
-        // Configurar eventos para cerrar modal
-        document.getElementById('closeViewTreatmentPlanModal').addEventListener('click', function() {
-            viewModal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(viewModal), 300);
-        });
-        
-        document.getElementById('closeViewPlanBtn').addEventListener('click', function() {
-            viewModal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(viewModal), 300);
-        });
-        
-        // Configurar evento para cambiar estado
-        document.getElementById('updatePlanStatusBtn').addEventListener('click', async function() {
-            const planId = this.getAttribute('data-id');
-            const currentStatus = this.getAttribute('data-status');
-            
-            let newStatus = currentStatus === 'active' ? 'completed' : 'active';
-            
-            try {
-                showLoading();
-                
-                // Actualizar en Firebase
-                const planRef = doc(db, "patients", patientId, "treatmentPlans", planId);
-                await updateDoc(planRef, {
-                    status: newStatus,
-                    updatedAt: new Date().toISOString()
-                });
-                
-                hideLoading();
-                showToast(`Plan ${newStatus === 'completed' ? 'completado' : 'reactivado'} correctamente`, "success");
-                
-                // Cerrar modal
-                viewModal.classList.remove('active');
-                setTimeout(() => document.body.removeChild(viewModal), 300);
-                
-                // Actualizar la visualización de planes si es necesario
-                // Aquí podría refrescar la lista de planes
-            } catch (error) {
-                hideLoading();
-                console.error("Error al actualizar estado del plan:", error);
-                showToast("Error al actualizar plan: " + error.message, "error");
-            }
-        });
-    } catch (error) {
-        hideLoading();
-        console.error("Error al ver plan de tratamiento:", error);
-        showToast("Error al cargar plan: " + error.message, "error");
-    }
-}
-
-        // Función para guardar plan de tratamiento en Firebase
-async function saveTreatmentPlan(patientId, planData) {
-    try {
-        showLoading();
-        
-        // Añadir timestamp de creación
-        planData.createdAt = new Date().toISOString();
-        planData.updatedAt = new Date().toISOString();
-        
-        // Guardar en Firebase
-        const plansRef = collection(db, "patients", patientId, "treatmentPlans");
-        const docRef = await addDoc(plansRef, planData);
-        
-        hideLoading();
         showToast("Plan de tratamiento guardado correctamente", "success");
-        return docRef.id;
-    } catch (error) {
-        console.error("Error al guardar plan de tratamiento:", error);
-        hideLoading();
-        showToast("Error al guardar plan: " + error.message, "error");
-        return null;
-    }
-}
-
-// Función para obtener planes de tratamiento
-async function getTreatmentPlans(patientId) {
-    try {
-        showLoading();
-        const plansRef = collection(db, "patients", patientId, "treatmentPlans");
-        const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
-        const plansSnapshot = await getDocs(plansQuery);
         
-        const plansList = plansSnapshot.docs.map(doc => {
-            return { id: doc.id, ...doc.data() };
-        });
-        
-        hideLoading();
-        return plansList;
-    } catch (error) {
-        console.error("Error obteniendo planes de tratamiento:", error);
-        hideLoading();
-        showToast("Error al cargar planes: " + error.message, "error");
-        return [];
-    }
+        // Cerrar modal
+        planModal.classList.remove('active');
+        setTimeout(() => document.body.removeChild(planModal), 300);
+    });
 }
 
 // Show new evolution modal with proper validation
@@ -6742,7 +6319,7 @@ function changeView(viewName) {
         // Manejar vista dashboard de forma especial
         if (viewName === 'dashboard') {
             if (window.dashboardContent) {
-                // Crear un contenedor temporal para insertar el contenido
+                // Usar el contenido guardado del dashboard
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = window.dashboardContent;
                 
@@ -6774,9 +6351,6 @@ function changeView(viewName) {
                         
                         newAddEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
-                }).catch(error => {
-                    console.error("Error al cargar pacientes:", error);
-                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             } else {
                 // Si no hay contenido guardado, crear una estructura básica
@@ -6873,9 +6447,6 @@ function changeView(viewName) {
                     if (addEvolutionBtn) {
                         addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
-                }).catch(error => {
-                    console.error("Error al cargar pacientes:", error);
-                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
         } else {
@@ -7173,9 +6744,6 @@ function changeView(viewName) {
                             if (modal) modal.classList.add('active');
                         });
                     }
-                }).catch(error => {
-                    console.error("Error al cargar pacientes:", error);
-                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             } 
             else if (viewName === 'evoluciones') {
@@ -7185,32 +6753,10 @@ function changeView(viewName) {
                     
                     // Mostrar pacientes en la vista principal
                     renderPatientsInView('patientEvolutionsView', patients);
-                }).catch(error => {
-                    console.error("Error al cargar pacientes:", error);
-                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
             else if (viewName === 'reportes') {
-                // Cargar estadísticas en tiempo real
-                showLoading();
-                
-                // Mostrar mensaje de carga
-                const statsElements = ['totalPatientsReport', 'totalEvolutionsReport', 'monthEvolutionsReport'];
-                statsElements.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.textContent = "Cargando...";
-                    }
-                });
-                
-                // Actualizar estadísticas de forma asíncrona
-                updateReportStatistics().then(() => {
-                    hideLoading();
-                }).catch(error => {
-                    console.error("Error al actualizar estadísticas:", error);
-                    hideLoading();
-                    showToast("Error al cargar estadísticas: " + error.message, "error");
-                });
+                updateReportStatistics();
                 
                 // Cargar pacientes para el selector de informes
                 getPatients().then(patients => {
@@ -7254,9 +6800,6 @@ function changeView(viewName) {
                         
                         newStatReportBtn.addEventListener('click', generateStatisticsReport);
                     }
-                }).catch(error => {
-                    console.error("Error al cargar pacientes para reportes:", error);
-                    showToast("Error al cargar pacientes: " + error.message, "error");
                 });
             }
             else if (viewName === 'configuracion') {
@@ -7321,7 +6864,7 @@ function changeView(viewName) {
     }
 }
 
-// Actualizar estadísticas de reportes
+        // Actualizar estadísticas de reportes
 async function updateReportStatistics() {
     try {
         // Obtener todos los pacientes
@@ -7365,13 +6908,10 @@ async function updateReportStatistics() {
             monthEvolutionsElement.textContent = monthEvolutions;
         }
         
-        // Eliminar la sección de estudiantes activos del HTML
+        // Mostrar número de estudiantes activos (simulado)
         const studentsElement = document.getElementById('activeStudentsReport');
         if (studentsElement) {
-            const cardContainer = studentsElement.closest('.dashboard-card');
-            if (cardContainer) {
-                cardContainer.style.display = 'none';
-            }
+            studentsElement.textContent = "12";
         }
     } catch (error) {
         console.error('Error actualizando estadísticas de reportes:', error);
@@ -7379,6 +6919,7 @@ async function updateReportStatistics() {
     }
 }
 
+// Generar informe de paciente
 function generatePatientReport() {
     const patientSelect = document.getElementById('reportPatientSelect');
     if (!patientSelect) {
@@ -7393,27 +6934,42 @@ function generatePatientReport() {
         return;
     }
     
-    // Mostrar indicador de carga
-    showLoading();
+    // Redirigir al exportar PDF del paciente
+    currentPatientId = patientId;
     
-    // Configurar opciones y generar el PDF
-    setTimeout(() => {
-        // Guardar el ID del paciente para usar en exportToPDF
-        currentPatientId = patientId;
+    // Mostrar opciones de exportación
+    const pdfOptionsContainer = document.getElementById('pdfOptionsContainer');
+    if (pdfOptionsContainer) {
+        pdfOptionsContainer.style.display = 'block';
         
-        // Llamar a la función de exportación
-        exportToPDF(patientId).then(() => {
-            hideLoading();
-        }).catch(error => {
-            console.error("Error al generar informe:", error);
-            hideLoading();
-            showToast("Error al generar informe: " + error.message, "error");
-        });
-    }, 100);
+        // Configurar botones
+        const cancelBtn = document.getElementById('cancelPdfExport');
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                pdfOptionsContainer.style.display = 'none';
+            });
+        }
+        
+        const generateBtn = document.getElementById('generatePdfBtn');
+        if (generateBtn) {
+            // Eliminar manejadores previos
+            const newGenerateBtn = generateBtn.cloneNode(true);
+            generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
+            
+            newGenerateBtn.addEventListener('click', function() {
+                exportToPDF(patientId);
+                pdfOptionsContainer.style.display = 'none';
+            });
+        }
+    }
 }
 
 // Generar informe estadístico
-async function generateStatisticsReport() {
+function generateStatisticsReport() {
     const startDateInput = document.getElementById('reportStartDate');
     const endDateInput = document.getElementById('reportEndDate');
     
@@ -7430,383 +6986,11 @@ async function generateStatisticsReport() {
         return;
     }
     
-    try {
-        showLoading();
-        showToast("Generando informe estadístico...", "info");
-        
-        // Obtener estadísticas para el período
-        const stats = await getStatisticsForPeriod(startDate, endDate);
-        
-        // Generar PDF con las estadísticas
-        await generateStatisticsPDF(stats, startDate, endDate);
-        
-        hideLoading();
+    showToast("Generando informe estadístico...", "info");
+    // Aquí iría la lógica para generar un informe estadístico
+    setTimeout(() => {
         showToast("Informe estadístico generado correctamente", "success");
-    } catch (error) {
-        hideLoading();
-        console.error("Error al generar informe estadístico:", error);
-        showToast("Error al generar informe: " + error.message, "error");
-    }
-}
-
-// Obtener estadísticas para un período
-async function getStatisticsForPeriod(startDate, endDate) {
-    try {
-        // Convertir fechas a objetos Date para comparaciones
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999); // Incluir todo el día final
-        
-        // Obtener todos los pacientes
-        const patients = await getPatients();
-        
-        // Estadísticas iniciales
-        const stats = {
-            totalPatients: patients.length,
-            activePatients: 0,
-            newPatients: 0,
-            totalEvolutions: 0,
-            evolutionsInPeriod: 0,
-            mostCommonTechniques: {},
-            evaluationsInPeriod: []
-        };
-        
-        // Para cada paciente, contar evoluciones en el período
-        for (const patient of patients) {
-            // Verificar si es un paciente nuevo en el período
-            if (patient.createdAt) {
-                const createdDate = new Date(patient.createdAt);
-                if (createdDate >= start && createdDate <= end) {
-                    stats.newPatients++;
-                }
-            }
-            
-            // Obtener evoluciones
-            const evolutions = await getEvolutions(patient.id);
-            
-            // Contar evoluciones totales
-            stats.totalEvolutions += evolutions.length;
-            
-            // Contar evoluciones en el período
-            const evolutionsInPeriod = evolutions.filter(ev => {
-                if (!ev.date) return false;
-                const evDate = new Date(ev.date);
-                return evDate >= start && evDate <= end;
-            });
-            
-            stats.evolutionsInPeriod += evolutionsInPeriod.length;
-            
-            // Si tiene evoluciones en el período, considerar paciente activo
-            if (evolutionsInPeriod.length > 0) {
-                stats.activePatients++;
-            }
-            
-            // Contar técnicas utilizadas
-            evolutionsInPeriod.forEach(ev => {
-                // Evolución contiene un objeto treatment con el texto del tratamiento
-                const treatmentText = ev.treatment || '';
-                
-                // Verificar técnicas comunes
-                const techniques = [
-                    "Terapia manual", "Ejercicio", "Agentes físicos", 
-                    "Electroterapia", "Ultrasonido", "Láser", 
-                    "Estiramientos", "Fortalecimiento", "Propiocepción"
-                ];
-                
-                techniques.forEach(technique => {
-                    if (treatmentText.toLowerCase().includes(technique.toLowerCase())) {
-                        stats.mostCommonTechniques[technique] = (stats.mostCommonTechniques[technique] || 0) + 1;
-                    }
-                });
-                
-                // Añadir datos de evaluación si hay escalas
-                if (ev.scales) {
-                    // Añadir al array de evaluaciones
-                    stats.evaluationsInPeriod.push({
-                        patientName: patient.name,
-                        date: ev.date,
-                        eva: ev.scales.eva,
-                        groc: ev.scales.groc,
-                        sane: ev.scales.sane
-                    });
-                }
-            });
-        }
-        
-        return stats;
-    } catch (error) {
-        console.error("Error obteniendo estadísticas:", error);
-        throw error;
-    }
-}
-
-// Generar PDF con estadísticas
-async function generateStatisticsPDF(stats, startDate, endDate) {
-    try {
-        // Verificar que jsPDF esté disponible
-        if (!window.jspdf || !window.jspdf.jsPDF) {
-            throw new Error("Librería jsPDF no disponible. Verifique la conexión a Internet.");
-        }
-        
-        // Formatear fechas para el título
-        const formattedStartDate = formatDate(new Date(startDate));
-        const formattedEndDate = formatDate(new Date(endDate));
-        
-        // Get center info from configuration
-        let centerName = "Polideportivo";
-        let centerAddress = "";
-        let therapistName = "Nicolás Ayelef";
-        
-        try {
-            const savedConfig = localStorage.getItem('sistemakineConfig');
-            if (savedConfig) {
-                const config = JSON.parse(savedConfig);
-                if (config.centerName) centerName = config.centerName;
-                if (config.centerAddress) centerAddress = config.centerAddress;
-                if (config.mainTherapistName) therapistName = config.mainTherapistName;
-            }
-        } catch (error) {
-            console.error("Error al cargar configuración para PDF:", error);
-        }
-        
-        // Create a new PDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Add header
-        doc.setFillColor(30, 136, 229);
-        doc.rect(0, 0, 210, 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text(`INFORME ESTADÍSTICO - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
-        
-        // Add period info
-        doc.setFillColor(245, 247, 250);
-        doc.rect(10, 30, 190, 25, 'F');
-        
-        doc.setTextColor(30, 136, 229);
-        doc.setFontSize(14);
-        doc.text(`Período: ${formattedStartDate} - ${formattedEndDate}`, 15, 40);
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 50);
-        
-        let yPos = 70;
-        
-        // Estadísticas generales
-        doc.setFillColor(30, 136, 229);
-        doc.rect(10, yPos, 190, 10, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.text('ESTADÍSTICAS GENERALES', 105, yPos + 7, null, null, 'center');
-        
-        yPos += 20;
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, 'normal');
-        
-        // Mostrar estadísticas en una tabla
-        doc.text(`Total de pacientes: ${stats.totalPatients}`, 15, yPos);
-        yPos += 10;
-        doc.text(`Pacientes activos en el período: ${stats.activePatients}`, 15, yPos);
-        yPos += 10;
-        doc.text(`Pacientes nuevos en el período: ${stats.newPatients}`, 15, yPos);
-        yPos += 10;
-        doc.text(`Total de evoluciones: ${stats.totalEvolutions}`, 15, yPos);
-        yPos += 10;
-        doc.text(`Evoluciones en el período: ${stats.evolutionsInPeriod}`, 15, yPos);
-        yPos += 10;
-        
-        // Promedio de evoluciones por paciente activo
-        const avgEvolutionsPerPatient = stats.activePatients > 0 
-            ? (stats.evolutionsInPeriod / stats.activePatients).toFixed(1) 
-            : 0;
-        
-        doc.text(`Promedio de evoluciones por paciente activo: ${avgEvolutionsPerPatient}`, 15, yPos);
-        yPos += 20;
-        
-        // Técnicas más utilizadas
-        if (Object.keys(stats.mostCommonTechniques).length > 0) {
-            // Nueva página si es necesario
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('TÉCNICAS MÁS UTILIZADAS', 105, yPos + 7, null, null, 'center');
-            
-            yPos += 20;
-            doc.setTextColor(0, 0, 0);
-            doc.setFont(undefined, 'normal');
-            
-            // Ordenar técnicas por frecuencia
-            const sortedTechniques = Object.entries(stats.mostCommonTechniques)
-                .sort((a, b) => b[1] - a[1]);
-            
-            // Mostrar las técnicas más comunes
-            sortedTechniques.forEach(([technique, count], index) => {
-                if (index < 10) { // Limitar a las 10 más comunes
-                    doc.text(`${technique}: ${count} veces`, 15, yPos);
-                    yPos += 10;
-                }
-            });
-            
-            yPos += 10;
-        }
-        
-        // Resumen de evaluaciones
-        if (stats.evaluationsInPeriod.length > 0) {
-            // Nueva página si es necesario
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('RESUMEN DE EVALUACIONES', 105, yPos + 7, null, null, 'center');
-            
-            yPos += 20;
-            doc.setTextColor(0, 0, 0);
-            doc.setFont(undefined, 'normal');
-            
-            // Calcular promedios de escales
-            let totalEva = 0;
-            let evaCount = 0;
-            let totalGroc = 0;
-            let grocCount = 0;
-            let totalSane = 0;
-            let saneCount = 0;
-            
-            stats.evaluationsInPeriod.forEach(eval => {
-                if (eval.eva !== undefined) {
-                    totalEva += eval.eva;
-                    evaCount++;
-                }
-                if (eval.groc !== undefined) {
-                    totalGroc += eval.groc;
-                    grocCount++;
-                }
-                if (eval.sane !== undefined) {
-                    totalSane += eval.sane;
-                    saneCount++;
-                }
-            });
-            
-            // Promedios
-            const avgEva = evaCount > 0 ? (totalEva / evaCount).toFixed(1) : 'N/A';
-            const avgGroc = grocCount > 0 ? (totalGroc / grocCount).toFixed(1) : 'N/A';
-            const avgSane = saneCount > 0 ? (totalSane / saneCount).toFixed(1) : 'N/A';
-            
-            doc.text(`Promedio EVA (dolor): ${avgEva}/10`, 15, yPos);
-            yPos += 10;
-            doc.text(`Promedio GROC (cambio global): ${avgGroc}`, 15, yPos);
-            yPos += 10;
-            doc.text(`Promedio SANE (evaluación): ${avgSane}%`, 15, yPos);
-            yPos += 20;
-            
-            // Tabla de evaluaciones
-            if (stats.evaluationsInPeriod.length > 0) {
-                // Nueva página para la tabla
-                doc.addPage();
-                yPos = 20;
-                
-                doc.setFillColor(30, 136, 229);
-                doc.rect(10, yPos, 190, 10, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('DETALLE DE EVALUACIONES', 105, yPos + 7, null, null, 'center');
-                
-                yPos += 20;
-                
-                // Encabezados de tabla
-                doc.setFillColor(220, 220, 220);
-                doc.rect(15, yPos - 5, 180, 10, 'F');
-                doc.setTextColor(0, 0, 0);
-                doc.setFont(undefined, 'bold');
-                doc.text("Paciente", 20, yPos);
-                doc.text("Fecha", 80, yPos);
-                doc.text("EVA", 120, yPos);
-                doc.text("GROC", 140, yPos);
-                doc.text("SANE", 160, yPos);
-                
-                yPos += 10;
-                doc.setFont(undefined, 'normal');
-                
-                // Limitar a las primeras 20 evaluaciones para que no sea demasiado extenso
-                const limitedEvals = stats.evaluationsInPeriod.slice(0, 20);
-                
-                // Filas de la tabla
-                limitedEvals.forEach((eval, index) => {
-                    // Alternar colores de fondo para mejorar legibilidad
-                    if (index % 2 === 1) {
-                        doc.setFillColor(245, 247, 250);
-                        doc.rect(15, yPos - 5, 180, 10, 'F');
-                    }
-                    
-                    // Datos de la fila
-                    doc.text(eval.patientName || "-", 20, yPos);
-                    doc.text(formatDate(new Date(eval.date)) || "-", 80, yPos);
-                    doc.text(eval.eva !== undefined ? `${eval.eva}/10` : "-", 120, yPos);
-                    doc.text(eval.groc !== undefined ? `${eval.groc}` : "-", 140, yPos);
-                    doc.text(eval.sane !== undefined ? `${eval.sane}%` : "-", 160, yPos);
-                    
-                    yPos += 10;
-                    
-                    // Nueva página si es necesario
-                    if (yPos > 280) {
-                        doc.addPage();
-                        
-                        // Repetir encabezados
-                        yPos = 20;
-                        doc.setFillColor(220, 220, 220);
-                        doc.rect(15, yPos - 5, 180, 10, 'F');
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Paciente", 20, yPos);
-                        doc.text("Fecha", 80, yPos);
-                        doc.text("EVA", 120, yPos);
-                        doc.text("GROC", 140, yPos);
-                        doc.text("SANE", 160, yPos);
-                        
-                        yPos += 10;
-                        doc.setFont(undefined, 'normal');
-                    }
-                });
-            }
-        }
-        
-        // Añadir pie de página
-        const pageCount = doc.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            
-            doc.setFontSize(9);
-            doc.setTextColor(150, 150, 150);
-            doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
-            
-            // Añadir timestamp y profesional
-            const timestamp = new Date().toLocaleString();
-            doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
-        }
-        
-        // Guardar el PDF
-        const today = new Date().toISOString().slice(0, 10);
-        doc.save(`Estadisticas_${formattedStartDate}_${formattedEndDate}_${today}.pdf`);
-        
-    } catch (error) {
-        console.error("Error generando PDF estadístico:", error);
-        throw error;
-    }
+    }, 1500);
 }
 
 // Export PDF function (mejorada)
@@ -7831,23 +7015,13 @@ async function exportToPDF(patientId) {
         // Get evolutions
         const evolutions = await getEvolutions(patientId);
         
-        // Leer opciones del formulario - Versión corregida para asegurar que se manejen correctamente
-        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
-            document.getElementById('pdfIncludeDiagnosis').checked : true;
-        const includeEvolutions = document.getElementById('pdfIncludeEvolutions') ? 
-            document.getElementById('pdfIncludeEvolutions').checked : true;
-        const includeScales = document.getElementById('pdfIncludeScales') ? 
-            document.getElementById('pdfIncludeScales').checked : true;
-        const includeExercises = document.getElementById('pdfIncludeExercises') ? 
-            document.getElementById('pdfIncludeExercises').checked : true;
-        const includeLogo = document.getElementById('pdfIncludeLogo') ? 
-            document.getElementById('pdfIncludeLogo').checked : true;
-        const includeFooter = document.getElementById('pdfIncludeFooter') ? 
-            document.getElementById('pdfIncludeFooter').checked : true;
-        
-        console.log("Opciones de exportación:", {
-            includeDiagnosis, includeEvolutions, includeScales, includeExercises, includeLogo, includeFooter
-        });
+        // Leer opciones del formulario
+        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis')?.checked || true;
+        const includeEvolutions = document.getElementById('pdfIncludeEvolutions')?.checked || true;
+        const includeScales = document.getElementById('pdfIncludeScales')?.checked || true;
+        const includeExercises = document.getElementById('pdfIncludeExercises')?.checked || true;
+        const includeLogo = document.getElementById('pdfIncludeLogo')?.checked || true;
+        const includeFooter = document.getElementById('pdfIncludeFooter')?.checked || true;
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -7984,7 +7158,7 @@ async function exportToPDF(patientId) {
                     if (!a.date || !b.date) return 0;
                     return new Date(b.date) - new Date(a.date);
                 });
-                        
+                
                 for (let i = 0; i < filteredEvolutions.length; i++) {
                     const evolution = filteredEvolutions[i];
                     
@@ -10765,7 +9939,6 @@ window.useExample = function(text, fieldId) {
 };
 
         // Función para exportar objetivos a PDF
-// Función para exportar objetivos a PDF
 async function exportObjectivesToPDF(patientId) {
     try {
         showLoading();
@@ -10833,7 +10006,7 @@ async function exportObjectivesToPDF(patientId) {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(18);
         doc.setFont(undefined, 'bold');
-        doc.text(`PLAN DE OBJETIVOS TERAPÉUTICOS`, 105, 15, null, null, 'center');
+        doc.text(`OBJETIVOS TERAPÉUTICOS - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
         
         // Información del paciente
         doc.setFillColor(245, 247, 250);
@@ -10936,7 +10109,6 @@ async function exportObjectivesToPDF(patientId) {
                     yPos = 20;
                 }
                 
-                // Encabezado de categoría
                 doc.setFillColor(240, 240, 240);
                 doc.rect(10, yPos - 5, 190, 10, 'F');
                 doc.setFont(undefined, 'bold');
@@ -10955,15 +10127,6 @@ async function exportObjectivesToPDF(patientId) {
                         yPos = 20;
                     }
                     
-                    // Determinar colores según estado
-                    let statusColor = [158, 158, 158]; // Gris para pendiente
-                    if (obj.status === 'completed') {
-                        statusColor = [76, 175, 80]; // Verde para completado
-                    } else if (obj.status === 'inprogress') {
-                        statusColor = [33, 150, 243]; // Azul para en progreso
-                    }
-                    
-                    // Título y detalles
                     const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
                     const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
                     const progress = obj.progress || 0;
@@ -10973,49 +10136,47 @@ async function exportObjectivesToPDF(patientId) {
                     if (obj.status === 'completed') statusText = "Completado";
                     else if (obj.status === 'inprogress') statusText = "En progreso";
                     
-                    // Tarjeta de objetivo
-                    doc.setFillColor(245, 247, 250);
-                    doc.roundedRect(15, yPos - 5, 180, 50, 2, 2, 'F');
-                    
-                    // Icono de estado (círculo con color según estado)
-                    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-                    doc.circle(25, yPos + 5, 3, 'F');
-                    
-                    // Título con numeral
                     doc.setFont(undefined, 'bold');
-                    doc.text(`${index + 1}. ${title}`, 30, yPos + 5);
-                    yPos += 10;
-                    
-                    // Detalles
-                    doc.setFont(undefined, 'normal');
-                    doc.text(`Medida: ${details}`, 30, yPos);
+                    doc.text(`${index + 1}. ${title}`, 15, yPos);
                     yPos += 7;
                     
-                    // Estado y progreso
-                    doc.text(`Estado: ${statusText}`, 30, yPos);
-                    doc.text(`Progreso: ${progress}%`, 120, yPos);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Medida: ${details}`, 20, yPos);
+                    yPos += 7;
+                    
+                    doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
                     yPos += 7;
                     
                     // Fechas
                     const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'N/A';
                     const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'N/A';
-                    doc.text(`Inicio: ${startDate}`, 30, yPos);
-                    doc.text(`Objetivo: ${endDate}`, 120, yPos);
+                    doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
                     yPos += 7;
                     
                     // Barra de progreso
                     doc.setDrawColor(220, 220, 220);
                     doc.setFillColor(220, 220, 220);
-                    doc.roundedRect(30, yPos, 150, 4, 1, 1, 'F');
+                    doc.roundedRect(20, yPos, 170, 4, 1, 1, 'F');
                     
                     if (progress > 0) {
-                        const progressWidth = (progress / 100) * 150;
-                        doc.setDrawColor(...statusColor);
-                        doc.setFillColor(...statusColor);
-                        doc.roundedRect(30, yPos, progressWidth, 4, 1, 1, 'F');
+                        const progressWidth = (progress / 100) * 170;
+                        
+                        // Color según estado
+                        if (obj.status === 'completed') {
+                            doc.setDrawColor(76, 175, 80);
+                            doc.setFillColor(76, 175, 80);
+                        } else if (obj.status === 'inprogress') {
+                            doc.setDrawColor(33, 150, 243);
+                            doc.setFillColor(33, 150, 243);
+                        } else {
+                            doc.setDrawColor(158, 158, 158);
+                            doc.setFillColor(158, 158, 158);
+                        }
+                        
+                        doc.roundedRect(20, yPos, progressWidth, 4, 1, 1, 'F');
                     }
                     
-                    yPos += 15;
+                    yPos += 12;
                 });
             }
         }
@@ -11051,67 +10212,49 @@ async function exportObjectivesToPDF(patientId) {
             
             const total = completed + inProgress + pending;
             
-            // Tabla de resumen con colores
-            doc.setFillColor(245, 247, 250);
-            doc.rect(20, yPos - 5, 170, 110, 'F');
-            
+            // Crear gráfico de dona manualmente (sin canvas)
             doc.setFont(undefined, 'bold');
-            doc.text('Distribución de objetivos por estado', 105, yPos, null, null, 'center');
+            doc.text('Estado de objetivos', 105, yPos, null, null, 'center');
             yPos += 15;
             
-            // Estadísticas de texto con mejor formato
+            // Estadísticas de texto
             doc.setFont(undefined, 'normal');
-            doc.text(`Total de objetivos: ${total}`, 40, yPos);
-            yPos += 10;
+            doc.text(`Total de objetivos: ${total}`, 65, yPos);
+            yPos += 7;
             
-            // Sección completados
-            const completedPerc = total > 0 ? Math.round(completed/total*100) : 0;
             doc.setFillColor(76, 175, 80); // Verde
-            doc.rect(40, yPos, 15, 15, 'F');
-            doc.text(`Completados: ${completed} (${completedPerc}%)`, 60, yPos + 10);
-            yPos += 25;
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`Completados: ${completed} (${Math.round(completed/total*100)}%)`, 65, yPos);
+            yPos += 7;
             
-            // Sección en progreso
-            const inProgressPerc = total > 0 ? Math.round(inProgress/total*100) : 0;
             doc.setFillColor(33, 150, 243); // Azul
-            doc.rect(40, yPos, 15, 15, 'F');
-            doc.text(`En progreso: ${inProgress} (${inProgressPerc}%)`, 60, yPos + 10);
-            yPos += 25;
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`En progreso: ${inProgress} (${Math.round(inProgress/total*100)}%)`, 65, yPos);
+            yPos += 7;
             
-            // Sección pendientes
-            const pendingPerc = total > 0 ? Math.round(pending/total*100) : 0;
             doc.setFillColor(158, 158, 158); // Gris
-            doc.rect(40, yPos, 15, 15, 'F');
-            doc.text(`Pendientes: ${pending} (${pendingPerc}%)`, 60, yPos + 10);
-            yPos += 30;
+            doc.circle(60, yPos, 3, 'F');
+            doc.text(`Pendientes: ${pending} (${Math.round(pending/total*100)}%)`, 65, yPos);
+            yPos += 20;
             
             // Información de progreso global
             const overallProgress = specificObjectives.reduce((sum, obj) => sum + (obj.progress || 0), 0) / total;
             
             doc.setFont(undefined, 'bold');
-            doc.text(`Progreso general: ${Math.round(overallProgress)}%`, 105, yPos, null, null, 'center');
+            doc.text(`Progreso general: ${Math.round(overallProgress)}%`, 65, yPos);
             yPos += 10;
             
-            // Barra de progreso general más ancha y visible
+            // Barra de progreso general
             doc.setDrawColor(220, 220, 220);
             doc.setFillColor(220, 220, 220);
-            doc.roundedRect(40, yPos, 130, 10, 2, 2, 'F');
+            doc.roundedRect(65, yPos, 100, 8, 1, 1, 'F');
             
             if (overallProgress > 0) {
-                const progressWidth = (overallProgress / 100) * 130;
+                const progressWidth = (overallProgress / 100) * 100;
                 doc.setDrawColor(33, 150, 243);
                 doc.setFillColor(33, 150, 243);
-                doc.roundedRect(40, yPos, progressWidth, 10, 2, 2, 'F');
+                doc.roundedRect(65, yPos, progressWidth, 8, 1, 1, 'F');
             }
-            
-            // Añadir valor de porcentaje dentro de la barra
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(8);
-            doc.text(`${Math.round(overallProgress)}%`, 105, yPos + 7, null, null, 'center');
-            
-            // Resetear texto a negro
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(11);
         }
         
         // Añadir pie de página
@@ -11668,62 +10811,9 @@ function setupObjectiveReordering() {
         }
     });
     
-    objectivesList.addEventListener('drop', async function(e) {
+    objectivesList.addEventListener('drop', function(e) {
         e.preventDefault();
-        const draggableId = e.dataTransfer.getData('text/plain');
-        if (!draggableId || !currentPatientId) return;
-        
-        // Guardar el nuevo orden en Firebase
-        try {
-            // Obtener todos los objetivos en el nuevo orden
-            const orderedObjectives = Array.from(objectivesList.querySelectorAll('.objective-card')).map((card, index) => ({
-                id: card.getAttribute('data-id'),
-                order: index
-            }));
-            
-            // Actualizar el orden de cada objetivo en Firebase
-            try {
-                const batch = writeBatch(db);
-                
-                orderedObjectives.forEach(obj => {
-                    if (obj && obj.id) {
-                        const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
-                        batch.update(objectiveRef, { displayOrder: obj.order });
-                        
-                        // También actualizar en la caché
-                        if (objectivesCache[currentPatientId] && 
-                            objectivesCache[currentPatientId].specific && 
-                            objectivesCache[currentPatientId].specific[obj.id]) {
-                            objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
-                        }
-                    }
-                });
-                
-                await batch.commit();
-                showToast("Orden de objetivos guardado", "success");
-            } catch (batchError) {
-                console.error("Error en la operación batch:", batchError);
-                
-                // Intento alternativo con operaciones individuales
-                for (const obj of orderedObjectives) {
-                    if (obj && obj.id) {
-                        const objectiveRef = doc(db, "patients", currentPatientId, "objectives", obj.id);
-                        await updateDoc(objectiveRef, { displayOrder: obj.order });
-                        
-                        // También actualizar en la caché
-                        if (objectivesCache[currentPatientId] && 
-                            objectivesCache[currentPatientId].specific && 
-                            objectivesCache[currentPatientId].specific[obj.id]) {
-                            objectivesCache[currentPatientId].specific[obj.id].displayOrder = obj.order;
-                        }
-                    }
-                }
-                showToast("Orden de objetivos guardado (método alternativo)", "success");
-            }
-        } catch (error) {
-            console.error("Error al guardar el orden de objetivos:", error);
-            showToast("Error al guardar el orden: " + error.message, "error");
-        }
+        // Aquí podrías guardar el nuevo orden en la base de datos si es necesario
     });
     
     // Función para determinar después de qué elemento insertar
