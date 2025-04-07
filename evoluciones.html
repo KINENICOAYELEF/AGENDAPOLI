@@ -6,6 +6,8 @@
     <title>Evoluciones Polideportivo - Kinesiólogo Nicolás Ayelef</title>
     <!-- SDK de ImageKit.io -->
     <script src="https://unpkg.com/imagekit-javascript/dist/imagekit.min.js"></script>
+    <!-- Autenticación para ImageKit.io -->
+    <script src="auth.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
@@ -1588,10 +1590,10 @@ let customTemplates = [];
 // Configuración de ImageKit.io
 let imagekit = null;
 const imagekitConfig = {
-    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=", // Reemplaza con tu clave pública
-    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw", // Reemplaza con tu URL de endpoint
-    authenticationEndpoint: "" // Dejaremos esto en blanco por ahora
-};        
+    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=", 
+    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw", 
+    authenticationEndpoint: "" // No usaremos endpoint, implementaremos auth manual
+};   
 
 
         // Variables para objetivos
@@ -1691,14 +1693,16 @@ async function initFirebase() {
 
         // Inicializar ImageKit.io
         try {
-            imagekit = new ImageKit(imagekitConfig);
+            imagekit = new ImageKit({
+                publicKey: imagekitConfig.publicKey,
+                urlEndpoint: imagekitConfig.urlEndpoint,
+                authenticationEndpoint: imagekitConfig.authenticationEndpoint
+            });
             console.log("ImageKit inicializado correctamente");
         } catch (imagekitError) {
             console.error("Error al inicializar ImageKit:", imagekitError);
             showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
         }
-        
-        console.log("Firebase inicializado correctamente");
         
         // Verificar conexión
         try {
@@ -2122,6 +2126,7 @@ async function uploadFile(file, patientId, folder) {
 }
 
         // Upload file to ImageKit.io
+// Upload file to ImageKit.io
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
@@ -2140,13 +2145,20 @@ async function uploadFileToImageKit(file, patientId, folder) {
                 const filePath = `patients/${patientId}/${folder}`;
                 
                 try {
-                    // Subir el archivo a ImageKit
+                    // Obtener parámetros de autenticación
+                    const authParams = window.getImageKitAuthParams();
+                    
+                    // Subir el archivo a ImageKit con autenticación manual
                     const uploadResponse = await imagekit.upload({
                         file: base64data,
                         fileName: fileName,
                         folder: filePath,
                         useUniqueFileName: true,
-                        tags: [`patient_${patientId}`, folder]
+                        tags: [`patient_${patientId}`, folder],
+                        // Añadimos los parámetros de autenticación
+                        token: authParams.token,
+                        expire: authParams.expire,
+                        signature: authParams.signature
                     });
                     
                     console.log("Archivo subido a ImageKit:", uploadResponse);
@@ -11646,7 +11658,7 @@ if (cancelEvolutionBtn) {
                     emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
                 };
 
-                // Procesar archivos de la ficha del paciente
+                /// Procesar archivos de la ficha del paciente
                 const patientFilesInput = document.getElementById('patientFiles');
                 if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
                     const files = Array.from(patientFilesInput.files);
@@ -11817,7 +11829,7 @@ if (deletePatientBtn) {
                         attachments: []
                     };
 
-                    // Procesar archivos adjuntos con ImageKit
+                    // Procesar archivos adjuntos
                     const attachmentInput = document.getElementById('evolutionAttachments');
                     if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
                         const files = Array.from(attachmentInput.files);
