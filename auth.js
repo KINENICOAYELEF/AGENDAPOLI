@@ -1,23 +1,22 @@
-// auth.js - Autenticación para ImageKit.io
-
-// Esta función genera los tokens necesarios para ImageKit
-function generateAuthenticationParameters() {
-  // Generamos un timestamp para la expiración (1 hora desde ahora)
-  const expire = Math.floor(Date.now() / 1000) + 3600;
+exports.handler = async function(event, context) {
+  const privateKey = "XNLSvEGgU7XKRFZGONvMFkgiX9E="; // Tu clave privada de ImageKit
+  const token = Math.random().toString(36).substring(2);
+  const expire = Math.floor(Date.now()/1000) + 1200; // 20 minutos
   
-  // Valor de token aleatorio para cada solicitud
-  const token = Math.random().toString(36).substring(2, 15);
-  
-  // En un entorno real, la firma debería generarse en el servidor
-  // Esta es una implementación temporal para pruebas
-  const signature = btoa(`${token}_${expire}_vbxofs9fw`);
+  const crypto = require('crypto');
+  const hmac = crypto.createHmac('sha1', privateKey);
+  const signature = hmac.update(token + expire).digest('hex');
   
   return {
-    token,
-    expire,
-    signature
+    statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type"
+    },
+    body: JSON.stringify({
+      token: token,
+      expire: expire,
+      signature: signature
+    })
   };
-}
-
-// Exponemos la función para que esté disponible globalmente
-window.getImageKitAuthParams = generateAuthenticationParameters;
+};
