@@ -3261,12 +3261,6 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
                             <div id="diagnosisAssistantContainer" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-top: 15px;">
                                 <h4 style="margin-top: 0; color: var(--primary);">Asistente de Diagnóstico Funcional</h4>
                                 <p style="margin-bottom: 15px; font-size: 14px;">Seleccione las opciones que mejor describan al paciente para generar un diagnóstico funcional según el modelo CIF.</p>
-
-                                <div id="cifLinkSummary" style="display: none; margin-top: 15px; background-color: var(--background-alt); padding: 15px; border-radius: 8px;">
-                                    <h4 style="margin-top: 0;">Elementos CIF asociados a este diagnóstico</h4>
-                                    <p class="cif-link-info">Se mostrarán aquí las categorías CIF relevantes para este diagnóstico.</p>
-                                    <div class="cif-link-items" style="margin-top: 10px;"></div>
-                                </div>
                                 
                                 <div class="form-group">
                                     <label class="form-label">Región anatómica principal</label>
@@ -3799,7 +3793,6 @@ async function viewDiagnosis(patientId, diagnosisId) {
         
 
 // Función para generar diagnóstico funcional basado en las selecciones del asistente
-// Función para generar diagnóstico funcional basado en las selecciones del asistente
 function generateFunctionalDiagnosis() {
     // Obtener valores seleccionados
     const region = document.getElementById('assistantRegion').value;
@@ -3953,55 +3946,8 @@ function generateFunctionalDiagnosis() {
     
     diagnosis += '.';
     
-    // Incorporar información de CIF del paciente
-    if (currentPatientId) {
-        diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
-        
-        // Opcional: Añadir botón para conectar con categorías CIF
-        const diagnosisText = document.getElementById('diagnosisText');
-        const cifLinkContainer = document.getElementById('cifLinkContainer');
-        
-        if (!cifLinkContainer) {
-            const container = document.createElement('div');
-            container.id = 'cifLinkContainer';
-            container.style.marginTop = '10px';
-            container.style.textAlign = 'right';
-            
-            const linkButton = document.createElement('button');
-            linkButton.type = 'button';
-            linkButton.className = 'action-btn btn-secondary';
-            linkButton.innerHTML = '<i class="fas fa-link"></i> Vincular con CIF';
-            linkButton.onclick = function() {
-                // Guardar temporalmente el diagnóstico
-                if (diagnosisText) diagnosisText.value = diagnosis;
-                
-                // Cerrar el asistente
-                document.getElementById('diagnosisAssistantContainer').style.display = 'none';
-                
-                // Cambiar a la pestaña CIF
-                document.querySelectorAll('.tab').forEach(tab => {
-                    if (tab.getAttribute('data-tab') === 'cif') {
-                        tab.click();
-                    }
-                });
-                
-                // Mostrar mensaje guía
-                showToast("Ahora puede seleccionar categorías CIF relevantes para este diagnóstico", "info");
-            };
-            
-            container.appendChild(linkButton);
-            
-            // Añadir el contenedor después del diagnosisText o del contenedor del asistente
-            if (diagnosisText && diagnosisText.parentNode) {
-                diagnosisText.parentNode.appendChild(container);
-            } else {
-                const assistantContainer = document.getElementById('diagnosisAssistantContainer');
-                if (assistantContainer) {
-                    assistantContainer.appendChild(container);
-                }
-            }
-        }
-    }
+    // Añadir recomendación basada en CIF
+    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
     
     // Establecer el diagnóstico en el campo de texto
     const diagnosisTextElement = document.getElementById('diagnosisText');
