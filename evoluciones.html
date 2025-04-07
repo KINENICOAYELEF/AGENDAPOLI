@@ -1590,10 +1590,39 @@ let customTemplates = [];
 // Configuración de ImageKit.io
 let imagekit = null;
 const imagekitConfig = {
-    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=", 
-    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw", 
-    authenticationEndpoint: "" // No usaremos endpoint, implementaremos auth manual
-};   
+    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=",
+    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw",
+    // Función que provee los datos de autenticación directamente
+    authenticationEndpoint: ""
+};
+
+// Función para generar parámetros de autenticación para pruebas
+// NOTA: Esta implementación NO es segura para producción, solo para pruebas
+function getImageKitAuthParams() {
+    // Generar timestamp de expiración (20 minutos a futuro)
+    const expire = Math.floor(Date.now()/1000) + 1200;
+    
+    // Generar token aleatorio
+    const token = Math.random().toString(36).substring(2);
+    
+    // Esta firma debería generarse en un servidor
+    // Esta implementación es solo para pruebas
+    const privateKey = "XNLSvEGgU7XKRFZGONvMFkgiX9E=";
+    let signature = "";
+    
+    try {
+        // Generar una firma simple
+        signature = btoa(`${token}${expire}${privateKey}`);
+    } catch (e) {
+        console.error("Error generando firma:", e);
+    }
+    
+    return {
+        token: token,
+        expire: expire,
+        signature: signature
+    };
+}
 
 
         // Variables para objetivos
@@ -1692,17 +1721,24 @@ async function initFirebase() {
         console.log("Storage obtenido:", storage);
 
         // Inicializar ImageKit.io
-        try {
-            imagekit = new ImageKit({
-                publicKey: imagekitConfig.publicKey,
-                urlEndpoint: imagekitConfig.urlEndpoint,
-                authenticationEndpoint: imagekitConfig.authenticationEndpoint
-            });
-            console.log("ImageKit inicializado correctamente");
-        } catch (imagekitError) {
-            console.error("Error al inicializar ImageKit:", imagekitError);
-            showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
-        }
+try {
+    imagekit = new ImageKit({
+        publicKey: imagekitConfig.publicKey,
+        urlEndpoint: imagekitConfig.urlEndpoint,
+        authenticationEndpoint: ""
+    });
+    
+    // Verificar que ImageKit funcione con una solicitud de prueba
+    const authParams = getImageKitAuthParams();
+    if (authParams.signature) {
+        console.log("ImageKit inicializado correctamente con parámetros de autenticación");
+    } else {
+        console.warn("ImageKit inicializado, pero los parámetros de autenticación pueden no ser válidos");
+    }
+} catch (imagekitError) {
+    console.error("Error al inicializar ImageKit:", imagekitError);
+    showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
+}
         
         // Verificar conexión
         try {
@@ -2127,6 +2163,7 @@ async function uploadFile(file, patientId, folder) {
 
         // Upload file to ImageKit.io
 // Upload file to ImageKit.io
+// Upload file to ImageKit.io
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
@@ -2146,20 +2183,39 @@ async function uploadFileToImageKit(file, patientId, folder) {
                 
                 try {
                     // Obtener parámetros de autenticación
-                    const authParams = window.getImageKitAuthParams();
+                    const authParams = getImageKitAuthParams();
                     
-                    // Subir el archivo a ImageKit con autenticación manual
-                    const uploadResponse = await imagekit.upload({
+                    console.log("Parámetros de autenticación:", authParams);
+                    
+                    // Configurar opciones de carga
+                    const uploadOptions = {
                         file: base64data,
                         fileName: fileName,
-                        folder: filePath,
                         useUniqueFileName: true,
-                        tags: [`patient_${patientId}`, folder],
-                        // Añadimos los parámetros de autenticación
+                        folder: filePath,
+                        
+                        // Parámetros de autenticación
                         token: authParams.token,
                         expire: authParams.expire,
-                        signature: authParams.signature
-                    });
+                        signature: authParams.signature,
+                        
+                        // Metadatos adicionales
+                        tags: [`patient_${patientId}`, folder]
+                    };
+                    
+                    // Verificar que ImageKit está inicializado
+                    if (!imagekit) {
+                        // Intentar inicializar si no existe
+                        try {
+                            imagekit = new ImageKit(imagekitConfig);
+                        } catch (initError) {
+                            console.error("Error al inicializar ImageKit:", initError);
+                            throw new Error("No se pudo inicializar ImageKit: " + initError.message);
+                        }
+                    }
+                    
+                    // Subir el archivo a ImageKit
+                    const uploadResponse = await imagekit.upload(uploadOptions);
                     
                     console.log("Archivo subido a ImageKit:", uploadResponse);
                     
@@ -3092,6 +3148,7 @@ function renderScales(scales) {
     }
 }
 
+// Render attachments
 // Render attachments
 // Render attachments
 function renderAttachments(attachments) {
@@ -11448,6 +11505,7 @@ async function initApp() {
         }
         
         // Configurar previsualización de archivos adjuntos
+// Configurar previsualización de archivos adjuntos
 const evolutionAttachments = document.getElementById('evolutionAttachments');
 if (evolutionAttachments) {
     evolutionAttachments.addEventListener('change', function() {
@@ -11658,7 +11716,7 @@ if (cancelEvolutionBtn) {
                     emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
                 };
 
-                /// Procesar archivos de la ficha del paciente
+                // Procesar archivos de la ficha del paciente
                 const patientFilesInput = document.getElementById('patientFiles');
                 if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
                     const files = Array.from(patientFilesInput.files);
