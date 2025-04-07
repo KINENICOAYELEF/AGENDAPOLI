@@ -3593,14 +3593,19 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
                         try {
                             diagnosisModal.classList.remove('active');
                             setTimeout(() => {
-                                if (document.body.contains(diagnosisModal)) {
-                                    document.body.removeChild(diagnosisModal);
+                                if (diagnosisModal && document.body.contains(diagnosisModal)) {
+                                    try {
+                                        document.body.removeChild(diagnosisModal);
+                                    } catch (e) {
+                                        console.log("Modal ya eliminado, ignorando operación");
+                                        diagnosisModal.style.display = 'none';
+                                    }
                                 }
                             }, 300);
                         } catch (error) {
                             console.error("Error al cerrar modal:", error);
                             // En caso de error, intentar ocultar el modal
-                            diagnosisModal.style.display = 'none';
+                            if (diagnosisModal) diagnosisModal.style.display = 'none';
                         }
                     })
                     .catch(error => {
