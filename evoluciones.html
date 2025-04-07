@@ -866,10 +866,11 @@
                         </div>
                         <div class="accordion-body">
                             <div class="form-group">
-                                <label class="form-label">Subir imágenes o documentos</label>
-                                <input type="file" multiple class="form-control" id="evolutionAttachments">
+                                <label class="form-label">Archivos adjuntos</label>
+                                <input type="file" class="form-control" id="evolutionAttachments" multiple accept="image/*,application/pdf">
+                                <div class="form-text">Puede adjuntar múltiples imágenes o documentos PDF</div>
+                                <div id="attachmentPreview" class="attachment-preview"></div>
                             </div>
-                            <div class="attachments" id="attachmentPreview">
                                 <!-- Attachment previews will be shown here -->
                             </div>
                         </div>
