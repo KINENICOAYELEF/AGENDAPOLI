@@ -1,4 +1,5 @@
-<script type="module">
+ <!-- Script for Firebase -->
+    <script type="module">
 
 
         // Import the functions you need from the SDKs you need
@@ -1540,6 +1541,12 @@ async function initDiagnosisTab(patientId) {
             });
             }
         }
+
+        // Cargar planes de tratamiento existentes
+        await loadTreatmentPlans(patientId);
+
+
+
         
         // Configurar botones solo si existen
         const addDiagnosisBtn = document.getElementById('addDiagnosisBtn');
@@ -2022,14 +2029,19 @@ function openDiagnosisModal(patientId, existingDiagnosis = null) {
                         try {
                             diagnosisModal.classList.remove('active');
                             setTimeout(() => {
-                                if (document.body.contains(diagnosisModal)) {
-                                    document.body.removeChild(diagnosisModal);
+                                if (diagnosisModal && document.body.contains(diagnosisModal)) {
+                                    try {
+                                        document.body.removeChild(diagnosisModal);
+                                    } catch (e) {
+                                        console.log("Modal ya eliminado, ignorando operación");
+                                        diagnosisModal.style.display = 'none';
+                                    }
                                 }
                             }, 300);
                         } catch (error) {
                             console.error("Error al cerrar modal:", error);
                             // En caso de error, intentar ocultar el modal
-                            diagnosisModal.style.display = 'none';
+                            if (diagnosisModal) diagnosisModal.style.display = 'none';
                         }
                     })
                     .catch(error => {
@@ -5710,7 +5722,7 @@ function saveObjective(patientId, modal) {
     }, 300);
 }
 
-        // Abrir modal de plan de tratamiento
+// Abrir modal de plan de tratamiento
 function openTreatmentPlanModal(patientId) {
     // Crear modal para plan de tratamiento
     const planModal = document.createElement('div');
@@ -5731,6 +5743,18 @@ function openTreatmentPlanModal(patientId) {
                         <label class="form-label">Fecha de inicio</label>
                         <input type="date" class="form-control" id="planStartDate" value="${new Date().toISOString().split('T')[0]}" required>
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Duración estimada</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" class="form-control" id="planDuration" min="1" max="52" value="4" style="width: 80px;">
+                            <select class="form-control" id="planDurationUnit">
+                                <option value="semanas">semanas</option>
+                                <option value="meses">meses</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Frecuencia de sesiones</label>
                         <div style="display: flex; gap: 10px;">
@@ -5739,47 +5763,206 @@ function openTreatmentPlanModal(patientId) {
                                 <option value="sesiones por semana">sesiones por semana</option>
                                 <option value="sesiones por mes">sesiones por mes</option>
                             </select>
-                            <input type="number" class="form-control" id="planDuration" min="1" max="52" value="4" style="width: 80px;">
-                            <select class="form-control" id="planDurationUnit">
-                                <option value="semanas">semanas</option>
-                                <option value="meses">meses</option>
-                            </select>
                         </div>
                     </div>
+                    
                     <div class="form-group">
-                        <label class="form-label">Técnicas a utilizar</label>
-                        <div class="techniques-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniqueTM" checked>
-                                <label for="techniqueTM">Terapia manual</label>
+                        <label class="form-label">Objetivos del tratamiento</label>
+                        <textarea class="form-control" id="planObjectives" rows="2" placeholder="Defina los objetivos principales de este plan de tratamiento..."></textarea>
+                    </div>
+                    
+                    <div class="accordion active">
+                        <div class="accordion-header">
+                            <span>Técnicas a utilizar</span>
+                            <i class="fas fa-chevron-down accordion-icon"></i>
+                        </div>
+                        <div class="accordion-body">
+                            <!-- Técnicas Manuales -->
+                            <div class="techniques-category">
+                                <div class="techniques-header">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="techniqueTM" class="technique-main-check">
+                                        <label for="techniqueTM" class="technique-main-label"><strong>Terapia manual</strong></label>
+                                    </div>
+                                </div>
+                                <div class="techniques-subcategories" id="techniqueTMSub" style="display: none; margin-left: 25px; margin-top: 5px;">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="tmJointMob" class="technique-sub-check">
+                                            <label for="tmJointMob">Movilización articular</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="tmJointManip" class="technique-sub-check">
+                                            <label for="tmJointManip">Manipulación articular</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="tmMyofascial" class="technique-sub-check">
+                                            <label for="tmMyofascial">Liberación miofascial</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="tmNeurodyn" class="technique-sub-check">
+                                            <label for="tmNeurodyn">Neurodinamia</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="tmMuscleEnergy" class="technique-sub-check">
+                                            <label for="tmMuscleEnergy">Técnicas de energía muscular</label>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                                        <label style="font-size: 13px;">Detalles:</label>
+                                        <input type="text" class="form-control" id="tmDetails" placeholder="Especifique técnicas, regiones o detalles adicionales..." style="flex-grow: 1;">
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniqueEJ" checked>
-                                <label for="techniqueEJ">Ejercicio terapéutico</label>
+                            
+                            <!-- Ejercicio Terapéutico -->
+                            <div class="techniques-category" style="margin-top: 15px;">
+                                <div class="techniques-header">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="techniqueEJ" class="technique-main-check">
+                                        <label for="techniqueEJ" class="technique-main-label"><strong>Ejercicio terapéutico</strong></label>
+                                    </div>
+                                </div>
+                                <div class="techniques-subcategories" id="techniqueEJSub" style="display: none; margin-left: 25px; margin-top: 5px;">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejStrength" class="technique-sub-check">
+                                            <label for="ejStrength">Fortalecimiento</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejFlex" class="technique-sub-check">
+                                            <label for="ejFlex">Flexibilidad</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejPropio" class="technique-sub-check">
+                                            <label for="ejPropio">Propiocepción</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejBalance" class="technique-sub-check">
+                                            <label for="ejBalance">Equilibrio</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejCardio" class="technique-sub-check">
+                                            <label for="ejCardio">Cardiovascular</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="ejFunctional" class="technique-sub-check">
+                                            <label for="ejFunctional">Funcional</label>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                                        <label style="font-size: 13px;">Detalles:</label>
+                                        <input type="text" class="form-control" id="ejDetails" placeholder="Especifique tipos de ejercicios, progresiones, etc..." style="flex-grow: 1;">
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniqueAG">
-                                <label for="techniqueAG">Agentes físicos</label>
+                            
+                            <!-- Agentes Físicos -->
+                            <div class="techniques-category" style="margin-top: 15px;">
+                                <div class="techniques-header">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="techniqueAG" class="technique-main-check">
+                                        <label for="techniqueAG" class="technique-main-label"><strong>Agentes físicos</strong></label>
+                                    </div>
+                                </div>
+                                <div class="techniques-subcategories" id="techniqueAGSub" style="display: none; margin-left: 25px; margin-top: 5px;">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agThermotherapy" class="technique-sub-check">
+                                            <label for="agThermotherapy">Termoterapia</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agCryotherapy" class="technique-sub-check">
+                                            <label for="agCryotherapy">Crioterapia</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agElectrotherapy" class="technique-sub-check">
+                                            <label for="agElectrotherapy">Electroterapia</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agUltrasound" class="technique-sub-check">
+                                            <label for="agUltrasound">Ultrasonido</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agLaser" class="technique-sub-check">
+                                            <label for="agLaser">Láser</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="agShockwave" class="technique-sub-check">
+                                            <label for="agShockwave">Ondas de choque</label>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                                        <label style="font-size: 13px;">Parámetros:</label>
+                                        <input type="text" class="form-control" id="agDetails" placeholder="Especifique parámetros, duración, intensidad, etc..." style="flex-grow: 1;">
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniqueEN">
-                                <label for="techniqueEN">Entrenamiento funcional</label>
+                            
+                            <!-- Educación al Paciente -->
+                            <div class="techniques-category" style="margin-top: 15px;">
+                                <div class="techniques-header">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="techniqueED" class="technique-main-check">
+                                        <label for="techniqueED" class="technique-main-label"><strong>Educación al paciente</strong></label>
+                                    </div>
+                                </div>
+                                <div class="techniques-subcategories" id="techniqueEDSub" style="display: none; margin-left: 25px; margin-top: 5px;">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="edPainScience" class="technique-sub-check">
+                                            <label for="edPainScience">Educación en neurociencia del dolor</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="edPosture" class="technique-sub-check">
+                                            <label for="edPosture">Higiene postural</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="edErgonomics" class="technique-sub-check">
+                                            <label for="edErgonomics">Ergonomía</label>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 5px; min-width: 200px;">
+                                            <input type="checkbox" id="edSelfManagement" class="technique-sub-check">
+                                            <label for="edSelfManagement">Automanejo</label>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                                        <label style="font-size: 13px;">Contenido:</label>
+                                        <input type="text" class="form-control" id="edDetails" placeholder="Especifique temas, materiales, estrategias..." style="flex-grow: 1;">
+                                    </div>
+                                </div>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniquePL">
-                                <label for="techniquePL">Propiocepción y equilibrio</label>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <input type="checkbox" id="techniqueED">
-                                <label for="techniqueED">Educación al paciente</label>
+                            
+                            <!-- Otras Técnicas -->
+                            <div class="techniques-category" style="margin-top: 15px;">
+                                <div class="techniques-header">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="techniqueOT" class="technique-main-check">
+                                        <label for="techniqueOT" class="technique-main-label"><strong>Otras técnicas</strong></label>
+                                    </div>
+                                </div>
+                                <div class="techniques-subcategories" id="techniqueOTSub" style="display: none; margin-left: 25px; margin-top: 5px;">
+                                    <input type="text" class="form-control" id="otherTechniques" placeholder="Especifique otras técnicas o enfoques terapéuticos...">
+                                </div>
                             </div>
                         </div>
-                        <input type="text" class="form-control" id="techniquesOther" placeholder="Otras técnicas...">
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Progresión planificada</label>
+                        <textarea class="form-control" id="planProgression" rows="2" placeholder="Describa cómo se progresará el tratamiento a lo largo del tiempo..."></textarea>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Observaciones y recomendaciones</label>
                         <textarea class="form-control" id="planObservations" rows="3" placeholder="Detalle observaciones específicas para este plan de tratamiento..."></textarea>
                     </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Criterios de alta</label>
+                        <textarea class="form-control" id="planDischargeGoals" rows="2" placeholder="Defina los criterios para finalizar el tratamiento o dar de alta al paciente..."></textarea>
+                    </div>
+                    
                     <div class="form-group" style="margin-top: 20px; text-align: right;">
                         <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelTreatmentPlanBtn">Cancelar</button>
                         <button type="submit" class="action-btn btn-primary">Guardar plan</button>
@@ -5792,6 +5975,24 @@ function openTreatmentPlanModal(patientId) {
     document.body.appendChild(planModal);
     setTimeout(() => planModal.classList.add('active'), 50);
     
+    // Configurar eventos para los acordeones
+    planModal.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', function() {
+            this.parentElement.classList.toggle('active');
+        });
+    });
+    
+    // Configurar eventos para mostrar/ocultar subcategorías
+    planModal.querySelectorAll('.technique-main-check').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const subcategoryId = this.id + 'Sub';
+            const subcategoryContainer = document.getElementById(subcategoryId);
+            if (subcategoryContainer) {
+                subcategoryContainer.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+    
     // Configurar eventos
     document.getElementById('closeTreatmentPlanModal').addEventListener('click', function() {
         planModal.classList.remove('active');
@@ -5803,87 +6004,591 @@ function openTreatmentPlanModal(patientId) {
         setTimeout(() => document.body.removeChild(planModal), 300);
     });
     
-    document.getElementById('treatmentPlanForm').addEventListener('submit', function(e) {
+    document.getElementById('treatmentPlanForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Obtener datos del formulario
         const startDate = document.getElementById('planStartDate').value;
-        const frequency = document.getElementById('planFrequency').value;
-        const frequencyUnit = document.getElementById('planFrequencyUnit').value;
         const duration = document.getElementById('planDuration').value;
         const durationUnit = document.getElementById('planDurationUnit').value;
+        const frequency = document.getElementById('planFrequency').value;
+        const frequencyUnit = document.getElementById('planFrequencyUnit').value;
+        const objectives = document.getElementById('planObjectives').value;
+        const progression = document.getElementById('planProgression').value;
         const observations = document.getElementById('planObservations').value;
+        const dischargeGoals = document.getElementById('planDischargeGoals').value;
         
-        // Recopilar técnicas seleccionadas
-        const techniques = [];
-        if (document.getElementById('techniqueTM').checked) techniques.push('Terapia manual');
-        if (document.getElementById('techniqueEJ').checked) techniques.push('Ejercicio terapéutico');
-        if (document.getElementById('techniqueAG').checked) techniques.push('Agentes físicos');
-        if (document.getElementById('techniqueEN').checked) techniques.push('Entrenamiento funcional');
-        if (document.getElementById('techniquePL').checked) techniques.push('Propiocepción y equilibrio');
-        if (document.getElementById('techniqueED').checked) techniques.push('Educación al paciente');
+        // Recopilar técnicas seleccionadas con sus subcategorías
+        const techniques = {};
         
-        const otherTechniques = document.getElementById('techniquesOther').value;
-        if (otherTechniques) {
-            techniques.push(otherTechniques);
+        // Terapia Manual
+        if (document.getElementById('techniqueTM').checked) {
+            techniques.manual = {
+                active: true,
+                details: document.getElementById('tmDetails').value,
+                subtechniques: {
+                    jointMobilization: document.getElementById('tmJointMob').checked,
+                    jointManipulation: document.getElementById('tmJointManip').checked,
+                    myofascial: document.getElementById('tmMyofascial').checked,
+                    neurodynamics: document.getElementById('tmNeurodyn').checked,
+                    muscleEnergy: document.getElementById('tmMuscleEnergy').checked
+                }
+            };
         }
         
-        // Añadir plan a la lista
-        const treatmentPlanList = document.getElementById('treatmentPlanList');
-        if (treatmentPlanList) {
-            const newPlan = document.createElement('div');
-            newPlan.className = 'plan-card fade-in';
-            
-            newPlan.innerHTML = `
-                <div class="plan-header">
-                    <div class="plan-title">
-                        <i class="fas fa-clipboard-list"></i>
-                        Plan de Tratamiento
-                    </div>
-                    <div class="plan-date">${formatDate(new Date(startDate))}</div>
-                </div>
-                <div class="plan-details">
-                    <div class="plan-row">
-                        <div class="plan-label">Frecuencia:</div>
-                        <div class="plan-value">${frequency} ${frequencyUnit} durante ${duration} ${durationUnit}</div>
-                    </div>
-                    <div class="plan-row">
-                        <div class="plan-label">Técnicas:</div>
-                        <div class="plan-value">
-                            <div class="techniques-list">
-                                ${techniques.map(t => `<div class="technique-tag">${t}</div>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                    ${observations ? `
-                    <div class="plan-row">
-                        <div class="plan-label">Observaciones:</div>
-                        <div class="plan-value">
-                            ${observations}
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            // Añadir al inicio para mayor visibilidad
-            if (treatmentPlanList.firstChild) {
-                treatmentPlanList.insertBefore(newPlan, treatmentPlanList.firstChild);
-            } else {
-                treatmentPlanList.appendChild(newPlan);
-            }
+        // Ejercicio Terapéutico
+        if (document.getElementById('techniqueEJ').checked) {
+            techniques.exercise = {
+                active: true,
+                details: document.getElementById('ejDetails').value,
+                subtechniques: {
+                    strength: document.getElementById('ejStrength').checked,
+                    flexibility: document.getElementById('ejFlex').checked,
+                    proprioception: document.getElementById('ejPropio').checked,
+                    balance: document.getElementById('ejBalance').checked,
+                    cardiovascular: document.getElementById('ejCardio').checked,
+                    functional: document.getElementById('ejFunctional').checked
+                }
+            };
         }
         
-        // En una implementación real, aquí se guardarían los datos en Firebase
+        // Agentes Físicos
+        if (document.getElementById('techniqueAG').checked) {
+            techniques.physical = {
+                active: true,
+                details: document.getElementById('agDetails').value,
+                subtechniques: {
+                    thermotherapy: document.getElementById('agThermotherapy').checked,
+                    cryotherapy: document.getElementById('agCryotherapy').checked,
+                    electrotherapy: document.getElementById('agElectrotherapy').checked,
+                    ultrasound: document.getElementById('agUltrasound').checked,
+                    laser: document.getElementById('agLaser').checked,
+                    shockwave: document.getElementById('agShockwave').checked
+                }
+            };
+        }
         
-        showToast("Plan de tratamiento guardado correctamente", "success");
+        // Educación al Paciente
+        if (document.getElementById('techniqueED').checked) {
+            techniques.education = {
+                active: true,
+                details: document.getElementById('edDetails').value,
+                subtechniques: {
+                    painEducation: document.getElementById('edPainScience').checked,
+                    posture: document.getElementById('edPosture').checked,
+                    ergonomics: document.getElementById('edErgonomics').checked,
+                    selfManagement: document.getElementById('edSelfManagement').checked
+                }
+            };
+        }
         
-        // Cerrar modal
-        planModal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(planModal), 300);
+        // Otras Técnicas
+        if (document.getElementById('techniqueOT').checked) {
+            techniques.other = {
+                active: true,
+                details: document.getElementById('otherTechniques').value
+            };
+        }
+        
+        // Crear estructura para el plan de tratamiento
+        const treatmentPlanData = {
+            startDate: startDate,
+            duration: duration,
+            durationUnit: durationUnit,
+            frequency: frequency,
+            frequencyUnit: frequencyUnit,
+            objectives: objectives,
+            techniques: techniques,
+            progression: progression,
+            observations: observations,
+            dischargeGoals: dischargeGoals,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Guardar en Firebase
+        try {
+            showLoading();
+            
+            // Crear referencia a la colección de planes de tratamiento
+            const plansRef = collection(db, "patients", patientId, "treatmentPlans");
+            
+            // Añadir el plan
+            const docRef = await addDoc(plansRef, treatmentPlanData);
+            
+            hideLoading();
+            showToast("Plan de tratamiento guardado correctamente", "success");
+            
+            // Añadir plan a la interfaz
+            addTreatmentPlanToUI(treatmentPlanData, docRef.id);
+            
+            // Cerrar modal
+            planModal.classList.remove('active');
+            setTimeout(() => document.body.removeChild(planModal), 300);
+            
+        } catch (error) {
+            hideLoading();
+            console.error("Error al guardar plan de tratamiento:", error);
+            showToast("Error al guardar plan: " + error.message, "error");
+        }
     });
 }
 
+        // Función para añadir el plan de tratamiento a la UI
+function addTreatmentPlanToUI(plan, planId) {
+    const treatmentPlanList = document.getElementById('treatmentPlanList');
+    if (!treatmentPlanList) return;
+    
+    const newPlan = document.createElement('div');
+    newPlan.className = 'plan-card fade-in';
+    newPlan.dataset.id = planId;
+    
+    // Generar HTML para las técnicas
+    let techniquesHTML = '<div class="techniques-list">';
+    
+    if (plan.techniques.manual && plan.techniques.manual.active) {
+        techniquesHTML += '<div class="technique-tag">Terapia manual</div>';
+    }
+    
+    if (plan.techniques.exercise && plan.techniques.exercise.active) {
+        techniquesHTML += '<div class="technique-tag">Ejercicio terapéutico</div>';
+    }
+    
+    if (plan.techniques.physical && plan.techniques.physical.active) {
+        techniquesHTML += '<div class="technique-tag">Agentes físicos</div>';
+    }
+    
+    if (plan.techniques.education && plan.techniques.education.active) {
+        techniquesHTML += '<div class="technique-tag">Educación al paciente</div>';
+    }
+    
+    if (plan.techniques.other && plan.techniques.other.active) {
+        techniquesHTML += '<div class="technique-tag">Otras técnicas</div>';
+    }
+    
+    techniquesHTML += '</div>';
+    
+    newPlan.innerHTML = `
+        <div class="plan-header">
+            <div class="plan-title">
+                <i class="fas fa-clipboard-list"></i>
+                Plan de Tratamiento
+            </div>
+            <div class="plan-date">${formatDate(new Date(plan.startDate))}</div>
+        </div>
+        <div class="plan-details">
+            <div class="plan-row">
+                <div class="plan-label">Duración:</div>
+                <div class="plan-value">${plan.duration} ${plan.durationUnit}</div>
+            </div>
+            <div class="plan-row">
+                <div class="plan-label">Frecuencia:</div>
+                <div class="plan-value">${plan.frequency} ${plan.frequencyUnit}</div>
+            </div>
+            <div class="plan-row">
+                <div class="plan-label">Técnicas:</div>
+                <div class="plan-value">
+                    ${techniquesHTML}
+                </div>
+            </div>
+            ${plan.objectives ? `
+            <div class="plan-row">
+                <div class="plan-label">Objetivos:</div>
+                <div class="plan-value">
+                    ${plan.objectives}
+                </div>
+            </div>
+            ` : ''}
+            ${plan.observations ? `
+            <div class="plan-row">
+                <div class="plan-label">Observaciones:</div>
+                <div class="plan-value">
+                    ${plan.observations}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        <div class="plan-actions" style="text-align: right; margin-top: 10px;">
+            <button class="action-btn btn-secondary view-plan-btn">
+                <i class="fas fa-eye"></i> Ver detalles
+            </button>
+            <button class="action-btn btn-secondary delete-plan-btn" style="background-color: var(--accent2-light);">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
+    `;
+    
+    // Añadir al inicio para mayor visibilidad
+    if (treatmentPlanList.firstChild) {
+        treatmentPlanList.insertBefore(newPlan, treatmentPlanList.firstChild);
+    } else {
+        treatmentPlanList.appendChild(newPlan);
+    }
+    
+    // Añadir eventos a los botones
+    const viewBtn = newPlan.querySelector('.view-plan-btn');
+    const deleteBtn = newPlan.querySelector('.delete-plan-btn');
+    
+    if (viewBtn) {
+        viewBtn.addEventListener('click', function() {
+            // Implementar vista detallada del plan
+            viewTreatmentPlan(planId);
+        });
+    }
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            // Implementar eliminación del plan
+            deleteTreatmentPlan(planId);
+        });
+    }
+}
+
+        // Ver detalles del plan de tratamiento
+async function viewTreatmentPlan(planId) {
+    try {
+        showLoading();
+        
+        // Obtener el plan desde Firebase
+        const planRef = doc(db, "patients", currentPatientId, "treatmentPlans", planId);
+        const planSnap = await getDoc(planRef);
+        
+        if (planSnap.exists()) {
+            const plan = planSnap.data();
+            
+            // Crear modal para mostrar detalles
+            const viewModal = document.createElement('div');
+            viewModal.className = 'modal-overlay';
+            viewModal.id = 'viewTreatmentPlanModal';
+            
+            // Generar HTML para técnicas
+            let techniquesHTML = '';
+            
+            if (plan.techniques.manual && plan.techniques.manual.active) {
+                const subs = plan.techniques.manual.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.jointMobilization) subTechniques.push("Movilización articular");
+                if (subs.jointManipulation) subTechniques.push("Manipulación articular");
+                if (subs.myofascial) subTechniques.push("Liberación miofascial");
+                if (subs.neurodynamics) subTechniques.push("Neurodinamia");
+                if (subs.muscleEnergy) subTechniques.push("Técnicas de energía muscular");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-hands"></i> Terapia manual</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.manual.details ? `
+                            <div class="technique-notes">
+                                <strong>Detalles:</strong> ${plan.techniques.manual.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.exercise && plan.techniques.exercise.active) {
+                const subs = plan.techniques.exercise.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.strength) subTechniques.push("Fortalecimiento");
+                if (subs.flexibility) subTechniques.push("Flexibilidad");
+                if (subs.proprioception) subTechniques.push("Propiocepción");
+                if (subs.balance) subTechniques.push("Equilibrio");
+                if (subs.cardiovascular) subTechniques.push("Cardiovascular");
+                if (subs.functional) subTechniques.push("Funcional");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-dumbbell"></i> Ejercicio terapéutico</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.exercise.details ? `
+                            <div class="technique-notes">
+                                <strong>Detalles:</strong> ${plan.techniques.exercise.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.physical && plan.techniques.physical.active) {
+                const subs = plan.techniques.physical.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.thermotherapy) subTechniques.push("Termoterapia");
+                if (subs.cryotherapy) subTechniques.push("Crioterapia");
+                if (subs.electrotherapy) subTechniques.push("Electroterapia");
+                if (subs.ultrasound) subTechniques.push("Ultrasonido");
+                if (subs.laser) subTechniques.push("Láser");
+                if (subs.shockwave) subTechniques.push("Ondas de choque");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-bolt"></i> Agentes físicos</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.physical.details ? `
+                            <div class="technique-notes">
+                                <strong>Parámetros:</strong> ${plan.techniques.physical.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.education && plan.techniques.education.active) {
+                const subs = plan.techniques.education.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.painEducation) subTechniques.push("Educación en neurociencia del dolor");
+                if (subs.posture) subTechniques.push("Higiene postural");
+                if (subs.ergonomics) subTechniques.push("Ergonomía");
+                if (subs.selfManagement) subTechniques.push("Automanejo");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-chalkboard-teacher"></i> Educación al paciente</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.education.details ? `
+                            <div class="technique-notes">
+                                <strong>Contenido:</strong> ${plan.techniques.education.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.other && plan.techniques.other.active) {
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-plus-circle"></i> Otras técnicas</div>
+                        ${plan.techniques.other.details ? `
+                            <div class="technique-notes">
+                                ${plan.techniques.other.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            viewModal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Plan de tratamiento</h2>
+                        <button class="modal-close" id="closeViewPlanModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 18px; font-weight: bold; color: var(--primary);">
+                                    <i class="fas fa-calendar-alt"></i> Detalles del plan
+                                </div>
+                                <div style="font-size: 14px;">
+                                    Inicio: ${formatDate(new Date(plan.startDate))}
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 15px;">
+                                <div style="flex: 1; min-width: 150px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Duración</div>
+                                    <div>${plan.duration} ${plan.durationUnit}</div>
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Frecuencia</div>
+                                    <div>${plan.frequency} ${plan.frequencyUnit}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${plan.objectives ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Objetivos</div>
+                            <div class="detail-content">${plan.objectives}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-section">
+                            <div class="detail-title">Técnicas de tratamiento</div>
+                            <div class="detail-content" style="padding: 5px 0;">
+                                ${techniquesHTML || 'No se especificaron técnicas.'}
+                            </div>
+                        </div>
+                        
+                        ${plan.progression ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Progresión planificada</div>
+                            <div class="detail-content">${plan.progression}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${plan.observations ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Observaciones</div>
+                            <div class="detail-content">${plan.observations}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${plan.dischargeGoals ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Criterios de alta</div>
+                            <div class="detail-content">${plan.dischargeGoals}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 20px; text-align: right;">
+                            <button class="action-btn btn-secondary" id="closeViewPlanBtn">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(viewModal);
+            
+            // Añadir estilos para esta vista específica
+            const styleEl = document.createElement('style');
+            styleEl.innerHTML = `
+                .detail-section {
+                    margin-bottom: 15px;
+                    border-bottom: 1px solid var(--border);
+                    padding-bottom: 15px;
+                }
+                .detail-title {
+                    font-weight: bold;
+                    color: var(--primary);
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                }
+                .technique-detail {
+                    margin-bottom: 15px;
+                    background-color: var(--background);
+                    border-radius: 6px;
+                    padding: 10px;
+                }
+                .technique-title {
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .technique-subtechniques {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                    margin: 5px 0;
+                }
+                .subtechnique-item {
+                    background-color: var(--background-alt);
+                    border-radius: 4px;
+                    padding: 3px 8px;
+                    font-size: 13px;
+                }
+                .technique-notes {
+                    font-size: 14px;
+                    margin-top: 5px;
+                    color: var(--text-secondary);
+                }
+            `;
+            viewModal.appendChild(styleEl);
+            
+            setTimeout(() => viewModal.classList.add('active'), 50);
+            
+            // Añadir eventos a los botones
+            document.getElementById('closeViewPlanModal').addEventListener('click', function() {
+                viewModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(viewModal), 300);
+            });
+            
+            document.getElementById('closeViewPlanBtn').addEventListener('click', function() {
+                viewModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(viewModal), 300);
+            });
+            
+            hideLoading();
+        } else {
+            hideLoading();
+            showToast("Plan de tratamiento no encontrado", "error");
+        }
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar plan de tratamiento:", error);
+        showToast("Error al cargar plan: " + error.message, "error");
+    }
+}
+
+// Eliminar plan de tratamiento
+async function deleteTreatmentPlan(planId) {
+    if (!confirm("¿Está seguro que desea eliminar este plan de tratamiento? Esta acción no se puede deshacer.")) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        // Eliminar de Firebase
+        const planRef = doc(db, "patients", currentPatientId, "treatmentPlans", planId);
+        await deleteDoc(planRef);
+        
+        // Eliminar de la interfaz
+        const planElement = document.querySelector(`.plan-card[data-id="${planId}"]`);
+        if (planElement && planElement.parentNode) {
+            planElement.parentNode.removeChild(planElement);
+        }
+        
+        hideLoading();
+        showToast("Plan de tratamiento eliminado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar plan de tratamiento:", error);
+        showToast("Error al eliminar plan: " + error.message, "error");
+    }
+}
+
+        // Cargar planes de tratamiento
+async function loadTreatmentPlans(patientId) {
+    try {
+        const treatmentPlanList = document.getElementById('treatmentPlanList');
+        if (!treatmentPlanList) return;
+        
+        // Limpiar lista actual
+        treatmentPlanList.innerHTML = '';
+        
+        // Obtener planes desde Firebase
+        const plansRef = collection(db, "patients", patientId, "treatmentPlans");
+        const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
+        const plansSnapshot = await getDocs(plansQuery);
+        
+        if (plansSnapshot.empty) {
+            treatmentPlanList.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay planes de tratamiento registrados.</p>';
+            return;
+        }
+        
+        // Mostrar cada plan
+        plansSnapshot.docs.forEach(doc => {
+            const plan = doc.data();
+            addTreatmentPlanToUI(plan, doc.id);
+        });
+    } catch (error) {
+        console.error("Error al cargar planes de tratamiento:", error);
+        const treatmentPlanList = document.getElementById('treatmentPlanList');
+        if (treatmentPlanList) {
+            treatmentPlanList.innerHTML = '<p style="color: var(--accent2); font-style: italic;">Error al cargar planes de tratamiento.</p>';
+        }
+    }
+}
 // Show new evolution modal with proper validation
 function showNewEvolutionModal() {
     try {
