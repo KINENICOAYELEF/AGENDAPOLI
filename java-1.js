@@ -1,5 +1,4 @@
- <!-- Script for Firebase -->
-    <script type="module">
+ <script type="module">
 
 
         // Import the functions you need from the SDKs you need
@@ -7720,13 +7719,23 @@ async function exportToPDF(patientId) {
         // Get evolutions
         const evolutions = await getEvolutions(patientId);
         
-        // Leer opciones del formulario
-        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis')?.checked || true;
-        const includeEvolutions = document.getElementById('pdfIncludeEvolutions')?.checked || true;
-        const includeScales = document.getElementById('pdfIncludeScales')?.checked || true;
-        const includeExercises = document.getElementById('pdfIncludeExercises')?.checked || true;
-        const includeLogo = document.getElementById('pdfIncludeLogo')?.checked || true;
-        const includeFooter = document.getElementById('pdfIncludeFooter')?.checked || true;
+        // Leer opciones del formulario - Versión corregida para asegurar que se manejen correctamente
+        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
+            document.getElementById('pdfIncludeDiagnosis').checked : true;
+        const includeEvolutions = document.getElementById('pdfIncludeEvolutions') ? 
+            document.getElementById('pdfIncludeEvolutions').checked : true;
+        const includeScales = document.getElementById('pdfIncludeScales') ? 
+            document.getElementById('pdfIncludeScales').checked : true;
+        const includeExercises = document.getElementById('pdfIncludeExercises') ? 
+            document.getElementById('pdfIncludeExercises').checked : true;
+        const includeLogo = document.getElementById('pdfIncludeLogo') ? 
+            document.getElementById('pdfIncludeLogo').checked : true;
+        const includeFooter = document.getElementById('pdfIncludeFooter') ? 
+            document.getElementById('pdfIncludeFooter').checked : true;
+        
+        console.log("Opciones de exportación:", {
+            includeDiagnosis, includeEvolutions, includeScales, includeExercises, includeLogo, includeFooter
+        });
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
