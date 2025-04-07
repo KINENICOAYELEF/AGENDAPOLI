@@ -11933,23 +11933,17 @@ if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.leng
         // Filtrar archivos que fallaron al subir (null)
         const validFiles = uploadedFiles.filter(file => file !== null);
         
-        // Añadir los archivos al objeto patientData
-        // AQUÍ ESTÁ EL PROBLEMA - Asegurar que no guardamos undefined
+        // Inicializar el arreglo de archivos si no existe
         if (!patientData.files) {
             patientData.files = [];
         }
         
-        // Si había archivos anteriores, conservarlos
-        if (patient && patient.files && Array.isArray(patient.files)) {
-            patientData.files = [...patient.files];
-        }
-        
-        // Añadir los nuevos archivos
+        // Añadir los nuevos archivos válidos
         if (validFiles && validFiles.length > 0) {
             patientData.files = [...patientData.files, ...validFiles];
         }
         
-        console.log("Archivos de ficha médica subidos:", validFiles, "Total archivos:", patientData.files.length);
+        console.log("Archivos de ficha médica subidos:", validFiles.length);
         showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
     } catch (filesError) {
         console.error("Error al subir archivos de ficha médica:", filesError);
@@ -12102,26 +12096,28 @@ if (deletePatientBtn) {
                     };
 
                     // Procesar archivos adjuntos
-                    const attachmentInput = document.getElementById('evolutionAttachments');
-                    if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
-                        const files = Array.from(attachmentInput.files);
-                        const attachmentsPromises = files.map(file => 
-                            uploadFileToImageKit(file, currentPatientId, 'evolutions')
-                        );
-                        
-                        try {
-                            // Esperar a que se suban todos los archivos
-                            const attachments = await Promise.all(attachmentsPromises);
-                            
-                            // Filtrar archivos que fallaron al subir (null)
-                            evolutionData.attachments = attachments.filter(attachment => attachment !== null);
-                            
-                            console.log("Archivos adjuntos subidos:", evolutionData.attachments);
-                        } catch (attachmentError) {
-                            console.error("Error al subir archivos adjuntos:", attachmentError);
-                            showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
-                        }
-                    }
+const attachmentInput = document.getElementById('evolutionAttachments');
+if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
+    const files = Array.from(attachmentInput.files);
+    const attachmentsPromises = files.map(file => 
+        uploadFileToImageKit(file, currentPatientId, 'evolutions')
+    );
+    
+    try {
+        // Esperar a que se suban todos los archivos
+        const attachments = await Promise.all(attachmentsPromises);
+        
+        // Filtrar archivos que fallaron al subir (null)
+        evolutionData.attachments = attachments.filter(attachment => attachment !== null);
+        
+        console.log("Archivos adjuntos subidos:", evolutionData.attachments.length);
+    } catch (attachmentError) {
+        console.error("Error al subir archivos adjuntos:", attachmentError);
+        showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
+        // En caso de error, inicializar el arreglo de adjuntos vacío
+        evolutionData.attachments = [];
+    }
+}
                     
                     console.log("Datos de evolución a guardar:", evolutionData);
                     
