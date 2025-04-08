@@ -11921,7 +11921,6 @@ if (cancelEvolutionBtn) {
                     emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
                 };
 
-                // Procesar archivos de la ficha del paciente
 // Procesar archivos de la ficha del paciente
 const patientFilesInput = document.getElementById('patientFiles');
 if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
@@ -11931,27 +11930,53 @@ if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.leng
     );
     
     try {
+        showLoading();
+        
         // Esperar a que se suban todos los archivos
         const uploadedFiles = await Promise.all(filesPromises);
         
         // Filtrar archivos que fallaron al subir (null)
         const validFiles = uploadedFiles.filter(file => file !== null);
         
-        // Inicializar el arreglo de archivos si no existe
-        if (!patientData.files) {
-            patientData.files = [];
+        // IMPORTANTE: Primero obtener los archivos actuales desde la base de datos
+        const currentPatient = await getPatient(currentPatientId);
+        
+        // Crear un array con TODOS los archivos (los existentes más los nuevos)
+        let allFiles = [];
+        
+        // Añadir archivos existentes si hay alguno
+        if (currentPatient && currentPatient.files && Array.isArray(currentPatient.files)) {
+            allFiles = [...currentPatient.files];
         }
         
         // Añadir los nuevos archivos válidos
         if (validFiles && validFiles.length > 0) {
-            patientData.files = [...patientData.files, ...validFiles];
+            allFiles = [...allFiles, ...validFiles];
         }
+        
+        // Actualizar SOLO la propiedad 'files' del paciente, no todo el objeto patientData
+        await updateDoc(doc(db, "patients", currentPatientId), {
+            files: allFiles,
+            updatedAt: new Date().toISOString()
+        });
+        
+        // Actualizar también en la caché
+        const cachedIndex = patientsCache.findIndex(p => p.id === currentPatientId);
+        if (cachedIndex >= 0) {
+            patientsCache[cachedIndex].files = allFiles;
+            patientsCache[cachedIndex].updatedAt = new Date().toISOString();
+        }
+        
+        // Actualizar la visualización de los archivos
+        loadPatientFiles(currentPatientId);
         
         console.log("Archivos de ficha médica subidos:", validFiles.length);
         showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
+        hideLoading();
     } catch (filesError) {
         console.error("Error al subir archivos de ficha médica:", filesError);
         showToast("Error al subir algunos archivos", "warning");
+        hideLoading();
     }
 }
                 
@@ -12112,14 +12137,20 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
         const attachments = await Promise.all(attachmentsPromises);
         
         // Filtrar archivos que fallaron al subir (null)
-        evolutionData.attachments = attachments.filter(attachment => attachment !== null);
+        const validAttachments = attachments.filter(attachment => attachment !== null);
         
-        console.log("Archivos adjuntos subidos:", evolutionData.attachments.length);
+        // Asegurar que evolutionData.attachments sea un array
+        if (!evolutionData.attachments) {
+            evolutionData.attachments = [];
+        }
+        
+        // Añadir los nuevos archivos a los existentes (si es una edición)
+        evolutionData.attachments = [...evolutionData.attachments, ...validAttachments];
+        
+        console.log("Archivos adjuntos subidos:", validAttachments.length);
     } catch (attachmentError) {
         console.error("Error al subir archivos adjuntos:", attachmentError);
         showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
-        // En caso de error, inicializar el arreglo de adjuntos vacío
-        evolutionData.attachments = [];
     }
 }
                     
@@ -13566,6 +13597,8 @@ async function loadPatientFiles(patientId) {
         if (!previewContainer) return;
         
         previewContainer.innerHTML = '';
+        
+        console.log("Cargando archivos:", patient.files.length, patient.files); // Para depuración
         
         // Crear tabla para mostrar los archivos
         const table = document.createElement('table');
