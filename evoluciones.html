@@ -2622,6 +2622,9 @@ async function openPatientModal(patientId) {
         // Llenar datos personales
         fillPersonalData(patient);
         
+        // Cargar archivos del paciente (explícitamente con el ID correcto)
+        loadPatientFiles(patientId);
+        
         // Obtener evoluciones
         const evolutions = await getEvolutions(patientId);
         
@@ -3194,9 +3197,13 @@ function renderScales(scales) {
 }
 
 // Función mejorada para mostrar archivos adjuntos
+// Función mejorada para mostrar archivos adjuntos
 function renderAttachments(attachments) {
     try {
-        if (!attachments || attachments.length === 0) return '';
+        // Si no hay adjuntos, devolver un mensaje vacío o de "no hay adjuntos"
+        if (!attachments || attachments.length === 0) {
+            return '<div class="evolution-section">No hay archivos adjuntos</div>';
+        }
         
         let attachmentsHTML = `
             <div class="evolution-section">
@@ -11833,6 +11840,18 @@ if (patientFilesInput) {
                 let parent = this.closest('.modal-overlay');
                 if (parent) {
                     parent.classList.remove('active');
+                    
+                    // Limpiar contenedores de archivos
+                    const patientFilesPreview = document.getElementById('patientFilesPreview');
+                    if (patientFilesPreview) {
+                        patientFilesPreview.innerHTML = '';
+                    }
+                    
+                    // También limpiar otros contenedores relevantes
+                    const attachmentPreview = document.getElementById('attachmentPreview');
+                    if (attachmentPreview) {
+                        attachmentPreview.innerHTML = '';
+                    }
                 }
             });
         });
@@ -13587,18 +13606,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Función para cargar y mostrar archivos guardados del paciente
-// Función para cargar y mostrar archivos guardados del paciente
 async function loadPatientFiles(patientId) {
     try {
-        const patient = await getPatient(patientId);
-        if (!patient || !patient.files || !patient.files.length) return;
-        
+        // Siempre limpiar el contenedor de archivos primero
         const previewContainer = document.getElementById('patientFilesPreview');
         if (!previewContainer) return;
         
+        // IMPORTANTE: Siempre empezar con el contenedor vacío
         previewContainer.innerHTML = '';
         
-        console.log("Cargando archivos:", patient.files.length, patient.files); // Para depuración
+        // Si no hay ID de paciente válido, terminar aquí
+        if (!patientId) return;
+        
+        // Obtener datos del paciente
+        const patient = await getPatient(patientId);
+        
+        // Si el paciente no existe o no tiene archivos, mostrar mensaje y terminar
+        if (!patient || !patient.files || !patient.files.length) {
+            previewContainer.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay documentos cargados para este paciente.</p>';
+            return;
+        }
+        
+        console.log(`Mostrando ${patient.files.length} archivos para el paciente ${patientId}`);
         
         // Crear tabla para mostrar los archivos
         const table = document.createElement('table');
@@ -13671,36 +13700,12 @@ async function loadPatientFiles(patientId) {
             });
         });
         
-        // Añadir estilos CSS para los botones de acción
-        const style = document.createElement('style');
-        style.textContent = `
-            .file-action-btn {
-                padding: 5px;
-                margin-left: 5px;
-                background: none;
-                border: none;
-                color: var(--primary);
-                cursor: pointer;
-                font-size: 14px;
-            }
-            
-            .file-action-btn:hover {
-                color: var(--primary-dark);
-            }
-            
-            .delete-file-btn {
-                color: var(--accent2);
-            }
-            
-            .delete-file-btn:hover {
-                color: var(--accent2-dark);
-            }
-        `;
-        document.head.appendChild(style);
-        
     } catch (error) {
         console.error("Error al cargar archivos del paciente:", error);
-        showToast("Error al cargar los archivos", "error");
+        const previewContainer = document.getElementById('patientFilesPreview');
+        if (previewContainer) {
+            previewContainer.innerHTML = '<p style="color: var(--accent2); font-style: italic;">Error al cargar los archivos</p>';
+        }
     }
 }
 
