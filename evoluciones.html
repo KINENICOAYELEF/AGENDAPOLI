@@ -2280,7 +2280,8 @@ async function uploadFileToImageKit(file, patientId, folder) {
             fileId: result.fileId || result.id || `file_${Date.now()}`,
             name: file.name,
             type: file.type.startsWith('image/') ? 'image' : 'document',
-            thumbnailUrl: result.thumbnailUrl || result.url
+            thumbnailUrl: result.thumbnailUrl || result.url,
+            uploadDate: new Date().toISOString() // Añadir fecha de carga
         };
         
         showToast("Archivo subido correctamente", "success");
@@ -3200,53 +3201,54 @@ function renderAttachments(attachments) {
         let attachmentsHTML = `
             <div class="evolution-section">
                 <div class="evolution-section-title">Archivos adjuntos</div>
-                <div class="attachments" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+                <div class="attachments-table-container" style="margin-top: 10px; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Archivo</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Tipo</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Fecha</th>
+                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border);">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
         `;
         
         attachments.forEach(attachment => {
             const isImage = attachment.type === 'image';
             const isPDF = attachment.name && attachment.name.toLowerCase().endsWith('.pdf');
             
-            // Crear miniatura o icono
-            let contentHTML = '';
+            // Determinar icono según tipo de archivo
+            let fileIcon = '<i class="fas fa-file" style="color: #3498db;"></i>';
             if (isImage) {
-                // Para imágenes, mostrar la thumbnail si está disponible
-                const imageUrl = attachment.thumbnailUrl || attachment.url;
-                contentHTML = `<img src="${imageUrl}" alt="${attachment.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                fileIcon = '<i class="fas fa-image" style="color: #2ecc71;"></i>';
             } else if (isPDF) {
-                // Para PDFs, mostrar icono PDF
-                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                </div>`;
-            } else {
-                // Para otros tipos de archivo, mostrar icono genérico
-                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                    <div style="font-weight: bold; margin-top: 3px;">${attachment.name ? attachment.name.split('.').pop().toUpperCase() : 'DOC'}</div>
-                </div>`;
+                fileIcon = '<i class="fas fa-file-pdf" style="color: #e74c3c;"></i>';
             }
             
-            // Añadir elemento al HTML
+            // Formatear fecha si existe
+            const uploadDate = attachment.uploadDate ? formatDate(new Date(attachment.uploadDate)) : 'No disponible';
+            
             attachmentsHTML += `
-                <div class="attachment" style="position: relative; width: 150px; height: 150px; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background-color: #f8f9fa;">
-                    ${contentHTML}
-                    <div class="attachment-actions" style="position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: rgba(0,0,0,0.6); padding: 5px 0;">
-                        <a href="${attachment.url}" target="_blank" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                <tr style="border-bottom: 1px solid var(--border-light);">
+                    <td style="padding: 8px;">${fileIcon} ${attachment.name || 'Archivo sin nombre'}</td>
+                    <td style="padding: 8px;">${isImage ? 'Imagen' : (isPDF ? 'PDF' : 'Documento')}</td>
+                    <td style="padding: 8px;">${uploadDate}</td>
+                    <td style="padding: 8px; text-align: right;">
+                        <a href="${attachment.url}" target="_blank" title="Ver" class="file-action-btn">
                             <i class="fas fa-eye"></i>
-                            <span>Ver</span>
                         </a>
-                        <a href="${attachment.url}" download="${attachment.name}" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                        <a href="${attachment.url}" download="${attachment.name}" title="Descargar" class="file-action-btn">
                             <i class="fas fa-download"></i>
-                            <span>Descargar</span>
                         </a>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `;
         });
         
         attachmentsHTML += `
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -11920,6 +11922,7 @@ if (cancelEvolutionBtn) {
                 };
 
                 // Procesar archivos de la ficha del paciente
+// Procesar archivos de la ficha del paciente
 const patientFilesInput = document.getElementById('patientFiles');
 if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
     const files = Array.from(patientFilesInput.files);
@@ -13553,6 +13556,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Función para cargar y mostrar archivos guardados del paciente
+// Función para cargar y mostrar archivos guardados del paciente
 async function loadPatientFiles(patientId) {
     try {
         const patient = await getPatient(patientId);
@@ -13563,123 +13567,157 @@ async function loadPatientFiles(patientId) {
         
         previewContainer.innerHTML = '';
         
-        patient.files.forEach(file => {
+        // Crear tabla para mostrar los archivos
+        const table = document.createElement('table');
+        table.className = 'files-table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.marginTop = '10px';
+        
+        // Cabecera de la tabla
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Nombre</th>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Tipo</th>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Fecha</th>
+                <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border);">Acciones</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+        
+        // Cuerpo de la tabla
+        const tbody = document.createElement('tbody');
+        
+        patient.files.forEach((file, index) => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--border-light)';
+            
+            // Determinar el tipo de archivo
             const isImage = file.type === 'image';
             const isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-            
-            const attachment = document.createElement('div');
-            attachment.className = 'attachment';
-            attachment.style.position = 'relative';
-            attachment.style.width = '150px';
-            attachment.style.height = '150px';
-            attachment.style.overflow = 'hidden';
-            attachment.style.borderRadius = '8px';
-            attachment.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
-            attachment.style.backgroundColor = '#f8f9fa';
-            attachment.style.margin = '10px';
-            
+            let fileIcon = '<i class="fas fa-file" style="color: #3498db;"></i>';
             if (isImage) {
-                const img = document.createElement('img');
-                img.src = file.thumbnailUrl || file.url;
-                img.alt = file.name;
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
-                img.style.cursor = 'pointer';
-                img.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(img);
+                fileIcon = '<i class="fas fa-image" style="color: #2ecc71;"></i>';
             } else if (isPDF) {
-                const fileIconContainer = document.createElement('div');
-                fileIconContainer.style.display = 'flex';
-                fileIconContainer.style.flexDirection = 'column';
-                fileIconContainer.style.alignItems = 'center';
-                fileIconContainer.style.justifyContent = 'center';
-                fileIconContainer.style.height = '100%';
-                fileIconContainer.style.padding = '10px';
-                fileIconContainer.style.textAlign = 'center';
-                fileIconContainer.style.cursor = 'pointer';
-                fileIconContainer.innerHTML = `
-                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name}</div>
-                `;
-                fileIconContainer.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(fileIconContainer);
-            } else {
-                const fileIconContainer = document.createElement('div');
-                fileIconContainer.style.display = 'flex';
-                fileIconContainer.style.flexDirection = 'column';
-                fileIconContainer.style.alignItems = 'center';
-                fileIconContainer.style.justifyContent = 'center';
-                fileIconContainer.style.height = '100%';
-                fileIconContainer.style.padding = '10px';
-                fileIconContainer.style.textAlign = 'center';
-                fileIconContainer.style.cursor = 'pointer';
-                fileIconContainer.innerHTML = `
-                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name || 'Documento'}</div>
-                    <div style="font-weight: bold; margin-top: 3px;">${file.name ? file.name.split('.').pop().toUpperCase() : 'DOC'}</div>
-                `;
-                fileIconContainer.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(fileIconContainer);
+                fileIcon = '<i class="fas fa-file-pdf" style="color: #e74c3c;"></i>';
             }
             
-            // Acciones (Ver y Descargar)
-            const actions = document.createElement('div');
-            actions.style.position = 'absolute';
-            actions.style.bottom = '0';
-            actions.style.left = '0';
-            actions.style.width = '100%';
-            actions.style.display = 'flex';
-            actions.style.justifyContent = 'space-around';
-            actions.style.background = 'rgba(0,0,0,0.6)';
-            actions.style.padding = '5px 0';
+            // Formatear fecha
+            const uploadDate = file.uploadDate ? formatDate(new Date(file.uploadDate)) : 'No disponible';
             
-            // Botón para ver
-            const viewBtn = document.createElement('a');
-            viewBtn.href = file.url;
-            viewBtn.target = '_blank';
-            viewBtn.className = 'attachment-action';
-            viewBtn.style.color = 'white';
-            viewBtn.style.textDecoration = 'none';
-            viewBtn.style.display = 'flex';
-            viewBtn.style.flexDirection = 'column';
-            viewBtn.style.alignItems = 'center';
-            viewBtn.style.fontSize = '12px';
-            viewBtn.innerHTML = `
-                <i class="fas fa-eye"></i>
-                <span>Ver</span>
+            row.innerHTML = `
+                <td style="padding: 8px;">${fileIcon} ${file.name || 'Archivo sin nombre'}</td>
+                <td style="padding: 8px;">${isImage ? 'Imagen' : (isPDF ? 'PDF' : 'Documento')}</td>
+                <td style="padding: 8px;">${uploadDate}</td>
+                <td style="padding: 8px; text-align: right;">
+                    <a href="${file.url}" target="_blank" title="Ver" class="file-action-btn">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="${file.url}" download="${file.name}" title="Descargar" class="file-action-btn">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button type="button" class="file-action-btn delete-file-btn" data-index="${index}" data-file-id="${file.fileId || ''}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
             `;
             
-            // Botón para descargar
-            const downloadBtn = document.createElement('a');
-            downloadBtn.href = file.url;
-            downloadBtn.download = file.name || 'documento';
-            downloadBtn.className = 'attachment-action';
-            downloadBtn.style.color = 'white';
-            downloadBtn.style.textDecoration = 'none';
-            downloadBtn.style.display = 'flex';
-            downloadBtn.style.flexDirection = 'column';
-            downloadBtn.style.alignItems = 'center';
-            downloadBtn.style.fontSize = '12px';
-            downloadBtn.innerHTML = `
-                <i class="fas fa-download"></i>
-                <span>Descargar</span>
-            `;
-            
-            actions.appendChild(viewBtn);
-            actions.appendChild(downloadBtn);
-            attachment.appendChild(actions);
-            
-            previewContainer.appendChild(attachment);
+            tbody.appendChild(row);
         });
+        
+        table.appendChild(tbody);
+        previewContainer.appendChild(table);
+        
+        // Añadir evento para eliminar archivos
+        previewContainer.querySelectorAll('.delete-file-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileIndex = parseInt(this.getAttribute('data-index'));
+                const fileId = this.getAttribute('data-file-id');
+                deletePatientFile(patientId, fileIndex, fileId);
+            });
+        });
+        
+        // Añadir estilos CSS para los botones de acción
+        const style = document.createElement('style');
+        style.textContent = `
+            .file-action-btn {
+                padding: 5px;
+                margin-left: 5px;
+                background: none;
+                border: none;
+                color: var(--primary);
+                cursor: pointer;
+                font-size: 14px;
+            }
+            
+            .file-action-btn:hover {
+                color: var(--primary-dark);
+            }
+            
+            .delete-file-btn {
+                color: var(--accent2);
+            }
+            
+            .delete-file-btn:hover {
+                color: var(--accent2-dark);
+            }
+        `;
+        document.head.appendChild(style);
+        
     } catch (error) {
         console.error("Error al cargar archivos del paciente:", error);
+        showToast("Error al cargar los archivos", "error");
+    }
+}
+
+        // Función para eliminar un archivo del paciente
+async function deletePatientFile(patientId, fileIndex, fileId) {
+    try {
+        if (!confirm('¿Está seguro que desea eliminar este archivo? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Obtener datos actuales del paciente
+        const patient = await getPatient(patientId);
+        if (!patient || !patient.files) {
+            hideLoading();
+            showToast("No se encontraron archivos para eliminar", "error");
+            return;
+        }
+        
+        // Eliminar el archivo del array
+        if (fileIndex >= 0 && fileIndex < patient.files.length) {
+            // Guardar el archivo que se eliminará para referencia
+            const fileToDelete = patient.files[fileIndex];
+            
+            // Eliminar del array
+            patient.files.splice(fileIndex, 1);
+            
+            // Actualizar datos del paciente en la base de datos
+            await updatePatient(patientId, { 
+                files: patient.files,
+                updatedAt: new Date().toISOString()
+            });
+            
+            // Actualizar la visualización
+            loadPatientFiles(patientId);
+            
+            hideLoading();
+            showToast("Archivo eliminado correctamente", "success");
+            
+            // También podríamos eliminar físicamente el archivo de ImageKit aquí
+            // si tienes una API para eso (no implementado en este ejemplo)
+        } else {
+            hideLoading();
+            showToast("Índice de archivo no válido", "error");
+        }
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar archivo:", error);
+        showToast("Error al eliminar archivo: " + error.message, "error");
     }
 }
         </script>
