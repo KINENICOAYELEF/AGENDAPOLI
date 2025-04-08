@@ -13606,14 +13606,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Función para cargar y mostrar archivos guardados del paciente
+// Función para cargar y mostrar archivos guardados del paciente
 async function loadPatientFiles(patientId) {
     try {
-        // Siempre limpiar el contenedor de archivos primero
+        // Siempre limpiar TODOS los posibles contenedores de archivos primero
         const previewContainer = document.getElementById('patientFilesPreview');
-        if (!previewContainer) return;
+        const clinicalFilesContainer = document.getElementById('clinicalFiles');
         
-        // IMPORTANTE: Siempre empezar con el contenedor vacío
-        previewContainer.innerHTML = '';
+        // Limpiar todos los contenedores posibles
+        if (previewContainer) previewContainer.innerHTML = '';
+        if (clinicalFilesContainer) clinicalFilesContainer.innerHTML = '';
         
         // Si no hay ID de paciente válido, terminar aquí
         if (!patientId) return;
@@ -13623,13 +13625,14 @@ async function loadPatientFiles(patientId) {
         
         // Si el paciente no existe o no tiene archivos, mostrar mensaje y terminar
         if (!patient || !patient.files || !patient.files.length) {
-            previewContainer.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay documentos cargados para este paciente.</p>';
+            const noFilesMessage = '<p style="color: var(--text-secondary); font-style: italic;">No hay documentos cargados para este paciente.</p>';
+            if (previewContainer) previewContainer.innerHTML = noFilesMessage;
             return;
         }
         
         console.log(`Mostrando ${patient.files.length} archivos para el paciente ${patientId}`);
         
-        // Crear tabla para mostrar los archivos
+        // Crear tabla para mostrar los archivos - SOLO USAREMOS UN CONTENEDOR
         const table = document.createElement('table');
         table.className = 'files-table';
         table.style.width = '100%';
@@ -13689,16 +13692,25 @@ async function loadPatientFiles(patientId) {
         });
         
         table.appendChild(tbody);
-        previewContainer.appendChild(table);
+        
+        // IMPORTANTE: Solo añadir la tabla a un contenedor (previewContainer)
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(table);
+        }
+        
+        // NO añadir la tabla también a clinicalFilesContainer
         
         // Añadir evento para eliminar archivos
-        previewContainer.querySelectorAll('.delete-file-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const fileIndex = parseInt(this.getAttribute('data-index'));
-                const fileId = this.getAttribute('data-file-id');
-                deletePatientFile(patientId, fileIndex, fileId);
+        if (previewContainer) {
+            previewContainer.querySelectorAll('.delete-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileIndex = parseInt(this.getAttribute('data-index'));
+                    const fileId = this.getAttribute('data-file-id');
+                    deletePatientFile(patientId, fileIndex, fileId);
+                });
             });
-        });
+        }
         
     } catch (error) {
         console.error("Error al cargar archivos del paciente:", error);
