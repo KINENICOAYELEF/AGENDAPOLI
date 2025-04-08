@@ -12,31 +12,63 @@ let currentPatientId = null;
 let patientsCache = []; // Para almacenar pacientes y reducir consultas
 let customTemplates = [];
 
-// Configuración de ImageKit.io
-let imagekit = null;
-const imagekitConfig = {
-    publicKey: "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM=",
-    urlEndpoint: "https://ik.imagekit.io/vbxofs9fw",
-    authenticationEndpoint: "https://ik.imagekit.io/vbxofs9fw/auth"
-};
 
-// Cargar el SDK de ImageKit
-function loadImageKitSDK() {
-    return new Promise((resolve, reject) => {
-        // Si ya existe el script, no lo volvemos a cargar
-        if (document.getElementById('imagekitScript')) {
-            resolve();
-            return;
+
+        // Función para subir archivos directamente a ImageKit usando upload API
+async function uploadToImageKitDirect(file, folder, fileName) {
+    try {
+        // Crear FormData para la subida
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('publicKey', imagekitConfig.publicKey);
+        formData.append('fileName', fileName);
+        formData.append('folder', folder);
+        formData.append('useUniqueFileName', 'true');
+        
+        // Realizar subida directa a ImageKit
+        const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error de carga');
         }
         
-        const script = document.createElement('script');
-        script.id = 'imagekitScript';
-        script.src = 'https://unpkg.com/imagekit-javascript/dist/imagekit.min.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('No se pudo cargar el SDK de ImageKit'));
-        document.head.appendChild(script);
-    });
+        return await response.json();
+    } catch (error) {
+        console.error('Error en subida directa a ImageKit:', error);
+        throw error;
+    }
 }
+
+// Función para generar la firma para ImageKit
+function generateImageKitSignature(privateKey, stringToSign) {
+    // Esta función simula la generación de una firma HMAC-SHA1
+    // Normalmente esto debería hacerse en el servidor, pero usaremos
+    // una versión simplificada para el navegador
+    
+    // Usamos una librería externa para generar la firma
+    function loadCryptoJS() {
+        return new Promise((resolve, reject) => {
+            if (window.CryptoJS) {
+                resolve(window.CryptoJS);
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js';
+            script.onload = () => resolve(window.CryptoJS);
+            script.onerror = () => reject(new Error('No se pudo cargar CryptoJS'));
+            document.head.appendChild(script);
+        });
+    }
+    
+    return loadCryptoJS().then(CryptoJS => {
+        return CryptoJS.HmacSHA1(stringToSign, privateKey).toString(CryptoJS.enc.Hex);
+    });
+}        
 
 // Función para obtener autenticación desde un método alternativo
 async function getImageKitAuthParams() {
@@ -62,6 +94,21 @@ async function getImageKitAuthParams() {
     }
 }
 
+
+        // Variables para objetivos
+let currentObjectiveId = null;
+let objectivesCache = {};
+let objectiveParameters = {
+    "Fuerza muscular": ["Escala Daniels (0-5)", "Dinamometría (kg/N)", "Test manual (%)", "Test isocinético (Nm)", "Repetición máxima (RM)"],
+    "Rango de movimiento": ["Goniometría (grados)", "Porcentaje de rango normal (%)", "Test dedos-suelo (cm)"],
+    "Dolor": ["EVA (0-10)", "Escala numérica (0-10)", "Escala verbal (leve/moderado/severo)", "Cuestionario de dolor McGill", "Brief Pain Inventory"],
+    "Funcionalidad": ["Índice Barthel (0-100)", "Escala Berg (0-56)", "Timed Up and Go (segundos)", "Test 6 minutos (metros)", "WOMAC", "DASH", "FIM"],
+    "Propiocepción": ["Error en reposicionamiento (grados)", "Tiempo mantenimiento posición (segundos)"],
+    "Equilibrio": ["Apoyo unipodal (segundos)", "Escala Berg (0-56)", "Test Tinetti (0-28)", "Y-Balance Test (cm)", "Star Excursion Balance Test (cm)"],
+    "Postura": ["Ángulos posturales (grados)", "Desviaciones en cm", "Evaluación postural fotogramétrica"],
+    "Edema": ["Perímetro (cm)", "Volumetría (ml)", "Escala visual (0-4)"],
+    "Función piso pélvico": ["Escala Oxford (0-5)", "Perineometría (cmH₂O)", "EMG (μV)", "PERFECT", "Test pad (g)"]
+};
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -143,27 +190,8 @@ async function initFirebase() {
         storage = getStorage(app);
         console.log("Storage obtenido:", storage);
 
-        // Inicializar ImageKit.io con el nuevo método
-try {
-    // Primero cargamos el SDK
-    await loadImageKitSDK();
-    
-    // Luego inicializamos ImageKit
-    if (window.ImageKit) {
-        imagekit = new window.ImageKit({
-            publicKey: imagekitConfig.publicKey,
-            urlEndpoint: imagekitConfig.urlEndpoint,
-            authenticationEndpoint: ""
-        });
-        
-        console.log("ImageKit inicializado correctamente");
-    } else {
-        console.warn("SDK de ImageKit no está disponible. Se cargará cuando sea necesario.");
-    }
-} catch (imagekitError) {
-    console.error("Error al inicializar ImageKit:", imagekitError);
-    showToast("Advertencia: Error al inicializar ImageKit, pero continuando...", "info");
-}
+        // No necesitamos inicializar ImageKit
+        console.log("Sistema de archivos configurado para usar ImageKit directamente");
         
         // Verificar conexión
         try {
@@ -346,6 +374,14 @@ async function getPatient(patientId) {
 async function updatePatient(patientId, patientData) {
     try {
         showLoading();
+
+// Antes de llamar a updateDoc, añade esta verificación
+Object.keys(patientData).forEach(key => {
+    if (patientData[key] === undefined) {
+        console.warn(`Valor undefined detectado en patientData.${key}, estableciendo a null`);
+        patientData[key] = null; // Firebase acepta null pero no undefined
+    }
+});
         
         // Añadir timestamp de actualización
         patientData.updatedAt = new Date().toISOString();
@@ -586,112 +622,98 @@ async function uploadFile(file, patientId, folder) {
     }
 }
 
-// Upload file to ImageKit.io - Versión mejorada
+// Función para subir archivos a ImageKit - Versión corregida
+// Función para subir archivos a ImageKit - Versión corregida
 async function uploadFileToImageKit(file, patientId, folder) {
     try {
         showLoading();
         
-        // Cargar el SDK de ImageKit si no está cargado
-        await loadImageKitSDK();
+        // IMPORTANTE: Reemplaza estos valores con tus propias credenciales de ImageKit
+        const publicKey = "public_R03ZLLEFJiBI2VJqLPv3Ayw9BoM="; // Reemplaza con tu clave pública
+        const privateKey = "private_XNLSvEGgU7XKRFZGONvMFkgiX9E="; // Reemplaza con tu clave privada
+        const urlEndpoint = "https://ik.imagekit.io/vbxofs9fw"; // Reemplaza con tu URL endpoint
         
-        // Convertir el archivo a base64
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = async function(event) {
-                const base64data = event.target.result;
-                
-                // Crear nombre para el archivo con formato: patients_patientId_folder_nombreOriginal
-                const fileName = `patients_${patientId}_${folder}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-                
-                // Crear ruta para organizar los archivos
-                const filePath = `patients/${patientId}/${folder}`;
-                
-                try {
-                    // Usar método alternativo para subir archivos
-                    // Esta es una solución temporal hasta que tengas un servidor para autenticación
-                    
-                    // Inicializamos FormData para hacer una solicitud fetch directa
-                    const formData = new FormData();
-                    
-                    // Convertir base64 a Blob
-                    const byteString = atob(base64data.split(',')[1]);
-                    const mimeType = base64data.split(',')[0].split(':')[1].split(';')[0];
-                    const ab = new ArrayBuffer(byteString.length);
-                    const ia = new Uint8Array(ab);
-                    
-                    for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                    }
-                    
-                    const blob = new Blob([ab], {type: mimeType});
-                    
-                    // Añadir datos al FormData
-                    formData.append('file', blob, fileName);
-                    formData.append('publicKey', imagekitConfig.publicKey);
-                    formData.append('fileName', fileName);
-                    formData.append('folder', filePath);
-                    formData.append('useUniqueFileName', 'true');
-                    
-                    // Realizar solicitud para subir el archivo directamente
-                    const uploadEndpoint = 'https://upload.imagekit.io/api/v1/files/upload';
-                    
-                    // Intentar subir el archivo
-                    const response = await fetch(uploadEndpoint, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        // Intentar leer el mensaje de error
-                        const errorData = await response.json();
-                        throw new Error(`Error en la carga: ${errorData.message || response.statusText}`);
-                    }
-                    
-                    const uploadResult = await response.json();
-                    
-                    // Crear objeto de resultado
-                    const resultado = {
-                        url: uploadResult.url,
-                        fileId: uploadResult.fileId,
-                        name: file.name,
-                        type: file.type.startsWith('image/') ? 'image' : 'document'
-                    };
-                    
-                    console.log("Archivo subido correctamente:", resultado);
-                    showToast("Archivo subido correctamente", "success");
-                    
-                    resolve(resultado);
-                } catch (error) {
-                    console.error("Error al subir a ImageKit:", error);
-                    showToast("Error al subir archivo: " + (error.message || "Error desconocido"), "error");
-                    
-                    // Como alternativa, simular una carga exitosa para pruebas
-                    const fallbackResult = {
-                        url: URL.createObjectURL(file), // URL temporal local
-                        fileId: 'local_' + Date.now(),
-                        name: file.name,
-                        type: file.type.startsWith('image/') ? 'image' : 'document'
-                    };
-                    
-                    resolve(fallbackResult);
-                } finally {
-                    hideLoading();
-                }
-            };
-            
-            reader.onerror = function(error) {
-                console.error("Error leyendo archivo:", error);
-                showToast("Error al leer el archivo", "error");
-                hideLoading();
-                reject(error);
-            };
-            
-            reader.readAsDataURL(file);
+        // Generar token y fecha de expiración (30 minutos en el futuro)
+        const token = Math.random().toString(36).substring(2);
+        const expire = Math.floor(Date.now() / 1000) + 1800; // 30 minutos
+        
+        console.log("Valores de autenticación:", {
+            token: token,
+            expire: expire,
+            expireFormatted: new Date(expire * 1000).toISOString()
         });
+        
+        // Generar firma utilizando CryptoJS
+        const stringToSign = token + expire;
+        const signature = CryptoJS.HmacSHA1(stringToSign, privateKey).toString(CryptoJS.enc.Hex);
+        
+        // Crear nombre de archivo seguro
+        const fileName = `patients_${patientId}_${folder}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        
+        // Crear FormData
+        const form = new FormData();
+        form.append('file', file);
+        form.append('fileName', fileName);
+        form.append('publicKey', publicKey);
+        form.append('signature', signature);
+        form.append('expire', expire.toString()); // Convertir a string explícitamente
+        form.append('token', token);
+        form.append('useUniqueFileName', 'true');
+        form.append('folder', `patients/${patientId}/${folder}`);
+        
+        // Mostrar lo que estamos enviando (para depuración)
+        console.log("Enviando petición a ImageKit con los siguientes datos:");
+        for (const pair of form.entries()) {
+            // No mostrar el archivo completo para no saturar la consola
+            if (pair[0] === 'file') {
+                console.log('file:', pair[1].name, pair[1].type, pair[1].size + ' bytes');
+            } else {
+                console.log(pair[0] + ':', pair[1]);
+            }
+        }
+        
+        // Realizar la solicitud de carga
+        const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+            method: 'POST',
+            body: form
+        });
+        
+        // Verificar respuesta
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = "Error desconocido";
+            
+            try {
+                // Intentar parsear como JSON
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.message || errorData.error || "Error sin detalles";
+            } catch {
+                // Si no es JSON, usar el texto como está
+                errorMessage = errorText;
+            }
+            
+            throw new Error(`Error de carga: ${errorMessage}`);
+        }
+        
+        // Procesar respuesta exitosa
+        const result = await response.json();
+        console.log("Archivo subido exitosamente:", result);
+        
+        // Crear objeto de resultado para nuestra aplicación
+        const uploadResult = {
+            url: result.url,
+            fileId: result.fileId || result.id || `file_${Date.now()}`,
+            name: file.name,
+            type: file.type.startsWith('image/') ? 'image' : 'document',
+            thumbnailUrl: result.thumbnailUrl || result.url
+        };
+        
+        showToast("Archivo subido correctamente", "success");
+        hideLoading();
+        return uploadResult;
     } catch (error) {
-        console.error("Error preparando archivo para ImageKit:", error);
-        showToast("Error al preparar archivo: " + error.message, "error");
+        console.error("Error subiendo archivo:", error);
+        showToast("Error al subir archivo: " + error.message, "error");
         hideLoading();
         return null;
     }
@@ -1595,35 +1617,56 @@ function renderScales(scales) {
     }
 }
 
-// Render attachments
-// Render attachments
-// Render attachments
+// Función mejorada para mostrar archivos adjuntos
 function renderAttachments(attachments) {
     try {
         if (!attachments || attachments.length === 0) return '';
         
         let attachmentsHTML = `
             <div class="evolution-section">
-                <div class="evolution-section-title">Adjuntos</div>
-                <div class="attachments">
+                <div class="evolution-section-title">Archivos adjuntos</div>
+                <div class="attachments" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
         `;
         
         attachments.forEach(attachment => {
             const isImage = attachment.type === 'image';
-            const isPDF = attachment.name.toLowerCase().endsWith('.pdf');
+            const isPDF = attachment.name && attachment.name.toLowerCase().endsWith('.pdf');
             
+            // Crear miniatura o icono
+            let contentHTML = '';
+            if (isImage) {
+                // Para imágenes, mostrar la thumbnail si está disponible
+                const imageUrl = attachment.thumbnailUrl || attachment.url;
+                contentHTML = `<img src="${imageUrl}" alt="${attachment.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+            } else if (isPDF) {
+                // Para PDFs, mostrar icono PDF
+                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
+                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
+                </div>`;
+            } else {
+                // Para otros tipos de archivo, mostrar icono genérico
+                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
+                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
+                    <div style="font-weight: bold; margin-top: 3px;">${attachment.name ? attachment.name.split('.').pop().toUpperCase() : 'DOC'}</div>
+                </div>`;
+            }
+            
+            // Añadir elemento al HTML
             attachmentsHTML += `
-                <div class="attachment">
-                    ${isImage 
-                        ? `<img src="${attachment.url}" alt="${attachment.name}">`
-                        : isPDF
-                          ? `<div class="pdf-icon"><i class="fas fa-file-pdf" style="font-size: 40px; color: #e74c3c;"></i></div>`
-                          : `<img src="https://via.placeholder.com/100x100/e9ecef/495057?text=${attachment.name.split('.').pop().toUpperCase()}" alt="${attachment.name}">`
-                    }
-                    <div class="attachment-type">${isImage ? 'Foto' : attachment.name.split('.').pop().toUpperCase()}</div>
-                    <a href="${attachment.url}" target="_blank" class="attachment-download" title="Abrir/Descargar archivo">
-                        <i class="fas fa-download"></i>
-                    </a>
+                <div class="attachment" style="position: relative; width: 150px; height: 150px; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background-color: #f8f9fa;">
+                    ${contentHTML}
+                    <div class="attachment-actions" style="position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: rgba(0,0,0,0.6); padding: 5px 0;">
+                        <a href="${attachment.url}" target="_blank" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                            <i class="fas fa-eye"></i>
+                            <span>Ver</span>
+                        </a>
+                        <a href="${attachment.url}" download="${attachment.name}" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                            <i class="fas fa-download"></i>
+                            <span>Descargar</span>
+                        </a>
+                    </div>
                 </div>
             `;
         });
@@ -1640,2658 +1683,33 @@ function renderAttachments(attachments) {
     }
 }
 
-// Initialize diagnosis tab
-async function initDiagnosisTab(patientId) {
-    try {
-        // Cargar diagnósticos y CIF del paciente
-        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-        if (diagnosisTimeline) {
-            diagnosisTimeline.innerHTML = '<p>Cargando diagnósticos...</p>';
-            
-            // Consultar diagnósticos del paciente
-            const diagnoses = await getDiagnoses(patientId);
-            
-            if (diagnoses.length === 0) {
-                diagnosisTimeline.innerHTML = `
-                    <p>No hay diagnósticos registrados para este paciente.</p>
-                `;
-            } else {
-                diagnosisTimeline.innerHTML = '';
-                
-                diagnoses.forEach(diagnosis => {
-                const diagnosisItem = document.createElement('div');
-                diagnosisItem.className = 'timeline-item fade-in';
-                diagnosisItem.dataset.id = diagnosis.id;
-                
-                const formattedDate = formatDate(new Date(diagnosis.date));
-                
-                diagnosisItem.innerHTML = `
-                    <div class="timeline-dot">
-                        <i class="fas fa-file-medical"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="timeline-date">Evaluación - ${formattedDate}</div>
-                            <div class="timeline-actions">
-                                <button class="action-btn btn-secondary view-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                    <i class="fas fa-eye"></i> Ver
-                                </button>
-                                <button class="action-btn btn-secondary edit-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                                <button class="action-btn btn-secondary delete-diagnosis-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <h3 class="timeline-title">${diagnosis.code || 'Sin código CIE'}</h3>
-                        <p>${diagnosis.description || 'Sin descripción'}</p>
-                    </div>
-                `;
-                
-                diagnosisTimeline.appendChild(diagnosisItem);
-                
-                // Añadir event listeners para los botones
-                const viewBtn = diagnosisItem.querySelector('.view-diagnosis-btn');
-                const editBtn = diagnosisItem.querySelector('.edit-diagnosis-btn');
-                const deleteBtn = diagnosisItem.querySelector('.delete-diagnosis-btn');
-                
-                if (viewBtn) {
-                    viewBtn.addEventListener('click', function() {
-                        viewDiagnosis(patientId, diagnosis.id);
-                    });
-                }
-                
-                if (editBtn) {
-                    editBtn.addEventListener('click', function() {
-                        openDiagnosisModal(patientId, diagnosis);
-                    });
-                }
-                
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function() {
-                        deleteDiagnosis(patientId, diagnosis.id);
-                    });
-                }
-            });
-            }
-        }
 
-        // Cargar planes de tratamiento existentes
-        await loadTreatmentPlans(patientId);
-
-
-
+        // Limpiar lista actual
+        treatmentPlanList.innerHTML = '';
         
-        // Configurar botones solo si existen
-        const addDiagnosisBtn = document.getElementById('addDiagnosisBtn');
-        if (addDiagnosisBtn) {
-            // Eliminar cualquier manejador previo
-            const newAddDiagnosisBtn = addDiagnosisBtn.cloneNode(true);
-            addDiagnosisBtn.parentNode.replaceChild(newAddDiagnosisBtn, addDiagnosisBtn);
-            
-            newAddDiagnosisBtn.addEventListener('click', function() {
-                openDiagnosisModal(patientId);
-            });
-        }
+        // Obtener planes desde Firebase
+        const plansRef = collection(db, "patients", patientId, "treatmentPlans");
+        const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
+        const plansSnapshot = await getDocs(plansQuery);
         
-        // Configurar componentes CIF
-        await setupCifCategories(patientId);
-        
-        // Inicializar botón de guardar diagnóstico
-        const saveDiagnosisBtn = document.getElementById('saveDiagnosisBtn');
-        if (saveDiagnosisBtn) {
-            // Eliminar cualquier manejador previo
-            const newSaveDiagnosisBtn = saveDiagnosisBtn.cloneNode(true);
-            saveDiagnosisBtn.parentNode.replaceChild(newSaveDiagnosisBtn, saveDiagnosisBtn);
-            
-            newSaveDiagnosisBtn.addEventListener('click', function() {
-                saveDiagnosisChanges(patientId);
-            });
-        }
-        
-        // Inicializar botón de añadir objetivo
-        const addObjectiveBtn = document.getElementById('addObjectiveBtn');
-        if (addObjectiveBtn) {
-            // Eliminar cualquier manejador previo
-            const newAddObjectiveBtn = addObjectiveBtn.cloneNode(true);
-            addObjectiveBtn.parentNode.replaceChild(newAddObjectiveBtn, addObjectiveBtn);
-            
-            newAddObjectiveBtn.addEventListener('click', function() {
-                openObjectiveModal(patientId);
-            });
-        }
-        
-        // Inicializar botón de añadir plan de tratamiento
-        const addTreatmentPlanBtn = document.getElementById('addTreatmentPlanBtn');
-        if (addTreatmentPlanBtn) {
-            // Eliminar cualquier manejador previo
-            const newAddTreatmentPlanBtn = addTreatmentPlanBtn.cloneNode(true);
-            addTreatmentPlanBtn.parentNode.replaceChild(newAddTreatmentPlanBtn, addTreatmentPlanBtn);
-            
-            newAddTreatmentPlanBtn.addEventListener('click', function() {
-                openTreatmentPlanModal(patientId);
-            });
-        }
-    } catch (error) {
-        console.error("Error inicializando pestaña de diagnóstico:", error);
-        showToast("Error al cargar diagnósticos", "error");
-    }
-}
-
-// Obtener diagnósticos del paciente
-async function getDiagnoses(patientId) {
-    try {
-        showLoading();
-        
-        // Obtener diagnósticos de Firebase
-        const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
-        const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
-        const diagnosesSnapshot = await getDocs(diagnosesQuery);
-        
-        const diagnosesList = diagnosesSnapshot.docs.map(doc => {
-            return { id: doc.id, ...doc.data() };
-        });
-        
-        hideLoading();
-        return diagnosesList;
-    } catch (error) {
-        console.error("Error obteniendo diagnósticos:", error);
-        hideLoading();
-        return [];
-    }
-}
-
-// Función mejorada para abrir el modal de diagnóstico
-// Función mejorada para abrir el modal de diagnóstico (con soporte para edición)
-function openDiagnosisModal(patientId, existingDiagnosis = null) {
-    // Determinar si es edición o nuevo diagnóstico
-    const isEditing = existingDiagnosis !== null;
-    
-    // Crear modal de diagnóstico
-    const diagnosisModal = document.createElement('div');
-    diagnosisModal.className = 'modal-overlay';
-    diagnosisModal.id = 'diagnosisFormModal';
-    
-    diagnosisModal.innerHTML = `
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">${isEditing ? 'Editar diagnóstico kinesiológico' : 'Nuevo diagnóstico kinesiológico'}</h2>
-                <button class="modal-close" id="closeDiagnosisModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="diagnosisForm">
-                    <div class="form-group">
-                        <label class="form-label">Fecha de evaluación</label>
-                        <input type="date" class="form-control" id="diagnosisDate" value="${isEditing ? existingDiagnosis.date : new Date().toISOString().split('T')[0]}" required>
-                    </div>
-                    
-                    <div class="accordion active">
-                        <div class="accordion-header">
-                            <span>Información médica</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Diagnóstico médico</label>
-                                <input type="text" class="form-control" id="diagnosisCIE" value="${isEditing ? existingDiagnosis.code || '' : ''}" placeholder="Ej: Lumbago, Cervicalgia, Tendinitis, etc." required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Motivo de consulta</label>
-                                <textarea class="form-control" id="consultReason" rows="2" placeholder="Descripción del motivo por el que el paciente acude a kinesiología">${isEditing ? existingDiagnosis.consultReason || '' : ''}</textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Antecedentes relevantes</label>
-                                <textarea class="form-control" id="medicalBackground" rows="2" placeholder="Antecedentes médicos relevantes para el caso">${isEditing ? existingDiagnosis.medicalBackground || '' : ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="accordion active">
-                        <div class="accordion-header">
-                            <span>Diagnóstico kinesiológico funcional</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <label class="form-label">Descripción funcional</label>
-                                    <button type="button" class="btn-example" style="font-size: 13px; color: var(--primary);" id="diagnosisAssistantBtn">
-                                        <i class="fas fa-magic"></i> Asistente de diagnóstico
-                                    </button>
-                                </div>
-                                <textarea class="form-control" id="diagnosisText" rows="5" placeholder="Ingrese el diagnóstico kinesiológico detallado en términos de limitación funcional, restricción de participación y alteraciones estructurales según el modelo CIF" required>${isEditing ? existingDiagnosis.description || '' : ''}</textarea>
-                            </div>
-                            
-                            <div id="diagnosisAssistantContainer" style="display: none; background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-top: 15px;">
-                                <h4 style="margin-top: 0; color: var(--primary);">Asistente de Diagnóstico Funcional</h4>
-                                <p style="margin-bottom: 15px; font-size: 14px;">Seleccione las opciones que mejor describan al paciente para generar un diagnóstico funcional según el modelo CIF.</p>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Región anatómica principal</label>
-                                    <select class="form-control" id="assistantRegion">
-                                        <option value="">Seleccione región...</option>
-                                        <option value="cervical">Columna cervical</option>
-                                        <option value="dorsal">Columna dorsal</option>
-                                        <option value="lumbar">Columna lumbar</option>
-                                        <option value="hombro">Hombro</option>
-                                        <option value="codo">Codo</option>
-                                        <option value="muñeca">Muñeca y mano</option>
-                                        <option value="cadera">Cadera</option>
-                                        <option value="rodilla">Rodilla</option>
-                                        <option value="tobillo">Tobillo y pie</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-col">
-                                        <div class="form-group">
-                                            <label class="form-label">Intensidad del dolor (EVA)</label>
-                                            <select class="form-control" id="assistantPain">
-                                                <option value="">Seleccione...</option>
-                                                <option value="leve">Leve (1-3)</option>
-                                                <option value="moderado">Moderado (4-6)</option>
-                                                <option value="severo">Severo (7-10)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-col">
-                                        <div class="form-group">
-                                            <label class="form-label">Tipo de dolor</label>
-                                            <select class="form-control" id="assistantPainType">
-                                                <option value="">Seleccione...</option>
-                                                <option value="mecanico">Mecánico</option>
-                                                <option value="neuropatico">Neuropático</option>
-                                                <option value="inflamatorio">Inflamatorio</option>
-                                                <option value="miofascial">Miofascial</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Limitaciones funcionales</label>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitMovilidad" class="assistant-checkbox">
-                                            <label for="limitMovilidad">Movilidad</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitFuerza" class="assistant-checkbox">
-                                            <label for="limitFuerza">Fuerza</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitEstabilidad" class="assistant-checkbox">
-                                            <label for="limitEstabilidad">Estabilidad</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitPropiocepcion" class="assistant-checkbox">
-                                            <label for="limitPropiocepcion">Propiocepción</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitResistencia" class="assistant-checkbox">
-                                            <label for="limitResistencia">Resistencia</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="limitEquilibrio" class="assistant-checkbox">
-                                            <label for="limitEquilibrio">Equilibrio</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Estructuras anatómicas afectadas</label>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="estructuraMuscular" class="assistant-checkbox">
-                                            <label for="estructuraMuscular">Muscular</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="estructuraArticular" class="assistant-checkbox">
-                                            <label for="estructuraArticular">Articular</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="estructuraTendinosa" class="assistant-checkbox">
-                                            <label for="estructuraTendinosa">Tendinosa</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="estructuraNervio" class="assistant-checkbox">
-                                            <label for="estructuraNervio">Nerviosa</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="estructuraLigamento" class="assistant-checkbox">
-                                            <label for="estructuraLigamento">Ligamentosa</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Restricciones de participación</label>
-                                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="restriccionLaboral" class="assistant-checkbox">
-                                            <label for="restriccionLaboral">Laboral</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="restriccionDeportiva" class="assistant-checkbox">
-                                            <label for="restriccionDeportiva">Deportiva</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="restriccionAVD" class="assistant-checkbox">
-                                            <label for="restriccionAVD">Actividades cotidianas</label>
-                                        </div>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" id="restriccionSocial" class="assistant-checkbox">
-                                            <label for="restriccionSocial">Social</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div style="margin-top: 15px; display: flex; justify-content: space-between;">
-                                    <button type="button" class="action-btn btn-secondary" id="cancelAssistantBtn">
-                                        Cancelar
-                                    </button>
-                                    <button type="button" class="action-btn btn-primary" id="generateDiagnosisBtn">
-                                        <i class="fas fa-magic"></i> Generar diagnóstico
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 20px; text-align: right;">
-                        <button type="button" class="action-btn btn-secondary" style="margin-right: 10px;" id="cancelDiagnosisBtn">Cancelar</button>
-                        <button type="submit" class="action-btn btn-primary">
-                            ${isEditing ? 'Actualizar diagnóstico' : 'Guardar diagnóstico'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(diagnosisModal);
-    setTimeout(() => diagnosisModal.classList.add('active'), 50);
-    
-    // Eventos para los acordeones
-    diagnosisModal.querySelectorAll('.accordion-header').forEach(header => {
-        header.addEventListener('click', function() {
-            this.parentElement.classList.toggle('active');
-        });
-    });
-    
-    // Eventos para el modal
-    document.getElementById('closeDiagnosisModal').addEventListener('click', function() {
-        diagnosisModal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(diagnosisModal), 300);
-    });
-    
-    document.getElementById('cancelDiagnosisBtn').addEventListener('click', function() {
-        diagnosisModal.classList.remove('active');
-        setTimeout(() => document.body.removeChild(diagnosisModal), 300);
-    });
-    
-    // Evento para mostrar/ocultar el asistente de diagnóstico
-    document.getElementById('diagnosisAssistantBtn').addEventListener('click', function() {
-        const container = document.getElementById('diagnosisAssistantContainer');
-        if (container) {
-            container.style.display = container.style.display === 'none' ? 'block' : 'none';
-        }
-    });
-    
-    // Evento para cancelar el asistente
-    document.getElementById('cancelAssistantBtn').addEventListener('click', function() {
-        document.getElementById('diagnosisAssistantContainer').style.display = 'none';
-    });
-    
-    // Evento para generar diagnóstico con el asistente
-    document.getElementById('generateDiagnosisBtn').addEventListener('click', function() {
-        generateFunctionalDiagnosis();
-    });
-    
-    // Evento para el envío del formulario
-    document.getElementById('diagnosisForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        // Obtener datos del formulario
-        const diagnosisDate = document.getElementById('diagnosisDate').value;
-        const diagnosisCIE = document.getElementById('diagnosisCIE').value;
-        const diagnosisText = document.getElementById('diagnosisText').value;
-        const consultReason = document.getElementById('consultReason')?.value || '';
-        const medicalBackground = document.getElementById('medicalBackground')?.value || '';
-
-        // Crear objeto de diagnóstico
-        const diagnosisData = {
-            date: diagnosisDate,
-            code: diagnosisCIE,
-            description: diagnosisText,
-            consultReason: consultReason,
-            medicalBackground: medicalBackground,
-            updatedAt: new Date().toISOString()
-        };
-        
-        // Si no estamos editando, añadir campo createdAt
-        if (!isEditing) {
-            diagnosisData.createdAt = new Date().toISOString();
-        }
-
-        // Mostrar loading mientras se guarda
-        showLoading();
-
-        try {
-            if (isEditing) {
-                // Actualizar diagnóstico existente
-                const diagnosisRef = doc(db, "patients", patientId, "diagnoses", existingDiagnosis.id);
-                updateDoc(diagnosisRef, diagnosisData)
-                    .then(() => {
-                        hideLoading();
-                        
-                        // Actualizar la entrada en la línea de tiempo (interfaz visual)
-                        const diagnosisItem = document.querySelector(`.timeline-item[data-id="${existingDiagnosis.id}"]`);
-                        if (diagnosisItem) {
-                            const titleElement = diagnosisItem.querySelector('.timeline-title');
-                            const descElement = diagnosisItem.querySelector('.timeline-content p');
-                            
-                            if (titleElement) titleElement.textContent = diagnosisCIE;
-                            if (descElement) descElement.textContent = diagnosisText;
-                        }
-                        
-                        // Mostrar mensaje de éxito
-                        showToast("Diagnóstico actualizado correctamente", "success");
-                        
-                        // Cerrar modal
-                        diagnosisModal.classList.remove('active');
-                        setTimeout(() => {
-                            if (document.body.contains(diagnosisModal)) {
-                                document.body.removeChild(diagnosisModal);
-                            }
-                        }, 300);
-                    })
-                    .catch(error => {
-                        hideLoading();
-                        console.error("Error al actualizar diagnóstico:", error);
-                        showToast("Error al actualizar diagnóstico: " + error.message, "error");
-                    });
-            } else {
-                // Guardar nuevo diagnóstico
-                const diagnosisRef = collection(db, "patients", patientId, "diagnoses");
-                addDoc(diagnosisRef, diagnosisData)
-                    .then(docRef => {
-                        hideLoading();
-                        
-                        // Añadir diagnóstico a la línea de tiempo (interfaz visual)
-                        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-                        if (diagnosisTimeline) {
-                            // Remover mensaje "no hay diagnósticos"
-                            const noDataMessage = diagnosisTimeline.querySelector('p');
-                            if (noDataMessage) {
-                                diagnosisTimeline.removeChild(noDataMessage);
-                            }
-                            
-                            // Crear nuevo elemento con el mismo formato que usamos en initDiagnosisTab
-                            const newDiagnosis = document.createElement('div');
-                            newDiagnosis.className = 'timeline-item fade-in';
-                            newDiagnosis.dataset.id = docRef.id;
-                            
-                            newDiagnosis.innerHTML = `
-                                <div class="timeline-dot">
-                                    <i class="fas fa-file-medical"></i>
-                                </div>
-                                <div class="timeline-content">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <div class="timeline-date">Evaluación - ${formatDate(new Date(diagnosisDate))}</div>
-                                        <div class="timeline-actions">
-                                            <button class="action-btn btn-secondary view-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                                <i class="fas fa-eye"></i> Ver
-                                            </button>
-                                            <button class="action-btn btn-secondary edit-diagnosis-btn" style="padding: 3px 8px; margin-right: 5px; font-size: 12px;">
-                                                <i class="fas fa-edit"></i> Editar
-                                            </button>
-                                            <button class="action-btn btn-secondary delete-diagnosis-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <h3 class="timeline-title">${diagnosisCIE}</h3>
-                                    <p>${diagnosisText}</p>
-                                </div>
-                            `;
-                            
-                            // Añadir event listeners para los botones
-                            const fullDiagnosis = {
-                                id: docRef.id,
-                                ...diagnosisData
-                            };
-                            
-                            const viewBtn = newDiagnosis.querySelector('.view-diagnosis-btn');
-                            const editBtn = newDiagnosis.querySelector('.edit-diagnosis-btn');
-                            const deleteBtn = newDiagnosis.querySelector('.delete-diagnosis-btn');
-                            
-                            if (viewBtn) {
-                                viewBtn.addEventListener('click', function() {
-                                    viewDiagnosis(patientId, docRef.id);
-                                });
-                            }
-                            
-                            if (editBtn) {
-                                editBtn.addEventListener('click', function() {
-                                    openDiagnosisModal(patientId, fullDiagnosis);
-                                });
-                            }
-                            
-                            if (deleteBtn) {
-                                deleteBtn.addEventListener('click', function() {
-                                    deleteDiagnosis(patientId, docRef.id);
-                                });
-                            }
-                            
-                            // Añadir al inicio de la lista para que aparezca primero
-                            if (diagnosisTimeline.firstChild) {
-                                diagnosisTimeline.insertBefore(newDiagnosis, diagnosisTimeline.firstChild);
-                            } else {
-                                diagnosisTimeline.appendChild(newDiagnosis);
-                            }
-                        }
-                        
-                        // Mostrar mensaje de éxito
-                        showToast("Diagnóstico guardado correctamente", "success");
-                        
-                        // Cerrar modal - Versión mejorada para evitar el error
-                        try {
-                            diagnosisModal.classList.remove('active');
-                            setTimeout(() => {
-                                if (diagnosisModal && document.body.contains(diagnosisModal)) {
-                                    try {
-                                        document.body.removeChild(diagnosisModal);
-                                    } catch (e) {
-                                        console.log("Modal ya eliminado, ignorando operación");
-                                        diagnosisModal.style.display = 'none';
-                                    }
-                                }
-                            }, 300);
-                        } catch (error) {
-                            console.error("Error al cerrar modal:", error);
-                            // En caso de error, intentar ocultar el modal
-                            if (diagnosisModal) diagnosisModal.style.display = 'none';
-                        }
-                    })
-                    .catch(error => {
-                        hideLoading();
-                        console.error("Error al guardar diagnóstico:", error);
-                        showToast("Error al guardar diagnóstico: " + error.message, "error");
-                    });
-            }
-        } catch (error) {
-            hideLoading();
-            console.error("Error al guardar diagnóstico:", error);
-            showToast("Error al guardar diagnóstico: " + error.message, "error");
-        }
-    });
-}
-
-        // Función para eliminar un diagnóstico
-async function deleteDiagnosis(patientId, diagnosisId) {
-    if (!patientId || !diagnosisId) {
-        showToast("Error: ID de paciente o diagnóstico no válido", "error");
-        return false;
-    }
-    
-    // Pedir confirmación antes de eliminar
-    if (!confirm("¿Está seguro que desea eliminar este diagnóstico kinesiológico?\nEsta acción no se puede deshacer.")) {
-        return false;
-    }
-    
-    try {
-        showLoading();
-        
-        // Referencia al documento del diagnóstico
-        const diagnosisRef = doc(db, "patients", patientId, "diagnoses", diagnosisId);
-        
-        // Eliminar el diagnóstico
-        await deleteDoc(diagnosisRef);
-        
-        // Eliminar visualmente de la interfaz
-        const diagnosisItem = document.querySelector(`.timeline-item[data-id="${diagnosisId}"]`);
-        if (diagnosisItem && diagnosisItem.parentNode) {
-            diagnosisItem.parentNode.removeChild(diagnosisItem);
-        }
-        
-        hideLoading();
-        showToast("Diagnóstico eliminado correctamente", "success");
-        
-        // Verificar si no quedan diagnósticos
-        const diagnosisTimeline = document.getElementById('diagnosisTimeline');
-        if (diagnosisTimeline && diagnosisTimeline.children.length === 0) {
-            diagnosisTimeline.innerHTML = `
-                <p>No hay diagnósticos registrados para este paciente.</p>
-            `;
-        }
-        
-        return true;
-    } catch (error) {
-        console.error("Error eliminando diagnóstico:", error);
-        hideLoading();
-        showToast("Error al eliminar diagnóstico: " + error.message, "error");
-        return false;
-    }
-}
-
-
-        // Función para ver el diagnóstico completo
-async function viewDiagnosis(patientId, diagnosisId) {
-    try {
-        showLoading();
-        
-        // Obtener el diagnóstico de Firebase
-        const diagnosisRef = doc(db, "patients", patientId, "diagnoses", diagnosisId);
-        const diagnosisSnap = await getDoc(diagnosisRef);
-        
-        if (!diagnosisSnap.exists()) {
-            hideLoading();
-            showToast("Error: Diagnóstico no encontrado", "error");
+        if (plansSnapshot.empty) {
+            treatmentPlanList.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay planes de tratamiento registrados.</p>';
             return;
         }
         
-        const diagnosis = { id: diagnosisSnap.id, ...diagnosisSnap.data() };
-        
-        // Crear modal para mostrar diagnóstico
-        const diagnosisViewModal = document.createElement('div');
-        diagnosisViewModal.className = 'modal-overlay';
-        diagnosisViewModal.id = 'diagnosisViewModal';
-        
-        const formattedDate = formatDate(new Date(diagnosis.date));
-        
-        diagnosisViewModal.innerHTML = `
-            <div class="modal">
-                <div class="modal-header">
-                    <h2 class="modal-title">Diagnóstico Kinesiológico - ${formattedDate}</h2>
-                    <button class="modal-close" id="closeDiagnosisViewModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">Fecha de evaluación</label>
-                        <input type="text" class="form-control" value="${formattedDate}" readonly>
-                    </div>
-                    
-                    <div class="accordion active">
-                        <div class="accordion-header">
-                            <span>Información médica</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Diagnóstico médico</label>
-                                <input type="text" class="form-control" value="${diagnosis.code || ''}" readonly>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Motivo de consulta</label>
-                                <textarea class="form-control" rows="2" readonly>${diagnosis.consultReason || ''}</textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Antecedentes relevantes</label>
-                                <textarea class="form-control" rows="2" readonly>${diagnosis.medicalBackground || ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="accordion active">
-                        <div class="accordion-header">
-                            <span>Diagnóstico kinesiológico funcional</span>
-                            <i class="fas fa-chevron-down accordion-icon"></i>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="form-group">
-                                <label class="form-label">Descripción funcional</label>
-                                <textarea class="form-control" rows="6" readonly>${diagnosis.description || ''}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 20px; text-align: right;">
-                        <button type="button" class="action-btn btn-secondary" id="closeViewBtn">Cerrar</button>
-                        <button type="button" class="action-btn btn-primary" id="editFromViewBtn">
-                            <i class="fas fa-edit"></i> Editar diagnóstico
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(diagnosisViewModal);
-        hideLoading();
-        
-        setTimeout(() => diagnosisViewModal.classList.add('active'), 50);
-        
-        // Configurar eventos para acordeones
-        diagnosisViewModal.querySelectorAll('.accordion-header').forEach(header => {
-            header.addEventListener('click', function() {
-                this.parentElement.classList.toggle('active');
-            });
-        });
-        
-        // Configurar evento para cerrar modal
-        document.getElementById('closeDiagnosisViewModal').addEventListener('click', function() {
-            diagnosisViewModal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(diagnosisViewModal), 300);
-        });
-        
-        document.getElementById('closeViewBtn').addEventListener('click', function() {
-            diagnosisViewModal.classList.remove('active');
-            setTimeout(() => document.body.removeChild(diagnosisViewModal), 300);
-        });
-        
-        // Configurar evento para editar desde la vista
-        document.getElementById('editFromViewBtn').addEventListener('click', function() {
-            diagnosisViewModal.classList.remove('active');
-            setTimeout(() => {
-                document.body.removeChild(diagnosisViewModal);
-                openDiagnosisModal(patientId, diagnosis);
-            }, 300);
-        });
-        
-    } catch (error) {
-        console.error("Error al mostrar diagnóstico:", error);
-        hideLoading();
-        showToast("Error al mostrar diagnóstico: " + error.message, "error");
-    }
-}
-
-        
-
-// Función para generar diagnóstico funcional basado en las selecciones del asistente
-function generateFunctionalDiagnosis() {
-    // Obtener valores seleccionados
-    const region = document.getElementById('assistantRegion').value;
-    const painIntensity = document.getElementById('assistantPain').value;
-    const painType = document.getElementById('assistantPainType').value;
-    
-    // Obtener limitaciones funcionales seleccionadas
-    const limitations = [];
-    document.querySelectorAll('[id^="limit"]:checked').forEach(el => {
-        limitations.push(el.id.replace('limit', '').toLowerCase());
-    });
-    
-    // Obtener estructuras afectadas seleccionadas
-    const structures = [];
-    document.querySelectorAll('[id^="estructura"]:checked').forEach(el => {
-        structures.push(el.id.replace('estructura', '').toLowerCase());
-    });
-    
-    // Obtener restricciones de participación seleccionadas
-    const restrictions = [];
-    document.querySelectorAll('[id^="restriccion"]:checked').forEach(el => {
-        restrictions.push(el.id.replace('restriccion', '').toLowerCase());
-    });
-    
-    // Verificar que se hayan seleccionado los campos mínimos necesarios
-    if (!region) {
-        showToast("Debe seleccionar la región anatómica", "error");
-        return;
-    }
-    
-    if (!painIntensity) {
-        showToast("Debe seleccionar la intensidad del dolor", "error");
-        return;
-    }
-    
-    if (limitations.length === 0) {
-        showToast("Debe seleccionar al menos una limitación funcional", "error");
-        return;
-    }
-    
-    if (structures.length === 0) {
-        showToast("Debe seleccionar al menos una estructura afectada", "error");
-        return;
-    }
-    
-    // Mapeo de valores para el texto
-    const regionMap = {
-        'cervical': 'región cervical',
-        'dorsal': 'región dorsal',
-        'lumbar': 'región lumbar',
-        'hombro': 'articulación del hombro',
-        'codo': 'articulación del codo',
-        'muñeca': 'articulación de la muñeca y mano',
-        'cadera': 'articulación de la cadera',
-        'rodilla': 'articulación de la rodilla',
-        'tobillo': 'complejo articular del tobillo y pie'
-    };
-    
-    const painMap = {
-        'leve': 'de intensidad leve (EVA 1-3/10)',
-        'moderado': 'de intensidad moderada (EVA 4-6/10)',
-        'severo': 'de intensidad severa (EVA 7-10/10)'
-    };
-    
-    const painTypeMap = {
-        'mecanico': 'de características mecánicas',
-        'neuropatico': 'de características neuropáticas',
-        'inflamatorio': 'de características inflamatorias',
-        'miofascial': 'de origen miofascial'
-    };
-    
-    // Mapeo de limitaciones
-    const limitationDescriptions = {
-        'movilidad': 'rango de movimiento articular',
-        'fuerza': 'fuerza muscular',
-        'estabilidad': 'estabilidad articular',
-        'propiocepcion': 'propiocepción',
-        'resistencia': 'resistencia muscular',
-        'equilibrio': 'equilibrio'
-    };
-    
-    // Mapeo de estructuras
-    const structureDescriptions = {
-        'muscular': 'musculatura',
-        'articular': 'componentes articulares',
-        'tendinosa': 'estructuras tendinosas',
-        'nervio': 'tejido nervioso',
-        'ligamento': 'estructuras ligamentosas'
-    };
-    
-    // Mapeo de restricciones
-    const restrictionDescriptions = {
-        'laboral': 'actividades laborales',
-        'deportiva': 'actividades deportivas',
-        'avd': 'actividades de la vida diaria',
-        'social': 'participación social'
-    };
-    
-    // Construir el diagnóstico
-    let diagnosis = `Paciente presenta disfunción ${regionMap[region] || region} con dolor ${painMap[painIntensity] || painIntensity}`;
-    
-    // Añadir tipo de dolor si está seleccionado
-    if (painType) {
-        diagnosis += ` ${painTypeMap[painType] || painType}`;
-    }
-    
-    // Añadir estructuras afectadas
-    if (structures.length > 0) {
-        diagnosis += `, asociado a compromiso de `;
-        const structureTexts = structures.map(s => structureDescriptions[s] || s);
-        
-        if (structureTexts.length === 1) {
-            diagnosis += structureTexts[0];
-        } else if (structureTexts.length === 2) {
-            diagnosis += `${structureTexts[0]} y ${structureTexts[1]}`;
-        } else {
-            const lastStructure = structureTexts.pop();
-            diagnosis += `${structureTexts.join(', ')} y ${lastStructure}`;
-        }
-    }
-    
-    // Añadir limitaciones funcionales
-    if (limitations.length > 0) {
-        diagnosis += `. Se evidencia alteración en `;
-        const limitationTexts = limitations.map(l => limitationDescriptions[l] || l);
-        
-        if (limitationTexts.length === 1) {
-            diagnosis += limitationTexts[0];
-        } else if (limitationTexts.length === 2) {
-            diagnosis += `${limitationTexts[0]} y ${limitationTexts[1]}`;
-        } else {
-            const lastLimitation = limitationTexts.pop();
-            diagnosis += `${limitationTexts.join(', ')} y ${lastLimitation}`;
-        }
-    }
-    
-    // Añadir restricciones de participación
-    if (restrictions.length > 0) {
-        diagnosis += `, generando restricción en `;
-        const restrictionTexts = restrictions.map(r => restrictionDescriptions[r] || r);
-        
-        if (restrictionTexts.length === 1) {
-            diagnosis += restrictionTexts[0];
-        } else if (restrictionTexts.length === 2) {
-            diagnosis += `${restrictionTexts[0]} y ${restrictionTexts[1]}`;
-        } else {
-            const lastRestriction = restrictionTexts.pop();
-            diagnosis += `${restrictionTexts.join(', ')} y ${lastRestriction}`;
-        }
-    }
-    
-    diagnosis += '.';
-    
-    // Añadir recomendación basada en CIF
-    diagnosis += ` Según la Clasificación Internacional del Funcionamiento (CIF), presenta alteraciones en funciones corporales (b) y estructuras (s) que afectan su capacidad en actividades y participación (d).`;
-    
-    // Establecer el diagnóstico en el campo de texto
-    const diagnosisTextElement = document.getElementById('diagnosisText');
-    if (diagnosisTextElement) {
-        diagnosisTextElement.value = diagnosis;
-    }
-    
-    // Ocultar el asistente
-    document.getElementById('diagnosisAssistantContainer').style.display = 'none';
-    
-    // Mostrar mensaje
-    showToast("Diagnóstico generado correctamente", "success");
-}
-
-// Configurar categorías CIF (versión actualizada)
-async function setupCifCategories(patientId) {
-    try {
-        // Implementar selección básica de códigos CIF para cada categoría
-        await setupCifCategory('addCifFunctionBtn', 'cifFunctions', 'Función', getCifFunctions(patientId));
-        await setupCifCategory('addCifStructureBtn', 'cifStructures', 'Estructura', getCifStructures(patientId));
-        await setupCifCategory('addCifActivityBtn', 'cifActivities', 'Actividad', getCifActivities(patientId));
-        await setupCifCategory('addCifFactorBtn', 'cifFactors', 'Factor', getCifFactors(patientId));
-        
-        // Cargar factores personales
-        await loadPersonalFactors(patientId);
-    } catch (error) {
-        console.error("Error configurando categorías CIF:", error);
-        showToast("Error al cargar datos CIF", "error");
-    }
-}
-
-// Configurar una categoría CIF específica (versión actualizada)
-async function setupCifCategory(buttonId, containerId, categoryType, itemsPromise) {
-    const addBtn = document.getElementById(buttonId);
-    const container = document.getElementById(containerId);
-    
-    if (addBtn && container) {
-        try {
-            // Esperar a que lleguen los items
-            const items = await itemsPromise;
-            
-            // Mostrar elementos existentes
-            renderCifItems(container, items);
-            
-            // Eliminar manejadores existentes
-            const newAddBtn = addBtn.cloneNode(true);
-            addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-            
-            // Implementar funcionalidad del botón para añadir nuevos elementos
-            newAddBtn.addEventListener('click', function() {
-                showCifSelectorModal(categoryType, containerId, currentPatientId);
-            });
-        } catch (error) {
-            console.error(`Error configurando categoría CIF ${categoryType}:`, error);
-            container.innerHTML = `<p style="color: var(--accent2);">Error al cargar elementos: ${error.message}</p>`;
-        }
-    }
-}
-
-// Renderizar elementos CIF
-// Renderizar elementos CIF (versión actualizada)
-function renderCifItems(container, items) {
-    container.innerHTML = '';
-    
-    if (!items || items.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No hay elementos registrados.</p>';
-        return;
-    }
-    
-    items.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.className = 'cif-item';
-        itemElement.dataset.id = item.id;
-        
-        itemElement.innerHTML = `
-            <div class="cif-code">
-                ${item.code}: ${item.name}
-                <button class="scale-value active">${item.value}</button>
-            </div>
-            <div class="cif-desc">${item.description}</div>
-            <div class="cif-scale">
-                Escala:
-                <div class="scale-values">
-                    <button class="scale-value ${item.value === 0 ? 'active' : ''}">0</button>
-                    <button class="scale-value ${item.value === 1 ? 'active' : ''}">1</button>
-                    <button class="scale-value ${item.value === 2 ? 'active' : ''}">2</button>
-                    <button class="scale-value ${item.value === 3 ? 'active' : ''}">3</button>
-                    <button class="scale-value ${item.value === 4 ? 'active' : ''}">4</button>
-                </div>
-            </div>
-        `;
-        
-        // Añadir interactividad a los botones de escala
-        itemElement.querySelectorAll('.scale-value').forEach(button => {
-            button.addEventListener('click', function() {
-                const scaleValues = this.closest('.scale-values');
-                if (scaleValues) {
-                    // Desactivar otros botones del mismo grupo
-                    scaleValues.querySelectorAll('.scale-value').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
-                    this.classList.add('active');
-                    
-                    // Actualizar valor en el título
-                    const cifCode = this.closest('.cif-item').querySelector('.cif-code');
-                    const valueBtn = cifCode.querySelector('.scale-value');
-                    valueBtn.textContent = this.textContent;
-                    
-                    // Obtener el ID del elemento y la categoría
-                    const itemId = itemElement.dataset.id;
-                    const categoryContainer = container.closest('.cif-category');
-                    let categoryType = "";
-                    
-                    if (categoryContainer) {
-                        const titleElement = categoryContainer.querySelector('.cif-title');
-                        if (titleElement) {
-                            const titleText = titleElement.textContent.trim();
-                            if (titleText.includes('Funciones')) categoryType = "functions";
-                            else if (titleText.includes('Estructuras')) categoryType = "structures";
-                            else if (titleText.includes('Actividades')) categoryType = "activities";
-                            else if (titleText.includes('Factores')) categoryType = "factors";
-                        }
-                    }
-                    
-                    // Actualizar en Firebase si tenemos el ID y categoría
-                    if (itemId && categoryType && currentPatientId) {
-                        const newValue = parseInt(this.textContent);
-                        updateCifItemValue(currentPatientId, categoryType, itemId, newValue);
-                    }
-                }
-            });
-        });
-        
-        container.appendChild(itemElement);
-    });
-}
-
-        // Obtener funciones CIF del paciente
-// Obtener elementos CIF del paciente desde Firebase
-async function getCifItems(patientId, category) {
-    try {
-        // Colección de elementos CIF dentro del paciente
-        const cifRef = collection(db, "patients", patientId, "cif_" + category);
-        const cifSnapshot = await getDocs(cifRef);
-        
-        const cifItems = cifSnapshot.docs.map(doc => {
-            return { id: doc.id, ...doc.data() };
-        });
-        
-        return cifItems;
-    } catch (error) {
-        console.error(`Error obteniendo elementos CIF ${category}:`, error);
-        return [];
-    }
-}
-
-// Funciones específicas para cada categoría
-async function getCifFunctions(patientId) {
-    return await getCifItems(patientId, "functions");
-}
-
-async function getCifStructures(patientId) {
-    return await getCifItems(patientId, "structures");
-}
-
-async function getCifActivities(patientId) {
-    return await getCifItems(patientId, "activities");
-}
-
-async function getCifFactors(patientId) {
-    return await getCifItems(patientId, "factors");
-}
-
-// Guardar elemento CIF en Firebase
-async function saveCifItem(patientId, category, cifData) {
-    try {
-        showLoading();
-        
-        // Colección de elementos CIF dentro del paciente
-        const cifRef = collection(db, "patients", patientId, "cif_" + category);
-        
-        // Añadir timestamp
-        cifData.createdAt = new Date().toISOString();
-        
-        // Guardar en Firebase
-        const docRef = await addDoc(cifRef, cifData);
-        
-        hideLoading();
-        showToast(`Elemento CIF añadido correctamente`, "success");
-        
-        return { id: docRef.id, ...cifData };
-    } catch (error) {
-        hideLoading();
-        console.error(`Error guardando elemento CIF:`, error);
-        showToast(`Error al guardar elemento CIF: ${error.message}`, "error");
-        return null;
-    }
-}
-
-// Actualizar valor de escala de un elemento CIF en Firebase
-async function updateCifItemValue(patientId, category, itemId, newValue) {
-    try {
-        // Referencia al documento en Firebase
-        const itemRef = doc(db, "patients", patientId, "cif_" + category, itemId);
-        
-        // Actualizar solo el campo value
-        await updateDoc(itemRef, {
-            value: newValue,
-            updatedAt: new Date().toISOString()
-        });
-        
-        // No mostramos toast para no interrumpir la experiencia del usuario
-        console.log(`Valor de elemento CIF actualizado a ${newValue}`);
-    } catch (error) {
-        console.error("Error actualizando valor de elemento CIF:", error);
-        showToast("Error al actualizar valor", "error");
-    }
-}
-
-// Guardar factores personales en Firebase
-async function savePersonalFactors(patientId, text) {
-    try {
-        // Referencia al documento del paciente
-        const patientRef = doc(db, "patients", patientId);
-        
-        // Actualizar campo de factores personales
-        await updateDoc(patientRef, {
-            personalFactors: text,
-            updatedAt: new Date().toISOString()
-        });
-        
-        console.log("Factores personales guardados correctamente");
-    } catch (error) {
-        console.error("Error guardando factores personales:", error);
-        showToast("Error al guardar factores personales", "error");
-    }
-}
-
-// Cargar factores personales desde Firebase
-async function loadPersonalFactors(patientId) {
-    try {
-        // Obtener documento del paciente
-        const patientDoc = await getDoc(doc(db, "patients", patientId));
-        
-        if (patientDoc.exists()) {
-            const personalFactors = patientDoc.data().personalFactors || "";
-            
-            // Actualizar campo de texto
-            const cifPersonalFactors = document.getElementById('cifPersonalFactors');
-            if (cifPersonalFactors) {
-                cifPersonalFactors.value = personalFactors;
-                
-                // Eliminar manejadores previos
-                const newCifPersonalFactors = cifPersonalFactors.cloneNode(true);
-                cifPersonalFactors.parentNode.replaceChild(newCifPersonalFactors, cifPersonalFactors);
-                
-                // Añadir evento para guardar al perder el foco
-                newCifPersonalFactors.addEventListener('blur', function() {
-                    savePersonalFactors(patientId, this.value);
-                });
-            }
-        }
-    } catch (error) {
-        console.error("Error cargando factores personales:", error);
-    }
-}
-
-// Mostrar selector de CIF
-// Mostrar selector de CIF (versión actualizada con buscador)
-function showCifSelectorModal(categoryType, targetContainerId, patientId) {
-    // Reconfigurar el modal existente
-    const cifModal = document.getElementById('cifSelectorModal');
-    
-    if (!cifModal) {
-        console.error("Modal de selector CIF no encontrado");
-        return;
-    }
-    
-    // Actualizar título
-    const modalTitle = cifModal.querySelector('.modal-title');
-    if (modalTitle) {
-        modalTitle.textContent = `Seleccionar código CIF - ${categoryType}`;
-    }
-    
-    // Mostrar modal
-    cifModal.style.display = 'block';
-    setTimeout(() => cifModal.classList.add('active'), 50);
-    
-    // Cargar códigos según la categoría
-    let allCifCodes = [];
-    switch(categoryType) {
-        case 'Función':
-            allCifCodes = [
-                    // Funciones mentales
-                    { code: 'b126', name: 'Funciones del temperamento y la personalidad', desc: 'Tendencia del individuo a reaccionar de una manera determinada ante situaciones, incluyendo el conjunto de características mentales que hace que una persona sea diferente de otra.' },
-                    { code: 'b130', name: 'Funciones de la energía y los impulsos', desc: 'Funciones mentales generales de los mecanismos fisiológicos y psicológicos que empujan al individuo a moverse de manera persistente para satisfacer necesidades específicas.' },
-                    { code: 'b134', name: 'Funciones del sueño', desc: 'Funciones mentales generales de desconexión física y mental periódica, reversible y selectiva del entorno inmediato, acompañada de cambios fisiológicos.' },
-                    { code: 'b140', name: 'Funciones de la atención', desc: 'Funciones mentales específicas que permiten centrarse en un estímulo externo o experiencia interna durante el periodo de tiempo necesario.' },
-                    { code: 'b152', name: 'Funciones emocionales', desc: 'Funciones mentales específicas relacionadas con los sentimientos y los componentes afectivos de los procesos mentales.' },
-                    { code: 'b180', name: 'Funciones de la experiencia del propio cuerpo e imagen corporal', desc: 'Conciencia relacionada con el propio cuerpo, incluyendo la experiencia psicológica relacionada con el propio cuerpo.' },
-                    
-                    // Funciones sensoriales y dolor
-                    { code: 'b210', name: 'Funciones visuales', desc: 'Funciones relacionadas con la percepción de la presencia de luz y la forma, tamaño y color de un estímulo visual.' },
-                    { code: 'b230', name: 'Funciones auditivas', desc: 'Funciones sensoriales relacionadas con la percepción de los sonidos y la discriminación de su localización, tono, volumen y calidad.' },
-                    { code: 'b235', name: 'Función vestibular', desc: 'Funciones sensoriales del oído interno relacionadas con la posición, el equilibrio y el movimiento.' },
-                    { code: 'b240', name: 'Sensaciones asociadas con el oído y la función vestibular', desc: 'Sensaciones de mareo, caída, tinnitus y vértigo.' },
-                    { code: 'b260', name: 'Función propioceptiva', desc: 'Funciones sensoriales relacionadas con sentir la posición relativa de las partes del cuerpo.' },
-                    { code: 'b265', name: 'Función táctil', desc: 'Funciones sensoriales relacionadas con sentir las superficies de los objetos y su textura o calidad.' },
-                    { code: 'b270', name: 'Funciones sensoriales relacionadas con la temperatura y otros estímulos', desc: 'Funciones sensoriales relacionadas con sentir la temperatura, la vibración, la presión y los estímulos nocivos.' },
-                    { code: 'b280', name: 'Sensación de dolor', desc: 'Sensación desagradable que indica daño potencial o real a alguna estructura corporal.' },
-                    { code: 'b2801', name: 'Dolor localizado', desc: 'Sensación de dolor experimentada en una o más partes del cuerpo.' },
-                    { code: 'b28010', name: 'Dolor en cabeza y cuello', desc: 'Sensación de dolor localizado en cabeza y cuello.' },
-                    { code: 'b28011', name: 'Dolor en el pecho', desc: 'Sensación de dolor localizado en el pecho.' },
-                    { code: 'b28012', name: 'Dolor en el estómago o abdomen', desc: 'Sensación de dolor localizado en el estómago o abdomen.' },
-                    { code: 'b28013', name: 'Dolor en la espalda', desc: 'Sensación de dolor localizado en la espalda.' },
-                    { code: 'b28014', name: 'Dolor en extremidad superior', desc: 'Sensación de dolor localizado en una o ambas extremidades superiores.' },
-                    { code: 'b28015', name: 'Dolor en extremidad inferior', desc: 'Sensación de dolor localizado en una o ambas extremidades inferiores.' },
-                    { code: 'b28016', name: 'Dolor en las articulaciones', desc: 'Sensación de dolor localizado en una o más articulaciones.' },
-                    { code: 'b2802', name: 'Dolor en múltiples partes del cuerpo', desc: 'Sensación de dolor localizado en varias partes del cuerpo.' },
-                    { code: 'b2803', name: 'Dolor irradiado en un dermatoma', desc: 'Sensación de dolor localizado en áreas de la piel inervadas por la misma raíz nerviosa.' },
-                    { code: 'b2804', name: 'Dolor irradiado en un segmento o región', desc: 'Sensación de dolor localizado en áreas de la piel inervadas por diferentes raíces nerviosas.' },
-                    
-                    // Funciones cardiovasculares y respiratorias (comorbilidades)
-                    { code: 'b410', name: 'Funciones del corazón', desc: 'Funciones relacionadas con el bombeo de sangre en una cantidad y presión adecuadas para el cuerpo.' },
-                    { code: 'b420', name: 'Funciones de la presión arterial', desc: 'Funciones relacionadas con el mantenimiento de la presión arterial dentro del cuerpo.' },
-                    { code: 'b430', name: 'Funciones del sistema hematológico', desc: 'Funciones relacionadas con la producción de sangre, transporte de oxígeno y metabolitos, y coagulación.' },
-                    { code: 'b440', name: 'Funciones respiratorias', desc: 'Funciones relacionadas con la inhalación de aire a los pulmones, el intercambio de gases y la exhalación.' },
-                    { code: 'b455', name: 'Funciones relacionadas con la tolerancia al ejercicio', desc: 'Funciones relacionadas con la capacidad respiratoria y cardiovascular necesaria para resistir el esfuerzo físico.' },
-                    { code: 'b4550', name: 'Resistencia física general', desc: 'Funciones relacionadas con el nivel general de tolerancia al ejercicio físico o vigor.' },
-                    { code: 'b4551', name: 'Capacidad aeróbica', desc: 'Funciones relacionadas con el grado en que una persona puede ejercitarse sin jadear.' },
-                    { code: 'b4552', name: 'Fatigabilidad', desc: 'Sensación de cansancio a cualquier nivel de esfuerzo.' },
-                    
-                    // Funciones neuromusculoesqueléticas - MUY RELEVANTES PARA KINESIOLOGÍA
-                    { code: 'b710', name: 'Funciones relacionadas con la movilidad de las articulaciones', desc: 'Funciones relacionadas con la amplitud y la facilidad de movimiento de una articulación.' },
-                    { code: 'b7100', name: 'Movilidad de una sola articulación', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de una articulación.' },
-                    { code: 'b7101', name: 'Movilidad de varias articulaciones', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de más de una articulación.' },
-                    { code: 'b7102', name: 'Movilidad generalizada de las articulaciones', desc: 'Funciones relacionadas con el rango y facilidad de movimiento de las articulaciones en todo el cuerpo.' },
-                    { code: 'b715', name: 'Funciones relacionadas con la estabilidad de las articulaciones', desc: 'Funciones relacionadas con el mantenimiento de la integridad estructural de las articulaciones.' },
-                    { code: 'b720', name: 'Funciones relacionadas con la movilidad de los huesos', desc: 'Funciones relacionadas con la amplitud y facilidad de movimiento de la escápula, pelvis, huesos del carpo y tarso.' },
-                    { code: 'b730', name: 'Funciones relacionadas con la fuerza muscular', desc: 'Funciones relacionadas con la fuerza generada por la contracción de un músculo o grupos de músculos.' },
-                    { code: 'b7300', name: 'Fuerza de músculos aislados o grupos de músculos', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculos específicos aislados o grupos de músculos.' },
-                    { code: 'b7301', name: 'Fuerza de los músculos de una extremidad', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares de un brazo o pierna.' },
-                    { code: 'b7302', name: 'Fuerza de los músculos de un lado del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculos y grupos musculares del lado derecho o izquierdo del cuerpo.' },
-                    { code: 'b7303', name: 'Fuerza de los músculos de la mitad inferior del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares de la mitad inferior del cuerpo.' },
-                    { code: 'b7304', name: 'Fuerza de los músculos de todas las extremidades', desc: 'Funciones relacionadas con la fuerza generada por contracciones de músculo y grupos musculares de las cuatro extremidades.' },
-                    { code: 'b7305', name: 'Fuerza de los músculos del tronco', desc: 'Funciones relacionadas con la fuerza generada por contracciones de los músculos y grupos musculares del tronco.' },
-                    { code: 'b7306', name: 'Fuerza de todos los músculos del cuerpo', desc: 'Funciones relacionadas con la fuerza generada por contracciones de todos los músculos y grupos musculares del cuerpo.' },
-                    { code: 'b735', name: 'Funciones relacionadas con el tono muscular', desc: 'Funciones relacionadas con la tensión presente en los músculos cuando están en reposo y la resistencia que ofrecen al intentar moverlos pasivamente.' },
-                    { code: 'b740', name: 'Funciones relacionadas con la resistencia muscular', desc: 'Funciones relacionadas con el sostenimiento de la contracción muscular durante un periodo de tiempo determinado.' },
-                    { code: 'b750', name: 'Funciones relacionadas con los reflejos motores', desc: 'Funciones relacionadas con la contracción involuntaria de los músculos, inducida automáticamente por estímulos específicos.' },
-                    { code: 'b755', name: 'Funciones relacionadas con los reflejos de movimiento involuntario', desc: 'Funciones relacionadas con las contracciones involuntarias de grandes músculos o de todo el cuerpo inducidas por la posición del cuerpo, el equilibrio y los estímulos amenazantes.' },
-                    { code: 'b760', name: 'Funciones relacionadas con el control de los movimientos voluntarios', desc: 'Funciones asociadas con el control sobre los movimientos voluntarios y la coordinación de los mismos.' },
-                    { code: 'b7600', name: 'Control de movimientos voluntarios simples', desc: 'Funciones asociadas con el control y la coordinación de movimientos voluntarios simples o aislados.' },
-                    { code: 'b7601', name: 'Control de movimientos voluntarios complejos', desc: 'Funciones asociadas con el control y la coordinación de movimientos voluntarios complejos.' },
-                    { code: 'b7602', name: 'Coordinación de movimientos voluntarios', desc: 'Funciones asociadas con la coordinación de movimientos voluntarios simples y complejos, realizando movimientos de forma ordenada.' },
-                    { code: 'b7603', name: 'Funciones de apoyo del brazo o la pierna', desc: 'Funciones asociadas con el control y coordinación de movimientos voluntarios al colocar peso en los brazos o piernas.' },
-                    { code: 'b765', name: 'Funciones relacionadas con los movimientos involuntarios', desc: 'Funciones relacionadas con las contracciones no intencionadas, involuntarias sin propósito final o con algo de propósito final.' },
-                    { code: 'b770', name: 'Funciones relacionadas con el patrón de la marcha', desc: 'Funciones relacionadas con los patrones de movimiento al caminar, correr u otros movimientos de todo el cuerpo.' },
-                    { code: 'b780', name: 'Sensaciones relacionadas con los músculos y las funciones del movimiento', desc: 'Sensaciones asociadas con los músculos o grupos de músculos del cuerpo y su movimiento.' },
-                    { code: 'b7800', name: 'Sensación de rigidez muscular', desc: 'Sensación de tensión o rigidez muscular.' },
-                    { code: 'b7801', name: 'Sensación de espasmo muscular', desc: 'Sensación de contracción involuntaria de un músculo o grupo de músculos.' },
-                    
-                    // Funciones relacionadas con el metabolismo (para poblaciones con comorbilidades)
-                    { code: 'b530', name: 'Funciones relacionadas con el mantenimiento del peso', desc: 'Funciones relacionadas con el mantenimiento del peso corporal apropiado, incluyendo ganancia de peso durante el desarrollo.' },
-                    { code: 'b540', name: 'Funciones metabólicas generales', desc: 'Funciones relacionadas con la regulación de los componentes esenciales del cuerpo como carbohidratos, proteínas y grasas, la conversión de los mismos en energía, y el metabolismo en general.' },
-                    { code: 'b545', name: 'Funciones relacionadas con el balance hídrico, mineral y electrolítico', desc: 'Funciones relacionadas con la regulación del agua, minerales y electrolitos en el cuerpo.' }
-                ];
-                break;
-       
-        case 'Estructura':
-            allCifCodes = [
-                    // Estructuras del sistema nervioso
-                    { code: 's110', name: 'Estructura del cerebro', desc: 'Estructura del sistema nervioso central.' },
-                    { code: 's120', name: 'Médula espinal y estructuras relacionadas', desc: 'Estructura del sistema nervioso central.' },
-                    { code: 's130', name: 'Estructura de las meninges', desc: 'Membranas que recubren el sistema nervioso central.' },
-                    { code: 's140', name: 'Estructura del sistema nervioso simpático', desc: 'Sistema nervioso que controla en gran medida funciones involuntarias.' },
-                    { code: 's150', name: 'Estructura del sistema nervioso parasimpático', desc: 'Sistema nervioso que estimula actividades corporales cuando el cuerpo está en reposo.' },
-                    
-                    // Estructuras relacionadas con el movimiento (muy relevantes para kinesiología)
-                    { code: 's710', name: 'Estructura de la región de la cabeza y del cuello', desc: 'Estructura de la cabeza y cuello, incluida la región craneal, facial y cervical.' },
-                    { code: 's7100', name: 'Huesos del cráneo', desc: 'Estructuras óseas de la cavidad craneal.' },
-                    { code: 's7101', name: 'Huesos de la cara', desc: 'Estructuras óseas de la cara.' },
-                    { code: 's7102', name: 'Huesos de la región del cuello', desc: 'Estructuras óseas de la región del cuello.' },
-                    { code: 's7103', name: 'Articulaciones de la cabeza y de la región del cuello', desc: 'Estructura de las articulaciones de la región cefálica y cervical.' },
-                    { code: 's7104', name: 'Músculos de la cabeza y de la región del cuello', desc: 'Músculos de la región cefálica y cervical.' },
-                    { code: 's7105', name: 'Ligamentos y fascias de la cabeza y de la región del cuello', desc: 'Ligamentos y fascias de la región cefálica y cervical.' },
-                    
-                    { code: 's720', name: 'Estructura de la región del hombro', desc: 'Estructuras del complejo del hombro.' },
-                    { code: 's7200', name: 'Huesos de la región del hombro', desc: 'Estructuras óseas de la región del hombro.' },
-                    { code: 's7201', name: 'Articulaciones de la región del hombro', desc: 'Estructuras articulares de la región del hombro.' },
-                    { code: 's7202', name: 'Músculos de la región del hombro', desc: 'Músculos de la región del hombro.' },
-                    { code: 's7203', name: 'Ligamentos y fascias de la región del hombro', desc: 'Ligamentos y fascias de la región del hombro.' },
-                    
-                    { code: 's730', name: 'Estructura de la extremidad superior', desc: 'Estructuras del miembro superior.' },
-                    { code: 's7300', name: 'Estructura del brazo', desc: 'Estructuras del brazo (húmero y radio-cúbito).' },
-                    { code: 's7301', name: 'Estructura de la región del codo', desc: 'Estructura de la articulación del codo y las estructuras relacionadas.' },
-                    { code: 's7302', name: 'Estructura de la región de la muñeca', desc: 'Estructura de la articulación de la muñeca y las estructuras relacionadas.' },
-                    { code: 's7308', name: 'Estructura de la extremidad superior, otra especificada', desc: 'Otras estructuras del miembro superior no especificadas.' },
-                    
-                    { code: 's740', name: 'Estructura de la región pélvica', desc: 'Estructura de la pelvis.' },
-                    { code: 's7400', name: 'Huesos de la región pélvica', desc: 'Estructuras óseas de la región pélvica.' },
-                    { code: 's7401', name: 'Articulaciones de la región pélvica', desc: 'Articulaciones de la región pélvica.' },
-                    { code: 's7402', name: 'Músculos de la región pélvica', desc: 'Músculos de la región pélvica.' },
-                    { code: 's7403', name: 'Ligamentos y fascias de la región pélvica', desc: 'Ligamentos y fascias de la región pélvica.' },
-                    
-                    { code: 's750', name: 'Estructura de la extremidad inferior', desc: 'Estructura del miembro inferior.' },
-                    { code: 's7500', name: 'Estructura del muslo', desc: 'Estructuras del fémur y estructuras relacionadas.' },
-                    { code: 's7501', name: 'Estructura de la rodilla', desc: 'Estructuras de la articulación de la rodilla y estructuras relacionadas.' },
-                    { code: 's7502', name: 'Estructura de la región del tobillo y pie', desc: 'Estructuras del tobillo, pie y dedos del pie.' },
-                    { code: 's75020', name: 'Huesos del tobillo y del pie', desc: 'Huesos del tobillo y del pie.' },
-                    { code: 's75021', name: 'Articulaciones del tobillo y dedos del pie', desc: 'Articulaciones del tobillo y dedos del pie.' },
-                    { code: 's75022', name: 'Músculos del tobillo y pie', desc: 'Músculos del tobillo y pie.' },
-                    { code: 's75023', name: 'Ligamentos y fascias del tobillo y pie', desc: 'Ligamentos y fascias del tobillo y pie.' },
-                    
-                    { code: 's760', name: 'Estructura del tronco', desc: 'Estructura del tronco.' },
-                    { code: 's7600', name: 'Estructura de la columna vertebral', desc: 'Estructura de la columna vertebral.' },
-                    { code: 's76000', name: 'Columna vertebral cervical', desc: 'Estructura de las vértebras cervicales.' },
-                    { code: 's76001', name: 'Columna vertebral torácica', desc: 'Estructura de las vértebras torácicas.' },
-                    { code: 's76002', name: 'Columna vertebral lumbar', desc: 'Estructura de las vértebras lumbares.' },
-                    { code: 's76003', name: 'Columna vertebral sacra', desc: 'Estructura del sacro.' },
-                    { code: 's76004', name: 'Cóccix', desc: 'Estructura del cóccix.' },
-                    { code: 's7601', name: 'Musculatura del tronco', desc: 'Músculos del tronco.' },
-                    { code: 's7602', name: 'Ligamentos y fascias del tronco', desc: 'Ligamentos y fascias del tronco.' },
-                    
-                    { code: 's770', name: 'Estructuras musculoesqueléticas adicionales relacionadas con el movimiento', desc: 'Estructuras relacionadas con el movimiento adicionales a las ya especificadas.' },
-                    
-                    // Estructuras relacionadas con sistemas corporales (para comorbilidades)
-                    { code: 's410', name: 'Estructura del sistema cardiovascular', desc: 'Estructura del corazón y los vasos sanguíneos.' },
-                    { code: 's430', name: 'Estructura del sistema respiratorio', desc: 'Estructura de los pulmones y el árbol respiratorio.' },
-                    { code: 's530', name: 'Estructura del sistema digestivo', desc: 'Estructura del sistema digestivo desde la boca hasta el recto.' },
-                    { code: 's550', name: 'Estructura del páncreas', desc: 'Estructura del páncreas.' },
-                    { code: 's560', name: 'Estructura del sistema metabólico', desc: 'Estructura de las glándulas endocrinas.' },
-                    { code: 's580', name: 'Estructura de las glándulas endocrinas', desc: 'Estructura de las glándulas con función hormonal.' }
-                ];
-                break;
-                
-            case 'Actividad':
-            allCifCodes = [
-                    // Aprendizaje y aplicación del conocimiento
-                    { code: 'd155', name: 'Adquisición de habilidades', desc: 'Desarrollar capacidades simples y complejas para integrar acciones o tareas coordinadas.' },
-                    { code: 'd175', name: 'Resolver problemas', desc: 'Encontrar soluciones a problemas identificando y analizando los aspectos de una situación.' },
-                    { code: 'd177', name: 'Tomar decisiones', desc: 'Elegir una opción entre varias, llevar a cabo la elección y evaluar los efectos.' },
-                    
-                    // Tareas y demandas generales
-                    { code: 'd230', name: 'Llevar a cabo rutinas diarias', desc: 'Realizar acciones coordinadas para planificar, dirigir y completar los requerimientos de las obligaciones y tareas cotidianas.' },
-                    { code: 'd240', name: 'Manejo del estrés y otras demandas psicológicas', desc: 'Llevar a cabo acciones coordinadas para manejar el estrés provocado por tareas con demandas importantes o relacionadas con responsabilidades.' },
-                    
-                    // Movilidad - MUY RELEVANTES PARA KINESIOLOGÍA
-                    { code: 'd410', name: 'Cambiar las posturas corporales básicas', desc: 'Adoptar o abandonar una postura, pasar de un lugar a otro, como levantarse de una silla para tumbarse en una cama.' },
-                    { code: 'd4100', name: 'Tumbarse', desc: 'Adoptar una posición tumbada o cambiar la posición del cuerpo de cualquier otra posición a tumbado.' },
-                    { code: 'd4101', name: 'Ponerse en cuclillas', desc: 'Adoptar una posición del cuerpo sentado o agachado sobre los talones.' },
-                    { code: 'd4102', name: 'Ponerse de rodillas', desc: 'Adoptar una posición donde el cuerpo está soportado por las rodillas con las piernas dobladas.' },
-                    { code: 'd4103', name: 'Sentarse', desc: 'Adoptar la posición de sentado y cambiar de postura.' },
-                    { code: 'd4104', name: 'Ponerse de pie', desc: 'Adoptar la posición de estar de pie o cambiar de postura de estar sentado o tumbado a estar de pie.' },
-                    { code: 'd4105', name: 'Inclinarse', desc: 'Inclinar el torso hacia abajo o hacia los lados.' },
-                    
-                    { code: 'd415', name: 'Mantener la posición del cuerpo', desc: 'Mantener el cuerpo en la misma posición durante el tiempo necesario, como permanecer sentado o de pie en el trabajo o en el colegio.' },
-                    { code: 'd4150', name: 'Permanecer tumbado', desc: 'Permanecer tumbado durante el tiempo necesario.' },
-                    { code: 'd4151', name: 'Permanecer en cuclillas', desc: 'Permanecer en cuclillas durante el tiempo necesario.' },
-                    { code: 'd4152', name: 'Permanecer de rodillas', desc: 'Permanecer de rodillas, soportado por las piernas dobladas durante el tiempo necesario.' },
-                    { code: 'd4153', name: 'Permanecer sentado', desc: 'Permanecer sentado, en un asiento o en el suelo, durante el tiempo necesario.' },
-                    { code: 'd4154', name: 'Permanecer de pie', desc: 'Permanecer de pie durante el tiempo necesario.' },
-                    
-                    { code: 'd420', name: 'Transferir el propio cuerpo', desc: 'Moverse de una superficie a otra sin cambiar la posición del cuerpo.' },
-                    { code: 'd4200', name: 'Transferir el propio cuerpo estando sentado', desc: 'Moverse estando sentado, de un asiento a otro, en el mismo nivel o en un nivel diferente.' },
-                    { code: 'd4201', name: 'Transferir el propio cuerpo estando acostado', desc: 'Moverse estando acostado de un lugar a otro en el mismo nivel o a un nivel diferente.' },
-                    
-                    { code: 'd430', name: 'Levantar y llevar objetos', desc: 'Levantar un objeto o llevar algo de un sitio a otro.' },
-                    { code: 'd4300', name: 'Levantar objetos', desc: 'Levantar un objeto para moverlo de un nivel bajo a uno más alto.' },
-                    { code: 'd4301', name: 'Llevar objetos en las manos', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando las manos.' },
-                    { code: 'd4302', name: 'Llevar objetos en brazos', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando los brazos y manos.' },
-                    { code: 'd4303', name: 'Llevar objetos en hombros, cadera y espalda', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando los hombros, cadera o espalda, o alguna combinación de ellas.' },
-                    { code: 'd4304', name: 'Llevar objetos en la cabeza', desc: 'Llevar o transportar un objeto de un lugar a otro utilizando la cabeza.' },
-                    { code: 'd4305', name: 'Posar objetos', desc: 'Usar las manos, brazos u otra parte del cuerpo para posar un objeto en una superficie o lugar.' },
-                    
-                    { code: 'd435', name: 'Mover objetos con las extremidades inferiores', desc: 'Realizar acciones coordinadas para mover objetos utilizando las piernas y los pies.' },
-                    { code: 'd4350', name: 'Empujar con las extremidades inferiores', desc: 'Usar las piernas y pies para ejercer una fuerza sobre un objeto para moverlo de un lugar a otro.' },
-                    { code: 'd4351', name: 'Dar patadas', desc: 'Usar las piernas y pies para propulsar algo lejos.' },
-                    
-                    { code: 'd440', name: 'Uso fino de la mano', desc: 'Realizar acciones coordinadas de manejo de objetos, recogerlos, manipularlos y soltarlos utilizando la mano y los dedos incluyendo el dedo pulgar.' },
-                    { code: 'd4400', name: 'Recoger objetos', desc: 'Levantar o recoger objetos pequeños con las manos y los dedos.' },
-                    { code: 'd4401', name: 'Agarrar', desc: 'Sujetar o sostener algo utilizando las manos.' },
-                    { code: 'd4402', name: 'Manipular', desc: 'Utilizar los dedos y las manos para controlar, dirigir o guiar objetos.' },
-                    { code: 'd4403', name: 'Soltar', desc: 'Utilizar los dedos y las manos para soltar o liberar un objeto de manera que caiga o cambie de posición.' },
-                    
-                    { code: 'd445', name: 'Uso de la mano y el brazo', desc: 'Realizar las acciones coordinadas que se requieren para manipular y mover objetos utilizando las manos y los brazos.' },
-                    { code: 'd4450', name: 'Tirar', desc: 'Utilizar los dedos, manos y brazos para levantar un objeto y lanzarlo con alguna fuerza por el aire.' },
-                    { code: 'd4451', name: 'Empujar', desc: 'Utilizar los dedos, manos y brazos para mover algo desde uno mismo, o para moverlo de un lugar a otro.' },
-                    { code: 'd4452', name: 'Alcanzar', desc: 'Utilizar las manos y los brazos para estirarse, tocar y agarrar algo, como cuando se alcanza un libro por encima de la mesa.' },
-                    { code: 'd4453', name: 'Girar o torcer las manos o los brazos', desc: 'Utilizar los dedos, las manos y los brazos para girar, torcer o doblar un objeto.' },
-                    { code: 'd4454', name: 'Lanzar', desc: 'Utilizar los dedos, las manos y los brazos para levantar un objeto y moverlo con alguna fuerza por el aire.' },
-                    { code: 'd4455', name: 'Atrapar', desc: 'Utilizar los dedos, manos y brazos para agarrar un objeto en movimiento con el fin de pararlo y sujetarlo.' },
-                    
-                    { code: 'd450', name: 'Caminar', desc: 'Avanzar sobre una superficie a pie, paso a paso, de manera que una pierna siempre esté en el suelo.' },
-                    { code: 'd4500', name: 'Andar distancias cortas', desc: 'Andar menos de un kilómetro, como caminar alrededor de habitaciones, pasillos, dentro de un edificio o distancias cortas exteriores.' },
-                    { code: 'd4501', name: 'Andar distancias largas', desc: 'Andar más de un kilómetro, como caminar por un pueblo o ciudad, entre pueblos o a través de campo abierto.' },
-                    { code: 'd4502', name: 'Andar sobre diferentes superficies', desc: 'Caminar por superficies inclinadas, irregulares o que se mueven, como hierba, grava, hielo y nieve, o cruzar una calle.' },
-                    { code: 'd4503', name: 'Andar sorteando obstáculos', desc: 'Caminar de manera apropiada para evitar objetos tanto móviles como estáticos, personas, animales y vehículos.' },
-                    
-                    { code: 'd455', name: 'Desplazarse por el entorno', desc: 'Mover todo el cuerpo de un sitio a otro, sin caminar, como escalar, correr, saltar, nadar, etc.' },
-                    { code: 'd4550', name: 'Gatear', desc: 'Mover todo el cuerpo boca abajo de un sitio a otro utilizando las manos, las manos y los brazos, y las rodillas.' },
-                    { code: 'd4551', name: 'Subir/bajar', desc: 'Mover todo el cuerpo hacia arriba o hacia abajo sobre superficies u objetos como escalones, rocas, escaleras, escaleras de mano o bordes.' },
-                    { code: 'd4552', name: 'Correr', desc: 'Moverse con pasos rápidos de modo que ambos pies pueden estar simultáneamente sin contacto con el suelo.' },
-                    { code: 'd4553', name: 'Saltar', desc: 'Levantarse del suelo doblando y estirando las piernas, como saltar con uno o los dos pies, brincar, saltar y tirarse o bucear en el agua.' },
-                    { code: 'd4554', name: 'Nadar', desc: 'Propulsar el cuerpo propio a través del agua mediante el movimiento coordinado de las extremidades y todo el cuerpo sin apoyarse en el fondo.' },
-                    
-                    { code: 'd460', name: 'Desplazarse por distintos lugares', desc: 'Andar y moverse por varios lugares y situaciones, como andar entre habitaciones en una casa, dentro de un edificio o por la calle de un pueblo o ciudad.' },
-                    { code: 'd4600', name: 'Desplazarse dentro de la casa', desc: 'Andar y moverse dentro de la propia casa, en una habitación, entre habitaciones y alrededor de toda la casa o lugar donde se vive.' },
-                    { code: 'd4601', name: 'Desplazarse dentro de edificios que no son la propia vivienda', desc: 'Andar y desplazarse dentro de edificios que no son la propia residencia, como desplazarse alrededor de la casa de otras personas, otros edificios residenciales, edificios privados o públicos de la comunidad y áreas adyacentes.' },
-                    { code: 'd4602', name: 'Desplazarse fuera del hogar y de otros edificios', desc: 'Andar y moverse por las inmediaciones y zonas alejadas de la propia casa y de otros edificios, sin utilizar transporte, público o privado.' },
-                    
-                    { code: 'd465', name: 'Desplazarse utilizando algún tipo de equipamiento', desc: 'Mover todo el cuerpo de un sitio a otro, sobre cualquier superficie o espacio, utilizando dispositivos específicos diseñados para facilitar el desplazamiento o crear métodos alternativos de desplazamiento.' },
-                    
-                    { code: 'd470', name: 'Utilización de medios de transporte', desc: 'Utilizar medios de transporte para desplazarse como pasajero, como ser llevado en un coche, autobús, bicicleta, etc.' },
-                    
-                    // Autocuidado - Importantes para geriatría
-                    { code: 'd510', name: 'Lavarse', desc: 'Lavarse y secarse todo el cuerpo, o partes del cuerpo, utilizando agua y materiales o métodos apropiados de lavado y secado.' },
-                    { code: 'd520', name: 'Cuidado de partes del cuerpo', desc: 'Cuidado de partes del cuerpo, como la piel, la cara, los dientes, el cuero cabelludo, las uñas, que requieren un nivel de cuidado mayor que el mero hecho de lavarse y secarse.' },
-                    { code: 'd530', name: 'Higiene personal relacionada con los procesos de excreción', desc: 'Planificación y realización de la eliminación de desechos humanos (menstruación, orinar y defecar) y la propia limpieza posterior.' },
-                    { code: 'd540', name: 'Vestirse', desc: 'Llevar a cabo las acciones y tareas coordinadas precisas para ponerse y quitarse ropa y calzado en secuencia y de acuerdo con las condiciones climáticas y sociales.' },
-                    { code: 'd550', name: 'Comer', desc: 'Llevar a cabo las tareas y acciones coordinadas relacionadas con comer los alimentos servidos, llevarlos a la boca y consumirlos de manera culturalmente aceptable.' },
-                    { code: 'd560', name: 'Beber', desc: 'Sujetar el vaso, llevarlo a la boca y beber de manera culturalmente aceptable.' },
-                    { code: 'd570', name: 'Cuidado de la propia salud', desc: 'Asegurarse de la salud física y mental propia, siguiendo consejos médicos, y evitando riesgos.' },
-                    
-                    // Vida doméstica
-                    { code: 'd620', name: 'Adquisición de bienes y servicios', desc: 'Seleccionar, comprar y transportar todos los bienes y servicios necesarios para la vida diaria.' },
-                    { code: 'd630', name: 'Preparar comidas', desc: 'Planear, organizar, cocinar y servir comidas sencillas y complejas para uno mismo y para otros.' },
-                    { code: 'd640', name: 'Realizar los quehaceres de la casa', desc: 'Organizar, limpiar y mantener la casa, cuidar de la ropa, los muebles y electrodomésticos.' },
-                    { code: 'd650', name: 'Cuidado de los objetos del hogar', desc: 'Mantener y reparar objetos del hogar y de uso personal.' },
-                    { code: 'd660', name: 'Ayudar a los demás', desc: 'Ayudar a miembros del hogar y a otras personas con el aprendizaje, comunicación, autocuidado o desplazamiento.' },
-                    
-                    // Interacciones y relaciones interpersonales (importantes para poblaciones geriátricas)
-                    { code: 'd710', name: 'Interacciones interpersonales básicas', desc: 'Interactuar con otras personas de manera adecuada para el contexto y el entorno social.' },
-                    { code: 'd720', name: 'Interacciones interpersonales complejas', desc: 'Mantener y manejar las interacciones con otras personas, de manera adecuada para el contexto y el entorno social.' },
-                    { code: 'd760', name: 'Relaciones familiares', desc: 'Crear y mantener relaciones de parentesco.' },
-                    { code: 'd770', name: 'Relaciones íntimas', desc: 'Crear y mantener relaciones cercanas o románticas entre individuos.' },
-                    
-                    // Áreas principales de la vida (trabajo, estudio, actividades deportivas)
-                    { code: 'd845', name: 'Conseguir, mantener y finalizar un trabajo', desc: 'Buscar, encontrar y elegir un trabajo, ser contratado y aceptar un empleo, mantener y avanzar en el trabajo.' },
-                    { code: 'd850', name: 'Trabajo remunerado', desc: 'Participar en todos los aspectos relacionados con un trabajo remunerado, como buscar empleo y conseguir un trabajo.' },
-                    { code: 'd855', name: 'Trabajo no remunerado', desc: 'Participar en todos los aspectos de un trabajo no remunerado, como voluntariado o caridad.' },
-                    { code: 'd920', name: 'Tiempo libre y ocio', desc: 'Participar en cualquier forma de juego, actividad recreativa o de ocio.' },
-                    { code: 'd9201', name: 'Deportes', desc: 'Participar en juegos o eventos deportivos competitivos e informales.' },
-                    { code: 'd9202', name: 'Arte y cultura', desc: 'Participar en eventos artísticos o culturales.' },
-                    { code: 'd9203', name: 'Manualidades', desc: 'Participar en manualidades, como cerámica o hacer punto.' },
-                    { code: 'd9204', name: 'Aficiones', desc: 'Participar en pasatiempos, como coleccionar sellos, monedas u antigüedades.' },
-                    { code: 'd9205', name: 'Socialización', desc: 'Participar en reuniones informales o casuales con otros, como visitar amigos o familiares.' }
-                ];
-                break;
-                
-            case 'Factor':
-            allCifCodes = [
-                    // Productos y tecnología
-                    { code: 'e110', name: 'Productos o sustancias para el consumo personal', desc: 'Cualquier sustancia natural o fabricada por el hombre, recogida, procesada o manufacturada para la ingesta, consumo o uso personal.' },
-                    { code: 'e1101', name: 'Medicamentos', desc: 'Sustancias naturales o artificiales, medicamentos recetados o de libre disposición, utilizados para tratar síntomas o enfermedades.' },
-                    { code: 'e115', name: 'Productos y tecnología para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnología utilizados por las personas en las actividades cotidianas.' },
-                    { code: 'e1150', name: 'Productos y tecnología generales para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnología utilizados en la vida diaria, incluyendo aquellos adaptados o diseñados específicamente, situados en, sobre o cerca de la persona que los utiliza.' },
-                    { code: 'e1151', name: 'Productos y tecnología de ayuda para uso personal en la vida diaria', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas en su vida diaria.' },
-                    
-                    { code: 'e120', name: 'Productos y tecnología para la movilidad y transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnología utilizados por las personas para desplazarse dentro y fuera de edificios, incluyendo aquellos adaptados o diseñados específicamente.' },
-                    { code: 'e1200', name: 'Productos y tecnología generales para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnología utilizados por las personas para desplazarse dentro y fuera de los edificios.' },
-                    { code: 'e1201', name: 'Productos y tecnología de ayuda para la movilidad y el transporte personal en espacios cerrados y abiertos', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas a desplazarse dentro y fuera de los edificios.' },
-                    
-                    { code: 'e125', name: 'Productos y tecnología para la comunicación', desc: 'Equipamiento, productos y tecnología utilizados por las personas para transmitir y recibir información.' },
-                    { code: 'e1250', name: 'Productos y tecnología generales para la comunicación', desc: 'Equipamiento, productos y tecnología utilizados por las personas para transmitir y recibir información.' },
-                    { code: 'e1251', name: 'Productos y tecnología de ayuda para la comunicación', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para ayudar a las personas a transmitir y recibir información.' },
-                    
-                    { code: 'e130', name: 'Productos y tecnología para la educación', desc: 'Equipamiento, productos, métodos y tecnología utilizados para la adquisición de conocimiento, experiencia o habilidades.' },
-                    { code: 'e1300', name: 'Productos y tecnología generales para la educación', desc: 'Equipamiento, productos, métodos y tecnología utilizados para la adquisición de conocimiento, experiencia o habilidades.' },
-                    { code: 'e1301', name: 'Productos y tecnología de ayuda para la educación', desc: 'Equipamiento, productos, métodos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades de las personas con discapacidad para la adquisición de conocimiento, experiencia o habilidades.' },
-                    
-                    { code: 'e135', name: 'Productos y tecnología para el empleo', desc: 'Equipamiento, productos y tecnología utilizados para el trabajo, para prevenir discapacidades ocupacionales o aumentar las capacidades laborales.' },
-                    { code: 'e1350', name: 'Productos y tecnología generales para el empleo', desc: 'Equipamiento, productos y tecnología utilizados para el trabajo, no adaptados.' },
-                    { code: 'e1351', name: 'Productos y tecnología de ayuda para el empleo', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades laborales de las personas con discapacidad.' },
-                    
-                    { code: 'e140', name: 'Productos y tecnología para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnología utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas.' },
-                    { code: 'e1400', name: 'Productos y tecnología generales para las actividades culturales, recreativas y deportivas', desc: 'Equipamiento, productos y tecnología utilizados para la realización y mejora de las actividades culturales, recreativas y deportivas, no adaptados.' },
-                    { code: 'e1401', name: 'Productos y tecnología de ayuda para la cultura, el ocio y el deporte', desc: 'Equipamiento, productos y tecnologías adaptados o diseñados específicamente para mejorar las capacidades para realizar actividades culturales, recreativas y deportivas de las personas con discapacidad.' },
-                    
-                    { code: 'e145', name: 'Productos y tecnología para la práctica religiosa y la vida espiritual', desc: 'Productos y tecnología, únicos o producidos en masa, que tienen un significado simbólico en el contexto de la práctica religiosa o espiritual.' },
-                    
-                    { code: 'e150', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre, que ha sido planeado, diseñado y construido para edificios públicos.' },
-                    { code: 'e1500', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para entrar y salir de los edificios de uso público', desc: 'Productos y tecnología que constituyen el ambiente arquitectónico interior y exterior, planeado y construido para uso público y relacionado con la accesibilidad.' },
-                    { code: 'e1501', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer accesos a instalaciones en los edificios para uso público', desc: 'Productos y tecnología en relación con el diseño, planificación e instalación de elementos que facilitan el acceso a instalaciones dentro de edificios para uso público.' },
-                    { code: 'e1502', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer la ruta a seguir y señalizar las localizaciones en edificios de uso público', desc: 'Productos y tecnología en relación con el diseño, planificación y señalización tanto interno como externo de edificios para uso público que ayudan a encontrar la ruta a seguir dentro y la localización inmediata a áreas específicas.' },
-                    
-                    { code: 'e155', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para edificios de uso privado', desc: 'Productos y tecnología que constituyen el ambiente fabricado por el hombre, que ha sido planeado, diseñado y construido para edificios de uso privado.' },
-                    { code: 'e1550', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para entrar y salir de los edificios de uso privado', desc: 'Productos y tecnología relacionados con el diseño, planificación y construcción de entradas y salidas de edificios de uso privado.' },
-                    { code: 'e1551', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer accesos a instalaciones en los edificios para uso privado', desc: 'Productos y tecnología para espacios interiores y exteriores que constituyan elementos facilitadores del diseño, planificación y construcción de edificios para uso privado.' },
-                    { code: 'e1552', name: 'Diseño, construcción, materiales de construcción y tecnología arquitectónica para establecer la ruta a seguir y señalizar las localizaciones en edificios de uso privado', desc: 'Productos y tecnología en relación con el diseño, planificación y construcción de la señalización interna y externa para orientar a las personas dentro de los edificios de uso privado y para localizar las zonas a las que se dirigen.' },
-                    
-                    // Entorno natural y cambios en el entorno derivados de la actividad humana
-                    { code: 'e210', name: 'Geografía física', desc: 'Características de las formas de la tierra y las extensiones de agua.' },
-                    { code: 'e225', name: 'Clima', desc: 'Características y eventos meteorológicos, como el tiempo.' },
-                    { code: 'e235', name: 'Desastres naturales', desc: 'Cambios en el entorno natural causados por fenómenos naturales como terremotos, inundaciones, etc.' },
-                    { code: 'e240', name: 'Luz', desc: 'Radiación electromagnética mediante la cual las cosas se hacen visibles, ya sea por luz solar o iluminación artificial.' },
-                    { code: 'e245', name: 'Cambios relacionados con el tiempo', desc: 'Cambio natural, regular o predecible en el tiempo.' },
-                    { code: 'e250', name: 'Sonido', desc: 'Fenómeno que es o puede ser oído, como ruido, zumbido, o sirenas.' },
-                    { code: 'e255', name: 'Vibración', desc: 'Oscilación regular o irregular, de alta o baja frecuencia, producida por un objeto o una persona.' },
-                    { code: 'e260', name: 'Calidad del aire', desc: 'Características de la atmósfera o del aire en espacios cerrados o abiertos.' },
-                    
-                    // Apoyo y relaciones (muy importantes para adultos mayores)
-                    { code: 'e310', name: 'Familiares cercanos', desc: 'Personas emparentadas por el nacimiento, el matrimonio o cualquier relación reconocida por la cultura como familia cercana.' },
-                    { code: 'e315', name: 'Otros familiares', desc: 'Personas emparentadas mediante el nacimiento, el matrimonio o cualquier relación reconocida por la cultura como familia ampliada.' },
-                    { code: 'e320', name: 'Amigos', desc: 'Personas que son cercanas y que participan continuamente en relaciones caracterizadas por la confianza y el apoyo mutuo.' },
-                    { code: 'e325', name: 'Conocidos, compañeros, colegas, vecinos y miembros de la comunidad', desc: 'Personas que mantienen una relación de familiaridad, pero no de estrecha unión, unos con otros.' },
-                    { code: 'e330', name: 'Personas en cargos de autoridad', desc: 'Personas que tienen responsabilidades de tomar decisiones por otros y que ejercen influencia o poder socialmente definido.' },
-                    { code: 'e335', name: 'Personas en cargos subordinados', desc: 'Personas cuya vida cotidiana está influida por personas en cargos de autoridad en el trabajo, el colegio o en otros ambientes.' },
-                    { code: 'e340', name: 'Cuidadores y personal de ayuda', desc: 'Personas que proporcionan los servicios necesarios para el cuidado de otros en sus actividades cotidianas.' },
-                    { code: 'e345', name: 'Extraños', desc: 'Personas desconocidas o que no se han tratado antes, que no comparten una relación o rol específico con la persona.' },
-                    { code: 'e350', name: 'Animales domésticos', desc: 'Animales que proporcionan apoyo físico, emocional o psicológico.' },
-                    { code: 'e355', name: 'Profesionales de la salud', desc: 'Todos los proveedores de servicios que trabajan en el contexto del sistema sanitario.' },
-                    { code: 'e360', name: 'Otros profesionales', desc: 'Todos los proveedores de servicios que trabajan fuera del sistema sanitario, incluyendo trabajadores sociales, abogados, profesores, etc.' },
-                    
-                    // Actitudes (críticas para lograr adherencia a tratamiento)
-                    { code: 'e410', name: 'Actitudes individuales de miembros de la familia cercana', desc: 'Opiniones y creencias generales o específicas de miembros de la familia cercana sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e415', name: 'Actitudes individuales de otros familiares', desc: 'Opiniones y creencias generales o específicas de otros familiares sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e420', name: 'Actitudes individuales de amigos', desc: 'Opiniones y creencias generales o específicas de amigos sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e425', name: 'Actitudes individuales de conocidos, compañeros, colegas, vecinos y miembros de la comunidad', desc: 'Opiniones y creencias generales o específicas de conocidos, compañeros, colegas, vecinos y miembros de la comunidad sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e430', name: 'Actitudes individuales de personas en cargos de autoridad', desc: 'Opiniones y creencias generales o específicas de personas en cargos de autoridad sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e440', name: 'Actitudes individuales de cuidadores y personal de ayuda', desc: 'Opiniones y creencias generales o específicas de cuidadores y personal de ayuda sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e450', name: 'Actitudes individuales de profesionales de la salud', desc: 'Opiniones y creencias generales o específicas de profesionales de la salud sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e455', name: 'Actitudes individuales de profesionales relacionados con la salud', desc: 'Opiniones y creencias generales o específicas de profesionales relacionados con la salud sobre la persona o sobre otras cuestiones.' },
-                    { code: 'e460', name: 'Actitudes sociales', desc: 'Opiniones y creencias generales o específicas mantenidas habitualmente por personas de una cultura, sociedad u otro grupo social, sobre otras personas o sobre otras cuestiones sociales, políticas y económicas.' },
-                    { code: 'e465', name: 'Normas, costumbres e ideologías sociales', desc: 'Hábitos, costumbres, reglas, sistemas de valores abstractos, normas y creencias morales y religiosas, que surgen en contextos sociales.' },
-                    
-                    // Servicios, sistemas y políticas (importantes para acceso a tratamiento)
-                    { code: 'e570', name: 'Servicios, sistemas y políticas de seguridad social', desc: 'Servicios, sistemas y políticas destinados a proporcionar ayudas económicas a personas que debido a su edad, pobreza, desempleo, condición de salud o discapacidad, necesitan asistencia pública.' },
-                    { code: 'e575', name: 'Servicios, sistemas y políticas de apoyo social general', desc: 'Servicios, sistemas y políticas orientados a proporcionar apoyo a aquellos que necesitan asistencia en áreas tales como hacer la compra, las tareas del hogar, el transporte, el autocuidado y al cuidado de otras personas.' },
-                    { code: 'e580', name: 'Servicios, sistemas y políticas sanitarias', desc: 'Servicios, sistemas y políticas para prevenir y tratar problemas de salud, proporcionando rehabilitación médica y promoviendo un estilo de vida saludable.' },
-                    { code: 'e5800', name: 'Servicios sanitarios', desc: 'Servicios y programas cuyo objetivo es proporcionar intervenciones médicas y promover el bienestar de la persona.' },
-                    { code: 'e5801', name: 'Sistemas sanitarios', desc: 'Mecanismos de control administrativo y seguimiento, como son los regímenes sanitarios locales, regionales o nacionales.' },
-                    { code: 'e5802', name: 'Políticas sanitarias', desc: 'Legislación, regulaciones y normas que rigen el ámbito sanitario.' },
-                    { code: 'e585', name: 'Servicios, sistemas y políticas de educación y formación', desc: 'Servicios, sistemas y políticas para la adquisición, conservación y perfeccionamiento de conocimientos, experiencia y habilidades vocacionales o artísticas.' },
-                    { code: 'e590', name: 'Servicios, sistemas y políticas laborales y de empleo', desc: 'Servicios, sistemas y políticas relacionados con encontrar un trabajo adecuado para las personas desempleadas o que buscan un trabajo diferente, o para dar apoyo a aquellos que tienen trabajo.' }
-                ];
-                break;
-        }
-        
-        // Guardamos los códigos en una variable del objeto window para accederlos globalmente
-    window.currentCifCodes = allCifCodes;
-    
-    // Función para actualizar el select basado en el texto de búsqueda
-    function updateCifSelect(searchText) {
-        const cifCodeSelect = document.getElementById('cifCodeSelect');
-        if (!cifCodeSelect) return;
-        
-        // Convertir texto de búsqueda a minúsculas y sin acentos
-        searchText = searchText.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        
-        // Limpiar select actual
-        cifCodeSelect.innerHTML = '';
-        
-        // Añadir opción por defecto
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "";
-        defaultOption.textContent = "-- Seleccione un código --";
-        cifCodeSelect.appendChild(defaultOption);
-        
-        // Filtrar códigos
-        const filteredCodes = searchText === "" 
-            ? window.currentCifCodes  // Si no hay búsqueda, mostrar todos
-            : window.currentCifCodes.filter(code => {
-                // Texto normalizado para búsqueda
-                const normalizedText = `${code.code} ${code.name} ${code.desc}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                return normalizedText.includes(searchText);
-              });
-        
-        // Añadir opciones filtradas
-        filteredCodes.forEach(code => {
-            const option = document.createElement('option');
-            option.value = code.code;
-            option.textContent = `${code.code} - ${code.name}`;
-            option.dataset.name = code.name;
-            option.dataset.desc = code.desc;
-            cifCodeSelect.appendChild(option);
-        });
-        
-        console.log(`Filtrado completado: ${filteredCodes.length} resultados para "${searchText}"`);
-    }
-    
-    // Configurar campo de búsqueda
-    const searchFilter = document.getElementById('cifSearchFilter');
-    if (searchFilter) {
-        // Limpiar el campo
-        searchFilter.value = '';
-        
-        // Eliminar todos los listeners previos
-        const newSearchFilter = searchFilter.cloneNode(true);
-        searchFilter.parentNode.replaceChild(newSearchFilter, searchFilter);
-        
-        // Crear listener para el input
-        newSearchFilter.addEventListener('input', function() {
-            updateCifSelect(this.value);
-        });
-        
-        // Dar foco inicial
-        setTimeout(() => newSearchFilter.focus(), 200);
-    }
-    
-    // Inicializar select con todos los códigos
-    updateCifSelect("");
-    
-    // Configurar evento para selección en el select
-    const cifCodeSelect = document.getElementById('cifCodeSelect');
-    if (cifCodeSelect) {
-        cifCodeSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            
-            // Actualizar campos del formulario
-            const codeInput = document.getElementById('cifCodeInput');
-            const nameInput = document.getElementById('cifNameInput');
-            const descInput = document.getElementById('cifDescInput');
-            
-            if (codeInput) codeInput.value = this.value;
-            if (nameInput && selectedOption) nameInput.value = selectedOption.dataset.name || '';
-            if (descInput && selectedOption) descInput.value = selectedOption.dataset.desc || '';
-        });
-    }
-    
-    // Configurar campos de formulario
-    const codeInput = document.getElementById('cifCodeInput');
-    const nameInput = document.getElementById('cifNameInput');
-    const descInput = document.getElementById('cifDescInput');
-    const valueInput = document.getElementById('cifValueInput');
-    
-    if (codeInput) codeInput.value = '';
-    if (nameInput) nameInput.value = '';
-    if (descInput) descInput.value = '';
-    if (valueInput) valueInput.value = '2';
-    
-    // Guardar referencias para el botón de guardar
-    cifModal.setAttribute('data-target', targetContainerId);
-    cifModal.setAttribute('data-category', categoryType);
-    cifModal.setAttribute('data-patient', patientId);
-    
-    // Configurar evento para botones
-    const closeModalBtn = document.getElementById('closeCifModal');
-    if (closeModalBtn) {
-        const newCloseBtn = closeModalBtn.cloneNode(true);
-        closeModalBtn.parentNode.replaceChild(newCloseBtn, closeModalBtn);
-        
-        newCloseBtn.addEventListener('click', function() {
-            cifModal.classList.remove('active');
-            setTimeout(() => {
-                cifModal.style.display = 'none';
-            }, 300);
-        });
-    }
-    
-    const cancelBtn = document.getElementById('cancelCifBtn');
-    if (cancelBtn) {
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        
-        newCancelBtn.addEventListener('click', function() {
-            cifModal.classList.remove('active');
-            setTimeout(() => {
-                cifModal.style.display = 'none';
-            }, 300);
-        });
-    }
-    
-    const saveBtn = document.getElementById('saveCifBtn');
-    if (saveBtn) {
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        
-        newSaveBtn.addEventListener('click', function() {
-            addCifItem(cifModal);
-        });
-    }
-}
-
-
-// Añadir un elemento CIF
-// Añadir un elemento CIF (versión actualizada)
-async function addCifItem(modal){
-    // Obtener datos del formulario
-    const code = document.getElementById('cifCodeInput').value;
-    const name = document.getElementById('cifNameInput').value;
-    const description = document.getElementById('cifDescInput').value;
-    const value = parseInt(document.getElementById('cifValueInput').value);
-    
-    if (!code || !name) {
-        showToast("Código y nombre son obligatorios", "error");
-        return;
-    }
-    
-    // Obtener información del contenedor destino
-    const targetContainerId = modal.getAttribute('data-target');
-    const categoryType = modal.getAttribute('data-category');
-    const patientId = modal.getAttribute('data-patient');
-    
-    // Determinar la categoría para Firebase
-    let firebaseCategory = "";
-    switch(categoryType) {
-        case 'Función': firebaseCategory = "functions"; break;
-        case 'Estructura': firebaseCategory = "structures"; break;
-        case 'Actividad': firebaseCategory = "activities"; break;
-        case 'Factor': firebaseCategory = "factors"; break;
-        default: 
-            showToast("Categoría no válida", "error");
-            return;
-    }
-    
-    // Crear objeto con los datos
-    const cifData = {
-        code: code,
-        name: name,
-        description: description,
-        value: value
-    };
-    
-    // Guardar en Firebase
-    const savedItem = await saveCifItem(patientId, firebaseCategory, cifData);
-    
-    if (savedItem) {
-        // Actualizar UI
-        const container = document.getElementById(targetContainerId);
-        if (container) {
-            // Eliminar mensaje "no hay elementos" si existe
-            const emptyMessage = container.querySelector('p');
-            if (emptyMessage) {
-                container.removeChild(emptyMessage);
-            }
-            
-            // Crear nuevo elemento en la UI
-            const newItem = document.createElement('div');
-            newItem.className = 'cif-item';
-            newItem.dataset.id = savedItem.id;
-            
-            newItem.innerHTML = `
-                <div class="cif-code">
-                    ${code}: ${name}
-                    <button class="scale-value active">${value}</button>
-                </div>
-                <div class="cif-desc">${description}</div>
-                <div class="cif-scale">
-                    Escala:
-                    <div class="scale-values">
-                        <button class="scale-value ${value === 0 ? 'active' : ''}">0</button>
-                        <button class="scale-value ${value === 1 ? 'active' : ''}">1</button>
-                        <button class="scale-value ${value === 2 ? 'active' : ''}">2</button>
-                        <button class="scale-value ${value === 3 ? 'active' : ''}">3</button>
-                        <button class="scale-value ${value === 4 ? 'active' : ''}">4</button>
-                    </div>
-                </div>
-            `;
-            
-            // Añadir interactividad a los botones de escala
-            newItem.querySelectorAll('.scale-value').forEach(button => {
-                button.addEventListener('click', function() {
-                    // Desactivar otros botones del mismo grupo
-                    const scaleValues = this.closest('.scale-values');
-                    if (scaleValues) {
-                        scaleValues.querySelectorAll('.scale-value').forEach(btn => {
-                            btn.classList.remove('active');
-                        });
-                        this.classList.add('active');
-                        
-                        // Actualizar valor en el título
-                        const cifCode = this.closest('.cif-item').querySelector('.cif-code');
-                        const valueBtn = cifCode.querySelector('.scale-value');
-                        valueBtn.textContent = this.textContent;
-                        
-                        // Actualizar en Firebase
-                        const itemId = newItem.dataset.id;
-                        const newValue = parseInt(this.textContent);
-                        updateCifItemValue(patientId, firebaseCategory, itemId, newValue);
-                    }
-                });
-            });
-            
-            // Añadir al inicio para mayor visibilidad
-            if (container.firstChild) {
-                container.insertBefore(newItem, container.firstChild);
-            } else {
-                container.appendChild(newItem);
-            }
-        }
-    }
-    
-    // Cerrar modal
-    modal.classList.remove('active');
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300);
-}
-
-// Guardar cambios en diagnóstico
-function saveDiagnosisChanges(patientId) {
-    // En una implementación real, aquí se guardarían todos los cambios en Firebase
-    
-    // Obtener factores personales
-    const personalFactors = document.getElementById('cifPersonalFactors')?.value || '';
-    
-    // Simular guardado exitoso
-    showToast("Diagnóstico guardado correctamente", "success");
-}
-
-// Abrir modal de objetivo general
-function openGeneralObjectiveModal(patientId) {
-    try {
-        // Mostrar modal
-        const modal = document.getElementById('generalObjectiveModal');
-        if (!modal) {
-            console.error("Modal de objetivo general no encontrado");
-            return;
-        }
-        
-        // Mostrar modal
-        modal.style.display = 'block';
-        setTimeout(() => modal.classList.add('active'), 50);
-        
-        // Establecer fecha actual para el campo de fecha
-        const today = new Date();
-        const endDate = new Date();
-        endDate.setMonth(today.getMonth() + 3); // Fecha estimada por defecto: 3 meses después
-        
-        // Convertir a formato YYYY-MM-DD para input type="date"
-        const endDateStr = endDate.toISOString().split('T')[0];
-        
-        const endDateInput = document.getElementById('generalObjectiveEndDateInput');
-        if (endDateInput) endDateInput.value = endDateStr;
-        
-        // Limpiar campo de descripción
-        const descInput = document.getElementById('generalObjectiveDescInput');
-        if (descInput) descInput.value = '';
-        
-        // Cargar objetivo general existente si hay
-        loadGeneralObjective(patientId);
-        
-        // Configurar eventos de botones
-        const saveBtn = document.getElementById('saveGeneralObjectiveBtn');
-        if (saveBtn) {
-            // Eliminar manejadores previos
-            const newSaveBtn = saveBtn.cloneNode(true);
-            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-            
-            newSaveBtn.addEventListener('click', function() {
-                saveGeneralObjective(patientId);
-            });
-        }
-        
-        const cancelBtn = document.getElementById('cancelGeneralObjectiveBtn');
-        if (cancelBtn) {
-            // Eliminar manejadores previos
-            const newCancelBtn = cancelBtn.cloneNode(true);
-            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-            
-            newCancelBtn.addEventListener('click', function() {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            });
-        }
-        
-        const closeBtn = document.getElementById('closeGeneralObjectiveModal');
-        if (closeBtn) {
-            // Eliminar manejadores previos
-            const newCloseBtn = closeBtn.cloneNode(true);
-            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-            
-            newCloseBtn.addEventListener('click', function() {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            });
-        }
-        
-        // Configurar botones de plantillas SMART
-        const templateBtns = document.querySelectorAll('.smart-template-btn');
-        templateBtns.forEach(btn => {
-            // Eliminar manejadores previos
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', function() {
-                const template = this.getAttribute('data-template');
-                if (template) {
-                    showGeneralObjectiveAssistant(template);
-                }
-            });
-        });
-        
-        // Configurar evento para botón de cancelar asistente
-        const cancelAssistantBtn = document.getElementById('cancelAssistantBtn');
-        if (cancelAssistantBtn) {
-            // Eliminar manejadores previos
-            const newCancelAssistantBtn = cancelAssistantBtn.cloneNode(true);
-            cancelAssistantBtn.parentNode.replaceChild(newCancelAssistantBtn, cancelAssistantBtn);
-            
-            newCancelAssistantBtn.addEventListener('click', function() {
-                const assistantPanel = document.getElementById('generalObjectiveAssistant');
-                if (assistantPanel) assistantPanel.style.display = 'none';
-            });
-        }
-        
-        // Configurar evento para usar resultado del asistente
-        const useResultBtn = document.getElementById('useAssistantResultBtn');
-        if (useResultBtn) {
-            // Eliminar manejadores previos
-            const newUseResultBtn = useResultBtn.cloneNode(true);
-            useResultBtn.parentNode.replaceChild(newUseResultBtn, useResultBtn);
-            
-            newUseResultBtn.addEventListener('click', function() {
-                const preview = document.getElementById('objectivePreview');
-                const descInput = document.getElementById('generalObjectiveDescInput');
-                
-                if (preview && descInput) {
-                    descInput.value = preview.textContent;
-                    
-                    // Actualizar fecha estimada basada en el plazo del asistente
-                    const timeFrame = parseInt(document.getElementById('timeFrameInput')?.value || 4);
-                    const timeUnit = document.getElementById('timeUnitSelect')?.value || 'semanas';
-                    
-                    const endDate = new Date();
-                    if (timeUnit === 'semanas') {
-                        endDate.setDate(endDate.getDate() + timeFrame * 7);
-                    } else {
-                        endDate.setMonth(endDate.getMonth() + timeFrame);
-                    }
-                    
-                    const endDateInput = document.getElementById('generalObjectiveEndDateInput');
-                    if (endDateInput) endDateInput.value = endDate.toISOString().split('T')[0];
-                    
-                    // Ocultar panel del asistente
-                    const assistantPanel = document.getElementById('generalObjectiveAssistant');
-                    if (assistantPanel) assistantPanel.style.display = 'none';
-                }
-            });
-        }
-        
-        // Configurar eventos para previsualización en tiempo real
-        configureGeneralObjectivePreview();
-        
-    } catch (error) {
-        console.error("Error al abrir modal de objetivo general:", error);
-        showToast("Error al abrir formulario de objetivo", "error");
-    }
-}
-
-
-        
-        // ID del documento (nuevo o existente)
-        let objectiveId = currentObjectiveId;
-        
-        // Guardar en Firebase
-        if (objectiveId) {
-            // Actualizar objetivo existente
-            const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
-            await updateDoc(objectiveRef, objectiveData);
-        } else {
-            // Crear nuevo objetivo
-            const objectivesRef = collection(db, "patients", patientId, "objectives");
-            const docRef = await addDoc(objectivesRef, objectiveData);
-            objectiveId = docRef.id;
-        }
-        
-        // Actualizar caché
-        if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
-        if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
-        objectivesCache[patientId].specific[objectiveId] = objectiveData;
-        
-        // Actualizar UI
-        updateObjectivesUI(patientId);
-        
-        // Cerrar modal
-        const modal = document.getElementById('specificObjectiveModal');
-        if (modal) {
-            modal.classList.remove('active');
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
-        
-        hideLoading();
-        showToast("Objetivo específico guardado correctamente", "success");
-    } catch (error) {
-        hideLoading();
-        console.error("Error al guardar objetivo específico:", error);
-        showToast("Error al guardar objetivo: " + error.message, "error");
-    }
-}
-
-
-
-
-
-// Cargar objetivos específicos para mostrar
-async function loadSpecificObjectivesDisplay(patientId) {
-    try {
-        const specificObjectivesList = document.getElementById('specificObjectivesList');
-        const noSpecificObjectives = document.getElementById('noSpecificObjectives');
-        const objectivesStatsPanel = document.getElementById('objectivesStatsPanel');
-        
-        if (!specificObjectivesList) return;
-        
-        // Limpiar lista actual (excepto el mensaje de "no hay objetivos")
-        Array.from(specificObjectivesList.children).forEach(child => {
-            if (child.id !== 'noSpecificObjectives') {
-                specificObjectivesList.removeChild(child);
-            }
-        });
-        
-        // Verificar si ya tenemos los objetivos en caché
-        let specificObjectives = [];
-        
-        if (objectivesCache[patientId] && objectivesCache[patientId].specific) {
-            specificObjectives = Object.entries(objectivesCache[patientId].specific).map(([id, obj]) => ({
-                id,
-                ...obj
-            }));
-        } else {
-            // Obtener de Firebase
-            const objectivesRef = collection(db, "patients", patientId, "objectives");
-            // No incluir el objetivo general
-            const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
-            const objectivesSnap = await getDocs(objectivesQuery);
-            
-            if (!objectivesSnap.empty) {
-                specificObjectives = objectivesSnap.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                
-                // Guardar en caché
-                if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
-                if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
-                
-                specificObjectives.forEach(obj => {
-                    objectivesCache[patientId].specific[obj.id] = obj;
-                });
-            }
-        }
-        
-        // Mostrar/ocultar mensaje de "no hay objetivos"
-        if (noSpecificObjectives) {
-            noSpecificObjectives.style.display = specificObjectives.length === 0 ? 'block' : 'none';
-        }
-        
-        // Mostrar/ocultar panel de estadísticas
-        if (objectivesStatsPanel) {
-            objectivesStatsPanel.style.display = specificObjectives.length > 0 ? 'block' : 'none';
-        }
-        
-        // Ordenar objetivos: pendientes primero, luego en progreso, luego completados
-        specificObjectives.sort((a, b) => {
-            const statusOrder = { 'completed': 2, 'inprogress': 1, 'pending': 0 };
-            return statusOrder[a.status || 'pending'] - statusOrder[b.status || 'pending'];
-        });
-        
-        // Mostrar objetivos
-        specificObjectives.forEach(objective => {
-            const objectiveCard = createSpecificObjectiveCard(objective);
-            specificObjectivesList.appendChild(objectiveCard);
+        // Mostrar cada plan
+        plansSnapshot.docs.forEach(doc => {
+            const plan = doc.data();
+            addTreatmentPlanToUI(plan, doc.id);
         });
     } catch (error) {
-        console.error("Error al cargar objetivos específicos:", error);
-        
-        // Mostrar mensaje de error
-        if (specificObjectivesList) {
-            specificObjectivesList.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: var(--accent2);">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 30px; margin-bottom: 10px;"></i>
-                    <p>Error al cargar los objetivos específicos.</p>
-                </div>
-            `;
+        console.error("Error al cargar planes de tratamiento:", error);
+        const treatmentPlanList = document.getElementById('treatmentPlanList');
+        if (treatmentPlanList) {
+            treatmentPlanList.innerHTML = '<p style="color: var(--accent2); font-style: italic;">Error al cargar planes de tratamiento.</p>';
         }
     }
 }
-
-// Crear tarjeta de objetivo específico
-// Crear tarjeta de objetivo específico
-// Crear tarjeta de objetivo específico
-function createSpecificObjectiveCard(objective) {
-    // Determinar clase y color según el estado
-    let statusClass = 'status-pending';
-    let statusText = 'Pendiente';
-    let statusIcon = 'fas fa-clock';
-    let borderColor = '#9E9E9E'; // Gris para pendientes
-    
-    switch(objective.status) {
-        case 'inprogress':
-            statusClass = 'status-inprogress';
-            statusText = 'En progreso';
-            statusIcon = 'fas fa-spinner';
-            borderColor = '#2196F3'; // Azul para en progreso
-            break;
-        case 'completed':
-            statusClass = 'status-completed';
-            statusText = 'Completado';
-            statusIcon = 'fas fa-check';
-            borderColor = '#4CAF50'; // Verde para completados
-            break;
-    }
-    
-    // Crear elemento
-    const card = document.createElement('div');
-    card.className = 'objective-card';
-    card.setAttribute('data-id', objective.id);
-    card.style.backgroundColor = 'var(--background-alt)';
-    card.style.borderLeft = `4px solid ${borderColor}`;
-    card.style.padding = '15px';
-    card.style.borderRadius = '5px';
-    card.style.marginBottom = '15px';
-    card.style.transition = 'all 0.3s ease';
-    card.style.boxShadow = 'var(--shadow-sm)';
-    card.style.cursor = 'pointer';
-    
-    // Hover effect
-    card.addEventListener('mouseenter', function() {
-        this.style.boxShadow = 'var(--shadow)';
-        this.style.transform = 'translateY(-2px)';
-    });
-    
-    card.addEventListener('mouseleave', function() {
-        this.style.boxShadow = 'var(--shadow-sm)';
-        this.style.transform = 'translateY(0)';
-    });
-    
-    // Construir contenido
-    const title = `${objective.verb} ${objective.structure}`;
-    const details = `${objective.initialValue} → ${objective.targetValue} (${objective.evaluationMethod})`;
-    const progress = objective.progress || 0;
-    
-    // Mostrar la descripción si existe
-    const description = objective.description || title;
-    
-    // Calcular días restantes
-    let daysRemaining = "";
-    if (objective.endDate) {
-        const endDate = new Date(objective.endDate);
-        const today = new Date();
-        const diffTime = endDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays > 0) {
-            daysRemaining = `<div style="font-size: 12px; color: var(--text-secondary);"><i class="far fa-clock"></i> ${diffDays} días restantes</div>`;
-        } else if (diffDays < 0 && objective.status !== 'completed') {
-            daysRemaining = `<div style="font-size: 12px; color: #F44336;"><i class="fas fa-exclamation-circle"></i> Vencido hace ${Math.abs(diffDays)} días</div>`;
-        }
-    }
-    
-    card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <div style="flex-grow: 1;">
-                <h4 style="margin: 0; font-size: 16px; color: var(--text-primary);">${description}</h4>
-                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 3px;">${details}</div>
-            </div>
-            <div class="objective-badge ${statusClass}" style="font-size: 12px; padding: 3px 8px; border-radius: 12px; display: flex; align-items: center; gap: 5px;">
-                <i class="${statusIcon}"></i>
-                ${statusText}
-            </div>
-        </div>
-        
-        <div style="margin-top: 10px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-                <div style="color: var(--text-secondary);">Progreso</div>
-                <div>${progress}%</div>
-            </div>
-            <div style="height: 6px; background-color: var(--background); border-radius: 3px; overflow: hidden;">
-                <div style="height: 100%; width: ${progress}%; background-color: ${borderColor}; border-radius: 3px;"></div>
-            </div>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-secondary);">
-            <div>${objective.category}</div>
-            ${daysRemaining || `<div><i class="far fa-calendar-alt"></i> ${formatDate(new Date(objective.endDate))}</div>`}
-        </div>
-        
-        <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
-            <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
-                <i class="fas fa-edit"></i> Editar
-            </button>
-            <button type="button" class="action-btn btn-secondary delete-objective-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--accent2-light);">
-                <i class="fas fa-trash"></i> Eliminar
-            </button>
-        </div>
-    `;
-    
-    // Añadir evento de clic para ver detalles
-    card.addEventListener('click', function(e) {
-        // Ignorar si hicieron clic en un botón
-        if (e.target.closest('button')) return;
-        
-        openViewSpecificObjectiveModal(objective);
-    });
-    
-    // Añadir eventos para los botones
-    const editBtn = card.querySelector('.edit-objective-btn');
-    if (editBtn) {
-        editBtn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Evitar que se abra el modal de detalles
-            openSpecificObjectiveModal(currentPatientId, objective.id);
-        });
-    }
-    
-    const deleteBtn = card.querySelector('.delete-objective-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Evitar que se abra el modal de detalles
-            deleteSpecificObjective(currentPatientId, objective.id);
-        });
-    }
-    
-    return card;
-}
-
-
-// Llenar modal de registro de progreso
-function fillRecordProgressModal(objective) {
-    // Título y detalles
-    const titleElement = document.getElementById('progressObjectiveTitle');
-    const detailElement = document.getElementById('progressObjectiveDetail');
-    
-    if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
-    if (detailElement) {
-        detailElement.textContent = `Valor inicial: ${objective.initialValue} → Valor objetivo: ${objective.targetValue} (${objective.evaluationMethod})`;
-    }
-    
-    // Fecha actual
-    const dateInput = document.getElementById('progressDateInput');
-    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-    
-    // Valor actual
-    const currentValueInput = document.getElementById('currentValueInput');
-    const unitLabel = document.getElementById('progressUnitLabel');
-    
-    if (currentValueInput) currentValueInput.value = objective.currentValue || objective.initialValue || '';
-    
-    if (unitLabel) {
-        // Extraer unidad del método (generalmente entre paréntesis)
-        let unit = '';
-        if (objective.evaluationMethod) {
-            const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
-            if (match && match[1]) {
-                unit = match[1];
-            }
-        }
-        
-        // Si no se encontró unidad, usar texto genérico
-        if (!unit) unit = 'unidad';
-        
-        unitLabel.textContent = unit;
-    }
-    
-    // Notas
-    const notesInput = document.getElementById('progressNotes');
-    if (notesInput) notesInput.value = '';
-}
-
-// Calcular progreso en tiempo real
-function calculateProgress(objective) {
-    try {
-        const currentValueInput = document.getElementById('currentValueInput');
-        if (!currentValueInput) return;
-        
-        const currentValue = currentValueInput.value;
-        if (!currentValue) return;
-        
-        // Obtener elementos de UI
-        const progressCircle = document.getElementById('progressCircle');
-        const progressText = document.getElementById('progressText');
-        const progressBar = document.getElementById('progressBar');
-        const progressPercentage = document.getElementById('progressPercentage');
-        const progressIncrease = document.getElementById('progressIncrease');
-        const progressStatus = document.getElementById('progressStatus');
-        
-        // Extraer valores numéricos
-        let initialNum = extractNumericValue(objective.initialValue);
-        let targetNum = extractNumericValue(objective.targetValue);
-        let currentNum = extractNumericValue(currentValue);
-        
-        if (initialNum === null || targetNum === null || currentNum === null) {
-            // No se pueden extraer valores numéricos, usar progreso manual
-            let manualProgress = 0;
-            
-            // Intentar identificar si es un valor de escala tipo "3/5"
-            const initialScale = parseScale(objective.initialValue);
-            const targetScale = parseScale(objective.targetValue);
-            const currentScale = parseScale(currentValue);
-            
-            if (initialScale && targetScale && currentScale) {
-                // Calcular progreso proporcional
-                const totalRange = targetScale - initialScale;
-                const currentProgress = currentScale - initialScale;
-                
-                if (totalRange !== 0) {
-                    manualProgress = (currentProgress / totalRange) * 100;
-                }
-            }
-            
-            // Limitar a valores entre 0 y 100
-            manualProgress = Math.max(0, Math.min(100, manualProgress));
-            
-            // Actualizar UI
-            updateProgressUI(manualProgress);
-            return;
-        }
-        
-        // Calcular progreso
-        let progress = 0;
-        
-        // Si el objetivo es aumentar un valor
-        if (targetNum > initialNum) {
-            progress = ((currentNum - initialNum) / (targetNum - initialNum)) * 100;
-        }
-        // Si el objetivo es disminuir un valor
-        else if (targetNum < initialNum) {
-            progress = ((initialNum - currentNum) / (initialNum - targetNum)) * 100;
-        }
-        // Si inicial y objetivo son iguales
-        else {
-            progress = currentNum >= targetNum ? 100 : 0;
-        }
-        
-        // Limitar a valores entre 0 y 100
-        progress = Math.max(0, Math.min(100, progress));
-        
-        // Redondear a entero
-        progress = Math.round(progress);
-        
-        // Actualizar UI
-        updateProgressUI(progress);
-        
-        // Determinar estado
-        const previousValue = objective.currentValue || objective.initialValue;
-        let previousNum = extractNumericValue(previousValue);
-        
-        if (previousNum === null) {
-            previousNum = parseScale(previousValue) || 0;
-        }
-        
-        // Calcular cambio desde la última evaluación
-        let change = 0;
-        
-        if (targetNum > initialNum) {
-            // El objetivo es aumentar
-            change = currentNum - previousNum;
-        } else {
-            // El objetivo es disminuir
-            change = previousNum - currentNum;
-        }
-        
-        // Actualizar texto de incremento
-        if (progressIncrease) {
-            if (change > 0) {
-                progressIncrease.textContent = `+${change.toFixed(1)} desde última evaluación`;
-                progressIncrease.style.color = '#4CAF50'; // Verde para mejora
-            } else if (change < 0) {
-                progressIncrease.textContent = `${change.toFixed(1)} desde última evaluación`;
-                progressIncrease.style.color = '#F44336'; // Rojo para retroceso
-            } else {
-                progressIncrease.textContent = 'Sin cambios desde última evaluación';
-                progressIncrease.style.color = '#9E9E9E'; // Gris para sin cambios
-            }
-        }
-        
-        // Actualizar estado
-        if (progressStatus) {
-            if (progress >= 100) {
-                progressStatus.textContent = 'Completado';
-                progressStatus.style.color = '#4CAF50'; // Verde para completado
-            } else if (progress > 0) {
-                progressStatus.textContent = 'En progreso';
-                progressStatus.style.color = '#2196F3'; // Azul para en progreso
-            } else {
-                progressStatus.textContent = 'Pendiente';
-                progressStatus.style.color = '#9E9E9E'; // Gris para pendiente
-            }
-        }
-    } catch (error) {
-        console.error("Error al calcular progreso:", error);
-    }
-}
-
-// Actualizar UI de progreso
-function updateProgressUI(progress) {
-    const progressCircle = document.getElementById('progressCircle');
-    const progressText = document.getElementById('progressText');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercentage = document.getElementById('progressPercentage');
-    
-    // Actualizar círculo de progreso
-    if (progressCircle) {
-        const circumference = 2 * Math.PI * 35;
-        const offset = circumference - (circumference * progress / 100);
-        progressCircle.setAttribute('stroke-dasharray', circumference);
-        progressCircle.setAttribute('stroke-dashoffset', offset);
-    }
-    
-    // Actualizar texto de porcentaje
-    if (progressText) progressText.textContent = `${progress}%`;
-    if (progressPercentage) progressPercentage.textContent = `${progress}%`;
-    
-    // Actualizar barra de progreso
-    if (progressBar) progressBar.style.width = `${progress}%`;
-}
-
-// Extraer valor numérico de un texto
-function extractNumericValue(text) {
-    if (!text) return null;
-    
-    // Intentar convertir directamente a número
-    const directNum = parseFloat(text);
-    if (!isNaN(directNum)) return directNum;
-    
-    // Buscar números en el texto
-    const numMatch = text.match(/-?\d+(\.\d+)?/);
-    if (numMatch) return parseFloat(numMatch[0]);
-    
-    return null;
-}
-
-// Analizar valor de escala (ej: "3/5" -> 3)
-function parseScale(text) {
-    if (!text) return null;
-    
-    // Buscar patrón de escala: número/número
-    const scaleMatch = text.match(/(\d+)\/(\d+)/);
-    if (scaleMatch) {
-        const numerator = parseInt(scaleMatch[1]);
-        return numerator;
-    }
-    
-    return null;
-}
-
-// Guardar progreso de objetivo
-async function saveObjectiveProgress(patientId, objectiveId) {
-    try {
-        if (!patientId || !objectiveId) {
-            showToast("Error: Faltan datos para guardar progreso", "error");
-            return;
-        }
-        
-        // Obtener valores del formulario
-        const progressDate = document.getElementById('progressDateInput')?.value;
-        const currentValue = document.getElementById('currentValueInput')?.value;
-        const notes = document.getElementById('progressNotes')?.value || '';
-        
-        if (!progressDate) {
-            showToast("La fecha de evaluación es obligatoria", "error");
-            return;
-        }
-        
-        if (!currentValue) {
-            showToast("El valor actual es obligatorio", "error");
-            return;
-        }
-        
-        showLoading();
-        
-        // Obtener objetivo actual
-        const objectiveRef = doc(db, "patients", patientId, "objectives", objectiveId);
-        const objectiveSnap = await getDoc(objectiveRef);
-        
-        if (!objectiveSnap.exists()) {
-            hideLoading();
-            showToast("Error: Objetivo no encontrado", "error");
-            return;
-        }
-        
-        const objective = objectiveSnap.data();
-        
-        // Calcular progreso
-        const initialVal = objective.initialValue;
-        const targetVal = objective.targetValue;
-        
-        // Extraer valores numéricos
-        let initialNum = extractNumericValue(initialVal);
-        let targetNum = extractNumericValue(targetVal);
-        let currentNum = extractNumericValue(currentValue);
-        
-        let progress = 0;
-        let status = 'pending';
-        
-        if (initialNum !== null && targetNum !== null && currentNum !== null) {
-            // Si el objetivo es aumentar un valor
-            if (targetNum > initialNum) {
-                progress = ((currentNum - initialNum) / (targetNum - initialNum)) * 100;
-            }
-            // Si el objetivo es disminuir un valor
-            else if (targetNum < initialNum) {
-                progress = ((initialNum - currentNum) / (initialNum - targetNum)) * 100;
-            }
-            // Si inicial y objetivo son iguales
-            else {
-                progress = currentNum >= targetNum ? 100 : 0;
-            }
-        } else {
-            // Intentar con valores de escala
-            const initialScale = parseScale(initialVal);
-            const targetScale = parseScale(targetVal);
-            const currentScale = parseScale(currentValue);
-            
-            if (initialScale !== null && targetScale !== null && currentScale !== null) {
-                const totalRange = targetScale - initialScale;
-                const currentProgress = currentScale - initialScale;
-                
-                if (totalRange !== 0) {
-                    progress = (currentProgress / totalRange) * 100;
-                }
-            }
-        }
-        
-        // Limitar a valores entre 0 y 100
-        progress = Math.max(0, Math.min(100, Math.round(progress)));
-        
-        // Determinar estado
-        if (progress >= 100) {
-            status = 'completed';
-        } else if (progress > 0) {
-            status = 'inprogress';
-        }
-        
-        // Crear entrada de historial
-        const progressEntry = {
-            date: progressDate,
-            value: currentValue,
-            notes: notes
-        };
-        
-        // Actualizar objeto de objetivo
-        const progressHistory = objective.progressHistory || [];
-        progressHistory.push(progressEntry);
-        
-        const updatedData = {
-            currentValue: currentValue,
-            progress: progress,
-            status: status,
-            updatedAt: new Date().toISOString(),
-            progressHistory: progressHistory
-        };
-        
-        // Guardar en Firebase
-        await updateDoc(objectiveRef, updatedData);
-        
-        // Actualizar caché
-        if (objectivesCache[patientId] && 
-            objectivesCache[patientId].specific && 
-            objectivesCache[patientId].specific[objectiveId]) {
-            
-            objectivesCache[patientId].specific[objectiveId] = {
-                ...objectivesCache[patientId].specific[objectiveId],
-                ...updatedData
-            };
-        }
-        
-        // Actualizar progreso general
-        await updateGeneralObjectiveProgress(patientId);
-        
-        // Actualizar UI
-        updateObjectivesUI(patientId);
-        
-        // Cerrar modal
-        const modal = document.getElementById('recordProgressModal');
-        if (modal) {
-            modal.classList.remove('active');
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
-        
-        hideLoading();
-        showToast("Progreso guardado correctamente", "success");
-    } catch (error) {
-        hideLoading();
-        console.error("Error al guardar progreso:", error);
-        showToast("Error al guardar progreso: " + error.message, "error");
-    }
-}
-
-// Actualizar progreso del objetivo general
-async function updateGeneralObjectiveProgress(patientId) {
-    try {
-        if (!patientId) return;
-        
-        // Obtener todos los objetivos específicos
-        const objectivesRef = collection(db, "patients", patientId, "objectives");
-        // No incluir el objetivo general
-        const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
-        const objectivesSnap = await getDocs(objectivesQuery);
-        
-        if (objectivesSnap.empty) return;
-        
-        // Calcular progreso general
-        let totalProgress = 0;
-        let objectivesCount = 0;
-        
-        objectivesSnap.docs.forEach(doc => {
-            const obj = doc.data();
-            totalProgress += (obj.progress || 0);
-            objectivesCount++;
-        });
-        
-        // Calcular promedio
-        const avgProgress = objectivesCount > 0 ? Math.round(totalProgress / objectivesCount) : 0;
-        
-        // Actualizar objetivo general
-        const generalRef = doc(db, "patients", patientId, "objectives", "general");
-        const generalSnap = await getDoc(generalRef);
-        
-        if (generalSnap.exists()) {
-            await updateDoc(generalRef, {
-                progress: avgProgress,
-                updatedAt: new Date().toISOString()
-            });
-            
-            // Actualizar caché
-            if (objectivesCache[patientId] && objectivesCache[patientId].general) {
-                objectivesCache[patientId].general = {
-                    ...objectivesCache[patientId].general,
-                    progress: avgProgress,
-                    updatedAt: new Date().toISOString()
-                };
-            }
-        }
-    } catch (error) {
-        console.error("Error al actualizar progreso general:", error);
-    }
-}
-
-
-
-
 // Show new evolution modal with proper validation
 function showNewEvolutionModal() {
     try {
@@ -7830,31 +5248,37 @@ if (cancelEvolutionBtn) {
                 };
 
                 // Procesar archivos de la ficha del paciente
-                const patientFilesInput = document.getElementById('patientFiles');
-                if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
-                    const files = Array.from(patientFilesInput.files);
-                    const filesPromises = files.map(file => 
-                        uploadFileToImageKit(file, currentPatientId, 'medical_records')
-                    );
-                    
-                    try {
-                        // Esperar a que se suban todos los archivos
-                        const uploadedFiles = await Promise.all(filesPromises);
-                        
-                        // Filtrar archivos que fallaron al subir (null)
-                        const validFiles = uploadedFiles.filter(file => file !== null);
-                        
-                        // Añadir los archivos al objeto patientData
-                        if (!patientData.files) patientData.files = [];
-                        patientData.files = [...patientData.files, ...validFiles];
-                        
-                        console.log("Archivos de ficha médica subidos:", validFiles);
-                        showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
-                    } catch (filesError) {
-                        console.error("Error al subir archivos de ficha médica:", filesError);
-                        showToast("Error al subir algunos archivos", "warning");
-                    }
-                }
+const patientFilesInput = document.getElementById('patientFiles');
+if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
+    const files = Array.from(patientFilesInput.files);
+    const filesPromises = files.map(file => 
+        uploadFileToImageKit(file, currentPatientId, 'medical_records')
+    );
+    
+    try {
+        // Esperar a que se suban todos los archivos
+        const uploadedFiles = await Promise.all(filesPromises);
+        
+        // Filtrar archivos que fallaron al subir (null)
+        const validFiles = uploadedFiles.filter(file => file !== null);
+        
+        // Inicializar el arreglo de archivos si no existe
+        if (!patientData.files) {
+            patientData.files = [];
+        }
+        
+        // Añadir los nuevos archivos válidos
+        if (validFiles && validFiles.length > 0) {
+            patientData.files = [...patientData.files, ...validFiles];
+        }
+        
+        console.log("Archivos de ficha médica subidos:", validFiles.length);
+        showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
+    } catch (filesError) {
+        console.error("Error al subir archivos de ficha médica:", filesError);
+        showToast("Error al subir algunos archivos", "warning");
+    }
+}
                 
                 // Actualizar datos del paciente
                 await updatePatient(currentPatientId, patientData);
@@ -8001,26 +5425,28 @@ if (deletePatientBtn) {
                     };
 
                     // Procesar archivos adjuntos
-                    const attachmentInput = document.getElementById('evolutionAttachments');
-                    if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
-                        const files = Array.from(attachmentInput.files);
-                        const attachmentsPromises = files.map(file => 
-                            uploadFileToImageKit(file, currentPatientId, 'evolutions')
-                        );
-                        
-                        try {
-                            // Esperar a que se suban todos los archivos
-                            const attachments = await Promise.all(attachmentsPromises);
-                            
-                            // Filtrar archivos que fallaron al subir (null)
-                            evolutionData.attachments = attachments.filter(attachment => attachment !== null);
-                            
-                            console.log("Archivos adjuntos subidos:", evolutionData.attachments);
-                        } catch (attachmentError) {
-                            console.error("Error al subir archivos adjuntos:", attachmentError);
-                            showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
-                        }
-                    }
+const attachmentInput = document.getElementById('evolutionAttachments');
+if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
+    const files = Array.from(attachmentInput.files);
+    const attachmentsPromises = files.map(file => 
+        uploadFileToImageKit(file, currentPatientId, 'evolutions')
+    );
+    
+    try {
+        // Esperar a que se suban todos los archivos
+        const attachments = await Promise.all(attachmentsPromises);
+        
+        // Filtrar archivos que fallaron al subir (null)
+        evolutionData.attachments = attachments.filter(attachment => attachment !== null);
+        
+        console.log("Archivos adjuntos subidos:", evolutionData.attachments.length);
+    } catch (attachmentError) {
+        console.error("Error al subir archivos adjuntos:", attachmentError);
+        showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
+        // En caso de error, inicializar el arreglo de adjuntos vacío
+        evolutionData.attachments = [];
+    }
+}
                     
                     console.log("Datos de evolución a guardar:", evolutionData);
                     
@@ -9324,9 +6750,120 @@ if (deleteGeneralObjectiveBtn) {
         });
     });
 
-    
+    // Función para actualizar la vista previa del objetivo específico
+    function updateSpecificObjectivePreview() {
+        const verb = document.getElementById('actionVerbSelect').value;
+        const structure = document.getElementById('structureInput').value;
+        const initialValue = document.getElementById('initialValueInput').value;
+        const targetValue = document.getElementById('targetValueInput').value;
+        const method = document.getElementById('evaluationMethodSelect').value;
+        const duration = document.getElementById('durationInput').value;
+        const durationUnit = document.getElementById('durationUnitSelect').value;
+        
+        const preview = document.getElementById('specificObjectivePreview');
+        if (preview) {
+            preview.textContent = `${verb} ${structure ? 'la ' + structure : 'la estructura/función'} de ${initialValue || 'valor inicial'} a ${targetValue || 'valor objetivo'} en ${method || 'método de evaluación'} en ${duration || '2'} ${durationUnit || 'semanas'}.`;
+        }
+    }
 
+    // Actualizar vista previa al cambiar cualquier campo
+    const specificObjectiveInputs = [
+        'actionVerbSelect', 'structureInput', 'initialValueInput', 
+        'targetValueInput', 'evaluationMethodSelect', 'durationInput', 
+        'durationUnitSelect'
+    ];
     
+    specificObjectiveInputs.forEach(inputId => {
+        const element = document.getElementById(inputId);
+        if (element) {
+            element.addEventListener('input', updateSpecificObjectivePreview);
+            element.addEventListener('change', updateSpecificObjectivePreview);
+        }
+    });
+});
+
+
+
+
+        // Habilitar reordenamiento de objetivos (drag and drop)
+function setupObjectiveReordering() {
+    const objectivesList = document.getElementById('specificObjectivesList');
+    if (!objectivesList) return;
+    
+    // Comprobar si ya se configuró antes para evitar duplicar
+    if (objectivesList.getAttribute('data-sortable-initialized') === 'true') return;
+    objectivesList.setAttribute('data-sortable-initialized', 'true');
+    
+    // Hacer que los elementos sean arrastrables
+    const cards = objectivesList.querySelectorAll('.objective-card');
+    cards.forEach(card => {
+        card.setAttribute('draggable', 'true');
+        
+        // Añadir indicador visual de "arrastrable"
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'drag-handle';
+        dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i>';
+        dragHandle.style.position = 'absolute';
+        dragHandle.style.top = '15px';
+        dragHandle.style.left = '5px';
+        dragHandle.style.color = 'var(--text-secondary)';
+        dragHandle.style.opacity = '0.5';
+        dragHandle.style.cursor = 'move';
+        
+        // Asegurar que la card tiene posición relativa para posicionar el handle
+        card.style.position = 'relative';
+        card.style.paddingLeft = '25px';
+        
+        card.appendChild(dragHandle);
+        
+        // Eventos de arrastrar
+        card.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
+            this.classList.add('dragging');
+            setTimeout(() => this.style.opacity = '0.4', 0);
+        });
+        
+        card.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            this.style.opacity = '1';
+        });
+    });
+    
+    // Eventos para la zona donde se sueltan
+    objectivesList.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const draggable = document.querySelector('.dragging');
+        if (!draggable) return;
+        
+        const afterElement = getDragAfterElement(objectivesList, e.clientY);
+        if (afterElement) {
+            objectivesList.insertBefore(draggable, afterElement);
+        } else {
+            objectivesList.appendChild(draggable);
+        }
+    });
+    
+    objectivesList.addEventListener('drop', function(e) {
+        e.preventDefault();
+        // Aquí podrías guardar el nuevo orden en la base de datos si es necesario
+    });
+    
+    // Función para determinar después de qué elemento insertar
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.objective-card:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+}
 
 // Llamar a esta función cuando se cargan los objetivos específicos
 document.addEventListener('DOMContentLoaded', function() {
@@ -9343,7 +6880,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-        // Función para cargar y mostrar archivos guardados del paciente
+// Función para cargar y mostrar archivos guardados del paciente
 async function loadPatientFiles(patientId) {
     try {
         const patient = await getPatient(patientId);
@@ -9357,72 +6894,115 @@ async function loadPatientFiles(patientId) {
         patient.files.forEach(file => {
             const isImage = file.type === 'image';
             const isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
+            
             const attachment = document.createElement('div');
             attachment.className = 'attachment';
             attachment.style.position = 'relative';
+            attachment.style.width = '150px';
+            attachment.style.height = '150px';
+            attachment.style.overflow = 'hidden';
+            attachment.style.borderRadius = '8px';
+            attachment.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+            attachment.style.backgroundColor = '#f8f9fa';
+            attachment.style.margin = '10px';
             
             if (isImage) {
                 const img = document.createElement('img');
-                img.src = file.url;
+                img.src = file.thumbnailUrl || file.url;
                 img.alt = file.name;
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
                 img.style.cursor = 'pointer';
                 img.addEventListener('click', function() {
                     window.open(file.url, '_blank');
                 });
                 attachment.appendChild(img);
             } else if (isPDF) {
-                // Icono especial para PDF
-                attachment.innerHTML = `
-                    <div style="text-align: center; padding: 10px; cursor: pointer;" onclick="window.open('${file.url}', '_blank')">
-                        <i class="fas fa-file-pdf" style="font-size: 40px; color: #e74c3c;"></i>
-                        <div style="margin-top: 5px; font-size: 12px; word-break: break-word;">
-                            ${file.name}
-                        </div>
-                    </div>
+                const fileIconContainer = document.createElement('div');
+                fileIconContainer.style.display = 'flex';
+                fileIconContainer.style.flexDirection = 'column';
+                fileIconContainer.style.alignItems = 'center';
+                fileIconContainer.style.justifyContent = 'center';
+                fileIconContainer.style.height = '100%';
+                fileIconContainer.style.padding = '10px';
+                fileIconContainer.style.textAlign = 'center';
+                fileIconContainer.style.cursor = 'pointer';
+                fileIconContainer.innerHTML = `
+                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name}</div>
                 `;
+                fileIconContainer.addEventListener('click', function() {
+                    window.open(file.url, '_blank');
+                });
+                attachment.appendChild(fileIconContainer);
             } else {
-                // Ícono genérico para otros tipos de archivo
-                const fileExtension = file.name ? file.name.split('.').pop().toUpperCase() : 'DOC';
-                attachment.innerHTML = `
-                    <div style="text-align: center; padding: 10px; cursor: pointer;" onclick="window.open('${file.url}', '_blank')">
-                        <i class="fas fa-file" style="font-size: 40px; color: #3498db;"></i>
-                        <div style="margin-top: 5px; font-size: 12px; word-break: break-word;">
-                            ${file.name || 'Documento'}
-                        </div>
-                        <div style="font-weight: bold; margin-top: 3px;">${fileExtension}</div>
-                    </div>
+                const fileIconContainer = document.createElement('div');
+                fileIconContainer.style.display = 'flex';
+                fileIconContainer.style.flexDirection = 'column';
+                fileIconContainer.style.alignItems = 'center';
+                fileIconContainer.style.justifyContent = 'center';
+                fileIconContainer.style.height = '100%';
+                fileIconContainer.style.padding = '10px';
+                fileIconContainer.style.textAlign = 'center';
+                fileIconContainer.style.cursor = 'pointer';
+                fileIconContainer.innerHTML = `
+                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
+                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name || 'Documento'}</div>
+                    <div style="font-weight: bold; margin-top: 3px;">${file.name ? file.name.split('.').pop().toUpperCase() : 'DOC'}</div>
                 `;
+                fileIconContainer.addEventListener('click', function() {
+                    window.open(file.url, '_blank');
+                });
+                attachment.appendChild(fileIconContainer);
             }
             
-            // Añadir botón para descargar
+            // Acciones (Ver y Descargar)
+            const actions = document.createElement('div');
+            actions.style.position = 'absolute';
+            actions.style.bottom = '0';
+            actions.style.left = '0';
+            actions.style.width = '100%';
+            actions.style.display = 'flex';
+            actions.style.justifyContent = 'space-around';
+            actions.style.background = 'rgba(0,0,0,0.6)';
+            actions.style.padding = '5px 0';
+            
+            // Botón para ver
+            const viewBtn = document.createElement('a');
+            viewBtn.href = file.url;
+            viewBtn.target = '_blank';
+            viewBtn.className = 'attachment-action';
+            viewBtn.style.color = 'white';
+            viewBtn.style.textDecoration = 'none';
+            viewBtn.style.display = 'flex';
+            viewBtn.style.flexDirection = 'column';
+            viewBtn.style.alignItems = 'center';
+            viewBtn.style.fontSize = '12px';
+            viewBtn.innerHTML = `
+                <i class="fas fa-eye"></i>
+                <span>Ver</span>
+            `;
+            
+            // Botón para descargar
             const downloadBtn = document.createElement('a');
             downloadBtn.href = file.url;
-            downloadBtn.target = '_blank';
-            downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
-            downloadBtn.className = 'download-attachment-btn';
-            downloadBtn.style.position = 'absolute';
-            downloadBtn.style.bottom = '5px';
-            downloadBtn.style.right = '5px';
-            downloadBtn.style.background = 'rgba(0,0,0,0.5)';
+            downloadBtn.download = file.name || 'documento';
+            downloadBtn.className = 'attachment-action';
             downloadBtn.style.color = 'white';
-            downloadBtn.style.border = 'none';
-            downloadBtn.style.borderRadius = '50%';
-            downloadBtn.style.width = '24px';
-            downloadBtn.style.height = '24px';
+            downloadBtn.style.textDecoration = 'none';
             downloadBtn.style.display = 'flex';
+            downloadBtn.style.flexDirection = 'column';
             downloadBtn.style.alignItems = 'center';
-            downloadBtn.style.justifyContent = 'center';
-            downloadBtn.style.cursor = 'pointer';
-            downloadBtn.title = 'Descargar';
+            downloadBtn.style.fontSize = '12px';
+            downloadBtn.innerHTML = `
+                <i class="fas fa-download"></i>
+                <span>Descargar</span>
+            `;
             
-            attachment.appendChild(downloadBtn);
-            
-            const typeLabel = document.createElement('div');
-            typeLabel.className = 'attachment-type';
-            typeLabel.textContent = isImage ? 'Foto' : (isPDF ? 'PDF' : (file.name ? file.name.split('.').pop().toUpperCase() : 'DOC'));
-            attachment.appendChild(typeLabel);
+            actions.appendChild(viewBtn);
+            actions.appendChild(downloadBtn);
+            attachment.appendChild(actions);
             
             previewContainer.appendChild(attachment);
         });
