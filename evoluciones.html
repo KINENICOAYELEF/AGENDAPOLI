@@ -567,21 +567,23 @@
                                 <div style="display: flex; flex-wrap: wrap; gap: 15px;">
                                     <div style="flex: 1; min-width: 200px;">
                                         <h4 style="margin-bottom: 10px; font-size: 15px; color: var(--primary);">Contenido a incluir</h4>
-                                        <div class="pdf-option-toggle">
-                                            <input type="checkbox" id="pdfIncludeDiagnosis" checked>
-                                            <label for="pdfIncludeDiagnosis">Diagnóstico kinesiológico</label>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeDiagnosis" checked> Diagnóstico kinesiológico</label>
                                         </div>
-                                        <div class="pdf-option-toggle">
-                                            <input type="checkbox" id="pdfIncludeEvolutions" checked>
-                                            <label for="pdfIncludeEvolutions">Historial de evoluciones</label>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeEvolutions" checked> Historial de evoluciones</label>
                                         </div>
-                                        <div class="pdf-option-toggle">
-                                            <input type="checkbox" id="pdfIncludeScales" checked>
-                                            <label for="pdfIncludeScales">Escalas de evaluación</label>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeScales" checked> Escalas de evaluación</label>
                                         </div>
-                                        <div class="pdf-option-toggle">
-                                            <input type="checkbox" id="pdfIncludeExercises" checked>
-                                            <label for="pdfIncludeExercises">Planes de ejercicios</label>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeExercises" checked> Planes de ejercicios</label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeLogo" checked> Incluir logo del centro</label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label"><input type="checkbox" id="pdfIncludeFooter" checked> Incluir pie de página</label>
                                         </div>
                                     </div>
                                     <div style="flex: 1; min-width: 200px;">
@@ -9537,6 +9539,7 @@ function generateStatisticsReport() {
 }
 
 // Export PDF function (mejorada)
+// Export PDF function (mejorada)
 async function exportToPDF(patientId) {
     try {
         showLoading();
@@ -9558,7 +9561,10 @@ async function exportToPDF(patientId) {
         // Get evolutions
         const evolutions = await getEvolutions(patientId);
         
-        // Leer opciones del formulario - Versión corregida para asegurar que se manejen correctamente
+        // Obtener diagnósticos del paciente
+        const diagnoses = await getDiagnoses(patientId);
+        
+        // Leer opciones del formulario
         const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
             document.getElementById('pdfIncludeDiagnosis').checked : true;
         const includeEvolutions = document.getElementById('pdfIncludeEvolutions') ? 
@@ -9644,17 +9650,108 @@ async function exportToPDF(patientId) {
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         doc.text(`RUT: ${patient.rut || 'No registrado'}`, 15, 50);
-        doc.text(`Teléfono: ${patient.phone || 'No registrado'}`, 15, 60);
+        doc.text(`Teléfono: ${patient.phone || 'No reporta'}`, 15, 60);
         doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 70);
         
         if (centerAddress) {
             doc.text(`Centro: ${centerName} - ${centerAddress}`, 15, 80);
         }
         
+        // Añadir información adicional del paciente
         let yPos = 100;
+        
+        // Sección de datos personales
+        doc.setFillColor(30, 136, 229);
+        doc.rect(10, yPos, 190, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text('DATOS PERSONALES', 105, yPos + 7, null, null, 'center');
+        
+        yPos += 20;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        
+        // Fecha de nacimiento
+        if (patient.birthDate) {
+            doc.text(`Fecha de nacimiento: ${formatDate(new Date(patient.birthDate))}`, 15, yPos);
+        } else {
+            doc.text("Fecha de nacimiento: No reporta", 15, yPos);
+        }
+        yPos += 10;
+        
+        // Email y dirección
+        doc.text(`Email: ${patient.email || 'No reporta'}`, 15, yPos);
+        yPos += 10;
+        doc.text(`Dirección: ${patient.address || 'No reporta'}`, 15, yPos);
+        yPos += 10;
+        
+        // Historia médica
+        doc.setFont(undefined, 'bold');
+        doc.text("Historia médica:", 15, yPos);
+        yPos += 7;
+        doc.setFont(undefined, 'normal');
+        
+        if (patient.medicalHistory) {
+            const historyLines = doc.splitTextToSize(patient.medicalHistory, 180);
+            doc.text(historyLines, 15, yPos);
+            yPos += historyLines.length * 7 + 5;
+        } else {
+            doc.text("No reporta", 15, yPos);
+            yPos += 10;
+        }
+        
+        // Medicamentos
+        doc.setFont(undefined, 'bold');
+        doc.text("Medicamentos:", 15, yPos);
+        yPos += 7;
+        doc.setFont(undefined, 'normal');
+        
+        if (patient.medications) {
+            const medicationsLines = doc.splitTextToSize(patient.medications, 180);
+            doc.text(medicationsLines, 15, yPos);
+            yPos += medicationsLines.length * 7 + 5;
+        } else {
+            doc.text("No reporta", 15, yPos);
+            yPos += 10;
+        }
+        
+        // Alergias
+        doc.setFont(undefined, 'bold');
+        doc.text("Alergias:", 15, yPos);
+        yPos += 7;
+        doc.setFont(undefined, 'normal');
+        
+        if (patient.allergies) {
+            const allergiesLines = doc.splitTextToSize(patient.allergies, 180);
+            doc.text(allergiesLines, 15, yPos);
+            yPos += allergiesLines.length * 7 + 5;
+        } else {
+            doc.text("No reporta", 15, yPos);
+            yPos += 10;
+        }
+        
+        // Contacto de emergencia
+        doc.setFont(undefined, 'bold');
+        doc.text("Contacto de emergencia:", 15, yPos);
+        yPos += 7;
+        doc.setFont(undefined, 'normal');
+        
+        if (patient.emergencyContact || patient.emergencyPhone) {
+            doc.text(`${patient.emergencyContact || 'No reporta'} - ${patient.emergencyPhone || 'No reporta'}`, 15, yPos);
+        } else {
+            doc.text("No reporta", 15, yPos);
+        }
+        yPos += 15;
         
         // Add diagnoses if requested
         if (includeDiagnosis) {
+            // Check if we need a new page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
             doc.setFillColor(30, 136, 229);
             doc.rect(10, yPos, 190, 10, 'F');
             doc.setTextColor(255, 255, 255);
@@ -9666,18 +9763,72 @@ async function exportToPDF(patientId) {
             doc.setFont(undefined, 'normal');
             yPos += 20;
             
-            // Add diagnosis info (if available)
-            // In a real implementation, this would fetch the actual diagnosis data
+            // Add diagnosis info
             doc.setFontSize(11);
             doc.setTextColor(0, 0, 0);
-            doc.text("Diagnóstico kinesiológico funcional del paciente:", 15, yPos);
-            yPos += 10;
             
-            // Ejemplo de diagnóstico (esto debería venir de la base de datos)
-            const diagnosisText = patient.diagnosis || "No se ha registrado un diagnóstico formal para este paciente.";
-            const diagnosisLines = doc.splitTextToSize(diagnosisText, 180);
-            doc.text(diagnosisLines, 15, yPos);
-            yPos += diagnosisLines.length * 7 + 15;
+            if (diagnoses && diagnoses.length > 0) {
+                // Sort diagnoses from newest to oldest
+                diagnoses.sort((a, b) => {
+                    if (!a.date || !b.date) return 0;
+                    return new Date(b.date) - new Date(a.date);
+                });
+                
+                // Include only the most recent diagnosis
+                const latestDiagnosis = diagnoses[0];
+                
+                // Date
+                doc.setFont(undefined, 'bold');
+                doc.text(`Fecha de evaluación: ${formatDate(new Date(latestDiagnosis.date))}`, 15, yPos);
+                yPos += 10;
+                
+                // Código CIE
+                if (latestDiagnosis.code) {
+                    doc.text(`Diagnóstico médico: ${latestDiagnosis.code}`, 15, yPos);
+                    yPos += 10;
+                }
+                
+                // Motivo de consulta
+                if (latestDiagnosis.consultReason) {
+                    doc.text("Motivo de consulta:", 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFont(undefined, 'normal');
+                    const reasonLines = doc.splitTextToSize(latestDiagnosis.consultReason, 180);
+                    doc.text(reasonLines, 15, yPos);
+                    yPos += reasonLines.length * 7 + 5;
+                    doc.setFont(undefined, 'bold');
+                }
+                
+                // Antecedentes médicos
+                if (latestDiagnosis.medicalBackground) {
+                    doc.text("Antecedentes relevantes:", 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFont(undefined, 'normal');
+                    const backgroundLines = doc.splitTextToSize(latestDiagnosis.medicalBackground, 180);
+                    doc.text(backgroundLines, 15, yPos);
+                    yPos += backgroundLines.length * 7 + 5;
+                    doc.setFont(undefined, 'bold');
+                }
+                
+                // Descripción del diagnóstico
+                doc.text("Diagnóstico kinesiológico funcional:", 15, yPos);
+                yPos += 7;
+                
+                doc.setFont(undefined, 'normal');
+                if (latestDiagnosis.description) {
+                    const diagnosisLines = doc.splitTextToSize(latestDiagnosis.description, 180);
+                    doc.text(diagnosisLines, 15, yPos);
+                    yPos += diagnosisLines.length * 7 + 10;
+                } else {
+                    doc.text("No se ha registrado descripción del diagnóstico", 15, yPos);
+                    yPos += 10;
+                }
+            } else {
+                doc.text("No se ha registrado un diagnóstico formal para este paciente.", 15, yPos);
+                yPos += 10;
+            }
             
             // Check if we need a new page
             if (yPos > 270) {
@@ -9916,7 +10067,18 @@ async function exportToPDF(patientId) {
                             doc.text(exercise.name?.substring(0, 20) || 'Sin nombre', 15 + cellPadding, yPos);
                             doc.text(exercise.sets?.toString() || '3', 75 + cellPadding, yPos);
                             doc.text(exercise.reps?.toString() || '10', 105 + cellPadding, yPos);
-                            doc.text(exercise.intensity || 'Media', 135 + cellPadding, yPos);
+                            
+                            // Determine intensity string
+                            let intensityText = '';
+                            if (exercise.effortType && exercise.effortValue) {
+                                intensityText = `${exercise.effortType} ${exercise.effortValue}`;
+                            } else if (exercise.intensity) {
+                                intensityText = exercise.intensity;
+                            } else {
+                                intensityText = 'No especificada';
+                            }
+                            
+                            doc.text(intensityText, 135 + cellPadding, yPos);
                             
                             // Notes (might need truncation)
                             const notes = exercise.notes?.substring(0, 15) || '';
