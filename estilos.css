@@ -2689,3 +2689,69 @@ button:focus {
 .attachment {
     position: relative;
 }
+
+
+
+
+    /* Estilos para mejorar responsividad */
+    @media screen and (max-width: 768px) {
+        .form-row {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .form-col {
+            flex: 1 1 calc(50% - 10px);
+            min-width: 120px;
+        }
+        
+        .exercise-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .exercise-table th, 
+        .exercise-table td {
+            padding: 8px 5px;
+            font-size: 0.9em;
+        }
+        
+        .exercise-two-columns {
+            grid-template-columns: 1fr;
+        }
+        
+        /* Ajustes para modal en pantallas pequeñas */
+        .modal {
+            width: 95%;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* Ajustes para escalas */
+        .scales-container {
+            flex-direction: column;
+        }
+        
+        .scale-card {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+    }
+    
+    /* Mejoras generales */
+    .exercise-detail-item {
+        margin-bottom: 8px;
+    }
+    
+    .exercise-detail-label {
+        margin-bottom: 3px;
+        font-weight: bold;
+        color: var(--text-secondary);
+    }
+    
+    .tooltip-container:hover .tooltip-content {
+        display: block;
+        z-index: 1000;
+    }
