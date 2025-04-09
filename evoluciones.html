@@ -2793,6 +2793,11 @@ function fillEvolutionsTab(evolutions) {
                 });
             }
         });
+
+        // Configurar tooltips para dispositivos móviles después de cargar evoluciones
+        setTimeout(setupMobileTooltips, 500);
+
+        
     } catch (error) {
         console.error("Error llenando pestaña de evoluciones:", error);
         showToast("Error al cargar evoluciones: " + error.message, "error");
@@ -3009,7 +3014,7 @@ function renderExercises(exercises) {
                         <span class="intensity-badge ${intensityClass}">
                             ${effortStr}
                         </span>
-                        <div class="tooltip-content" style="width: 280px; left: -120px; top: 25px;">
+                        <div class="tooltip-content" style="width: 280px; max-width: 90vw; z-index: 1001;">
                             ${exercise.effortType === 'RIR' ? `
                                 <p><strong>RIR: Repeticiones en Reserva</strong></p>
                                 <p>0 = No podría realizar ni una repetición más (fallo muscular)</p>
@@ -10528,8 +10533,8 @@ function addExerciseRow(exercise = {}) {
               'Repeticiones en reserva'}
         </div>
         <div class="tooltip-container" style="align-self: center;">
-            <i class="fas fa-info-circle tooltip-icon" style="font-size: 12px; color: var(--primary-light);"></i>
-            <div class="tooltip-content" style="width: 280px; right: -140px; left: auto;">
+            <i class="fas fa-info-circle tooltip-icon" style="font-size: 16px; color: var(--primary-light);"></i>
+            <div class="tooltip-content" style="width: 280px; max-width: 90vw; z-index: 1001;">
                 ${(exercise.effortType === 'RPE' || !exercise.effortType) ? `
                 <p><strong>RPE: Rating of Perceived Exertion (0-10)</strong></p>
                 <p>0 = Reposo absoluto</p>
@@ -12297,6 +12302,16 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
         
         console.log("Inicialización completada correctamente");
         showToast("Sistema iniciado correctamente", "success");
+
+        // Cargar pacientes iniciales
+        await getPatients();
+        
+        // Configurar tooltips para dispositivos móviles
+        setupMobileTooltips();
+        
+        console.log("Inicialización completada correctamente");
+        showToast("Sistema iniciado correctamente", "success");
+        
     } catch (error) {
         console.error("Error durante la inicialización:", error);
         showToast("Error de inicialización: " + error.message, "error");
@@ -13820,6 +13835,121 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
         hideLoading();
         console.error("Error al eliminar archivo:", error);
         showToast("Error al eliminar archivo: " + error.message, "error");
+    }
+}
+
+
+        // Función para gestionar tooltips en dispositivos móviles
+function setupMobileTooltips() {
+    // Detectar si es un dispositivo móvil o táctil
+    const isMobile = window.matchMedia("(max-width: 768px)").matches || 
+                      ('ontouchstart' in window) || 
+                      (navigator.maxTouchPoints > 0);
+    
+    if (isMobile) {
+        // Añadir manejadores de clic a todos los tooltips
+        document.querySelectorAll('.tooltip-icon').forEach(icon => {
+            // Remover manejadores anteriores para evitar duplicados
+            const newIcon = icon.cloneNode(true);
+            if (icon.parentNode) {
+                icon.parentNode.replaceChild(newIcon, icon);
+            }
+            
+            newIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Cerrar cualquier tooltip abierto primero
+                document.querySelectorAll('.tooltip-content.mobile-view').forEach(tt => {
+                    tt.style.display = 'none';
+                    tt.classList.remove('mobile-view');
+                });
+                
+                // Obtener el tooltip asociado a este icono
+                const tooltip = this.nextElementSibling;
+                if (tooltip && tooltip.classList.contains('tooltip-content')) {
+                    // Añadir clase especial para vista móvil
+                    tooltip.classList.add('mobile-view');
+                    
+                    // Crear botón de cierre si no existe
+                    if (!tooltip.querySelector('.tooltip-close')) {
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'tooltip-close';
+                        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                        closeBtn.addEventListener('click', function(evt) {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            tooltip.style.display = 'none';
+                        });
+                        tooltip.appendChild(closeBtn);
+                    }
+                    
+                    // Mostrar el tooltip
+                    tooltip.style.display = 'block';
+                    
+                    // Cerrar al hacer clic fuera
+                    document.addEventListener('click', function closeTooltip(evt) {
+                        if (!tooltip.contains(evt.target) && evt.target !== newIcon) {
+                            tooltip.style.display = 'none';
+                            document.removeEventListener('click', closeTooltip);
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Manejar también los elementos de intensidad que deben mostrar tooltip
+        document.querySelectorAll('.intensity-badge').forEach(badge => {
+            // Buscar el tooltip contenedor padre
+            const container = badge.closest('.tooltip-container');
+            if (container) {
+                // Remover manejadores anteriores
+                const newBadge = badge.cloneNode(true);
+                badge.parentNode.replaceChild(newBadge, badge);
+                
+                newBadge.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Cerrar cualquier tooltip abierto
+                    document.querySelectorAll('.tooltip-content.mobile-view').forEach(tt => {
+                        tt.style.display = 'none';
+                        tt.classList.remove('mobile-view');
+                    });
+                    
+                    // Obtener el tooltip cercano
+                    const tooltip = container.querySelector('.tooltip-content');
+                    if (tooltip) {
+                        // Añadir clase especial para vista móvil
+                        tooltip.classList.add('mobile-view');
+                        
+                        // Crear botón de cierre si no existe
+                        if (!tooltip.querySelector('.tooltip-close')) {
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'tooltip-close';
+                            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                            closeBtn.addEventListener('click', function(evt) {
+                                evt.preventDefault();
+                                evt.stopPropagation();
+                                tooltip.style.display = 'none';
+                            });
+                            tooltip.appendChild(closeBtn);
+                        }
+                        
+                        // Mostrar el tooltip
+                        tooltip.style.display = 'block';
+                        
+                        // Cerrar al hacer clic fuera
+                        document.addEventListener('click', function closeTooltip(evt) {
+                            if (!tooltip.contains(evt.target) && evt.target !== newBadge) {
+                                tooltip.style.display = 'none';
+                                document.removeEventListener('click', closeTooltip);
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
 }
         </script>
