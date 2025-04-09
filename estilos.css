@@ -2937,3 +2937,9 @@ select.form-control option:checked {
         display: block;
         z-index: 1000;
     }
+
+/* Ocultar el icono de información en la tabla de ejercicios */
+.exercise-table td .fa-info-circle,
+.exercise-table td i.fas.fa-info-circle {
+    display: none !important;
+}
