@@ -9577,61 +9577,89 @@ async function exportToPDF(patientId) {
         const cifActivities = await getCifActivities(patientId);
         const cifFactors = await getCifFactors(patientId);
         
-        // Obtener objetivos terapéuticos
+        // Obtener objetivos terapéuticos con manejo mejorado
         let generalObjective = null;
         let specificObjectives = [];
         
         try {
+            console.log("Obteniendo objetivos para paciente:", patientId);
+            
             // Objetivo general
             const generalRef = doc(db, "patients", patientId, "objectives", "general");
             const generalSnap = await getDoc(generalRef);
             if (generalSnap.exists()) {
                 generalObjective = generalSnap.data();
+                console.log("Objetivo general encontrado:", generalObjective);
+            } else {
+                console.log("No se encontró objetivo general");
             }
             
             // Objetivos específicos
             const objectivesRef = collection(db, "patients", patientId, "objectives");
             const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
             const objectivesSnap = await getDocs(objectivesQuery);
-            specificObjectives = objectivesSnap.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            
+            if (objectivesSnap.empty) {
+                console.log("No se encontraron objetivos específicos");
+            } else {
+                specificObjectives = objectivesSnap.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log(`Se encontraron ${specificObjectives.length} objetivos específicos`);
+            }
         } catch (error) {
             console.error("Error al obtener objetivos:", error);
+            showToast("Error al cargar objetivos: " + error.message, "error");
         }
         
-        // Obtener planes de tratamiento
+        // Obtener planes de tratamiento con manejo mejorado
         let treatmentPlans = [];
         try {
+            console.log("Obteniendo planes de tratamiento para paciente:", patientId);
+            
             const plansRef = collection(db, "patients", patientId, "treatmentPlans");
             const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
             const plansSnapshot = await getDocs(plansQuery);
-            treatmentPlans = plansSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            
+            if (plansSnapshot.empty) {
+                console.log("No se encontraron planes de tratamiento");
+            } else {
+                treatmentPlans = plansSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log(`Se encontraron ${treatmentPlans.length} planes de tratamiento`);
+            }
         } catch (error) {
             console.error("Error al obtener planes de tratamiento:", error);
+            showToast("Error al cargar planes: " + error.message, "error");
         }
         
-        // Leer opciones del formulario
-        const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
-            document.getElementById('pdfIncludeDiagnosis').checked : true;
-        const includeEvolutions = document.getElementById('pdfIncludeEvolutions') ? 
-            document.getElementById('pdfIncludeEvolutions').checked : true;
-        const includeScales = document.getElementById('pdfIncludeScales') ? 
-            document.getElementById('pdfIncludeScales').checked : true;
-        const includeExercises = document.getElementById('pdfIncludeExercises') ? 
-            document.getElementById('pdfIncludeExercises').checked : true;
-        const includeLogo = document.getElementById('pdfIncludeLogo') ? 
-            document.getElementById('pdfIncludeLogo').checked : true;
-        const includeFooter = document.getElementById('pdfIncludeFooter') ? 
-            document.getElementById('pdfIncludeFooter').checked : true;
-        const includeObjectives = document.getElementById('pdfIncludeObjectives') ? 
-            document.getElementById('pdfIncludeObjectives').checked : true;
-        const includePlans = document.getElementById('pdfIncludePlans') ? 
-            document.getElementById('pdfIncludePlans').checked : true;
+        // Leer opciones del formulario con mejor manejo de casillas
+        function getCheckboxState(id, defaultValue = true) {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.log(`Checkbox ${id} no encontrado, usando valor predeterminado:`, defaultValue);
+                return defaultValue;
+            }
+            console.log(`Checkbox ${id} estado:`, element.checked);
+            return element.checked;
+        }
+        
+        const includeDiagnosis = getCheckboxState('pdfIncludeDiagnosis', true);
+        const includeEvolutions = getCheckboxState('pdfIncludeEvolutions', true);
+        const includeScales = getCheckboxState('pdfIncludeScales', true);
+        const includeExercises = getCheckboxState('pdfIncludeExercises', true);
+        const includeLogo = getCheckboxState('pdfIncludeLogo', true);
+        const includeFooter = getCheckboxState('pdfIncludeFooter', true);
+        const includeObjectives = getCheckboxState('pdfIncludeObjectives', true);
+        const includePlans = getCheckboxState('pdfIncludePlans', true);
+        
+        console.log("Opciones de exportación PDF:", {
+            includeDiagnosis, includeObjectives, includePlans,
+            includeEvolutions, includeScales, includeExercises
+        });
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -10048,131 +10076,143 @@ async function exportToPDF(patientId) {
             }
         }
         
-        // AÑADIR OBJETIVOS TERAPÉUTICOS
-        if (includeObjectives) {
+        /// AÑADIR OBJETIVOS TERAPÉUTICOS
+if (includeObjectives) {
+    // Check if we need a new page
+    if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+    }
+    
+    doc.setFillColor(30, 136, 229);
+    doc.rect(10, yPos, 190, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
+    yPos += 20;
+    
+    doc.setTextColor(0, 0, 0);
+    
+    // Objetivo general
+    if (generalObjective) {
+        console.log("Añadiendo objetivo general al PDF");
+        doc.setFont(undefined, 'bold');
+        doc.text("Objetivo general:", 15, yPos);
+        yPos += 7;
+        
+        doc.setFont(undefined, 'normal');
+        const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
+        doc.text(generalLines, 15, yPos);
+        yPos += generalLines.length * 7 + 5;
+        
+        if (generalObjective.endDate) {
+            doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
+            yPos += 7;
+        }
+        
+        // Mostrar progreso
+        doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
+        yPos += 10;
+    } else {
+        console.log("No hay objetivo general para añadir al PDF");
+        doc.setFont(undefined, 'normal');
+        doc.text("No se ha definido un objetivo general para este paciente.", 15, yPos);
+        yPos += 10;
+    }
+    
+    // Objetivos específicos
+    if (specificObjectives.length > 0) {
+        console.log("Añadiendo objetivos específicos al PDF:", specificObjectives.length);
+        // Check if we need a new page
+        if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.text("Objetivos específicos:", 15, yPos);
+        yPos += 10;
+        
+        // Agrupar por categoría
+        const categorized = {};
+        specificObjectives.forEach(obj => {
+            const category = obj.category || "Sin categoría";
+            if (!categorized[category]) {
+                categorized[category] = [];
+            }
+            categorized[category].push(obj);
+        });
+        
+        // Mostrar por categoría
+        for (const [category, objectives] of Object.entries(categorized)) {
             // Check if we need a new page
             if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
             
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(10, yPos - 5, 190, 10, 'F');
             doc.setFont(undefined, 'bold');
-            doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
-            yPos += 20;
-            
+            doc.setTextColor(30, 136, 229);
+            doc.text(`Categoría: ${category}`, 15, yPos);
+            doc.setFont(undefined, 'normal');
             doc.setTextColor(0, 0, 0);
             
-            // Objetivo general
-            if (generalObjective) {
-                doc.setFont(undefined, 'bold');
-                doc.text("Objetivo general:", 15, yPos);
-                yPos += 7;
-                
-                doc.setFont(undefined, 'normal');
-                const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
-                doc.text(generalLines, 15, yPos);
-                yPos += generalLines.length * 7 + 5;
-                
-                if (generalObjective.endDate) {
-                    doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
-                    yPos += 7;
-                }
-                
-                // Mostrar progreso
-                doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
-                yPos += 10;
-            }
+            yPos += 10;
             
-            // Objetivos específicos
-            if (specificObjectives.length > 0) {
+            // Mostrar cada objetivo
+            objectives.forEach((obj, index) => {
                 // Check if we need a new page
                 if (yPos > 250) {
                     doc.addPage();
                     yPos = 20;
                 }
                 
-                doc.setFont(undefined, 'bold');
-                doc.text("Objetivos específicos:", 15, yPos);
-                yPos += 10;
-                
-                // Agrupar por categoría
-                const categorized = {};
-                specificObjectives.forEach(obj => {
-                    const category = obj.category || "Sin categoría";
-                    if (!categorized[category]) {
-                        categorized[category] = [];
-                    }
-                    categorized[category].push(obj);
-                });
-                
-                // Mostrar por categoría
-                for (const [category, objectives] of Object.entries(categorized)) {
-                    // Check if we need a new page
-                    if (yPos > 250) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-                    
-                    doc.setFillColor(240, 240, 240);
-                    doc.rect(10, yPos - 5, 190, 10, 'F');
+                // Si hay descripción explícita, usarla
+                if (obj.description) {
                     doc.setFont(undefined, 'bold');
-                    doc.setTextColor(30, 136, 229);
-                    doc.text(`Categoría: ${category}`, 15, yPos);
-                    doc.setFont(undefined, 'normal');
-                    doc.setTextColor(0, 0, 0);
-                    
+                    doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
                     yPos += 10;
-                    
-                    // Mostrar cada objetivo
-                    objectives.forEach((obj, index) => {
-                        // Check if we need a new page
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        // Si hay descripción explícita, usarla
-                        if (obj.description) {
-                            doc.setFont(undefined, 'bold');
-                            doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
-                            yPos += 10;
-                        } else {
-                            // Si no, construir la descripción a partir de los componentes
-                            const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
-                            doc.setFont(undefined, 'bold');
-                            doc.text(`${index + 1}. ${title}`, 15, yPos);
-                            yPos += 7;
-                        }
-                        
-                        // Detalles adicionales
-                        doc.setFont(undefined, 'normal');
-                        
-                        const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
-                        doc.text(`Medida: ${details}`, 20, yPos);
-                        yPos += 7;
-                        
-                        // Estado
-                        let statusText = "Pendiente";
-                        if (obj.status === 'completed') statusText = "Completado";
-                        else if (obj.status === 'inprogress') statusText = "En progreso";
-                        
-                        const progress = obj.progress || 0;
-                        doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
-                        yPos += 7;
-                        
-                        // Fechas
-                        const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
-                        const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
-                        doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
-                        yPos += 10;
-                    });
+                } else {
+                    // Si no, construir la descripción a partir de los componentes
+                    const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`${index + 1}. ${title}`, 15, yPos);
+                    yPos += 7;
                 }
-            }
+                
+                // Detalles adicionales
+                doc.setFont(undefined, 'normal');
+                
+                const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
+                doc.text(`Medida: ${details}`, 20, yPos);
+                yPos += 7;
+                
+                // Estado
+                let statusText = "Pendiente";
+                if (obj.status === 'completed') statusText = "Completado";
+                else if (obj.status === 'inprogress') statusText = "En progreso";
+                
+                const progress = obj.progress || 0;
+                doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                yPos += 7;
+                
+                // Fechas
+                const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
+                const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
+                doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                yPos += 10;
+            });
         }
+    } else {
+        console.log("No hay objetivos específicos para añadir al PDF");
+        doc.setFont(undefined, 'normal');
+        doc.text("No hay objetivos específicos definidos para este paciente.", 15, yPos);
+        yPos += 10;
+    }
+}
         
         // AÑADIR PLANES DE TRATAMIENTO
         if (includePlans) {
