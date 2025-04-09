@@ -3008,33 +3008,13 @@ function renderExercises(exercises) {
                 <td>${exercise.sets || '3'} x ${exercise.reps || '10'}</td>
                 <td>${loadStr}</td>
                 <td>
-                    <div class="tooltip-container" style="display: inline-block;">
+                    <div style="display: inline-block;">
                         <span class="intensity-badge ${intensityClass}">
                             ${effortStr}
                         </span>
-                        <div class="tooltip-content" style="width: 280px; max-width: 90vw; z-index: 1001;">
-                            ${exercise.effortType === 'RIR' ? `
-                                <p><strong>RIR: Repeticiones en Reserva</strong></p>
-                                <p>0 = No podría realizar ni una repetición más (fallo muscular)</p>
-                                <p>1 = Podría realizar 1 repetición más</p>
-                                <p>2 = Podría realizar 2 repeticiones más</p>
-                                <p>3 = Podría realizar 3 repeticiones más</p>
-                                <p>4 = Podría realizar 4 repeticiones más</p>
-                                <p>5+ = Podría realizar 5 o más repeticiones adicionales</p>
-                            ` : `
-                                <p><strong>RPE: Rating of Perceived Exertion (0-10)</strong></p>
-                                <p>0 = Reposo absoluto</p>
-                                <p>1 = Esfuerzo muy, muy ligero</p>
-                                <p>2 = Esfuerzo muy ligero</p>
-                                <p>3 = Esfuerzo ligero</p>
-                                <p>4 = Esfuerzo moderado</p>
-                                <p>5 = Esfuerzo algo duro</p>
-                                <p>6 = Esfuerzo duro</p>
-                                <p>7-8 = Esfuerzo muy duro</p>
-                                <p>9 = Esfuerzo extremadamente duro</p>
-                                <p>10 = Esfuerzo máximo (imposible continuar)</p>
-                            `}
-                        </div>
+                        <button type="button" class="info-btn" onclick="showEffortInfo(this)" data-type="${exercise.effortType || 'RPE'}" style="background: none; border: none; color: var(--primary); cursor: pointer; margin-left: 5px;">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
                     </div>
                 </td>
                 <td>${exercise.notes || ''}</td>
@@ -10530,31 +10510,10 @@ function addExerciseRow(exercise = {}) {
               'Percepción de esfuerzo' : 
               'Repeticiones en reserva'}
         </div>
-        <div class="tooltip-container" style="align-self: center;">
-            <i class="fas fa-info-circle tooltip-icon" style="font-size: 16px; color: var(--primary-light);"></i>
-            <div class="tooltip-content" style="width: 280px; max-width: 90vw; z-index: 1001;">
-                ${(exercise.effortType === 'RPE' || !exercise.effortType) ? `
-                <p><strong>RPE: Rating of Perceived Exertion (0-10)</strong></p>
-                <p>0 = Reposo absoluto</p>
-                <p>1 = Esfuerzo muy, muy ligero</p>
-                <p>2 = Esfuerzo muy ligero</p>
-                <p>3 = Esfuerzo ligero</p>
-                <p>4 = Esfuerzo moderado</p>
-                <p>5 = Esfuerzo algo duro</p>
-                <p>6 = Esfuerzo duro</p>
-                <p>7-8 = Esfuerzo muy duro</p>
-                <p>9 = Esfuerzo extremadamente duro</p>
-                <p>10 = Esfuerzo máximo (imposible continuar)</p>
-                ` : `
-                <p><strong>RIR: Repeticiones en Reserva</strong></p>
-                <p>0 = No podría realizar ni una repetición más (fallo muscular)</p>
-                <p>1 = Podría realizar 1 repetición más</p>
-                <p>2 = Podría realizar 2 repeticiones más</p>
-                <p>3 = Podría realizar 3 repeticiones más</p>
-                <p>4 = Podría realizar 4 repeticiones más</p>
-                <p>5+ = Podría realizar 5 o más repeticiones adicionales</p>
-                `}
-            </div>
+        <div style="align-self: center; text-align: center;">
+            <button type="button" class="info-btn" onclick="showEffortInfo(this)" data-type="${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}" style="background: none; border: none; color: var(--primary); cursor: pointer;">
+                <i class="fas fa-info-circle" style="font-size: 16px;"></i>
+            </button>
         </div>
     </div>
 </td>
@@ -13950,6 +13909,148 @@ function setupMobileTooltips() {
         });
     }
 }
+
+
+        // Función para mostrar información sobre RPE/RIR en un modal más compatible con móviles
+window.showEffortInfo = function(button) {
+    const effortType = button.getAttribute('data-type');
+    
+    // Crear el modal
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'effortInfoModal';
+    modal.style.zIndex = '2000';
+    modal.style.display = 'block';
+    
+    // Determinar el contenido según el tipo (RPE o RIR)
+    let content = '';
+    if (effortType === 'RPE') {
+        content = `
+            <h2 style="margin-top: 0; color: var(--primary);">Escala RPE (Rating of Perceived Exertion)</h2>
+            <p>Escala de 0-10 para indicar la intensidad percibida del ejercicio:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                <tr style="background-color: var(--background-alt);">
+                    <th style="padding: 8px; border: 1px solid var(--border); text-align: center;">Valor</th>
+                    <th style="padding: 8px; border: 1px solid var(--border); text-align: left;">Descripción</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">0</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Reposo absoluto</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">1</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo muy, muy ligero</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">2</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo muy ligero</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">3</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo ligero</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">4</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo moderado</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">5</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo algo duro</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">6</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo duro</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">7-8</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo muy duro</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">9</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo extremadamente duro</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">10</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Esfuerzo máximo (imposible continuar)</td>
+                </tr>
+            </table>
+        `;
+    } else {
+        content = `
+            <h2 style="margin-top: 0; color: var(--primary);">Escala RIR (Repeticiones en Reserva)</h2>
+            <p>Indica cuántas repeticiones podrías haber hecho pero no hiciste:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                <tr style="background-color: var(--background-alt);">
+                    <th style="padding: 8px; border: 1px solid var(--border); text-align: center;">Valor</th>
+                    <th style="padding: 8px; border: 1px solid var(--border); text-align: left;">Descripción</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">0</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">No podría realizar ni una repetición más (fallo muscular)</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">1</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Podría realizar 1 repetición más</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">2</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Podría realizar 2 repeticiones más</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">3</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Podría realizar 3 repeticiones más</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">4</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Podría realizar 4 repeticiones más</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid var(--border); text-align: center;">5+</td>
+                    <td style="padding: 8px; border: 1px solid var(--border);">Podría realizar 5 o más repeticiones adicionales</td>
+                </tr>
+            </table>
+        `;
+    }
+    
+    // Construir el HTML del modal
+    modal.innerHTML = `
+        <div class="modal" style="width: 90%; max-width: 500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">${effortType === 'RPE' ? 'Escala RPE' : 'Escala RIR'}</h2>
+                <button class="modal-close" id="closeEffortInfoModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                ${content}
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="action-btn btn-primary" onclick="document.getElementById('effortInfoModal').remove();">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Añadir el modal al DOM
+    document.body.appendChild(modal);
+    
+    // Configurar evento para cerrar
+    document.getElementById('closeEffortInfoModal').addEventListener('click', function() {
+        document.body.removeChild(modal);
+    });
+    
+    // Cerrar con escape
+    document.addEventListener('keydown', function escapeClose(e) {
+        if (e.key === 'Escape') {
+            if (document.getElementById('effortInfoModal')) {
+                document.getElementById('effortInfoModal').remove();
+            }
+            document.removeEventListener('keydown', escapeClose);
+        }
+    });
+}
+        
         </script>
     
 </body>
