@@ -2821,3 +2821,35 @@ button:focus {
         display: none;  /* Desactivar hover en dispositivos táctiles */
     }
 }
+
+
+/* Mejorar la visualización en dispositivos móviles */
+@media screen and (max-width: 768px) {
+    /* Hacer las casillas de entrada más grandes en móviles */
+    .exercise-table input[type="text"],
+    .exercise-table input[type="number"],
+    .exercise-table select {
+        padding: 10px;
+        font-size: 16px; /* iOS requiere 16px mínimo para evitar zoom */
+    }
+    
+    /* Ajustar ancho de primera columna (nombre ejercicio) */
+    .exercise-table tr td:first-child input[type="text"] {
+        min-width: 150px;
+        width: 100%;
+    }
+    
+    /* Mejorar visualización de la tabla en móviles */
+    .exercise-table {
+        table-layout: fixed;
+    }
+    
+    .exercise-table th,
+    .exercise-table td {
+        padding: 10px 5px;
+    }
+    
+    .exercise-table th:first-child {
+        width: 25% !important;
+    }
+}
