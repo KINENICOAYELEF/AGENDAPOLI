@@ -793,7 +793,14 @@
                                 <label class="form-label">Descripción General</label>
                                 <textarea class="form-control" rows="3" name="trainingPlan" id="evolutionTrainingPlan" placeholder="Descripción general del plan de entrenamiento"></textarea>
                             </div>
-                            
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" class="info-btn" onclick="showRPEInfo()" style="background-color: #1E88E5; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">
+                                    <i class="fas fa-info-circle"></i> ¿Qué es RPE?
+                                </button>
+                                <button type="button" class="info-btn" onclick="showRIRInfo()" style="background-color: #1E88E5; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">
+                                    <i class="fas fa-info-circle"></i> ¿Qué es RIR?
+                                </button>
+                            </div>
                             <div class="form-group">
                                 <label class="form-label">Ejercicios</label>
                                 <div class="exercise-table-container" style="margin-bottom: 15px; overflow-x: auto;">
@@ -13770,6 +13777,72 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
         console.error("Error al eliminar archivo:", error);
         showToast("Error al eliminar archivo: " + error.message, "error");
     }
+
+
+    function showRPEInfo() {
+    const content = `
+        <h3>Escala RPE (Rating of Perceived Exertion)</h3>
+        <p>La escala RPE mide el esfuerzo percibido:</p>
+        <ul>
+            <li><strong>1-2:</strong> Muy fácil, casi sin esfuerzo</li>
+            <li><strong>3-4:</strong> Fácil, podría continuar mucho tiempo</li>
+            <li><strong>5-6:</strong> Moderado, comenzando a sentir esfuerzo</li>
+            <li><strong>7-8:</strong> Difícil, alto nivel de esfuerzo</li>
+            <li><strong>9:</strong> Muy difícil, casi máximo esfuerzo</li>
+            <li><strong>10:</strong> Esfuerzo máximo, imposible continuar</li>
+        </ul>
+    `;
+    showInfoModal("Escala RPE", content);
+}
+
+function showRIRInfo() {
+    const content = `
+        <h3>Escala RIR (Repetitions In Reserve)</h3>
+        <p>La escala RIR indica las repeticiones que podrías hacer antes del fallo:</p>
+        <ul>
+            <li><strong>0:</strong> Fallo muscular, no puedes hacer más repeticiones</li>
+            <li><strong>1:</strong> Podrías hacer 1 repetición más</li>
+            <li><strong>2:</strong> Podrías hacer 2 repeticiones más</li>
+            <li><strong>3:</strong> Podrías hacer 3 repeticiones más</li>
+            <li><strong>4:</strong> Podrías hacer 4 repeticiones más</li>
+            <li><strong>5+:</strong> Podrías hacer 5 o más repeticiones</li>
+        </ul>
+    `;
+    showInfoModal("Escala RIR", content);
+}
+
+function showInfoModal(title, content) {
+    // Crear el modal dinámicamente
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.display = 'flex';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.zIndex = '9999';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee;">
+                <h3 style="margin: 0;">${title}</h3>
+                <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 15px;">
+                ${content}
+            </div>
+            <div style="padding: 15px; text-align: right; border-top: 1px solid #eee;">
+                <button onclick="this.closest('.modal-overlay').remove()" style="background: #1E88E5; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">Cerrar</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
 }
         </script>
     
