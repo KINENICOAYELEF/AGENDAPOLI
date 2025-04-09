@@ -9540,6 +9540,7 @@ function generateStatisticsReport() {
 
 // Export PDF function (mejorada)
 // Export PDF function (mejorada)
+// Export PDF function (versión mejorada completa)
 async function exportToPDF(patientId) {
     try {
         showLoading();
@@ -9564,6 +9565,50 @@ async function exportToPDF(patientId) {
         // Obtener diagnósticos del paciente
         const diagnoses = await getDiagnoses(patientId);
         
+        // Obtener datos CIF
+        const cifFunctions = await getCifFunctions(patientId);
+        const cifStructures = await getCifStructures(patientId);
+        const cifActivities = await getCifActivities(patientId);
+        const cifFactors = await getCifFactors(patientId);
+        
+        // Obtener objetivos terapéuticos
+        let generalObjective = null;
+        let specificObjectives = [];
+        
+        try {
+            // Objetivo general
+            const generalRef = doc(db, "patients", patientId, "objectives", "general");
+            const generalSnap = await getDoc(generalRef);
+            if (generalSnap.exists()) {
+                generalObjective = generalSnap.data();
+            }
+            
+            // Objetivos específicos
+            const objectivesRef = collection(db, "patients", patientId, "objectives");
+            const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
+            const objectivesSnap = await getDocs(objectivesQuery);
+            specificObjectives = objectivesSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        } catch (error) {
+            console.error("Error al obtener objetivos:", error);
+        }
+        
+        // Obtener planes de tratamiento
+        let treatmentPlans = [];
+        try {
+            const plansRef = collection(db, "patients", patientId, "treatmentPlans");
+            const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
+            const plansSnapshot = await getDocs(plansQuery);
+            treatmentPlans = plansSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        } catch (error) {
+            console.error("Error al obtener planes de tratamiento:", error);
+        }
+        
         // Leer opciones del formulario
         const includeDiagnosis = document.getElementById('pdfIncludeDiagnosis') ? 
             document.getElementById('pdfIncludeDiagnosis').checked : true;
@@ -9577,10 +9622,6 @@ async function exportToPDF(patientId) {
             document.getElementById('pdfIncludeLogo').checked : true;
         const includeFooter = document.getElementById('pdfIncludeFooter') ? 
             document.getElementById('pdfIncludeFooter').checked : true;
-        
-        console.log("Opciones de exportación:", {
-            includeDiagnosis, includeEvolutions, includeScales, includeExercises, includeLogo, includeFooter
-        });
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -9774,56 +9815,83 @@ async function exportToPDF(patientId) {
                     return new Date(b.date) - new Date(a.date);
                 });
                 
-                // Include only the most recent diagnosis
-                const latestDiagnosis = diagnoses[0];
-                
-                // Date
-                doc.setFont(undefined, 'bold');
-                doc.text(`Fecha de evaluación: ${formatDate(new Date(latestDiagnosis.date))}`, 15, yPos);
-                yPos += 10;
-                
-                // Código CIE
-                if (latestDiagnosis.code) {
-                    doc.text(`Diagnóstico médico: ${latestDiagnosis.code}`, 15, yPos);
-                    yPos += 10;
-                }
-                
-                // Motivo de consulta
-                if (latestDiagnosis.consultReason) {
-                    doc.text("Motivo de consulta:", 15, yPos);
+                // Mostrar TODOS los diagnósticos, no solo el más reciente
+                for (let i = 0; i < diagnoses.length; i++) {
+                    const diagnosis = diagnoses[i];
+                    
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Date with background
+                    doc.setFillColor(230, 240, 250);
+                    doc.rect(10, yPos - 5, 190, 10, 'F');
+                    doc.setTextColor(30, 136, 229);
+                    doc.setFontSize(12);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Evaluación: ${formatDate(new Date(diagnosis.date))}`, 15, yPos);
+                    yPos += 15;
+                    
+                    // Reset font
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(11);
+                    
+                    // Código CIE
+                    if (diagnosis.code) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text(`Diagnóstico médico:`, 15, yPos);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(diagnosis.code, 80, yPos);
+                        yPos += 10;
+                    }
+                    
+                    // Motivo de consulta
+                    if (diagnosis.consultReason) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Motivo de consulta:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const reasonLines = doc.splitTextToSize(diagnosis.consultReason, 180);
+                        doc.text(reasonLines, 15, yPos);
+                        yPos += reasonLines.length * 7 + 5;
+                    }
+                    
+                    // Antecedentes médicos
+                    if (diagnosis.medicalBackground) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Antecedentes relevantes:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const backgroundLines = doc.splitTextToSize(diagnosis.medicalBackground, 180);
+                        doc.text(backgroundLines, 15, yPos);
+                        yPos += backgroundLines.length * 7 + 5;
+                    }
+                    
+                    // Descripción del diagnóstico - ASEGURANDO QUE APAREZCA COMPLETO
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Diagnóstico kinesiológico funcional:", 15, yPos);
                     yPos += 7;
                     
                     doc.setFont(undefined, 'normal');
-                    const reasonLines = doc.splitTextToSize(latestDiagnosis.consultReason, 180);
-                    doc.text(reasonLines, 15, yPos);
-                    yPos += reasonLines.length * 7 + 5;
-                    doc.setFont(undefined, 'bold');
-                }
-                
-                // Antecedentes médicos
-                if (latestDiagnosis.medicalBackground) {
-                    doc.text("Antecedentes relevantes:", 15, yPos);
-                    yPos += 7;
+                    if (diagnosis.description) {
+                        const diagnosisLines = doc.splitTextToSize(diagnosis.description, 180);
+                        doc.text(diagnosisLines, 15, yPos);
+                        yPos += diagnosisLines.length * 7 + 10;
+                    } else {
+                        doc.text("No se ha registrado descripción del diagnóstico", 15, yPos);
+                        yPos += 10;
+                    }
                     
-                    doc.setFont(undefined, 'normal');
-                    const backgroundLines = doc.splitTextToSize(latestDiagnosis.medicalBackground, 180);
-                    doc.text(backgroundLines, 15, yPos);
-                    yPos += backgroundLines.length * 7 + 5;
-                    doc.setFont(undefined, 'bold');
-                }
-                
-                // Descripción del diagnóstico
-                doc.text("Diagnóstico kinesiológico funcional:", 15, yPos);
-                yPos += 7;
-                
-                doc.setFont(undefined, 'normal');
-                if (latestDiagnosis.description) {
-                    const diagnosisLines = doc.splitTextToSize(latestDiagnosis.description, 180);
-                    doc.text(diagnosisLines, 15, yPos);
-                    yPos += diagnosisLines.length * 7 + 10;
-                } else {
-                    doc.text("No se ha registrado descripción del diagnóstico", 15, yPos);
-                    yPos += 10;
+                    // Add separator line between diagnoses
+                    if (i < diagnoses.length - 1) {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(15, yPos - 5, 195, yPos - 5);
+                        yPos += 5;
+                    }
                 }
             } else {
                 doc.text("No se ha registrado un diagnóstico formal para este paciente.", 15, yPos);
@@ -9835,10 +9903,556 @@ async function exportToPDF(patientId) {
                 doc.addPage();
                 yPos = 20;
             }
+            
+            // AÑADIR SECCIÓN DE CIF
+            if (cifFunctions.length > 0 || cifStructures.length > 0 || cifActivities.length > 0 || cifFactors.length > 0) {
+                doc.setFillColor(30, 136, 229);
+                doc.rect(10, yPos, 190, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('CLASIFICACIÓN INTERNACIONAL DEL FUNCIONAMIENTO (CIF)', 105, yPos + 7, null, null, 'center');
+                yPos += 20;
+                
+                doc.setTextColor(0, 0, 0);
+                
+                // Funciones corporales
+                if (cifFunctions.length > 0) {
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Funciones corporales (b):", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    cifFunctions.forEach(func => {
+                        doc.text(`${func.code}: ${func.name} - Valor: ${func.value}`, 20, yPos);
+                        yPos += 7;
+                        
+                        if (func.description) {
+                            const descLines = doc.splitTextToSize(func.description, 175);
+                            doc.text(descLines, 25, yPos);
+                            yPos += descLines.length * 7 + 3;
+                        }
+                    });
+                    
+                    yPos += 5;
+                }
+                
+                // Estructuras corporales
+                if (cifStructures.length > 0) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Estructuras corporales (s):", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    cifStructures.forEach(struct => {
+                        doc.text(`${struct.code}: ${struct.name} - Valor: ${struct.value}`, 20, yPos);
+                        yPos += 7;
+                        
+                        if (struct.description) {
+                            const descLines = doc.splitTextToSize(struct.description, 175);
+                            doc.text(descLines, 25, yPos);
+                            yPos += descLines.length * 7 + 3;
+                        }
+                    });
+                    
+                    yPos += 5;
+                }
+                
+                // Actividades y participación
+                if (cifActivities.length > 0) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Actividades y participación (d):", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    cifActivities.forEach(activity => {
+                        doc.text(`${activity.code}: ${activity.name} - Valor: ${activity.value}`, 20, yPos);
+                        yPos += 7;
+                        
+                        if (activity.description) {
+                            const descLines = doc.splitTextToSize(activity.description, 175);
+                            doc.text(descLines, 25, yPos);
+                            yPos += descLines.length * 7 + 3;
+                        }
+                    });
+                    
+                    yPos += 5;
+                }
+                
+                // Factores ambientales
+                if (cifFactors.length > 0) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Factores ambientales (e):", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    cifFactors.forEach(factor => {
+                        doc.text(`${factor.code}: ${factor.name} - Valor: ${factor.value}`, 20, yPos);
+                        yPos += 7;
+                        
+                        if (factor.description) {
+                            const descLines = doc.splitTextToSize(factor.description, 175);
+                            doc.text(descLines, 25, yPos);
+                            yPos += descLines.length * 7 + 3;
+                        }
+                    });
+                    
+                    yPos += 5;
+                }
+                
+                // Factores personales (desde el paciente)
+                if (patient.personalFactors) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Factores personales (fp):", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    const factorLines = doc.splitTextToSize(patient.personalFactors, 180);
+                    doc.text(factorLines, 15, yPos);
+                    yPos += factorLines.length * 7 + 10;
+                }
+            }
+            
+            // AÑADIR OBJETIVOS TERAPÉUTICOS
+            if (generalObjective || specificObjectives.length > 0) {
+                // Check if we need a new page
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFillColor(30, 136, 229);
+                doc.rect(10, yPos, 190, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
+                yPos += 20;
+                
+                doc.setTextColor(0, 0, 0);
+                
+                // Objetivo general
+                if (generalObjective) {
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Objetivo general:", 15, yPos);
+                    yPos += 7;
+                    
+                    doc.setFont(undefined, 'normal');
+                    const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
+                    doc.text(generalLines, 15, yPos);
+                    yPos += generalLines.length * 7 + 5;
+                    
+                    if (generalObjective.endDate) {
+                        doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
+                        yPos += 7;
+                    }
+                    
+                    // Mostrar progreso
+                    doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
+                    yPos += 10;
+                }
+                
+                // Objetivos específicos
+                if (specificObjectives.length > 0) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Objetivos específicos:", 15, yPos);
+                    yPos += 10;
+                    
+                    // Agrupar por categoría
+                    const categorized = {};
+                    specificObjectives.forEach(obj => {
+                        const category = obj.category || "Sin categoría";
+                        if (!categorized[category]) {
+                            categorized[category] = [];
+                        }
+                        categorized[category].push(obj);
+                    });
+                    
+                    // Mostrar por categoría
+                    for (const [category, objectives] of Object.entries(categorized)) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFillColor(240, 240, 240);
+                        doc.rect(10, yPos - 5, 190, 10, 'F');
+                        doc.setFont(undefined, 'bold');
+                        doc.setTextColor(30, 136, 229);
+                        doc.text(`Categoría: ${category}`, 15, yPos);
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(0, 0, 0);
+                        
+                        yPos += 10;
+                        
+                        // Mostrar cada objetivo
+                        objectives.forEach((obj, index) => {
+                            // Check if we need a new page
+                            if (yPos > 250) {
+                                doc.addPage();
+                                yPos = 20;
+                            }
+                            
+                            // Si hay descripción explícita, usarla
+                            if (obj.description) {
+                                doc.setFont(undefined, 'bold');
+                                doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
+                                yPos += 10;
+                            } else {
+                                // Si no, construir la descripción a partir de los componentes
+                                const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
+                                doc.setFont(undefined, 'bold');
+                                doc.text(`${index + 1}. ${title}`, 15, yPos);
+                                yPos += 7;
+                            }
+                            
+                            // Detalles adicionales
+                            doc.setFont(undefined, 'normal');
+                            
+                            const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
+                            doc.text(`Medida: ${details}`, 20, yPos);
+                            yPos += 7;
+                            
+                            // Estado
+                            let statusText = "Pendiente";
+                            if (obj.status === 'completed') statusText = "Completado";
+                            else if (obj.status === 'inprogress') statusText = "En progreso";
+                            
+                            const progress = obj.progress || 0;
+                            doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                            yPos += 7;
+                            
+                            // Fechas
+                            const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
+                            const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
+                            doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                            yPos += 10;
+                        });
+                    }
+                }
+            }
+            
+            // AÑADIR PLANES DE TRATAMIENTO
+            if (treatmentPlans.length > 0) {
+                // Check if we need a new page
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFillColor(30, 136, 229);
+                doc.rect(10, yPos, 190, 10, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('PLANES DE TRATAMIENTO', 105, yPos + 7, null, null, 'center');
+                yPos += 20;
+                
+                doc.setTextColor(0, 0, 0);
+                
+                // Mostrar cada plan
+                for (let i = 0; i < treatmentPlans.length; i++) {
+                    const plan = treatmentPlans[i];
+                    
+                    // Check if we need a new page
+                    if (yPos > 230) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Encabezado con fecha
+                    doc.setFillColor(230, 240, 250);
+                    doc.rect(10, yPos - 5, 190, 10, 'F');
+                    doc.setTextColor(30, 136, 229);
+                    doc.setFontSize(12);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(`Plan de tratamiento: ${formatDate(new Date(plan.startDate || plan.createdAt))}`, 15, yPos);
+                    yPos += 15;
+                    
+                    // Reset font
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(11);
+                    doc.setFont(undefined, 'normal');
+                    
+                    // Duración y frecuencia
+                    doc.text(`Duración: ${plan.duration || '?'} ${plan.durationUnit || 'semanas'} - Frecuencia: ${plan.frequency || '?'} ${plan.frequencyUnit || 'sesiones por semana'}`, 15, yPos);
+                    yPos += 10;
+                    
+                    // Objetivos del plan
+                    if (plan.objectives) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Objetivos del tratamiento:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const objectivesLines = doc.splitTextToSize(plan.objectives, 180);
+                        doc.text(objectivesLines, 15, yPos);
+                        yPos += objectivesLines.length * 7 + 5;
+                    }
+                    
+                    // Técnicas
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Técnicas utilizadas:", 15, yPos);
+                    yPos += 7;
+                    doc.setFont(undefined, 'normal');
+                    
+                    if (plan.techniques) {
+                        // Terapia manual
+                        if (plan.techniques.manual && plan.techniques.manual.active) {
+                            doc.text("• Terapia manual", 20, yPos);
+                            yPos += 7;
+                            
+                            // Subtécnicas
+                            if (plan.techniques.manual.subtechniques) {
+                                const subs = plan.techniques.manual.subtechniques;
+                                const activeSubs = [];
+                                
+                                if (subs.jointMobilization) activeSubs.push("Movilización articular");
+                                if (subs.jointManipulation) activeSubs.push("Manipulación articular");
+                                if (subs.myofascial) activeSubs.push("Liberación miofascial");
+                                if (subs.neurodynamics) activeSubs.push("Neurodinamia");
+                                if (subs.muscleEnergy) activeSubs.push("Técnicas de energía muscular");
+                                
+                                if (activeSubs.length > 0) {
+                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    yPos += 7;
+                                }
+                            }
+                            
+                            // Detalles
+                            if (plan.techniques.manual.details) {
+                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.manual.details}`, 175);
+                                doc.text(detailLines, 25, yPos);
+                                yPos += detailLines.length * 7 + 3;
+                            }
+                        }
+                        
+                        // Ejercicio terapéutico
+                        if (plan.techniques.exercise && plan.techniques.exercise.active) {
+                            doc.text("• Ejercicio terapéutico", 20, yPos);
+                            yPos += 7;
+                            
+                            // Subtécnicas
+                            if (plan.techniques.exercise.subtechniques) {
+                                const subs = plan.techniques.exercise.subtechniques;
+                                const activeSubs = [];
+                                
+                                if (subs.strength) activeSubs.push("Fortalecimiento");
+                                if (subs.flexibility) activeSubs.push("Flexibilidad");
+                                if (subs.proprioception) activeSubs.push("Propiocepción");
+                                if (subs.balance) activeSubs.push("Equilibrio");
+                                if (subs.cardiovascular) activeSubs.push("Cardiovascular");
+                                if (subs.functional) activeSubs.push("Funcional");
+                                
+                                if (activeSubs.length > 0) {
+                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    yPos += 7;
+                                }
+                            }
+                            
+                            // Detalles
+                            if (plan.techniques.exercise.details) {
+                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.exercise.details}`, 175);
+                                doc.text(detailLines, 25, yPos);
+                                yPos += detailLines.length * 7 + 3;
+                            }
+                        }
+                        
+                        // Agentes físicos
+                        if (plan.techniques.physical && plan.techniques.physical.active) {
+                            // Check if we need a new page
+                            if (yPos > 250) {
+                                doc.addPage();
+                                yPos = 20;
+                            }
+                            
+                            doc.text("• Agentes físicos", 20, yPos);
+                            yPos += 7;
+                            
+                            // Subtécnicas
+                            if (plan.techniques.physical.subtechniques) {
+                                const subs = plan.techniques.physical.subtechniques;
+                                const activeSubs = [];
+                                
+                                if (subs.thermotherapy) activeSubs.push("Termoterapia");
+                                if (subs.cryotherapy) activeSubs.push("Crioterapia");
+                                if (subs.electrotherapy) activeSubs.push("Electroterapia");
+                                if (subs.ultrasound) activeSubs.push("Ultrasonido");
+                                if (subs.laser) activeSubs.push("Láser");
+                                if (subs.shockwave) activeSubs.push("Ondas de choque");
+                                
+                                if (activeSubs.length > 0) {
+                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    yPos += 7;
+                                }
+                            }
+                            
+                            // Detalles
+                            if (plan.techniques.physical.details) {
+                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.physical.details}`, 175);
+                                doc.text(detailLines, 25, yPos);
+                                yPos += detailLines.length * 7 + 3;
+                            }
+                        }
+                        
+                        // Educación al paciente
+                        if (plan.techniques.education && plan.techniques.education.active) {
+                            // Check if we need a new page
+                            if (yPos > 250) {
+                                doc.addPage();
+                                yPos = 20;
+                            }
+                            
+                            doc.text("• Educación al paciente", 20, yPos);
+                            yPos += 7;
+                            
+                            // Subtécnicas
+                            if (plan.techniques.education.subtechniques) {
+                                const subs = plan.techniques.education.subtechniques;
+                                const activeSubs = [];
+                                
+                                if (subs.painEducation) activeSubs.push("Educación en neurociencia del dolor");
+                                if (subs.posture) activeSubs.push("Higiene postural");
+                                if (subs.ergonomics) activeSubs.push("Ergonomía");
+                                if (subs.selfManagement) activeSubs.push("Automanejo");
+                                
+                                if (activeSubs.length > 0) {
+                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    yPos += 7;
+                                }
+                            }
+                            
+                            // Detalles
+                            if (plan.techniques.education.details) {
+                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.education.details}`, 175);
+                                doc.text(detailLines, 25, yPos);
+                                yPos += detailLines.length * 7 + 3;
+                            }
+                        }
+                        
+                        // Otras técnicas
+                        if (plan.techniques.other && plan.techniques.other.active) {
+                            // Check if we need a new page
+                            if (yPos > 250) {
+                                doc.addPage();
+                                yPos = 20;
+                            }
+                            
+                            doc.text("• Otras técnicas", 20, yPos);
+                            yPos += 7;
+                            
+                            // Detalles
+                            if (plan.techniques.other.details) {
+                                const detailLines = doc.splitTextToSize(`  ${plan.techniques.other.details}`, 175);
+                                doc.text(detailLines, 25, yPos);
+                                yPos += detailLines.length * 7 + 3;
+                            }
+                        }
+                    }
+                    
+                    // Progresión planificada
+                    if (plan.progression) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Progresión planificada:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const progressionLines = doc.splitTextToSize(plan.progression, 180);
+                        doc.text(progressionLines, 15, yPos);
+                        yPos += progressionLines.length * 7 + 5;
+                    }
+                    
+                    // Observaciones
+                    if (plan.observations) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Observaciones:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const observationsLines = doc.splitTextToSize(plan.observations, 180);
+                        doc.text(observationsLines, 15, yPos);
+                        yPos += observationsLines.length * 7 + 5;
+                    }
+                    
+                    // Criterios de alta
+                    if (plan.dischargeGoals) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.setFont(undefined, 'bold');
+                        doc.text("Criterios de alta:", 15, yPos);
+                        yPos += 7;
+                        
+                        doc.setFont(undefined, 'normal');
+                        const goalsLines = doc.splitTextToSize(plan.dischargeGoals, 180);
+                        doc.text(goalsLines, 15, yPos);
+                        yPos += goalsLines.length * 7 + 5;
+                    }
+                    
+                    // Add separator line between planes
+                    if (i < treatmentPlans.length - 1) {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.line(15, yPos, 195, yPos);
+                        yPos += 10;
+                    }
+                }
+            }
         }
         
         // Add evolutions if requested
         if (includeEvolutions) {
+            // Check if we need a new page
+            if (yPos > 270) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
             doc.setFillColor(30, 136, 229);
             doc.rect(10, yPos, 190, 10, 'F');
             doc.setTextColor(255, 255, 255);
@@ -10014,10 +10628,8 @@ async function exportToPDF(patientId) {
                         doc.text('Ejercicios prescritos:', 15, yPos);
                         yPos += 10;
                         
-                        // Simple table for exercises
-                        const tableTop = yPos;
-                        const cellPadding = 5;
-                        const colWidths = [60, 30, 30, 40, 30]; // Adjust widths as needed
+                        // Table for exercises - Redimensionada para evitar cortes de texto
+                        const cellPadding = 3;
                         
                         // Table header
                         doc.setFillColor(230, 240, 250);
@@ -10026,14 +10638,15 @@ async function exportToPDF(patientId) {
                         doc.setFont(undefined, 'bold');
                         doc.text("Ejercicio", 15 + cellPadding, yPos);
                         doc.text("Series", 75 + cellPadding, yPos);
-                        doc.text("Reps", 105 + cellPadding, yPos);
-                        doc.text("Intensidad", 135 + cellPadding, yPos);
-                        doc.text("Notas", 175 + cellPadding, yPos);
+                        doc.text("Reps", 95 + cellPadding, yPos);
+                        doc.text("Intens.", 115 + cellPadding, yPos);
+                        doc.text("Notas", 140 + cellPadding, yPos);
                         yPos += 10;
                         
                         // Table rows
                         doc.setTextColor(0, 0, 0);
                         doc.setFont(undefined, 'normal');
+                        doc.setFontSize(9); // Tamaño de fuente más pequeño para la tabla
                         
                         evolution.exercises.forEach((exercise, index) => {
                             // Check if we need a new page
@@ -10042,17 +10655,19 @@ async function exportToPDF(patientId) {
                                 yPos = 20;
                                 
                                 // Repeat header on new page
+                                doc.setFontSize(11);
                                 doc.setFillColor(230, 240, 250);
                                 doc.rect(15, yPos - 7, 180, 10, 'F');
                                 doc.setTextColor(30, 136, 229);
                                 doc.setFont(undefined, 'bold');
                                 doc.text("Ejercicio", 15 + cellPadding, yPos);
                                 doc.text("Series", 75 + cellPadding, yPos);
-                                doc.text("Reps", 105 + cellPadding, yPos);
-                                doc.text("Intensidad", 135 + cellPadding, yPos);
-                                doc.text("Notas", 175 + cellPadding, yPos);
+                                doc.text("Reps", 95 + cellPadding, yPos);
+                                doc.text("Intens.", 115 + cellPadding, yPos);
+                                doc.text("Notas", 140 + cellPadding, yPos);
                                 yPos += 10;
                                 
+                                doc.setFontSize(9);
                                 doc.setTextColor(0, 0, 0);
                                 doc.setFont(undefined, 'normal');
                             }
@@ -10063,30 +10678,65 @@ async function exportToPDF(patientId) {
                                 doc.rect(15, yPos - 7, 180, 10, 'F');
                             }
                             
-                            // Cell content
-                            doc.text(exercise.name?.substring(0, 20) || 'Sin nombre', 15 + cellPadding, yPos);
-                            doc.text(exercise.sets?.toString() || '3', 75 + cellPadding, yPos);
-                            doc.text(exercise.reps?.toString() || '10', 105 + cellPadding, yPos);
+                            // Ejercicio (primera columna) - Nombre truncado si es necesario
+                            const nombreEjercicio = exercise.name || 'Sin nombre';
+                            // Limitar a 25 caracteres aproximadamente
+                            const nombreMostrado = nombreEjercicio.length > 25 ? 
+                                nombreEjercicio.substring(0, 22) + '...' : nombreEjercicio;
+                            doc.text(nombreMostrado, 15 + cellPadding, yPos);
                             
-                            // Determine intensity string
+                            // Series
+                            doc.text(exercise.sets?.toString() || '3', 75 + cellPadding, yPos);
+                            
+                            // Repeticiones
+                            doc.text(exercise.reps?.toString() || '10', 95 + cellPadding, yPos);
+                            
+                            // Intensidad (formato corto)
                             let intensityText = '';
                             if (exercise.effortType && exercise.effortValue) {
                                 intensityText = `${exercise.effortType} ${exercise.effortValue}`;
                             } else if (exercise.intensity) {
                                 intensityText = exercise.intensity;
                             } else {
-                                intensityText = 'No especificada';
+                                intensityText = '-';
                             }
                             
-                            doc.text(intensityText, 135 + cellPadding, yPos);
+                            // Acortar el texto de intensidad si es necesario
+                            if (intensityText.length > 10) {
+                                intensityText = intensityText.substring(0, 8) + '..';
+                            }
                             
-                            // Notes (might need truncation)
-                            const notes = exercise.notes?.substring(0, 15) || '';
-                            doc.text(notes, 175 + cellPadding, yPos);
+                            doc.text(intensityText, 115 + cellPadding, yPos);
                             
-                            yPos += 10;
+                            // Notas - Permitir más caracteres y manejar mejor el espacio
+                            if (exercise.notes) {
+                                // Si las notas son largas, mostrar en múltiples líneas
+                                if (exercise.notes.length > 25) {
+                                    const notesLines = doc.splitTextToSize(exercise.notes, 50);
+                                    // Limitar a solo 2 líneas para que no se desborde
+                                    const limitedLines = notesLines.slice(0, 2);
+                                    
+                                    doc.text(limitedLines, 140 + cellPadding, yPos - 3);
+                                    
+                                    // Si se truncaron líneas, indicarlo
+                                    if (notesLines.length > 2) {
+                                        doc.text("...", 140 + cellPadding, yPos + 4);
+                                    }
+                                    
+                                    // Ajustar la altura para la siguiente fila
+                                    yPos += (limitedLines.length * 7);
+                                } else {
+                                    doc.text(exercise.notes, 140 + cellPadding, yPos);
+                                    yPos += 10;
+                                }
+                            } else {
+                                doc.text("-", 140 + cellPadding, yPos);
+                                yPos += 10;
+                            }
                         });
                         
+                        // Restaurar tamaño de fuente
+                        doc.setFontSize(11);
                         yPos += 5;
                     }
                     
