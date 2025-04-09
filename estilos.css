@@ -2689,3 +2689,35 @@ button:focus {
 .attachment {
     position: relative;
 }
+
+
+.exercise-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.exercise-table th,
+.exercise-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #ddd;
+    word-wrap: break-word;
+}
+
+/* Ajustes para móviles */
+@media (max-width: 768px) {
+    .exercise-table {
+        font-size: 14px;
+    }
+    
+    .exercise-table th,
+    .exercise-table td {
+        padding: 5px;
+    }
+    
+    .exercise-table th:nth-child(6), /* Columna RPE/RIR */
+    .exercise-table td:nth-child(6) {
+        min-width: 80px; /* Asegurar que sea suficientemente ancho */
+    }
+}
