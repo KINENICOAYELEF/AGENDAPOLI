@@ -579,6 +579,14 @@
                                         <div class="form-group">
                                             <label class="form-label"><input type="checkbox" id="pdfIncludeExercises" checked> Planes de ejercicios</label>
                                         </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" id="pdfIncludeObjectives" checked>
+                                            <label for="pdfIncludeObjectives">Incluir objetivos terapéuticos</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" id="pdfIncludePlans" checked>
+                                            <label for="pdfIncludePlans">Incluir planes de tratamiento</label>
+                                        </div>
                                         <div class="form-group">
                                             <label class="form-label"><input type="checkbox" id="pdfIncludeLogo" checked> Incluir logo del centro</label>
                                         </div>
@@ -9538,9 +9546,6 @@ function generateStatisticsReport() {
     }, 1500);
 }
 
-// Export PDF function (mejorada)
-// Export PDF function (mejorada)
-// Export PDF function (versión mejorada completa)
 // Export PDF function (versión mejorada completa)
 async function exportToPDF(patientId) {
     try {
@@ -9623,6 +9628,10 @@ async function exportToPDF(patientId) {
             document.getElementById('pdfIncludeLogo').checked : true;
         const includeFooter = document.getElementById('pdfIncludeFooter') ? 
             document.getElementById('pdfIncludeFooter').checked : true;
+        const includeObjectives = document.getElementById('pdfIncludeObjectives') ? 
+            document.getElementById('pdfIncludeObjectives').checked : true;
+        const includePlans = document.getElementById('pdfIncludePlans') ? 
+            document.getElementById('pdfIncludePlans').checked : true;
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -9789,7 +9798,7 @@ async function exportToPDF(patientId) {
         // Add diagnoses if requested
         if (includeDiagnosis) {
             // Check if we need a new page
-            if (yPos > 240) {
+            if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -9821,7 +9830,7 @@ async function exportToPDF(patientId) {
                     const diagnosis = diagnoses[i];
                     
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -9900,7 +9909,7 @@ async function exportToPDF(patientId) {
             }
             
             // Check if we need a new page
-            if (yPos > 240) {
+            if (yPos > 270) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -9941,7 +9950,7 @@ async function exportToPDF(patientId) {
                 // Estructuras corporales
                 if (cifStructures.length > 0) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -9968,7 +9977,7 @@ async function exportToPDF(patientId) {
                 // Actividades y participación
                 if (cifActivities.length > 0) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -9995,7 +10004,7 @@ async function exportToPDF(patientId) {
                 // Factores ambientales
                 if (cifFactors.length > 0) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10022,7 +10031,7 @@ async function exportToPDF(patientId) {
                 // Factores personales (desde el paciente)
                 if (patient.personalFactors) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10039,10 +10048,10 @@ async function exportToPDF(patientId) {
             }
         }
         
-        // AÑADIR OBJETIVOS TERAPÉUTICOS SIEMPRE (fuera del bloque de diagnósticos)
-        if (generalObjective || specificObjectives.length > 0) {
+        // AÑADIR OBJETIVOS TERAPÉUTICOS
+        if (includeObjectives) {
             // Check if we need a new page
-            if (yPos > 240) {
+            if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -10081,7 +10090,7 @@ async function exportToPDF(patientId) {
             // Objetivos específicos
             if (specificObjectives.length > 0) {
                 // Check if we need a new page
-                if (yPos > 240) {
+                if (yPos > 250) {
                     doc.addPage();
                     yPos = 20;
                 }
@@ -10103,7 +10112,7 @@ async function exportToPDF(patientId) {
                 // Mostrar por categoría
                 for (const [category, objectives] of Object.entries(categorized)) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10121,7 +10130,7 @@ async function exportToPDF(patientId) {
                     // Mostrar cada objetivo
                     objectives.forEach((obj, index) => {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10166,9 +10175,9 @@ async function exportToPDF(patientId) {
         }
         
         // AÑADIR PLANES DE TRATAMIENTO
-        if (treatmentPlans.length > 0) {
+        if (includePlans) {
             // Check if we need a new page
-            if (yPos > 240) {
+            if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -10188,7 +10197,7 @@ async function exportToPDF(patientId) {
                 const plan = treatmentPlans[i];
                 
                 // Check if we need a new page
-                if (yPos > 240) {
+                if (yPos > 230) {
                     doc.addPage();
                     yPos = 20;
                 }
@@ -10294,7 +10303,7 @@ async function exportToPDF(patientId) {
                     // Agentes físicos
                     if (plan.techniques.physical && plan.techniques.physical.active) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10331,7 +10340,7 @@ async function exportToPDF(patientId) {
                     // Educación al paciente
                     if (plan.techniques.education && plan.techniques.education.active) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10366,7 +10375,7 @@ async function exportToPDF(patientId) {
                     // Otras técnicas
                     if (plan.techniques.other && plan.techniques.other.active) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10386,7 +10395,7 @@ async function exportToPDF(patientId) {
                 // Progresión planificada
                 if (plan.progression) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10404,7 +10413,7 @@ async function exportToPDF(patientId) {
                 // Observaciones
                 if (plan.observations) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10422,7 +10431,7 @@ async function exportToPDF(patientId) {
                 // Criterios de alta
                 if (plan.dischargeGoals) {
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10449,7 +10458,7 @@ async function exportToPDF(patientId) {
         // Add evolutions if requested
         if (includeEvolutions) {
             // Check if we need a new page
-            if (yPos > 240) {
+            if (yPos > 270) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -10482,7 +10491,7 @@ async function exportToPDF(patientId) {
                     const evolution = filteredEvolutions[i];
                     
                     // Check if we need a new page
-                    if (yPos > 240) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
@@ -10528,7 +10537,7 @@ async function exportToPDF(patientId) {
                     
                     if (evolution.treatment) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10548,7 +10557,7 @@ async function exportToPDF(patientId) {
                     
                     if (evolution.response) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10569,7 +10578,7 @@ async function exportToPDF(patientId) {
                     // Add scales if requested
                     if (includeScales && evolution.scales) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10618,7 +10627,7 @@ async function exportToPDF(patientId) {
                     // Add exercises if requested
                     if (includeExercises && evolution.exercises && evolution.exercises.length > 0) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 230) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10651,7 +10660,7 @@ async function exportToPDF(patientId) {
                         
                         evolution.exercises.forEach((exercise, index) => {
                             // Check if we need a new page
-                            if (yPos > 240) {
+                            if (yPos > 270) {
                                 doc.addPage();
                                 yPos = 20;
                                 
@@ -10743,7 +10752,7 @@ async function exportToPDF(patientId) {
                     
                     if (evolution.trainingPlan) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10763,7 +10772,7 @@ async function exportToPDF(patientId) {
                     
                     if (evolution.observations) {
                         // Check if we need a new page
-                        if (yPos > 240) {
+                        if (yPos > 250) {
                             doc.addPage();
                             yPos = 20;
                         }
@@ -10796,12 +10805,11 @@ async function exportToPDF(patientId) {
                 doc.setPage(i);
                 doc.setFontSize(9);
                 doc.setTextColor(150, 150, 150);
-                // Cambiamos la posición vertical de 290 a 285 para el número de página
-                doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 285, null, null, 'center');
+                doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
                 
-                // Cambiamos la posición vertical de 285 a 280 para el timestamp
+                // Add timestamp and kinesiólogo
                 const timestamp = new Date().toLocaleString();
-                doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 280, null, null, 'center');
+                doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
             }
         }
         
