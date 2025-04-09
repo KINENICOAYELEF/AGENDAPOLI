@@ -10527,6 +10527,129 @@ function addExercise(exerciseData = {}) {
     return exerciseId;
 }
 
+        // Función para añadir una serie a un ejercicio existente
+function addSeries(exerciseId, seriesData = {}) {
+    const seriesBody = document.querySelector(`#${exerciseId} .series-body`);
+    if (!seriesBody) {
+        console.error("Contenedor de series no encontrado");
+        return;
+    }
+    
+    // Contar las series existentes para determinar el número de la nueva
+    const seriesCount = seriesBody.querySelectorAll('tr').length + 1;
+    
+    // Establecer valores por defecto o usar los proporcionados
+    const reps = seriesData.reps || '';
+    const load = seriesData.load || '';
+    const effortType = seriesData.effortType || 'RPE';
+    const effortValue = seriesData.effortValue || '';
+    const notes = seriesData.notes || '';
+    
+    // Crear la fila de la serie
+    const seriesRow = document.createElement('tr');
+    seriesRow.className = 'series-row';
+    seriesRow.innerHTML = `
+        <td class="series-number">Serie ${seriesCount}</td>
+        <td>
+            <input type="text" class="form-control" placeholder="Reps" value="${reps}">
+        </td>
+        <td>
+            <input type="number" class="form-control" placeholder="kg" min="0" step="0.5" value="${load}">
+        </td>
+        <td>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <select class="form-control effort-type-select" style="width: 70px;">
+                    <option value="RPE" ${effortType === 'RPE' ? 'selected' : ''}>RPE</option>
+                    <option value="RIR" ${effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+                </select>
+                <input type="number" class="form-control" min="0" max="10" step="1" 
+                       value="${effortValue}" style="width: 50px; text-align: center;">
+                <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${effortType}')">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+        </td>
+        <td>
+            <input type="text" class="form-control" placeholder="Observaciones de la serie" value="${notes}">
+        </td>
+        <td>
+            ${seriesCount > 1 ? `
+                <button type="button" class="remove-series-btn" onclick="removeSeries(this)">
+                    <i class="fas fa-minus"></i> Quitar
+                </button>
+            ` : `
+                <button type="button" class="remove-series-btn" onclick="removeSeries(this)" disabled style="opacity: 0.5;">
+                    <i class="fas fa-minus"></i> Quitar
+                </button>
+            `}
+        </td>
+    `;
+    
+    // Añadir evento para cambiar el tipo de esfuerzo
+    const effortTypeSelect = seriesRow.querySelector('.effort-type-select');
+    if (effortTypeSelect) {
+        effortTypeSelect.addEventListener('change', function() {
+            const infoButton = this.parentElement.querySelector('.info-button');
+            if (infoButton) {
+                infoButton.setAttribute('onclick', `mostrarInfoIntensidad('${this.value}')`);
+            }
+        });
+    }
+    
+    // Añadir la fila a la tabla
+    seriesBody.appendChild(seriesRow);
+    
+    // Actualizar numeración de series
+    updateSeriesNumbers(exerciseId);
+}
+
+// Función para eliminar una serie
+function removeSeries(button) {
+    const row = button.closest('tr');
+    const exerciseId = row.closest('.exercise-row').id;
+    
+    row.parentNode.removeChild(row);
+    
+    // Actualizar numeración de series
+    updateSeriesNumbers(exerciseId);
+}
+
+// Función para actualizar la numeración de series
+function updateSeriesNumbers(exerciseId) {
+    const seriesRows = document.querySelectorAll(`#${exerciseId} .series-row`);
+    
+    seriesRows.forEach((row, index) => {
+        // Actualizar número de serie
+        const seriesNumber = row.querySelector('.series-number');
+        if (seriesNumber) {
+            seriesNumber.textContent = `Serie ${index + 1}`;
+        }
+        
+        // Habilitar/deshabilitar botón de quitar según sea la única serie
+        const removeButton = row.querySelector('.remove-series-btn');
+        if (removeButton) {
+            if (seriesRows.length <= 1) {
+                removeButton.disabled = true;
+                removeButton.style.opacity = '0.5';
+            } else {
+                removeButton.disabled = false;
+                removeButton.style.opacity = '1';
+            }
+        }
+    });
+}
+
+// Función para eliminar un ejercicio completo
+function removeExercise(exerciseId) {
+    const exercise = document.getElementById(exerciseId);
+    if (exercise && confirm('¿Está seguro que desea eliminar este ejercicio?')) {
+        exercise.parentNode.removeChild(exercise);
+    }
+}
+
+        
+        
+
 // Función para cargar plantilla de ejercicios
 function loadExerciseTemplate(template) {
     // Limpiar tabla actual
@@ -13993,127 +14116,6 @@ window.showEffortInfo = function(button) {
 }
 
 
-        // Función para añadir una serie a un ejercicio existente
-function addSeries(exerciseId, seriesData = {}) {
-    const seriesBody = document.querySelector(`#${exerciseId} .series-body`);
-    if (!seriesBody) {
-        console.error("Contenedor de series no encontrado");
-        return;
-    }
-    
-    // Contar las series existentes para determinar el número de la nueva
-    const seriesCount = seriesBody.querySelectorAll('tr').length + 1;
-    
-    // Establecer valores por defecto o usar los proporcionados
-    const reps = seriesData.reps || '';
-    const load = seriesData.load || '';
-    const effortType = seriesData.effortType || 'RPE';
-    const effortValue = seriesData.effortValue || '';
-    const notes = seriesData.notes || '';
-    
-    // Crear la fila de la serie
-    const seriesRow = document.createElement('tr');
-    seriesRow.className = 'series-row';
-    seriesRow.innerHTML = `
-        <td class="series-number">Serie ${seriesCount}</td>
-        <td>
-            <input type="text" class="form-control" placeholder="Reps" value="${reps}">
-        </td>
-        <td>
-            <input type="number" class="form-control" placeholder="kg" min="0" step="0.5" value="${load}">
-        </td>
-        <td>
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <select class="form-control effort-type-select" style="width: 70px;">
-                    <option value="RPE" ${effortType === 'RPE' ? 'selected' : ''}>RPE</option>
-                    <option value="RIR" ${effortType === 'RIR' ? 'selected' : ''}>RIR</option>
-                </select>
-                <input type="number" class="form-control" min="0" max="10" step="1" 
-                       value="${effortValue}" style="width: 50px; text-align: center;">
-                <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${effortType}')">
-                    <i class="fas fa-info-circle"></i>
-                </button>
-            </div>
-        </td>
-        <td>
-            <input type="text" class="form-control" placeholder="Observaciones de la serie" value="${notes}">
-        </td>
-        <td>
-            ${seriesCount > 1 ? `
-                <button type="button" class="remove-series-btn" onclick="removeSeries(this)">
-                    <i class="fas fa-minus"></i> Quitar
-                </button>
-            ` : `
-                <button type="button" class="remove-series-btn" onclick="removeSeries(this)" disabled style="opacity: 0.5;">
-                    <i class="fas fa-minus"></i> Quitar
-                </button>
-            `}
-        </td>
-    `;
-    
-    // Añadir evento para cambiar el tipo de esfuerzo
-    const effortTypeSelect = seriesRow.querySelector('.effort-type-select');
-    if (effortTypeSelect) {
-        effortTypeSelect.addEventListener('change', function() {
-            const infoButton = this.parentElement.querySelector('.info-button');
-            if (infoButton) {
-                infoButton.setAttribute('onclick', `mostrarInfoIntensidad('${this.value}')`);
-            }
-        });
-    }
-    
-    // Añadir la fila a la tabla
-    seriesBody.appendChild(seriesRow);
-    
-    // Actualizar numeración de series
-    updateSeriesNumbers(exerciseId);
-}
-
-// Función para eliminar una serie
-function removeSeries(button) {
-    const row = button.closest('tr');
-    const exerciseId = row.closest('.exercise-row').id;
-    
-    row.parentNode.removeChild(row);
-    
-    // Actualizar numeración de series
-    updateSeriesNumbers(exerciseId);
-}
-
-// Función para actualizar la numeración de series
-function updateSeriesNumbers(exerciseId) {
-    const seriesRows = document.querySelectorAll(`#${exerciseId} .series-row`);
-    
-    seriesRows.forEach((row, index) => {
-        // Actualizar número de serie
-        const seriesNumber = row.querySelector('.series-number');
-        if (seriesNumber) {
-            seriesNumber.textContent = `Serie ${index + 1}`;
-        }
-        
-        // Habilitar/deshabilitar botón de quitar según sea la única serie
-        const removeButton = row.querySelector('.remove-series-btn');
-        if (removeButton) {
-            if (seriesRows.length <= 1) {
-                removeButton.disabled = true;
-                removeButton.style.opacity = '0.5';
-            } else {
-                removeButton.disabled = false;
-                removeButton.style.opacity = '1';
-            }
-        }
-    });
-}
-
-// Función para eliminar un ejercicio completo
-function removeExercise(exerciseId) {
-    const exercise = document.getElementById(exerciseId);
-    if (exercise && confirm('¿Está seguro que desea eliminar este ejercicio?')) {
-        exercise.parentNode.removeChild(exercise);
-    }
-}
-
-        
         
         </script>
 
