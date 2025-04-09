@@ -10487,8 +10487,8 @@ function addExerciseRow(exercise = {}) {
     // Definir el HTML de la fila con todos los campos y tooltips
     row.innerHTML = `
         <td>
-            <input type="text" class="form-control" placeholder="Nombre" 
-                   value="${exercise.name || ''}" style="width: 100%;">
+            <textarea class="form-control" placeholder="Nombre" 
+                   style="width: 100%; min-height: 60px; resize: vertical;">${exercise.name || ''}</textarea>
         </td>
         <td>
             <select class="form-control" style="width: 100%;">
@@ -10534,8 +10534,8 @@ function addExerciseRow(exercise = {}) {
     </div>
 </td>
         <td>
-            <input type="text" class="form-control" placeholder="Notas" 
-                   value="${exercise.notes || ''}" style="width: 100%;">
+           <textarea class="form-control" placeholder="Notas" 
+          style="width: 100%; min-height: 60px; resize: vertical;">${exercise.notes || ''}</textarea>
         </td>
         <td style="text-align: center;">
             <button type="button" class="exercise-delete-btn">
