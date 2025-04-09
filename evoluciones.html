@@ -2792,16 +2792,14 @@ function fillEvolutionsTab(evolutions) {
                     deleteEvolution(currentPatientId, evolution.id);
                 });
             }
-        });
-
-        // Configurar tooltips para dispositivos móviles después de cargar evoluciones
-        setTimeout(setupMobileTooltips, 500);
-
-        
+        });        
     } catch (error) {
         console.error("Error llenando pestaña de evoluciones:", error);
         showToast("Error al cargar evoluciones: " + error.message, "error");
     }
+
+     // Configurar tooltips para dispositivos móviles después de cargar evoluciones
+        setTimeout(setupMobileTooltips, 500);
 }
 
 // Función mejorada para renderizar ejercicios con tooltips y 2 columnas
