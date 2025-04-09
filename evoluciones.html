@@ -650,21 +650,20 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="evolutionForm">
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label required">Fecha</label>
-                                <input type="date" class="form-control" name="date" id="evolutionDate" required>
-                            </div>
-                        </div>
-                        <div class="form-col">
-                            <div class="form-group">
-                                <label class="form-label required">Hora</label>
-                                <input type="time" class="form-control" name="time" id="evolutionTime" required>
-                            </div>
+                <div class="form-row" style="gap: 15px; margin-bottom: 15px;">
+                    <div class="form-col" style="flex: 1;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Fecha</label>
+                            <input type="date" class="form-control" name="date" id="evolutionDate" required>
                         </div>
                     </div>
+                    <div class="form-col" style="flex: 1;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label required">Hora</label>
+                            <input type="time" class="form-control" name="time" id="evolutionTime" required>
+                        </div>
+                    </div>
+                </div>
                     <div class="form-group">
                         <label class="form-label required">Estudiante responsable</label>
                         <input type="text" class="form-control" name="student" id="evolutionStudent" required>
@@ -793,12 +792,12 @@
                                 <label class="form-label">Descripción General</label>
                                 <textarea class="form-control" rows="3" name="trainingPlan" id="evolutionTrainingPlan" placeholder="Descripción general del plan de entrenamiento"></textarea>
                             </div>
-                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                                <button type="button" class="info-btn" onclick="showRPEInfo()" style="background-color: #1E88E5; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">
-                                    <i class="fas fa-info-circle"></i> ¿Qué es RPE?
+                            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button type="button" class="action-btn btn-secondary" onclick="mostrarInfoIntensidad('RPE')" style="flex: 1;">
+                                    <i class="fas fa-info-circle"></i> Escala RPE
                                 </button>
-                                <button type="button" class="info-btn" onclick="showRIRInfo()" style="background-color: #1E88E5; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer;">
-                                    <i class="fas fa-info-circle"></i> ¿Qué es RIR?
+                                <button type="button" class="action-btn btn-secondary" onclick="mostrarInfoIntensidad('RIR')" style="flex: 1;">
+                                    <i class="fas fa-info-circle"></i> Escala RIR
                                 </button>
                             </div>
                             <div class="form-group">
@@ -1595,166 +1594,6 @@ let currentPatientId = null;
 let patientsCache = []; // Para almacenar pacientes y reducir consultas
 let customTemplates = [];
 
-// Definiciones de funciones globales para las escalas RPE/RIR
-window.showRPEInfo = function() {
-    const content = `
-        <h3>Escala RPE (Rating of Perceived Exertion)</h3>
-        <p>La escala RPE es una medida subjetiva del esfuerzo percibido durante el ejercicio:</p>
-        <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">RPE</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Descripción</th>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">10</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo máximo absoluto, imposible continuar</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Apenas posible completar la repetición</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">1 repetición más sería imposible (fallo técnico inminente)</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1 repetición más pero con dificultad extrema</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1 repetición más</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1-2 repeticiones más</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 2-3 repeticiones más</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">6</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 4-5 repeticiones más</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 6+ repeticiones más (moderadamente difícil)</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">4</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo moderado, conversación posible</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">3</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo ligero, cómodo</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Muy fácil, casi sin esfuerzo</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Sin esfuerzo, calentamiento muy ligero</td>
-            </tr>
-        </table>
-    `;
-    showInfoModal("Escala RPE", content);
-}
-
-window.showRIRInfo = function() {
-    const content = `
-        <h3>Escala RIR (Repetitions In Reserve)</h3>
-        <p>La escala RIR indica las repeticiones que podrías hacer antes del fallo muscular:</p>
-        <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">RIR</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Descripción</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Equivalente RPE</th>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Fallo técnico, no podrías hacer más repeticiones</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">10</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Posible fallo en siguiente repetición</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más con esfuerzo</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2-3 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">3</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 3 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">4</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 4 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">6</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5+</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 5 o más repeticiones, moderado</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5 o menos</td>
-            </tr>
-        </table>
-        <p style="margin-top: 15px;"><strong>Nota:</strong> A mayor RIR, menor intensidad; a menor RIR, mayor intensidad.</p>
-    `;
-    showInfoModal("Escala RIR", content);
-}
-
-window.showInfoModal = function(title, content) {
-    // Crear el modal dinámicamente
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    modal.style.zIndex = '9999';
-    modal.style.justifyContent = 'center';
-    modal.style.alignItems = 'center';
-    
-    modal.innerHTML = `
-        <div style="background: white; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee;">
-                <h3 style="margin: 0;">${title}</h3>
-                <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div style="padding: 15px;">
-                ${content}
-            </div>
-            <div style="padding: 15px; text-align: right; border-top: 1px solid #eee;">
-                <button onclick="this.closest('.modal-overlay').remove()" style="background: #1E88E5; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">Cerrar</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
 
         // Función para subir archivos directamente a ImageKit usando upload API
 async function uploadToImageKitDirect(file, folder, fileName) {
@@ -13942,101 +13781,37 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
     showInfoModal("Escala RPE", content);
 }
 
-function showRIRInfo() {
-    const content = `
-        <h3>Escala RIR (Repetitions In Reserve)</h3>
-        <p>La escala RIR indica las repeticiones que podrías hacer antes del fallo muscular:</p>
-        <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">RIR</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Descripción</th>
-                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Equivalente RPE</th>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Fallo técnico, no podrías hacer más repeticiones</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">10</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Posible fallo en siguiente repetición</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más con esfuerzo</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2.5</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2-3 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7.5</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">3</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 3 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">4</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 4 repeticiones más</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">6</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5+</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 5 o más repeticiones, moderado</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5 o menos</td>
-            </tr>
-        </table>
-        <p style="margin-top: 15px;"><strong>Nota:</strong> A mayor RIR, menor intensidad; a menor RIR, mayor intensidad.</p>
-    `;
-    showInfoModal("Escala RIR", content);
-}
 
-function showInfoModal(title, content) {
-    // Crear el modal dinámicamente
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100%';
-    modal.style.height = '100%';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    modal.style.zIndex = '9999';
-    modal.style.justifyContent = 'center';
-    modal.style.alignItems = 'center';
-    
-    modal.innerHTML = `
-        <div style="background: white; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee;">
-                <h3 style="margin: 0;">${title}</h3>
-                <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-            <div style="padding: 15px;">
-                ${content}
-            </div>
-            <div style="padding: 15px; text-align: right; border-top: 1px solid #eee;">
-                <button onclick="this.closest('.modal-overlay').remove()" style="background: #1E88E5; color: white; border: none; border-radius: 4px; padding: 8px 15px; cursor: pointer;">Cerrar</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
-}
         </script>
+    <script>
+// Función para mostrar información de intensidad
+function mostrarInfoIntensidad(tipo) {
+    let titulo = tipo === 'RPE' ? "Escala RPE (Rating of Perceived Exertion)" : "Escala RIR (Repeticiones en Reserva)";
+    let mensaje = "";
+    
+    if (tipo === 'RPE') {
+        mensaje = "0 = Reposo absoluto\n" +
+            "1 = Esfuerzo muy, muy ligero\n" +
+            "2 = Esfuerzo muy ligero\n" +
+            "3 = Esfuerzo ligero\n" +
+            "4 = Esfuerzo moderado\n" +
+            "5 = Esfuerzo algo duro\n" +
+            "6 = Esfuerzo duro\n" +
+            "7-8 = Esfuerzo muy duro\n" +
+            "9 = Esfuerzo extremadamente duro\n" +
+            "10 = Esfuerzo máximo (imposible continuar)";
+    } else {
+        mensaje = "0 = No podría realizar ni una repetición más (fallo muscular)\n" +
+            "1 = Podría realizar 1 repetición más\n" +
+            "2 = Podría realizar 2 repeticiones más\n" +
+            "3 = Podría realizar 3 repeticiones más\n" +
+            "4 = Podría realizar 4 repeticiones más\n" +
+            "5+ = Podría realizar 5 o más repeticiones adicionales";
+    }
+    
+    alert(titulo + "\n\n" + mensaje);
+}
+</script>
     
 </body>
 </html>
