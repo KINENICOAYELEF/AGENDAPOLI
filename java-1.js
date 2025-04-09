@@ -7594,7 +7594,6 @@ function generateStatisticsReport() {
     }, 1500);
 }
 
-// Export PDF function (mejorada)
 // Export PDF function (versión mejorada completa)
 async function exportToPDF(patientId) {
     try {
@@ -7677,6 +7676,10 @@ async function exportToPDF(patientId) {
             document.getElementById('pdfIncludeLogo').checked : true;
         const includeFooter = document.getElementById('pdfIncludeFooter') ? 
             document.getElementById('pdfIncludeFooter').checked : true;
+        const includeObjectives = document.getElementById('pdfIncludeObjectives') ? 
+            document.getElementById('pdfIncludeObjectives').checked : true;
+        const includePlans = document.getElementById('pdfIncludePlans') ? 
+            document.getElementById('pdfIncludePlans').checked : true;
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
@@ -8091,48 +8094,354 @@ async function exportToPDF(patientId) {
                     yPos += factorLines.length * 7 + 10;
                 }
             }
+        }
+        
+        // AÑADIR OBJETIVOS TERAPÉUTICOS
+        if (includeObjectives) {
+            // Check if we need a new page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
             
-            // AÑADIR OBJETIVOS TERAPÉUTICOS
-            if (generalObjective || specificObjectives.length > 0) {
+            doc.setFillColor(30, 136, 229);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
+            yPos += 20;
+            
+            doc.setTextColor(0, 0, 0);
+            
+            // Objetivo general
+            if (generalObjective) {
+                doc.setFont(undefined, 'bold');
+                doc.text("Objetivo general:", 15, yPos);
+                yPos += 7;
+                
+                doc.setFont(undefined, 'normal');
+                const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
+                doc.text(generalLines, 15, yPos);
+                yPos += generalLines.length * 7 + 5;
+                
+                if (generalObjective.endDate) {
+                    doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
+                    yPos += 7;
+                }
+                
+                // Mostrar progreso
+                doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
+                yPos += 10;
+            }
+            
+            // Objetivos específicos
+            if (specificObjectives.length > 0) {
                 // Check if we need a new page
                 if (yPos > 250) {
                     doc.addPage();
                     yPos = 20;
                 }
                 
-                doc.setFillColor(30, 136, 229);
-                doc.rect(10, yPos, 190, 10, 'F');
-                doc.setTextColor(255, 255, 255);
+                doc.setFont(undefined, 'bold');
+                doc.text("Objetivos específicos:", 15, yPos);
+                yPos += 10;
+                
+                // Agrupar por categoría
+                const categorized = {};
+                specificObjectives.forEach(obj => {
+                    const category = obj.category || "Sin categoría";
+                    if (!categorized[category]) {
+                        categorized[category] = [];
+                    }
+                    categorized[category].push(obj);
+                });
+                
+                // Mostrar por categoría
+                for (const [category, objectives] of Object.entries(categorized)) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    doc.setFillColor(240, 240, 240);
+                    doc.rect(10, yPos - 5, 190, 10, 'F');
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(30, 136, 229);
+                    doc.text(`Categoría: ${category}`, 15, yPos);
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(0, 0, 0);
+                    
+                    yPos += 10;
+                    
+                    // Mostrar cada objetivo
+                    objectives.forEach((obj, index) => {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        // Si hay descripción explícita, usarla
+                        if (obj.description) {
+                            doc.setFont(undefined, 'bold');
+                            doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
+                            yPos += 10;
+                        } else {
+                            // Si no, construir la descripción a partir de los componentes
+                            const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
+                            doc.setFont(undefined, 'bold');
+                            doc.text(`${index + 1}. ${title}`, 15, yPos);
+                            yPos += 7;
+                        }
+                        
+                        // Detalles adicionales
+                        doc.setFont(undefined, 'normal');
+                        
+                        const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
+                        doc.text(`Medida: ${details}`, 20, yPos);
+                        yPos += 7;
+                        
+                        // Estado
+                        let statusText = "Pendiente";
+                        if (obj.status === 'completed') statusText = "Completado";
+                        else if (obj.status === 'inprogress') statusText = "En progreso";
+                        
+                        const progress = obj.progress || 0;
+                        doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                        yPos += 7;
+                        
+                        // Fechas
+                        const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
+                        const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
+                        doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                        yPos += 10;
+                    });
+                }
+            }
+        }
+        
+        // AÑADIR PLANES DE TRATAMIENTO
+        if (includePlans) {
+            // Check if we need a new page
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFillColor(30, 136, 229);
+            doc.rect(10, yPos, 190, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('PLANES DE TRATAMIENTO', 105, yPos + 7, null, null, 'center');
+            yPos += 20;
+            
+            doc.setTextColor(0, 0, 0);
+            
+            // Mostrar cada plan
+            for (let i = 0; i < treatmentPlans.length; i++) {
+                const plan = treatmentPlans[i];
+                
+                // Check if we need a new page
+                if (yPos > 230) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                // Encabezado con fecha
+                doc.setFillColor(230, 240, 250);
+                doc.rect(10, yPos - 5, 190, 10, 'F');
+                doc.setTextColor(30, 136, 229);
                 doc.setFontSize(12);
                 doc.setFont(undefined, 'bold');
-                doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
-                yPos += 20;
+                doc.text(`Plan de tratamiento: ${formatDate(new Date(plan.startDate || plan.createdAt))}`, 15, yPos);
+                yPos += 15;
                 
+                // Reset font
                 doc.setTextColor(0, 0, 0);
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'normal');
                 
-                // Objetivo general
-                if (generalObjective) {
+                // Duración y frecuencia
+                doc.text(`Duración: ${plan.duration || '?'} ${plan.durationUnit || 'semanas'} - Frecuencia: ${plan.frequency || '?'} ${plan.frequencyUnit || 'sesiones por semana'}`, 15, yPos);
+                yPos += 10;
+                
+                // Objetivos del plan
+                if (plan.objectives) {
                     doc.setFont(undefined, 'bold');
-                    doc.text("Objetivo general:", 15, yPos);
+                    doc.text("Objetivos del tratamiento:", 15, yPos);
                     yPos += 7;
                     
                     doc.setFont(undefined, 'normal');
-                    const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
-                    doc.text(generalLines, 15, yPos);
-                    yPos += generalLines.length * 7 + 5;
-                    
-                    if (generalObjective.endDate) {
-                        doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
-                        yPos += 7;
-                    }
-                    
-                    // Mostrar progreso
-                    doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
-                    yPos += 10;
+                    const objectivesLines = doc.splitTextToSize(plan.objectives, 180);
+                    doc.text(objectivesLines, 15, yPos);
+                    yPos += objectivesLines.length * 7 + 5;
                 }
                 
-                // Objetivos específicos
-                if (specificObjectives.length > 0) {
+                // Técnicas
+                doc.setFont(undefined, 'bold');
+                doc.text("Técnicas utilizadas:", 15, yPos);
+                yPos += 7;
+                doc.setFont(undefined, 'normal');
+                
+                if (plan.techniques) {
+                    // Terapia manual
+                    if (plan.techniques.manual && plan.techniques.manual.active) {
+                        doc.text("• Terapia manual", 20, yPos);
+                        yPos += 7;
+                        
+                        // Subtécnicas
+                        if (plan.techniques.manual.subtechniques) {
+                            const subs = plan.techniques.manual.subtechniques;
+                            const activeSubs = [];
+                            
+                            if (subs.jointMobilization) activeSubs.push("Movilización articular");
+                            if (subs.jointManipulation) activeSubs.push("Manipulación articular");
+                            if (subs.myofascial) activeSubs.push("Liberación miofascial");
+                            if (subs.neurodynamics) activeSubs.push("Neurodinamia");
+                            if (subs.muscleEnergy) activeSubs.push("Técnicas de energía muscular");
+                            
+                            if (activeSubs.length > 0) {
+                                doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                yPos += 7;
+                            }
+                        }
+                        
+                        // Detalles
+                        if (plan.techniques.manual.details) {
+                            const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.manual.details}`, 175);
+                            doc.text(detailLines, 25, yPos);
+                            yPos += detailLines.length * 7 + 3;
+                        }
+                    }
+                    
+                    // Ejercicio terapéutico
+                    if (plan.techniques.exercise && plan.techniques.exercise.active) {
+                        doc.text("• Ejercicio terapéutico", 20, yPos);
+                        yPos += 7;
+                        
+                        // Subtécnicas
+                        if (plan.techniques.exercise.subtechniques) {
+                            const subs = plan.techniques.exercise.subtechniques;
+                            const activeSubs = [];
+                            
+                            if (subs.strength) activeSubs.push("Fortalecimiento");
+                            if (subs.flexibility) activeSubs.push("Flexibilidad");
+                            if (subs.proprioception) activeSubs.push("Propiocepción");
+                            if (subs.balance) activeSubs.push("Equilibrio");
+                            if (subs.cardiovascular) activeSubs.push("Cardiovascular");
+                            if (subs.functional) activeSubs.push("Funcional");
+                            
+                            if (activeSubs.length > 0) {
+                                doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                yPos += 7;
+                            }
+                        }
+                        
+                        // Detalles
+                        if (plan.techniques.exercise.details) {
+                            const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.exercise.details}`, 175);
+                            doc.text(detailLines, 25, yPos);
+                            yPos += detailLines.length * 7 + 3;
+                        }
+                    }
+                    
+                    // Agentes físicos
+                    if (plan.techniques.physical && plan.techniques.physical.active) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.text("• Agentes físicos", 20, yPos);
+                        yPos += 7;
+                        
+                        // Subtécnicas
+                        if (plan.techniques.physical.subtechniques) {
+                            const subs = plan.techniques.physical.subtechniques;
+                            const activeSubs = [];
+                            
+                            if (subs.thermotherapy) activeSubs.push("Termoterapia");
+                            if (subs.cryotherapy) activeSubs.push("Crioterapia");
+                            if (subs.electrotherapy) activeSubs.push("Electroterapia");
+                            if (subs.ultrasound) activeSubs.push("Ultrasonido");
+                            if (subs.laser) activeSubs.push("Láser");
+                            if (subs.shockwave) activeSubs.push("Ondas de choque");
+                            
+                            if (activeSubs.length > 0) {
+                                doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                yPos += 7;
+                            }
+                        }
+                        
+                        // Detalles
+                        if (plan.techniques.physical.details) {
+                            const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.physical.details}`, 175);
+                            doc.text(detailLines, 25, yPos);
+                            yPos += detailLines.length * 7 + 3;
+                        }
+                    }
+                    
+                    // Educación al paciente
+                    if (plan.techniques.education && plan.techniques.education.active) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.text("• Educación al paciente", 20, yPos);
+                        yPos += 7;
+                        
+                        // Subtécnicas
+                        if (plan.techniques.education.subtechniques) {
+                            const subs = plan.techniques.education.subtechniques;
+                            const activeSubs = [];
+                            
+                            if (subs.painEducation) activeSubs.push("Educación en neurociencia del dolor");
+                            if (subs.posture) activeSubs.push("Higiene postural");
+                            if (subs.ergonomics) activeSubs.push("Ergonomía");
+                            if (subs.selfManagement) activeSubs.push("Automanejo");
+                            
+                            if (activeSubs.length > 0) {
+                                doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                yPos += 7;
+                            }
+                        }
+                        
+                        // Detalles
+                        if (plan.techniques.education.details) {
+                            const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.education.details}`, 175);
+                            doc.text(detailLines, 25, yPos);
+                            yPos += detailLines.length * 7 + 3;
+                        }
+                    }
+                    
+                    // Otras técnicas
+                    if (plan.techniques.other && plan.techniques.other.active) {
+                        // Check if we need a new page
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        
+                        doc.text("• Otras técnicas", 20, yPos);
+                        yPos += 7;
+                        
+                        // Detalles
+                        if (plan.techniques.other.details) {
+                            const detailLines = doc.splitTextToSize(`  ${plan.techniques.other.details}`, 175);
+                            doc.text(detailLines, 25, yPos);
+                            yPos += detailLines.length * 7 + 3;
+                        }
+                    }
+                }
+                
+                // Progresión planificada
+                if (plan.progression) {
                     // Check if we need a new page
                     if (yPos > 250) {
                         doc.addPage();
@@ -8140,362 +8449,56 @@ async function exportToPDF(patientId) {
                     }
                     
                     doc.setFont(undefined, 'bold');
-                    doc.text("Objetivos específicos:", 15, yPos);
-                    yPos += 10;
+                    doc.text("Progresión planificada:", 15, yPos);
+                    yPos += 7;
                     
-                    // Agrupar por categoría
-                    const categorized = {};
-                    specificObjectives.forEach(obj => {
-                        const category = obj.category || "Sin categoría";
-                        if (!categorized[category]) {
-                            categorized[category] = [];
-                        }
-                        categorized[category].push(obj);
-                    });
-                    
-                    // Mostrar por categoría
-                    for (const [category, objectives] of Object.entries(categorized)) {
-                        // Check if we need a new page
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        doc.setFillColor(240, 240, 240);
-                        doc.rect(10, yPos - 5, 190, 10, 'F');
-                        doc.setFont(undefined, 'bold');
-                        doc.setTextColor(30, 136, 229);
-                        doc.text(`Categoría: ${category}`, 15, yPos);
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        
-                        yPos += 10;
-                        
-                        // Mostrar cada objetivo
-                        objectives.forEach((obj, index) => {
-                            // Check if we need a new page
-                            if (yPos > 250) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            // Si hay descripción explícita, usarla
-                            if (obj.description) {
-                                doc.setFont(undefined, 'bold');
-                                doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
-                                yPos += 10;
-                            } else {
-                                // Si no, construir la descripción a partir de los componentes
-                                const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
-                                doc.setFont(undefined, 'bold');
-                                doc.text(`${index + 1}. ${title}`, 15, yPos);
-                                yPos += 7;
-                            }
-                            
-                            // Detalles adicionales
-                            doc.setFont(undefined, 'normal');
-                            
-                            const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
-                            doc.text(`Medida: ${details}`, 20, yPos);
-                            yPos += 7;
-                            
-                            // Estado
-                            let statusText = "Pendiente";
-                            if (obj.status === 'completed') statusText = "Completado";
-                            else if (obj.status === 'inprogress') statusText = "En progreso";
-                            
-                            const progress = obj.progress || 0;
-                            doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
-                            yPos += 7;
-                            
-                            // Fechas
-                            const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
-                            const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
-                            doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
-                            yPos += 10;
-                        });
-                    }
-                }
-            }
-            
-            // AÑADIR PLANES DE TRATAMIENTO
-            if (treatmentPlans.length > 0) {
-                // Check if we need a new page
-                if (yPos > 250) {
-                    doc.addPage();
-                    yPos = 20;
+                    doc.setFont(undefined, 'normal');
+                    const progressionLines = doc.splitTextToSize(plan.progression, 180);
+                    doc.text(progressionLines, 15, yPos);
+                    yPos += progressionLines.length * 7 + 5;
                 }
                 
-                doc.setFillColor(30, 136, 229);
-                doc.rect(10, yPos, 190, 10, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('PLANES DE TRATAMIENTO', 105, yPos + 7, null, null, 'center');
-                yPos += 20;
-                
-                doc.setTextColor(0, 0, 0);
-                
-                // Mostrar cada plan
-                for (let i = 0; i < treatmentPlans.length; i++) {
-                    const plan = treatmentPlans[i];
-                    
+                // Observaciones
+                if (plan.observations) {
                     // Check if we need a new page
-                    if (yPos > 230) {
+                    if (yPos > 250) {
                         doc.addPage();
                         yPos = 20;
                     }
                     
-                    // Encabezado con fecha
-                    doc.setFillColor(230, 240, 250);
-                    doc.rect(10, yPos - 5, 190, 10, 'F');
-                    doc.setTextColor(30, 136, 229);
-                    doc.setFontSize(12);
                     doc.setFont(undefined, 'bold');
-                    doc.text(`Plan de tratamiento: ${formatDate(new Date(plan.startDate || plan.createdAt))}`, 15, yPos);
-                    yPos += 15;
-                    
-                    // Reset font
-                    doc.setTextColor(0, 0, 0);
-                    doc.setFontSize(11);
-                    doc.setFont(undefined, 'normal');
-                    
-                    // Duración y frecuencia
-                    doc.text(`Duración: ${plan.duration || '?'} ${plan.durationUnit || 'semanas'} - Frecuencia: ${plan.frequency || '?'} ${plan.frequencyUnit || 'sesiones por semana'}`, 15, yPos);
-                    yPos += 10;
-                    
-                    // Objetivos del plan
-                    if (plan.objectives) {
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Objetivos del tratamiento:", 15, yPos);
-                        yPos += 7;
-                        
-                        doc.setFont(undefined, 'normal');
-                        const objectivesLines = doc.splitTextToSize(plan.objectives, 180);
-                        doc.text(objectivesLines, 15, yPos);
-                        yPos += objectivesLines.length * 7 + 5;
-                    }
-                    
-                    // Técnicas
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Técnicas utilizadas:", 15, yPos);
+                    doc.text("Observaciones:", 15, yPos);
                     yPos += 7;
+                    
                     doc.setFont(undefined, 'normal');
-                    
-                    if (plan.techniques) {
-                        // Terapia manual
-                        if (plan.techniques.manual && plan.techniques.manual.active) {
-                            doc.text("• Terapia manual", 20, yPos);
-                            yPos += 7;
-                            
-                            // Subtécnicas
-                            if (plan.techniques.manual.subtechniques) {
-                                const subs = plan.techniques.manual.subtechniques;
-                                const activeSubs = [];
-                                
-                                if (subs.jointMobilization) activeSubs.push("Movilización articular");
-                                if (subs.jointManipulation) activeSubs.push("Manipulación articular");
-                                if (subs.myofascial) activeSubs.push("Liberación miofascial");
-                                if (subs.neurodynamics) activeSubs.push("Neurodinamia");
-                                if (subs.muscleEnergy) activeSubs.push("Técnicas de energía muscular");
-                                
-                                if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
-                                    yPos += 7;
-                                }
-                            }
-                            
-                            // Detalles
-                            if (plan.techniques.manual.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.manual.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
-                                yPos += detailLines.length * 7 + 3;
-                            }
-                        }
-                        
-                        // Ejercicio terapéutico
-                        if (plan.techniques.exercise && plan.techniques.exercise.active) {
-                            doc.text("• Ejercicio terapéutico", 20, yPos);
-                            yPos += 7;
-                            
-                            // Subtécnicas
-                            if (plan.techniques.exercise.subtechniques) {
-                                const subs = plan.techniques.exercise.subtechniques;
-                                const activeSubs = [];
-                                
-                                if (subs.strength) activeSubs.push("Fortalecimiento");
-                                if (subs.flexibility) activeSubs.push("Flexibilidad");
-                                if (subs.proprioception) activeSubs.push("Propiocepción");
-                                if (subs.balance) activeSubs.push("Equilibrio");
-                                if (subs.cardiovascular) activeSubs.push("Cardiovascular");
-                                if (subs.functional) activeSubs.push("Funcional");
-                                
-                                if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
-                                    yPos += 7;
-                                }
-                            }
-                            
-                            // Detalles
-                            if (plan.techniques.exercise.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.exercise.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
-                                yPos += detailLines.length * 7 + 3;
-                            }
-                        }
-                        
-                        // Agentes físicos
-                        if (plan.techniques.physical && plan.techniques.physical.active) {
-                            // Check if we need a new page
-                            if (yPos > 250) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.text("• Agentes físicos", 20, yPos);
-                            yPos += 7;
-                            
-                            // Subtécnicas
-                            if (plan.techniques.physical.subtechniques) {
-                                const subs = plan.techniques.physical.subtechniques;
-                                const activeSubs = [];
-                                
-                                if (subs.thermotherapy) activeSubs.push("Termoterapia");
-                                if (subs.cryotherapy) activeSubs.push("Crioterapia");
-                                if (subs.electrotherapy) activeSubs.push("Electroterapia");
-                                if (subs.ultrasound) activeSubs.push("Ultrasonido");
-                                if (subs.laser) activeSubs.push("Láser");
-                                if (subs.shockwave) activeSubs.push("Ondas de choque");
-                                
-                                if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
-                                    yPos += 7;
-                                }
-                            }
-                            
-                            // Detalles
-                            if (plan.techniques.physical.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.physical.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
-                                yPos += detailLines.length * 7 + 3;
-                            }
-                        }
-                        
-                        // Educación al paciente
-                        if (plan.techniques.education && plan.techniques.education.active) {
-                            // Check if we need a new page
-                            if (yPos > 250) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.text("• Educación al paciente", 20, yPos);
-                            yPos += 7;
-                            
-                            // Subtécnicas
-                            if (plan.techniques.education.subtechniques) {
-                                const subs = plan.techniques.education.subtechniques;
-                                const activeSubs = [];
-                                
-                                if (subs.painEducation) activeSubs.push("Educación en neurociencia del dolor");
-                                if (subs.posture) activeSubs.push("Higiene postural");
-                                if (subs.ergonomics) activeSubs.push("Ergonomía");
-                                if (subs.selfManagement) activeSubs.push("Automanejo");
-                                
-                                if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
-                                    yPos += 7;
-                                }
-                            }
-                            
-                            // Detalles
-                            if (plan.techniques.education.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.education.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
-                                yPos += detailLines.length * 7 + 3;
-                            }
-                        }
-                        
-                        // Otras técnicas
-                        if (plan.techniques.other && plan.techniques.other.active) {
-                            // Check if we need a new page
-                            if (yPos > 250) {
-                                doc.addPage();
-                                yPos = 20;
-                            }
-                            
-                            doc.text("• Otras técnicas", 20, yPos);
-                            yPos += 7;
-                            
-                            // Detalles
-                            if (plan.techniques.other.details) {
-                                const detailLines = doc.splitTextToSize(`  ${plan.techniques.other.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
-                                yPos += detailLines.length * 7 + 3;
-                            }
-                        }
+                    const observationsLines = doc.splitTextToSize(plan.observations, 180);
+                    doc.text(observationsLines, 15, yPos);
+                    yPos += observationsLines.length * 7 + 5;
+                }
+                
+                // Criterios de alta
+                if (plan.dischargeGoals) {
+                    // Check if we need a new page
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
                     }
                     
-                    // Progresión planificada
-                    if (plan.progression) {
-                        // Check if we need a new page
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Progresión planificada:", 15, yPos);
-                        yPos += 7;
-                        
-                        doc.setFont(undefined, 'normal');
-                        const progressionLines = doc.splitTextToSize(plan.progression, 180);
-                        doc.text(progressionLines, 15, yPos);
-                        yPos += progressionLines.length * 7 + 5;
-                    }
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Criterios de alta:", 15, yPos);
+                    yPos += 7;
                     
-                    // Observaciones
-                    if (plan.observations) {
-                        // Check if we need a new page
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Observaciones:", 15, yPos);
-                        yPos += 7;
-                        
-                        doc.setFont(undefined, 'normal');
-                        const observationsLines = doc.splitTextToSize(plan.observations, 180);
-                        doc.text(observationsLines, 15, yPos);
-                        yPos += observationsLines.length * 7 + 5;
-                    }
-                    
-                    // Criterios de alta
-                    if (plan.dischargeGoals) {
-                        // Check if we need a new page
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Criterios de alta:", 15, yPos);
-                        yPos += 7;
-                        
-                        doc.setFont(undefined, 'normal');
-                        const goalsLines = doc.splitTextToSize(plan.dischargeGoals, 180);
-                        doc.text(goalsLines, 15, yPos);
-                        yPos += goalsLines.length * 7 + 5;
-                    }
-                    
-                    // Add separator line between planes
-                    if (i < treatmentPlans.length - 1) {
-                        doc.setDrawColor(200, 200, 200);
-                        doc.line(15, yPos, 195, yPos);
-                        yPos += 10;
-                    }
+                    doc.setFont(undefined, 'normal');
+                    const goalsLines = doc.splitTextToSize(plan.dischargeGoals, 180);
+                    doc.text(goalsLines, 15, yPos);
+                    yPos += goalsLines.length * 7 + 5;
+                }
+                
+                // Add separator line between planes
+                if (i < treatmentPlans.length - 1) {
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(15, yPos, 195, yPos);
+                    yPos += 10;
                 }
             }
         }
@@ -8884,79 +8887,8 @@ async function exportToPDF(patientId) {
 }
 
 
-        // Inicializar selector de pacientes mejorado
-function initPatientSelector(patients) {
-    const patientSelector = document.getElementById('patientSelector');
-    const patientSelectorHeader = document.getElementById('patientSelectorHeader');
-    const patientSelectorDropdown = document.getElementById('patientSelectorDropdown');
-    const patientSelectorList = document.getElementById('patientSelectorList');
-    const patientSelectorSearchInput = document.getElementById('patientSelectorSearchInput');
-    
-    if (!patientSelector || !patientSelectorHeader || !patientSelectorDropdown || !patientSelectorList) {
-        return;
-    }
-    
-    // Llenar lista de pacientes
-    renderPatientSelectorList(patients);
-    
-    // Toggle dropdown al hacer clic en el header
-    patientSelectorHeader.addEventListener('click', function() {
-        patientSelectorDropdown.classList.toggle('show');
-    });
-    
-    // Cerrar dropdown al hacer clic fuera
-    document.addEventListener('click', function(event) {
-        if (!patientSelector.contains(event.target)) {
-            patientSelectorDropdown.classList.remove('show');
-        }
-    });
-    
-    // Filtrar pacientes al escribir
-    if (patientSelectorSearchInput) {
-        patientSelectorSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const filteredPatients = patients.filter(patient => 
-                (patient.name && patient.name.toLowerCase().includes(searchTerm)) || 
-                (patient.rut && patient.rut.toLowerCase().includes(searchTerm))
-            );
-            renderPatientSelectorList(filteredPatients);
-        });
-    }
-}
-
-// Función para renderizar la lista de pacientes en el selector
-function renderPatientSelectorList(patientsList) {
-    const patientSelectorList = document.getElementById('patientSelectorList');
-    if (!patientSelectorList) return;
-    
-    patientSelectorList.innerHTML = '';
-    
-    if (patientsList.length === 0) {
-        patientSelectorList.innerHTML = '<div style="padding: 15px; text-align: center; color: var(--text-secondary);">No se encontraron pacientes</div>';
-        return;
-    }
-    
-    patientsList.forEach(patient => {
-        const initials = getInitials(patient.name);
-        const patientItem = document.createElement('div');
-        patientItem.className = 'patient-selector-item';
-        patientItem.dataset.id = patient.id;
         
-        patientItem.innerHTML = `
-            <div class="patient-selector-avatar">${initials}</div>
-            <div class="patient-selector-info">
-                <div class="patient-selector-name">${patient.name}</div>
-                <div class="patient-selector-rut">${patient.rut}</div>
-            </div>
-        `;
-        
-        patientItem.addEventListener('click', function() {
-            selectPatient(patient.id);
-        });
-        
-        patientSelectorList.appendChild(patientItem);
-    });
-}
+    
 
 // Setup scales controls
 function setupScalesControls() {
@@ -9284,21 +9216,7 @@ if (effortTypeSelect) {
     });
 }
     
-    // Añadir evento para eliminar ejercicio
-    const deleteBtn = row.querySelector('.exercise-delete-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            tableBody.removeChild(row);
-        });
-    }
-    
-    // Añadir la fila a la tabla
-    tableBody.appendChild(row);
-    
-    // Mostrar mensaje de confirmación
-    console.log("Ejercicio añadido a la tabla");
-}
-
+   
 
 // Recopilar datos de PSFS para guardar
 function getPsfsActivities() {
@@ -10379,147 +10297,6 @@ const functionalCapabilities = {
     "Marcha y locomoción": ["Patrón de marcha", "Transferencias", "Subir/bajar escaleras", "Carrera", "Salto"]
 };
 
-// Plantillas de objetivos específicos por especialidad
-const objectiveTemplates = {
-    "deportiva": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza explosiva de cuádriceps",
-            parameter: "Fuerza muscular",
-            method: "Test de salto vertical (cm)",
-            initialValue: "30",
-            targetValue: "40",
-            duration: "6",
-            durationUnit: "semanas",
-            frequency: "semanal",
-            notes: "Enfocarse en fase concéntrica explosiva"
-        },
-        {
-            verb: "Mejorar",
-            category: "Funcional",
-            structure: "estabilidad dinámica de rodilla",
-            parameter: "Equilibrio",
-            method: "Y-Balance Test (cm)",
-            initialValue: "75",
-            targetValue: "90",
-            duration: "4",
-            durationUnit: "semanas",
-            frequency: "quincenal",
-            notes: "Trabajar control neuromuscular en planos múltiples"
-        }
-    ],
-    "geriatria": [
-        {
-            verb: "Aumentar",
-            category: "Funcional",
-            structure: "equilibrio estático y dinámico",
-            parameter: "Equilibrio",
-            method: "Escala Berg (0-56)",
-            initialValue: "35",
-            targetValue: "45",
-            duration: "8",
-            durationUnit: "semanas",
-            frequency: "quincenal",
-            notes: "Priorizar seguridad y prevención de caídas"
-        },
-        {
-            verb: "Mejorar",
-            category: "Funcional",
-            structure: "patrón de marcha",
-            parameter: "Funcionalidad",
-            method: "Timed Up and Go (segundos)",
-            initialValue: "15",
-            targetValue: "10",
-            duration: "6",
-            durationUnit: "semanas",
-            frequency: "quincenal",
-            notes: "Trabajar transferencias y cambios de dirección"
-        }
-    ],
-    "neurologica": [
-        {
-            verb: "Reeducar",
-            category: "Funcional",
-            structure: "control motor selectivo de miembro superior",
-            parameter: "Funcionalidad",
-            method: "Box and Block Test (bloques)",
-            initialValue: "20",
-            targetValue: "35",
-            duration: "8",
-            durationUnit: "semanas",
-            frequency: "semanal",
-            notes: "Incorporar actividades de motricidad fina"
-        }
-    ],
-    "respiratoria": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza muscular inspiratoria",
-            parameter: "Fuerza muscular",
-            method: "Presión inspiratoria máxima (cmH₂O)",
-            initialValue: "60",
-            targetValue: "80",
-            duration: "6",
-            durationUnit: "semanas",
-            frequency: "semanal",
-            notes: "Entrenamiento progresivo con válvula umbral"
-        }
-    ],
-    "piso-pelvico": [
-        {
-            verb: "Aumentar",
-            category: "Analítico",
-            structure: "fuerza de la musculatura del piso pélvico",
-            parameter: "Función piso pélvico",
-            method: "Escala Oxford (0-5)",
-            initialValue: "2",
-            targetValue: "4",
-            duration: "8",
-            durationUnit: "semanas",
-            frequency: "semanal",
-            notes: "Combinar contracciones rápidas y sostenidas"
-        }
-    ]
-};
-
-// Función para mostrar explicación del verbo seleccionado
-document.addEventListener('DOMContentLoaded', function() {
-    // Explicaciones de verbos para objetivos específicos
-    const verbExplanations = {
-        "Aumentar": "Incrementar una capacidad o función que está disminuida.",
-        "Disminuir": "Reducir un síntoma o parámetro que está elevado (dolor, edema, etc).",
-        "Mantener": "Conservar el nivel actual de una función que podría deteriorarse.",
-        "Modular": "Regular o ajustar una función para optimizar su rendimiento.",
-        "Optimizar": "Mejorar la eficiencia de una función ya existente.",
-        "Reeducar": "Enseñar nuevamente un patrón de movimiento o función alterada.",
-        "Controlar": "Manejar o regular un síntoma o condición.",
-        "Reducir": "Disminuir la intensidad o frecuencia de un síntoma.",
-        "Incrementar": "Aumentar progresivamente una capacidad o función.",
-        "Restaurar": "Devolver a un estado funcional previo.",
-        "Desarrollar": "Generar una capacidad o habilidad nueva o poco desarrollada.",
-        "Reintegrar": "Incorporar nuevamente una función a un patrón global.",
-        "Normalizar": "Llevar a parámetros considerados normales.",
-        "Educar": "Enseñar al paciente sobre su condición o manejo.",
-        "Estabilizar": "Proporcionar mayor firmeza o control a una estructura.",
-        "Activar": "Iniciar o facilitar la contracción de un músculo inhibido.",
-        "Integrar": "Incorporar una función específica en patrones más complejos.",
-        "Coordinar": "Sincronizar diferentes componentes de un movimiento.",
-        "Adaptar": "Modificar una función para ajustarse a nuevas condiciones."
-    };
-
-    // Mostrar explicación al seleccionar un verbo
-    const actionVerbSelect = document.getElementById('actionVerbSelect');
-    const verbExplanation = document.getElementById('verbExplanation');
-    
-    if (actionVerbSelect && verbExplanation) {
-        actionVerbSelect.addEventListener('change', function() {
-            const selectedVerb = this.value;
-            const explanation = verbExplanations[selectedVerb] || "Seleccione un verbo para ver su explicación.";
-            verbExplanation.innerHTML = `<strong>${selectedVerb}:</strong> ${explanation}`;
-        });
-    }
 
     // Botones para mostrar estructuras y funciones en objetivo general
     const showStructuresBtn = document.getElementById('showStructuresBtn');
@@ -10741,50 +10518,7 @@ if (deleteGeneralObjectiveBtn) {
     });
 }
 
-    // Manejar plantillas de objetivos específicos
-    const templateBtns = document.querySelectorAll('.template-btn[data-template]');
-    templateBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const templateType = this.getAttribute('data-template');
-            const templates = objectiveTemplates[templateType];
-            
-            if (templates && templates.length > 0) {
-                // Usar la primera plantilla de la categoría seleccionada
-                const template = templates[0];
-                
-                // Llenar el formulario con los datos de la plantilla
-                document.getElementById('actionVerbSelect').value = template.verb;
-                document.getElementById('objectiveCategorySelect').value = template.category;
-                document.getElementById('structureInput').value = template.structure;
-                document.getElementById('parameterSelect').value = template.parameter;
-                
-                // Disparar evento change para actualizar métodos de evaluación
-                const parameterEvent = new Event('change');
-                document.getElementById('parameterSelect').dispatchEvent(parameterEvent);
-                
-                // Continuar llenando después de que se actualicen los métodos
-                setTimeout(() => {
-                    document.getElementById('evaluationMethodSelect').value = template.method;
-                    document.getElementById('initialValueInput').value = template.initialValue;
-                    document.getElementById('targetValueInput').value = template.targetValue;
-                    document.getElementById('durationInput').value = template.duration;
-                    document.getElementById('durationUnitSelect').value = template.durationUnit;
-                    document.getElementById('evaluationFrequencySelect').value = template.frequency;
-                    document.getElementById('specificObjectiveNotes').value = template.notes;
-                    
-                    // Actualizar vista previa
-                    updateSpecificObjectivePreview();
-                    
-                    // Mostrar explicación del verbo
-                    const verbExplanation = document.getElementById('verbExplanation');
-                    if (verbExplanation) {
-                        const explanation = verbExplanations[template.verb] || "Seleccione un verbo para ver su explicación.";
-                        verbExplanation.innerHTML = `<strong>${template.verb}:</strong> ${explanation}`;
-                    }
-                }, 100);
-            }
-        });
-    });
+   
 
     // Función para actualizar la vista previa del objetivo específico
     function updateSpecificObjectivePreview() {
