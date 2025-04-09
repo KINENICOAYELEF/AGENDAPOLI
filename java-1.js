@@ -1,4 +1,5 @@
-<script type="module">
+ <!-- Script for Firebase -->
+    <script type="module">
 
 
         // Import the functions you need from the SDKs you need
@@ -705,7 +706,8 @@ async function uploadFileToImageKit(file, patientId, folder) {
             fileId: result.fileId || result.id || `file_${Date.now()}`,
             name: file.name,
             type: file.type.startsWith('image/') ? 'image' : 'document',
-            thumbnailUrl: result.thumbnailUrl || result.url
+            thumbnailUrl: result.thumbnailUrl || result.url,
+            uploadDate: new Date().toISOString() // Añadir fecha de carga
         };
         
         showToast("Archivo subido correctamente", "success");
@@ -1045,6 +1047,9 @@ async function openPatientModal(patientId) {
         
         // Llenar datos personales
         fillPersonalData(patient);
+        
+        // Cargar archivos del paciente (explícitamente con el ID correcto)
+        loadPatientFiles(patientId);
         
         // Obtener evoluciones
         const evolutions = await getEvolutions(patientId);
@@ -1618,60 +1623,65 @@ function renderScales(scales) {
 }
 
 // Función mejorada para mostrar archivos adjuntos
+// Función mejorada para mostrar archivos adjuntos
 function renderAttachments(attachments) {
     try {
-        if (!attachments || attachments.length === 0) return '';
+        // Si no hay adjuntos, devolver un mensaje vacío o de "no hay adjuntos"
+        if (!attachments || attachments.length === 0) {
+            return '<div class="evolution-section">No hay archivos adjuntos</div>';
+        }
         
         let attachmentsHTML = `
             <div class="evolution-section">
                 <div class="evolution-section-title">Archivos adjuntos</div>
-                <div class="attachments" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+                <div class="attachments-table-container" style="margin-top: 10px; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Archivo</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Tipo</th>
+                                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Fecha</th>
+                                <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border);">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
         `;
         
         attachments.forEach(attachment => {
             const isImage = attachment.type === 'image';
             const isPDF = attachment.name && attachment.name.toLowerCase().endsWith('.pdf');
             
-            // Crear miniatura o icono
-            let contentHTML = '';
+            // Determinar icono según tipo de archivo
+            let fileIcon = '<i class="fas fa-file" style="color: #3498db;"></i>';
             if (isImage) {
-                // Para imágenes, mostrar la thumbnail si está disponible
-                const imageUrl = attachment.thumbnailUrl || attachment.url;
-                contentHTML = `<img src="${imageUrl}" alt="${attachment.name}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                fileIcon = '<i class="fas fa-image" style="color: #2ecc71;"></i>';
             } else if (isPDF) {
-                // Para PDFs, mostrar icono PDF
-                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                </div>`;
-            } else {
-                // Para otros tipos de archivo, mostrar icono genérico
-                contentHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center;">
-                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${attachment.name}</div>
-                    <div style="font-weight: bold; margin-top: 3px;">${attachment.name ? attachment.name.split('.').pop().toUpperCase() : 'DOC'}</div>
-                </div>`;
+                fileIcon = '<i class="fas fa-file-pdf" style="color: #e74c3c;"></i>';
             }
             
-            // Añadir elemento al HTML
+            // Formatear fecha si existe
+            const uploadDate = attachment.uploadDate ? formatDate(new Date(attachment.uploadDate)) : 'No disponible';
+            
             attachmentsHTML += `
-                <div class="attachment" style="position: relative; width: 150px; height: 150px; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background-color: #f8f9fa;">
-                    ${contentHTML}
-                    <div class="attachment-actions" style="position: absolute; bottom: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: rgba(0,0,0,0.6); padding: 5px 0;">
-                        <a href="${attachment.url}" target="_blank" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                <tr style="border-bottom: 1px solid var(--border-light);">
+                    <td style="padding: 8px;">${fileIcon} ${attachment.name || 'Archivo sin nombre'}</td>
+                    <td style="padding: 8px;">${isImage ? 'Imagen' : (isPDF ? 'PDF' : 'Documento')}</td>
+                    <td style="padding: 8px;">${uploadDate}</td>
+                    <td style="padding: 8px; text-align: right;">
+                        <a href="${attachment.url}" target="_blank" title="Ver" class="file-action-btn">
                             <i class="fas fa-eye"></i>
-                            <span>Ver</span>
                         </a>
-                        <a href="${attachment.url}" download="${attachment.name}" class="attachment-action" style="color: white; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 12px;">
+                        <a href="${attachment.url}" download="${attachment.name}" title="Descargar" class="file-action-btn">
                             <i class="fas fa-download"></i>
-                            <span>Descargar</span>
                         </a>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `;
         });
         
         attachmentsHTML += `
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -1684,6 +1694,436 @@ function renderAttachments(attachments) {
 }
 
 
+
+        // Función para añadir el plan de tratamiento a la UI
+function addTreatmentPlanToUI(plan, planId) {
+    const treatmentPlanList = document.getElementById('treatmentPlanList');
+    if (!treatmentPlanList) return;
+    
+    const newPlan = document.createElement('div');
+    newPlan.className = 'plan-card fade-in';
+    newPlan.dataset.id = planId;
+    
+    // Generar HTML para las técnicas
+    let techniquesHTML = '<div class="techniques-list">';
+    
+    if (plan.techniques.manual && plan.techniques.manual.active) {
+        techniquesHTML += '<div class="technique-tag">Terapia manual</div>';
+    }
+    
+    if (plan.techniques.exercise && plan.techniques.exercise.active) {
+        techniquesHTML += '<div class="technique-tag">Ejercicio terapéutico</div>';
+    }
+    
+    if (plan.techniques.physical && plan.techniques.physical.active) {
+        techniquesHTML += '<div class="technique-tag">Agentes físicos</div>';
+    }
+    
+    if (plan.techniques.education && plan.techniques.education.active) {
+        techniquesHTML += '<div class="technique-tag">Educación al paciente</div>';
+    }
+    
+    if (plan.techniques.other && plan.techniques.other.active) {
+        techniquesHTML += '<div class="technique-tag">Otras técnicas</div>';
+    }
+    
+    techniquesHTML += '</div>';
+    
+    newPlan.innerHTML = `
+        <div class="plan-header">
+            <div class="plan-title">
+                <i class="fas fa-clipboard-list"></i>
+                Plan de Tratamiento
+            </div>
+            <div class="plan-date">${formatDate(new Date(plan.startDate))}</div>
+        </div>
+        <div class="plan-details">
+            <div class="plan-row">
+                <div class="plan-label">Duración:</div>
+                <div class="plan-value">${plan.duration} ${plan.durationUnit}</div>
+            </div>
+            <div class="plan-row">
+                <div class="plan-label">Frecuencia:</div>
+                <div class="plan-value">${plan.frequency} ${plan.frequencyUnit}</div>
+            </div>
+            <div class="plan-row">
+                <div class="plan-label">Técnicas:</div>
+                <div class="plan-value">
+                    ${techniquesHTML}
+                </div>
+            </div>
+            ${plan.objectives ? `
+            <div class="plan-row">
+                <div class="plan-label">Objetivos:</div>
+                <div class="plan-value">
+                    ${plan.objectives}
+                </div>
+            </div>
+            ` : ''}
+            ${plan.observations ? `
+            <div class="plan-row">
+                <div class="plan-label">Observaciones:</div>
+                <div class="plan-value">
+                    ${plan.observations}
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        <div class="plan-actions" style="text-align: right; margin-top: 10px;">
+            <button class="action-btn btn-secondary view-plan-btn">
+                <i class="fas fa-eye"></i> Ver detalles
+            </button>
+            <button class="action-btn btn-secondary delete-plan-btn" style="background-color: var(--accent2-light);">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
+    `;
+    
+    // Añadir al inicio para mayor visibilidad
+    if (treatmentPlanList.firstChild) {
+        treatmentPlanList.insertBefore(newPlan, treatmentPlanList.firstChild);
+    } else {
+        treatmentPlanList.appendChild(newPlan);
+    }
+    
+    // Añadir eventos a los botones
+    const viewBtn = newPlan.querySelector('.view-plan-btn');
+    const deleteBtn = newPlan.querySelector('.delete-plan-btn');
+    
+    if (viewBtn) {
+        viewBtn.addEventListener('click', function() {
+            // Implementar vista detallada del plan
+            viewTreatmentPlan(planId);
+        });
+    }
+    
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            // Implementar eliminación del plan
+            deleteTreatmentPlan(planId);
+        });
+    }
+}
+
+        // Ver detalles del plan de tratamiento
+async function viewTreatmentPlan(planId) {
+    try {
+        showLoading();
+        
+        // Obtener el plan desde Firebase
+        const planRef = doc(db, "patients", currentPatientId, "treatmentPlans", planId);
+        const planSnap = await getDoc(planRef);
+        
+        if (planSnap.exists()) {
+            const plan = planSnap.data();
+            
+            // Crear modal para mostrar detalles
+            const viewModal = document.createElement('div');
+            viewModal.className = 'modal-overlay';
+            viewModal.id = 'viewTreatmentPlanModal';
+            
+            // Generar HTML para técnicas
+            let techniquesHTML = '';
+            
+            if (plan.techniques.manual && plan.techniques.manual.active) {
+                const subs = plan.techniques.manual.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.jointMobilization) subTechniques.push("Movilización articular");
+                if (subs.jointManipulation) subTechniques.push("Manipulación articular");
+                if (subs.myofascial) subTechniques.push("Liberación miofascial");
+                if (subs.neurodynamics) subTechniques.push("Neurodinamia");
+                if (subs.muscleEnergy) subTechniques.push("Técnicas de energía muscular");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-hands"></i> Terapia manual</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.manual.details ? `
+                            <div class="technique-notes">
+                                <strong>Detalles:</strong> ${plan.techniques.manual.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.exercise && plan.techniques.exercise.active) {
+                const subs = plan.techniques.exercise.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.strength) subTechniques.push("Fortalecimiento");
+                if (subs.flexibility) subTechniques.push("Flexibilidad");
+                if (subs.proprioception) subTechniques.push("Propiocepción");
+                if (subs.balance) subTechniques.push("Equilibrio");
+                if (subs.cardiovascular) subTechniques.push("Cardiovascular");
+                if (subs.functional) subTechniques.push("Funcional");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-dumbbell"></i> Ejercicio terapéutico</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.exercise.details ? `
+                            <div class="technique-notes">
+                                <strong>Detalles:</strong> ${plan.techniques.exercise.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.physical && plan.techniques.physical.active) {
+                const subs = plan.techniques.physical.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.thermotherapy) subTechniques.push("Termoterapia");
+                if (subs.cryotherapy) subTechniques.push("Crioterapia");
+                if (subs.electrotherapy) subTechniques.push("Electroterapia");
+                if (subs.ultrasound) subTechniques.push("Ultrasonido");
+                if (subs.laser) subTechniques.push("Láser");
+                if (subs.shockwave) subTechniques.push("Ondas de choque");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-bolt"></i> Agentes físicos</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.physical.details ? `
+                            <div class="technique-notes">
+                                <strong>Parámetros:</strong> ${plan.techniques.physical.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.education && plan.techniques.education.active) {
+                const subs = plan.techniques.education.subtechniques || {};
+                const subTechniques = [];
+                
+                if (subs.painEducation) subTechniques.push("Educación en neurociencia del dolor");
+                if (subs.posture) subTechniques.push("Higiene postural");
+                if (subs.ergonomics) subTechniques.push("Ergonomía");
+                if (subs.selfManagement) subTechniques.push("Automanejo");
+                
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-chalkboard-teacher"></i> Educación al paciente</div>
+                        ${subTechniques.length > 0 ? `
+                            <div class="technique-subtechniques">
+                                ${subTechniques.map(sub => `<div class="subtechnique-item">${sub}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${plan.techniques.education.details ? `
+                            <div class="technique-notes">
+                                <strong>Contenido:</strong> ${plan.techniques.education.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            if (plan.techniques.other && plan.techniques.other.active) {
+                techniquesHTML += `
+                    <div class="technique-detail">
+                        <div class="technique-title"><i class="fas fa-plus-circle"></i> Otras técnicas</div>
+                        ${plan.techniques.other.details ? `
+                            <div class="technique-notes">
+                                ${plan.techniques.other.details}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            viewModal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Plan de tratamiento</h2>
+                        <button class="modal-close" id="closeViewPlanModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background-color: var(--background-alt); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 18px; font-weight: bold; color: var(--primary);">
+                                    <i class="fas fa-calendar-alt"></i> Detalles del plan
+                                </div>
+                                <div style="font-size: 14px;">
+                                    Inicio: ${formatDate(new Date(plan.startDate))}
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 15px;">
+                                <div style="flex: 1; min-width: 150px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Duración</div>
+                                    <div>${plan.duration} ${plan.durationUnit}</div>
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <div style="font-weight: bold; margin-bottom: 5px;">Frecuencia</div>
+                                    <div>${plan.frequency} ${plan.frequencyUnit}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${plan.objectives ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Objetivos</div>
+                            <div class="detail-content">${plan.objectives}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-section">
+                            <div class="detail-title">Técnicas de tratamiento</div>
+                            <div class="detail-content" style="padding: 5px 0;">
+                                ${techniquesHTML || 'No se especificaron técnicas.'}
+                            </div>
+                        </div>
+                        
+                        ${plan.progression ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Progresión planificada</div>
+                            <div class="detail-content">${plan.progression}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${plan.observations ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Observaciones</div>
+                            <div class="detail-content">${plan.observations}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${plan.dischargeGoals ? `
+                        <div class="detail-section">
+                            <div class="detail-title">Criterios de alta</div>
+                            <div class="detail-content">${plan.dischargeGoals}</div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 20px; text-align: right;">
+                            <button class="action-btn btn-secondary" id="closeViewPlanBtn">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(viewModal);
+            
+            // Añadir estilos para esta vista específica
+            const styleEl = document.createElement('style');
+            styleEl.innerHTML = `
+                .detail-section {
+                    margin-bottom: 15px;
+                    border-bottom: 1px solid var(--border);
+                    padding-bottom: 15px;
+                }
+                .detail-title {
+                    font-weight: bold;
+                    color: var(--primary);
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                }
+                .technique-detail {
+                    margin-bottom: 15px;
+                    background-color: var(--background);
+                    border-radius: 6px;
+                    padding: 10px;
+                }
+                .technique-title {
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .technique-subtechniques {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                    margin: 5px 0;
+                }
+                .subtechnique-item {
+                    background-color: var(--background-alt);
+                    border-radius: 4px;
+                    padding: 3px 8px;
+                    font-size: 13px;
+                }
+                .technique-notes {
+                    font-size: 14px;
+                    margin-top: 5px;
+                    color: var(--text-secondary);
+                }
+            `;
+            viewModal.appendChild(styleEl);
+            
+            setTimeout(() => viewModal.classList.add('active'), 50);
+            
+            // Añadir eventos a los botones
+            document.getElementById('closeViewPlanModal').addEventListener('click', function() {
+                viewModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(viewModal), 300);
+            });
+            
+            document.getElementById('closeViewPlanBtn').addEventListener('click', function() {
+                viewModal.classList.remove('active');
+                setTimeout(() => document.body.removeChild(viewModal), 300);
+            });
+            
+            hideLoading();
+        } else {
+            hideLoading();
+            showToast("Plan de tratamiento no encontrado", "error");
+        }
+    } catch (error) {
+        hideLoading();
+        console.error("Error al cargar plan de tratamiento:", error);
+        showToast("Error al cargar plan: " + error.message, "error");
+    }
+}
+
+// Eliminar plan de tratamiento
+async function deleteTreatmentPlan(planId) {
+    if (!confirm("¿Está seguro que desea eliminar este plan de tratamiento? Esta acción no se puede deshacer.")) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        // Eliminar de Firebase
+        const planRef = doc(db, "patients", currentPatientId, "treatmentPlans", planId);
+        await deleteDoc(planRef);
+        
+        // Eliminar de la interfaz
+        const planElement = document.querySelector(`.plan-card[data-id="${planId}"]`);
+        if (planElement && planElement.parentNode) {
+            planElement.parentNode.removeChild(planElement);
+        }
+        
+        hideLoading();
+        showToast("Plan de tratamiento eliminado correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar plan de tratamiento:", error);
+        showToast("Error al eliminar plan: " + error.message, "error");
+    }
+}
+
+        // Cargar planes de tratamiento
+async function loadTreatmentPlans(patientId) {
+    try {
+        const treatmentPlanList = document.getElementById('treatmentPlanList');
+        if (!treatmentPlanList) return;
+        
         // Limpiar lista actual
         treatmentPlanList.innerHTML = '';
         
@@ -5159,6 +5599,18 @@ if (patientFilesInput) {
                 let parent = this.closest('.modal-overlay');
                 if (parent) {
                     parent.classList.remove('active');
+                    
+                    // Limpiar contenedores de archivos
+                    const patientFilesPreview = document.getElementById('patientFilesPreview');
+                    if (patientFilesPreview) {
+                        patientFilesPreview.innerHTML = '';
+                    }
+                    
+                    // También limpiar otros contenedores relevantes
+                    const attachmentPreview = document.getElementById('attachmentPreview');
+                    if (attachmentPreview) {
+                        attachmentPreview.innerHTML = '';
+                    }
                 }
             });
         });
@@ -5247,7 +5699,7 @@ if (cancelEvolutionBtn) {
                     emergencyPhone: document.getElementById('patientEmergencyPhone')?.value || ''
                 };
 
-                // Procesar archivos de la ficha del paciente
+// Procesar archivos de la ficha del paciente
 const patientFilesInput = document.getElementById('patientFiles');
 if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.length > 0) {
     const files = Array.from(patientFilesInput.files);
@@ -5256,27 +5708,53 @@ if (patientFilesInput && patientFilesInput.files && patientFilesInput.files.leng
     );
     
     try {
+        showLoading();
+        
         // Esperar a que se suban todos los archivos
         const uploadedFiles = await Promise.all(filesPromises);
         
         // Filtrar archivos que fallaron al subir (null)
         const validFiles = uploadedFiles.filter(file => file !== null);
         
-        // Inicializar el arreglo de archivos si no existe
-        if (!patientData.files) {
-            patientData.files = [];
+        // IMPORTANTE: Primero obtener los archivos actuales desde la base de datos
+        const currentPatient = await getPatient(currentPatientId);
+        
+        // Crear un array con TODOS los archivos (los existentes más los nuevos)
+        let allFiles = [];
+        
+        // Añadir archivos existentes si hay alguno
+        if (currentPatient && currentPatient.files && Array.isArray(currentPatient.files)) {
+            allFiles = [...currentPatient.files];
         }
         
         // Añadir los nuevos archivos válidos
         if (validFiles && validFiles.length > 0) {
-            patientData.files = [...patientData.files, ...validFiles];
+            allFiles = [...allFiles, ...validFiles];
         }
+        
+        // Actualizar SOLO la propiedad 'files' del paciente, no todo el objeto patientData
+        await updateDoc(doc(db, "patients", currentPatientId), {
+            files: allFiles,
+            updatedAt: new Date().toISOString()
+        });
+        
+        // Actualizar también en la caché
+        const cachedIndex = patientsCache.findIndex(p => p.id === currentPatientId);
+        if (cachedIndex >= 0) {
+            patientsCache[cachedIndex].files = allFiles;
+            patientsCache[cachedIndex].updatedAt = new Date().toISOString();
+        }
+        
+        // Actualizar la visualización de los archivos
+        loadPatientFiles(currentPatientId);
         
         console.log("Archivos de ficha médica subidos:", validFiles.length);
         showToast(`${validFiles.length} archivo(s) subido(s) correctamente`, "success");
+        hideLoading();
     } catch (filesError) {
         console.error("Error al subir archivos de ficha médica:", filesError);
         showToast("Error al subir algunos archivos", "warning");
+        hideLoading();
     }
 }
                 
@@ -5437,14 +5915,20 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
         const attachments = await Promise.all(attachmentsPromises);
         
         // Filtrar archivos que fallaron al subir (null)
-        evolutionData.attachments = attachments.filter(attachment => attachment !== null);
+        const validAttachments = attachments.filter(attachment => attachment !== null);
         
-        console.log("Archivos adjuntos subidos:", evolutionData.attachments.length);
+        // Asegurar que evolutionData.attachments sea un array
+        if (!evolutionData.attachments) {
+            evolutionData.attachments = [];
+        }
+        
+        // Añadir los nuevos archivos a los existentes (si es una edición)
+        evolutionData.attachments = [...evolutionData.attachments, ...validAttachments];
+        
+        console.log("Archivos adjuntos subidos:", validAttachments.length);
     } catch (attachmentError) {
         console.error("Error al subir archivos adjuntos:", attachmentError);
         showToast("Error al subir algunos archivos, pero continuando con la evolución", "warning");
-        // En caso de error, inicializar el arreglo de adjuntos vacío
-        evolutionData.attachments = [];
     }
 }
                     
@@ -6881,133 +7365,168 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // Función para cargar y mostrar archivos guardados del paciente
+// Función para cargar y mostrar archivos guardados del paciente
 async function loadPatientFiles(patientId) {
     try {
-        const patient = await getPatient(patientId);
-        if (!patient || !patient.files || !patient.files.length) return;
-        
+        // Siempre limpiar TODOS los posibles contenedores de archivos primero
         const previewContainer = document.getElementById('patientFilesPreview');
-        if (!previewContainer) return;
+        const clinicalFilesContainer = document.getElementById('clinicalFiles');
         
-        previewContainer.innerHTML = '';
+        // Limpiar todos los contenedores posibles
+        if (previewContainer) previewContainer.innerHTML = '';
+        if (clinicalFilesContainer) clinicalFilesContainer.innerHTML = '';
         
-        patient.files.forEach(file => {
+        // Si no hay ID de paciente válido, terminar aquí
+        if (!patientId) return;
+        
+        // Obtener datos del paciente
+        const patient = await getPatient(patientId);
+        
+        // Si el paciente no existe o no tiene archivos, mostrar mensaje y terminar
+        if (!patient || !patient.files || !patient.files.length) {
+            const noFilesMessage = '<p style="color: var(--text-secondary); font-style: italic;">No hay documentos cargados para este paciente.</p>';
+            if (previewContainer) previewContainer.innerHTML = noFilesMessage;
+            return;
+        }
+        
+        console.log(`Mostrando ${patient.files.length} archivos para el paciente ${patientId}`);
+        
+        // Crear tabla para mostrar los archivos - SOLO USAREMOS UN CONTENEDOR
+        const table = document.createElement('table');
+        table.className = 'files-table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.marginTop = '10px';
+        
+        // Cabecera de la tabla
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Nombre</th>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Tipo</th>
+                <th style="text-align: left; padding: 8px; border-bottom: 1px solid var(--border);">Fecha</th>
+                <th style="text-align: right; padding: 8px; border-bottom: 1px solid var(--border);">Acciones</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+        
+        // Cuerpo de la tabla
+        const tbody = document.createElement('tbody');
+        
+        patient.files.forEach((file, index) => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--border-light)';
+            
+            // Determinar el tipo de archivo
             const isImage = file.type === 'image';
             const isPDF = file.name && file.name.toLowerCase().endsWith('.pdf');
-            
-            const attachment = document.createElement('div');
-            attachment.className = 'attachment';
-            attachment.style.position = 'relative';
-            attachment.style.width = '150px';
-            attachment.style.height = '150px';
-            attachment.style.overflow = 'hidden';
-            attachment.style.borderRadius = '8px';
-            attachment.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
-            attachment.style.backgroundColor = '#f8f9fa';
-            attachment.style.margin = '10px';
-            
+            let fileIcon = '<i class="fas fa-file" style="color: #3498db;"></i>';
             if (isImage) {
-                const img = document.createElement('img');
-                img.src = file.thumbnailUrl || file.url;
-                img.alt = file.name;
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
-                img.style.cursor = 'pointer';
-                img.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(img);
+                fileIcon = '<i class="fas fa-image" style="color: #2ecc71;"></i>';
             } else if (isPDF) {
-                const fileIconContainer = document.createElement('div');
-                fileIconContainer.style.display = 'flex';
-                fileIconContainer.style.flexDirection = 'column';
-                fileIconContainer.style.alignItems = 'center';
-                fileIconContainer.style.justifyContent = 'center';
-                fileIconContainer.style.height = '100%';
-                fileIconContainer.style.padding = '10px';
-                fileIconContainer.style.textAlign = 'center';
-                fileIconContainer.style.cursor = 'pointer';
-                fileIconContainer.innerHTML = `
-                    <i class="fas fa-file-pdf" style="font-size: 50px; color: #e74c3c;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name}</div>
-                `;
-                fileIconContainer.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(fileIconContainer);
-            } else {
-                const fileIconContainer = document.createElement('div');
-                fileIconContainer.style.display = 'flex';
-                fileIconContainer.style.flexDirection = 'column';
-                fileIconContainer.style.alignItems = 'center';
-                fileIconContainer.style.justifyContent = 'center';
-                fileIconContainer.style.height = '100%';
-                fileIconContainer.style.padding = '10px';
-                fileIconContainer.style.textAlign = 'center';
-                fileIconContainer.style.cursor = 'pointer';
-                fileIconContainer.innerHTML = `
-                    <i class="fas fa-file" style="font-size: 50px; color: #3498db;"></i>
-                    <div style="margin-top: 10px; font-size: 12px; word-break: break-word; overflow: hidden; text-overflow: ellipsis;">${file.name || 'Documento'}</div>
-                    <div style="font-weight: bold; margin-top: 3px;">${file.name ? file.name.split('.').pop().toUpperCase() : 'DOC'}</div>
-                `;
-                fileIconContainer.addEventListener('click', function() {
-                    window.open(file.url, '_blank');
-                });
-                attachment.appendChild(fileIconContainer);
+                fileIcon = '<i class="fas fa-file-pdf" style="color: #e74c3c;"></i>';
             }
             
-            // Acciones (Ver y Descargar)
-            const actions = document.createElement('div');
-            actions.style.position = 'absolute';
-            actions.style.bottom = '0';
-            actions.style.left = '0';
-            actions.style.width = '100%';
-            actions.style.display = 'flex';
-            actions.style.justifyContent = 'space-around';
-            actions.style.background = 'rgba(0,0,0,0.6)';
-            actions.style.padding = '5px 0';
+            // Formatear fecha
+            const uploadDate = file.uploadDate ? formatDate(new Date(file.uploadDate)) : 'No disponible';
             
-            // Botón para ver
-            const viewBtn = document.createElement('a');
-            viewBtn.href = file.url;
-            viewBtn.target = '_blank';
-            viewBtn.className = 'attachment-action';
-            viewBtn.style.color = 'white';
-            viewBtn.style.textDecoration = 'none';
-            viewBtn.style.display = 'flex';
-            viewBtn.style.flexDirection = 'column';
-            viewBtn.style.alignItems = 'center';
-            viewBtn.style.fontSize = '12px';
-            viewBtn.innerHTML = `
-                <i class="fas fa-eye"></i>
-                <span>Ver</span>
+            row.innerHTML = `
+                <td style="padding: 8px;">${fileIcon} ${file.name || 'Archivo sin nombre'}</td>
+                <td style="padding: 8px;">${isImage ? 'Imagen' : (isPDF ? 'PDF' : 'Documento')}</td>
+                <td style="padding: 8px;">${uploadDate}</td>
+                <td style="padding: 8px; text-align: right;">
+                    <a href="${file.url}" target="_blank" title="Ver" class="file-action-btn">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="${file.url}" download="${file.name}" title="Descargar" class="file-action-btn">
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button type="button" class="file-action-btn delete-file-btn" data-index="${index}" data-file-id="${file.fileId || ''}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </td>
             `;
             
-            // Botón para descargar
-            const downloadBtn = document.createElement('a');
-            downloadBtn.href = file.url;
-            downloadBtn.download = file.name || 'documento';
-            downloadBtn.className = 'attachment-action';
-            downloadBtn.style.color = 'white';
-            downloadBtn.style.textDecoration = 'none';
-            downloadBtn.style.display = 'flex';
-            downloadBtn.style.flexDirection = 'column';
-            downloadBtn.style.alignItems = 'center';
-            downloadBtn.style.fontSize = '12px';
-            downloadBtn.innerHTML = `
-                <i class="fas fa-download"></i>
-                <span>Descargar</span>
-            `;
-            
-            actions.appendChild(viewBtn);
-            actions.appendChild(downloadBtn);
-            attachment.appendChild(actions);
-            
-            previewContainer.appendChild(attachment);
+            tbody.appendChild(row);
         });
+        
+        table.appendChild(tbody);
+        
+        // IMPORTANTE: Solo añadir la tabla a un contenedor (previewContainer)
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+            previewContainer.appendChild(table);
+        }
+        
+        // NO añadir la tabla también a clinicalFilesContainer
+        
+        // Añadir evento para eliminar archivos
+        if (previewContainer) {
+            previewContainer.querySelectorAll('.delete-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileIndex = parseInt(this.getAttribute('data-index'));
+                    const fileId = this.getAttribute('data-file-id');
+                    deletePatientFile(patientId, fileIndex, fileId);
+                });
+            });
+        }
+        
     } catch (error) {
         console.error("Error al cargar archivos del paciente:", error);
+        const previewContainer = document.getElementById('patientFilesPreview');
+        if (previewContainer) {
+            previewContainer.innerHTML = '<p style="color: var(--accent2); font-style: italic;">Error al cargar los archivos</p>';
+        }
+    }
+}
+
+        // Función para eliminar un archivo del paciente
+async function deletePatientFile(patientId, fileIndex, fileId) {
+    try {
+        if (!confirm('¿Está seguro que desea eliminar este archivo? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        // Obtener datos actuales del paciente
+        const patient = await getPatient(patientId);
+        if (!patient || !patient.files) {
+            hideLoading();
+            showToast("No se encontraron archivos para eliminar", "error");
+            return;
+        }
+        
+        // Eliminar el archivo del array
+        if (fileIndex >= 0 && fileIndex < patient.files.length) {
+            // Guardar el archivo que se eliminará para referencia
+            const fileToDelete = patient.files[fileIndex];
+            
+            // Eliminar del array
+            patient.files.splice(fileIndex, 1);
+            
+            // Actualizar datos del paciente en la base de datos
+            await updatePatient(patientId, { 
+                files: patient.files,
+                updatedAt: new Date().toISOString()
+            });
+            
+            // Actualizar la visualización
+            loadPatientFiles(patientId);
+            
+            hideLoading();
+            showToast("Archivo eliminado correctamente", "success");
+            
+            // También podríamos eliminar físicamente el archivo de ImageKit aquí
+            // si tienes una API para eso (no implementado en este ejemplo)
+        } else {
+            hideLoading();
+            showToast("Índice de archivo no válido", "error");
+        }
+    } catch (error) {
+        hideLoading();
+        console.error("Error al eliminar archivo:", error);
+        showToast("Error al eliminar archivo: " + error.message, "error");
     }
 }
         </script>
