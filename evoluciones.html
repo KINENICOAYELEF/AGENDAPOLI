@@ -793,6 +793,15 @@
                                 <label class="form-label">Descripción General</label>
                                 <textarea class="form-control" rows="3" name="trainingPlan" id="evolutionTrainingPlan" placeholder="Descripción general del plan de entrenamiento"></textarea>
                             </div>
+
+                            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button type="button" class="action-btn btn-secondary" onclick="mostrarInfoIntensidad('RPE')" style="flex: 1;">
+                                    <i class="fas fa-info-circle"></i> Escala RPE
+                                </button>
+                                <button type="button" class="action-btn btn-secondary" onclick="mostrarInfoIntensidad('RIR')" style="flex: 1;">
+                                    <i class="fas fa-info-circle"></i> Escala RIR
+                                </button>
+                            </div>
                             
                             <div class="form-group">
                                 <label class="form-label">Ejercicios</label>
@@ -815,7 +824,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <button type="button" class="action-btn btn-secondary" id="addExerciseBtn" style="width: 100%;">
+                                <button type="button" class="add-exercise-btn" id="addExerciseBtn">
                                     <i class="fas fa-plus"></i> Añadir ejercicio
                                 </button>
                             </div>
@@ -10450,7 +10459,7 @@ function setupExerciseTable() {
     }
 }
 
-// Función mejorada para añadir una fila de ejercicio con tooltips
+// Función mejorada para añadir una fila de ejercicio con compatibilidad móvil
 function addExerciseRow(exercise = {}) {
     // Obtener la tabla de ejercicios
     const tableBody = document.getElementById('exerciseTableBody');
@@ -10462,19 +10471,13 @@ function addExerciseRow(exercise = {}) {
     // Crear una nueva fila
     const row = document.createElement('tr');
     
-    // Información para tooltips
-    const tooltips = {
-        rpe: "RPE (Rating of Perceived Exertion): Escala de 0-10 que indica qué tan duro fue el ejercicio. 1 = muy fácil, 10 = máximo esfuerzo posible.",
-        rir: "RIR (Repeticiones en Reserva): Número de repeticiones que podrías haber hecho pero no hiciste. RIR 2 significa que podrías haber hecho 2 reps más."
-    };
-    
-    // Definir el HTML de la fila con todos los campos y tooltips
+    // Definir el HTML de la fila con todos los campos y etiquetas para móvil
     row.innerHTML = `
-        <td>
-            <input type="text" class="form-control" placeholder="Nombre" 
+        <td data-label="Ejercicio">
+            <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
                    value="${exercise.name || ''}" style="width: 100%;">
         </td>
-        <td>
+        <td data-label="Implemento">
             <select class="form-control" style="width: 100%;">
                 <option value="" ${!exercise.implement ? 'selected' : ''}>Ninguno</option>
                 <option value="Mancuernas" ${exercise.implement === 'Mancuernas' ? 'selected' : ''}>Mancuernas</option>
@@ -10487,90 +10490,62 @@ function addExerciseRow(exercise = {}) {
                 <option value="Otros" ${exercise.implement === 'Otros' ? 'selected' : ''}>Otros</option>
             </select>
         </td>
-        <td>
+        <td data-label="Series">
             <input type="number" class="form-control" placeholder="Series" min="1" 
                    value="${exercise.sets || '3'}" style="width: 100%; text-align: center;">
         </td>
-        <td>
-            <input type="text" class="form-control" placeholder="Reps" 
+        <td data-label="Repeticiones">
+            <input type="text" class="form-control" placeholder="Repeticiones" 
                    value="${exercise.reps || '10'}" style="width: 100%; text-align: center;">
         </td>
-        <td>
+        <td data-label="Carga (kg)">
             <input type="number" class="form-control" placeholder="kg" min="0" step="0.5"
                    value="${exercise.load || ''}" style="width: 100%; text-align: center;">
         </td>
-        <td>
-            <div style="display: flex; flex-direction: column; gap: 5px;">
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <select class="form-control effort-type-select" style="flex: 1; min-width: 60px;" onchange="this.nextElementSibling.setAttribute('onclick', 'mostrarInfoIntensidad(\''+this.value+'\')'); document.querySelector('[data-effort-desc='+this.closest('tr').rowIndex+']').textContent = this.value === 'RPE' ? 'Percepción de esfuerzo' : 'Repeticiones en reserva';">
-                        <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
-                        <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
-                    </select>
-                    <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}')" style="background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-info-circle" style="color: var(--primary); font-size: 18px;"></i>
-                    </button>
-                </div>
-                <div data-effort-desc="${row ? row.rowIndex : 0}" style="font-size: 12px; text-align: center; color: var(--text-secondary);">
-                    ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'Percepción de esfuerzo' : 'Repeticiones en reserva'}
-                </div>
+        <td data-label="Intensidad (RPE/RIR)">
+            <div class="rpe-rir-container">
+                <select class="form-control effort-type-select">
+                    <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
+                    <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+                </select>
                 <input type="number" class="form-control" min="0" max="10" step="1"
-                       value="${exercise.effortValue || ''}" style="text-align: center; width: 100%;">
+                       value="${exercise.effortValue || ''}" style="text-align: center;">
             </div>
+            <div style="margin-top: 5px; font-size: 12px; text-align: center; color: var(--text-secondary);">
+                ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'Percepción de esfuerzo' : 'Repeticiones en reserva'}
+            </div>
+            <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}')">
+                <i class="fas fa-info-circle"></i>
+                Ver explicación
+            </button>
         </td>
-            <input type="text" class="form-control" placeholder="Notas" 
+        <td data-label="Observaciones">
+            <input type="text" class="form-control" placeholder="Notas o indicaciones" 
                    value="${exercise.notes || ''}" style="width: 100%;">
         </td>
-        <td style="text-align: center;">
+        <td data-label="Acciones">
             <button type="button" class="exercise-delete-btn">
                 <i class="fas fa-trash-alt"></i>
+                Eliminar ejercicio
             </button>
         </td>
     `;
     
-    // Añadir tooltip dinámico que cambia según el tipo de esfuerzo seleccionado
-const effortTypeSelect = row.querySelector('.effort-type-select');
-if (effortTypeSelect) {
-    effortTypeSelect.addEventListener('change', function() {
-        // Actualizar la etiqueta descriptiva
-        const descriptionDiv = row.querySelector('div[style*="text-align: center; font-size: 11px;"]');
-        if (descriptionDiv) {
-            descriptionDiv.textContent = this.value === 'RPE' ? 'Percepción de esfuerzo' : 'Repeticiones en reserva';
-        }
-        
-        // Actualizar el tooltip
-        const tooltipIcon = row.querySelector('.tooltip-icon');
-        if (tooltipIcon) {
-            const tooltipContent = tooltipIcon.nextElementSibling;
-            if (tooltipContent) {
-                if (this.value === 'RPE') {
-                    tooltipContent.innerHTML = `
-                        <p><strong>RPE: Rating of Perceived Exertion (0-10)</strong></p>
-                        <p>0 = Reposo absoluto</p>
-                        <p>1 = Esfuerzo muy, muy ligero</p>
-                        <p>2 = Esfuerzo muy ligero</p>
-                        <p>3 = Esfuerzo ligero</p>
-                        <p>4 = Esfuerzo moderado</p>
-                        <p>5 = Esfuerzo algo duro</p>
-                        <p>6 = Esfuerzo duro</p>
-                        <p>7-8 = Esfuerzo muy duro</p>
-                        <p>9 = Esfuerzo extremadamente duro</p>
-                        <p>10 = Esfuerzo máximo (imposible continuar)</p>
-                    `;
-                } else {
-                    tooltipContent.innerHTML = `
-                        <p><strong>RIR: Repeticiones en Reserva</strong></p>
-                        <p>0 = No podría realizar ni una repetición más (fallo muscular)</p>
-                        <p>1 = Podría realizar 1 repetición más</p>
-                        <p>2 = Podría realizar 2 repeticiones más</p>
-                        <p>3 = Podría realizar 3 repeticiones más</p>
-                        <p>4 = Podría realizar 4 repeticiones más</p>
-                        <p>5+ = Podría realizar 5 o más repeticiones adicionales</p>
-                    `;
-                }
+    // Añadir evento para actualizar descripción cuando se cambia entre RPE/RIR
+    const effortTypeSelect = row.querySelector('.effort-type-select');
+    if (effortTypeSelect) {
+        effortTypeSelect.addEventListener('change', function() {
+            const descriptionText = this.closest('td').querySelector('div[style*="font-size: 12px"]');
+            if (descriptionText) {
+                descriptionText.textContent = this.value === 'RPE' ? 'Percepción de esfuerzo' : 'Repeticiones en reserva';
             }
-        }
-    });
-}
+            
+            const infoButton = this.closest('td').querySelector('.info-button');
+            if (infoButton) {
+                infoButton.setAttribute('onclick', `mostrarInfoIntensidad('${this.value}')`);
+            }
+        });
+    }
     
     // Añadir evento para eliminar ejercicio
     const deleteBtn = row.querySelector('.exercise-delete-btn');
@@ -10583,7 +10558,7 @@ if (effortTypeSelect) {
     // Añadir la fila a la tabla
     tableBody.appendChild(row);
     
-    // Mostrar mensaje de confirmación
+    // Mensaje de confirmación en consola
     console.log("Ejercicio añadido a la tabla");
 }
 
@@ -14054,11 +14029,11 @@ window.showEffortInfo = function(button) {
 
         // Función para mostrar información de intensidad
 function mostrarInfoIntensidad(tipo) {
+    let titulo = tipo === 'RPE' ? "Escala RPE (Rating of Perceived Exertion)" : "Escala RIR (Repeticiones en Reserva)";
     let mensaje = "";
     
     if (tipo === 'RPE') {
-        mensaje = "ESCALA RPE (Rating of Perceived Exertion)\n\n" +
-            "0 = Reposo absoluto\n" +
+        mensaje = "0 = Reposo absoluto\n" +
             "1 = Esfuerzo muy, muy ligero\n" +
             "2 = Esfuerzo muy ligero\n" +
             "3 = Esfuerzo ligero\n" +
@@ -14069,8 +14044,7 @@ function mostrarInfoIntensidad(tipo) {
             "9 = Esfuerzo extremadamente duro\n" +
             "10 = Esfuerzo máximo (imposible continuar)";
     } else {
-        mensaje = "ESCALA RIR (Repeticiones en Reserva)\n\n" +
-            "0 = No podría realizar ni una repetición más (fallo muscular)\n" +
+        mensaje = "0 = No podría realizar ni una repetición más (fallo muscular)\n" +
             "1 = Podría realizar 1 repetición más\n" +
             "2 = Podría realizar 2 repeticiones más\n" +
             "3 = Podría realizar 3 repeticiones más\n" +
@@ -14078,7 +14052,7 @@ function mostrarInfoIntensidad(tipo) {
             "5+ = Podría realizar 5 o más repeticiones adicionales";
     }
     
-    alert(mensaje);
+    alert(titulo + "\n\n" + mensaje);
 }
         
         </script>
