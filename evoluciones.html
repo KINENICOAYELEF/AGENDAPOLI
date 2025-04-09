@@ -10614,17 +10614,11 @@ function addExerciseRow(exercise = {}) {
     // Crear una nueva fila
     const row = document.createElement('tr');
     
-    // Información para tooltips
-    const tooltips = {
-        rpe: "RPE (Rating of Perceived Exertion): Escala de 0-10 que indica qué tan duro fue el ejercicio. 1 = muy fácil, 10 = máximo esfuerzo posible.",
-        rir: "RIR (Repeticiones en Reserva): Número de repeticiones que podrías haber hecho pero no hiciste. RIR 2 significa que podrías haber hecho 2 reps más."
-    };
-    
     // Definir el HTML de la fila con todos los campos y tooltips
     row.innerHTML = `
         <td>
-            <input type="text" class="form-control" placeholder="Nombre" 
-                   value="${exercise.name || ''}" style="width: 100%;">
+            <textarea class="form-control" placeholder="Nombre" 
+                   style="width: 100%; min-height: 60px; resize: vertical;">${exercise.name || ''}</textarea>
         </td>
         <td>
             <select class="form-control" style="width: 100%;">
@@ -10651,37 +10645,18 @@ function addExerciseRow(exercise = {}) {
                    value="${exercise.load || ''}" style="width: 100%; text-align: center;">
         </td>
         <td>
-            <div style="display: flex; align-items: center; gap: 5px; position: relative;">
+            <div style="display: flex; align-items: center; gap: 5px;">
                 <select class="form-control effort-type-select" style="flex: 1;">
                     <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
                     <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
                 </select>
                 <input type="number" class="form-control" min="0" max="10" step="1"
                        value="${exercise.effortValue || ''}" style="flex: 1; text-align: center;">
-                <div class="tooltip-container" style="position: absolute; right: -20px; top: 50%; transform: translateY(-50%);">
-                    <i class="fas fa-info-circle tooltip-icon"></i>
-                    <div class="tooltip-content" style="width: 250px; right: 0; left: auto; transform: none;">
-                        <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
-                        <p>Escala de percepción del esfuerzo donde:</p>
-                        <p>RPE 10 = Esfuerzo máximo absoluto</p>
-                        <p>RPE 9 = 1 rep antes del fallo</p>
-                        <p>RPE 8 = 2 reps antes del fallo</p>
-                        <p>RPE 7 = 3 reps antes del fallo</p>
-                        <p>RPE 6 = 4-5 reps antes del fallo</p>
-                        <p>RPE 5 = Moderadamente difícil</p>
-                        <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
-                        <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                        <p>RIR 0 = Fallo técnico, no puedes hacer más</p>
-                        <p>RIR 1 = Podrías hacer 1 rep más</p>
-                        <p>RIR 2 = Podrías hacer 2 reps más</p>
-                        <p>RIR 3 = Podrías hacer 3 reps más</p>
-                    </div>
-                </div>
             </div>
         </td>
         <td>
-            <input type="text" class="form-control" placeholder="Notas" 
-                   value="${exercise.notes || ''}" style="width: 100%;">
+            <textarea class="form-control" placeholder="Notas" 
+                      style="width: 100%; min-height: 60px; resize: vertical;">${exercise.notes || ''}</textarea>
         </td>
         <td style="text-align: center;">
             <button type="button" class="exercise-delete-btn">
@@ -10689,47 +10664,6 @@ function addExerciseRow(exercise = {}) {
             </button>
         </td>
     `;
-    
-    // Añadir tooltip dinámico que cambia según el tipo de esfuerzo seleccionado
-    const effortTypeSelect = row.querySelector('.effort-type-select');
-    if (effortTypeSelect) {
-        effortTypeSelect.addEventListener('change', function() {
-            const tooltipIcon = row.querySelector('.tooltip-icon');
-            if (tooltipIcon) {
-                const tooltipContent = tooltipIcon.nextElementSibling;
-                if (tooltipContent) {
-                    if (this.value === 'RPE') {
-                        tooltipContent.innerHTML = `
-                            <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
-                            <p>Escala de percepción del esfuerzo donde:</p>
-                            <p>RPE 10 = Esfuerzo máximo absoluto</p>
-                            <p>RPE 9 = 1 rep antes del fallo</p>
-                            <p>RPE 8 = 2 reps antes del fallo</p>
-                            <p>RPE 7 = 3 reps antes del fallo</p>
-                            <p>RPE 6 = 4-5 reps antes del fallo</p>
-                            <p>RPE 5 = Moderadamente difícil</p>
-                            <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
-                            <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                            <p>RIR = Repeticiones que podrías hacer</p>
-                        `;
-                    } else {
-                        tooltipContent.innerHTML = `
-                            <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                            <p>RIR 0 = Fallo técnico, no puedes hacer más</p>
-                            <p>RIR 1 = Podrías hacer 1 rep más</p>
-                            <p>RIR 2 = Podrías hacer 2 reps más</p>
-                            <p>RIR 3 = Podrías hacer 3 reps más</p>
-                            <p>RIR 4 = Podrías hacer 4 reps más</p>
-                            <p>RIR 5+ = Podrías hacer 5 o más reps</p>
-                            <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
-                            <p><strong>RPE:</strong> Rating of Perceived Exertion</p>
-                            <p>Nivel de esfuerzo percibido (0-10)</p>
-                        `;
-                    }
-                }
-            }
-        });
-    }
     
     // Añadir evento para eliminar ejercicio
     const deleteBtn = row.querySelector('.exercise-delete-btn');
@@ -10742,7 +10676,6 @@ function addExerciseRow(exercise = {}) {
     // Añadir la fila a la tabla
     tableBody.appendChild(row);
     
-    // Mostrar mensaje de confirmación
     console.log("Ejercicio añadido a la tabla");
 }
 
