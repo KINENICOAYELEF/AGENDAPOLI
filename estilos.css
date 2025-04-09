@@ -2818,3 +2818,58 @@ button:focus {
     font-size: 14px;
     font-weight: bold;
 }
+
+
+/* Ocultar el icono de información en la tabla de ejercicios */
+.exercise-table td .fa-info-circle,
+.exercise-table td i.fas.fa-info-circle {
+    display: none !important;
+}
+
+/* Mejorar visibilidad del selector RPE/RIR */
+select.form-control {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+select.form-control:focus {
+    border-color: #1E88E5;
+    box-shadow: 0 0 0 0.2rem rgba(30, 136, 229, 0.25);
+}
+
+/* Color para destacar la opción seleccionada */
+select.form-control option:checked {
+    background-color: #1E88E5;
+    color: white;
+}
+
+/* Ajustes adicionales para la tabla de ejercicios */
+@media (max-width: 768px) {
+    .exercise-table {
+        font-size: 12px;
+    }
+    
+    .exercise-table th,
+    .exercise-table td {
+        padding: 4px;
+    }
+    
+    /* Columnas de menor importancia pueden ser más estrechas */
+    .exercise-table th:nth-child(3), /* Series */
+    .exercise-table td:nth-child(3),
+    .exercise-table th:nth-child(4), /* Reps */
+    .exercise-table td:nth-child(4) {
+        width: 40px;
+    }
+    
+    /* El campo de nombre y observaciones debe tener más ancho */
+    .exercise-table th:nth-child(1),
+    .exercise-table td:nth-child(1),
+    .exercise-table th:nth-child(7),
+    .exercise-table td:nth-child(7) {
+        min-width: 80px;
+    }
+}
