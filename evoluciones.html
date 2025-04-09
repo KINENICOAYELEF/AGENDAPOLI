@@ -10499,28 +10499,23 @@ function addExerciseRow(exercise = {}) {
                    value="${exercise.load || ''}" style="width: 100%; text-align: center;">
         </td>
         <td>
-    <div style="display: flex; flex-direction: column; gap: 5px;">
-        <div style="display: flex; align-items: center; gap: 5px;">
-            <select class="form-control effort-type-select" style="flex: 1; min-width: 60px;">
-                <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
-                <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
-            </select>
-            <input type="number" class="form-control" min="0" max="10" step="1"
-                   value="${exercise.effortValue || ''}" style="flex: 1; text-align: center; min-width: 40px;">
-        </div>
-        <div style="text-align: center; font-size: 11px; color: var(--text-secondary);">
-            ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 
-              'Percepción de esfuerzo' : 
-              'Repeticiones en reserva'}
-        </div>
-        <div style="align-self: center; text-align: center;">
-            <button type="button" class="info-btn" onclick="showEffortInfo(this)" data-type="${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}" style="background: none; border: none; color: var(--primary); cursor: pointer;">
-                <i class="fas fa-info-circle" style="font-size: 16px;"></i>
-            </button>
-        </div>
-    </div>
-</td>
-        <td>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <select class="form-control effort-type-select" style="flex: 1; min-width: 60px;" onchange="this.nextElementSibling.setAttribute('onclick', 'mostrarInfoIntensidad(\''+this.value+'\')'); document.querySelector('[data-effort-desc='+this.closest('tr').rowIndex+']').textContent = this.value === 'RPE' ? 'Percepción de esfuerzo' : 'Repeticiones en reserva';">
+                        <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
+                        <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+                    </select>
+                    <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}')" style="background: none; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-info-circle" style="color: var(--primary); font-size: 18px;"></i>
+                    </button>
+                </div>
+                <div data-effort-desc="${row ? row.rowIndex : 0}" style="font-size: 12px; text-align: center; color: var(--text-secondary);">
+                    ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'Percepción de esfuerzo' : 'Repeticiones en reserva'}
+                </div>
+                <input type="number" class="form-control" min="0" max="10" step="1"
+                       value="${exercise.effortValue || ''}" style="text-align: center; width: 100%;">
+            </div>
+        </td>
             <input type="text" class="form-control" placeholder="Notas" 
                    value="${exercise.notes || ''}" style="width: 100%;">
         </td>
@@ -14052,6 +14047,37 @@ window.showEffortInfo = function(button) {
             document.removeEventListener('keydown', escapeClose);
         }
     });
+}
+
+
+
+        // Función para mostrar información de intensidad
+function mostrarInfoIntensidad(tipo) {
+    let mensaje = "";
+    
+    if (tipo === 'RPE') {
+        mensaje = "ESCALA RPE (Rating of Perceived Exertion)\n\n" +
+            "0 = Reposo absoluto\n" +
+            "1 = Esfuerzo muy, muy ligero\n" +
+            "2 = Esfuerzo muy ligero\n" +
+            "3 = Esfuerzo ligero\n" +
+            "4 = Esfuerzo moderado\n" +
+            "5 = Esfuerzo algo duro\n" +
+            "6 = Esfuerzo duro\n" +
+            "7-8 = Esfuerzo muy duro\n" +
+            "9 = Esfuerzo extremadamente duro\n" +
+            "10 = Esfuerzo máximo (imposible continuar)";
+    } else {
+        mensaje = "ESCALA RIR (Repeticiones en Reserva)\n\n" +
+            "0 = No podría realizar ni una repetición más (fallo muscular)\n" +
+            "1 = Podría realizar 1 repetición más\n" +
+            "2 = Podría realizar 2 repeticiones más\n" +
+            "3 = Podría realizar 3 repeticiones más\n" +
+            "4 = Podría realizar 4 repeticiones más\n" +
+            "5+ = Podría realizar 5 o más repeticiones adicionales";
+    }
+    
+    alert(mensaje);
 }
         
         </script>
