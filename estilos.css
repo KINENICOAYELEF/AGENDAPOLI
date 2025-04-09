@@ -2853,3 +2853,40 @@ button:focus {
         width: 25% !important;
     }
 }
+
+
+
+
+/* Más mejoras para visualización en móviles */
+@media screen and (max-width: 576px) {
+    /* Hacer más legibles los inputs */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    
+    /* Ajustar encabezados de tabla */
+    .exercise-table thead th {
+        font-size: 12px;
+        padding: 8px 2px;
+        word-break: break-word;
+        hyphens: auto;
+    }
+    
+    /* Reducir padding en celdas para mejor aprovechamiento */
+    .exercise-table td {
+        padding: 8px 3px;
+    }
+    
+    /* Mejorar los botones de acción */
+    .exercise-delete-btn {
+        padding: 8px;
+        font-size: 16px;
+    }
+    
+    /* Añadir scroll horizontal a la tabla */
+    .exercise-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+    }
+}
