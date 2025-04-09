@@ -805,26 +805,10 @@
                             
                             <div class="form-group">
                                 <label class="form-label">Ejercicios</label>
-                                <div class="exercise-table-container" style="margin-bottom: 15px; overflow-x: auto; max-width: 100%;">
-                                    <table class="exercise-table" id="exerciseTable" style="min-width: 750px;">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 22%;">Ejercicio</th>
-                                                <th style="width: 12%;">Implemento</th>
-                                                <th style="width: 7%;">Series</th>
-                                                <th style="width: 7%;">Reps</th>
-                                                <th style="width: 9%;">Carga</th>
-                                                <th style="width: 14%;">RPE/RIR</th>
-                                                <th style="width: 20%;">Observaciones</th>
-                                                <th style="width: 9%;">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="exerciseTableBody">
-                                            <!-- Los ejercicios se añadirán dinámicamente -->
-                                        </tbody>
-                                    </table>
+                                <div id="exercisesContainer">
+                                    <!-- Los ejercicios se añadirán dinámicamente aquí -->
                                 </div>
-                                <button type="button" class="add-exercise-btn" id="addExerciseBtn">
+                                <button type="button" class="action-btn btn-primary" id="addExerciseBtn" style="width: 100%; margin-top: 15px;">
                                     <i class="fas fa-plus"></i> Añadir ejercicio
                                 </button>
                             </div>
@@ -10432,7 +10416,7 @@ function setupExerciseTable() {
         addExerciseBtn.parentNode.replaceChild(newAddExerciseBtn, addExerciseBtn);
         
         newAddExerciseBtn.addEventListener('click', function() {
-            addExerciseRow();
+            addExercise();
         });
     }
 
@@ -10459,107 +10443,88 @@ function setupExerciseTable() {
     }
 }
 
-// Función mejorada para añadir una fila de ejercicio con compatibilidad móvil
-function addExerciseRow(exercise = {}) {
-    // Obtener la tabla de ejercicios
-    const tableBody = document.getElementById('exerciseTableBody');
-    if (!tableBody) {
-        console.error("No se encontró la tabla de ejercicios");
+// Función para añadir un nuevo ejercicio con series
+function addExercise(exerciseData = {}) {
+    const exercisesContainer = document.getElementById('exercisesContainer');
+    if (!exercisesContainer) {
+        console.error("Contenedor de ejercicios no encontrado");
         return;
     }
     
-    // Crear una nueva fila
-    const row = document.createElement('tr');
+    // Crear el ID único para este ejercicio
+    const exerciseId = 'exercise_' + Date.now();
     
-    // Definir el HTML de la fila con todos los campos y etiquetas para móvil
-    row.innerHTML = `
-        <td data-label="Ejercicio">
-            <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
-                   value="${exercise.name || ''}" style="width: 100%;">
-        </td>
-        <td data-label="Implemento">
-            <select class="form-control" style="width: 100%;">
-                <option value="" ${!exercise.implement ? 'selected' : ''}>Ninguno</option>
-                <option value="Mancuernas" ${exercise.implement === 'Mancuernas' ? 'selected' : ''}>Mancuernas</option>
-                <option value="Bandas" ${exercise.implement === 'Bandas' ? 'selected' : ''}>Bandas</option>
-                <option value="Máquina" ${exercise.implement === 'Máquina' ? 'selected' : ''}>Máquina</option>
-                <option value="Peso corporal" ${exercise.implement === 'Peso corporal' ? 'selected' : ''}>Peso corporal</option>
-                <option value="Barra olímpica" ${exercise.implement === 'Barra olímpica' ? 'selected' : ''}>Barra olímpica</option>
-                <option value="Barra preolímpica" ${exercise.implement === 'Barra preolímpica' ? 'selected' : ''}>Barra preolímpica</option>
-                <option value="Kettlebell" ${exercise.implement === 'Kettlebell' ? 'selected' : ''}>Kettlebell</option>
-                <option value="Otros" ${exercise.implement === 'Otros' ? 'selected' : ''}>Otros</option>
-            </select>
-        </td>
-        <td data-label="Series">
-            <input type="number" class="form-control" placeholder="Series" min="1" 
-                   value="${exercise.sets || '3'}" style="width: 100%; text-align: center;">
-        </td>
-        <td data-label="Repeticiones">
-            <input type="text" class="form-control" placeholder="Repeticiones" 
-                   value="${exercise.reps || '10'}" style="width: 100%; text-align: center;">
-        </td>
-        <td data-label="Carga (kg)">
-            <input type="number" class="form-control" placeholder="kg" min="0" step="0.5"
-                   value="${exercise.load || ''}" style="width: 100%; text-align: center;">
-        </td>
-        <td data-label="Intensidad (RPE/RIR)">
-            <div class="rpe-rir-container">
-                <select class="form-control effort-type-select">
-                    <option value="RPE" ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'selected' : ''}>RPE</option>
-                    <option value="RIR" ${exercise.effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+    // Crear el contenedor del ejercicio
+    const exerciseDiv = document.createElement('div');
+    exerciseDiv.className = 'exercise-row';
+    exerciseDiv.id = exerciseId;
+    
+    // Establecer valores por defecto
+    const exerciseName = exerciseData.name || '';
+    const implement = exerciseData.implement || '';
+    const implementDetail = exerciseData.implementDetail || '';
+    const notes = exerciseData.notes || '';
+    
+    // Crear la cabecera del ejercicio
+    exerciseDiv.innerHTML = `
+        <div class="exercise-header">
+            <div class="exercise-title">
+                <input type="text" class="form-control" placeholder="Nombre del ejercicio" 
+                       value="${exerciseName}" style="width: 250px;">
+            </div>
+            <div class="implement-selector" style="display: flex; gap: 10px; align-items: center;">
+                <select class="form-control implement-select" style="width: 150px;">
+                    <option value="" ${!implement ? 'selected' : ''}>Ninguno</option>
+                    <option value="Mancuernas" ${implement === 'Mancuernas' ? 'selected' : ''}>Mancuernas</option>
+                    <option value="Bandas" ${implement === 'Bandas' ? 'selected' : ''}>Bandas</option>
+                    <option value="Máquina" ${implement === 'Máquina' ? 'selected' : ''}>Máquina</option>
+                    <option value="Peso corporal" ${implement === 'Peso corporal' ? 'selected' : ''}>Peso corporal</option>
+                    <option value="Barra olímpica" ${implement === 'Barra olímpica' ? 'selected' : ''}>Barra olímpica</option>
+                    <option value="Barra preolímpica" ${implement === 'Barra preolímpica' ? 'selected' : ''}>Barra preolímpica</option>
+                    <option value="Kettlebell" ${implement === 'Kettlebell' ? 'selected' : ''}>Kettlebell</option>
+                    <option value="Otros" ${implement === 'Otros' ? 'selected' : ''}>Otros</option>
                 </select>
-                <input type="number" class="form-control" min="0" max="10" step="1"
-                       value="${exercise.effortValue || ''}" style="text-align: center;">
+                <input type="text" class="form-control" placeholder="Detalle" value="${implementDetail}" style="width: 150px;">
             </div>
-            <div style="margin-top: 5px; font-size: 12px; text-align: center; color: var(--text-secondary);">
-                ${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'Percepción de esfuerzo' : 'Repeticiones en reserva'}
+            <div class="exercise-actions">
+                <button type="button" class="add-series-btn" onclick="addSeries('${exerciseId}')">
+                    <i class="fas fa-plus"></i> Añadir serie
+                </button>
+                <button type="button" class="action-btn btn-secondary" style="background-color: var(--accent2-light);" onclick="removeExercise('${exerciseId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
-            <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${(exercise.effortType === 'RPE' || !exercise.effortType) ? 'RPE' : 'RIR'}')">
-                <i class="fas fa-info-circle"></i>
-                Ver explicación
-            </button>
-        </td>
-        <td data-label="Observaciones">
-            <input type="text" class="form-control" placeholder="Notas o indicaciones" 
-                   value="${exercise.notes || ''}" style="width: 100%;">
-        </td>
-        <td data-label="Acciones">
-            <button type="button" class="exercise-delete-btn">
-                <i class="fas fa-trash-alt"></i>
-                Eliminar ejercicio
-            </button>
-        </td>
+        </div>
+        <div class="series-container">
+            <table class="series-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Serie</th>
+                        <th style="width: 15%;">Repeticiones</th>
+                        <th style="width: 15%;">Carga (kg)</th>
+                        <th style="width: 15%;">RPE/RIR</th>
+                        <th style="width: 30%;">Observaciones</th>
+                        <th style="width: 15%;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="series-body">
+                    <!-- Las series se añadirán aquí -->
+                </tbody>
+            </table>
+        </div>
+        <div class="exercise-notes" style="padding: 10px 15px;">
+            <textarea class="form-control" placeholder="Observaciones generales del ejercicio" style="width: 100%; height: 60px;">${notes}</textarea>
+        </div>
     `;
     
-    // Añadir evento para actualizar descripción cuando se cambia entre RPE/RIR
-    const effortTypeSelect = row.querySelector('.effort-type-select');
-    if (effortTypeSelect) {
-        effortTypeSelect.addEventListener('change', function() {
-            const descriptionText = this.closest('td').querySelector('div[style*="font-size: 12px"]');
-            if (descriptionText) {
-                descriptionText.textContent = this.value === 'RPE' ? 'Percepción de esfuerzo' : 'Repeticiones en reserva';
-            }
-            
-            const infoButton = this.closest('td').querySelector('.info-button');
-            if (infoButton) {
-                infoButton.setAttribute('onclick', `mostrarInfoIntensidad('${this.value}')`);
-            }
-        });
-    }
+    // Añadir al contenedor
+    exercisesContainer.appendChild(exerciseDiv);
     
-    // Añadir evento para eliminar ejercicio
-    const deleteBtn = row.querySelector('.exercise-delete-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function() {
-            tableBody.removeChild(row);
-        });
-    }
+    // Añadir primera serie por defecto
+    addSeries(exerciseId);
     
-    // Añadir la fila a la tabla
-    tableBody.appendChild(row);
-    
-    // Mensaje de confirmación en consola
-    console.log("Ejercicio añadido a la tabla");
+    // Devolver el ID del ejercicio creado
+    return exerciseId;
 }
 
 // Función para cargar plantilla de ejercicios
@@ -10625,46 +10590,48 @@ function getTemplateName(template) {
 // Recopilar datos de ejercicios para guardar
 function getExercisesData() {
     const exercises = [];
-    const rows = document.querySelectorAll('#exerciseTableBody tr');
+    const exerciseContainers = document.querySelectorAll('.exercise-row');
     
-    rows.forEach(row => {
-        const nameInput = row.querySelector('td:nth-child(1) input');
-        const implementSelect = row.querySelector('td:nth-child(2) select');
-        const setsInput = row.querySelector('td:nth-child(3) input');
-        const repsInput = row.querySelector('td:nth-child(4) input');
-        const loadInput = row.querySelector('td:nth-child(5) input');
-        const effortTypeSelect = row.querySelector('td:nth-child(6) select');
-        const effortValueInput = row.querySelector('td:nth-child(6) input[type="number"]');
-        const notesInput = row.querySelector('td:nth-child(7) input');
+    exerciseContainers.forEach(container => {
+        // Obtener datos básicos del ejercicio
+        const nameInput = container.querySelector('.exercise-title input');
+        const implementSelect = container.querySelector('.implement-select');
+        const implementDetailInput = container.querySelector('.implement-selector input');
+        const notesTextarea = container.querySelector('.exercise-notes textarea');
         
-        if (nameInput && nameInput.value.trim() !== '') {
-            // Construir cadena de intensidad combinando carga y esfuerzo
-            let intensityStr = '';
-            if (loadInput && loadInput.value) {
-                intensityStr = loadInput.value + 'kg';
-            }
-            
-            if (effortTypeSelect && effortValueInput && effortValueInput.value) {
-                if (intensityStr) intensityStr += ' - ';
-                intensityStr += effortTypeSelect.value + ' ' + effortValueInput.value;
-            }
-            
-            // Si no hay intensidad especificada, usar valor legacy
-            if (!intensityStr) {
-                intensityStr = 'Media';
-            }
-            
-            exercises.push({
-                name: nameInput.value,
+        const name = nameInput ? nameInput.value.trim() : '';
+        
+        // Solo añadir si tiene nombre
+        if (name) {
+            const exercise = {
+                name: name,
                 implement: implementSelect ? implementSelect.value : '',
-                sets: setsInput ? setsInput.value : '3',
-                reps: repsInput ? repsInput.value : '10',
-                intensity: intensityStr, // Para compatibilidad con versiones anteriores
-                load: loadInput ? loadInput.value : '',
-                effortType: effortTypeSelect ? effortTypeSelect.value : 'RPE',
-                effortValue: effortValueInput ? effortValueInput.value : '',
-                notes: notesInput ? notesInput.value : ''
+                implementDetail: implementDetailInput ? implementDetailInput.value : '',
+                notes: notesTextarea ? notesTextarea.value : '',
+                series: []
+            };
+            
+            // Recopilar datos de cada serie
+            const seriesRows = container.querySelectorAll('.series-row');
+            seriesRows.forEach(row => {
+                const repsInput = row.querySelector('td:nth-child(2) input');
+                const loadInput = row.querySelector('td:nth-child(3) input');
+                const effortTypeSelect = row.querySelector('.effort-type-select');
+                const effortValueInput = row.querySelector('td:nth-child(4) input[type="number"]');
+                const notesInput = row.querySelector('td:nth-child(5) input');
+                
+                const series = {
+                    reps: repsInput ? repsInput.value : '',
+                    load: loadInput ? loadInput.value : '',
+                    effortType: effortTypeSelect ? effortTypeSelect.value : 'RPE',
+                    effortValue: effortValueInput ? effortValueInput.value : '',
+                    notes: notesInput ? notesInput.value : ''
+                };
+                
+                exercise.series.push(series);
             });
+            
+            exercises.push(exercise);
         }
     });
     
@@ -14026,8 +13993,132 @@ window.showEffortInfo = function(button) {
 }
 
 
+        // Función para añadir una serie a un ejercicio existente
+function addSeries(exerciseId, seriesData = {}) {
+    const seriesBody = document.querySelector(`#${exerciseId} .series-body`);
+    if (!seriesBody) {
+        console.error("Contenedor de series no encontrado");
+        return;
+    }
+    
+    // Contar las series existentes para determinar el número de la nueva
+    const seriesCount = seriesBody.querySelectorAll('tr').length + 1;
+    
+    // Establecer valores por defecto o usar los proporcionados
+    const reps = seriesData.reps || '';
+    const load = seriesData.load || '';
+    const effortType = seriesData.effortType || 'RPE';
+    const effortValue = seriesData.effortValue || '';
+    const notes = seriesData.notes || '';
+    
+    // Crear la fila de la serie
+    const seriesRow = document.createElement('tr');
+    seriesRow.className = 'series-row';
+    seriesRow.innerHTML = `
+        <td class="series-number">Serie ${seriesCount}</td>
+        <td>
+            <input type="text" class="form-control" placeholder="Reps" value="${reps}">
+        </td>
+        <td>
+            <input type="number" class="form-control" placeholder="kg" min="0" step="0.5" value="${load}">
+        </td>
+        <td>
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <select class="form-control effort-type-select" style="width: 70px;">
+                    <option value="RPE" ${effortType === 'RPE' ? 'selected' : ''}>RPE</option>
+                    <option value="RIR" ${effortType === 'RIR' ? 'selected' : ''}>RIR</option>
+                </select>
+                <input type="number" class="form-control" min="0" max="10" step="1" 
+                       value="${effortValue}" style="width: 50px; text-align: center;">
+                <button type="button" class="info-button" onclick="mostrarInfoIntensidad('${effortType}')">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+        </td>
+        <td>
+            <input type="text" class="form-control" placeholder="Observaciones de la serie" value="${notes}">
+        </td>
+        <td>
+            ${seriesCount > 1 ? `
+                <button type="button" class="remove-series-btn" onclick="removeSeries(this)">
+                    <i class="fas fa-minus"></i> Quitar
+                </button>
+            ` : `
+                <button type="button" class="remove-series-btn" onclick="removeSeries(this)" disabled style="opacity: 0.5;">
+                    <i class="fas fa-minus"></i> Quitar
+                </button>
+            `}
+        </td>
+    `;
+    
+    // Añadir evento para cambiar el tipo de esfuerzo
+    const effortTypeSelect = seriesRow.querySelector('.effort-type-select');
+    if (effortTypeSelect) {
+        effortTypeSelect.addEventListener('change', function() {
+            const infoButton = this.parentElement.querySelector('.info-button');
+            if (infoButton) {
+                infoButton.setAttribute('onclick', `mostrarInfoIntensidad('${this.value}')`);
+            }
+        });
+    }
+    
+    // Añadir la fila a la tabla
+    seriesBody.appendChild(seriesRow);
+    
+    // Actualizar numeración de series
+    updateSeriesNumbers(exerciseId);
+}
 
-        // Función para mostrar información de intensidad
+// Función para eliminar una serie
+function removeSeries(button) {
+    const row = button.closest('tr');
+    const exerciseId = row.closest('.exercise-row').id;
+    
+    row.parentNode.removeChild(row);
+    
+    // Actualizar numeración de series
+    updateSeriesNumbers(exerciseId);
+}
+
+// Función para actualizar la numeración de series
+function updateSeriesNumbers(exerciseId) {
+    const seriesRows = document.querySelectorAll(`#${exerciseId} .series-row`);
+    
+    seriesRows.forEach((row, index) => {
+        // Actualizar número de serie
+        const seriesNumber = row.querySelector('.series-number');
+        if (seriesNumber) {
+            seriesNumber.textContent = `Serie ${index + 1}`;
+        }
+        
+        // Habilitar/deshabilitar botón de quitar según sea la única serie
+        const removeButton = row.querySelector('.remove-series-btn');
+        if (removeButton) {
+            if (seriesRows.length <= 1) {
+                removeButton.disabled = true;
+                removeButton.style.opacity = '0.5';
+            } else {
+                removeButton.disabled = false;
+                removeButton.style.opacity = '1';
+            }
+        }
+    });
+}
+
+// Función para eliminar un ejercicio completo
+function removeExercise(exerciseId) {
+    const exercise = document.getElementById(exerciseId);
+    if (exercise && confirm('¿Está seguro que desea eliminar este ejercicio?')) {
+        exercise.parentNode.removeChild(exercise);
+    }
+}
+
+        
+        
+        </script>
+
+<script>
+// Función para mostrar información de intensidad
 function mostrarInfoIntensidad(tipo) {
     let titulo = tipo === 'RPE' ? "Escala RPE (Rating of Perceived Exertion)" : "Escala RIR (Repeticiones en Reserva)";
     let mensaje = "";
@@ -14054,8 +14145,8 @@ function mostrarInfoIntensidad(tipo) {
     
     alert(titulo + "\n\n" + mensaje);
 }
-        
-        </script>
+</script>
+
     
 </body>
 </html>
