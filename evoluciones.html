@@ -10444,7 +10444,6 @@ function setupExerciseTable() {
     }
 }
 
-// Función mejorada para añadir una fila de ejercicio con tooltips
 function addExerciseRow(exercise = {}) {
     // Obtener la tabla de ejercicios
     const tableBody = document.getElementById('exerciseTableBody');
@@ -10474,6 +10473,8 @@ function addExerciseRow(exercise = {}) {
                 <option value="Mancuernas" ${exercise.implement === 'Mancuernas' ? 'selected' : ''}>Mancuernas</option>
                 <option value="Bandas" ${exercise.implement === 'Bandas' ? 'selected' : ''}>Bandas</option>
                 <option value="Máquina" ${exercise.implement === 'Máquina' ? 'selected' : ''}>Máquina</option>
+                <option value="Barra olímpica" ${exercise.implement === 'Barra olímpica' ? 'selected' : ''}>Barra olímpica</option>
+                <option value="Barra preolímpica" ${exercise.implement === 'Barra preolímpica' ? 'selected' : ''}>Barra preolímpica</option>
                 <option value="Peso corporal" ${exercise.implement === 'Peso corporal' ? 'selected' : ''}>Peso corporal</option>
                 <option value="Otros" ${exercise.implement === 'Otros' ? 'selected' : ''}>Otros</option>
             </select>
@@ -10503,17 +10504,18 @@ function addExerciseRow(exercise = {}) {
                     <div class="tooltip-content" style="width: 250px; right: 0; left: auto; transform: none;">
                         <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
                         <p>Escala de percepción del esfuerzo donde:</p>
-                        <p>1-3 = Muy fácil</p>
-                        <p>4-6 = Moderado</p>
-                        <p>7-8 = Difícil</p>
-                        <p>9-10 = Máximo esfuerzo</p>
+                        <p>RPE 10 = Esfuerzo máximo absoluto</p>
+                        <p>RPE 9 = 1 rep antes del fallo</p>
+                        <p>RPE 8 = 2 reps antes del fallo</p>
+                        <p>RPE 7 = 3 reps antes del fallo</p>
+                        <p>RPE 6 = 4-5 reps antes del fallo</p>
+                        <p>RPE 5 = Moderadamente difícil</p>
                         <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
                         <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                        <p>Cuántas repeticiones más podría hacer:</p>
-                        <p>0 = No podría hacer más (fallo)</p>
-                        <p>1-2 = Cercano al fallo</p>
-                        <p>3-4 = Moderadamente difícil</p>
-                        <p>5+ = Fácil</p>
+                        <p>RIR 0 = Fallo técnico, no puedes hacer más</p>
+                        <p>RIR 1 = Podrías hacer 1 rep más</p>
+                        <p>RIR 2 = Podrías hacer 2 reps más</p>
+                        <p>RIR 3 = Podrías hacer 3 reps más</p>
                     </div>
                 </div>
             </div>
@@ -10541,25 +10543,28 @@ function addExerciseRow(exercise = {}) {
                         tooltipContent.innerHTML = `
                             <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
                             <p>Escala de percepción del esfuerzo donde:</p>
-                            <p>1-3 = Muy fácil</p>
-                            <p>4-6 = Moderado</p>
-                            <p>7-8 = Difícil</p>
-                            <p>9-10 = Máximo esfuerzo</p>
+                            <p>RPE 10 = Esfuerzo máximo absoluto</p>
+                            <p>RPE 9 = 1 rep antes del fallo</p>
+                            <p>RPE 8 = 2 reps antes del fallo</p>
+                            <p>RPE 7 = 3 reps antes del fallo</p>
+                            <p>RPE 6 = 4-5 reps antes del fallo</p>
+                            <p>RPE 5 = Moderadamente difícil</p>
                             <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
                             <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                            <p>Cuántas repeticiones más podría hacer</p>
+                            <p>RIR = Repeticiones que podrías hacer</p>
                         `;
                     } else {
                         tooltipContent.innerHTML = `
                             <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                            <p>Cuántas repeticiones más podría hacer:</p>
-                            <p>0 = No podría hacer más (fallo)</p>
-                            <p>1-2 = Cercano al fallo</p>
-                            <p>3-4 = Moderadamente difícil</p>
-                            <p>5+ = Fácil</p>
+                            <p>RIR 0 = Fallo técnico, no puedes hacer más</p>
+                            <p>RIR 1 = Podrías hacer 1 rep más</p>
+                            <p>RIR 2 = Podrías hacer 2 reps más</p>
+                            <p>RIR 3 = Podrías hacer 3 reps más</p>
+                            <p>RIR 4 = Podrías hacer 4 reps más</p>
+                            <p>RIR 5+ = Podrías hacer 5 o más reps</p>
                             <hr style="border-color: rgba(255,255,255,0.2); margin: 5px 0;">
                             <p><strong>RPE:</strong> Rating of Perceived Exertion</p>
-                            <p>Escala de percepción del esfuerzo (0-10)</p>
+                            <p>Nivel de esfuerzo percibido (0-10)</p>
                         `;
                     }
                 }
@@ -13782,15 +13787,65 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
     function showRPEInfo() {
     const content = `
         <h3>Escala RPE (Rating of Perceived Exertion)</h3>
-        <p>La escala RPE mide el esfuerzo percibido:</p>
-        <ul>
-            <li><strong>1-2:</strong> Muy fácil, casi sin esfuerzo</li>
-            <li><strong>3-4:</strong> Fácil, podría continuar mucho tiempo</li>
-            <li><strong>5-6:</strong> Moderado, comenzando a sentir esfuerzo</li>
-            <li><strong>7-8:</strong> Difícil, alto nivel de esfuerzo</li>
-            <li><strong>9:</strong> Muy difícil, casi máximo esfuerzo</li>
-            <li><strong>10:</strong> Esfuerzo máximo, imposible continuar</li>
-        </ul>
+        <p>La escala RPE es una medida subjetiva del esfuerzo percibido durante el ejercicio:</p>
+        <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+            <tr style="background-color: #f2f2f2;">
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">RPE</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Descripción</th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">10</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo máximo absoluto, imposible continuar</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Apenas posible completar la repetición</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">1 repetición más sería imposible (fallo técnico inminente)</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1 repetición más pero con dificultad extrema</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1 repetición más</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 1-2 repeticiones más</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 2-3 repeticiones más</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">6</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 4-5 repeticiones más</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podría hacer 6+ repeticiones más (moderadamente difícil)</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">4</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo moderado, conversación posible</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">3</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Esfuerzo ligero, cómodo</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Muy fácil, casi sin esfuerzo</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Sin esfuerzo, calentamiento muy ligero</td>
+            </tr>
+        </table>
     `;
     showInfoModal("Escala RPE", content);
 }
@@ -13798,15 +13853,60 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
 function showRIRInfo() {
     const content = `
         <h3>Escala RIR (Repetitions In Reserve)</h3>
-        <p>La escala RIR indica las repeticiones que podrías hacer antes del fallo:</p>
-        <ul>
-            <li><strong>0:</strong> Fallo muscular, no puedes hacer más repeticiones</li>
-            <li><strong>1:</strong> Podrías hacer 1 repetición más</li>
-            <li><strong>2:</strong> Podrías hacer 2 repeticiones más</li>
-            <li><strong>3:</strong> Podrías hacer 3 repeticiones más</li>
-            <li><strong>4:</strong> Podrías hacer 4 repeticiones más</li>
-            <li><strong>5+:</strong> Podrías hacer 5 o más repeticiones</li>
-        </ul>
+        <p>La escala RIR indica las repeticiones que podrías hacer antes del fallo muscular:</p>
+        <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+            <tr style="background-color: #f2f2f2;">
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">RIR</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Descripción</th>
+                <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Equivalente RPE</th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Fallo técnico, no podrías hacer más repeticiones</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">10</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">0.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Posible fallo en siguiente repetición</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9.5</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">9</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">1.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 1 repetición más con esfuerzo</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8.5</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2 repeticiones más</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">8</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">2.5</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 2-3 repeticiones más</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7.5</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">3</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 3 repeticiones más</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">7</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">4</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 4 repeticiones más</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">6</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5+</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">Podrías hacer 5 o más repeticiones, moderado</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">5 o menos</td>
+            </tr>
+        </table>
+        <p style="margin-top: 15px;"><strong>Nota:</strong> A mayor RIR, menor intensidad; a menor RIR, mayor intensidad.</p>
     `;
     showInfoModal("Escala RIR", content);
 }
