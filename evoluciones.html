@@ -2632,6 +2632,24 @@ async function openPatientModal(patientId) {
         if (titleElement) {
             titleElement.textContent = patient.name;
         }
+
+        // Añadir botón de impresión
+        const titleContainer = titleElement.parentElement;
+        if (titleContainer) {
+            // Verificar si ya existe el botón para evitar duplicados
+            const existingPrintButton = titleContainer.querySelector('#printPatientBtn');
+            if (!existingPrintButton) {
+                const printButton = document.createElement('button');
+                printButton.id = 'printPatientBtn';
+                printButton.className = 'action-btn btn-secondary';
+                printButton.innerHTML = '<i class="fas fa-print"></i> Imprimir';
+                printButton.style.marginLeft = '10px';
+                printButton.onclick = function() { printPatientData(); };
+                titleContainer.appendChild(printButton);
+            }
+        }
+
+
         
         // Llenar datos personales
         fillPersonalData(patient);
@@ -2659,6 +2677,535 @@ async function openPatientModal(patientId) {
     }
 }
 
+// Función para imprimir datos del paciente
+function printPatientData() {
+    try {
+        // Mostrar indicador de carga
+        showLoading();
+        
+        // Obtener el modal y sus elementos
+        const modal = document.getElementById('patientModal');
+        if (!modal) {
+            hideLoading();
+            showToast("Error: No se encontró el modal del paciente", "error");
+            return;
+        }
+        
+        // Guardar el estado original de los acordeones
+        const accordions = modal.querySelectorAll('.accordion');
+        const originalStates = [];
+        accordions.forEach(accordion => {
+            originalStates.push(accordion.classList.contains('active'));
+        });
+        
+        // Expandir todos los acordeones
+        accordions.forEach(accordion => {
+            accordion.classList.add('active');
+        });
+        
+        // Crear un iframe oculto para la impresión
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
+        
+        printFrame.onload = function() {
+            try {
+                // Obtener el documento del iframe
+                const frameDoc = printFrame.contentDocument || printFrame.contentWindow.document;
+                
+                // Crear el contenido del documento para imprimir
+                frameDoc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Ficha del Paciente</title>
+                        <style>
+                            /* Estilos básicos para la impresión */
+                            body { 
+                                font-family: Arial, sans-serif; 
+                                color: #333;
+                                line-height: 1.4;
+                                margin: 0;
+                                padding: 20px;
+                            }
+                            h1, h2, h3, h4 { margin-top: 20px; color: #1976D2; }
+                            h1 { text-align: center; border-bottom: 2px solid #1976D2; padding-bottom: 10px; }
+                            .section { margin-bottom: 20px; page-break-inside: avoid; }
+                            .section-title { 
+                                background-color: #1976D2; 
+                                color: white; 
+                                padding: 5px 10px; 
+                                margin-bottom: 10px;
+                                border-radius: 5px;
+                            }
+                            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                            table, th, td { border: 1px solid #ddd; }
+                            th, td { padding: 8px; text-align: left; }
+                            th { background-color: #f2f2f2; }
+                            .info-row { display: flex; margin-bottom: 5px; }
+                            .info-label { font-weight: bold; min-width: 150px; }
+                            .info-value { flex: 1; }
+                            .evolution-item { 
+                                border: 1px solid #ddd;
+                                border-radius: 5px;
+                                padding: 10px;
+                                margin-bottom: 15px;
+                            }
+                            .evolution-header { 
+                                border-bottom: 1px solid #ddd;
+                                padding-bottom: 5px;
+                                margin-bottom: 10px;
+                                font-weight: bold;
+                            }
+                            .evolution-section { margin-top: 10px; }
+                            .evolution-section-title { 
+                                font-weight: bold;
+                                border-bottom: 1px dashed #ddd;
+                                margin-bottom: 5px;
+                            }
+                            .exercise-table { width: 100%; margin-top: 10px; }
+                            .exercise-table th { background-color: #f2f2f2; }
+                            .scale-card {
+                                border: 1px solid #ddd;
+                                border-radius: 5px;
+                                padding: 10px;
+                                margin-bottom: 10px;
+                            }
+                            .footer {
+                                text-align: center;
+                                margin-top: 30px;
+                                font-size: 12px;
+                                color: #666;
+                                border-top: 1px solid #ddd;
+                                padding-top: 10px;
+                            }
+                            @page {
+                                margin: 2cm;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                `);
+                
+                // Obtener datos del paciente
+                const patientName = document.getElementById('patientModalTitle').textContent;
+                
+                // Añadir encabezado
+                frameDoc.write(`<h1>Ficha Completa del Paciente</h1>`);
+                
+                // Sección 1: Datos Personales
+                frameDoc.write(`
+                    <div class="section">
+                        <h2 class="section-title">Datos Personales</h2>
+                        <div class="info-row">
+                            <div class="info-label">Nombre completo:</div>
+                            <div class="info-value">${document.getElementById('patientName')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">RUT:</div>
+                            <div class="info-value">${document.getElementById('patientRut')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Fecha de nacimiento:</div>
+                            <div class="info-value">${document.getElementById('patientBirthDate')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Teléfono:</div>
+                            <div class="info-value">${document.getElementById('patientPhone')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Correo electrónico:</div>
+                            <div class="info-value">${document.getElementById('patientEmail')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Dirección:</div>
+                            <div class="info-value">${document.getElementById('patientAddress')?.value || 'No registrado'}</div>
+                        </div>
+                        
+                        <h3>Información Médica</h3>
+                        <div class="info-row">
+                            <div class="info-label">Historia médica:</div>
+                            <div class="info-value">${document.getElementById('patientMedicalHistory')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Medicamentos:</div>
+                            <div class="info-value">${document.getElementById('patientMedications')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Alergias:</div>
+                            <div class="info-value">${document.getElementById('patientAllergies')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Contacto de emergencia:</div>
+                            <div class="info-value">${document.getElementById('patientEmergencyContact')?.value || 'No registrado'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Teléfono de emergencia:</div>
+                            <div class="info-value">${document.getElementById('patientEmergencyPhone')?.value || 'No registrado'}</div>
+                        </div>
+                    </div>
+                `);
+                
+                // Sección 2: Diagnóstico Kinesiológico
+                const diagnosisTabContent = document.getElementById('diagnosisTab');
+                if (diagnosisTabContent) {
+                    frameDoc.write(`
+                        <div class="section">
+                            <h2 class="section-title">Diagnóstico Kinesiológico</h2>
+                    `);
+                    
+                    // Obtener diagnósticos
+                    const diagnosisElements = diagnosisTabContent.querySelectorAll('.timeline-item');
+                    if (diagnosisElements.length > 0) {
+                        frameDoc.write(`<h3>Evaluaciones y Diagnósticos</h3>`);
+                        
+                        diagnosisElements.forEach(item => {
+                            const date = item.querySelector('.timeline-date')?.textContent || 'Fecha no disponible';
+                            const title = item.querySelector('.timeline-title')?.textContent || 'Sin diagnóstico';
+                            const description = item.querySelector('.timeline-content p')?.textContent || 'Sin descripción';
+                            
+                            frameDoc.write(`
+                                <div class="evolution-item">
+                                    <div class="evolution-header">${date}</div>
+                                    <h4>${title}</h4>
+                                    <p>${description}</p>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        frameDoc.write(`<p>No hay diagnósticos registrados.</p>`);
+                    }
+                    
+                    // Objetivos terapéuticos
+                    const generalObjective = diagnosisTabContent.querySelector('#generalObjectiveContent');
+                    const specificObjectives = diagnosisTabContent.querySelectorAll('.objective-card');
+                    
+                    if (generalObjective || specificObjectives.length > 0) {
+                        frameDoc.write(`<h3>Objetivos Terapéuticos</h3>`);
+                        
+                        if (generalObjective) {
+                            const generalDesc = generalObjective.querySelector('#generalObjectiveDesc')?.textContent || 'No definido';
+                            frameDoc.write(`
+                                <div class="info-row">
+                                    <div class="info-label">Objetivo general:</div>
+                                    <div class="info-value">${generalDesc}</div>
+                                </div>
+                            `);
+                        }
+                        
+                        if (specificObjectives.length > 0) {
+                            frameDoc.write(`<h4>Objetivos específicos</h4>`);
+                            
+                            specificObjectives.forEach((obj, index) => {
+                                const title = obj.querySelector('h4')?.textContent || 'Sin título';
+                                const details = obj.querySelectorAll('.objective-card div');
+                                let detailsText = '';
+                                
+                                details.forEach(detail => {
+                                    if (detail.className !== 'objective-header' && !detail.className.includes('progress-') && !detail.querySelector('button')) {
+                                        detailsText += `<p>${detail.textContent}</p>`;
+                                    }
+                                });
+                                
+                                frameDoc.write(`
+                                    <div class="evolution-item">
+                                        <h4>${index + 1}. ${title}</h4>
+                                        ${detailsText}
+                                    </div>
+                                `);
+                            });
+                        }
+                    }
+                    
+                    // Planes de tratamiento
+                    const treatmentPlans = diagnosisTabContent.querySelectorAll('.plan-card');
+                    if (treatmentPlans.length > 0) {
+                        frameDoc.write(`<h3>Planes de Tratamiento</h3>`);
+                        
+                        treatmentPlans.forEach(plan => {
+                            const planTitle = plan.querySelector('.plan-title')?.textContent || 'Plan de Tratamiento';
+                            const planDate = plan.querySelector('.plan-date')?.textContent || 'Fecha no disponible';
+                            const planDetails = plan.querySelectorAll('.plan-row');
+                            
+                            frameDoc.write(`
+                                <div class="evolution-item">
+                                    <div class="evolution-header">${planTitle} - ${planDate}</div>
+                            `);
+                            
+                            planDetails.forEach(detail => {
+                                const label = detail.querySelector('.plan-label')?.textContent || '';
+                                const value = detail.querySelector('.plan-value')?.innerHTML || '';
+                                
+                                frameDoc.write(`
+                                    <div class="info-row">
+                                        <div class="info-label">${label}</div>
+                                        <div class="info-value">${value}</div>
+                                    </div>
+                                `);
+                            });
+                            
+                            frameDoc.write(`</div>`);
+                        });
+                    }
+                    
+                    frameDoc.write(`</div>`); // Cierra sección Diagnóstico
+                }
+                
+                // Sección 3: Evoluciones
+                const evolutionsTabContent = document.getElementById('evolutionsTab');
+                if (evolutionsTabContent) {
+                    frameDoc.write(`
+                        <div class="section">
+                            <h2 class="section-title">Historial de Evoluciones</h2>
+                    `);
+                    
+                    const evolutionItems = evolutionsTabContent.querySelectorAll('.evolution-item');
+                    if (evolutionItems.length > 0) {
+                        evolutionItems.forEach(evolution => {
+                            const date = evolution.querySelector('.evolution-date')?.textContent || 'Fecha no disponible';
+                            const student = evolution.querySelector('.evolution-student')?.textContent || 'No registrado';
+                            
+                            frameDoc.write(`
+                                <div class="evolution-item">
+                                    <div class="evolution-header">${date}</div>
+                                    <div style="margin-bottom: 10px;">${student}</div>
+                            `);
+                            
+                            // Secciones de la evolución
+                            const sections = evolution.querySelectorAll('.evolution-section');
+                            sections.forEach(section => {
+                                const title = section.querySelector('.evolution-section-title')?.textContent || 'Sección';
+                                
+                                // Contenido especializado según el tipo de sección
+                                if (title.includes('Escalas')) {
+                                    // Escalas de evaluación
+                                    const scales = section.querySelector('.scales-container');
+                                    if (scales) {
+                                        frameDoc.write(`
+                                            <div class="evolution-section">
+                                                <div class="evolution-section-title">${title}</div>
+                                        `);
+                                        
+                                        // EVA
+                                        const evaScale = scales.querySelector('.eva-scale');
+                                        if (evaScale) {
+                                            const evaValue = evaScale.querySelector('.scale-header div:nth-child(2)')?.textContent || '0/10';
+                                            frameDoc.write(`<p><strong>EVA (Dolor):</strong> ${evaValue}</p>`);
+                                        }
+                                        
+                                        // PSFS
+                                        const psfsActivities = scales.querySelectorAll('.psfs-activity');
+                                        if (psfsActivities.length > 0) {
+                                            frameDoc.write(`<p><strong>PSFS (Funcionalidad):</strong></p><ul>`);
+                                            psfsActivities.forEach(activity => {
+                                                const name = activity.querySelector('.activity-name')?.textContent || 'Actividad';
+                                                const rating = activity.querySelector('.rating-number')?.textContent || '0';
+                                                frameDoc.write(`<li>${name}: ${rating}/10</li>`);
+                                            });
+                                            frameDoc.write(`</ul>`);
+                                        }
+                                        
+                                        // GROC
+                                        const grocScale = scales.querySelector('.groc-scale');
+                                        if (grocScale) {
+                                            const grocValue = grocScale.parentElement.querySelector('.scale-header div:nth-child(2)')?.textContent || '0';
+                                            frameDoc.write(`<p><strong>GROC (Cambio global):</strong> ${grocValue}</p>`);
+                                        }
+                                        
+                                        // SANE
+                                        const saneScale = scales.querySelector('.sane-scale');
+                                        if (saneScale) {
+                                            const saneValue = saneScale.parentElement.querySelector('.scale-header div:nth-child(2)')?.textContent || '0%';
+                                            frameDoc.write(`<p><strong>SANE (Evaluación numérica):</strong> ${saneValue}</p>`);
+                                        }
+                                        
+                                        frameDoc.write(`</div>`);
+                                    }
+                                } else if (title.includes('Ejercicios')) {
+                                    // Tabla de ejercicios
+                                    const exerciseTable = section.querySelector('.exercise-table');
+                                    if (exerciseTable) {
+                                        frameDoc.write(`
+                                            <div class="evolution-section">
+                                                <div class="evolution-section-title">${title}</div>
+                                                <table class="exercise-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Ejercicio</th>
+                                                            <th>Series x Reps</th>
+                                                            <th>Intensidad</th>
+                                                            <th>Notas</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                        `);
+                                        
+                                        const rows = exerciseTable.querySelectorAll('tbody tr');
+                                        rows.forEach(row => {
+                                            const cells = row.querySelectorAll('td');
+                                            if (cells.length >= 6) {
+                                                frameDoc.write(`
+                                                    <tr>
+                                                        <td>${cells[0]?.textContent || ''}</td>
+                                                        <td>${cells[2]?.textContent || ''} x ${cells[3]?.textContent || ''}</td>
+                                                        <td>${cells[4]?.textContent || ''}</td>
+                                                        <td>${cells[5]?.textContent || ''}</td>
+                                                    </tr>
+                                                `);
+                                            }
+                                        });
+                                        
+                                        frameDoc.write(`
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        `);
+                                    } else {
+                                        // Vista de columnas de ejercicios
+                                        const exerciseColumns = section.querySelector('.exercise-two-columns');
+                                        if (exerciseColumns) {
+                                            frameDoc.write(`
+                                                <div class="evolution-section">
+                                                    <div class="evolution-section-title">${title}</div>
+                                                    <table class="exercise-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Ejercicio</th>
+                                                                <th>Series</th>
+                                                                <th>Repeticiones</th>
+                                                                <th>Intensidad</th>
+                                                                <th>Notas</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                            `);
+                                            
+                                            const columns = exerciseColumns.querySelectorAll('.exercise-column');
+                                            columns.forEach(column => {
+                                                const exerciseName = column.querySelector('h4')?.textContent || 'Ejercicio';
+                                                const details = column.querySelectorAll('.exercise-detail-item');
+                                                
+                                                let series = '';
+                                                let reps = '';
+                                                let intensity = '';
+                                                let notes = '';
+                                                
+                                                details.forEach(detail => {
+                                                    const label = detail.querySelector('.exercise-detail-label')?.textContent || '';
+                                                    const value = detail.querySelector('.exercise-detail-value')?.textContent || '';
+                                                    
+                                                    if (label.includes('Series')) series = value;
+                                                    else if (label.includes('Repeticiones')) reps = value;
+                                                    else if (label.includes('Intensidad')) intensity = value;
+                                                    else if (label.includes('Observaciones')) notes = value;
+                                                });
+                                                
+                                                frameDoc.write(`
+                                                    <tr>
+                                                        <td>${exerciseName}</td>
+                                                        <td>${series}</td>
+                                                        <td>${reps}</td>
+                                                        <td>${intensity}</td>
+                                                        <td>${notes}</td>
+                                                    </tr>
+                                                `);
+                                            });
+                                            
+                                            frameDoc.write(`
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            `);
+                                        }
+                                    }
+                                } else {
+                                    // Secciones de texto normal
+                                    const content = section.innerHTML.replace(/<div class="evolution-section-title">.*?<\/div>/, '');
+                                    
+                                    frameDoc.write(`
+                                        <div class="evolution-section">
+                                            <div class="evolution-section-title">${title}</div>
+                                            ${content}
+                                        </div>
+                                    `);
+                                }
+                            });
+                            
+                            frameDoc.write(`</div>`); // Cierra evolution-item
+                        });
+                    } else {
+                        frameDoc.write(`<p>No hay evoluciones registradas.</p>`);
+                    }
+                    
+                    frameDoc.write(`</div>`); // Cierra sección Evoluciones
+                }
+                
+                // Añadir pie de página
+                const today = new Date().toLocaleDateString();
+                frameDoc.write(`
+                    <div class="footer">
+                        <p>Documento generado el ${today}</p>
+                    </div>
+                `);
+                
+                // Cerrar documento
+                frameDoc.write(`
+                    </body>
+                    </html>
+                `);
+                
+                frameDoc.close();
+                
+                // Imprimir el iframe
+                setTimeout(function() {
+                    printFrame.contentWindow.focus();
+                    printFrame.contentWindow.print();
+                    
+                    // Restaurar el estado original de los acordeones después de imprimir
+                    setTimeout(function() {
+                        // Eliminar el iframe
+                        document.body.removeChild(printFrame);
+                        
+                        // Restaurar estado original de acordeones
+                        accordions.forEach((accordion, index) => {
+                            if (!originalStates[index]) {
+                                accordion.classList.remove('active');
+                            }
+                        });
+                        
+                        hideLoading();
+                    }, 1000);
+                }, 500);
+            } catch (error) {
+                console.error("Error al preparar la impresión:", error);
+                hideLoading();
+                showToast("Error al preparar la impresión: " + error.message, "error");
+                
+                // Restaurar estado original de acordeones
+                accordions.forEach((accordion, index) => {
+                    if (!originalStates[index]) {
+                        accordion.classList.remove('active');
+                    }
+                });
+            }
+        };
+        
+        // Iniciar carga del iframe
+        printFrame.src = 'about:blank';
+        
+    } catch (error) {
+        console.error("Error al preparar la impresión:", error);
+        hideLoading();
+        showToast("Error al preparar la impresión: " + error.message, "error");
+    }
+}
+
+        
 // Fill personal data tab
 function fillPersonalData(patient) {
     try {
@@ -14532,6 +15079,24 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
         showToast("Error al eliminar archivo: " + error.message, "error");
     }
 }
+
+
+
+
+        // Función auxiliar para obtener texto limpio de elementos HTML
+function getElementText(element) {
+    if (!element) return '';
+    
+    // Si es un campo de formulario, obtener su valor
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') {
+        return element.value || '';
+    }
+    
+    // Para otros elementos, obtener su texto
+    return element.textContent || '';
+}
+
+        
         </script>
 
     <script>
