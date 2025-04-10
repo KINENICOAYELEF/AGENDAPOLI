@@ -9581,13 +9581,13 @@ async function exportToPDF(patientId) {
         console.log("Obteniendo diagnósticos...");
         const diagnosesRef = collection(db, "patients", patientId, "diagnoses");
         const diagnosesQuery = query(diagnosesRef, orderBy("createdAt", "desc"));
-        const diagnosesSnapshot = await getDocs(diagnosesQuery);
+        const diagnosesSnapshot = await getpdfDocs(diagnosesQuery);
         
         let diagnoses = [];
         if (!diagnosesSnapshot.empty) {
-            diagnoses = diagnosesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
+            diagnoses = diagnosesSnapshot.pdfDocs.map(pdfDoc => ({
+                id: pdfDoc.id,
+                ...pdfDoc.data()
             }));
             console.log(`Diagnósticos recuperados: ${diagnoses.length}`);
         } else {
@@ -9607,18 +9607,18 @@ async function exportToPDF(patientId) {
             - Actividades: ${cifActivities.length}
             - Factores: ${cifFactors.length}`);
         
-        // Obtener objetivos terapéuticos - MEJORADO Y CORREGIDO
+        // Obtener objetivos terapéuticos - CORREGIDO
         console.log("Obteniendo objetivos terapéuticos...");
         let generalObjective = null;
         let specificObjectives = [];
         
         try {
-            // Objetivo general - IMPORTANTE: usamos const docRef en lugar de doc para evitar conflictos
+            // Objetivo general
             const generalRef = doc(db, "patients", patientId, "objectives", "general");
             const generalSnap = await getDoc(generalRef);
             if (generalSnap.exists()) {
                 generalObjective = generalSnap.data();
-                console.log("✅ Objetivo general encontrado");
+                console.log("✅ Objetivo general encontrado", generalObjective);
             } else {
                 console.log("⚠️ No se encontró objetivo general");
             }
@@ -9629,9 +9629,9 @@ async function exportToPDF(patientId) {
             const objectivesSnap = await getDocs(objectivesQuery);
             
             if (!objectivesSnap.empty) {
-                specificObjectives = objectivesSnap.docs.map(docSnap => ({
-                    id: docSnap.id,
-                    ...docSnap.data()
+                specificObjectives = objectivesSnap.docs.map(docSnapshot => ({
+                    id: docSnapshot.id,
+                    ...docSnapshot.data()
                 }));
                 console.log(`✅ Se encontraron ${specificObjectives.length} objetivos específicos`);
             } else {
@@ -9639,7 +9639,6 @@ async function exportToPDF(patientId) {
             }
         } catch (error) {
             console.error("❌ Error al obtener objetivos:", error);
-            // Seguimos adelante aunque haya errores para que al menos se muestre el resto del PDF
         }
         
         // Obtener planes de tratamiento - MEJORADO
@@ -9648,12 +9647,12 @@ async function exportToPDF(patientId) {
         try {
             const plansRef = collection(db, "patients", patientId, "treatmentPlans");
             const plansQuery = query(plansRef, orderBy("createdAt", "desc"));
-            const plansSnapshot = await getDocs(plansQuery);
+            const plansSnapshot = await getpdfDocs(plansQuery);
             
             if (!plansSnapshot.empty) {
-                treatmentPlans = plansSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
+                treatmentPlans = plansSnapshot.pdfDocs.map(pdfDoc => ({
+                    id: pdfDoc.id,
+                    ...pdfDoc.data()
                 }));
                 console.log(`✅ Se encontraron ${treatmentPlans.length} planes de tratamiento`);
             } else {
@@ -9665,10 +9664,10 @@ async function exportToPDF(patientId) {
         
         // Leer opciones del formulario
         console.log("Leyendo opciones del formulario PDF...");
-        const pdfForm = document.getElementById('pdfOptionsForm');
+        const pdfForm = pdfDocument.getElementById('pdfOptionsForm');
         
         function getCheckboxValue(id) {
-            const checkbox = document.getElementById(id);
+            const checkbox = pdfDocument.getElementById(id);
             if (checkbox) {
                 console.log(`Checkbox ${id}: ${checkbox.checked}`);
                 return checkbox.checked;
@@ -9691,7 +9690,7 @@ async function exportToPDF(patientId) {
         
         // Filtrar evoluciones según período seleccionado
         let filteredEvolutions = [...evolutions];
-        const evolutionPeriod = document.getElementById('pdfEvolutionPeriod')?.value || 'all';
+        const evolutionPeriod = pdfDocument.getElementById('pdfEvolutionPeriod')?.value || 'all';
         
         if (evolutionPeriod !== 'all') {
             if (evolutionPeriod === 'last-month') {
@@ -9705,8 +9704,8 @@ async function exportToPDF(patientId) {
             } else if (evolutionPeriod === 'last-3') {
                 filteredEvolutions = evolutions.slice(0, 3);
             } else if (evolutionPeriod === 'custom') {
-                const startDate = new Date(document.getElementById('pdfDateFrom')?.value);
-                const endDate = new Date(document.getElementById('pdfDateTo')?.value);
+                const startDate = new Date(pdfDocument.getElementById('pdfDateFrom')?.value);
+                const endDate = new Date(pdfDocument.getElementById('pdfDateTo')?.value);
                 
                 if (startDate && endDate) {
                     filteredEvolutions = evolutions.filter(ev => {
@@ -9721,9 +9720,9 @@ async function exportToPDF(patientId) {
         console.log(`Usando ${filteredEvolutions.length} evoluciones de un total de ${evolutions.length}`);
         
         // Create a new PDF using jsPDF
-        console.log("Creando documento PDF...");
+        console.log("Creando pdfDocumento PDF...");
         const { jsPDF } = window.jspdf;
-        const pdfdoc = new jsPDF();
+        const pdfpdfDoc = new jsPDF();
         
         // Get center info from configuration
         let centerName = "Polideportivo";
@@ -9743,114 +9742,114 @@ async function exportToPDF(patientId) {
         }
         
         // Add header with logo and title
-        doc.setFillColor(30, 136, 229);
-        doc.rect(0, 0, 210, 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text(`INFORME KINESIOLÓGICO - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
+        pdfDoc.setFillColor(30, 136, 229);
+        pdfDoc.rect(0, 0, 210, 25, 'F');
+        pdfDoc.setTextColor(255, 255, 255);
+        pdfDoc.setFontSize(18);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text(`INFORME KINESIOLÓGICO - ${centerName.toUpperCase()}`, 105, 15, null, null, 'center');
         
         // Add patient info in a box
-        doc.setFillColor(245, 247, 250);
-        doc.rect(10, 30, 190, 60, 'F');
+        pdfDoc.setFillColor(245, 247, 250);
+        pdfDoc.rect(10, 30, 190, 60, 'F');
         
-        doc.setTextColor(30, 136, 229);
-        doc.setFontSize(14);
-        doc.text(`Paciente: ${patient.name || 'Sin nombre'}`, 15, 40);
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`RUT: ${patient.rut || 'No registrado'}`, 15, 50);
-        doc.text(`Teléfono: ${patient.phone || 'No reporta'}`, 15, 60);
-        doc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 70);
+        pdfDoc.setTextColor(30, 136, 229);
+        pdfDoc.setFontSize(14);
+        pdfDoc.text(`Paciente: ${patient.name || 'Sin nombre'}`, 15, 40);
+        pdfDoc.setFontSize(11);
+        pdfDoc.setTextColor(0, 0, 0);
+        pdfDoc.text(`RUT: ${patient.rut || 'No registrado'}`, 15, 50);
+        pdfDoc.text(`Teléfono: ${patient.phone || 'No reporta'}`, 15, 60);
+        pdfDoc.text(`Fecha del informe: ${formatDate(new Date())}`, 15, 70);
         
         if (centerAddress) {
-            doc.text(`Centro: ${centerName} - ${centerAddress}`, 15, 80);
+            pdfDoc.text(`Centro: ${centerName} - ${centerAddress}`, 15, 80);
         }
         
         // Añadir información adicional del paciente
         let yPos = 100;
         
         // Sección de datos personales
-        doc.setFillColor(30, 136, 229);
-        doc.rect(10, yPos, 190, 10, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.text('DATOS PERSONALES', 105, yPos + 7, null, null, 'center');
+        pdfDoc.setFillColor(30, 136, 229);
+        pdfDoc.rect(10, yPos, 190, 10, 'F');
+        pdfDoc.setTextColor(255, 255, 255);
+        pdfDoc.setFontSize(12);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text('DATOS PERSONALES', 105, yPos + 7, null, null, 'center');
         
         yPos += 20;
-        doc.setTextColor(0, 0, 0);
-        doc.setFont(undefined, 'normal');
+        pdfDoc.setTextColor(0, 0, 0);
+        pdfDoc.setFont(undefined, 'normal');
         
         // Fecha de nacimiento
         if (patient.birthDate) {
-            doc.text(`Fecha de nacimiento: ${formatDate(new Date(patient.birthDate))}`, 15, yPos);
+            pdfDoc.text(`Fecha de nacimiento: ${formatDate(new Date(patient.birthDate))}`, 15, yPos);
         } else {
-            doc.text("Fecha de nacimiento: No reporta", 15, yPos);
+            pdfDoc.text("Fecha de nacimiento: No reporta", 15, yPos);
         }
         yPos += 10;
         
         // Email y dirección
-        doc.text(`Email: ${patient.email || 'No reporta'}`, 15, yPos);
+        pdfDoc.text(`Email: ${patient.email || 'No reporta'}`, 15, yPos);
         yPos += 10;
-        doc.text(`Dirección: ${patient.address || 'No reporta'}`, 15, yPos);
+        pdfDoc.text(`Dirección: ${patient.address || 'No reporta'}`, 15, yPos);
         yPos += 10;
         
         // Historia médica
-        doc.setFont(undefined, 'bold');
-        doc.text("Historia médica:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Historia médica:", 15, yPos);
         yPos += 7;
-        doc.setFont(undefined, 'normal');
+        pdfDoc.setFont(undefined, 'normal');
         
         if (patient.medicalHistory) {
-            const historyLines = doc.splitTextToSize(patient.medicalHistory, 180);
-            doc.text(historyLines, 15, yPos);
+            const historyLines = pdfDoc.splitTextToSize(patient.medicalHistory, 180);
+            pdfDoc.text(historyLines, 15, yPos);
             yPos += historyLines.length * 7 + 5;
         } else {
-            doc.text("No reporta", 15, yPos);
+            pdfDoc.text("No reporta", 15, yPos);
             yPos += 10;
         }
         
         // Medicamentos
-        doc.setFont(undefined, 'bold');
-        doc.text("Medicamentos:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Medicamentos:", 15, yPos);
         yPos += 7;
-        doc.setFont(undefined, 'normal');
+        pdfDoc.setFont(undefined, 'normal');
         
         if (patient.medications) {
-            const medicationsLines = doc.splitTextToSize(patient.medications, 180);
-            doc.text(medicationsLines, 15, yPos);
+            const medicationsLines = pdfDoc.splitTextToSize(patient.medications, 180);
+            pdfDoc.text(medicationsLines, 15, yPos);
             yPos += medicationsLines.length * 7 + 5;
         } else {
-            doc.text("No reporta", 15, yPos);
+            pdfDoc.text("No reporta", 15, yPos);
             yPos += 10;
         }
         
         // Alergias
-        doc.setFont(undefined, 'bold');
-        doc.text("Alergias:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Alergias:", 15, yPos);
         yPos += 7;
-        doc.setFont(undefined, 'normal');
+        pdfDoc.setFont(undefined, 'normal');
         
         if (patient.allergies) {
-            const allergiesLines = doc.splitTextToSize(patient.allergies, 180);
-            doc.text(allergiesLines, 15, yPos);
+            const allergiesLines = pdfDoc.splitTextToSize(patient.allergies, 180);
+            pdfDoc.text(allergiesLines, 15, yPos);
             yPos += allergiesLines.length * 7 + 5;
         } else {
-            doc.text("No reporta", 15, yPos);
+            pdfDoc.text("No reporta", 15, yPos);
             yPos += 10;
         }
         
         // Contacto de emergencia
-        doc.setFont(undefined, 'bold');
-        doc.text("Contacto de emergencia:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Contacto de emergencia:", 15, yPos);
         yPos += 7;
-        doc.setFont(undefined, 'normal');
+        pdfDoc.setFont(undefined, 'normal');
         
         if (patient.emergencyContact || patient.emergencyPhone) {
-            doc.text(`${patient.emergencyContact || 'No reporta'} - ${patient.emergencyPhone || 'No reporta'}`, 15, yPos);
+            pdfDoc.text(`${patient.emergencyContact || 'No reporta'} - ${patient.emergencyPhone || 'No reporta'}`, 15, yPos);
         } else {
-            doc.text("No reporta", 15, yPos);
+            pdfDoc.text("No reporta", 15, yPos);
         }
         yPos += 15;
         
@@ -9859,24 +9858,24 @@ async function exportToPDF(patientId) {
             console.log("Añadiendo sección de diagnósticos al PDF...");
             // Check if we need a new page
             if (yPos > 250) {
-                doc.addPage();
+                pdfDoc.addPage();
                 yPos = 20;
             }
             
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('DIAGNÓSTICO KINESIOLÓGICO', 105, yPos + 7, null, null, 'center');
+            pdfDoc.setFillColor(30, 136, 229);
+            pdfDoc.rect(10, yPos, 190, 10, 'F');
+            pdfDoc.setTextColor(255, 255, 255);
+            pdfDoc.setFontSize(12);
+            pdfDoc.setFont(undefined, 'bold');
+            pdfDoc.text('DIAGNÓSTICO KINESIOLÓGICO', 105, yPos + 7, null, null, 'center');
             
             // Reset font
-            doc.setFont(undefined, 'normal');
+            pdfDoc.setFont(undefined, 'normal');
             yPos += 20;
             
             // Add diagnosis info
-            doc.setFontSize(11);
-            doc.setTextColor(0, 0, 0);
+            pdfDoc.setFontSize(11);
+            pdfDoc.setTextColor(0, 0, 0);
             
             if (diagnoses && diagnoses.length > 0) {
                 // Sort diagnoses from newest to oldest
@@ -9891,115 +9890,115 @@ async function exportToPDF(patientId) {
                     
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
                     // Date with background
-                    doc.setFillColor(230, 240, 250);
-                    doc.rect(10, yPos - 5, 190, 10, 'F');
-                    doc.setTextColor(30, 136, 229);
-                    doc.setFontSize(12);
-                    doc.setFont(undefined, 'bold');
-                    doc.text(`Evaluación: ${formatDate(new Date(diagnosis.date))}`, 15, yPos);
+                    pdfDoc.setFillColor(230, 240, 250);
+                    pdfDoc.rect(10, yPos - 5, 190, 10, 'F');
+                    pdfDoc.setTextColor(30, 136, 229);
+                    pdfDoc.setFontSize(12);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text(`Evaluación: ${formatDate(new Date(diagnosis.date))}`, 15, yPos);
                     yPos += 15;
                     
                     // Reset font
-                    doc.setTextColor(0, 0, 0);
-                    doc.setFontSize(11);
+                    pdfDoc.setTextColor(0, 0, 0);
+                    pdfDoc.setFontSize(11);
                     
                     // Código CIE
                     if (diagnosis.code) {
-                        doc.setFont(undefined, 'bold');
-                        doc.text(`Diagnóstico médico:`, 15, yPos);
-                        doc.setFont(undefined, 'normal');
-                        doc.text(diagnosis.code, 80, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text(`Diagnóstico médico:`, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.text(diagnosis.code, 80, yPos);
                         yPos += 10;
                     }
                     
                     // Motivo de consulta
                     if (diagnosis.consultReason) {
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Motivo de consulta:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Motivo de consulta:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const reasonLines = doc.splitTextToSize(diagnosis.consultReason, 180);
-                        doc.text(reasonLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const reasonLines = pdfDoc.splitTextToSize(diagnosis.consultReason, 180);
+                        pdfDoc.text(reasonLines, 15, yPos);
                         yPos += reasonLines.length * 7 + 5;
                     }
                     
                     // Antecedentes médicos
                     if (diagnosis.medicalBackground) {
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Antecedentes relevantes:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Antecedentes relevantes:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const backgroundLines = doc.splitTextToSize(diagnosis.medicalBackground, 180);
-                        doc.text(backgroundLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const backgroundLines = pdfDoc.splitTextToSize(diagnosis.medicalBackground, 180);
+                        pdfDoc.text(backgroundLines, 15, yPos);
                         yPos += backgroundLines.length * 7 + 5;
                     }
                     
                     // Descripción del diagnóstico - ASEGURANDO QUE APAREZCA COMPLETO
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Diagnóstico kinesiológico funcional:", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Diagnóstico kinesiológico funcional:", 15, yPos);
                     yPos += 7;
                     
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     if (diagnosis.description) {
-                        const diagnosisLines = doc.splitTextToSize(diagnosis.description, 180);
-                        doc.text(diagnosisLines, 15, yPos);
+                        const diagnosisLines = pdfDoc.splitTextToSize(diagnosis.description, 180);
+                        pdfDoc.text(diagnosisLines, 15, yPos);
                         yPos += diagnosisLines.length * 7 + 10;
                     } else {
-                        doc.text("No se ha registrado descripción del diagnóstico", 15, yPos);
+                        pdfDoc.text("No se ha registrado descripción del diagnóstico", 15, yPos);
                         yPos += 10;
                     }
                     
                     // Add separator line between diagnoses
                     if (i < diagnoses.length - 1) {
-                        doc.setDrawColor(200, 200, 200);
-                        doc.line(15, yPos - 5, 195, yPos - 5);
+                        pdfDoc.setDrawColor(200, 200, 200);
+                        pdfDoc.line(15, yPos - 5, 195, yPos - 5);
                         yPos += 5;
                     }
                 }
             } else {
-                doc.text("No se ha registrado un diagnóstico formal para este paciente.", 15, yPos);
+                pdfDoc.text("No se ha registrado un diagnóstico formal para este paciente.", 15, yPos);
                 yPos += 10;
             }
             
             // Check if we need a new page
             if (yPos > 270) {
-                doc.addPage();
+                pdfDoc.addPage();
                 yPos = 20;
             }
             
             // AÑADIR SECCIÓN DE CIF
             if (cifFunctions.length > 0 || cifStructures.length > 0 || cifActivities.length > 0 || cifFactors.length > 0) {
-                doc.setFillColor(30, 136, 229);
-                doc.rect(10, yPos, 190, 10, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('CLASIFICACIÓN INTERNACIONAL DEL FUNCIONAMIENTO (CIF)', 105, yPos + 7, null, null, 'center');
+                pdfDoc.setFillColor(30, 136, 229);
+                pdfDoc.rect(10, yPos, 190, 10, 'F');
+                pdfDoc.setTextColor(255, 255, 255);
+                pdfDoc.setFontSize(12);
+                pdfDoc.setFont(undefined, 'bold');
+                pdfDoc.text('CLASIFICACIÓN INTERNACIONAL DEL FUNCIONAMIENTO (CIF)', 105, yPos + 7, null, null, 'center');
                 yPos += 20;
                 
-                doc.setTextColor(0, 0, 0);
+                pdfDoc.setTextColor(0, 0, 0);
                 
                 // Funciones corporales
                 if (cifFunctions.length > 0) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Funciones corporales (b):", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Funciones corporales (b):", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     cifFunctions.forEach(func => {
-                        doc.text(`${func.code}: ${func.name} - Valor: ${func.value}`, 20, yPos);
+                        pdfDoc.text(`${func.code}: ${func.name} - Valor: ${func.value}`, 20, yPos);
                         yPos += 7;
                         
                         if (func.description) {
-                            const descLines = doc.splitTextToSize(func.description, 175);
-                            doc.text(descLines, 25, yPos);
+                            const descLines = pdfDoc.splitTextToSize(func.description, 175);
+                            pdfDoc.text(descLines, 25, yPos);
                             yPos += descLines.length * 7 + 3;
                         }
                     });
@@ -10011,22 +10010,22 @@ async function exportToPDF(patientId) {
                 if (cifStructures.length > 0) {
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Estructuras corporales (s):", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Estructuras corporales (s):", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     cifStructures.forEach(struct => {
-                        doc.text(`${struct.code}: ${struct.name} - Valor: ${struct.value}`, 20, yPos);
+                        pdfDoc.text(`${struct.code}: ${struct.name} - Valor: ${struct.value}`, 20, yPos);
                         yPos += 7;
                         
                         if (struct.description) {
-                            const descLines = doc.splitTextToSize(struct.description, 175);
-                            doc.text(descLines, 25, yPos);
+                            const descLines = pdfDoc.splitTextToSize(struct.description, 175);
+                            pdfDoc.text(descLines, 25, yPos);
                             yPos += descLines.length * 7 + 3;
                         }
                     });
@@ -10038,22 +10037,22 @@ async function exportToPDF(patientId) {
                 if (cifActivities.length > 0) {
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Actividades y participación (d):", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Actividades y participación (d):", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     cifActivities.forEach(activity => {
-                        doc.text(`${activity.code}: ${activity.name} - Valor: ${activity.value}`, 20, yPos);
+                        pdfDoc.text(`${activity.code}: ${activity.name} - Valor: ${activity.value}`, 20, yPos);
                         yPos += 7;
                         
                         if (activity.description) {
-                            const descLines = doc.splitTextToSize(activity.description, 175);
-                            doc.text(descLines, 25, yPos);
+                            const descLines = pdfDoc.splitTextToSize(activity.description, 175);
+                            pdfDoc.text(descLines, 25, yPos);
                             yPos += descLines.length * 7 + 3;
                         }
                     });
@@ -10065,22 +10064,22 @@ async function exportToPDF(patientId) {
                 if (cifFactors.length > 0) {
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Factores ambientales (e):", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Factores ambientales (e):", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     cifFactors.forEach(factor => {
-                        doc.text(`${factor.code}: ${factor.name} - Valor: ${factor.value}`, 20, yPos);
+                        pdfDoc.text(`${factor.code}: ${factor.name} - Valor: ${factor.value}`, 20, yPos);
                         yPos += 7;
                         
                         if (factor.description) {
-                            const descLines = doc.splitTextToSize(factor.description, 175);
-                            doc.text(descLines, 25, yPos);
+                            const descLines = pdfDoc.splitTextToSize(factor.description, 175);
+                            pdfDoc.text(descLines, 25, yPos);
                             yPos += descLines.length * 7 + 3;
                         }
                     });
@@ -10092,17 +10091,17 @@ async function exportToPDF(patientId) {
                 if (patient.personalFactors) {
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Factores personales (fp):", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Factores personales (fp):", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
-                    const factorLines = doc.splitTextToSize(patient.personalFactors, 180);
-                    doc.text(factorLines, 15, yPos);
+                    const factorLines = pdfDoc.splitTextToSize(patient.personalFactors, 180);
+                    pdfDoc.text(factorLines, 15, yPos);
                     yPos += factorLines.length * 7 + 10;
                 }
             }
@@ -10113,44 +10112,44 @@ if (includeObjectives) {
     console.log("Añadiendo sección de objetivos al PDF...");
     // Check if we need a new page
     if (yPos > 250) {
-        doc.addPage();
+        pdfDoc.addPage();
         yPos = 20;
     }
     
-    doc.setFillColor(30, 136, 229);
-    doc.rect(10, yPos, 190, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
+    pdfDoc.setFillColor(30, 136, 229);
+    pdfDoc.rect(10, yPos, 190, 10, 'F');
+    pdfDoc.setTextColor(255, 255, 255);
+    pdfDoc.setFontSize(12);
+    pdfDoc.setFont(undefined, 'bold');
+    pdfDoc.text('OBJETIVOS TERAPÉUTICOS', 105, yPos + 7, null, null, 'center');
     yPos += 20;
     
-    doc.setTextColor(0, 0, 0);
+    pdfDoc.setTextColor(0, 0, 0);
     
     // Objetivo general
     if (generalObjective) {
         console.log("Añadiendo objetivo general al PDF", generalObjective);
-        doc.setFont(undefined, 'bold');
-        doc.text("Objetivo general:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Objetivo general:", 15, yPos);
         yPos += 7;
         
-        doc.setFont(undefined, 'normal');
-        const generalLines = doc.splitTextToSize(generalObjective.description || "No definido", 180);
-        doc.text(generalLines, 15, yPos);
+        pdfDoc.setFont(undefined, 'normal');
+        const generalLines = pdfDoc.splitTextToSize(generalObjective.description || "No definido", 180);
+        pdfDoc.text(generalLines, 15, yPos);
         yPos += generalLines.length * 7 + 5;
         
         if (generalObjective.endDate) {
-            doc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
+            pdfDoc.text(`Fecha objetivo: ${formatDate(new Date(generalObjective.endDate))}`, 15, yPos);
             yPos += 7;
         }
         
         // Mostrar progreso
-        doc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
+        pdfDoc.text(`Progreso: ${generalObjective.progress || 0}%`, 15, yPos);
         yPos += 10;
     } else {
         console.log("No hay objetivo general para añadir al PDF");
-        doc.setFont(undefined, 'normal');
-        doc.text("No se ha definido un objetivo general para este paciente.", 15, yPos);
+        pdfDoc.setFont(undefined, 'normal');
+        pdfDoc.text("No se ha definido un objetivo general para este paciente.", 15, yPos);
         yPos += 10;
     }
     
@@ -10159,12 +10158,12 @@ if (includeObjectives) {
         console.log(`Añadiendo ${specificObjectives.length} objetivos específicos al PDF`);
         // Check if we need a new page
         if (yPos > 250) {
-            doc.addPage();
+            pdfDoc.addPage();
             yPos = 20;
         }
         
-        doc.setFont(undefined, 'bold');
-        doc.text("Objetivos específicos:", 15, yPos);
+        pdfDoc.setFont(undefined, 'bold');
+        pdfDoc.text("Objetivos específicos:", 15, yPos);
         yPos += 10;
         
         // Agrupar por categoría
@@ -10181,17 +10180,17 @@ if (includeObjectives) {
         for (const [category, objectives] of Object.entries(categorized)) {
             // Check if we need a new page
             if (yPos > 250) {
-                doc.addPage();
+                pdfDoc.addPage();
                 yPos = 20;
             }
             
-            doc.setFillColor(240, 240, 240);
-            doc.rect(10, yPos - 5, 190, 10, 'F');
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(30, 136, 229);
-            doc.text(`Categoría: ${category}`, 15, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(0, 0, 0);
+            pdfDoc.setFillColor(240, 240, 240);
+            pdfDoc.rect(10, yPos - 5, 190, 10, 'F');
+            pdfDoc.setFont(undefined, 'bold');
+            pdfDoc.setTextColor(30, 136, 229);
+            pdfDoc.text(`Categoría: ${category}`, 15, yPos);
+            pdfDoc.setFont(undefined, 'normal');
+            pdfDoc.setTextColor(0, 0, 0);
             
             yPos += 10;
             
@@ -10199,29 +10198,29 @@ if (includeObjectives) {
             objectives.forEach((obj, index) => {
                 // Check if we need a new page
                 if (yPos > 250) {
-                    doc.addPage();
+                    pdfDoc.addPage();
                     yPos = 20;
                 }
                 
                 // Si hay descripción explícita, usarla
                 if (obj.description) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text(`${index + 1}. ${obj.description}`, 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text(`${index + 1}. ${obj.description}`, 15, yPos);
                     yPos += 10;
                 } else {
                     // Si no, construir la descripción a partir de los componentes
                     const title = `${obj.verb || 'Objetivo'} ${obj.structure || ''}`;
-                    doc.setFont(undefined, 'bold');
-                    doc.text(`${index + 1}. ${title}`, 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text(`${index + 1}. ${title}`, 15, yPos);
                     yPos += 7;
                 }
                 
                 // Detalles adicionales
-                doc.setFont(undefined, 'normal');
+                pdfDoc.setFont(undefined, 'normal');
                 
                 if (obj.initialValue && obj.targetValue) {
                     const details = `${obj.initialValue || ''} → ${obj.targetValue || ''} (${obj.evaluationMethod || ''})`;
-                    doc.text(`Medida: ${details}`, 20, yPos);
+                    pdfDoc.text(`Medida: ${details}`, 20, yPos);
                     yPos += 7;
                 }
                 
@@ -10231,22 +10230,22 @@ if (includeObjectives) {
                 else if (obj.status === 'inprogress') statusText = "En progreso";
                 
                 const progress = obj.progress || 0;
-                doc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
+                pdfDoc.text(`Estado: ${statusText} - Progreso: ${progress}%`, 20, yPos);
                 yPos += 7;
                 
                 // Fechas
                 if (obj.startDate || obj.endDate) {
                     const startDate = obj.startDate ? formatDate(new Date(obj.startDate)) : 'No definido';
                     const endDate = obj.endDate ? formatDate(new Date(obj.endDate)) : 'No definido';
-                    doc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
+                    pdfDoc.text(`Inicio: ${startDate} - Fecha objetivo: ${endDate}`, 20, yPos);
                     yPos += 10;
                 }
             });
         }
     } else {
         console.log("No hay objetivos específicos para añadir al PDF");
-        doc.setFont(undefined, 'normal');
-        doc.text("No hay objetivos específicos definidos para este paciente.", 15, yPos);
+        pdfDoc.setFont(undefined, 'normal');
+        pdfDoc.text("No hay objetivos específicos definidos para este paciente.", 15, yPos);
         yPos += 10;
     }
 }
@@ -10256,24 +10255,24 @@ if (includeObjectives) {
             console.log(`Añadiendo ${treatmentPlans.length} planes de tratamiento al PDF`);
             // Check if we need a new page
             if (yPos > 250) {
-                doc.addPage();
+                pdfDoc.addPage();
                 yPos = 20;
             }
             
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('PLANES DE TRATAMIENTO', 105, yPos + 7, null, null, 'center');
+            pdfDoc.setFillColor(30, 136, 229);
+            pdfDoc.rect(10, yPos, 190, 10, 'F');
+            pdfDoc.setTextColor(255, 255, 255);
+            pdfDoc.setFontSize(12);
+            pdfDoc.setFont(undefined, 'bold');
+            pdfDoc.text('PLANES DE TRATAMIENTO', 105, yPos + 7, null, null, 'center');
             yPos += 20;
             
-            doc.setTextColor(0, 0, 0);
+            pdfDoc.setTextColor(0, 0, 0);
             
             // Mostrar cada plan
             if (treatmentPlans.length === 0) {
-                doc.setFont(undefined, 'normal');
-                doc.text("No hay planes de tratamiento registrados para este paciente.", 15, yPos);
+                pdfDoc.setFont(undefined, 'normal');
+                pdfDoc.text("No hay planes de tratamiento registrados para este paciente.", 15, yPos);
                 yPos += 10;
             } else {
                 for (let i = 0; i < treatmentPlans.length; i++) {
@@ -10282,52 +10281,52 @@ if (includeObjectives) {
                     
                     // Check if we need a new page
                     if (yPos > 230) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
                     // Encabezado con fecha
-                    doc.setFillColor(230, 240, 250);
-                    doc.rect(10, yPos - 5, 190, 10, 'F');
-                    doc.setTextColor(30, 136, 229);
-                    doc.setFontSize(12);
-                    doc.setFont(undefined, 'bold');
+                    pdfDoc.setFillColor(230, 240, 250);
+                    pdfDoc.rect(10, yPos - 5, 190, 10, 'F');
+                    pdfDoc.setTextColor(30, 136, 229);
+                    pdfDoc.setFontSize(12);
+                    pdfDoc.setFont(undefined, 'bold');
                     
                     const planDate = plan.startDate || plan.createdAt || new Date().toISOString();
-                    doc.text(`Plan de tratamiento: ${formatDate(new Date(planDate))}`, 15, yPos);
+                    pdfDoc.text(`Plan de tratamiento: ${formatDate(new Date(planDate))}`, 15, yPos);
                     yPos += 15;
                     
                     // Reset font
-                    doc.setTextColor(0, 0, 0);
-                    doc.setFontSize(11);
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setTextColor(0, 0, 0);
+                    pdfDoc.setFontSize(11);
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     // Duración y frecuencia
-                    doc.text(`Duración: ${plan.duration || '?'} ${plan.durationUnit || 'semanas'} - Frecuencia: ${plan.frequency || '?'} ${plan.frequencyUnit || 'sesiones por semana'}`, 15, yPos);
+                    pdfDoc.text(`Duración: ${plan.duration || '?'} ${plan.durationUnit || 'semanas'} - Frecuencia: ${plan.frequency || '?'} ${plan.frequencyUnit || 'sesiones por semana'}`, 15, yPos);
                     yPos += 10;
                     
                     // Objetivos del plan
                     if (plan.objectives) {
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Objetivos del tratamiento:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Objetivos del tratamiento:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const objectivesLines = doc.splitTextToSize(plan.objectives, 180);
-                        doc.text(objectivesLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const objectivesLines = pdfDoc.splitTextToSize(plan.objectives, 180);
+                        pdfDoc.text(objectivesLines, 15, yPos);
                         yPos += objectivesLines.length * 7 + 5;
                     }
                     
                     // Técnicas
-                    doc.setFont(undefined, 'bold');
-                    doc.text("Técnicas utilizadas:", 15, yPos);
+                    pdfDoc.setFont(undefined, 'bold');
+                    pdfDoc.text("Técnicas utilizadas:", 15, yPos);
                     yPos += 7;
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     if (plan.techniques) {
                         // Terapia manual
                         if (plan.techniques.manual && plan.techniques.manual.active) {
-                            doc.text("• Terapia manual", 20, yPos);
+                            pdfDoc.text("• Terapia manual", 20, yPos);
                             yPos += 7;
                             
                             // Subtécnicas
@@ -10342,22 +10341,22 @@ if (includeObjectives) {
                                 if (subs.muscleEnergy) activeSubs.push("Técnicas de energía muscular");
                                 
                                 if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    pdfDoc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
                                     yPos += 7;
                                 }
                             }
                             
                             // Detalles
                             if (plan.techniques.manual.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.manual.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
+                                const detailLines = pdfDoc.splitTextToSize(`  Detalles: ${plan.techniques.manual.details}`, 175);
+                                pdfDoc.text(detailLines, 25, yPos);
                                 yPos += detailLines.length * 7 + 3;
                             }
                         }
                         
                         // Ejercicio terapéutico
                         if (plan.techniques.exercise && plan.techniques.exercise.active) {
-                            doc.text("• Ejercicio terapéutico", 20, yPos);
+                            pdfDoc.text("• Ejercicio terapéutico", 20, yPos);
                             yPos += 7;
                             
                             // Subtécnicas
@@ -10373,15 +10372,15 @@ if (includeObjectives) {
                                 if (subs.functional) activeSubs.push("Funcional");
                                 
                                 if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    pdfDoc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
                                     yPos += 7;
                                 }
                             }
                             
                             // Detalles
                             if (plan.techniques.exercise.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.exercise.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
+                                const detailLines = pdfDoc.splitTextToSize(`  Detalles: ${plan.techniques.exercise.details}`, 175);
+                                pdfDoc.text(detailLines, 25, yPos);
                                 yPos += detailLines.length * 7 + 3;
                             }
                         }
@@ -10390,11 +10389,11 @@ if (includeObjectives) {
                         if (plan.techniques.physical && plan.techniques.physical.active) {
                             // Check if we need a new page
                             if (yPos > 250) {
-                                doc.addPage();
+                                pdfDoc.addPage();
                                 yPos = 20;
                             }
                             
-                            doc.text("• Agentes físicos", 20, yPos);
+                            pdfDoc.text("• Agentes físicos", 20, yPos);
                             yPos += 7;
                             
                             // Subtécnicas
@@ -10410,15 +10409,15 @@ if (includeObjectives) {
                                 if (subs.shockwave) activeSubs.push("Ondas de choque");
                                 
                                 if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    pdfDoc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
                                     yPos += 7;
                                 }
                             }
                             
                             // Detalles
                             if (plan.techniques.physical.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.physical.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
+                                const detailLines = pdfDoc.splitTextToSize(`  Detalles: ${plan.techniques.physical.details}`, 175);
+                                pdfDoc.text(detailLines, 25, yPos);
                                 yPos += detailLines.length * 7 + 3;
                             }
                         }
@@ -10427,11 +10426,11 @@ if (includeObjectives) {
                         if (plan.techniques.education && plan.techniques.education.active) {
                             // Check if we need a new page
                             if (yPos > 250) {
-                                doc.addPage();
+                                pdfDoc.addPage();
                                 yPos = 20;
                             }
                             
-                            doc.text("• Educación al paciente", 20, yPos);
+                            pdfDoc.text("• Educación al paciente", 20, yPos);
                             yPos += 7;
                             
                             // Subtécnicas
@@ -10445,15 +10444,15 @@ if (includeObjectives) {
                                 if (subs.selfManagement) activeSubs.push("Automanejo");
                                 
                                 if (activeSubs.length > 0) {
-                                    doc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
+                                    pdfDoc.text(`  - ${activeSubs.join(', ')}`, 25, yPos);
                                     yPos += 7;
                                 }
                             }
                             
                             // Detalles
                             if (plan.techniques.education.details) {
-                                const detailLines = doc.splitTextToSize(`  Detalles: ${plan.techniques.education.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
+                                const detailLines = pdfDoc.splitTextToSize(`  Detalles: ${plan.techniques.education.details}`, 175);
+                                pdfDoc.text(detailLines, 25, yPos);
                                 yPos += detailLines.length * 7 + 3;
                             }
                         }
@@ -10462,22 +10461,22 @@ if (includeObjectives) {
                         if (plan.techniques.other && plan.techniques.other.active) {
                             // Check if we need a new page
                             if (yPos > 250) {
-                                doc.addPage();
+                                pdfDoc.addPage();
                                 yPos = 20;
                             }
                             
-                            doc.text("• Otras técnicas", 20, yPos);
+                            pdfDoc.text("• Otras técnicas", 20, yPos);
                             yPos += 7;
                             
                             // Detalles
                             if (plan.techniques.other.details) {
-                                const detailLines = doc.splitTextToSize(`  ${plan.techniques.other.details}`, 175);
-                                doc.text(detailLines, 25, yPos);
+                                const detailLines = pdfDoc.splitTextToSize(`  ${plan.techniques.other.details}`, 175);
+                                pdfDoc.text(detailLines, 25, yPos);
                                 yPos += detailLines.length * 7 + 3;
                             }
                         }
                     } else {
-                        doc.text("No se han registrado técnicas para este plan", 20, yPos);
+                        pdfDoc.text("No se han registrado técnicas para este plan", 20, yPos);
                         yPos += 7;
                     }
                     
@@ -10485,17 +10484,17 @@ if (includeObjectives) {
                     if (plan.progression) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Progresión planificada:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Progresión planificada:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const progressionLines = doc.splitTextToSize(plan.progression, 180);
-                        doc.text(progressionLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const progressionLines = pdfDoc.splitTextToSize(plan.progression, 180);
+                        pdfDoc.text(progressionLines, 15, yPos);
                         yPos += progressionLines.length * 7 + 5;
                     }
                     
@@ -10503,17 +10502,17 @@ if (includeObjectives) {
                     if (plan.observations) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Observaciones:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Observaciones:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const observationsLines = doc.splitTextToSize(plan.observations, 180);
-                        doc.text(observationsLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const observationsLines = pdfDoc.splitTextToSize(plan.observations, 180);
+                        pdfDoc.text(observationsLines, 15, yPos);
                         yPos += observationsLines.length * 7 + 5;
                     }
                     
@@ -10521,24 +10520,24 @@ if (includeObjectives) {
                     if (plan.dischargeGoals) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Criterios de alta:", 15, yPos);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Criterios de alta:", 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        const goalsLines = doc.splitTextToSize(plan.dischargeGoals, 180);
-                        doc.text(goalsLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        const goalsLines = pdfDoc.splitTextToSize(plan.dischargeGoals, 180);
+                        pdfDoc.text(goalsLines, 15, yPos);
                         yPos += goalsLines.length * 7 + 5;
                     }
                     
                     // Add separator line between planes
                     if (i < treatmentPlans.length - 1) {
-                        doc.setDrawColor(200, 200, 200);
-                        doc.line(15, yPos, 195, yPos);
+                        pdfDoc.setDrawColor(200, 200, 200);
+                        pdfDoc.line(15, yPos, 195, yPos);
                         yPos += 10;
                     }
                 }
@@ -10550,26 +10549,26 @@ if (includeObjectives) {
             console.log(`Añadiendo ${filteredEvolutions.length} evoluciones al PDF`);
             // Check if we need a new page
             if (yPos > 270) {
-                doc.addPage();
+                pdfDoc.addPage();
                 yPos = 20;
             }
             
-            doc.setFillColor(30, 136, 229);
-            doc.rect(10, yPos, 190, 10, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('HISTORIAL DE EVOLUCIONES', 105, yPos + 7, null, null, 'center');
+            pdfDoc.setFillColor(30, 136, 229);
+            pdfDoc.rect(10, yPos, 190, 10, 'F');
+            pdfDoc.setTextColor(255, 255, 255);
+            pdfDoc.setFontSize(12);
+            pdfDoc.setFont(undefined, 'bold');
+            pdfDoc.text('HISTORIAL DE EVOLUCIONES', 105, yPos + 7, null, null, 'center');
             
             // Reset font
-            doc.setFont(undefined, 'normal');
+            pdfDoc.setFont(undefined, 'normal');
             
             yPos += 20;
             
             if (!filteredEvolutions || filteredEvolutions.length === 0) {
-                doc.setFontSize(11);
-                doc.setTextColor(0, 0, 0);
-                doc.text('No hay evoluciones registradas para este paciente.', 15, yPos);
+                pdfDoc.setFontSize(11);
+                pdfDoc.setTextColor(0, 0, 0);
+                pdfDoc.text('No hay evoluciones registradas para este paciente.', 15, yPos);
                 yPos += 10;
             } else {
                 // Sort evolutions from newest to oldest
@@ -10583,86 +10582,86 @@ if (includeObjectives) {
                     
                     // Check if we need a new page
                     if (yPos > 250) {
-                        doc.addPage();
+                        pdfDoc.addPage();
                         yPos = 20;
                     }
                     
                     // Add evolution date with background
-                    doc.setFillColor(230, 240, 250);
-                    doc.rect(10, yPos - 5, 190, 10, 'F');
-                    doc.setTextColor(30, 136, 229);
-                    doc.setFontSize(12);
-                    doc.setFont(undefined, 'bold');
+                    pdfDoc.setFillColor(230, 240, 250);
+                    pdfDoc.rect(10, yPos - 5, 190, 10, 'F');
+                    pdfDoc.setTextColor(30, 136, 229);
+                    pdfDoc.setFontSize(12);
+                    pdfDoc.setFont(undefined, 'bold');
                     
                     const evolutionDate = evolution.date ? formatDate(new Date(evolution.date)) : 'Fecha no registrada';
                     const evolutionTime = evolution.time || '';
-                    doc.text(`${evolutionDate} - ${evolutionTime}`, 15, yPos);
+                    pdfDoc.text(`${evolutionDate} - ${evolutionTime}`, 15, yPos);
                     yPos += 10;
                     
                     // Reset font
-                    doc.setFont(undefined, 'normal');
+                    pdfDoc.setFont(undefined, 'normal');
                     
                     // Add student
-                    doc.setFontSize(10);
-                    doc.setTextColor(100, 100, 100);
-                    doc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 15, yPos);
+                    pdfDoc.setFontSize(10);
+                    pdfDoc.setTextColor(100, 100, 100);
+                    pdfDoc.text(`Realizado por: ${evolution.student || 'No registrado'}`, 15, yPos);
                     yPos += 10;
                     
                     // Add evolution details
-                    doc.setFontSize(11);
-                    doc.setTextColor(0, 0, 0);
+                    pdfDoc.setFontSize(11);
+                    pdfDoc.setTextColor(0, 0, 0);
                     
                     if (evolution.patientState) {
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Estado del paciente:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Estado del paciente:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        const patientStateLines = doc.splitTextToSize(evolution.patientState, 180);
-                        doc.text(patientStateLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
+                        const patientStateLines = pdfDoc.splitTextToSize(evolution.patientState, 180);
+                        pdfDoc.text(patientStateLines, 15, yPos);
                         yPos += patientStateLines.length * 7 + 5;
                     }
                     
                     if (evolution.treatment) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Tratamiento realizado:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Tratamiento realizado:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        const treatmentLines = doc.splitTextToSize(evolution.treatment, 180);
-                        doc.text(treatmentLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
+                        const treatmentLines = pdfDoc.splitTextToSize(evolution.treatment, 180);
+                        pdfDoc.text(treatmentLines, 15, yPos);
                         yPos += treatmentLines.length * 7 + 5;
                     }
                     
                     if (evolution.response) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Respuesta al tratamiento:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Respuesta al tratamiento:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        const responseLines = doc.splitTextToSize(evolution.response, 180);
-                        doc.text(responseLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
+                        const responseLines = pdfDoc.splitTextToSize(evolution.response, 180);
+                        pdfDoc.text(responseLines, 15, yPos);
                         yPos += responseLines.length * 7 + 5;
                     }
                     
@@ -10670,43 +10669,43 @@ if (includeObjectives) {
                     if (includeScales && evolution.scales) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Escalas de evaluación:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Escalas de evaluación:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
                         
                         if (evolution.scales.eva !== undefined) {
-                            doc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 20, yPos);
+                            pdfDoc.text(`EVA (Dolor): ${evolution.scales.eva}/10`, 20, yPos);
                             yPos += 7;
                         }
                         
                         if (evolution.scales.groc !== undefined) {
-                            doc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 20, yPos);
+                            pdfDoc.text(`GROC (Cambio global): ${evolution.scales.groc > 0 ? '+' + evolution.scales.groc : evolution.scales.groc}`, 20, yPos);
                             yPos += 7;
                         }
                         
                         if (evolution.scales.sane !== undefined) {
-                            doc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 20, yPos);
+                            pdfDoc.text(`SANE (Evaluación numérica): ${evolution.scales.sane}%`, 20, yPos);
                             yPos += 7;
                         }
                         
                         // PSFS activities
                         if (evolution.scales.psfs && evolution.scales.psfs.length > 0) {
                             yPos += 3;
-                            doc.text("PSFS (Funcionalidad):", 20, yPos);
+                            pdfDoc.text("PSFS (Funcionalidad):", 20, yPos);
                             yPos += 7;
                             
                             evolution.scales.psfs.forEach(activity => {
                                 if (activity && activity.name) {
-                                    doc.text(`- ${activity.name}: ${activity.rating || 0}/10`, 25, yPos);
+                                    pdfDoc.text(`- ${activity.name}: ${activity.rating || 0}/10`, 25, yPos);
                                     yPos += 7;
                                 }
                             });
@@ -10719,77 +10718,77 @@ if (includeObjectives) {
                     if (includeExercises && evolution.exercises && evolution.exercises.length > 0) {
                         // Check if we need a new page
                         if (yPos > 230) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Ejercicios prescritos:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Ejercicios prescritos:', 15, yPos);
                         yPos += 10;
                         
                         // Table for exercises
                         const cellPadding = 3;
                         
                         // Table header
-                        doc.setFillColor(230, 240, 250);
-                        doc.rect(15, yPos - 7, 180, 10, 'F');
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text("Ejercicio", 15 + cellPadding, yPos);
-                        doc.text("Series", 75 + cellPadding, yPos);
-                        doc.text("Reps", 95 + cellPadding, yPos);
-                        doc.text("Intens.", 115 + cellPadding, yPos);
-                        doc.text("Notas", 140 + cellPadding, yPos);
+                        pdfDoc.setFillColor(230, 240, 250);
+                        pdfDoc.rect(15, yPos - 7, 180, 10, 'F');
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text("Ejercicio", 15 + cellPadding, yPos);
+                        pdfDoc.text("Series", 75 + cellPadding, yPos);
+                        pdfDoc.text("Reps", 95 + cellPadding, yPos);
+                        pdfDoc.text("Intens.", 115 + cellPadding, yPos);
+                        pdfDoc.text("Notas", 140 + cellPadding, yPos);
                         yPos += 10;
                         
                         // Table rows
-                        doc.setTextColor(0, 0, 0);
-                        doc.setFont(undefined, 'normal');
-                        doc.setFontSize(9);
+                        pdfDoc.setTextColor(0, 0, 0);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setFontSize(9);
                         
                         evolution.exercises.forEach((exercise, index) => {
                             // Check if we need a new page
                             if (yPos > 270) {
-                                doc.addPage();
+                                pdfDoc.addPage();
                                 yPos = 20;
                                 
                                 // Repeat header on new page
-                                doc.setFontSize(11);
-                                doc.setFillColor(230, 240, 250);
-                                doc.rect(15, yPos - 7, 180, 10, 'F');
-                                doc.setTextColor(30, 136, 229);
-                                doc.setFont(undefined, 'bold');
-                                doc.text("Ejercicio", 15 + cellPadding, yPos);
-                                doc.text("Series", 75 + cellPadding, yPos);
-                                doc.text("Reps", 95 + cellPadding, yPos);
-                                doc.text("Intens.", 115 + cellPadding, yPos);
-                                doc.text("Notas", 140 + cellPadding, yPos);
+                                pdfDoc.setFontSize(11);
+                                pdfDoc.setFillColor(230, 240, 250);
+                                pdfDoc.rect(15, yPos - 7, 180, 10, 'F');
+                                pdfDoc.setTextColor(30, 136, 229);
+                                pdfDoc.setFont(undefined, 'bold');
+                                pdfDoc.text("Ejercicio", 15 + cellPadding, yPos);
+                                pdfDoc.text("Series", 75 + cellPadding, yPos);
+                                pdfDoc.text("Reps", 95 + cellPadding, yPos);
+                                pdfDoc.text("Intens.", 115 + cellPadding, yPos);
+                                pdfDoc.text("Notas", 140 + cellPadding, yPos);
                                 yPos += 10;
                                 
-                                doc.setFontSize(9);
-                                doc.setTextColor(0, 0, 0);
-                                doc.setFont(undefined, 'normal');
+                                pdfDoc.setFontSize(9);
+                                pdfDoc.setTextColor(0, 0, 0);
+                                pdfDoc.setFont(undefined, 'normal');
                             }
                             
                             // Row background for even rows
                             if (index % 2 === 1) {
-                                doc.setFillColor(245, 247, 250);
-                                doc.rect(15, yPos - 7, 180, 10, 'F');
+                                pdfDoc.setFillColor(245, 247, 250);
+                                pdfDoc.rect(15, yPos - 7, 180, 10, 'F');
                             }
                             
                             // Ejercicio (primera columna)
                             const nombreEjercicio = exercise.name || 'Sin nombre';
                             const nombreMostrado = nombreEjercicio.length > 25 ? 
                                 nombreEjercicio.substring(0, 22) + '...' : nombreEjercicio;
-                            doc.text(nombreMostrado, 15 + cellPadding, yPos);
+                            pdfDoc.text(nombreMostrado, 15 + cellPadding, yPos);
                             
                             // Series
-                            doc.text(exercise.sets?.toString() || '3', 75 + cellPadding, yPos);
+                            pdfDoc.text(exercise.sets?.toString() || '3', 75 + cellPadding, yPos);
                             
                             // Repeticiones
-                            doc.text(exercise.reps?.toString() || '10', 95 + cellPadding, yPos);
+                            pdfDoc.text(exercise.reps?.toString() || '10', 95 + cellPadding, yPos);
                             
                             // Intensidad (formato corto)
                             let intensityText = '';
@@ -10806,79 +10805,79 @@ if (includeObjectives) {
                                 intensityText = intensityText.substring(0, 8) + '..';
                             }
                             
-                            doc.text(intensityText, 115 + cellPadding, yPos);
+                            pdfDoc.text(intensityText, 115 + cellPadding, yPos);
                             
                             // Notas - multiples líneas si es necesario
                             if (exercise.notes) {
                                 if (exercise.notes.length > 25) {
-                                    const notesLines = doc.splitTextToSize(exercise.notes, 50);
+                                    const notesLines = pdfDoc.splitTextToSize(exercise.notes, 50);
                                     const limitedLines = notesLines.slice(0, 2);
                                     
-                                    doc.text(limitedLines, 140 + cellPadding, yPos - 3);
+                                    pdfDoc.text(limitedLines, 140 + cellPadding, yPos - 3);
                                     
                                     if (notesLines.length > 2) {
-                                        doc.text("...", 140 + cellPadding, yPos + 4);
+                                        pdfDoc.text("...", 140 + cellPadding, yPos + 4);
                                     }
                                     
                                     yPos += (limitedLines.length * 7);
                                 } else {
-                                    doc.text(exercise.notes, 140 + cellPadding, yPos);
+                                    pdfDoc.text(exercise.notes, 140 + cellPadding, yPos);
                                     yPos += 10;
                                 }
                             } else {
-                                doc.text("-", 140 + cellPadding, yPos);
+                                pdfDoc.text("-", 140 + cellPadding, yPos);
                                 yPos += 10;
                             }
                         });
                         
                         // Restaurar tamaño de fuente
-                        doc.setFontSize(11);
+                        pdfDoc.setFontSize(11);
                         yPos += 5;
                     }
                     
                     if (evolution.trainingPlan) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Plan de entrenamiento:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Plan de entrenamiento:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        const planLines = doc.splitTextToSize(evolution.trainingPlan, 180);
-                        doc.text(planLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
+                        const planLines = pdfDoc.splitTextToSize(evolution.trainingPlan, 180);
+                        pdfDoc.text(planLines, 15, yPos);
                         yPos += planLines.length * 7 + 5;
                     }
                     
                     if (evolution.observations) {
                         // Check if we need a new page
                         if (yPos > 250) {
-                            doc.addPage();
+                            pdfDoc.addPage();
                             yPos = 20;
                         }
                         
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 136, 229);
-                        doc.setFont(undefined, 'bold');
-                        doc.text('Observaciones adicionales:', 15, yPos);
+                        pdfDoc.setFontSize(11);
+                        pdfDoc.setTextColor(30, 136, 229);
+                        pdfDoc.setFont(undefined, 'bold');
+                        pdfDoc.text('Observaciones adicionales:', 15, yPos);
                         yPos += 7;
                         
-                        doc.setFont(undefined, 'normal');
-                        doc.setTextColor(0, 0, 0);
-                        const observationsLines = doc.splitTextToSize(evolution.observations, 180);
-                        doc.text(observationsLines, 15, yPos);
+                        pdfDoc.setFont(undefined, 'normal');
+                        pdfDoc.setTextColor(0, 0, 0);
+                        const observationsLines = pdfDoc.splitTextToSize(evolution.observations, 180);
+                        pdfDoc.text(observationsLines, 15, yPos);
                         yPos += observationsLines.length * 7 + 5;
                     }
                     
                     // Add separator line
-                    doc.setDrawColor(200, 200, 200);
-                    doc.line(15, yPos, 195, yPos);
+                    pdfDoc.setDrawColor(200, 200, 200);
+                    pdfDoc.line(15, yPos, 195, yPos);
                     yPos += 15;
                 }
             }
@@ -10886,16 +10885,16 @@ if (includeObjectives) {
         
         // Add footer if requested
         if (includeFooter) {
-            const pageCount = doc.getNumberOfPages();
+            const pageCount = pdfDoc.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(9);
-                doc.setTextColor(150, 150, 150);
-                doc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
+                pdfDoc.setPage(i);
+                pdfDoc.setFontSize(9);
+                pdfDoc.setTextColor(150, 150, 150);
+                pdfDoc.text(`Página ${i} de ${pageCount} - ${centerName}`, 105, 290, null, null, 'center');
                 
                 // Add timestamp and kinesiólogo
                 const timestamp = new Date().toLocaleString();
-                doc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
+                pdfDoc.text(`Generado: ${timestamp} - Kinesiólogo: ${therapistName}`, 105, 285, null, null, 'center');
             }
         }
         
@@ -10909,7 +10908,7 @@ if (includeObjectives) {
             const today = new Date().toISOString().slice(0, 10);
             
             console.log("=== PDF GENERADO CORRECTAMENTE ===");
-            doc.save(`Informe_${sanitizedName}_${today}.pdf`);
+            pdfDoc.save(`Informe_${sanitizedName}_${today}.pdf`);
             
             hideLoading();
             showToast('PDF generado correctamente', 'success');
