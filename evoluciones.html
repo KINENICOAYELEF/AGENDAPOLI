@@ -13257,16 +13257,6 @@ updateNotifications(); // Inicialmente
             });
         }
         
-        // Configurar botones de actividad y perfil
-        const viewActivityLogBtn = document.getElementById('viewActivityLogBtn');
-        if (viewActivityLogBtn) {
-            viewActivityLogBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.getElementById('activityLogModal').classList.add('active');
-                loadRecentActivities();
-            });
-        }
-
         const closeActivityLogBtn = document.getElementById('closeActivityLogBtn');
         if (closeActivityLogBtn) {
             closeActivityLogBtn.addEventListener('click', function() {
