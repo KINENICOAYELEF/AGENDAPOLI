@@ -2484,9 +2484,11 @@ function updateDashboardStats(patients) {
             return lastSessionDate < sevenDaysAgo;
         });
         
+        // Dentro de updateDashboardStats
         // Actualizar contador de pacientes sin seguimiento
         const patientsWithoutFollowupElement = document.getElementById('patientsWithoutFollowup');
         if (patientsWithoutFollowupElement) {
+            const patientsWithoutFollowup = checkPatientsWithoutFollowup();
             patientsWithoutFollowupElement.textContent = patientsWithoutFollowup.length;
         }
         
@@ -14601,7 +14603,7 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
 }
 
 
-        // Función para actualizar las notificaciones
+// Función para actualizar las notificaciones
 function updateNotifications() {
     try {
         const patientsWithoutFollowup = checkPatientsWithoutFollowup();
@@ -14672,6 +14674,51 @@ async function getPatientName(patientId) {
     }
 }
 
+        // Función para verificar pacientes sin seguimiento
+function checkPatientsWithoutFollowup() {
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        // Filtrar pacientes sin seguimiento reciente
+        const patientsWithoutFollowup = patientsCache.filter(patient => {
+            if (!patient.lastSession) return true; // Sin ninguna sesión
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate < sevenDaysAgo;
+        });
+        
+        // Actualizar notificaciones visuales
+        updateNotificationsUI(patientsWithoutFollowup);
+        
+        return patientsWithoutFollowup;
+    } catch (error) {
+        console.error("Error al verificar pacientes sin seguimiento:", error);
+        return [];
+    }
+}
+
+// Función para actualizar notificaciones en la interfaz
+function updateNotificationsUI(patientsWithoutFollowup) {
+    const notificationsBadge = document.getElementById('notificationsBadge');
+    if (!notificationsBadge) return;
+    
+    if (patientsWithoutFollowup.length > 0) {
+        notificationsBadge.style.display = 'flex';
+        notificationsBadge.textContent = patientsWithoutFollowup.length;
+    } else {
+        notificationsBadge.style.display = 'none';
+    }
+}
 
         
         </script>
