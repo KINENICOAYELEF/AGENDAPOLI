@@ -90,43 +90,34 @@
         <div class="content">
             <!-- Dashboard -->
             <div class="dashboard">
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="dashboard-info">
-                        <div class="dashboard-title">Pacientes activos</div>
-                        <div class="dashboard-value" id="activePatients">0</div>
-                    </div>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="dashboard-info">
-                        <div class="dashboard-title">Evoluciones este mes</div>
-                        <div class="dashboard-value" id="monthlyEvolutions">0</div>
-                    </div>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-                    <div class="dashboard-info">
-                        <div class="dashboard-title">Objetivos logrados</div>
-                        <div class="dashboard-value" id="completedObjectives">0%</div>
-                    </div>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <div class="dashboard-info">
-                        <div class="dashboard-title">Estudiantes activos</div>
-                        <div class="dashboard-value" id="activeStudents">0</div>
-                    </div>
-                </div>
-            </div>
+    <div class="dashboard-card">
+        <div class="dashboard-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="dashboard-info">
+            <div class="dashboard-title">Pacientes activos</div>
+            <div class="dashboard-value" id="activePatients">0</div>
+        </div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dashboard-icon">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="dashboard-info">
+            <div class="dashboard-title">Evoluciones este mes</div>
+            <div class="dashboard-value" id="monthlyEvolutions">0</div>
+        </div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dashboard-icon">
+            <i class="fas fa-bell"></i>
+        </div>
+        <div class="dashboard-info">
+            <div class="dashboard-title">Pacientes sin seguimiento</div>
+            <div class="dashboard-value" id="patientsWithoutFollowup">0</div>
+        </div>
+    </div>
+</div>
 
             <!-- Patient List -->
             <div class="section-header">
@@ -2413,34 +2404,94 @@ function getInitials(name) {
     return name.substring(0, 2).toUpperCase();
 }
 
-// Update dashboard statistics
+// Actualizar estadísticas del dashboard con conteo correcto de pacientes
 function updateDashboardStats(patients) {
-    // Contar pacientes activos (progreso >= 50%)
-    const activePatients = patients.filter(p => calculatePatientProgress(p) >= 50).length;
-    const activeElement = document.getElementById('activePatients');
-    if (activeElement) {
-        activeElement.textContent = activePatients;
-    }
-    
-    // Contar evoluciones mensuales
-    // Por ahora usamos un estimado, en el futuro contaremos las evoluciones reales
-    const monthlyElement = document.getElementById('monthlyEvolutions');
-    if (monthlyElement) {
-        monthlyElement.textContent = Math.floor(patients.length * 1.5);
-    }
-    
-    // Establecer porcentaje de objetivos completados
-    const objectivesElement = document.getElementById('completedObjectives');
-    if (objectivesElement) {
-        // Simulación: Suponemos que el 65% de los objetivos están completados
-        objectivesElement.textContent = '65%';
-    }
-    
-    // Establecer número de estudiantes activos
-    const studentsElement = document.getElementById('activeStudents');
-    if (studentsElement) {
-        // Simulación: Suponemos que hay 12 estudiantes activos
-        studentsElement.textContent = '12';
+    try {
+        // Contar pacientes activos (aquellos con una evolución en los últimos 30 días)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        // Filtrar pacientes activos
+        const activePatients = patients.filter(patient => {
+            if (!patient.lastSession) return false;
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate >= thirtyDaysAgo;
+        });
+        
+        // Actualizar contador de pacientes activos
+        const activePatientsElement = document.getElementById('activePatients');
+        if (activePatientsElement) {
+            activePatientsElement.textContent = activePatients.length;
+        }
+        
+        // Contar evoluciones del mes actual
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        let monthlyEvolutionsCount = 0;
+        
+        // Contar evoluciones del mes actual
+        patients.forEach(async (patient) => {
+            try {
+                if (patient.id) {
+                    const evolutions = await getEvolutions(patient.id);
+                    
+                    const thisMonthEvolutions = evolutions.filter(ev => {
+                        if (!ev.date) return false;
+                        const evDate = new Date(ev.date);
+                        return evDate >= firstDayOfMonth;
+                    });
+                    
+                    monthlyEvolutionsCount += thisMonthEvolutions.length;
+                    
+                    // Actualizar contador de evoluciones mensuales
+                    const monthlyEvolutionsElement = document.getElementById('monthlyEvolutions');
+                    if (monthlyEvolutionsElement) {
+                        monthlyEvolutionsElement.textContent = monthlyEvolutionsCount;
+                    }
+                }
+            } catch (error) {
+                console.error("Error contando evoluciones de paciente:", error);
+            }
+        });
+        
+        // Identificar pacientes sin seguimiento en los últimos 7 días
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const patientsWithoutFollowup = patients.filter(patient => {
+            if (!patient.lastSession) return true; // Sin ninguna sesión
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate < sevenDaysAgo;
+        });
+        
+        // Actualizar contador de pacientes sin seguimiento
+        const patientsWithoutFollowupElement = document.getElementById('patientsWithoutFollowup');
+        if (patientsWithoutFollowupElement) {
+            patientsWithoutFollowupElement.textContent = patientsWithoutFollowup.length;
+        }
+        
+    } catch (error) {
+        console.error("Error actualizando estadísticas del dashboard:", error);
     }
 }
 
@@ -13069,6 +13120,9 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
                         
                         showToast("Evolución registrada correctamente", "success");
                     }
+
+                        // Registrar actividad
+                        logActivity("Registrar evolución", `Se registró evolución para el paciente ${await getPatientName(patientId)}`);
                     
                     hideLoading();
                 } catch (error) {
@@ -13078,6 +13132,34 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
                 }
             });
         }
+
+        // Configurar botones de actividad y perfil
+        const viewActivityLogBtn = document.getElementById('viewActivityLogBtn');
+        if (viewActivityLogBtn) {
+            viewActivityLogBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('activityLogModal').classList.add('active');
+                loadRecentActivities();
+            });
+        }
+        
+        const closeActivityLogBtn = document.getElementById('closeActivityLogBtn');
+        if (closeActivityLogBtn) {
+            closeActivityLogBtn.addEventListener('click', function() {
+                document.getElementById('activityLogModal').classList.remove('active');
+            });
+        }
+        
+        const closeActivityLogModal = document.getElementById('closeActivityLogModal');
+        if (closeActivityLogModal) {
+            closeActivityLogModal.addEventListener('click', function() {
+                document.getElementById('activityLogModal').classList.remove('active');
+            });
+        }
+        
+        // Actualizar notificaciones periódicamente
+        setInterval(updateNotifications, 60000); // Cada minuto
+        updateNotifications(); // Inicialmente
         
         // Cargar plantillas personalizadas
         loadCustomTemplates();
@@ -14517,6 +14599,81 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
         showToast("Error al eliminar archivo: " + error.message, "error");
     }
 }
+
+
+        // Función para actualizar las notificaciones
+function updateNotifications() {
+    try {
+        const patientsWithoutFollowup = checkPatientsWithoutFollowup();
+        const notificationsContainer = document.getElementById('notificationsContainer');
+        
+        if (!notificationsContainer) return;
+        
+        if (patientsWithoutFollowup.length === 0) {
+            notificationsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay pacientes sin seguimiento</p>';
+            return;
+        }
+        
+        notificationsContainer.innerHTML = '';
+        
+        patientsWithoutFollowup.forEach(patient => {
+            const notificationItem = document.createElement('div');
+            notificationItem.className = 'notification-item';
+            
+            // Calcular días desde la última sesión
+            let daysSinceLastSession = 'Nunca';
+            
+            if (patient.lastSession) {
+                const lastSessionParts = patient.lastSession.split('/');
+                if (lastSessionParts.length === 3) {
+                    const lastSessionDate = new Date(
+                        parseInt(lastSessionParts[2]), // año
+                        parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                        parseInt(lastSessionParts[0]) // día
+                    );
+                    
+                    const diffTime = Math.abs(new Date() - lastSessionDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    daysSinceLastSession = `${diffDays} días`;
+                }
+            }
+            
+            notificationItem.innerHTML = `
+                <div class="notification-icon">
+                    <i class="fas fa-exclamation"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${patient.name}</div>
+                    <div class="notification-desc">Sin seguimiento desde hace ${daysSinceLastSession}</div>
+                </div>
+            `;
+            
+            // Añadir evento para abrir ficha del paciente
+            notificationItem.addEventListener('click', function() {
+                openPatientModal(patient.id);
+            });
+            
+            notificationsContainer.appendChild(notificationItem);
+        });
+    } catch (error) {
+        console.error("Error al actualizar notificaciones:", error);
+    }
+}
+
+        // Función auxiliar para obtener nombre de paciente
+async function getPatientName(patientId) {
+    try {
+        const patient = await getPatient(patientId);
+        return patient ? patient.name : "Desconocido";
+    } catch (error) {
+        console.error("Error al obtener nombre de paciente:", error);
+        return "Desconocido";
+    }
+}
+
+
+        
         </script>
 
     <script>
@@ -14549,5 +14706,28 @@ function mostrarInfoIntensidad(tipo) {
     alert(mensaje);
 }
 </script>
+
+
+    <!-- Modal de historial de actividades -->
+<div class="modal-overlay" id="activityLogModal">
+    <div class="modal" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Historial de actividades</h2>
+            <button class="modal-close" id="closeActivityLogModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="activityLogContainer" class="activity-log-container">
+                <p style="text-align: center; color: var(--text-secondary);">Cargando actividades...</p>
+            </div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button class="action-btn btn-secondary" id="closeActivityLogBtn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
 </body>
 </html>
