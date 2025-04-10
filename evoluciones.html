@@ -9723,7 +9723,7 @@ async function exportToPDF(patientId) {
         // Create a new PDF using jsPDF
         console.log("Creando documento PDF...");
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        const pdfdoc = new jsPDF();
         
         // Get center info from configuration
         let centerName = "Polideportivo";
