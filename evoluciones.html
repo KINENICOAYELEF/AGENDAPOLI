@@ -20,8 +20,6 @@
 </head>
 <body>
 
-<div id="mainContainer" style="display: none; flex: 1;">
-
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner"></div>
@@ -13222,55 +13220,6 @@ updateNotifications(); // Inicialmente
         // Cargar pacientes iniciales
         await getPatients();
 
-        // Configurar formulario de login
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                const loginError = document.getElementById('loginError');
-                
-                try {
-                    const success = await loginUser(email, password);
-                    
-                    if (!success) {
-                        loginError.style.display = 'block';
-                        loginError.textContent = 'Credenciales incorrectas';
-                    } else {
-                        loginError.style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error("Error de inicio de sesión:", error);
-                    loginError.style.display = 'block';
-                    loginError.textContent = 'Error al iniciar sesión: ' + error.message;
-                }
-            });
-        }
-        
-        // Configurar botón de logout
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', async function() {
-                await logoutUser();
-            });
-        }
-        
-        const closeActivityLogBtn = document.getElementById('closeActivityLogBtn');
-        if (closeActivityLogBtn) {
-            closeActivityLogBtn.addEventListener('click', function() {
-                document.getElementById('activityLogModal').classList.remove('active');
-            });
-        }
-
-        const closeActivityLogModal = document.getElementById('closeActivityLogModal');
-        if (closeActivityLogModal) {
-            closeActivityLogModal.addEventListener('click', function() {
-                document.getElementById('activityLogModal').classList.remove('active');
-            });
-        }
-
         // Actualizar notificaciones periódicamente
         setInterval(updateNotifications, 60000); // Cada minuto
         updateNotifications(); // Inicialmente
@@ -15056,8 +15005,6 @@ function mostrarInfoIntensidad(tipo) {
         </div>
     </div>
 </div>
-
-    </div> <!-- Cierre del mainContainer -->
     
 </body>
 </html>
