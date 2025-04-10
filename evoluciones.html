@@ -14350,20 +14350,6 @@ if (deleteGeneralObjectiveBtn) {
 
 
 
-// Llamar a esta función cuando se cargan los objetivos específicos
-document.addEventListener('DOMContentLoaded', function() {
-    // Añadir observer para detectar cuando se agregan objetivos a la lista
-    const objectivesList = document.getElementById('specificObjectivesList');
-    if (objectivesList) {
-        const observer = new MutationObserver(function(mutations) {
-            setupObjectiveReordering();
-        });
-        
-        observer.observe(objectivesList, { childList: true });
-    }
-});
-
-
 
 // Función para cargar y mostrar archivos guardados del paciente
 // Función para cargar y mostrar archivos guardados del paciente
