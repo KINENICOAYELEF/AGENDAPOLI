@@ -14586,9 +14586,11 @@ function initializeFirebaseAuth() {
         authApp = firebase.initializeApp(firebaseAuthConfig, "auth");
         console.log("Firebase Auth inicializado correctamente");
         
-        // Crear referencias a servicios de autenticación
+        // Crear referencia solo al servicio de autenticación
         auth = authApp.auth();
-        authDb = authApp.firestore();
+        
+        // No usaremos Firestore para autenticación, elimina esta línea
+        // authDb = authApp.firestore();
     } catch (error) {
         console.error("Error al inicializar Firebase Auth:", error);
         alert("Error al inicializar Firebase Auth. Por favor revisa la consola para detalles.");
@@ -14629,48 +14631,9 @@ function checkUserRole(userId) {
     // Por ahora, todos son admin para simplificar
     isAdmin = true;
     
-    try {
-        // Registrar acceso del usuario
-        authDb.collection('usuarios').doc(userId).get()
-            .then((doc) => {
-                if (doc.exists) {
-                    // El usuario ya existe
-                    console.log("Información del usuario cargada");
-                    
-                    // Actualizar último acceso
-                    authDb.collection('usuarios').doc(userId).update({
-                        ultimoAcceso: new Date().toISOString()
-                    }).catch(error => {
-                        console.error("Error al actualizar último acceso:", error);
-                    });
-                } else {
-                    // Crear registro de usuario si no existe
-                    authDb.collection('usuarios').doc(userId).set({
-                        email: currentUser.email,
-                        ultimoAcceso: new Date().toISOString(),
-                        creado: new Date().toISOString()
-                    }).then(() => {
-                        console.log("Documento de usuario creado");
-                    }).catch(error => {
-                        console.error("Error al crear documento de usuario:", error);
-                    });
-                }
-                
-                // Inicializar la aplicación principal
-                initializeMainApp();
-            })
-            .catch((error) => {
-                console.error("Error al obtener información del usuario:", error);
-                
-                // Inicializar de todos modos
-                initializeMainApp();
-            });
-    } catch (error) {
-        console.error("Error crítico al acceder a la base de datos:", error);
-        
-        // Fallback para permitir acceso
-        initializeMainApp();
-    }
+    // Simplemente iniciamos la aplicación sin verificar en Firestore
+    console.log("Acceso permitido para usuario:", userId);
+    setTimeout(initializeMainApp, 100);
 }
 
 // Inicializar la aplicación principal
