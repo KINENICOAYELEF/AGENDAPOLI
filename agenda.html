@@ -2979,8 +2979,6 @@ function getAppointmentTypeIcon(typeClass) {
         
 // Actualizar estadísticas
 // Actualizar estadísticas
-// Actualizar estadísticas con clara diferenciación
-// Actualizar estadísticas
 function updateStatistics(isMonthly = false) {
     console.log(`🔍 Actualizando estadísticas ${isMonthly ? 'mensuales' : 'semanales'}...`);
     
@@ -3125,20 +3123,32 @@ function updateStatistics(isMonthly = false) {
             attendanceRateByStudent[student] = total > 0 ? Math.round((attended / total) * 100) : 0;
         }
         
-        // Actualizar DOM
-        document.getElementById('attendance-rate').textContent = `${attendanceRate}%`;
-        document.getElementById('total-appointments').textContent = appointments.length;
-        document.getElementById('busiest-hour').textContent = `${busiestHour}:00`;
+        // Actualizar DOM - con comprobaciones para evitar errores
+        const attendanceRateEl = document.getElementById('attendance-rate');
+        const totalAppointmentsEl = document.getElementById('total-appointments');
+        const busiestHourEl = document.getElementById('busiest-hour');
+        
+        if (attendanceRateEl) attendanceRateEl.textContent = `${attendanceRate}%`;
+        if (totalAppointmentsEl) totalAppointmentsEl.textContent = totalAppointments.toString();
+        if (busiestHourEl) busiestHourEl.textContent = `${busiestHour}:00`;
         
         // Modificar algunos títulos para reflejar el período
         if (isMonthly) {
-            document.getElementById('attendance-rate').parentElement.querySelector('.stat-label').textContent = 'Asistencia mensual';
-            document.getElementById('total-appointments').parentElement.querySelector('.stat-label').textContent = 'Citas totales del mes';
-            document.getElementById('busiest-hour').parentElement.querySelector('.stat-label').textContent = 'Hora más ocupada del mes';
+            const attendanceLabel = attendanceRateEl ? attendanceRateEl.parentElement.querySelector('.stat-label') : null;
+            const totalLabel = totalAppointmentsEl ? totalAppointmentsEl.parentElement.querySelector('.stat-label') : null;
+            const hourLabel = busiestHourEl ? busiestHourEl.parentElement.querySelector('.stat-label') : null;
+            
+            if (attendanceLabel) attendanceLabel.textContent = 'Asistencia mensual';
+            if (totalLabel) totalLabel.textContent = 'Citas totales del mes';
+            if (hourLabel) hourLabel.textContent = 'Hora más ocupada del mes';
         } else {
-            document.getElementById('attendance-rate').parentElement.querySelector('.stat-label').textContent = 'Asistencia semanal';
-            document.getElementById('total-appointments').parentElement.querySelector('.stat-label').textContent = 'Citas totales';
-            document.getElementById('busiest-hour').parentElement.querySelector('.stat-label').textContent = 'Hora más ocupada';
+            const attendanceLabel = attendanceRateEl ? attendanceRateEl.parentElement.querySelector('.stat-label') : null;
+            const totalLabel = totalAppointmentsEl ? totalAppointmentsEl.parentElement.querySelector('.stat-label') : null;
+            const hourLabel = busiestHourEl ? busiestHourEl.parentElement.querySelector('.stat-label') : null;
+            
+            if (attendanceLabel) attendanceLabel.textContent = 'Asistencia semanal';
+            if (totalLabel) totalLabel.textContent = 'Citas totales';
+            if (hourLabel) hourLabel.textContent = 'Hora más ocupada';
         }
         
         // Actualizar tabla de estudiantes con datos diferenciados
@@ -3161,8 +3171,8 @@ function updateStatistics(isMonthly = false) {
         
         // NUEVO: Crear gráfico de comunas
         createComunasChartFixed(comunaCounter);
-
-        // Corregir problemas de solapamiento en estadísticas
+        
+        // Arreglar el layout de estadísticas
         fixStatsStructure();
         
         console.log("✅ Actualización de estadísticas completada");
@@ -5149,124 +5159,158 @@ function deleteSpecificAppointment(appointmentId) {
         });
 }
 
-// Actualizar estadísticas de estudiantes
+// Actualizar tabla de estudiantes con datos de asistencia
 function updateStudentStatsTable(uniquePatients, totalSessions, attendanceRates, attendedPatients, attendedSessions) {
-    console.log("🔍 Actualizando tabla de estadísticas de estudiantes...");
-    
-    const chartContainer = document.getElementById('student-chart');
-    const chartLabels = document.getElementById('student-chart-labels');
-    
-    if (!chartContainer || !chartLabels) {
-        console.error("❌ No se encontraron los contenedores para la tabla de estudiantes");
-        return;
+    try {
+        console.log("🔍 Actualizando tabla de estadísticas de estudiantes...");
+        
+        const chartContainer = document.getElementById('student-chart');
+        const chartLabels = document.getElementById('student-chart-labels');
+        
+        if (!chartContainer || !chartLabels) {
+            console.error("❌ No se encontraron los contenedores para la tabla de estudiantes");
+            return;
+        }
+        
+        // Limpiar los contenedores
+        chartContainer.innerHTML = '';
+        chartLabels.innerHTML = '';
+        
+        // Crear tabla de estadísticas
+        const statsTable = document.createElement('table');
+        statsTable.className = 'student-stats-table';
+        
+        // Crear encabezado
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        ['Estudiante', 'Pacientes Únicos', 'Sesiones Agendadas', 'Sesiones Asistidas', 'Tasa de Asistencia'].forEach(text => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        statsTable.appendChild(thead);
+        
+        // Crear cuerpo de tabla
+        const tbody = document.createElement('tbody');
+        
+        // Ordenar estudiantes por número de pacientes
+        const sortedStudents = Object.keys(uniquePatients || {}).sort((a, b) => 
+            (uniquePatients[b] || 0) - (uniquePatients[a] || 0)
+        );
+        
+        console.log(`👨‍🎓 Estudiantes a mostrar: ${sortedStudents.length}`);
+        
+        sortedStudents.forEach(student => {
+            const row = document.createElement('tr');
+            
+            // Nombre del estudiante
+            const nameCell = document.createElement('td');
+            nameCell.textContent = studentNames[student] || student;
+            
+            // Número de pacientes únicos
+            const patientsCell = document.createElement('td');
+            patientsCell.textContent = uniquePatients[student] || 0;
+            
+            // Número de sesiones agendadas
+            const sessionsCell = document.createElement('td');
+            sessionsCell.textContent = totalSessions[student] || 0;
+            
+            // NUEVO: Número de sesiones asistidas
+            const attendedCell = document.createElement('td');
+            attendedCell.textContent = attendedSessions[student] || 0;
+            
+            // Tasa de asistencia
+            const attendanceCell = document.createElement('td');
+            const attendanceRate = attendanceRates[student] || 0;
+            
+            // Crear indicador visual de tasa de asistencia
+            const attendanceIndicator = document.createElement('div');
+            attendanceIndicator.style.display = 'flex';
+            attendanceIndicator.style.alignItems = 'center';
+            attendanceIndicator.style.gap = '10px';
+            
+            const attendanceBar = document.createElement('div');
+            attendanceBar.style.height = '10px';
+            attendanceBar.style.width = `${attendanceRate}%`;
+            attendanceBar.style.backgroundColor = getAttendanceColor(attendanceRate);
+            attendanceBar.style.borderRadius = '5px';
+            attendanceBar.style.flexGrow = '1';
+            
+            const attendanceText = document.createElement('span');
+            attendanceText.textContent = `${attendanceRate}%`;
+            attendanceText.style.whiteSpace = 'nowrap';
+            
+            attendanceIndicator.appendChild(attendanceBar);
+            attendanceIndicator.appendChild(attendanceText);
+            attendanceCell.appendChild(attendanceIndicator);
+            
+            row.appendChild(nameCell);
+            row.appendChild(patientsCell);
+            row.appendChild(sessionsCell);
+            row.appendChild(attendedCell);
+            row.appendChild(attendanceCell);
+            tbody.appendChild(row);
+        });
+        
+        statsTable.appendChild(tbody);
+        
+        // Añadir tabla al contenedor
+        chartContainer.appendChild(statsTable);
+        
+        // Añadir botones de exportación
+        const exportContainer = document.createElement('div');
+        exportContainer.className = 'export-container';
+        exportContainer.style.display = 'flex';
+        exportContainer.style.justifyContent = 'flex-end';
+        exportContainer.style.gap = '10px';
+        exportContainer.style.marginTop = '30px';
+        
+        // Crear botón Excel
+        const exportExcelBtn = document.createElement('button');
+        exportExcelBtn.className = 'button save-btn';
+        exportExcelBtn.textContent = 'Exportar a Excel';
+        exportExcelBtn.onclick = function() { 
+            if (typeof exportStatisticsToExcel === 'function') {
+                exportStatisticsToExcel(); 
+            } else {
+                console.error("Función exportStatisticsToExcel no encontrada");
+                alert("La exportación a Excel no está disponible");
+            }
+        };
+        
+        // Crear botón PDF
+        const exportPdfBtn = document.createElement('button');
+        exportPdfBtn.className = 'button save-btn';
+        exportPdfBtn.textContent = 'Exportar a PDF';
+        exportPdfBtn.onclick = function() { 
+            if (typeof exportStatisticsToPdf === 'function') {
+                exportStatisticsToPdf(); 
+            } else {
+                console.error("Función exportStatisticsToPdf no encontrada");
+                alert("La exportación a PDF no está disponible");
+            }
+        };
+        
+        exportContainer.appendChild(exportExcelBtn);
+        exportContainer.appendChild(exportPdfBtn);
+        
+        chartContainer.appendChild(exportContainer);
+        
+        console.log("✅ Tabla de estadísticas de estudiantes actualizada");
+    } catch (error) {
+        console.error("❌ Error al actualizar tabla de estadísticas:", error);
     }
-    
-    // Limpiar los contenedores
-    chartContainer.innerHTML = '';
-    chartLabels.innerHTML = '';
-    
-    // Crear tabla de estadísticas
-    const statsTable = document.createElement('table');
-    statsTable.className = 'student-stats-table';
-    
-    // Crear encabezado
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
-    
-    ['Estudiante', 'Pacientes Únicos', 'Sesiones Agendadas', 'Sesiones Asistidas', 'Tasa de Asistencia'].forEach(text => {
-        const th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
-    });
-    
-    thead.appendChild(headerRow);
-    statsTable.appendChild(thead);
-    
-    // Crear cuerpo de tabla
-    const tbody = document.createElement('tbody');
-    
-    // Ordenar estudiantes por número de pacientes
-    const sortedStudents = Object.keys(uniquePatients || {}).sort((a, b) => 
-        (uniquePatients[b] || 0) - (uniquePatients[a] || 0)
-    );
-    
-    console.log(`👨‍🎓 Estudiantes a mostrar: ${sortedStudents.length}`);
-    
-    sortedStudents.forEach(student => {
-        const row = document.createElement('tr');
-        
-        // Nombre del estudiante
-        const nameCell = document.createElement('td');
-        nameCell.textContent = studentNames[student] || student;
-        
-        // Número de pacientes únicos
-        const patientsCell = document.createElement('td');
-        patientsCell.textContent = uniquePatients[student] || 0;
-        
-        // Número de sesiones agendadas
-        const sessionsCell = document.createElement('td');
-        sessionsCell.textContent = totalSessions[student] || 0;
-        
-        // NUEVO: Número de sesiones asistidas
-        const attendedCell = document.createElement('td');
-        attendedCell.textContent = attendedSessions[student] || 0;
-        
-        // Tasa de asistencia
-        const attendanceCell = document.createElement('td');
-        const attendanceRate = attendanceRates[student] || 0;
-        
-        // Crear indicador visual de tasa de asistencia
-        const attendanceIndicator = document.createElement('div');
-        attendanceIndicator.style.display = 'flex';
-        attendanceIndicator.style.alignItems = 'center';
-        
-        const attendanceBar = document.createElement('div');
-        attendanceBar.style.height = '10px';
-        attendanceBar.style.width = `${attendanceRate}%`;
-        attendanceBar.style.backgroundColor = getAttendanceColor(attendanceRate);
-        attendanceBar.style.borderRadius = '5px';
-        attendanceBar.style.marginRight = '10px';
-        
-        const attendanceText = document.createElement('span');
-        attendanceText.textContent = `${attendanceRate}%`;
-        
-        attendanceIndicator.appendChild(attendanceBar);
-        attendanceIndicator.appendChild(attendanceText);
-        attendanceCell.appendChild(attendanceIndicator);
-        
-        row.appendChild(nameCell);
-        row.appendChild(patientsCell);
-        row.appendChild(sessionsCell);
-        row.appendChild(attendedCell);
-        row.appendChild(attendanceCell);
-        tbody.appendChild(row);
-    });
-    
-    statsTable.appendChild(tbody);
-    
-    // Añadir tabla al contenedor
-    chartContainer.appendChild(statsTable);
-    
-    // Añadir botones de exportación
-    const exportContainer = document.createElement('div');
-    exportContainer.className = 'export-container';
-    
-    const exportExcelBtn = document.createElement('button');
-    exportExcelBtn.className = 'button save-btn';
-    exportExcelBtn.textContent = 'Exportar a Excel';
-    exportExcelBtn.onclick = function() { exportStatisticsToExcel(); };
-    
-    const exportPdfBtn = document.createElement('button');
-    exportPdfBtn.className = 'button save-btn';
-    exportPdfBtn.textContent = 'Exportar a PDF';
-    exportPdfBtn.onclick = function() { exportStatisticsToPdf(); };
-    
-    exportContainer.appendChild(exportExcelBtn);
-    exportContainer.appendChild(exportPdfBtn);
-    
-    chartContainer.appendChild(exportContainer);
-    
-    console.log("✅ Tabla de estadísticas de estudiantes actualizada");
+}
+
+// Función para determinar el color de asistencia
+function getAttendanceColor(rate) {
+    if (rate >= 90) return 'var(--success)';
+    if (rate >= 70) return '#8BC34A'; // Verde-amarillo
+    if (rate >= 50) return 'var(--warning)';
+    return 'var(--error)';
 }
 
 
@@ -5587,39 +5631,55 @@ function deleteSpecificAppointment(appointmentId) {
 // Añade esta función nueva para actualizar solo datos de asistencia (menor uso de lecturas)
 // Función para actualizar solo los datos de asistencia (menos lecturas)
 function loadAttendanceData() {
-    // Usar una consulta filtrada que solo traiga los datos de asistencia
-    // Esto usa muchas menos lecturas que traer todas las citas completas
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    db.collection('citas')
-        .where('fecha', '>=', threeMonthsAgo)
-        .get()
-        .then((querySnapshot) => {
-            // Actualizar estados de asistencia en la caché
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const appointmentId = doc.id;
+    try {
+        // Usar una consulta filtrada que solo traiga los datos de asistencia
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        
+        db.collection('citas')
+            .where('fecha', '>=', threeMonthsAgo)
+            .get()
+            .then((querySnapshot) => {
+                let updatedCount = 0;
                 
-                // Encontrar esta cita en la caché y actualizar su estado
-                const index = CACHE.appointments.findIndex(a => a.id === appointmentId);
-                if (index >= 0) {
-                    CACHE.appointments[index].estado = data.estado;
+                // Actualizar estados de asistencia en la caché
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const appointmentId = doc.id;
+                    
+                    // Si la caché está inicializada
+                    if (CACHE && CACHE.appointments) {
+                        // Encontrar esta cita en la caché y actualizar su estado
+                        const index = CACHE.appointments.findIndex(a => a.id === appointmentId);
+                        if (index >= 0) {
+                            // Solo actualizar el estado de asistencia
+                            if (data.estado) {
+                                CACHE.appointments[index].estado = data.estado;
+                                updatedCount++;
+                            }
+                        }
+                    }
+                });
+                
+                // Guardar caché actualizada
+                if (CACHE && typeof CACHE.save === 'function') {
+                    CACHE.save();
+                    console.log(`Se actualizaron ${updatedCount} estados de asistencia en caché`);
                 }
+                
+                // Actualizar estadísticas
+                updateStatistics();
+                
+                hideSpinner();
+            })
+            .catch(error => {
+                console.error("Error actualizando datos de asistencia:", error);
+                hideSpinner();
             });
-            
-            // Guardar caché actualizada
-            CACHE.save();
-            
-            // Actualizar estadísticas
-            updateStatistics();
-            
-            hideSpinner();
-        })
-        .catch(error => {
-            console.error("Error actualizando datos de asistencia:", error);
-            hideSpinner();
-        });
+    } catch (error) {
+        console.error("Error crítico en loadAttendanceData:", error);
+        hideSpinner();
+    }
 }
         
 // Mover una cita a una fecha y hora específicas
@@ -7267,151 +7327,104 @@ function createComunasChartFixed(comunasData) {
 
 // Función para reconstruir la sección de estadísticas completamente
 function fixStatsStructure() {
-    const statsPanel = document.querySelector('.stats-panel');
-    if (!statsPanel) return;
-    
-    // Guardar el contenido original para referencia
-    const originalContent = statsPanel.innerHTML;
-    
-    // 1. Limpiar todo el contenido del panel de estadísticas
-    statsPanel.innerHTML = '';
-    
-    // 2. Crear una estructura HTML adecuada
-    const statsContainer = document.createElement('div');
-    statsContainer.className = 'stats-container';
-    statsContainer.style.width = '100%';
-    
-    // 3. Crear el título principal
-    const mainTitle = document.createElement('h3');
-    mainTitle.className = 'stats-title';
-    mainTitle.textContent = 'Estadísticas';
-    mainTitle.style.marginBottom = '20px';
-    statsContainer.appendChild(mainTitle);
-    
-    // 4. Crear contenedor para los botones de períodos
-    const periodSelectorContainer = document.createElement('div');
-    periodSelectorContainer.className = 'time-period-selector';
-    periodSelectorContainer.style.marginBottom = '20px';
-    periodSelectorContainer.style.display = 'flex';
-    periodSelectorContainer.style.justifyContent = 'flex-end';
-    periodSelectorContainer.style.gap = '10px';
-    
-    // Recuperar los botones del contenido original
-    const originalSelector = document.createElement('div');
-    originalSelector.innerHTML = originalContent;
-    const weeklyBtn = originalSelector.querySelector('#weekly-stats-btn');
-    const monthlyBtn = originalSelector.querySelector('#monthly-stats-btn');
-    const monthSelector = originalSelector.querySelector('#month-selector');
-    const yearSelector = originalSelector.querySelector('#year-selector');
-    
-    if (weeklyBtn) periodSelectorContainer.appendChild(weeklyBtn);
-    if (monthlyBtn) periodSelectorContainer.appendChild(monthlyBtn);
-    if (monthSelector) periodSelectorContainer.appendChild(monthSelector);
-    if (yearSelector) periodSelectorContainer.appendChild(yearSelector);
-    
-    statsContainer.appendChild(periodSelectorContainer);
-    
-    // 5. Crear sección de estadísticas principales
-    const mainStatsSection = document.createElement('div');
-    mainStatsSection.className = 'main-stats-section';
-    mainStatsSection.style.marginBottom = '40px';
-    
-    // Crear grid para las estadísticas principales
-    const statsGrid = document.createElement('div');
-    statsGrid.className = 'stats-grid';
-    statsGrid.style.display = 'grid';
-    statsGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-    statsGrid.style.gap = '20px';
-    statsGrid.style.marginBottom = '20px';
-    
-    // Recuperar los valores de estadísticas
-    const attendanceRate = originalSelector.querySelector('#attendance-rate');
-    const totalAppointments = originalSelector.querySelector('#total-appointments');
-    const busiestHour = originalSelector.querySelector('#busiest-hour');
-    
-    // Crear cajas de estadísticas
-    if (attendanceRate) {
-        const attendanceBox = createStatBox('Asistencia semanal', attendanceRate.textContent);
-        statsGrid.appendChild(attendanceBox);
-    }
-    
-    if (totalAppointments) {
-        const appointmentsBox = createStatBox('Citas totales', totalAppointments.textContent);
-        statsGrid.appendChild(appointmentsBox);
-    }
-    
-    if (busiestHour) {
-        const hourBox = createStatBox('Hora más ocupada', busiestHour.textContent);
-        statsGrid.appendChild(hourBox);
-    }
-    
-    mainStatsSection.appendChild(statsGrid);
-    statsContainer.appendChild(mainStatsSection);
-    
-    // 6. Crear sección para la tabla de estudiantes
-    const studentsSection = document.createElement('div');
-    studentsSection.className = 'students-stats-section';
-    studentsSection.style.marginBottom = '40px';
-    studentsSection.style.clear = 'both';
-    
-    // Título para la sección de estudiantes
-    const studentsTitle = document.createElement('h4');
-    studentsTitle.className = 'therapist-stats-title';
-    studentsTitle.textContent = 'Pacientes por estudiante';
-    studentsTitle.style.marginBottom = '20px';
-    studentsTitle.style.fontWeight = 'bold';
-    studentsSection.appendChild(studentsTitle);
-    
-    // Recuperar la tabla de estudiantes
-    const studentsTable = originalSelector.querySelector('.student-stats-table');
-    if (studentsTable) {
-        // Asegurar que la tabla tenga los estilos adecuados
-        studentsTable.style.width = '100%';
-        studentsTable.style.borderCollapse = 'separate';
-        studentsTable.style.borderSpacing = '0';
-        studentsTable.style.marginTop = '10px';
-        studentsTable.style.marginBottom = '30px';
-        studentsTable.style.boxShadow = 'var(--shadow)';
-        studentsTable.style.borderRadius = '8px';
-        studentsTable.style.overflow = 'hidden';
+    try {
+        const statsPanel = document.querySelector('.stats-panel');
+        if (!statsPanel) return;
         
-        studentsSection.appendChild(studentsTable);
+        // 1. Corregir el diseño de la sección de estadísticas
+        statsPanel.style.position = 'relative';
+        statsPanel.style.overflow = 'visible';
+        statsPanel.style.paddingBottom = '50px';
+        
+        // 2. Corregir la tabla de estadísticas de estudiantes
+        const studentStatsTable = document.querySelector('.student-stats-table');
+        if (studentStatsTable) {
+            studentStatsTable.style.width = '100%';
+            studentStatsTable.style.borderCollapse = 'separate';
+            studentStatsTable.style.borderSpacing = '0';
+            studentStatsTable.style.marginTop = '20px';
+            studentStatsTable.style.marginBottom = '30px';
+            studentStatsTable.style.boxShadow = 'var(--shadow)';
+            studentStatsTable.style.borderRadius = '8px';
+            studentStatsTable.style.overflow = 'hidden';
+            studentStatsTable.style.position = 'relative';
+            studentStatsTable.style.zIndex = '10';
+            
+            // Fijar el ancho de columnas para evitar solapamiento
+            const headers = studentStatsTable.querySelectorAll('th');
+            if (headers.length > 0) {
+                headers[0].style.width = '30%'; // Estudiante
+                headers[1].style.width = '15%'; // Pacientes únicos
+                headers[2].style.width = '15%'; // Sesiones agendadas
+                headers[3].style.width = '15%'; // Sesiones asistidas
+                headers[4].style.width = '25%'; // Tasa
+            }
+        }
+        
+        // 3. Encontrar y corregir el título "Pacientes por estudiante"
+        const nodes = Array.from(statsPanel.childNodes);
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.includes("Pacientes por estudiante")) {
+                // Crear un nuevo encabezado para reemplazar el texto
+                const heading = document.createElement('h4');
+                heading.className = 'therapist-stats-title';
+                heading.textContent = 'Pacientes por estudiante';
+                heading.style.clear = 'both';
+                heading.style.marginTop = '30px';
+                heading.style.marginBottom = '20px';
+                heading.style.display = 'block';
+                
+                // Reemplazar el nodo de texto con el encabezado
+                statsPanel.replaceChild(heading, node);
+            }
+        }
+        
+        // 4. Corregir todas las secciones de estadísticas
+        const statsSections = document.querySelectorAll('.stats-section');
+        statsSections.forEach(section => {
+            section.style.marginTop = '40px';
+            section.style.paddingTop = '20px';
+            section.style.borderTop = '1px solid var(--border)';
+            section.style.clear = 'both';
+            section.style.position = 'relative';
+            section.style.display = 'block';
+        });
+        
+        // 5. Corregir títulos de secciones
+        const sectionTitles = document.querySelectorAll('h4.therapist-stats-title');
+        sectionTitles.forEach(title => {
+            title.style.marginTop = '30px';
+            title.style.marginBottom = '20px';
+            title.style.paddingTop = '10px';
+            title.style.clear = 'both';
+            title.style.display = 'block';
+        });
+        
+        // 6. Corregir el contenedor de exportación
+        const exportContainer = document.querySelector('.export-container');
+        if (exportContainer) {
+            exportContainer.style.display = 'flex';
+            exportContainer.style.justifyContent = 'flex-end';
+            exportContainer.style.gap = '10px';
+            exportContainer.style.marginTop = '30px';
+            exportContainer.style.position = 'relative';
+            exportContainer.style.zIndex = '20';
+            exportContainer.style.clear = 'both';
+        }
+        
+        // 7. Asegurar espacio entre la tabla y el título siguiente
+        const charts = document.querySelectorAll('.charts-container');
+        charts.forEach(chart => {
+            chart.style.marginTop = '20px';
+            chart.style.marginBottom = '20px';
+            chart.style.clear = 'both';
+        });
+        
+        console.log("✅ Estructura de estadísticas corregida");
+    } catch (error) {
+        console.error("❌ Error al corregir estructura de estadísticas:", error);
     }
-    
-    statsContainer.appendChild(studentsSection);
-    
-    // 7. Recuperar y añadir otras secciones de estadísticas
-    const otherSections = originalSelector.querySelectorAll('.stats-section');
-    otherSections.forEach(section => {
-        const newSection = section.cloneNode(true);
-        newSection.style.marginTop = '30px';
-        newSection.style.paddingTop = '20px';
-        newSection.style.borderTop = '1px solid var(--border)';
-        newSection.style.clear = 'both';
-        statsContainer.appendChild(newSection);
-    });
-    
-    // 8. Añadir botones de exportación
-    const exportContainer = document.createElement('div');
-    exportContainer.className = 'export-container';
-    exportContainer.style.display = 'flex';
-    exportContainer.style.justifyContent = 'flex-end';
-    exportContainer.style.gap = '10px';
-    exportContainer.style.marginTop = '30px';
-    
-    // Recuperar botones de exportación
-    const exportButtons = originalSelector.querySelectorAll('.export-container button');
-    exportButtons.forEach(button => {
-        exportContainer.appendChild(button.cloneNode(true));
-    });
-    
-    statsContainer.appendChild(exportContainer);
-    
-    // Añadir todo al panel de estadísticas
-    statsPanel.appendChild(statsContainer);
-    
-    // Volver a conectar los eventos de los botones
-    reconnectEventListeners();
 }
 
 // Función auxiliar para crear cajas de estadísticas
