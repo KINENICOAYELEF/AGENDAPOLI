@@ -7930,177 +7930,154 @@ function processPenalolenReport() {
     }
 }
 
-// Generar PDF con estadísticas de Peñalolén - Versión corregida
+// Versión alternativa con API antigua de jsPDF
 function generatePenalolenPDF(stats, appointments, options) {
     try {
-        // Verificar que jspdf esté disponible
-        if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-            console.error("Error: La librería jsPDF no está disponible");
+        // Verificar jsPDF - intentar ambas formas de crear un documento
+        let doc;
+        try {
+            if (typeof jspdf !== 'undefined' && jspdf.jsPDF) {
+                doc = new jspdf.jsPDF();
+            } else if (typeof jsPDF !== 'undefined') {
+                doc = new jsPDF();
+            } else {
+                throw new Error("La librería jsPDF no está disponible");
+            }
+        } catch (pdfError) {
+            console.error("Error al inicializar jsPDF:", pdfError);
             hideSpinner();
-            showStatusMessage('Error: Falta la librería jsPDF. Contacte al administrador.', 'error');
+            showStatusMessage('Error: No se pudo inicializar jsPDF. Contacte al administrador.', 'error');
             return;
         }
         
-        // Crear documento PDF
-        const doc = new jspdf.jsPDF();
-        
-        // Colores - usar valores predeterminados si hay error
+        // Colores
         const primaryColor = [41, 63, 224]; // #2D3FE0
-        const secondaryColor = [113, 128, 150]; // #718096
         
-        // Encabezado con logo
-        doc.setFillColor(primaryColor[0] || 0, primaryColor[1] || 0, primaryColor[2] || 255);
-        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
+        // Encabezado
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(0, 0, doc.internal.pageSize.width, 25, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.text("Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo", 15, 16);
         
-        // Título del reporte
+        // Título
         doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
+        doc.setFontSize(18);
         doc.text(options.title || "Reporte Peñalolén", 15, 40);
         
-        // Información del período
+        // Período
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondaryColor[0] || 0, secondaryColor[1] || 0, secondaryColor[2] || 0);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Período: ${options.startDate.toLocaleDateString()} al ${options.endDate.toLocaleDateString()}`, 15, 50);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 15, 60);
         
-        // Función auxiliar de formato de fecha segura
-        const formatDate = (date) => {
-            if (!date) return "Fecha no disponible";
-            try {
-                return date.toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                });
-            } catch (e) {
-                return date.toString();
-            }
-        };
+        // Resumen
+        doc.setFillColor(240, 240, 240);
+        doc.rect(15, 70, doc.internal.pageSize.width - 30, 40, 'F');
         
-        if (options.startDate && options.endDate) {
-            doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
-        }
+        doc.setFont("helvetica", "bold");
+        doc.text("Resumen - Comuna de Peñalolén", 20, 80);
         
-        doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        })}`, 15, 58);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Sesiones totales: ${stats.totalSessions}`, 20, 90);
+        doc.text(`Pacientes únicos: ${stats.uniquePatients}`, 20, 100);
+        doc.text(`Hora más ocupada: ${stats.busiestHour}:00`, 20, 110);
         
-        // Sección de resumen
-        doc.setFillColor(245, 247, 250);
-        doc.roundedRect(15, 65, doc.internal.pageSize.getWidth() - 30, 60, 3, 3, 'F');
-        
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Resumen - Comuna de Peñalolén", 25, 80);
-        
-        // Estadísticas principales (con comprobaciones de valores indefinidos)
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Sesiones totales: ${stats && stats.totalSessions !== undefined ? stats.totalSessions : 0}`, 25, 95);
-        doc.text(`Pacientes únicos: ${stats && stats.uniquePatients !== undefined ? stats.uniquePatients : 0}`, 25, 105);
-        doc.text(`Hora más ocupada: ${stats && stats.busiestHour !== undefined ? stats.busiestHour : 0}:00`, 25, 115);
-        
-        // Si se solicita lista de pacientes
-        if (options.includePatientList && Array.isArray(appointments)) {
-            // Título de lista de pacientes
-            const listY = 150;
-            
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.text("Listado de Pacientes", 15, listY);
-            
-            // Obtener lista de pacientes únicos
-            const uniquePatientsMap = {};
+        // Lista de pacientes
+        if (options.includePatientList) {
+            // Procesar pacientes
+            const uniquePatients = {};
             
             appointments.forEach(appointment => {
-                if (appointment && appointment.paciente) {
+                if (appointment.paciente) {
                     const key = appointment.paciente.toLowerCase();
-                    if (!uniquePatientsMap[key]) {
-                        uniquePatientsMap[key] = {
+                    if (!uniquePatients[key]) {
+                        uniquePatients[key] = {
                             nombre: appointment.paciente,
                             telefono: appointment.telefono || 'No registrado',
                             correo: appointment.correo || 'No registrado',
                             sesiones: 0
                         };
                     }
-                    uniquePatientsMap[key].sesiones++;
+                    uniquePatients[key].sesiones++;
                 }
             });
             
-            // Convertir a array y ordenar por nombre
-            const patientsArray = Object.values(uniquePatientsMap);
+            // Convertir a array y ordenar
+            const patientsArray = Object.values(uniquePatients);
             patientsArray.sort((a, b) => a.nombre.localeCompare(b.nombre));
             
-            // Crear tabla de pacientes
-            const patientsTableData = patientsArray.map(patient => [
-                patient.nombre,
-                patient.telefono,
-                patient.correo,
-                patient.sesiones
-            ]);
+            // Título de lista
+            doc.setFont("helvetica", "bold");
+            doc.text("Listado de Pacientes", 15, 130);
             
-            // Comprobación de seguridad para autoTable
-            if (typeof doc.autoTable === 'function') {
-                doc.autoTable({
-                    head: [['Nombre del Paciente', 'Teléfono', 'Correo Electrónico', 'Sesiones']],
-                    body: patientsTableData,
-                    startY: listY + 5,
-                    styles: {
-                        fontSize: 9,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: primaryColor,
-                        textColor: [255, 255, 255],
-                        fontStyle: 'bold'
-                    },
-                    alternateRowStyles: {
-                        fillColor: [245, 247, 250]
-                    }
-                });
-            } else {
-                // Si autoTable no está disponible
-                doc.text("Error: La función autoTable no está disponible", 15, listY + 10);
-                console.error("Error: jsPDF autoTable plugin no está disponible");
-            }
+            // Encabezado de tabla
+            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.rect(15, 135, doc.internal.pageSize.width - 30, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.text("Nombre", 20, 142);
+            doc.text("Teléfono", 80, 142);
+            doc.text("Correo", 120, 142);
+            doc.text("Sesiones", 180, 142);
+            
+            // Filas de tabla
+            doc.setTextColor(0, 0, 0);
+            let y = 150;
+            
+            patientsArray.forEach((patient, index) => {
+                // Alternar color de fondo
+                if (index % 2 === 0) {
+                    doc.setFillColor(245, 245, 245);
+                    doc.rect(15, y - 5, doc.internal.pageSize.width - 30, 10, 'F');
+                }
+                
+                doc.text(patient.nombre, 20, y);
+                doc.text(patient.telefono, 80, y);
+                doc.text(patient.correo, 120, y);
+                doc.text(patient.sesiones.toString(), 180, y);
+                
+                y += 10;
+                
+                // Nueva página si es necesario
+                if (y > doc.internal.pageSize.height - 20) {
+                    doc.addPage();
+                    y = 20;
+                    
+                    // Encabezado en nueva página
+                    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+                    doc.rect(15, y - 5, doc.internal.pageSize.width - 30, 10, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.text("Nombre", 20, y + 2);
+                    doc.text("Teléfono", 80, y + 2);
+                    doc.text("Correo", 120, y + 2);
+                    doc.text("Sesiones", 180, y + 2);
+                    
+                    doc.setTextColor(0, 0, 0);
+                    y += 10;
+                }
+            });
         }
         
-        // Añadir pie de página
-        try {
-            const totalPages = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= totalPages; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text(`Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo`, 15, doc.internal.pageSize.getHeight() - 10);
-                doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
-                         doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
-            }
-        } catch (paginationError) {
-            console.error("Error en paginación:", paginationError);
+        // Pie de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo | Página ${i} de ${pageCount}`, 15, doc.internal.pageSize.height - 10);
         }
         
         // Guardar PDF
-        try {
-            const fileName = `${(options.title || "Reporte_Penalolen").replace(/\s/g, '_')}.pdf`;
-            doc.save(fileName);
-        } catch (saveError) {
-            console.error("Error al guardar PDF:", saveError);
-            alert("Error al guardar el PDF. Verifique si su navegador bloquea las descargas.");
-        }
+        doc.save(`${options.title.replace(/\s/g, '_')}.pdf`);
         
         hideSpinner();
-        showStatusMessage(`Reporte de Peñalolén generado correctamente`, 'success');
+        showStatusMessage('Reporte generado correctamente', 'success');
     } catch (error) {
         console.error("Error al generar PDF:", error);
         hideSpinner();
-        showStatusMessage('Error al generar el PDF: ' + error.message, 'error');
+        showStatusMessage('Error al generar PDF: ' + error.message, 'error');
     }
 }
 
