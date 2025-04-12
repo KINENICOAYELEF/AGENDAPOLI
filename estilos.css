@@ -2944,3 +2944,102 @@ select.form-control option:checked {
     display: none !important;
 }
 
+
+
+/* Estilos para elementos de autenticación */
+    .login-container {
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 30px;
+        background-color: #FFFFFF;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .login-title {
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 24px;
+        color: #2D3FE0;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        color: #2D3748;
+    }
+    
+    .form-group input[type="email"],
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .spinner {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+    }
+    
+    .spinner-content {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #E2E8F0;
+        border-top: 3px solid #2D3FE0;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .status-message {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        display: none;
+        z-index: 1500;
+        font-weight: 500;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .status-message.success {
+        background-color: #4CAF50;
+        color: white;
+    }
+    
+    .status-message.error {
+        background-color: #F44336;
+        color: white;
+    }
+    
+    .status-message.warning {
+        background-color: #FF9800;
+        color: white;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
