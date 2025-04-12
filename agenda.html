@@ -7833,7 +7833,7 @@ function exportPenalolenReport() {
     document.getElementById('report-title').value = `Reporte Peñalolén - ${getMonthName(today.getMonth())} ${today.getFullYear()}`;
     
     // Configurar evento del botón generar
-    document.getElementById('generate-report').onclick = generatePenalolenPdf;
+    document.getElementById('generate-report').onclick = generatePenalolenPDF;
     
     // Configurar evento del botón cancelar
     document.getElementById('cancel-report').onclick = function() {
