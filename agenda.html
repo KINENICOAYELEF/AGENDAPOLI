@@ -1878,11 +1878,8 @@ function checkUserRole(userId) {
 }
 
 // Inicializar la aplicación
-// Inicializar la aplicación
 function initializeApp() {
-    // Cargar caché desde localStorage
-    loadCacheFromStorage();
-    
+    // Cargar feriados (desde variables locales, no desde Firestore)
     loadHolidays();
     updateWeekDisplay();
     
