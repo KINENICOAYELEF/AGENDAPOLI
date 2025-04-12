@@ -5580,7 +5580,6 @@ function loadAttendanceData() {
     
     db.collection('citas')
         .where('fecha', '>=', threeMonthsAgo)
-        .select('estado', 'paciente', 'estudiante', 'fecha') // Solo traer campos necesarios
         .get()
         .then((querySnapshot) => {
             // Actualizar estados de asistencia en la caché
@@ -7253,59 +7252,121 @@ function createComunasChartFixed(comunasData) {
 }
 
 
-// Agrega esta función que corrige los estilos de estadísticas
+// Función mejorada para arreglar el solapamiento en las estadísticas
 function fixStatsLayout() {
-    // Corregir la posición de los elementos de estadísticas
+    // 1. Agregar estilos CSS al head
+    let styleElement = document.getElementById('fix-stats-styles');
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'fix-stats-styles';
+        styleElement.innerHTML = `
+            .stats-panel {
+                position: relative !important;
+                overflow: visible !important;
+                padding-bottom: 50px !important;
+                clear: both !important;
+            }
+            
+            .student-stats-table {
+                width: 100% !important;
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                margin-top: 20px !important;
+                margin-bottom: 30px !important;
+                box-shadow: var(--shadow) !important;
+                border-radius: 8px !important;
+                overflow: hidden !important;
+                position: relative !important;
+                z-index: 10 !important;
+                table-layout: fixed !important;
+            }
+            
+            .stats-section {
+                margin-top: 50px !important;
+                padding-top: 30px !important;
+                border-top: 1px solid var(--border) !important;
+                clear: both !important;
+                position: relative !important;
+            }
+            
+            h3.stats-title {
+                margin-bottom: 30px !important;
+            }
+            
+            h4.therapist-stats-title {
+                margin-top: 30px !important;
+                margin-bottom: 20px !important;
+                padding-top: 10px !important;
+                clear: both !important;
+            }
+            
+            /* Arreglo específico para el título "Pacientes por estudiante" */
+            .stats-panel > h3:not(:first-of-type) {
+                clear: both !important;
+                margin-top: 50px !important;
+                position: relative !important;
+                display: block !important;
+                width: 100% !important;
+            }
+            
+            .export-container {
+                display: flex !important;
+                justify-content: flex-end !important;
+                gap: 10px !important;
+                margin-top: 30px !important;
+                position: relative !important;
+                z-index: 20 !important;
+                float: right !important;
+            }
+            
+            /* Estilo para las estadísticas principales */
+            .stats-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 20px !important;
+                margin-bottom: 40px !important;
+                clear: both !important;
+            }
+            
+            /* Asegurar que las cifras grandes no se rompan */
+            .stat-value {
+                font-size: 28px !important;
+                font-weight: 700 !important;
+                white-space: nowrap !important;
+            }
+        `;
+        document.head.appendChild(styleElement);
+    }
+    
+    // 2. Mover el texto "Pacientes por estudiante" a una posición correcta
     const statsPanel = document.querySelector('.stats-panel');
     if (statsPanel) {
-        // Asegurar que el panel tiene posición relativa
-        statsPanel.style.position = 'relative';
-        statsPanel.style.overflow = 'visible';
-        statsPanel.style.paddingBottom = '50px'; /* Añadir espacio adicional abajo */
+        // Buscar el texto suelto "Pacientes por estudiante"
+        const nodes = Array.from(statsPanel.childNodes);
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.includes("Pacientes por estudiante")) {
+                // Crear un nuevo encabezado para reemplazar el texto
+                const heading = document.createElement('h4');
+                heading.className = 'therapist-stats-title';
+                heading.textContent = 'Pacientes por estudiante';
+                heading.style.clear = 'both';
+                heading.style.marginTop = '30px';
+                heading.style.marginBottom = '20px';
+                
+                // Reemplazar el nodo de texto con el encabezado
+                statsPanel.replaceChild(heading, node);
+                break;
+            }
+        }
     }
     
-    // Corregir la tabla de estadísticas de estudiantes
-    const studentStatsTable = document.querySelector('.student-stats-table');
-    if (studentStatsTable) {
-        studentStatsTable.style.width = '100%';
-        studentStatsTable.style.borderCollapse = 'separate';
-        studentStatsTable.style.borderSpacing = '0';
-        studentStatsTable.style.marginTop = '20px';
-        studentStatsTable.style.boxShadow = 'var(--shadow)';
-        studentStatsTable.style.borderRadius = '8px';
-        studentStatsTable.style.overflow = 'hidden';
-        studentStatsTable.style.position = 'relative';
-        studentStatsTable.style.zIndex = '10'; /* Aumentar para evitar solapamientos */
-    }
-    
-    // Mejorar separación entre secciones de estadísticas
-    const statsSections = document.querySelectorAll('.stats-section');
-    statsSections.forEach(section => {
-        section.style.marginTop = '50px';
-        section.style.paddingTop = '30px';
-        section.style.borderTop = '1px solid var(--border)';
-        section.style.clear = 'both'; /* Evitar solapamientos con elementos flotantes */
+    // 3. Asegurar que todos los elementos flotantes se limpien correctamente
+    document.querySelectorAll('.stats-panel > *').forEach(el => {
+        if (el.tagName === 'TABLE' || el.tagName === 'H3' || el.tagName === 'H4') {
+            el.style.clear = 'both';
+        }
     });
-    
-    // Corregir títulos de secciones
-    const sectionTitles = document.querySelectorAll('h4.therapist-stats-title');
-    sectionTitles.forEach(title => {
-        title.style.marginTop = '30px';
-        title.style.marginBottom = '20px';
-        title.style.paddingTop = '10px';
-        title.style.clear = 'both';
-    });
-    
-    // Corregir botones de exportación
-    const exportContainer = document.querySelector('.export-container');
-    if (exportContainer) {
-        exportContainer.style.display = 'flex';
-        exportContainer.style.justifyContent = 'flex-end';
-        exportContainer.style.gap = '10px';
-        exportContainer.style.marginTop = '30px';
-        exportContainer.style.position = 'relative';
-        exportContainer.style.zIndex = '20'; /* Asegurar que los botones estén encima */
-    }
 }
 
         
