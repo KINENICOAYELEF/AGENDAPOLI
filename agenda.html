@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1544,9 +1545,6 @@ h4.therapist-stats-title {
     </div>
 </div>
 
-        <button id="penalolen-report-btn" class="button save-btn" style="margin-right: 10px;">Reporte Peñalolén</button>
-
-        
      <!-- Panel de Administración de Estudiantes -->
         <div class="admin-panel">
             <h3 class="admin-title">Administración de Estudiantes</h3>
@@ -1554,6 +1552,8 @@ h4.therapist-stats-title {
                 <!-- Se llenará dinámicamente -->
             </div>
         </div>
+
+    <button id="penalolen-report-btn" class="button save-btn" style="margin-right: 10px;">Reporte Peñalolén</button>
     
     <!-- Modal para agregar/editar citas -->
     <div class="modal" id="appointment-modal">
@@ -1708,7 +1708,7 @@ h4.therapist-stats-title {
         </div>
     </div>
 
-<!-- Modal para selección de fechas para reporte Peñalolén -->
+    <!-- Modal para selección de fechas para reporte Peñalolén -->
 <div class="modal" id="penalolen-report-modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -1745,8 +1745,8 @@ h4.therapist-stats-title {
             <button class="button save-btn" id="generate-report">Generar Reporte</button>
         </div>
     </div>
-</div>
-        
+</div>    
+    
     <!-- Modal para confirmar asistencia -->
     <div class="modal" id="attendance-modal">
         <div class="modal-content">
@@ -7818,6 +7818,7 @@ function fixStatsLayout() {
     });
 }
 
+
 // Función para exportar estadísticas de pacientes de Peñalolén
 function exportPenalolenReport() {
     // Mostrar modal para seleccionar fechas
@@ -7833,7 +7834,7 @@ function exportPenalolenReport() {
     document.getElementById('report-title').value = `Reporte Peñalolén - ${getMonthName(today.getMonth())} ${today.getFullYear()}`;
     
     // Configurar evento del botón generar
-    document.getElementById('generate-report').onclick = generatePenalolenPDF;
+    document.getElementById('generate-report').onclick = generatePenalolenPdf;
     
     // Configurar evento del botón cancelar
     document.getElementById('cancel-report').onclick = function() {
@@ -7843,6 +7844,159 @@ function exportPenalolenReport() {
     // Cerrar modal con la X
     document.querySelector('#penalolen-report-modal .close').onclick = function() {
         document.getElementById('penalolen-report-modal').style.display = 'none';
+    };
+}
+
+// Función para generar el PDF
+function generatePenalolenPdf() {
+    try {
+        showSpinner();
+        
+        // Obtener datos del formulario
+        const startDate = document.getElementById('report-start-date').valueAsDate;
+        const endDate = document.getElementById('report-end-date').valueAsDate;
+        const reportTitle = document.getElementById('report-title').value.trim();
+        const includePatientList = document.getElementById('include-patient-list').checked;
+        
+        // Validar fechas
+        if (!startDate || !endDate) {
+            hideSpinner();
+            showStatusMessage('Por favor seleccione ambas fechas', 'warning');
+            return;
+        }
+        
+        if (startDate > endDate) {
+            hideSpinner();
+            showStatusMessage('La fecha inicial no puede ser posterior a la fecha final', 'warning');
+            return;
+        }
+        
+        // Ajustar la fecha final para incluir todo el día
+        const adjustedEndDate = new Date(endDate);
+        adjustedEndDate.setHours(23, 59, 59, 999);
+        
+        // Consultar citas en el rango seleccionado
+        db.collection('citas')
+            .where('fecha', '>=', startDate)
+            .where('fecha', '<=', adjustedEndDate)
+            .get()
+            .then((querySnapshot) => {
+                // Filtrar solo citas de Peñalolén con asistencia
+                const penalolenAppointments = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Filtrar solo citas de Peñalolén con asistencia confirmada
+                    if (data.comuna === 'Peñalolén' && data.estado === 'attended') {
+                        penalolenAppointments.push({
+                            id: doc.id,
+                            ...data,
+                            fecha: data.fecha.toDate ? data.fecha.toDate() : new Date(data.fecha)
+                        });
+                    }
+                });
+                
+                // Cerrar el modal
+                document.getElementById('penalolen-report-modal').style.display = 'none';
+                
+                // Si no hay citas, mostrar mensaje
+                if (penalolenAppointments.length === 0) {
+                    hideSpinner();
+                    showStatusMessage('No se encontraron citas de pacientes de Peñalolén en el período seleccionado', 'warning');
+                    return;
+                }
+                
+                // Calcular estadísticas
+                const stats = calculatePenalolenStats(penalolenAppointments);
+                
+                // Generar PDF
+                generatePenalolenPDF(stats, penalolenAppointments, {
+                    startDate,
+                    endDate: adjustedEndDate,
+                    title: reportTitle,
+                    includePatientList
+                });
+            })
+            .catch((error) => {
+                console.error("Error al consultar citas:", error);
+                hideSpinner();
+                showStatusMessage('Error al consultar citas', 'error');
+            });
+    } catch (error) {
+        console.error("Error al generar reporte:", error);
+        hideSpinner();
+        showStatusMessage('Error al generar reporte', 'error');
+    }
+}
+
+// Calcular estadísticas de Peñalolén
+function calculatePenalolenStats(appointments) {
+    // Contar pacientes únicos
+    const uniquePatients = new Set();
+    
+    // Contar por tipo de cita
+    const appointmentsByType = {
+        'evaluacion-msk': 0,
+        'evaluacion-deportiva': 0,
+        'sesion-msk': 0,
+        'sesion-deportiva': 0,
+        'sin-tipo': 0
+    };
+    
+    // Contar sesiones por día de la semana
+    const sessionsByDay = {
+        1: 0, // Lunes
+        2: 0, // Martes
+        3: 0, // Miércoles
+        4: 0, // Jueves
+        5: 0, // Viernes
+        6: 0, // Sábado
+        0: 0  // Domingo
+    };
+    
+    // Contar sesiones por hora
+    const sessionsByHour = {};
+    
+    // Procesar cada cita
+    appointments.forEach(appointment => {
+        // Pacientes únicos
+        if (appointment.paciente) {
+            uniquePatients.add(appointment.paciente.toLowerCase());
+        }
+        
+        // Tipo de cita
+        const tipoClase = appointment.tipoClase || 'sin-tipo';
+        appointmentsByType[tipoClase] = (appointmentsByType[tipoClase] || 0) + 1;
+        
+        // Día de la semana
+        if (appointment.fecha) {
+            const dayOfWeek = appointment.fecha.getDay();
+            sessionsByDay[dayOfWeek] = (sessionsByDay[dayOfWeek] || 0) + 1;
+            
+            // Hora del día
+            const hour = appointment.fecha.getHours();
+            sessionsByHour[hour] = (sessionsByHour[hour] || 0) + 1;
+        }
+    });
+    
+    // Encontrar la hora más ocupada
+    let busiestHour = 9; // Valor predeterminado
+    let maxSessions = 0;
+    
+    for (const hour in sessionsByHour) {
+        if (sessionsByHour[hour] > maxSessions) {
+            busiestHour = parseInt(hour);
+            maxSessions = sessionsByHour[hour];
+        }
+    }
+    
+    return {
+        totalSessions: appointments.length,
+        uniquePatients: uniquePatients.size,
+        appointmentsByType,
+        sessionsByDay,
+        sessionsByHour,
+        busiestHour
     };
 }
 
@@ -7862,7 +8016,7 @@ function generatePenalolenPDF(stats, appointments, options) {
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
-        doc.text("SISTEMAKINE", 15, 16);
+        doc.text("Kinesiólogo Nicolás Ayelef", 15, 16);
         
         // Título del reporte
         doc.setTextColor(0, 0, 0);
@@ -7971,334 +8125,7 @@ function generatePenalolenPDF(stats, appointments, options) {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
-            doc.text(`SISTEMAKINE - Página ${i} de ${totalPages}`, 15, doc.internal.pageSize.getHeight() - 10);
-            doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
-                     doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
-        }
-        
-        // Guardar PDF
-        const fileName = `${options.title.replace(/\s/g, '_')}.pdf`;
-        doc.save(fileName);
-        
-        hideSpinner();
-        showStatusMessage(`Reporte de Peñalolén generado correctamente`, 'success');
-    } catch (error) {
-        console.error("Error al generar PDF:", error);
-        hideSpinner();
-        showStatusMessage('Error al generar el PDF', 'error');
-    }
-}
-
-// Calcular estadísticas de Peñalolén
-function calculatePenalolenStats(appointments) {
-    // Contar pacientes únicos
-    const uniquePatients = new Set();
-    
-    // Contar por tipo de cita
-    const appointmentsByType = {
-        'evaluacion-msk': 0,
-        'evaluacion-deportiva': 0,
-        'sesion-msk': 0,
-        'sesion-deportiva': 0,
-        'sin-tipo': 0
-    };
-    
-    // Contar sesiones por día de la semana
-    const sessionsByDay = {
-        1: 0, // Lunes
-        2: 0, // Martes
-        3: 0, // Miércoles
-        4: 0, // Jueves
-        5: 0, // Viernes
-        6: 0, // Sábado
-        0: 0  // Domingo
-    };
-    
-    // Contar sesiones por hora
-    const sessionsByHour = {};
-    
-    // Procesar cada cita
-    appointments.forEach(appointment => {
-        // Pacientes únicos
-        if (appointment.paciente) {
-            uniquePatients.add(appointment.paciente.toLowerCase());
-        }
-        
-        // Tipo de cita
-        const tipoClase = appointment.tipoClase || 'sin-tipo';
-        appointmentsByType[tipoClase] = (appointmentsByType[tipoClase] || 0) + 1;
-        
-        // Día de la semana
-        if (appointment.fecha) {
-            const dayOfWeek = appointment.fecha.getDay();
-            sessionsByDay[dayOfWeek] = (sessionsByDay[dayOfWeek] || 0) + 1;
-            
-            // Hora del día
-            const hour = appointment.fecha.getHours();
-            sessionsByHour[hour] = (sessionsByHour[hour] || 0) + 1;
-        }
-    });
-    
-    // Encontrar la hora más ocupada
-    let busiestHour = 9; // Valor predeterminado
-    let maxSessions = 0;
-    
-    for (const hour in sessionsByHour) {
-        if (sessionsByHour[hour] > maxSessions) {
-            busiestHour = parseInt(hour);
-            maxSessions = sessionsByHour[hour];
-        }
-    }
-    
-    return {
-        totalSessions: appointments.length,
-        uniquePatients: uniquePatients.size,
-        appointmentsByType,
-        sessionsByDay,
-        sessionsByHour,
-        busiestHour
-    };
-}
-
-// Generar PDF con estadísticas de Peñalolén
-function generatePenalolenPDF(stats, appointments, options) {
-    try {
-        // Crear documento PDF
-        const doc = new jspdf.jsPDF();
-        
-        // Colores
-        const primaryColor = [41, 63, 224]; // #2D3FE0
-        const secondaryColor = [113, 128, 150]; // #718096
-        const successColor = [76, 175, 80]; // #4CAF50
-        
-        // Encabezado con logo
-        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.text("SISTEMAKINE", 15, 16);
-        
-        // Título del reporte
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text(options.title, 15, 40);
-        
-        // Información del período
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-        
-        const formatDate = (date) => {
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
-        };
-        
-        doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
-        doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })}`, 15, 58);
-        
-        // Sección de resumen
-        doc.setFillColor(245, 247, 250);
-        doc.roundedRect(15, 65, doc.internal.pageSize.getWidth() - 30, 60, 3, 3, 'F');
-        
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Resumen - Comuna de Peñalolén", 25, 80);
-        
-        // Estadísticas principales
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Sesiones totales: ${stats.totalSessions}`, 25, 95);
-        doc.text(`Pacientes únicos: ${stats.uniquePatients}`, 25, 105);
-        doc.text(`Hora más ocupada: ${stats.busiestHour}:00`, 25, 115);
-        
-        // Distribución por tipo de cita
-        doc.setFont('helvetica', 'bold');
-        doc.text("Distribución por tipo de cita", 15, 145);
-        
-        // Crear datos para la tabla de tipos
-        const typeTableData = [];
-        let totalByType = 0;
-        
-        for (const type in stats.appointmentsByType) {
-            if (stats.appointmentsByType[type] > 0) {
-                typeTableData.push([
-                    getAppointmentTypeName(type),
-                    stats.appointmentsByType[type],
-                    `${Math.round((stats.appointmentsByType[type] / stats.totalSessions) * 100)}%`
-                ]);
-                totalByType += stats.appointmentsByType[type];
-            }
-        }
-        
-        // Añadir total a la tabla
-        typeTableData.push(['Total', totalByType, '100%']);
-        
-        // Crear tabla de tipos
-        doc.autoTable({
-            head: [['Tipo de Cita', 'Sesiones', 'Porcentaje']],
-            body: typeTableData,
-            startY: 150,
-            styles: {
-                fontSize: 10,
-                cellPadding: 4
-            },
-            headStyles: {
-                fillColor: primaryColor,
-                textColor: [255, 255, 255],
-                fontStyle: 'bold'
-            },
-            alternateRowStyles: {
-                fillColor: [245, 247, 250]
-            }
-        });
-        
-        // Distribución por día de la semana
-        const daysY = doc.autoTable.previous.finalY + 15;
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text("Distribución por día de la semana", 15, daysY);
-        
-        // Crear datos para tabla de días
-        const dayNames = {
-            0: 'Domingo',
-            1: 'Lunes',
-            2: 'Martes',
-            3: 'Miércoles',
-            4: 'Jueves',
-            5: 'Viernes',
-            6: 'Sábado'
-        };
-        
-        const daysTableData = [];
-        
-        for (let i = 1; i <= 5; i++) { // Solo lunes a viernes
-            if (stats.sessionsByDay[i] > 0) {
-                daysTableData.push([
-                    dayNames[i],
-                    stats.sessionsByDay[i],
-                    `${Math.round((stats.sessionsByDay[i] / stats.totalSessions) * 100)}%`
-                ]);
-            }
-        }
-        
-        // Crear tabla de días
-        doc.autoTable({
-            head: [['Día', 'Sesiones', 'Porcentaje']],
-            body: daysTableData,
-            startY: daysY + 5,
-            styles: {
-                fontSize: 10,
-                cellPadding: 4
-            },
-            headStyles: {
-                fillColor: [0, 191, 165], // Teal
-                textColor: [255, 255, 255],
-                fontStyle: 'bold'
-            },
-            alternateRowStyles: {
-                fillColor: [245, 247, 250]
-            }
-        });
-        
-        // Si se solicita lista de pacientes
-        if (options.includePatientList) {
-            // Crear una nueva página
-            doc.addPage();
-            
-            // Encabezado con logo
-            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-            doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.text("SISTEMAKINE", 15, 16);
-            
-            // Título
-            doc.setTextColor(0, 0, 0);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(16);
-            doc.text("Listado de Pacientes - Peñalolén", 15, 40);
-            
-            // Información del período
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-            doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
-            
-            // Nota explicativa
-            doc.setFillColor(245, 247, 250);
-            doc.roundedRect(15, 60, doc.internal.pageSize.getWidth() - 30, 20, 3, 3, 'F');
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(10);
-            doc.text("Este listado incluye solo pacientes de la comuna de Peñalolén que asistieron a su cita durante el período seleccionado.", 20, 72);
-            
-            // Obtener lista de pacientes únicos con información completa
-            const uniquePatientsMap = {};
-            
-            appointments.forEach(appointment => {
-                if (appointment.paciente) {
-                    const key = appointment.paciente.toLowerCase();
-                    if (!uniquePatientsMap[key]) {
-                        uniquePatientsMap[key] = {
-                            nombre: appointment.paciente,
-                            telefono: appointment.telefono || 'No registrado',
-                            correo: appointment.correo || 'No registrado',
-                            sesiones: 0
-                        };
-                    }
-                    uniquePatientsMap[key].sesiones++;
-                }
-            });
-            
-            // Convertir a array y ordenar por nombre
-            const patientsArray = Object.values(uniquePatientsMap);
-            patientsArray.sort((a, b) => a.nombre.localeCompare(b.nombre));
-            
-            // Crear tabla de pacientes
-            const patientsTableData = patientsArray.map(patient => [
-                patient.nombre,
-                patient.telefono,
-                patient.correo,
-                patient.sesiones
-            ]);
-            
-            doc.autoTable({
-                head: [['Nombre del Paciente', 'Teléfono', 'Correo Electrónico', 'Sesiones']],
-                body: patientsTableData,
-                startY: 85,
-                styles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                headStyles: {
-                    fillColor: primaryColor,
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold'
-                },
-                alternateRowStyles: {
-                    fillColor: [245, 247, 250]
-                }
-            });
-        }
-        
-        // Añadir pie de página a todas las páginas
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text(`SISTEMAKINE - Página ${i} de ${totalPages}`, 15, doc.internal.pageSize.getHeight() - 10);
+            doc.text(`Kinesiólogo Nicolás Ayelef - Página ${i} de ${totalPages}`, 15, doc.internal.pageSize.getHeight() - 10);
             doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
                      doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
         }
@@ -8326,6 +8153,7 @@ function getAppointmentTypeName(typeClass) {
         default: return typeClass;
     }
 }
+
         
 </script>
 
