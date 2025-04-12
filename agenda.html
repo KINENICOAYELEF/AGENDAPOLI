@@ -7846,85 +7846,146 @@ function exportPenalolenReport() {
     };
 }
 
-// Función para generar el PDF
-function generatePenalolenPdf() {
+// Generar PDF con estadísticas de Peñalolén - Versión simplificada
+function generatePenalolenPDF(stats, appointments, options) {
     try {
-        showSpinner();
+        // Crear documento PDF
+        const doc = new jspdf.jsPDF();
         
-        // Obtener datos del formulario
-        const startDate = document.getElementById('report-start-date').valueAsDate;
-        const endDate = document.getElementById('report-end-date').valueAsDate;
-        const reportTitle = document.getElementById('report-title').value.trim();
-        const includePatientList = document.getElementById('include-patient-list').checked;
+        // Colores
+        const primaryColor = [41, 63, 224]; // #2D3FE0
+        const secondaryColor = [113, 128, 150]; // #718096
         
-        // Validar fechas
-        if (!startDate || !endDate) {
-            hideSpinner();
-            showStatusMessage('Por favor seleccione ambas fechas', 'warning');
-            return;
-        }
+        // Encabezado con logo
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text("SISTEMAKINE", 15, 16);
         
-        if (startDate > endDate) {
-            hideSpinner();
-            showStatusMessage('La fecha inicial no puede ser posterior a la fecha final', 'warning');
-            return;
-        }
+        // Título del reporte
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text(options.title, 15, 40);
         
-        // Ajustar la fecha final para incluir todo el día
-        const adjustedEndDate = new Date(endDate);
-        adjustedEndDate.setHours(23, 59, 59, 999);
+        // Información del período
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
         
-        // Consultar citas en el rango seleccionado
-        db.collection('citas')
-            .where('fecha', '>=', startDate)
-            .where('fecha', '<=', adjustedEndDate)
-            .get()
-            .then((querySnapshot) => {
-                // Filtrar solo citas de Peñalolén con asistencia
-                const penalolenAppointments = [];
-                
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    // Filtrar solo citas de Peñalolén con asistencia confirmada
-                    if (data.comuna === 'Peñalolén' && data.estado === 'attended') {
-                        penalolenAppointments.push({
-                            id: doc.id,
-                            ...data,
-                            fecha: data.fecha.toDate ? data.fecha.toDate() : new Date(data.fecha)
-                        });
-                    }
-                });
-                
-                // Cerrar el modal
-                document.getElementById('penalolen-report-modal').style.display = 'none';
-                
-                // Si no hay citas, mostrar mensaje
-                if (penalolenAppointments.length === 0) {
-                    hideSpinner();
-                    showStatusMessage('No se encontraron citas de pacientes de Peñalolén en el período seleccionado', 'warning');
-                    return;
-                }
-                
-                // Calcular estadísticas
-                const stats = calculatePenalolenStats(penalolenAppointments);
-                
-                // Generar PDF
-                generatePenalolenPDF(stats, penalolenAppointments, {
-                    startDate,
-                    endDate: adjustedEndDate,
-                    title: reportTitle,
-                    includePatientList
-                });
-            })
-            .catch((error) => {
-                console.error("Error al consultar citas:", error);
-                hideSpinner();
-                showStatusMessage('Error al consultar citas', 'error');
+        const formatDate = (date) => {
+            return date.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
             });
-    } catch (error) {
-        console.error("Error al generar reporte:", error);
+        };
+        
+        doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
+        doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}`, 15, 58);
+        
+        // Sección de resumen
+        doc.setFillColor(245, 247, 250);
+        doc.roundedRect(15, 65, doc.internal.pageSize.getWidth() - 30, 60, 3, 3, 'F');
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Resumen - Comuna de Peñalolén", 25, 80);
+        
+        // Estadísticas principales
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Sesiones totales: ${stats.totalSessions}`, 25, 95);
+        doc.text(`Pacientes únicos: ${stats.uniquePatients}`, 25, 105);
+        doc.text(`Hora más ocupada: ${stats.busiestHour}:00`, 25, 115);
+        
+        // Si se solicita lista de pacientes, la ubicamos inmediatamente después del resumen
+        if (options.includePatientList) {
+            // Título de lista de pacientes
+            const listY = 150;
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text("Listado de Pacientes", 15, listY);
+            
+            // Obtener lista de pacientes únicos con información completa
+            const uniquePatientsMap = {};
+            
+            appointments.forEach(appointment => {
+                if (appointment.paciente) {
+                    const key = appointment.paciente.toLowerCase();
+                    if (!uniquePatientsMap[key]) {
+                        uniquePatientsMap[key] = {
+                            nombre: appointment.paciente,
+                            telefono: appointment.telefono || 'No registrado',
+                            correo: appointment.correo || 'No registrado',
+                            sesiones: 0
+                        };
+                    }
+                    uniquePatientsMap[key].sesiones++;
+                }
+            });
+            
+            // Convertir a array y ordenar por nombre
+            const patientsArray = Object.values(uniquePatientsMap);
+            patientsArray.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            
+            // Crear tabla de pacientes
+            const patientsTableData = patientsArray.map(patient => [
+                patient.nombre,
+                patient.telefono,
+                patient.correo,
+                patient.sesiones
+            ]);
+            
+            doc.autoTable({
+                head: [['Nombre del Paciente', 'Teléfono', 'Correo Electrónico', 'Sesiones']],
+                body: patientsTableData,
+                startY: listY + 5,
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: primaryColor,
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 247, 250]
+                }
+            });
+        }
+        
+        // Añadir pie de página a todas las páginas
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`SISTEMAKINE - Página ${i} de ${totalPages}`, 15, doc.internal.pageSize.getHeight() - 10);
+            doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
+                     doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
+        }
+        
+        // Guardar PDF
+        const fileName = `${options.title.replace(/\s/g, '_')}.pdf`;
+        doc.save(fileName);
+        
         hideSpinner();
-        showStatusMessage('Error al generar reporte', 'error');
+        showStatusMessage(`Reporte de Peñalolén generado correctamente`, 'success');
+    } catch (error) {
+        console.error("Error al generar PDF:", error);
+        hideSpinner();
+        showStatusMessage('Error al generar el PDF', 'error');
     }
 }
 
