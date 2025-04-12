@@ -7818,7 +7818,7 @@ function fixStatsLayout() {
     });
 }
 
-        // Función para exportar estadísticas de pacientes de Peñalolén
+// Función para exportar estadísticas de pacientes de Peñalolén
 function exportPenalolenReport() {
     // Mostrar modal para seleccionar fechas
     document.getElementById('penalolen-report-modal').style.display = 'block';
@@ -7832,8 +7832,10 @@ function exportPenalolenReport() {
     document.getElementById('report-end-date').valueAsDate = lastDayOfMonth;
     document.getElementById('report-title').value = `Reporte Peñalolén - ${getMonthName(today.getMonth())} ${today.getFullYear()}`;
     
-    // Configurar evento del botón generar
-    document.getElementById('generate-report').onclick = generatePenalolenPDF;
+    // Configurar evento del botón generar - ESTA ES LA CORRECCIÓN CLAVE
+    document.getElementById('generate-report').onclick = function() {
+        processPenalolenReport();
+    };
     
     // Configurar evento del botón cancelar
     document.getElementById('cancel-report').onclick = function() {
@@ -7844,6 +7846,88 @@ function exportPenalolenReport() {
     document.querySelector('#penalolen-report-modal .close').onclick = function() {
         document.getElementById('penalolen-report-modal').style.display = 'none';
     };
+}
+
+        // Función para procesar y obtener datos para el reporte
+function processPenalolenReport() {
+    try {
+        showSpinner();
+        
+        // Obtener datos del formulario
+        const startDate = document.getElementById('report-start-date').valueAsDate;
+        const endDate = document.getElementById('report-end-date').valueAsDate;
+        const reportTitle = document.getElementById('report-title').value.trim();
+        const includePatientList = document.getElementById('include-patient-list').checked;
+        
+        // Validar fechas
+        if (!startDate || !endDate) {
+            hideSpinner();
+            showStatusMessage('Por favor seleccione ambas fechas', 'warning');
+            return;
+        }
+        
+        if (startDate > endDate) {
+            hideSpinner();
+            showStatusMessage('La fecha inicial no puede ser posterior a la fecha final', 'warning');
+            return;
+        }
+        
+        // Ajustar la fecha final para incluir todo el día
+        const adjustedEndDate = new Date(endDate);
+        adjustedEndDate.setHours(23, 59, 59, 999);
+        
+        // Consultar citas en el rango seleccionado
+        db.collection('citas')
+            .where('fecha', '>=', startDate)
+            .where('fecha', '<=', adjustedEndDate)
+            .get()
+            .then((querySnapshot) => {
+                // Filtrar solo citas de Peñalolén con asistencia
+                const penalolenAppointments = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Filtrar solo citas de Peñalolén con asistencia confirmada
+                    if (data.comuna === 'Peñalolén' && data.estado === 'attended') {
+                        penalolenAppointments.push({
+                            id: doc.id,
+                            ...data,
+                            fecha: data.fecha.toDate ? data.fecha.toDate() : new Date(data.fecha)
+                        });
+                    }
+                });
+                
+                // Cerrar el modal
+                document.getElementById('penalolen-report-modal').style.display = 'none';
+                
+                // Si no hay citas, mostrar mensaje
+                if (penalolenAppointments.length === 0) {
+                    hideSpinner();
+                    showStatusMessage('No se encontraron citas de pacientes de Peñalolén en el período seleccionado', 'warning');
+                    return;
+                }
+                
+                // Calcular estadísticas
+                const stats = calculatePenalolenStats(penalolenAppointments);
+                
+                // Generar PDF
+                generatePenalolenPDF(stats, penalolenAppointments, {
+                    startDate,
+                    endDate: adjustedEndDate,
+                    title: reportTitle,
+                    includePatientList
+                });
+            })
+            .catch((error) => {
+                console.error("Error al consultar citas:", error);
+                hideSpinner();
+                showStatusMessage('Error al consultar citas', 'error');
+            });
+    } catch (error) {
+        console.error("Error al generar reporte:", error);
+        hideSpinner();
+        showStatusMessage('Error al generar reporte', 'error');
+    }
 }
 
 // Generar PDF con estadísticas de Peñalolén - Con título personalizado
@@ -7989,30 +8073,10 @@ function generatePenalolenPDF(stats, appointments, options) {
     }
 }
 
-// Calcular estadísticas de Peñalolén
+// Función para calcular estadísticas de Peñalolén
 function calculatePenalolenStats(appointments) {
     // Contar pacientes únicos
     const uniquePatients = new Set();
-    
-    // Contar por tipo de cita
-    const appointmentsByType = {
-        'evaluacion-msk': 0,
-        'evaluacion-deportiva': 0,
-        'sesion-msk': 0,
-        'sesion-deportiva': 0,
-        'sin-tipo': 0
-    };
-    
-    // Contar sesiones por día de la semana
-    const sessionsByDay = {
-        1: 0, // Lunes
-        2: 0, // Martes
-        3: 0, // Miércoles
-        4: 0, // Jueves
-        5: 0, // Viernes
-        6: 0, // Sábado
-        0: 0  // Domingo
-    };
     
     // Contar sesiones por hora
     const sessionsByHour = {};
@@ -8024,16 +8088,8 @@ function calculatePenalolenStats(appointments) {
             uniquePatients.add(appointment.paciente.toLowerCase());
         }
         
-        // Tipo de cita
-        const tipoClase = appointment.tipoClase || 'sin-tipo';
-        appointmentsByType[tipoClase] = (appointmentsByType[tipoClase] || 0) + 1;
-        
-        // Día de la semana
+        // Hora del día
         if (appointment.fecha) {
-            const dayOfWeek = appointment.fecha.getDay();
-            sessionsByDay[dayOfWeek] = (sessionsByDay[dayOfWeek] || 0) + 1;
-            
-            // Hora del día
             const hour = appointment.fecha.getHours();
             sessionsByHour[hour] = (sessionsByHour[hour] || 0) + 1;
         }
@@ -8053,9 +8109,6 @@ function calculatePenalolenStats(appointments) {
     return {
         totalSessions: appointments.length,
         uniquePatients: uniquePatients.size,
-        appointmentsByType,
-        sessionsByDay,
-        sessionsByHour,
         busiestHour
     };
 }
