@@ -5945,15 +5945,30 @@ function saveAttendance() {
             closeAttendanceModal();
             showStatusMessage('Asistencia registrada correctamente', 'success');
             
-            // Actualizar caché
-            CACHE.updateAppointment(appointmentId, {
-                estado: status,
-                notasAsistencia: notes,
-                ultimaActualizacion: new Date()
-            });
+            // IMPORTANTE: Actualizar el estado de la cita en el array appointments local
+            const appointmentIndex = appointments.findIndex(a => a.id === appointmentId);
+            if (appointmentIndex !== -1) {
+                appointments[appointmentIndex].estado = status;
+                appointments[appointmentIndex].notasAsistencia = notes;
+                appointments[appointmentIndex].ultimaActualizacion = new Date();
+            }
             
-            // Cargar solo datos de asistencia para actualizar estadísticas
-            loadAttendanceData();
+            // Actualizar caché si existe
+            if (typeof CACHE !== 'undefined' && CACHE.updateAppointment) {
+                CACHE.updateAppointment(appointmentId, {
+                    estado: status,
+                    notasAsistencia: notes,
+                    ultimaActualizacion: new Date()
+                });
+            }
+            
+            // Actualizar la visualización de la cita en la agenda
+            renderAppointments();
+            
+            // IMPORTANTE: Actualizar las estadísticas inmediatamente
+            updateStatistics();
+            
+            hideSpinner();
         })
         .catch((error) => {
             console.error("Error al registrar asistencia:", error);
