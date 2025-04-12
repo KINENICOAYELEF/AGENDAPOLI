@@ -1710,8 +1710,10 @@ h4.therapist-stats-title {
                     <label for="attendance-notes">Notas:</label>
                     <textarea id="attendance-notes"></textarea>
                 </div>
+                <div id="attendance-status-info" style="margin-top: 15px; display: none;"></div>
             </div>
             <div class="modal-footer">
+                <button id="edit-appointment-btn" class="button save-btn" style="margin-right: auto;">Editar Cita</button>
                 <button class="button cancel-btn" id="cancel-attendance">Cancelar</button>
                 <button class="button save-btn" id="save-attendance">Guardar</button>
             </div>
@@ -1878,6 +1880,9 @@ function checkUserRole(userId) {
 // Inicializar la aplicación
 // Inicializar la aplicación
 function initializeApp() {
+    // Cargar caché desde localStorage
+    loadCacheFromStorage();
+    
     loadHolidays();
     updateWeekDisplay();
     
@@ -1890,6 +1895,9 @@ function initializeApp() {
     
     // Optimizar la carga de datos
     optimizeInitialLoad();
+    
+    // Configurar botones de asistencia
+    setupAttendanceButtons();
     
     hideSpinner();
 }
@@ -4255,30 +4263,8 @@ function setupEventListeners() {
             });
         });
         
-        // Eventos para asistencia
-        document.querySelectorAll('.attendance-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.attendance-btn').forEach(b => {
-                    b.classList.remove('selected');
-                });
-                this.classList.add('selected');
-            });
-        });
-        
-        document.getElementById('save-attendance').addEventListener('click', function() {
-            if (isAdmin) {
-                try {
-                    saveAttendance();
-                } catch (error) {
-                    console.error("Error al guardar asistencia:", error);
-                    showStatusMessage("Error al guardar asistencia", "error");
-                }
-            }
-        });
-        
-        document.getElementById('cancel-attendance').addEventListener('click', function() {
-            closeAttendanceModal();
-        });
+       // Configurar botones de asistencia
+        setupAttendanceButtons();
         
         // Evitar que el modal se cierre si se hace clic en él
         document.querySelectorAll('.modal-content').forEach(content => {
@@ -5341,41 +5327,32 @@ function moveAppointmentToDate(appointmentId, targetDate, hour) {
 
 // Abrir modal de asistencia
 // Abrir modal de asistencia
+// Abrir modal de asistencia - versión completamente nueva
 function openAttendanceModal(appointment) {
     if (!isAdmin) return;
     
     try {
-        const patientEl = document.getElementById('attendance-patient');
-        const dateEl = document.getElementById('attendance-date');
-        const timeEl = document.getElementById('attendance-time');
+        // Limpiar estado previo
+        document.querySelectorAll('.attendance-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        document.getElementById('attendance-notes').value = '';
         
-        patientEl.textContent = appointment.paciente || 'Sin nombre';
+        // Establecer información básica
+        document.getElementById('attendance-patient').textContent = appointment.paciente || 'Sin nombre';
         
         const fecha = appointment.fecha;
         const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-        dateEl.textContent = fecha ? fecha.toLocaleDateString('es-ES', options) : 'Fecha no disponible';
+        document.getElementById('attendance-date').textContent = fecha ? fecha.toLocaleDateString('es-ES', options) : 'Fecha no disponible';
         
         if (fecha) {
             const horaInicio = `${fecha.getHours().toString().padStart(2, '0')}:${fecha.getMinutes().toString().padStart(2, '0')}`;
             const fechaFin = new Date(fecha);
             fechaFin.setMinutes(fecha.getMinutes() + (appointment.duracion || 60));
             const horaFin = `${fechaFin.getHours().toString().padStart(2, '0')}:${fechaFin.getMinutes().toString().padStart(2, '0')}`;
-            timeEl.textContent = `${horaInicio} - ${horaFin}`;
+            document.getElementById('attendance-time').textContent = `${horaInicio} - ${horaFin}`;
         } else {
-            timeEl.textContent = 'Hora no disponible';
-        }
-        
-        // Resetear selección de estado
-        document.querySelectorAll('.attendance-btn').forEach(btn => {
-            btn.classList.remove('selected');
-        });
-        
-        // Seleccionar el estado actual si existe
-        if (appointment.estado) {
-            const currentStatusBtn = document.querySelector(`.attendance-btn[data-status="${appointment.estado}"]`);
-            if (currentStatusBtn) {
-                currentStatusBtn.classList.add('selected');
-            }
+            document.getElementById('attendance-time').textContent = 'Hora no disponible';
         }
         
         // Notas de asistencia
@@ -5384,43 +5361,25 @@ function openAttendanceModal(appointment) {
         // Guardar referencia a la cita actual
         attendanceModal.dataset.appointmentId = appointment.id;
         
-        // Mostrar modal
-        attendanceModal.style.display = 'block';
-        
-        // Eliminar botones de edición anteriores
-        const existingEditButtons = document.querySelectorAll('#attendance-modal .edit-past-button');
-        existingEditButtons.forEach(button => button.remove());
-
-        // Añadir botón para editar cita pasada (nuevo)
-        const editPastButton = document.createElement('button');
-        editPastButton.className = 'button save-btn edit-past-button'; // Añadida clase para identificarlo
-        editPastButton.id = 'edit-past-button'; // Añadido ID para fácil referencia
-        editPastButton.style.marginRight = '5px';
-        editPastButton.textContent = 'Editar Cita';
-        editPastButton.onclick = function() {
-            attendanceModal.style.display = 'none'; // Cerrar modal de asistencia
-            openAppointmentModal(appointment); // Abrir modal de edición
+        // Configurar el botón de editar
+        const editBtn = document.getElementById('edit-appointment-btn');
+        editBtn.onclick = function() {
+            attendanceModal.style.display = 'none';
+            openAppointmentModal(appointment);
         };
-
-        // Agregar el botón al footer del modal
-        const modalFooter = document.querySelector('#attendance-modal .modal-footer');
-        if (modalFooter) {
-            // Insertar al principio del footer
-            modalFooter.insertBefore(editPastButton, modalFooter.firstChild);
-        }
         
-        // Eliminar mensajes de estado anteriores
-        const existingStatusInfos = document.querySelectorAll('#attendance-modal .status-info');
-        existingStatusInfos.forEach(info => info.remove());
-
-        // Añadir mensaje informativo si la cita ya tiene un estado
+        // Seleccionar el estado actual si existe
         if (appointment.estado) {
-            const statusInfo = document.createElement('div');
-            statusInfo.className = 'status-info'; // Añadida clase para identificarlo
-            statusInfo.id = 'attendance-status-info'; // Añadido ID para fácil referencia
-            statusInfo.style.marginTop = '15px';
-            statusInfo.style.paddingTop = '10px';
+            const currentStatusBtn = document.querySelector(`.attendance-btn[data-status="${appointment.estado}"]`);
+            if (currentStatusBtn) {
+                currentStatusBtn.classList.add('selected');
+            }
+            
+            // Mostrar información de estado
+            const statusInfo = document.getElementById('attendance-status-info');
+            statusInfo.style.display = 'block';
             statusInfo.style.borderTop = '1px solid #eee';
+            statusInfo.style.paddingTop = '10px';
             
             let statusText = '';
             let statusColor = '';
@@ -5446,61 +5405,43 @@ function openAttendanceModal(appointment) {
                     ${statusText}
                 </p>
             `;
-            
-            const modalBody = document.querySelector('#attendance-modal .modal-body');
-            if (modalBody) {
-                modalBody.appendChild(statusInfo);
-            }
+        } else {
+            // Ocultar información de estado
+            document.getElementById('attendance-status-info').style.display = 'none';
         }
+        
+        // Mostrar modal
+        attendanceModal.style.display = 'block';
     } catch (error) {
         console.error("Error al abrir modal de asistencia:", error);
         showStatusMessage("Error al abrir el formulario de asistencia", "error");
     }
 }
 
-// Cerrar modal de asistencia
-// Cerrar modal de asistencia
+// Cerrar modal de asistencia - versión simplificada
 function closeAttendanceModal() {
     attendanceModal.style.display = 'none';
-    
-    // Limpiar contenido dinámico
-    // Limpiar botón de edición añadido
-    const modalFooter = document.querySelector('#attendance-modal .modal-footer');
-    if (modalFooter) {
-        // Conservar solo los botones originales
-        const saveBtn = document.getElementById('save-attendance');
-        const cancelBtn = document.getElementById('cancel-attendance');
-        const buttons = [saveBtn, cancelBtn].filter(Boolean);
-        
-        // Guardar los botones originales
-        const buttonsHTML = buttons.map(btn => btn.outerHTML).join('');
-        modalFooter.innerHTML = buttonsHTML;
-    }
-    
-    // Limpiar mensaje de estado
-    const modalBody = document.querySelector('#attendance-modal .modal-body');
-    if (modalBody) {
-        // Eliminar cualquier div añadido al final del modal-body
-        const statusInfo = modalBody.querySelector('.status-info');
-        if (statusInfo) {
-            modalBody.removeChild(statusInfo);
-        }
-    }
-    
-    // Limpiar notas de asistencia
-    const notesElement = document.getElementById('attendance-notes');
-    if (notesElement) {
-        notesElement.value = '';
-    }
-    
-    // Limpiar selección de botones de asistencia
+}
+
+// Configurar los eventos para los botones de asistencia
+function setupAttendanceButtons() {
+    // Botones de estado de asistencia
     document.querySelectorAll('.attendance-btn').forEach(btn => {
-        btn.classList.remove('selected');
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.attendance-btn').forEach(b => {
+                b.classList.remove('selected');
+            });
+            this.classList.add('selected');
+        });
     });
     
-    // Eliminar ID de cita
-    delete attendanceModal.dataset.appointmentId;
+    // Botón guardar
+    document.getElementById('save-attendance').addEventListener('click', saveAttendance);
+    
+    // Botón cancelar
+    document.getElementById('cancel-attendance').addEventListener('click', closeAttendanceModal);
 }
+
 
 // Guardar asistencia
 function saveAttendance() {
