@@ -7930,50 +7930,65 @@ function processPenalolenReport() {
     }
 }
 
-// Generar PDF con estadísticas de Peñalolén - Con título personalizado
+// Generar PDF con estadísticas de Peñalolén - Versión corregida
 function generatePenalolenPDF(stats, appointments, options) {
     try {
+        // Verificar que jspdf esté disponible
+        if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+            console.error("Error: La librería jsPDF no está disponible");
+            hideSpinner();
+            showStatusMessage('Error: Falta la librería jsPDF. Contacte al administrador.', 'error');
+            return;
+        }
+        
         // Crear documento PDF
         const doc = new jspdf.jsPDF();
         
-        // Colores
+        // Colores - usar valores predeterminados si hay error
         const primaryColor = [41, 63, 224]; // #2D3FE0
         const secondaryColor = [113, 128, 150]; // #718096
         
         // Encabezado con logo
-        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFillColor(primaryColor[0] || 0, primaryColor[1] || 0, primaryColor[2] || 255);
         doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14); // Reducido tamaño para que quepa el texto más largo
+        doc.setFontSize(14);
         doc.text("Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo", 15, 16);
         
         // Título del reporte
         doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
-        doc.text(options.title, 15, 40);
+        doc.text(options.title || "Reporte Peñalolén", 15, 40);
         
         // Información del período
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+        doc.setTextColor(secondaryColor[0] || 0, secondaryColor[1] || 0, secondaryColor[2] || 0);
         
+        // Función auxiliar de formato de fecha segura
         const formatDate = (date) => {
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
+            if (!date) return "Fecha no disponible";
+            try {
+                return date.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return date.toString();
+            }
         };
         
-        doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
+        if (options.startDate && options.endDate) {
+            doc.text(`Período: ${formatDate(options.startDate)} al ${formatDate(options.endDate)}`, 15, 50);
+        }
+        
         doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', {
             day: '2-digit',
             month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric'
         })}`, 15, 58);
         
         // Sección de resumen
@@ -7985,14 +8000,14 @@ function generatePenalolenPDF(stats, appointments, options) {
         doc.setFont('helvetica', 'bold');
         doc.text("Resumen - Comuna de Peñalolén", 25, 80);
         
-        // Estadísticas principales
+        // Estadísticas principales (con comprobaciones de valores indefinidos)
         doc.setFont('helvetica', 'normal');
-        doc.text(`Sesiones totales: ${stats.totalSessions}`, 25, 95);
-        doc.text(`Pacientes únicos: ${stats.uniquePatients}`, 25, 105);
-        doc.text(`Hora más ocupada: ${stats.busiestHour}:00`, 25, 115);
+        doc.text(`Sesiones totales: ${stats && stats.totalSessions !== undefined ? stats.totalSessions : 0}`, 25, 95);
+        doc.text(`Pacientes únicos: ${stats && stats.uniquePatients !== undefined ? stats.uniquePatients : 0}`, 25, 105);
+        doc.text(`Hora más ocupada: ${stats && stats.busiestHour !== undefined ? stats.busiestHour : 0}:00`, 25, 115);
         
-        // Si se solicita lista de pacientes, la ubicamos inmediatamente después del resumen
-        if (options.includePatientList) {
+        // Si se solicita lista de pacientes
+        if (options.includePatientList && Array.isArray(appointments)) {
             // Título de lista de pacientes
             const listY = 150;
             
@@ -8000,11 +8015,11 @@ function generatePenalolenPDF(stats, appointments, options) {
             doc.setFontSize(14);
             doc.text("Listado de Pacientes", 15, listY);
             
-            // Obtener lista de pacientes únicos con información completa
+            // Obtener lista de pacientes únicos
             const uniquePatientsMap = {};
             
             appointments.forEach(appointment => {
-                if (appointment.paciente) {
+                if (appointment && appointment.paciente) {
                     const key = appointment.paciente.toLowerCase();
                     if (!uniquePatientsMap[key]) {
                         uniquePatientsMap[key] = {
@@ -8030,46 +8045,62 @@ function generatePenalolenPDF(stats, appointments, options) {
                 patient.sesiones
             ]);
             
-            doc.autoTable({
-                head: [['Nombre del Paciente', 'Teléfono', 'Correo Electrónico', 'Sesiones']],
-                body: patientsTableData,
-                startY: listY + 5,
-                styles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                headStyles: {
-                    fillColor: primaryColor,
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold'
-                },
-                alternateRowStyles: {
-                    fillColor: [245, 247, 250]
-                }
-            });
+            // Comprobación de seguridad para autoTable
+            if (typeof doc.autoTable === 'function') {
+                doc.autoTable({
+                    head: [['Nombre del Paciente', 'Teléfono', 'Correo Electrónico', 'Sesiones']],
+                    body: patientsTableData,
+                    startY: listY + 5,
+                    styles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    headStyles: {
+                        fillColor: primaryColor,
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 247, 250]
+                    }
+                });
+            } else {
+                // Si autoTable no está disponible
+                doc.text("Error: La función autoTable no está disponible", 15, listY + 10);
+                console.error("Error: jsPDF autoTable plugin no está disponible");
+            }
         }
         
-        // Añadir pie de página a todas las páginas
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150, 150, 150);
-            doc.text(`Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo`, 15, doc.internal.pageSize.getHeight() - 10);
-            doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
-                     doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
+        // Añadir pie de página
+        try {
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo`, 15, doc.internal.pageSize.getHeight() - 10);
+                doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
+                         doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
+            }
+        } catch (paginationError) {
+            console.error("Error en paginación:", paginationError);
         }
         
         // Guardar PDF
-        const fileName = `${options.title.replace(/\s/g, '_')}.pdf`;
-        doc.save(fileName);
+        try {
+            const fileName = `${(options.title || "Reporte_Penalolen").replace(/\s/g, '_')}.pdf`;
+            doc.save(fileName);
+        } catch (saveError) {
+            console.error("Error al guardar PDF:", saveError);
+            alert("Error al guardar el PDF. Verifique si su navegador bloquea las descargas.");
+        }
         
         hideSpinner();
         showStatusMessage(`Reporte de Peñalolén generado correctamente`, 'success');
     } catch (error) {
         console.error("Error al generar PDF:", error);
         hideSpinner();
-        showStatusMessage('Error al generar el PDF', 'error');
+        showStatusMessage('Error al generar el PDF: ' + error.message, 'error');
     }
 }
 
@@ -8386,6 +8417,7 @@ function getAppointmentTypeName(typeClass) {
 <!-- Librerías para exportar -->
 <!-- Reemplaza las líneas existentes por estas -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<!-- Librerías para exportar a PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
 </body>
