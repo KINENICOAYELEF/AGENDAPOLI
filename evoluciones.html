@@ -14688,7 +14688,7 @@ function setupAuthEventListeners() {
     });
 }
 
-// Agregar botón de cerrar sesión a la UI (puedes ajustar la ubicación según tu interfaz)
+// Agregar botón de cerrar sesión a la UI
 function addLogoutButton() {
     // Buscar si ya existe un contenedor de usuario en el header
     const header = document.querySelector('.header');
@@ -14699,19 +14699,28 @@ function addLogoutButton() {
     if (!userInfo) {
         userInfo = document.createElement('div');
         userInfo.id = 'user-info';
-        userInfo.style.display = 'flex';
-        userInfo.style.justifyContent = 'flex-end';
-        userInfo.style.alignItems = 'center';
-        userInfo.style.marginLeft = 'auto';
-        userInfo.style.padding = '0 10px';
-        header.appendChild(userInfo);
+        userInfo.style.cssText = 'display: flex; align-items: center; margin-left: auto; height: 100%;';
+        
+        // Buscamos el elemento que contiene el título de la página
+        const existingElements = header.querySelectorAll('*');
+        let inserted = false;
+        
+        // Intentamos insertar antes del último elemento (que podría ser el buscador o notificaciones)
+        if (existingElements.length > 1) {
+            header.insertBefore(userInfo, existingElements[existingElements.length - 1]);
+            inserted = true;
+        }
+        
+        // Si no fue posible insertar antes, simplemente añadimos al final
+        if (!inserted) {
+            header.appendChild(userInfo);
+        }
     }
     
     // Añadir nombre de usuario
     const userName = document.createElement('span');
     userName.id = 'user-name';
-    userName.style.marginRight = '15px';
-    userName.style.fontWeight = '500';
+    userName.style.cssText = 'margin-right: 15px; font-weight: 500;';
     userName.textContent = currentUser ? currentUser.email : '';
     userInfo.appendChild(userName);
     
@@ -14719,8 +14728,7 @@ function addLogoutButton() {
     const logoutButton = document.createElement('button');
     logoutButton.id = 'logout-btn';
     logoutButton.className = 'button cancel-btn';
-    logoutButton.style.padding = '6px 12px';
-    logoutButton.style.fontSize = '13px';
+    logoutButton.style.cssText = 'padding: 6px 12px; font-size: 13px; height: auto; line-height: normal;';
     logoutButton.textContent = 'Cerrar sesión';
     userInfo.appendChild(logoutButton);
     
