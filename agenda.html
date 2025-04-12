@@ -1479,30 +1479,35 @@ h4.therapist-stats-title {
         </div>
         
         <div class="stats-panel">
-            <h3 class="stats-title">Estadísticas</h3>
-            <div class="time-period-selector" style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="weekly-stats-btn" class="button save-btn selected-period">Estadísticas Semanales</button>
-                <button id="monthly-stats-btn" class="button cancel-btn">Estadísticas Mensuales</button>
-                <select id="month-selector" style="padding: 8px; border-radius: 4px; display: none;">
-                    <option value="0">Enero</option>
-                    <option value="1">Febrero</option>
-                    <option value="2">Marzo</option>
-                    <option value="3">Abril</option>
-                    <option value="4">Mayo</option>
-                    <option value="5">Junio</option>
-                    <option value="6">Julio</option>
-                    <option value="7">Agosto</option>
-                    <option value="8">Septiembre</option>
-                    <option value="9">Octubre</option>
-                    <option value="10">Noviembre</option>
-                    <option value="11">Diciembre</option>
-                </select>
-                <select id="year-selector" style="padding: 8px; border-radius: 4px; display: none;">
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                </select>
-            </div>
-            
+    <div class="stats-container">
+        <h3 class="stats-title">Estadísticas</h3>
+        
+        <!-- Selector de período -->
+        <div class="time-period-selector" style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+            <button id="weekly-stats-btn" class="button save-btn selected-period">Estadísticas Semanales</button>
+            <button id="monthly-stats-btn" class="button cancel-btn">Estadísticas Mensuales</button>
+            <select id="month-selector" style="padding: 8px; border-radius: 4px; display: none;">
+                <option value="0">Enero</option>
+                <option value="1">Febrero</option>
+                <option value="2">Marzo</option>
+                <option value="3">Abril</option>
+                <option value="4">Mayo</option>
+                <option value="5">Junio</option>
+                <option value="6">Julio</option>
+                <option value="7">Agosto</option>
+                <option value="8">Septiembre</option>
+                <option value="9">Octubre</option>
+                <option value="10">Noviembre</option>
+                <option value="11">Diciembre</option>
+            </select>
+            <select id="year-selector" style="padding: 8px; border-radius: 4px; display: none;">
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+            </select>
+        </div>
+        
+        <!-- Estadísticas principales -->
+        <div class="main-stats-section" style="margin-bottom: 40px;">
             <div class="stats-grid">
                 <div class="stat-box">
                     <div class="stat-label">Asistencia semanal</div>
@@ -1517,18 +1522,27 @@ h4.therapist-stats-title {
                     <div class="stat-value" id="busiest-hour">10:00</div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Sección de estudiantes -->
+        <div class="students-stats-section" style="clear: both; margin-bottom: 40px; position: relative;">
+            <h4 class="therapist-stats-title" style="margin-bottom: 20px; clear: both;">Pacientes por estudiante</h4>
             
-            <h4 class="therapist-stats-title">Pacientes por estudiante</h4>
-            
-            <div class="charts-container" id="student-chart">
+            <div class="charts-container" id="student-chart" style="clear: both;">
                 <!-- Se llenará dinámicamente -->
             </div>
             
-            <div class="chart-labels" id="student-chart-labels">
+            <div class="chart-labels" id="student-chart-labels" style="clear: both;">
                 <!-- Se llenará dinámicamente -->
             </div>
         </div>
+        
+        <!-- Botones de exportación se añadirán dinámicamente aquí -->
+        <div class="export-container" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; position: relative; z-index: 20;">
+            <!-- Los botones se añadirán dinámicamente -->
+        </div>
     </div>
+</div>
 
      <!-- Panel de Administración de Estudiantes -->
         <div class="admin-panel">
@@ -3149,7 +3163,7 @@ function updateStatistics(isMonthly = false) {
         createComunasChartFixed(comunaCounter);
 
         // Corregir problemas de solapamiento en estadísticas
-        fixStatsLayout();
+        fixStatsStructure();
         
         console.log("✅ Actualización de estadísticas completada");
     } catch (error) {
@@ -7251,7 +7265,261 @@ function createComunasChartFixed(comunasData) {
     console.log("✅ Gráfico de comunas creado");
 }
 
+// Función para reconstruir la sección de estadísticas completamente
+function fixStatsStructure() {
+    const statsPanel = document.querySelector('.stats-panel');
+    if (!statsPanel) return;
+    
+    // Guardar el contenido original para referencia
+    const originalContent = statsPanel.innerHTML;
+    
+    // 1. Limpiar todo el contenido del panel de estadísticas
+    statsPanel.innerHTML = '';
+    
+    // 2. Crear una estructura HTML adecuada
+    const statsContainer = document.createElement('div');
+    statsContainer.className = 'stats-container';
+    statsContainer.style.width = '100%';
+    
+    // 3. Crear el título principal
+    const mainTitle = document.createElement('h3');
+    mainTitle.className = 'stats-title';
+    mainTitle.textContent = 'Estadísticas';
+    mainTitle.style.marginBottom = '20px';
+    statsContainer.appendChild(mainTitle);
+    
+    // 4. Crear contenedor para los botones de períodos
+    const periodSelectorContainer = document.createElement('div');
+    periodSelectorContainer.className = 'time-period-selector';
+    periodSelectorContainer.style.marginBottom = '20px';
+    periodSelectorContainer.style.display = 'flex';
+    periodSelectorContainer.style.justifyContent = 'flex-end';
+    periodSelectorContainer.style.gap = '10px';
+    
+    // Recuperar los botones del contenido original
+    const originalSelector = document.createElement('div');
+    originalSelector.innerHTML = originalContent;
+    const weeklyBtn = originalSelector.querySelector('#weekly-stats-btn');
+    const monthlyBtn = originalSelector.querySelector('#monthly-stats-btn');
+    const monthSelector = originalSelector.querySelector('#month-selector');
+    const yearSelector = originalSelector.querySelector('#year-selector');
+    
+    if (weeklyBtn) periodSelectorContainer.appendChild(weeklyBtn);
+    if (monthlyBtn) periodSelectorContainer.appendChild(monthlyBtn);
+    if (monthSelector) periodSelectorContainer.appendChild(monthSelector);
+    if (yearSelector) periodSelectorContainer.appendChild(yearSelector);
+    
+    statsContainer.appendChild(periodSelectorContainer);
+    
+    // 5. Crear sección de estadísticas principales
+    const mainStatsSection = document.createElement('div');
+    mainStatsSection.className = 'main-stats-section';
+    mainStatsSection.style.marginBottom = '40px';
+    
+    // Crear grid para las estadísticas principales
+    const statsGrid = document.createElement('div');
+    statsGrid.className = 'stats-grid';
+    statsGrid.style.display = 'grid';
+    statsGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    statsGrid.style.gap = '20px';
+    statsGrid.style.marginBottom = '20px';
+    
+    // Recuperar los valores de estadísticas
+    const attendanceRate = originalSelector.querySelector('#attendance-rate');
+    const totalAppointments = originalSelector.querySelector('#total-appointments');
+    const busiestHour = originalSelector.querySelector('#busiest-hour');
+    
+    // Crear cajas de estadísticas
+    if (attendanceRate) {
+        const attendanceBox = createStatBox('Asistencia semanal', attendanceRate.textContent);
+        statsGrid.appendChild(attendanceBox);
+    }
+    
+    if (totalAppointments) {
+        const appointmentsBox = createStatBox('Citas totales', totalAppointments.textContent);
+        statsGrid.appendChild(appointmentsBox);
+    }
+    
+    if (busiestHour) {
+        const hourBox = createStatBox('Hora más ocupada', busiestHour.textContent);
+        statsGrid.appendChild(hourBox);
+    }
+    
+    mainStatsSection.appendChild(statsGrid);
+    statsContainer.appendChild(mainStatsSection);
+    
+    // 6. Crear sección para la tabla de estudiantes
+    const studentsSection = document.createElement('div');
+    studentsSection.className = 'students-stats-section';
+    studentsSection.style.marginBottom = '40px';
+    studentsSection.style.clear = 'both';
+    
+    // Título para la sección de estudiantes
+    const studentsTitle = document.createElement('h4');
+    studentsTitle.className = 'therapist-stats-title';
+    studentsTitle.textContent = 'Pacientes por estudiante';
+    studentsTitle.style.marginBottom = '20px';
+    studentsTitle.style.fontWeight = 'bold';
+    studentsSection.appendChild(studentsTitle);
+    
+    // Recuperar la tabla de estudiantes
+    const studentsTable = originalSelector.querySelector('.student-stats-table');
+    if (studentsTable) {
+        // Asegurar que la tabla tenga los estilos adecuados
+        studentsTable.style.width = '100%';
+        studentsTable.style.borderCollapse = 'separate';
+        studentsTable.style.borderSpacing = '0';
+        studentsTable.style.marginTop = '10px';
+        studentsTable.style.marginBottom = '30px';
+        studentsTable.style.boxShadow = 'var(--shadow)';
+        studentsTable.style.borderRadius = '8px';
+        studentsTable.style.overflow = 'hidden';
+        
+        studentsSection.appendChild(studentsTable);
+    }
+    
+    statsContainer.appendChild(studentsSection);
+    
+    // 7. Recuperar y añadir otras secciones de estadísticas
+    const otherSections = originalSelector.querySelectorAll('.stats-section');
+    otherSections.forEach(section => {
+        const newSection = section.cloneNode(true);
+        newSection.style.marginTop = '30px';
+        newSection.style.paddingTop = '20px';
+        newSection.style.borderTop = '1px solid var(--border)';
+        newSection.style.clear = 'both';
+        statsContainer.appendChild(newSection);
+    });
+    
+    // 8. Añadir botones de exportación
+    const exportContainer = document.createElement('div');
+    exportContainer.className = 'export-container';
+    exportContainer.style.display = 'flex';
+    exportContainer.style.justifyContent = 'flex-end';
+    exportContainer.style.gap = '10px';
+    exportContainer.style.marginTop = '30px';
+    
+    // Recuperar botones de exportación
+    const exportButtons = originalSelector.querySelectorAll('.export-container button');
+    exportButtons.forEach(button => {
+        exportContainer.appendChild(button.cloneNode(true));
+    });
+    
+    statsContainer.appendChild(exportContainer);
+    
+    // Añadir todo al panel de estadísticas
+    statsPanel.appendChild(statsContainer);
+    
+    // Volver a conectar los eventos de los botones
+    reconnectEventListeners();
+}
 
+// Función auxiliar para crear cajas de estadísticas
+function createStatBox(label, value) {
+    const box = document.createElement('div');
+    box.className = 'stat-box';
+    box.style.padding = '16px';
+    box.style.borderRadius = '8px';
+    box.style.textAlign = 'center';
+    box.style.backgroundColor = 'var(--surface-hover)';
+    
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'stat-label';
+    labelDiv.style.fontSize = '14px';
+    labelDiv.style.color = 'var(--text-secondary)';
+    labelDiv.style.marginBottom = '8px';
+    labelDiv.textContent = label;
+    
+    const valueDiv = document.createElement('div');
+    valueDiv.className = 'stat-value';
+    valueDiv.style.fontSize = '28px';
+    valueDiv.style.fontWeight = '700';
+    valueDiv.style.color = 'var(--accent-blue)';
+    valueDiv.textContent = value;
+    
+    box.appendChild(labelDiv);
+    box.appendChild(valueDiv);
+    
+    return box;
+}
+
+// Reconectar los event listeners después de reconstruir el DOM
+function reconnectEventListeners() {
+    // Reconectar botones de período
+    const weeklyBtn = document.getElementById('weekly-stats-btn');
+    const monthlyBtn = document.getElementById('monthly-stats-btn');
+    const monthSelector = document.getElementById('month-selector');
+    const yearSelector = document.getElementById('year-selector');
+    
+    if (weeklyBtn && monthlyBtn) {
+        weeklyBtn.addEventListener('click', function() {
+            statsMode = 'weekly';
+            weeklyBtn.classList.add('selected-period');
+            weeklyBtn.classList.remove('cancel-btn');
+            weeklyBtn.classList.add('save-btn');
+            
+            monthlyBtn.classList.remove('selected-period');
+            monthlyBtn.classList.add('cancel-btn');
+            monthlyBtn.classList.remove('save-btn');
+            
+            if (monthSelector) monthSelector.style.display = 'none';
+            if (yearSelector) yearSelector.style.display = 'none';
+            
+            loadAppointments();
+        });
+        
+        monthlyBtn.addEventListener('click', function() {
+            statsMode = 'monthly';
+            monthlyBtn.classList.add('selected-period');
+            monthlyBtn.classList.remove('cancel-btn');
+            monthlyBtn.classList.add('save-btn');
+            
+            weeklyBtn.classList.remove('selected-period');
+            weeklyBtn.classList.add('cancel-btn');
+            weeklyBtn.classList.remove('save-btn');
+            
+            if (monthSelector) monthSelector.style.display = 'block';
+            if (yearSelector) yearSelector.style.display = 'block';
+            
+            const monthValue = monthSelector ? parseInt(monthSelector.value) : new Date().getMonth();
+            const yearValue = yearSelector ? parseInt(yearSelector.value) : new Date().getFullYear();
+            loadMonthlyAppointments(yearValue, monthValue);
+        });
+    }
+    
+    // Reconectar selectores de mes y año
+    if (monthSelector && yearSelector) {
+        monthSelector.addEventListener('change', function() {
+            if (statsMode === 'monthly') {
+                loadMonthlyAppointments(parseInt(yearSelector.value), parseInt(this.value));
+            }
+        });
+        
+        yearSelector.addEventListener('change', function() {
+            if (statsMode === 'monthly') {
+                loadMonthlyAppointments(parseInt(this.value), parseInt(monthSelector.value));
+            }
+        });
+    }
+    
+    // Reconectar botones de exportación
+    const exportExcelBtn = document.querySelector('.export-container .button:first-child');
+    const exportPdfBtn = document.querySelector('.export-container .button:last-child');
+    
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', function() { 
+            exportStatisticsToExcel(); 
+        });
+    }
+    
+    if (exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', function() { 
+            exportStatisticsToPdf(); 
+        });
+    }
+}
+
+        
 // Función mejorada para arreglar el solapamiento en las estadísticas
 function fixStatsLayout() {
     // 1. Agregar estilos CSS al head
