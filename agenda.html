@@ -1403,6 +1403,7 @@ h4.therapist-stats-title {
             <input type="text" id="patient-search" placeholder="Buscar paciente...">
             <button id="search-btn" class="button save-btn">Buscar</button>
             <button id="clear-search-btn" class="button cancel-btn">Limpiar</button>
+            <button id="refresh-data-btn" class="button save-btn" style="margin-left: 5px;">↻ Actualizar datos</button>
         </div>
         
         <div class="scheduler-container">
@@ -1771,6 +1772,117 @@ let currentWeekDate = new Date();
 let studentNames = {}; // Para guardar los nombres reales de los estudiantes
 let uniquePatientsByStudent = {}; // Para estadísticas
 
+// Sistema de caché básico para reducir lecturas de Firestore
+const CACHE = {
+    // Datos
+    appointments: [],
+    students: null,
+    
+    // Timestamps de actualización
+    lastFullUpdate: null,
+    
+    // Configuración
+    updateIntervalHours: 6, // Actualización completa cada 6 horas
+    
+    // Verificar si la caché está actualizada
+    isValid: function() {
+        if (!this.lastFullUpdate) return false;
+        
+        const now = new Date();
+        const hours = (now - this.lastFullUpdate) / (1000 * 60 * 60);
+        return hours < this.updateIntervalHours;
+    },
+    
+    // Guardar caché en localStorage
+    save: function() {
+        try {
+            // Convertir fechas a strings para almacenamiento
+            const appointmentsForStorage = this.appointments.map(app => {
+                const appCopy = {...app};
+                if (appCopy.fecha instanceof Date) {
+                    appCopy.fechaStr = appCopy.fecha.toISOString();
+                }
+                return appCopy;
+            });
+            
+            const dataToSave = {
+                appointments: appointmentsForStorage,
+                students: this.students,
+                lastFullUpdate: this.lastFullUpdate ? this.lastFullUpdate.toISOString() : null
+            };
+            
+            localStorage.setItem('sistemakine_cache', JSON.stringify(dataToSave));
+            console.log(`Caché guardada: ${this.appointments.length} citas`);
+        } catch (e) {
+            console.error('Error guardando caché:', e);
+        }
+    },
+    
+    // Cargar caché desde localStorage
+    load: function() {
+        try {
+            const saved = localStorage.getItem('sistemakine_cache');
+            if (!saved) return false;
+            
+            const data = JSON.parse(saved);
+            
+            // Restaurar fechas desde strings
+            if (data.appointments) {
+                data.appointments.forEach(app => {
+                    if (app.fechaStr) {
+                        app.fecha = new Date(app.fechaStr);
+                    }
+                });
+                
+                this.appointments = data.appointments;
+            }
+            
+            if (data.students) {
+                this.students = data.students;
+            }
+            
+            if (data.lastFullUpdate) {
+                this.lastFullUpdate = new Date(data.lastFullUpdate);
+            }
+            
+            console.log(`Caché cargada: ${this.appointments.length} citas`);
+            return true;
+        } catch (e) {
+            console.error('Error cargando caché:', e);
+            return false;
+        }
+    },
+    
+    // Limpiar caché
+    clear: function() {
+        this.appointments = [];
+        this.lastFullUpdate = null;
+        try {
+            localStorage.removeItem('sistemakine_cache');
+        } catch (e) {
+            console.error('Error limpiando caché:', e);
+        }
+    },
+    
+    // Actualizar una cita específica (para cuando se editan citas)
+    updateAppointment: function(appointmentId, newData, isDelete = false) {
+        if (isDelete) {
+            this.appointments = this.appointments.filter(a => a.id !== appointmentId);
+        } else {
+            const index = this.appointments.findIndex(a => a.id === appointmentId);
+            if (index >= 0) {
+                this.appointments[index] = {...this.appointments[index], ...newData};
+            } else {
+                // Si la cita no existe, agregarla
+                if (newData.id) {
+                    this.appointments.push(newData);
+                }
+            }
+        }
+        this.save();
+    }
+};
+
 // Elementos DOM
 const spinner = document.getElementById('spinner');
 const statusMessage = document.getElementById('status-message');
@@ -1879,7 +1991,9 @@ function checkUserRole(userId) {
 
 // Inicializar la aplicación
 function initializeApp() {
-    // Cargar feriados (desde variables locales, no desde Firestore)
+    // Cargar caché desde localStorage
+    CACHE.load();
+    
     loadHolidays();
     updateWeekDisplay();
     
@@ -2343,20 +2457,55 @@ function getMonthName(month) {
     return months[month];
 }
 
-// Modificar la función loadAppointments() para que funcione correctamente
+// Modificar la función loadAppointments() para usar caché
 function loadAppointments() {
     showSpinner();
+    
+    // Cargar caché si aún no se ha cargado
+    if (CACHE.appointments.length === 0) {
+        CACHE.load();
+    }
     
     // Obtener fecha de inicio y fin de la semana
     const startOfWeek = getStartOfWeek(currentWeekDate);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 4); // Un día después del jueves
     
+    // Si la caché es válida, usar esos datos
+    if (CACHE.isValid() && CACHE.appointments.length > 0) {
+        console.log("Usando datos en caché para la agenda");
+        
+        // Filtrar solo citas de esta semana de la caché
+        appointments = CACHE.appointments.filter(a => {
+            const appointmentDate = a.fecha;
+            return appointmentDate && appointmentDate >= startOfWeek && appointmentDate < endOfWeek;
+        });
+        
+        console.log(`Mostrando ${appointments.length} citas de la semana actual desde caché`);
+        
+        // Renderizar citas y actualizar estadísticas
+        renderAppointments();
+        updateStatistics();
+        
+        hideSpinner();
+        return;
+    }
+    
+    // Si la caché no es válida o está vacía, cargar desde Firestore
+    console.log("Caché inválida o vacía, cargando desde Firestore");
+    
     try {
-        // Consulta a Firestore
-        db.collection('citas').get()
+        // Especificar un límite de tiempo para reducir lecturas (últimos 3 meses)
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        
+        // Consulta a Firestore - limitada a los últimos 3 meses
+        db.collection('citas')
+            .where('fecha', '>=', threeMonthsAgo)
+            .get()
             .then((querySnapshot) => {
-                appointments = [];
+                // Primero, guardar todas las citas en la caché
+                CACHE.appointments = [];
                 
                 querySnapshot.forEach((doc) => {
                     try {
@@ -2375,42 +2524,81 @@ function loadAppointments() {
                             return;
                         }
                         
-                        // Filtrar solo las citas de esta semana
-                        if (appointmentDate >= startOfWeek && appointmentDate < endOfWeek) {
-                            const appointment = {
-                                id: doc.id,
-                                ...data,
-                                fecha: appointmentDate
-                            };
-                            
-                            appointments.push(appointment);
-                        }
+                        const appointment = {
+                            id: doc.id,
+                            ...data,
+                            fecha: appointmentDate
+                        };
+                        
+                        CACHE.appointments.push(appointment);
                     } catch (error) {
                         console.error("Error procesando cita individual:", error);
                     }
                 });
                 
-                console.log(`Se cargaron ${appointments.length} citas para la semana actual`);
+                // Actualizar timestamp de la caché
+                CACHE.lastFullUpdate = new Date();
+                
+                // Guardar en localStorage
+                CACHE.save();
+                
+                console.log(`Se cargaron ${CACHE.appointments.length} citas en caché`);
+                
+                // Filtrar solo las citas de esta semana para mostrar
+                appointments = CACHE.appointments.filter(a => {
+                    const appointmentDate = a.fecha;
+                    return appointmentDate && appointmentDate >= startOfWeek && appointmentDate < endOfWeek;
+                });
+                
+                console.log(`Se muestran ${appointments.length} citas para la semana actual`);
                 
                 // Renderizar citas y actualizar estadísticas
                 renderAppointments();
                 updateStatistics();
                 
-                // Cargar estadísticas históricas (solo una vez aquí)
+                // Cargar estadísticas históricas
                 loadHistoricalPatientStats();
                 
                 hideSpinner();
             })
             .catch((error) => {
                 console.error("Error al cargar citas:", error);
-                showStatusMessage("Error al cargar citas. Cargando datos de ejemplo.", "warning");
-                loadSampleAppointments(); // Cargar datos de ejemplo en caso de error
+                showStatusMessage("Error al cargar citas. Usando datos en caché si están disponibles.", "warning");
+                
+                // Si tenemos datos en caché (aunque estén desactualizados), usarlos
+                if (CACHE.appointments.length > 0) {
+                    appointments = CACHE.appointments.filter(a => {
+                        const appointmentDate = a.fecha;
+                        return appointmentDate && appointmentDate >= startOfWeek && appointmentDate < endOfWeek;
+                    });
+                    
+                    renderAppointments();
+                    updateStatistics();
+                } else {
+                    // Si no hay datos en caché, cargar datos de ejemplo
+                    loadSampleAppointments();
+                }
+                
                 hideSpinner();
             });
     } catch (error) {
         console.error("Error crítico al cargar citas:", error);
-        showStatusMessage("Error de conexión. Cargando datos de ejemplo.", "error");
-        loadSampleAppointments();
+        showStatusMessage("Error de conexión. Usando datos en caché si están disponibles.", "error");
+        
+        // Si tenemos datos en caché (aunque estén desactualizados), usarlos
+        if (CACHE.appointments.length > 0) {
+            appointments = CACHE.appointments.filter(a => {
+                const appointmentDate = a.fecha;
+                return appointmentDate && appointmentDate >= startOfWeek && appointmentDate < endOfWeek;
+            });
+            
+            renderAppointments();
+            updateStatistics();
+        } else {
+            // Si no hay datos en caché, cargar datos de ejemplo
+            loadSampleAppointments();
+        }
+        
         hideSpinner();
     }
 }
@@ -2959,6 +3147,10 @@ function updateStatistics(isMonthly = false) {
         
         // NUEVO: Crear gráfico de comunas
         createComunasChartFixed(comunaCounter);
+
+        // Corregir problemas de solapamiento en estadísticas
+        fixStatsLayout();
+    }
         
         console.log("✅ Actualización de estadísticas completada");
     } catch (error) {
@@ -2967,7 +3159,49 @@ function updateStatistics(isMonthly = false) {
 }
 
 // Cargar historial de pacientes con estadísticas de asistencia
+// Cargar historial de pacientes con estadísticas de asistencia
 function loadHistoricalPatientStats() {
+    // Si tenemos datos en caché, usarlos para estadísticas históricas
+    if (CACHE.appointments.length > 0) {
+        console.log("Usando caché para estadísticas históricas");
+        
+        // Contador de sesiones por paciente (histórico)
+        const historicalSessionsByPatient = {};
+        
+        // Contadores para asistencia
+        const attendedByPatient = {};
+        const missedByPatient = {};
+        const rescheduledByPatient = {};
+        
+        // Procesar datos de la caché
+        CACHE.appointments.forEach((data) => {
+            if (data.paciente) {
+                const patientKey = data.paciente.toLowerCase();
+                historicalSessionsByPatient[patientKey] = (historicalSessionsByPatient[patientKey] || 0) + 1;
+                
+                // Contabilizar estado de asistencia
+                if (data.estado === 'attended') {
+                    attendedByPatient[patientKey] = (attendedByPatient[patientKey] || 0) + 1;
+                } else if (data.estado === 'missed') {
+                    missedByPatient[patientKey] = (missedByPatient[patientKey] || 0) + 1;
+                } else if (data.estado === 'rescheduled') {
+                    rescheduledByPatient[patientKey] = (rescheduledByPatient[patientKey] || 0) + 1;
+                }
+            }
+        });
+        
+        // Crear la sección para estadísticas históricas con datos de asistencia
+        createHistoricalPatientStatsSection(
+            historicalSessionsByPatient, 
+            attendedByPatient, 
+            missedByPatient, 
+            rescheduledByPatient
+        );
+        
+        return;
+    }
+    
+    // Si no hay caché, consultar Firestore (usar tu código original)
     showSpinner();
     
     // Consultar TODAS las citas en Firestore (sin filtro de fecha)
@@ -3040,7 +3274,6 @@ function loadHistoricalPatientStats() {
             createHistoricalPatientStatsSection(sampleData, sampleAttended, sampleMissed, {});
         });
 }
-
 // Función para crear la sección de estadísticas históricas
 function createHistoricalPatientStatsSection(historicalData, attendedData, missedData, rescheduledData) {
     // Verificar si existe la sección, si no, crearla
@@ -4260,7 +4493,7 @@ function setupEventListeners() {
             });
         });
         
-       // Configurar botones de asistencia
+        // Configurar botones de asistencia
         setupAttendanceButtons();
         
         // Evitar que el modal se cierre si se hace clic en él
@@ -4276,14 +4509,47 @@ function setupEventListeners() {
                 this.style.display = 'none';
             });
         });
+        
+        // Configurar búsqueda de pacientes
+        setupPatientSearch();
+        
+        // Configurar filtros
+        setupFilters();
+        
+        // Botón para forzar actualización de datos
+        const refreshBtn = document.getElementById('refresh-data-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                // Invalidar caché para forzar recarga desde Firestore
+                CACHE.lastFullUpdate = null;
+                CACHE.save();
+                
+                showStatusMessage('Actualizando datos desde el servidor...', 'info');
+                loadAppointments();
+            });
+        } else {
+            // Si el botón no existe, añadirlo después del botón "Limpiar"
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (clearBtn && clearBtn.parentElement) {
+                const refreshButton = document.createElement('button');
+                refreshButton.id = 'refresh-data-btn';
+                refreshButton.className = 'button save-btn';
+                refreshButton.style.marginLeft = '5px';
+                refreshButton.innerHTML = '↻ Actualizar datos';
+                refreshButton.addEventListener('click', function() {
+                    CACHE.lastFullUpdate = null;
+                    CACHE.save();
+                    showStatusMessage('Actualizando datos desde el servidor...', 'info');
+                    loadAppointments();
+                });
+                
+                clearBtn.parentElement.appendChild(refreshButton);
+            }
+        }
     } catch (error) {
         console.error("Error al configurar eventos:", error);
         showStatusMessage("Error al inicializar la interfaz", "error");
     }
-    // Configurar búsqueda de pacientes
-    setupPatientSearch();
-    // Configurar filtros
-    setupFilters();
 }
 
 // Navegar entre semanas
@@ -4501,6 +4767,7 @@ function closeAppointmentModal() {
 }
 
 // Guardar cita
+// Guardar cita
 function saveAppointment() {
     try {
         showSpinner();
@@ -4680,12 +4947,20 @@ function saveAppointment() {
                                             } else {
                                                 showStatusMessage('Cita actualizada correctamente', 'success');
                                             }
+                                            
+                                            // Actualizar caché
+                                            CACHE.updateAppointment(editingAppointmentId, baseAppointmentData);
+                                            
                                             loadAppointments();
                                         });
                                 } else {
                                     // Si el nombre cambió o no hay cambios en datos de contacto
                                     closeAppointmentModal();
                                     showStatusMessage('Cita actualizada correctamente', 'success');
+                                    
+                                    // Actualizar caché
+                                    CACHE.updateAppointment(editingAppointmentId, baseAppointmentData);
+                                    
                                     loadAppointments();
                                 }
                             });
@@ -4733,6 +5008,11 @@ function saveAppointment() {
                 .then(() => {
                     closeAppointmentModal();
                     showStatusMessage(`Creadas ${createdDates.length} citas recurrentes`, 'success');
+                    
+                    // Forzar recarga completa de caché después de crear muchas citas
+                    CACHE.lastFullUpdate = null;
+                    CACHE.save();
+                    
                     loadAppointments();
                 })
                 .catch((error) => {
@@ -4747,6 +5027,11 @@ function saveAppointment() {
                     console.log("Cita creada con ID:", docRef.id);
                     closeAppointmentModal();
                     showStatusMessage('Cita creada correctamente', 'success');
+                    
+                    // Actualizar caché con la nueva cita
+                    const newAppointment = {...baseAppointmentData, id: docRef.id};
+                    CACHE.updateAppointment(docRef.id, newAppointment);
+                    
                     loadAppointments();
                 })
                 .catch((error) => {
@@ -4803,6 +5088,9 @@ function deleteAppointment() {
                     
                     querySnapshot.forEach((doc) => {
                         batch.delete(doc.ref);
+                        
+                        // Eliminar de la caché
+                        CACHE.updateAppointment(doc.id, {}, true);
                     });
                     
                     return batch.commit();
@@ -4835,6 +5123,10 @@ function deleteSpecificAppointment(appointmentId) {
         .then(() => {
             closeAppointmentModal();
             showStatusMessage('Cita eliminada correctamente', 'success');
+            
+            // Eliminar de la caché
+            CACHE.updateAppointment(appointmentId, {}, true);
+            
             loadAppointments();
         })
         .catch((error) => {
@@ -5279,6 +5571,45 @@ function deleteSpecificAppointment(appointmentId) {
         });
 }
 
+// Añade esta función nueva para actualizar solo datos de asistencia (menor uso de lecturas)
+// Función para actualizar solo los datos de asistencia (menos lecturas)
+function loadAttendanceData() {
+    // Usar una consulta filtrada que solo traiga los datos de asistencia
+    // Esto usa muchas menos lecturas que traer todas las citas completas
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    
+    db.collection('citas')
+        .where('fecha', '>=', threeMonthsAgo)
+        .select('estado', 'paciente', 'estudiante', 'fecha') // Solo traer campos necesarios
+        .get()
+        .then((querySnapshot) => {
+            // Actualizar estados de asistencia en la caché
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const appointmentId = doc.id;
+                
+                // Encontrar esta cita en la caché y actualizar su estado
+                const index = CACHE.appointments.findIndex(a => a.id === appointmentId);
+                if (index >= 0) {
+                    CACHE.appointments[index].estado = data.estado;
+                }
+            });
+            
+            // Guardar caché actualizada
+            CACHE.save();
+            
+            // Actualizar estadísticas
+            updateStatistics();
+            
+            hideSpinner();
+        })
+        .catch(error => {
+            console.error("Error actualizando datos de asistencia:", error);
+            hideSpinner();
+        });
+}
+        
 // Mover una cita a una fecha y hora específicas
 function moveAppointmentToDate(appointmentId, targetDate, hour) {
     if (!isAdmin) return;
@@ -5437,6 +5768,19 @@ function setupAttendanceButtons() {
     
     // Botón cancelar
     document.getElementById('cancel-attendance').addEventListener('click', closeAttendanceModal);
+    
+    // Botón editar cita (en el modal de asistencia)
+    const editBtn = document.getElementById('edit-appointment-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            const appointmentId = attendanceModal.dataset.appointmentId;
+            const appointment = appointments.find(a => a.id === appointmentId);
+            if (appointment) {
+                closeAttendanceModal();
+                openAppointmentModal(appointment);
+            }
+        });
+    }
 }
 
 
@@ -5470,7 +5814,16 @@ function saveAttendance() {
         .then(() => {
             closeAttendanceModal();
             showStatusMessage('Asistencia registrada correctamente', 'success');
-            loadAppointments();
+            
+            // Actualizar caché
+            CACHE.updateAppointment(appointmentId, {
+                estado: status,
+                notasAsistencia: notes,
+                ultimaActualizacion: new Date()
+            });
+            
+            // Cargar solo datos de asistencia para actualizar estadísticas
+            loadAttendanceData();
         })
         .catch((error) => {
             console.error("Error al registrar asistencia:", error);
@@ -6899,6 +7252,64 @@ function createComunasChartFixed(comunasData) {
     
     console.log("✅ Gráfico de comunas creado");
 }
+
+
+// Agrega esta función que corrige los estilos de estadísticas
+function fixStatsLayout() {
+    // Corregir la posición de los elementos de estadísticas
+    const statsPanel = document.querySelector('.stats-panel');
+    if (statsPanel) {
+        // Asegurar que el panel tiene posición relativa
+        statsPanel.style.position = 'relative';
+        statsPanel.style.overflow = 'visible';
+        statsPanel.style.paddingBottom = '50px'; /* Añadir espacio adicional abajo */
+    }
+    
+    // Corregir la tabla de estadísticas de estudiantes
+    const studentStatsTable = document.querySelector('.student-stats-table');
+    if (studentStatsTable) {
+        studentStatsTable.style.width = '100%';
+        studentStatsTable.style.borderCollapse = 'separate';
+        studentStatsTable.style.borderSpacing = '0';
+        studentStatsTable.style.marginTop = '20px';
+        studentStatsTable.style.boxShadow = 'var(--shadow)';
+        studentStatsTable.style.borderRadius = '8px';
+        studentStatsTable.style.overflow = 'hidden';
+        studentStatsTable.style.position = 'relative';
+        studentStatsTable.style.zIndex = '10'; /* Aumentar para evitar solapamientos */
+    }
+    
+    // Mejorar separación entre secciones de estadísticas
+    const statsSections = document.querySelectorAll('.stats-section');
+    statsSections.forEach(section => {
+        section.style.marginTop = '50px';
+        section.style.paddingTop = '30px';
+        section.style.borderTop = '1px solid var(--border)';
+        section.style.clear = 'both'; /* Evitar solapamientos con elementos flotantes */
+    });
+    
+    // Corregir títulos de secciones
+    const sectionTitles = document.querySelectorAll('h4.therapist-stats-title');
+    sectionTitles.forEach(title => {
+        title.style.marginTop = '30px';
+        title.style.marginBottom = '20px';
+        title.style.paddingTop = '10px';
+        title.style.clear = 'both';
+    });
+    
+    // Corregir botones de exportación
+    const exportContainer = document.querySelector('.export-container');
+    if (exportContainer) {
+        exportContainer.style.display = 'flex';
+        exportContainer.style.justifyContent = 'flex-end';
+        exportContainer.style.gap = '10px';
+        exportContainer.style.marginTop = '30px';
+        exportContainer.style.position = 'relative';
+        exportContainer.style.zIndex = '20'; /* Asegurar que los botones estén encima */
+    }
+}
+
+        
 </script>
 
 <!-- Librerías para exportar -->
