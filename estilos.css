@@ -3044,38 +3044,3 @@ select.form-control option:checked {
         to { opacity: 1; transform: translateY(0); }
     }
 
-
-/* Ajustes para restaurar el diseño original */
-.header {
-    height: 60px !important; /* Restaurar altura original */
-    min-height: 60px !important;
-    padding: 0 20px !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Asegurar que el contenedor principal mantiene el diseño original */
-#main-container {
-    height: 100vh !important;
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* Ajustes para el área de usuario en la barra */
-#user-info {
-    margin-left: auto !important;
-    padding: 0 15px !important;
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Ajustes para el botón de cerrar sesión */
-#logout-btn {
-    padding: 6px 12px !important;
-    margin-left: 15px !important;
-    font-size: 13px !important;
-    height: auto !important;
-    line-height: normal !important;
-}
