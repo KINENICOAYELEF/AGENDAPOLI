@@ -5164,12 +5164,61 @@ function updateStudentStatsTable(uniquePatients, totalSessions, attendanceRates,
     try {
         console.log("🔍 Actualizando tabla de estadísticas de estudiantes...");
         
-        const chartContainer = document.getElementById('student-chart');
-        const chartLabels = document.getElementById('student-chart-labels');
+        // Encontrar o crear los contenedores
+        let chartContainer = document.getElementById('student-chart');
+        let chartLabels = document.getElementById('student-chart-labels');
         
-        if (!chartContainer || !chartLabels) {
-            console.error("❌ No se encontraron los contenedores para la tabla de estudiantes");
-            return;
+        // Si no existe el contenedor principal, buscamos la sección de estudiantes
+        if (!chartContainer) {
+            const studentsSection = document.querySelector('.students-stats-section');
+            if (studentsSection) {
+                // Crear el contenedor si no existe
+                chartContainer = document.createElement('div');
+                chartContainer.id = 'student-chart';
+                chartContainer.className = 'charts-container';
+                studentsSection.appendChild(chartContainer);
+                console.log("Contenedor student-chart creado dinámicamente");
+            } else {
+                // Buscar cualquier contenedor donde podamos poner la tabla
+                const statsPanel = document.querySelector('.stats-panel');
+                if (statsPanel) {
+                    // Crear una sección de estudiantes
+                    const newSection = document.createElement('div');
+                    newSection.className = 'students-stats-section';
+                    newSection.style.clear = 'both';
+                    newSection.style.marginBottom = '40px';
+                    
+                    // Añadir título
+                    const title = document.createElement('h4');
+                    title.className = 'therapist-stats-title';
+                    title.textContent = 'Pacientes por estudiante';
+                    title.style.marginBottom = '20px';
+                    title.style.clear = 'both';
+                    newSection.appendChild(title);
+                    
+                    // Crear contenedor para la tabla
+                    chartContainer = document.createElement('div');
+                    chartContainer.id = 'student-chart';
+                    chartContainer.className = 'charts-container';
+                    newSection.appendChild(chartContainer);
+                    
+                    // Añadir la sección al panel de estadísticas
+                    statsPanel.appendChild(newSection);
+                    console.log("Sección de estudiantes y contenedor creados dinámicamente");
+                } else {
+                    console.error("❌ No se encontró el panel de estadísticas");
+                    return;
+                }
+            }
+        }
+        
+        // Crear el contenedor de etiquetas si no existe
+        if (!chartLabels) {
+            chartLabels = document.createElement('div');
+            chartLabels.id = 'student-chart-labels';
+            chartLabels.className = 'chart-labels';
+            chartContainer.parentNode.appendChild(chartLabels);
+            console.log("Contenedor chart-labels creado dinámicamente");
         }
         
         // Limpiar los contenedores
@@ -5179,6 +5228,13 @@ function updateStudentStatsTable(uniquePatients, totalSessions, attendanceRates,
         // Crear tabla de estadísticas
         const statsTable = document.createElement('table');
         statsTable.className = 'student-stats-table';
+        statsTable.style.width = '100%';
+        statsTable.style.borderCollapse = 'separate';
+        statsTable.style.borderSpacing = '0';
+        statsTable.style.marginTop = '20px';
+        statsTable.style.boxShadow = 'var(--shadow)';
+        statsTable.style.borderRadius = '8px';
+        statsTable.style.overflow = 'hidden';
         
         // Crear encabezado
         const thead = document.createElement('thead');
@@ -5267,6 +5323,7 @@ function updateStudentStatsTable(uniquePatients, totalSessions, attendanceRates,
         exportContainer.style.justifyContent = 'flex-end';
         exportContainer.style.gap = '10px';
         exportContainer.style.marginTop = '30px';
+        exportContainer.style.clear = 'both';
         
         // Crear botón Excel
         const exportExcelBtn = document.createElement('button');
@@ -5297,7 +5354,8 @@ function updateStudentStatsTable(uniquePatients, totalSessions, attendanceRates,
         exportContainer.appendChild(exportExcelBtn);
         exportContainer.appendChild(exportPdfBtn);
         
-        chartContainer.appendChild(exportContainer);
+        // Añadir contenedor de exportación después de la tabla
+        chartContainer.parentNode.appendChild(exportContainer);
         
         console.log("✅ Tabla de estadísticas de estudiantes actualizada");
     } catch (error) {
