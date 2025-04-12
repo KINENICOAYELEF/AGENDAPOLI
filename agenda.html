@@ -7846,7 +7846,7 @@ function exportPenalolenReport() {
     };
 }
 
-// Generar PDF con estadísticas de Peñalolén - Versión simplificada
+// Generar PDF con estadísticas de Peñalolén - Con título personalizado
 function generatePenalolenPDF(stats, appointments, options) {
     try {
         // Crear documento PDF
@@ -7861,8 +7861,8 @@ function generatePenalolenPDF(stats, appointments, options) {
         doc.rect(0, 0, doc.internal.pageSize.getWidth(), 25, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.text("SISTEMAKINE", 15, 16);
+        doc.setFontSize(14); // Reducido tamaño para que quepa el texto más largo
+        doc.text("Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo", 15, 16);
         
         // Título del reporte
         doc.setTextColor(0, 0, 0);
@@ -7971,7 +7971,7 @@ function generatePenalolenPDF(stats, appointments, options) {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
-            doc.text(`SISTEMAKINE - Página ${i} de ${totalPages}`, 15, doc.internal.pageSize.getHeight() - 10);
+            doc.text(`Kinesiólogo Nicolás Ayelef - ONG Movimiento Inclusivo`, 15, doc.internal.pageSize.getHeight() - 10);
             doc.text(`Reporte Peñalolén | ${new Date().toISOString().split('T')[0]}`, 
                      doc.internal.pageSize.getWidth() - 60, doc.internal.pageSize.getHeight() - 10);
         }
