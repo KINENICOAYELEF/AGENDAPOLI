@@ -6145,6 +6145,9 @@ const objectiveData = {
         if (!objectivesCache[patientId]) objectivesCache[patientId] = {};
         if (!objectivesCache[patientId].specific) objectivesCache[patientId].specific = {};
         objectivesCache[patientId].specific[objectiveId] = objectiveData;
+
+        // Actualizar progreso general
+        await updateGeneralObjectiveProgress(patientId);
         
         // Actualizar UI
         updateObjectivesUI(patientId);
@@ -6433,6 +6436,7 @@ function createSpecificObjectiveCard(objective) {
         }
     }
     
+    // Código existente
     card.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
             <div style="flex-grow: 1;">
@@ -6461,6 +6465,9 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
+            <button type="button" class="action-btn btn-secondary record-progress-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--primary);">
+                <i class="fas fa-chart-line"></i> Registrar progreso
+            </button>
             <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
                 <i class="fas fa-edit"></i> Editar
             </button>
@@ -6492,6 +6499,15 @@ function createSpecificObjectiveCard(objective) {
         deleteBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
             deleteSpecificObjective(currentPatientId, objective.id);
+        });
+    }
+
+    // Añadir evento para el botón de registrar progreso
+    const recordProgressBtn = card.querySelector('.record-progress-btn');
+    if (recordProgressBtn) {
+        recordProgressBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que se abra el modal de detalles
+            openRecordProgressModal(currentPatientId, objective);
         });
     }
     
@@ -6594,7 +6610,7 @@ function openViewSpecificObjectiveModal(objective) {
 function fillViewSpecificObjectiveModal(objective) {
     // Título y descripción
     const titleElement = document.getElementById('viewObjectiveTitle');
-    if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
+    if (titleElement) titleElement.textContent = `Detalle: ${objective.verb} ${objective.structure}`;
     
     // Metadatos
     const categoryElement = document.getElementById('viewObjectiveCategory');
@@ -7137,6 +7153,7 @@ async function saveObjectiveProgress(patientId, objectiveId) {
     }
 }
 
+// Actualizar progreso del objetivo general
 // Actualizar progreso del objetivo general
 async function updateGeneralObjectiveProgress(patientId) {
     try {
