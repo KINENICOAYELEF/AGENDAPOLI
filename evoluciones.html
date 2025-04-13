@@ -110,20 +110,11 @@
                 </div>
                 <div class="dashboard-card">
                     <div class="dashboard-icon">
-                        <i class="fas fa-clipboard-check"></i>
+                        <i class="fas fa-bell"></i>
                     </div>
                     <div class="dashboard-info">
-                        <div class="dashboard-title">Objetivos logrados</div>
-                        <div class="dashboard-value" id="completedObjectives">0%</div>
-                    </div>
-                </div>
-                <div class="dashboard-card">
-                    <div class="dashboard-icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <div class="dashboard-info">
-                        <div class="dashboard-title">Estudiantes activos</div>
-                        <div class="dashboard-value" id="activeStudents">0</div>
+                        <div class="dashboard-title">Pacientes sin seguimiento</div>
+                        <div class="dashboard-value" id="patientsWithoutFollowup">0</div>
                     </div>
                 </div>
             </div>
@@ -2413,34 +2404,94 @@ function getInitials(name) {
     return name.substring(0, 2).toUpperCase();
 }
 
-// Update dashboard statistics
+// Actualizar estadísticas del dashboard con conteo correcto de pacientes
 function updateDashboardStats(patients) {
-    // Contar pacientes activos (progreso >= 50%)
-    const activePatients = patients.filter(p => calculatePatientProgress(p) >= 50).length;
-    const activeElement = document.getElementById('activePatients');
-    if (activeElement) {
-        activeElement.textContent = activePatients;
-    }
-    
-    // Contar evoluciones mensuales
-    // Por ahora usamos un estimado, en el futuro contaremos las evoluciones reales
-    const monthlyElement = document.getElementById('monthlyEvolutions');
-    if (monthlyElement) {
-        monthlyElement.textContent = Math.floor(patients.length * 1.5);
-    }
-    
-    // Establecer porcentaje de objetivos completados
-    const objectivesElement = document.getElementById('completedObjectives');
-    if (objectivesElement) {
-        // Simulación: Suponemos que el 65% de los objetivos están completados
-        objectivesElement.textContent = '65%';
-    }
-    
-    // Establecer número de estudiantes activos
-    const studentsElement = document.getElementById('activeStudents');
-    if (studentsElement) {
-        // Simulación: Suponemos que hay 12 estudiantes activos
-        studentsElement.textContent = '12';
+    try {
+        // Contar pacientes activos (aquellos con una evolución en los últimos 30 días)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        // Filtrar pacientes activos
+        const activePatients = patients.filter(patient => {
+            if (!patient.lastSession) return false;
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate >= thirtyDaysAgo;
+        });
+        
+        // Actualizar contador de pacientes activos
+        const activePatientsElement = document.getElementById('activePatients');
+        if (activePatientsElement) {
+            activePatientsElement.textContent = activePatients.length;
+        }
+        
+        // Contar evoluciones del mes actual
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        let monthlyEvolutionsCount = 0;
+        
+        // Contar evoluciones del mes actual
+        patients.forEach(async (patient) => {
+            try {
+                if (patient.id) {
+                    const evolutions = await getEvolutions(patient.id);
+                    
+                    const thisMonthEvolutions = evolutions.filter(ev => {
+                        if (!ev.date) return false;
+                        const evDate = new Date(ev.date);
+                        return evDate >= firstDayOfMonth;
+                    });
+                    
+                    monthlyEvolutionsCount += thisMonthEvolutions.length;
+                    
+                    // Actualizar contador de evoluciones mensuales
+                    const monthlyEvolutionsElement = document.getElementById('monthlyEvolutions');
+                    if (monthlyEvolutionsElement) {
+                        monthlyEvolutionsElement.textContent = monthlyEvolutionsCount;
+                    }
+                }
+            } catch (error) {
+                console.error("Error contando evoluciones de paciente:", error);
+            }
+        });
+        
+        // Identificar pacientes sin seguimiento en los últimos 7 días
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const patientsWithoutFollowup = patients.filter(patient => {
+            if (!patient.lastSession) return true; // Sin ninguna sesión
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate < sevenDaysAgo;
+        });
+        
+        // Actualizar contador de pacientes sin seguimiento
+        const patientsWithoutFollowupElement = document.getElementById('patientsWithoutFollowup');
+        if (patientsWithoutFollowupElement) {
+            patientsWithoutFollowupElement.textContent = patientsWithoutFollowup.length;
+        }
+        
+    } catch (error) {
+        console.error("Error actualizando estadísticas del dashboard:", error);
     }
 }
 
