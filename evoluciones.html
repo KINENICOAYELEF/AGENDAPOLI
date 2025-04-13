@@ -13135,6 +13135,12 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
         
         // Cargar pacientes iniciales
         await getPatients();
+
+        // Verificar pacientes sin seguimiento
+        checkPatientsWithoutFollowup();
+
+        // Actualizar notificaciones periódicamente
+        updateNotifications(); // Inicialmente
         
         console.log("Inicialización completada correctamente");
         showToast("Sistema iniciado correctamente", "success");
@@ -14568,6 +14574,115 @@ async function deletePatientFile(patientId, fileIndex, fileId) {
         showToast("Error al eliminar archivo: " + error.message, "error");
     }
 }
+
+
+        // Función para verificar pacientes sin seguimiento
+function checkPatientsWithoutFollowup() {
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        // Filtrar pacientes sin seguimiento reciente
+        const patientsWithoutFollowup = patientsCache.filter(patient => {
+            if (!patient.lastSession) return true; // Sin ninguna sesión
+            
+            // Convertir la fecha de texto a objeto Date
+            const lastSessionParts = patient.lastSession.split('/');
+            if (lastSessionParts.length !== 3) return false;
+            
+            const lastSessionDate = new Date(
+                parseInt(lastSessionParts[2]), // año
+                parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                parseInt(lastSessionParts[0]) // día
+            );
+            
+            return lastSessionDate < sevenDaysAgo;
+        });
+        
+        // Actualizar notificaciones visuales
+        updateNotificationsUI(patientsWithoutFollowup);
+        
+        return patientsWithoutFollowup;
+    } catch (error) {
+        console.error("Error al verificar pacientes sin seguimiento:", error);
+        return [];
+    }
+}
+
+// Función para actualizar notificaciones en la interfaz
+function updateNotificationsUI(patientsWithoutFollowup) {
+    const notificationsBadge = document.getElementById('notificationsBadge');
+    if (!notificationsBadge) return;
+    
+    if (patientsWithoutFollowup.length > 0) {
+        notificationsBadge.style.display = 'flex';
+        notificationsBadge.textContent = patientsWithoutFollowup.length;
+    } else {
+        notificationsBadge.style.display = 'none';
+    }
+}
+
+        // Función para actualizar las notificaciones
+function updateNotifications() {
+    try {
+        const patientsWithoutFollowup = checkPatientsWithoutFollowup();
+        const notificationsContainer = document.getElementById('notificationsContainer');
+        
+        if (!notificationsContainer) return;
+        
+        if (patientsWithoutFollowup.length === 0) {
+            notificationsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay pacientes sin seguimiento</p>';
+            return;
+        }
+        
+        notificationsContainer.innerHTML = '';
+        
+        patientsWithoutFollowup.forEach(patient => {
+            const notificationItem = document.createElement('div');
+            notificationItem.className = 'notification-item';
+            
+            // Calcular días desde la última sesión
+            let daysSinceLastSession = 'Nunca';
+            
+            if (patient.lastSession) {
+                const lastSessionParts = patient.lastSession.split('/');
+                if (lastSessionParts.length === 3) {
+                    const lastSessionDate = new Date(
+                        parseInt(lastSessionParts[2]), // año
+                        parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                        parseInt(lastSessionParts[0]) // día
+                    );
+                    
+                    const diffTime = Math.abs(new Date() - lastSessionDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    daysSinceLastSession = `${diffDays} días`;
+                }
+            }
+            
+            notificationItem.innerHTML = `
+                <div class="notification-icon">
+                    <i class="fas fa-exclamation"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${patient.name}</div>
+                    <div class="notification-desc">Sin seguimiento desde hace ${daysSinceLastSession}</div>
+                </div>
+            `;
+            
+            // Añadir evento para abrir ficha del paciente
+            notificationItem.addEventListener('click', function() {
+                openPatientModal(patient.id);
+            });
+            
+            notificationsContainer.appendChild(notificationItem);
+        });
+    } catch (error) {
+        console.error("Error al actualizar notificaciones:", error);
+    }
+}
+
+        
         </script>
 
     <script>
