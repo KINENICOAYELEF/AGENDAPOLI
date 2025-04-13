@@ -6409,9 +6409,6 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
-            <button type="button" class="action-btn btn-primary record-progress-btn" style="padding: 3px 8px; font-size: 12px;">
-                <i class="fas fa-chart-line"></i> Registrar progreso
-            </button>
             <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
                 <i class="fas fa-edit"></i> Editar
             </button>
@@ -6430,21 +6427,10 @@ function createSpecificObjectiveCard(objective) {
     });
     
     // Añadir eventos para los botones
-    const recordBtn = card.querySelector('.record-progress-btn');
-    if (recordBtn) {
-        recordBtn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Evitar que se abra el modal de detalles
-            console.log("Botón de registrar progreso presionado para objetivo:", objective.id);
-            // Llamar directamente a la función que abre el modal de progreso
-            openRecordProgressModal(currentPatientId, objective);
-        });
-    }
-    
     const editBtn = card.querySelector('.edit-objective-btn');
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            // Asegurarse de que siempre abre el modal de edición
             openSpecificObjectiveModal(currentPatientId, objective.id);
         });
     }
@@ -6456,14 +6442,6 @@ function createSpecificObjectiveCard(objective) {
             deleteSpecificObjective(currentPatientId, objective.id);
         });
     }
-    
-    // Al hacer clic en la tarjeta, mostrar detalles
-    card.addEventListener('click', function(e) {
-        // Solo si no se hizo clic en un botón
-        if (!e.target.closest('button')) {
-            openViewSpecificObjectiveModal(objective);
-        }
-    });
     
     return card;
 }
@@ -6668,145 +6646,78 @@ function fillViewSpecificObjectiveModal(objective) {
 // Abrir modal para registrar progreso
 function openRecordProgressModal(patientId, objective) {
     try {
-        // Verificar que existe el modal
         const modal = document.getElementById('recordProgressModal');
         if (!modal) {
             console.error("Modal de registro de progreso no encontrado");
-            showToast("Error: No se pudo abrir el modal de registro de progreso", "error");
             return;
         }
         
-        // Verificar que tenemos un objetivo válido
-        if (!objective) {
-            console.error("Objetivo no válido para registrar progreso");
-            showToast("Error: Objetivo no válido", "error");
-            return;
-        }
-        
-        console.log("Abriendo modal de progreso para objetivo:", objective);
-        
-        // Llenar el título y detalles del objetivo
-        const titleElement = document.getElementById('progressObjectiveTitle');
-        const detailElement = document.getElementById('progressObjectiveDetail');
-        
-        if (titleElement) {
-            // Si hay descripción explícita, usarla
-            if (objective.description) {
-                titleElement.textContent = objective.description;
-            } else {
-                // Si no, construir la descripción a partir de los componentes
-                titleElement.textContent = `${objective.verb || 'Objetivo'} ${objective.structure || ''}`;
-            }
-        }
-        
-        if (detailElement) {
-            const details = `Valor inicial: ${objective.initialValue || ''} → Valor objetivo: ${objective.targetValue || ''} (${objective.evaluationMethod || ''})`;
-            detailElement.textContent = details;
-        }
-        
-        // Establecer fecha actual en el campo de fecha
-        const dateInput = document.getElementById('progressDateInput');
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-        
-        // Establecer valor actual (usar el último valor registrado)
-        const currentValueInput = document.getElementById('currentValueInput');
-        if (currentValueInput) currentValueInput.value = objective.currentValue || objective.initialValue || '';
-        
-        // Establecer etiqueta de unidad
-        const unitLabel = document.getElementById('progressUnitLabel');
-        if (unitLabel) {
-            // Extraer unidad del método (si está entre paréntesis)
-            let unit = '';
-            if (objective.evaluationMethod) {
-                const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
-                if (match && match[1]) {
-                    unit = match[1];
-                }
-            }
-            // Si no se encontró unidad, usar texto genérico
-            unitLabel.textContent = unit || 'unidad';
-        }
-        
-        // Limpiar campo de notas
-        const notesInput = document.getElementById('progressNotes');
-        if (notesInput) notesInput.value = '';
-        
-        // Calcular y mostrar progreso inicial
-        calculateProgress(objective);
+        // Llenar el modal con los datos del objetivo
+        fillRecordProgressModal(objective);
         
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
         
         // Configurar eventos para botones
-        configureProgressModalButtons(patientId, objective.id);
-
-        // Añadir evento al campo de valor actual para actualizar el progreso en tiempo real
-        const currentValueInput = document.getElementById('currentValueInput');
-        if (currentValueInput) {
+        const closeBtn = document.getElementById('closeRecordProgressModal');
+        if (closeBtn) {
             // Eliminar manejadores previos
-            const newInput = currentValueInput.cloneNode(true);
-            currentValueInput.parentNode.replaceChild(newInput, currentValueInput);
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
             
-            newInput.addEventListener('input', function() {
-                calculateProgress(objective);
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
             });
         }
         
+        // Cancelar
+        const cancelBtn = document.getElementById('cancelProgressBtn');
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Guardar progreso
+        const saveBtn = document.getElementById('saveProgressBtn');
+        if (saveBtn) {
+            // Eliminar manejadores previos
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                saveObjectiveProgress(patientId, objective.id);
+            });
+        }
+        
+        // Configurar eventos para calcular progreso en tiempo real
+        const currentValueInput = document.getElementById('currentValueInput');
+        if (currentValueInput) {
+            // Eliminar manejadores previos
+            const newCurrentValueInput = currentValueInput.cloneNode(true);
+            currentValueInput.parentNode.replaceChild(newCurrentValueInput, currentValueInput);
+            
+            newCurrentValueInput.addEventListener('input', function() {
+                calculateProgress(objective);
+            });
+            
+            // Disparar evento para inicializar
+            newCurrentValueInput.dispatchEvent(new Event('input'));
+        }
     } catch (error) {
         console.error("Error al abrir modal de registro de progreso:", error);
         showToast("Error al abrir formulario de progreso", "error");
-    }
-}
-
-// Configurar botones del modal de progreso
-function configureProgressModalButtons(patientId, objectiveId) {
-    // Botón de cancelar
-    const cancelBtn = document.getElementById('cancelProgressBtn');
-    if (cancelBtn) {
-        // Eliminar manejadores previos
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        
-        newCancelBtn.addEventListener('click', function() {
-            const modal = document.getElementById('recordProgressModal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            }
-        });
-    }
-    
-    // Botón de cerrar
-    const closeBtn = document.getElementById('closeRecordProgressModal');
-    if (closeBtn) {
-        // Eliminar manejadores previos
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        
-        newCloseBtn.addEventListener('click', function() {
-            const modal = document.getElementById('recordProgressModal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            }
-        });
-    }
-    
-    // Botón de guardar
-    const saveBtn = document.getElementById('saveProgressBtn');
-    if (saveBtn) {
-        // Eliminar manejadores previos
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        
-        newSaveBtn.addEventListener('click', function() {
-            saveObjectiveProgress(patientId, objectiveId);
-        });
     }
 }
 
@@ -7029,58 +6940,6 @@ function parseScale(text) {
     return null;
 }
 
-// Actualizar UI de progreso
-function updateProgressUI(progress) {
-    const progressCircle = document.getElementById('progressCircle');
-    const progressText = document.getElementById('progressText');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercentage = document.getElementById('progressPercentage');
-    
-    // Actualizar círculo de progreso
-    if (progressCircle) {
-        const circumference = 2 * Math.PI * 35;
-        const offset = circumference - (circumference * progress / 100);
-        progressCircle.setAttribute('stroke-dasharray', circumference);
-        progressCircle.setAttribute('stroke-dashoffset', offset);
-    }
-    
-    // Actualizar texto de porcentaje
-    if (progressText) progressText.textContent = `${progress}%`;
-    if (progressPercentage) progressPercentage.textContent = `${progress}%`;
-    
-    // Actualizar barra de progreso
-    if (progressBar) progressBar.style.width = `${progress}%`;
-}
-
-// Extraer valor numérico de un texto
-function extractNumericValue(text) {
-    if (!text) return null;
-    
-    // Intentar convertir directamente a número
-    const directNum = parseFloat(text);
-    if (!isNaN(directNum)) return directNum;
-    
-    // Buscar números en el texto
-    const numMatch = text.match(/-?\d+(\.\d+)?/);
-    if (numMatch) return parseFloat(numMatch[0]);
-    
-    return null;
-}
-
-// Analizar valor de escala (ej: "3/5" -> 3)
-function parseScale(text) {
-    if (!text) return null;
-    
-    // Buscar patrón de escala: número/número
-    const scaleMatch = text.match(/(\d+)\/(\d+)/);
-    if (scaleMatch) {
-        const numerator = parseInt(scaleMatch[1]);
-        return numerator;
-    }
-    
-    return null;
-}
-
 // Guardar progreso de objetivo
 async function saveObjectiveProgress(patientId, objectiveId) {
     try {
@@ -7088,8 +6947,6 @@ async function saveObjectiveProgress(patientId, objectiveId) {
             showToast("Error: Faltan datos para guardar progreso", "error");
             return;
         }
-        
-        console.log("Guardando progreso para objetivo:", objectiveId);
         
         // Obtener valores del formulario
         const progressDate = document.getElementById('progressDateInput')?.value;
