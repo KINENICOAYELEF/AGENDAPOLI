@@ -6401,6 +6401,7 @@ function createSpecificObjectiveCard(objective) {
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
+            // Siempre abrimos el modal de edición directamente
             openSpecificObjectiveModal(currentPatientId, objective.id);
         });
     }
@@ -6412,6 +6413,14 @@ function createSpecificObjectiveCard(objective) {
             deleteSpecificObjective(currentPatientId, objective.id);
         });
     }
+    
+    // Añadir evento de clic para ver detalles
+    card.addEventListener('click', function(e) {
+        // Solo abrir modal de detalles si no se hizo clic en un botón
+        if (!e.target.closest('button')) {
+            openViewSpecificObjectiveModal(objective);
+        }
+    });
     
     return card;
 }
