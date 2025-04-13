@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1362,6 +1360,38 @@
                 <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Vista previa del objetivo</h5>
                 <p id="specificObjectivePreview" style="font-weight: bold;">Aumentar la fuerza de abductores de hombro derecho de 3/5 a 4/5 en escala de Daniels en 2 semanas.</p>
             </div>
+
+
+                <div style="margin-top: 20px; background-color: var(--background-alt); padding: 15px; border-radius: 5px;">
+<h5 style="margin-top: 0; margin-bottom: 10px; color: var(--primary);">Plantillas por especialidad</h5>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <button type="button" class="template-btn" data-template="deportiva" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-running"></i> Deportiva
+    </button>
+    <button type="button" class="template-btn" data-template="geriatria" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-user-friends"></i> Geriatría
+    </button>
+    <button type="button" class="template-btn" data-template="neurologica" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-brain"></i> Neurológica
+    </button>
+    <button type="button" class="template-btn" data-template="respiratoria" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-lungs"></i> Respiratoria
+    </button>
+    <button type="button" class="template-btn" data-template="piso-pelvico" style="padding: 8px 15px; background-color: var(--background); border: 1px solid var(--border); border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-venus"></i> Piso Pélvico
+    </button>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+    <button type="button" class="action-btn btn-secondary" id="saveTemplateBtn" style="padding: 5px 10px;">
+        <i class="fas fa-save"></i> Guardar como plantilla
+    </button>
+    <button type="button" class="action-btn btn-secondary" id="manageTemplatesBtn" style="padding: 5px 10px;">
+        <i class="fas fa-cog"></i> Gestionar plantillas
+    </button>
+</div>
+</div>
+
+
 
                 
             <div class="form-group" style="margin-top: 20px; text-align: right;">
@@ -5478,15 +5508,8 @@ function openSpecificObjectiveModal(patientId, objectiveId = null) {
             loadSpecificObjective(patientId, objectiveId);
             
             // Cambiar título del modal
-            // Cambiar título del modal
             const modalTitle = modal.querySelector('.modal-title');
-            if (modalTitle) {
-                if (objectiveId) {
-                    modalTitle.textContent = "Editar Objetivo Terapéutico Específico";
-                } else {
-                    modalTitle.textContent = "Nuevo Objetivo Terapéutico Específico";
-                }
-            }
+            if (modalTitle) modalTitle.textContent = "Editar Objetivo Terapéutico Específico";
         } else {
             // Es un nuevo objetivo, establecer fecha actual
             const today = new Date();
@@ -6073,9 +6096,6 @@ const objectiveData = {
         
         // Actualizar UI
         updateObjectivesUI(patientId);
-
-        // Actualizar el objetivo general
-        await updateGeneralObjectiveProgress(patientId);
         
         // Cerrar modal
         const modal = document.getElementById('specificObjectiveModal');
@@ -6389,9 +6409,6 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
-            <button type="button" class="action-btn btn-primary record-progress-btn" style="padding: 3px 8px; font-size: 12px;">
-                <i class="fas fa-chart-line"></i> Registrar progreso
-            </button>
             <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
                 <i class="fas fa-edit"></i> Editar
             </button>
@@ -6410,21 +6427,10 @@ function createSpecificObjectiveCard(objective) {
     });
     
     // Añadir eventos para los botones
-    const recordBtn = card.querySelector('.record-progress-btn');
-    if (recordBtn) {
-        recordBtn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Evitar que se abra el modal de detalles
-            console.log("Botón de registrar progreso presionado para objetivo:", objective.id);
-            // Llamar directamente a la función que abre el modal de progreso
-            openRecordProgressModal(currentPatientId, objective);
-        });
-    }
-    
     const editBtn = card.querySelector('.edit-objective-btn');
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            // Asegurarse de que siempre abre el modal de edición
             openSpecificObjectiveModal(currentPatientId, objective.id);
         });
     }
@@ -6437,43 +6443,15 @@ function createSpecificObjectiveCard(objective) {
         });
     }
     
-    // Al hacer clic en la tarjeta, mostrar detalles
-    card.addEventListener('click', function(e) {
-        // Solo si no se hizo clic en un botón
-        if (!e.target.closest('button')) {
-            openViewSpecificObjectiveModal(objective);
-        }
-    });
-    
-    // Añadir evento de clic para toda la tarjeta
-    card.addEventListener('click', function(e) {
-        // Si no se hizo clic en un botón, mostrar modal de detalles
-        if (!e.target.closest('button')) {
-            // Siempre usamos openViewSpecificObjectiveModal para ver detalles
-            openViewSpecificObjectiveModal(objective);
-        }
-    });
-    
-    // Añadir evento de clic para ver detalles
-    card.addEventListener('click', function(e) {
-        // Solo abrir modal de detalles si no se hizo clic en un botón
-        if (!e.target.closest('button')) {
-            openViewSpecificObjectiveModal(objective);
-        }
-    });
-    
     return card;
 }
 
 // Abrir modal para ver detalles de objetivo específico
 function openViewSpecificObjectiveModal(objective) {
     try {
-        // IMPORTANTE: Verificar si el modal existe
         const modal = document.getElementById('viewSpecificObjectiveModal');
         if (!modal) {
             console.error("Modal de visualización de objetivo no encontrado");
-            // Si no existe, abrimos directamente el de edición como fallback
-            openSpecificObjectiveModal(currentPatientId, objective.id);
             return;
         }
         
@@ -6553,8 +6531,6 @@ function openViewSpecificObjectiveModal(objective) {
                     openRecordProgressModal(currentPatientId, objective);
                 }, 300);
             });
-        } else {
-            console.error("Botón de registro de progreso no encontrado");
         }
     } catch (error) {
         console.error("Error al abrir modal de detalle de objetivo:", error);
@@ -6670,148 +6646,78 @@ function fillViewSpecificObjectiveModal(objective) {
 // Abrir modal para registrar progreso
 function openRecordProgressModal(patientId, objective) {
     try {
-        // Verificar que existe el modal
         const modal = document.getElementById('recordProgressModal');
         if (!modal) {
             console.error("Modal de registro de progreso no encontrado");
-            showToast("Error: No se pudo abrir el modal de registro de progreso", "error");
             return;
         }
         
-        // Verificar que tenemos un objetivo válido
-        if (!objective) {
-            console.error("Objetivo no válido para registrar progreso");
-            showToast("Error: Objetivo no válido", "error");
-            return;
-        }
-        
-        console.log("Abriendo modal de progreso para objetivo:", objective);
-        
-        // Llenar el título y detalles del objetivo
-        const titleElement = document.getElementById('progressObjectiveTitle');
-        const detailElement = document.getElementById('progressObjectiveDetail');
-        
-        if (titleElement) {
-            // Si hay descripción explícita, usarla
-            if (objective.description) {
-                titleElement.textContent = objective.description;
-            } else {
-                // Si no, construir la descripción a partir de los componentes
-                titleElement.textContent = `${objective.verb || 'Objetivo'} ${objective.structure || ''}`;
-            }
-        }
-        
-        if (detailElement) {
-            const details = `Valor inicial: ${objective.initialValue || ''} → Valor objetivo: ${objective.targetValue || ''} (${objective.evaluationMethod || ''})`;
-            detailElement.textContent = details;
-        }
-        
-        // Establecer fecha actual en el campo de fecha
-        const dateInput = document.getElementById('progressDateInput');
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-        
-        // Establecer valor actual (usar el último valor registrado)
-        const currentValueInput = document.getElementById('currentValueInput');
-        if (currentValueInput) currentValueInput.value = objective.currentValue || objective.initialValue || '';
-        
-        // Establecer etiqueta de unidad
-        const unitLabel = document.getElementById('progressUnitLabel');
-        if (unitLabel) {
-            // Extraer unidad del método (si está entre paréntesis)
-            let unit = '';
-            if (objective.evaluationMethod) {
-                const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
-                if (match && match[1]) {
-                    unit = match[1];
-                }
-            }
-            // Si no se encontró unidad, usar texto genérico
-            unitLabel.textContent = unit || 'unidad';
-        }
-        
-        // Limpiar campo de notas
-        const notesInput = document.getElementById('progressNotes');
-        if (notesInput) notesInput.value = '';
-        
-        // Calcular y mostrar progreso inicial
-        calculateProgress(objective);
+        // Llenar el modal con los datos del objetivo
+        fillRecordProgressModal(objective);
         
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
         
         // Configurar eventos para botones
-        configureProgressModalButtons(patientId, objective.id);
-
-        // Añadir evento al campo de valor actual para actualizar el progreso en tiempo real
-        if (currentValueInput) {
+        const closeBtn = document.getElementById('closeRecordProgressModal');
+        if (closeBtn) {
             // Eliminar manejadores previos
-            const newInput = currentValueInput.cloneNode(true);
-            currentValueInput.parentNode.replaceChild(newInput, currentValueInput);
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
             
-            // Asignar nuevamente el valor
-            newInput.value = objective.currentValue || objective.initialValue || '';
-            
-            // Añadir el evento input
-            newInput.addEventListener('input', function() {
-                calculateProgress(objective);
+            newCloseBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
             });
         }
         
+        // Cancelar
+        const cancelBtn = document.getElementById('cancelProgressBtn');
+        if (cancelBtn) {
+            // Eliminar manejadores previos
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            
+            newCancelBtn.addEventListener('click', function() {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            });
+        }
+        
+        // Guardar progreso
+        const saveBtn = document.getElementById('saveProgressBtn');
+        if (saveBtn) {
+            // Eliminar manejadores previos
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+            
+            newSaveBtn.addEventListener('click', function() {
+                saveObjectiveProgress(patientId, objective.id);
+            });
+        }
+        
+        // Configurar eventos para calcular progreso en tiempo real
+        const currentValueInput = document.getElementById('currentValueInput');
+        if (currentValueInput) {
+            // Eliminar manejadores previos
+            const newCurrentValueInput = currentValueInput.cloneNode(true);
+            currentValueInput.parentNode.replaceChild(newCurrentValueInput, currentValueInput);
+            
+            newCurrentValueInput.addEventListener('input', function() {
+                calculateProgress(objective);
+            });
+            
+            // Disparar evento para inicializar
+            newCurrentValueInput.dispatchEvent(new Event('input'));
+        }
     } catch (error) {
         console.error("Error al abrir modal de registro de progreso:", error);
         showToast("Error al abrir formulario de progreso", "error");
-    }
-}
-
-        // Configurar botones del modal de progreso
-function configureProgressModalButtons(patientId, objectiveId) {
-    // Botón de cancelar
-    const cancelBtn = document.getElementById('cancelProgressBtn');
-    if (cancelBtn) {
-        // Eliminar manejadores previos
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        
-        newCancelBtn.addEventListener('click', function() {
-            const modal = document.getElementById('recordProgressModal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            }
-        });
-    }
-    
-    // Botón de cerrar
-    const closeBtn = document.getElementById('closeRecordProgressModal');
-    if (closeBtn) {
-        // Eliminar manejadores previos
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        
-        newCloseBtn.addEventListener('click', function() {
-            const modal = document.getElementById('recordProgressModal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 300);
-            }
-        });
-    }
-    
-    // Botón de guardar
-    const saveBtn = document.getElementById('saveProgressBtn');
-    if (saveBtn) {
-        // Eliminar manejadores previos
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        
-        newSaveBtn.addEventListener('click', function() {
-            saveObjectiveProgress(patientId, objectiveId);
-        });
     }
 }
 
@@ -7034,58 +6940,6 @@ function parseScale(text) {
     return null;
 }
 
-// Actualizar UI de progreso
-function updateProgressUI(progress) {
-    const progressCircle = document.getElementById('progressCircle');
-    const progressText = document.getElementById('progressText');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercentage = document.getElementById('progressPercentage');
-    
-    // Actualizar círculo de progreso
-    if (progressCircle) {
-        const circumference = 2 * Math.PI * 35;
-        const offset = circumference - (circumference * progress / 100);
-        progressCircle.setAttribute('stroke-dasharray', circumference);
-        progressCircle.setAttribute('stroke-dashoffset', offset);
-    }
-    
-    // Actualizar texto de porcentaje
-    if (progressText) progressText.textContent = `${progress}%`;
-    if (progressPercentage) progressPercentage.textContent = `${progress}%`;
-    
-    // Actualizar barra de progreso
-    if (progressBar) progressBar.style.width = `${progress}%`;
-}
-
-// Extraer valor numérico de un texto
-function extractNumericValue(text) {
-    if (!text) return null;
-    
-    // Intentar convertir directamente a número
-    const directNum = parseFloat(text);
-    if (!isNaN(directNum)) return directNum;
-    
-    // Buscar números en el texto
-    const numMatch = text.match(/-?\d+(\.\d+)?/);
-    if (numMatch) return parseFloat(numMatch[0]);
-    
-    return null;
-}
-
-// Analizar valor de escala (ej: "3/5" -> 3)
-function parseScale(text) {
-    if (!text) return null;
-    
-    // Buscar patrón de escala: número/número
-    const scaleMatch = text.match(/(\d+)\/(\d+)/);
-    if (scaleMatch) {
-        const numerator = parseInt(scaleMatch[1]);
-        return numerator;
-    }
-    
-    return null;
-}
-
 // Guardar progreso de objetivo
 async function saveObjectiveProgress(patientId, objectiveId) {
     try {
@@ -7093,8 +6947,6 @@ async function saveObjectiveProgress(patientId, objectiveId) {
             showToast("Error: Faltan datos para guardar progreso", "error");
             return;
         }
-        
-        console.log("Guardando progreso para objetivo:", objectiveId);
         
         // Obtener valores del formulario
         const progressDate = document.getElementById('progressDateInput')?.value;
@@ -7238,18 +7090,13 @@ async function updateGeneralObjectiveProgress(patientId) {
     try {
         if (!patientId) return;
         
-        console.log("Actualizando progreso del objetivo general para paciente:", patientId);
-        
         // Obtener todos los objetivos específicos
         const objectivesRef = collection(db, "patients", patientId, "objectives");
         // No incluir el objetivo general
         const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
         const objectivesSnap = await getDocs(objectivesQuery);
         
-        if (objectivesSnap.empty) {
-            console.log("No se encontraron objetivos específicos");
-            return;
-        }
+        if (objectivesSnap.empty) return;
         
         // Calcular progreso general
         let totalProgress = 0;
@@ -7257,21 +7104,18 @@ async function updateGeneralObjectiveProgress(patientId) {
         
         objectivesSnap.docs.forEach(doc => {
             const obj = doc.data();
-            console.log(`Objetivo: ${obj.structure || 'Sin nombre'}, Progreso: ${obj.progress || 0}%`);
             totalProgress += (obj.progress || 0);
             objectivesCount++;
         });
         
         // Calcular promedio
         const avgProgress = objectivesCount > 0 ? Math.round(totalProgress / objectivesCount) : 0;
-        console.log(`Progreso total: ${totalProgress}, Número de objetivos: ${objectivesCount}, Promedio: ${avgProgress}%`);
         
         // Actualizar objetivo general
         const generalRef = doc(db, "patients", patientId, "objectives", "general");
         const generalSnap = await getDoc(generalRef);
         
         if (generalSnap.exists()) {
-            console.log("Actualizando objetivo general con progreso:", avgProgress);
             await updateDoc(generalRef, {
                 progress: avgProgress,
                 updatedAt: new Date().toISOString()
@@ -7285,10 +7129,6 @@ async function updateGeneralObjectiveProgress(patientId) {
                     updatedAt: new Date().toISOString()
                 };
             }
-            
-            console.log("Objetivo general actualizado correctamente");
-        } else {
-            console.log("No se encontró objetivo general para actualizar");
         }
     } catch (error) {
         console.error("Error al actualizar progreso general:", error);
@@ -7322,9 +7162,6 @@ async function deleteSpecificObjective(patientId, objectiveId) {
         
         // Actualizar UI
         updateObjectivesUI(patientId);
-
-        // Actualizar el objetivo general
-        await updateGeneralObjectiveProgress(patientId);
         
         hideLoading();
         showToast("Objetivo eliminado correctamente", "success");
