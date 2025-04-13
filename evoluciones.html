@@ -6409,6 +6409,9 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
+            <button type="button" class="action-btn btn-primary record-progress-btn" style="padding: 3px 8px; font-size: 12px;">
+                <i class="fas fa-chart-line"></i> Registrar progreso
+            </button>
             <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
                 <i class="fas fa-edit"></i> Editar
             </button>
@@ -6427,11 +6430,12 @@ function createSpecificObjectiveCard(objective) {
     });
     
     // Añadir eventos para los botones
-    const editBtn = card.querySelector('.edit-objective-btn');
-    if (editBtn) {
-        editBtn.addEventListener('click', function(e) {
+    const recordBtn = card.querySelector('.record-progress-btn');
+    if (recordBtn) {
+        recordBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            openSpecificObjectiveModal(currentPatientId, objective.id);
+            // Llamar directamente a la función que abre el modal de progreso
+            openRecordProgressModal(currentPatientId, objective);
         });
     }
     
