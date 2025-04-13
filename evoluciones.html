@@ -6744,12 +6744,15 @@ function openRecordProgressModal(patientId, objective) {
         configureProgressModalButtons(patientId, objective.id);
 
         // Añadir evento al campo de valor actual para actualizar el progreso en tiempo real
-        const currentValueInput = document.getElementById('currentValueInput');
         if (currentValueInput) {
             // Eliminar manejadores previos
             const newInput = currentValueInput.cloneNode(true);
             currentValueInput.parentNode.replaceChild(newInput, currentValueInput);
             
+            // Asignar nuevamente el valor
+            newInput.value = objective.currentValue || objective.initialValue || '';
+            
+            // Añadir el evento input
             newInput.addEventListener('input', function() {
                 calculateProgress(objective);
             });
