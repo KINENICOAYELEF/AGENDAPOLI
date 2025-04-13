@@ -6490,7 +6490,28 @@ function createSpecificObjectiveCard(objective) {
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            openSpecificObjectiveModal(currentPatientId, objective.id);
+            
+            // Cerrar cualquier otro modal abierto
+            const allModals = document.querySelectorAll('.modal-overlay');
+            allModals.forEach(modal => {
+                if (modal.style.display === 'block') {
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.style.display = 'none';
+                    }, 300);
+                }
+            });
+            
+            // Esperar a que los otros modales se cierren
+            setTimeout(() => {
+                try {
+                    console.log("Abriendo modal de edición para objetivo:", objective.id);
+                    openSpecificObjectiveModal(currentPatientId, objective.id);
+                } catch (error) {
+                    console.error("Error al abrir modal de edición:", error);
+                    showToast("Error al abrir formulario de edición", "error");
+                }
+            }, 350);
         });
     }
     
@@ -6507,7 +6528,23 @@ function createSpecificObjectiveCard(objective) {
     if (recordProgressBtn) {
         recordProgressBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            openRecordProgressModal(currentPatientId, objective);
+            
+            // Cerrar modal de detalles si está abierto
+            const detailsModal = document.getElementById('viewSpecificObjectiveModal');
+            if (detailsModal && detailsModal.style.display === 'block') {
+                detailsModal.classList.remove('active');
+                setTimeout(() => {
+                    detailsModal.style.display = 'none';
+                }, 300);
+            }
+            
+            try {
+                console.log("Abriendo modal de registro de progreso para objetivo:", objective.id);
+                openRecordProgressModal(currentPatientId, objective);
+            } catch (error) {
+                console.error("Error al abrir modal de progreso:", error);
+                showToast("Error al abrir formulario de progreso", "error");
+            }
         });
     }
     
@@ -6714,11 +6751,19 @@ function fillViewSpecificObjectiveModal(objective) {
 // Abrir modal para registrar progreso
 function openRecordProgressModal(patientId, objective) {
     try {
+        console.log("Iniciando apertura de modal de progreso...");
         const modal = document.getElementById('recordProgressModal');
         if (!modal) {
             console.error("Modal de registro de progreso no encontrado");
+            showToast("Error: Modal no encontrado", "error");
             return;
         }
+        
+        console.log("Modal encontrado, preparando datos...");
+        
+        // Resetear formulario si existe
+        const modalForm = modal.querySelector('form');
+        if (modalForm) modalForm.reset();
         
         // Llenar el modal con los datos del objetivo
         fillRecordProgressModal(objective);
@@ -6726,6 +6771,8 @@ function openRecordProgressModal(patientId, objective) {
         // Mostrar modal
         modal.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 50);
+        
+        console.log("Modal de progreso activado");
         
         // Configurar eventos para botones
         const closeBtn = document.getElementById('closeRecordProgressModal');
@@ -6735,6 +6782,7 @@ function openRecordProgressModal(patientId, objective) {
             closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
             
             newCloseBtn.addEventListener('click', function() {
+                console.log("Cerrando modal de progreso");
                 modal.classList.remove('active');
                 setTimeout(() => {
                     modal.style.display = 'none';
@@ -6750,6 +6798,7 @@ function openRecordProgressModal(patientId, objective) {
             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
             
             newCancelBtn.addEventListener('click', function() {
+                console.log("Cancelando registro de progreso");
                 modal.classList.remove('active');
                 setTimeout(() => {
                     modal.style.display = 'none';
@@ -6765,6 +6814,7 @@ function openRecordProgressModal(patientId, objective) {
             saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
             
             newSaveBtn.addEventListener('click', function() {
+                console.log("Guardando progreso para objetivo:", objective.id);
                 saveObjectiveProgress(patientId, objective.id);
             });
         }
@@ -6781,54 +6831,80 @@ function openRecordProgressModal(patientId, objective) {
             });
             
             // Disparar evento para inicializar
-            newCurrentValueInput.dispatchEvent(new Event('input'));
+            setTimeout(() => {
+                newCurrentValueInput.dispatchEvent(new Event('input'));
+            }, 100);
         }
     } catch (error) {
         console.error("Error al abrir modal de registro de progreso:", error);
-        showToast("Error al abrir formulario de progreso", "error");
+        showToast("Error al abrir formulario de progreso: " + error.message, "error");
     }
 }
 
 // Llenar modal de registro de progreso
 function fillRecordProgressModal(objective) {
-    // Título y detalles
-    const titleElement = document.getElementById('progressObjectiveTitle');
-    const detailElement = document.getElementById('progressObjectiveDetail');
-    
-    if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
-    if (detailElement) {
-        detailElement.textContent = `Valor inicial: ${objective.initialValue} → Valor objetivo: ${objective.targetValue} (${objective.evaluationMethod})`;
-    }
-    
-    // Fecha actual
-    const dateInput = document.getElementById('progressDateInput');
-    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-    
-    // Valor actual
-    const currentValueInput = document.getElementById('currentValueInput');
-    const unitLabel = document.getElementById('progressUnitLabel');
-    
-    if (currentValueInput) currentValueInput.value = objective.currentValue || objective.initialValue || '';
-    
-    if (unitLabel) {
-        // Extraer unidad del método (generalmente entre paréntesis)
-        let unit = '';
-        if (objective.evaluationMethod) {
-            const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
-            if (match && match[1]) {
-                unit = match[1];
-            }
+    try {
+        console.log("Llenando modal con datos del objetivo:", objective);
+        
+        // Título y detalles
+        const titleElement = document.getElementById('progressObjectiveTitle');
+        const detailElement = document.getElementById('progressObjectiveDetail');
+        
+        if (titleElement) {
+            const title = `${objective.verb || ''} ${objective.structure || ''}`;
+            titleElement.textContent = title;
+            console.log("Título establecido:", title);
         }
         
-        // Si no se encontró unidad, usar texto genérico
-        if (!unit) unit = 'unidad';
+        if (detailElement) {
+            const details = `Valor inicial: ${objective.initialValue || ''} → Valor objetivo: ${objective.targetValue || ''} (${objective.evaluationMethod || ''})`;
+            detailElement.textContent = details;
+            console.log("Detalles establecidos:", details);
+        }
         
-        unitLabel.textContent = unit;
+        // Fecha actual
+        const dateInput = document.getElementById('progressDateInput');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+            console.log("Fecha establecida:", today);
+        }
+        
+        // Valor actual
+        const currentValueInput = document.getElementById('currentValueInput');
+        const unitLabel = document.getElementById('progressUnitLabel');
+        
+        if (currentValueInput) {
+            const currentVal = objective.currentValue || objective.initialValue || '';
+            currentValueInput.value = currentVal;
+            console.log("Valor actual establecido:", currentVal);
+        }
+        
+        if (unitLabel) {
+            // Extraer unidad del método (generalmente entre paréntesis)
+            let unit = '';
+            if (objective.evaluationMethod) {
+                const match = objective.evaluationMethod.match(/\(([^)]+)\)/);
+                if (match && match[1]) {
+                    unit = match[1];
+                }
+            }
+            
+            // Si no se encontró unidad, usar texto genérico
+            if (!unit) unit = 'unidad';
+            
+            unitLabel.textContent = unit;
+            console.log("Unidad establecida:", unit);
+        }
+        
+        // Notas
+        const notesInput = document.getElementById('progressNotes');
+        if (notesInput) notesInput.value = '';
+        
+        console.log("Modal de progreso llenado correctamente");
+    } catch (error) {
+        console.error("Error al llenar modal de progreso:", error);
     }
-    
-    // Notas
-    const notesInput = document.getElementById('progressNotes');
-    if (notesInput) notesInput.value = '';
 }
 
 // Calcular progreso en tiempo real
@@ -7134,6 +7210,8 @@ async function saveObjectiveProgress(patientId, objectiveId) {
         
         // Actualizar UI
         updateObjectivesUI(patientId);
+
+        
         
         // Cerrar modal
         const modal = document.getElementById('recordProgressModal');
@@ -7141,6 +7219,11 @@ async function saveObjectiveProgress(patientId, objectiveId) {
             modal.classList.remove('active');
             setTimeout(() => {
                 modal.style.display = 'none';
+                
+                // Después de cerrarse, actualizar UI nuevamente para asegurar que se muestre correctamente
+                setTimeout(() => {
+                    updateObjectivesUI(patientId);
+                }, 300);
             }, 300);
         }
         
