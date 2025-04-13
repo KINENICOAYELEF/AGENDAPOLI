@@ -5478,8 +5478,15 @@ function openSpecificObjectiveModal(patientId, objectiveId = null) {
             loadSpecificObjective(patientId, objectiveId);
             
             // Cambiar título del modal
+            // Cambiar título del modal
             const modalTitle = modal.querySelector('.modal-title');
-            if (modalTitle) modalTitle.textContent = "Editar Objetivo Terapéutico Específico";
+            if (modalTitle) {
+                if (objectiveId) {
+                    modalTitle.textContent = "Editar Objetivo Terapéutico Específico";
+                } else {
+                    modalTitle.textContent = "Nuevo Objetivo Terapéutico Específico";
+                }
+            }
         } else {
             // Es un nuevo objetivo, establecer fecha actual
             const today = new Date();
@@ -6067,7 +6074,7 @@ const objectiveData = {
         // Actualizar UI
         updateObjectivesUI(patientId);
 
-        // Actualizar progreso general
+        // Actualizar el objetivo general
         await updateGeneralObjectiveProgress(patientId);
         
         // Cerrar modal
@@ -6404,7 +6411,7 @@ function createSpecificObjectiveCard(objective) {
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
-            // Siempre abrimos el modal de edición directamente
+            // Siempre usamos openSpecificObjectiveModal para editar
             openSpecificObjectiveModal(currentPatientId, objective.id);
         });
     }
@@ -6416,6 +6423,15 @@ function createSpecificObjectiveCard(objective) {
             deleteSpecificObjective(currentPatientId, objective.id);
         });
     }
+    
+    // Añadir evento de clic para toda la tarjeta
+    card.addEventListener('click', function(e) {
+        // Si no se hizo clic en un botón, mostrar modal de detalles
+        if (!e.target.closest('button')) {
+            // Siempre usamos openViewSpecificObjectiveModal para ver detalles
+            openViewSpecificObjectiveModal(objective);
+        }
+    });
     
     // Añadir evento de clic para ver detalles
     card.addEventListener('click', function(e) {
@@ -6431,9 +6447,12 @@ function createSpecificObjectiveCard(objective) {
 // Abrir modal para ver detalles de objetivo específico
 function openViewSpecificObjectiveModal(objective) {
     try {
+        // IMPORTANTE: Verificar si el modal existe
         const modal = document.getElementById('viewSpecificObjectiveModal');
         if (!modal) {
             console.error("Modal de visualización de objetivo no encontrado");
+            // Si no existe, abrimos directamente el de edición como fallback
+            openSpecificObjectiveModal(currentPatientId, objective.id);
             return;
         }
         
@@ -6513,6 +6532,8 @@ function openViewSpecificObjectiveModal(objective) {
                     openRecordProgressModal(currentPatientId, objective);
                 }, 300);
             });
+        } else {
+            console.error("Botón de registro de progreso no encontrado");
         }
     } catch (error) {
         console.error("Error al abrir modal de detalle de objetivo:", error);
@@ -7043,11 +7064,11 @@ async function saveObjectiveProgress(patientId, objectiveId) {
             };
         }
         
-        // Actualizar progreso general
-        await updateGeneralObjectiveProgress(patientId);
-        
         // Actualizar UI
         updateObjectivesUI(patientId);
+
+        // Actualizar progreso general
+        await updateGeneralObjectiveProgress(patientId);
         
         // Cerrar modal
         const modal = document.getElementById('recordProgressModal');
@@ -7072,13 +7093,18 @@ async function updateGeneralObjectiveProgress(patientId) {
     try {
         if (!patientId) return;
         
+        console.log("Actualizando progreso del objetivo general para paciente:", patientId);
+        
         // Obtener todos los objetivos específicos
         const objectivesRef = collection(db, "patients", patientId, "objectives");
         // No incluir el objetivo general
         const objectivesQuery = query(objectivesRef, where(documentId(), "!=", "general"));
         const objectivesSnap = await getDocs(objectivesQuery);
         
-        if (objectivesSnap.empty) return;
+        if (objectivesSnap.empty) {
+            console.log("No se encontraron objetivos específicos");
+            return;
+        }
         
         // Calcular progreso general
         let totalProgress = 0;
@@ -7086,18 +7112,21 @@ async function updateGeneralObjectiveProgress(patientId) {
         
         objectivesSnap.docs.forEach(doc => {
             const obj = doc.data();
+            console.log(`Objetivo: ${obj.structure || 'Sin nombre'}, Progreso: ${obj.progress || 0}%`);
             totalProgress += (obj.progress || 0);
             objectivesCount++;
         });
         
         // Calcular promedio
         const avgProgress = objectivesCount > 0 ? Math.round(totalProgress / objectivesCount) : 0;
+        console.log(`Progreso total: ${totalProgress}, Número de objetivos: ${objectivesCount}, Promedio: ${avgProgress}%`);
         
         // Actualizar objetivo general
         const generalRef = doc(db, "patients", patientId, "objectives", "general");
         const generalSnap = await getDoc(generalRef);
         
         if (generalSnap.exists()) {
+            console.log("Actualizando objetivo general con progreso:", avgProgress);
             await updateDoc(generalRef, {
                 progress: avgProgress,
                 updatedAt: new Date().toISOString()
@@ -7111,6 +7140,10 @@ async function updateGeneralObjectiveProgress(patientId) {
                     updatedAt: new Date().toISOString()
                 };
             }
+            
+            console.log("Objetivo general actualizado correctamente");
+        } else {
+            console.log("No se encontró objetivo general para actualizar");
         }
     } catch (error) {
         console.error("Error al actualizar progreso general:", error);
@@ -7144,6 +7177,9 @@ async function deleteSpecificObjective(patientId, objectiveId) {
         
         // Actualizar UI
         updateObjectivesUI(patientId);
+
+        // Actualizar el objetivo general
+        await updateGeneralObjectiveProgress(patientId);
         
         hideLoading();
         showToast("Objetivo eliminado correctamente", "success");
