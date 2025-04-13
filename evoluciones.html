@@ -6066,6 +6066,9 @@ const objectiveData = {
         
         // Actualizar UI
         updateObjectivesUI(patientId);
+
+        // Actualizar progreso general
+        await updateGeneralObjectiveProgress(patientId);
         
         // Cerrar modal
         const modal = document.getElementById('specificObjectiveModal');
