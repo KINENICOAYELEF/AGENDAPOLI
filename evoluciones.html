@@ -14956,5 +14956,26 @@ function mostrarInfoIntensidad(tipo) {
     alert(mensaje);
 }
 </script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const toggleBtn = document.getElementById('toggleSidebar');
+
+    toggleBtn.addEventListener('click', function() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        toggleBtn.classList.toggle('active');
+    });
+
+    // Cerrar sidebar al hacer clic fuera
+    sidebarOverlay.addEventListener('click', function() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        toggleBtn.classList.remove('active');
+    });
+});
+</script>
 </body>
 </html>
