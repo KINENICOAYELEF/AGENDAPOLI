@@ -21,13 +21,6 @@
 
 </head>
 <body>
-
-    <!-- Botón hamburguesa fijo para móviles -->
-    <!-- Botón de menú móvil absolutamente independiente -->
-
-<!-- Overlay para cuando el menú está abierto -->
-<div id="menuOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9998; display: none;"></div>
-    
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner"></div>
@@ -37,9 +30,10 @@
     <div class="sidebar" id="sidebar">
         <div class="logo-container">
             <div class="logo">
+                <i class="fas fa-heartbeat"></i>
                 <span>SISTEMAKINE</span>
             </div>
-            <button class="toggle-btn" id="toggleSidebar" aria-label="Menú">
+            <button class="toggle-btn" id="toggleSidebar">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -13232,19 +13226,6 @@ if (deletePatientBtn) {
                         attachments: []
                     };
 
-
-                    var mobileMenuBtn = document.getElementById('mobileMenuBtn');
-                    var sidebar = document.getElementById('sidebar');
-                    
-                    if (mobileMenuBtn && sidebar) {
-                        // Añadir evento de clic directamente
-                        mobileMenuBtn.onclick = function() {
-                            console.log("Botón móvil presionado");
-                            sidebar.classList.toggle('active');
-                            document.body.classList.toggle('sidebar-open');
-                        };
-                    }
-
                     // Procesar archivos adjuntos
 const attachmentInput = document.getElementById('evolutionAttachments');
 if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
@@ -13400,14 +13381,8 @@ function setupNavigation() {
         
         if (toggleSidebarBtn && sidebar && mainContent) {
             toggleSidebarBtn.addEventListener('click', function() {
-                // En todos los tamaños de pantalla cambiamos la clase active
-                sidebar.classList.toggle('active');
-                
-                // En pantallas grandes también aplicamos estas clases
-                if (window.innerWidth > 576) {
-                    sidebar.classList.toggle('sidebar-collapsed');
-                    mainContent.classList.toggle('main-content-expanded');
-                }
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-content-expanded');
             });
         }
 
@@ -14982,192 +14957,5 @@ function mostrarInfoIntensidad(tipo) {
     alert(mensaje);
 }
 </script>
-
-    <script>
-// Script simple y directo para el menú móvil
-document.getElementById('menuMobile').addEventListener('click', function() {
-    var sidebar = document.getElementById('sidebar');
-    var overlay = document.getElementById('menuOverlay');
-    
-    // Toggle sidebar
-    if (sidebar) {
-        sidebar.style.transform = sidebar.style.transform === 'translateX(0px)' ? 'translateX(-100%)' : 'translateX(0px)';
-        sidebar.style.boxShadow = sidebar.style.transform === 'translateX(0px)' ? '5px 0 15px rgba(0,0,0,0.2)' : 'none';
-    }
-    
-    // Toggle overlay
-    if (overlay) {
-        overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
-    }
-});
-
-// Cerrar menú al hacer clic en el overlay
-document.getElementById('menuOverlay').addEventListener('click', function() {
-    var sidebar = document.getElementById('sidebar');
-    
-    if (sidebar) {
-        sidebar.style.transform = 'translateX(-100%)';
-        sidebar.style.boxShadow = 'none';
-    }
-    
-    this.style.display = 'none';
-});
-</script>
-
-   <!-- SOLUCIÓN ESPECÍFICA PARA ORIENTACIÓN VERTICAL - INICIO -->
-
-<!-- Botón flotante para orientación vertical -->
-<div id="menuButtonVertical" style="position: fixed; top: 15px; right: 15px; width: 45px; height: 45px; background-color: #1E88E5; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10001; cursor: pointer;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="12" x2="21" y2="12"></line>
-        <line x1="3" y1="6" x2="21" y2="6"></line>
-        <line x1="3" y1="18" x2="21" y2="18"></line>
-    </svg>
-</div>
-
-<!-- Overlay para cuando el menú está abierto -->
-<div id="menuOverlayVertical" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 9998; display: none;"></div>
-
-<style>
-/* Estilos para garantizar que aparezca en vertical */
-#menuButtonVertical {
-    /* Siempre visible */
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Garantizar visibilidad solo en orientación vertical */
-@media screen and (orientation: portrait) {
-    #menuButtonVertical {
-        display: flex !important;
-    }
-}
-
-/* Estilos para el sidebar */
-#sidebar.menu-visible-vertical {
-    left: 0 !important;
-    transform: translateX(0) !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 250px !important;
-    z-index: 9999 !important;
-    
-    /* Forzar visibilidad de textos del menú */
-    .menu-item-text,
-    .logo span,
-    .user-info {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-}
-</style>
-
-<script>
-// Script independiente para el botón de menú vertical
-(function() {
-    // Obtener elementos
-    var menuButton = document.getElementById('menuButtonVertical');
-    var menuOverlay = document.getElementById('menuOverlayVertical');
-    var sidebar = document.getElementById('sidebar');
-    
-    // Verificar si existen los elementos
-    if (!menuButton || !menuOverlay) {
-        console.error("No se encontraron elementos necesarios para el menú móvil vertical");
-        return;
-    }
-    
-    if (!sidebar) {
-        console.error("No se encontró el elemento sidebar");
-        // Intentar buscar por otras clases o ids comunes
-        sidebar = document.querySelector('.sidebar') || 
-                 document.querySelector('#sidebarMenu') || 
-                 document.querySelector('[class*="sidebar"]');
-        
-        if (!sidebar) {
-            console.error("No se pudo encontrar ningún sidebar");
-            return;
-        }
-    }
-    
-    // Función para mostrar el sidebar
-    function showSidebar() {
-        console.log("Abriendo menú vertical...");
-        
-        // Aplicar estilos para mostrar
-        sidebar.style.position = 'fixed';
-        sidebar.style.top = '0';
-        sidebar.style.left = '0';
-        sidebar.style.height = '100%';
-        sidebar.style.width = '250px';
-        sidebar.style.transform = 'translateX(0)';
-        sidebar.style.zIndex = '9999';
-        sidebar.style.boxShadow = '0 0 15px rgba(0,0,0,0.2)';
-        sidebar.style.transition = 'transform 0.3s ease';
-        sidebar.classList.add('menu-visible-vertical');
-        
-        // Mostrar overlay
-        menuOverlay.style.display = 'block';
-        
-        // Forzar visibilidad de textos
-        var textElements = sidebar.querySelectorAll('.menu-item-text, .logo span, .user-info');
-        textElements.forEach(function(el) {
-            el.style.display = 'block';
-            el.style.visibility = 'visible';
-            el.style.opacity = '1';
-        });
-    }
-    
-    // Función para ocultar el sidebar
-    function hideSidebar() {
-        console.log("Cerrando menú vertical...");
-        
-        // Restaurar estilos originales
-        sidebar.style.transform = 'translateX(-100%)';
-        sidebar.classList.remove('menu-visible-vertical');
-        
-        // Ocultar overlay
-        menuOverlay.style.display = 'none';
-    }
-    
-    // Añadir event listeners
-    menuButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log("Clic en botón de menú vertical");
-        
-        if (sidebar.classList.contains('menu-visible-vertical')) {
-            hideSidebar();
-        } else {
-            showSidebar();
-        }
-    });
-    
-    menuOverlay.addEventListener('click', function(e) {
-        e.preventDefault();
-        hideSidebar();
-    });
-    
-    // Forzar visualización en orientación vertical
-    function checkOrientation() {
-        if (window.innerHeight > window.innerWidth) { // Orientación vertical
-            menuButton.style.display = 'flex';
-        } else {
-            menuButton.style.display = 'flex'; // Mantenerlo visible también en horizontal
-        }
-    }
-    
-    // Verificar orientación inicial y en cada cambio
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-    
-    // Mensaje de confirmación
-    console.log("Script de menú vertical inicializado correctamente");
-})();
-</script>
-
-<!-- SOLUCIÓN ESPECÍFICA PARA ORIENTACIÓN VERTICAL - FIN -->
 </body>
 </html>
