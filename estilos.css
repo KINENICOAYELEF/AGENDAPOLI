@@ -3317,3 +3317,144 @@ body.mobile-view .toggle-btn {
         margin-left: 40px;
     }
 }
+
+/* Asegurar que el botón hamburguesa y notificaciones aparezcan en cualquier orientación */
+@media screen and (max-width: 768px) {
+    /* Botón de hamburguesa siempre visible */
+    #sidebar .logo-container .toggle-btn,
+    button.menu-toggle,
+    .header-icon i.fa-bars {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 9999;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    /* Botón de notificaciones siempre visible */
+    .notification-btn,
+    button.notification-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 9999;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    /* Asegurar que los íconos se vean */
+    .notification-btn i,
+    button.notification-btn i {
+        font-size: 18px;
+    }
+    
+    /* Ajustar posición del badge en móvil */
+    .notification-badge {
+        top: 0;
+        right: 0;
+    }
+    
+    /* Ajustar contenido principal para dar espacio a los botones */
+    #mainContent, .content {
+        padding-top: 50px !important;
+    }
+}
+
+/* Hacer que la tabla de archivos sea responsiva */
+@media screen and (max-width: 768px) {
+    /* Contenedor con desplazamiento horizontal */
+    .patient-files-container,
+    table,
+    .table-container,
+    .document-table-container {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+    }
+    
+    /* Asegurar ancho mínimo para la tabla */
+    table {
+        min-width: 500px;
+    }
+    
+    /* Ajustar tamaño de las celdas para mejor visualización */
+    th, td {
+        white-space: nowrap;
+        padding: 10px 8px;
+    }
+    
+    /* Estilo visual para indicar que se puede desplazar */
+    .patient-files-container:after,
+    .table-container:after,
+    .document-table-container:after {
+        content: "← Deslizar →";
+        display: block;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+        padding: 5px;
+        background-color: rgba(0,0,0,0.03);
+        border-radius: 5px;
+        margin-top: 5px;
+    }
+}
+
+/* Asegurar que los iconos de acción sean visibles */
+@media screen and (max-width: 768px) {
+    /* Iconos de acciones en tablas */
+    .action-icon,
+    td .action-btn,
+    .download-btn,
+    .view-btn,
+    .delete-file-btn {
+        display: inline-flex !important;
+        min-width: 30px;
+        min-height: 30px;
+        justify-content: center;
+        align-items: center;
+        margin: 2px;
+    }
+    
+    /* Mantener fija la columna de nombre */
+    table th:first-child,
+    table td:first-child {
+        position: sticky;
+        left: 0;
+        background-color: var(--background);
+        z-index: 1;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+    
+    /* Mantener fija la columna de acciones */
+    table th:last-child,
+    table td:last-child {
+        position: sticky;
+        right: 0;
+        background-color: var(--background);
+        z-index: 1;
+        box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+    }
+}
