@@ -3149,3 +3149,471 @@ select.form-control option:checked {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===== MEJORAS RESPONSIVAS ===== */
+
+/* Ajustes generales para elementos responsivos */
+* {
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+/* Mejoras en tablas responsivas */
+.exercise-table-container {
+    overflow-x: auto;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.exercise-table {
+    min-width: 650px; /* Ancho mínimo para contenido legible */
+    width: 100%;
+}
+
+.exercise-table td {
+    min-width: 80px; /* Evita que las celdas colapsen */
+    vertical-align: middle;
+    word-break: break-word;
+}
+
+.exercise-table td input, 
+.exercise-table td select {
+    width: 100%;
+    min-height: 38px;
+}
+
+/* Mejoras para campos de formulario */
+.form-control {
+    min-height: 40px;
+    padding: 8px 12px;
+    width: 100%;
+}
+
+textarea.form-control {
+    min-height: 80px;
+}
+
+/* Ajustes para tarjetas de pacientes */
+.patient-card {
+    height: auto;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.patient-name, .patient-rut {
+    width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Mejoras responsive para modales */
+.modal {
+    width: 95%;
+    max-width: 900px;
+    max-height: 90vh;
+    margin: 2.5vh auto;
+    overflow-y: auto;
+}
+
+.modal-body {
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
+    padding: 20px 15px;
+}
+
+/* Ajustes para escalas */
+.scales-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.scale-card {
+    width: 100%;
+    min-width: unset;
+}
+
+/* Ajustes para acordeones */
+.accordion-body {
+    padding: 15px 10px;
+}
+
+/* Ajustes para campos de PSFS */
+.psfs-activity {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+
+.psfs-activity-input {
+    width: 100%;
+    min-height: 36px;
+}
+
+/* Selector de pacientes responsivo */
+.patient-selector-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 12px 15px;
+    gap: 10px;
+}
+
+.patient-selector-dropdown {
+    width: 100%;
+    max-height: 300px;
+}
+
+/* Contenedores de dashboard */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 15px;
+}
+
+/* Mejoras para la evolución timeline */
+.evolution-timeline, .diagnosis-timeline {
+    padding-left: 25px;
+}
+
+.evolution-content, .timeline-content {
+    padding: 15px;
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.evolution-dot, .timeline-dot {
+    left: -25px;
+}
+
+/* Mejoras para pestañas */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+    white-space: nowrap;
+    padding: 10px 15px;
+}
+
+/* Mejoras para sección de información del paciente */
+.personal-info {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.personal-info .patient-details {
+    width: 100%;
+}
+
+/* Ajustes para filas de formulario */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.form-col {
+    flex: 1 1 250px;
+}
+
+/* Ajustes para botones de acción */
+.action-btn {
+    min-height: 40px;
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+
+/* Breakpoint para dispositivos pequeños */
+@media (max-width: 576px) {
+    .modal {
+        width: 98%;
+        margin: 1vh auto;
+    }
+    
+    .modal-header {
+        padding: 12px;
+    }
+    
+    .modal-body {
+        padding: 12px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .section-header .action-btn {
+        align-self: flex-start;
+        width: 100%;
+    }
+    
+    .header-actions {
+        display: none; /* Oculta acciones de header en dispositivos muy pequeños */
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-col {
+        width: 100%;
+    }
+    
+    .exercise-table {
+        min-width: 500px;
+    }
+    
+    .header {
+        padding: 10px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .page-title {
+        font-size: 18px;
+    }
+    
+    .dashboard-card {
+        margin-bottom: 10px;
+    }
+    
+    .content {
+        padding: 15px 10px;
+    }
+    
+    .evolution-header,
+    .plan-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* Breakpoint para tablets */
+@media (min-width: 577px) and (max-width: 992px) {
+    .content {
+        padding: 20px 15px;
+    }
+    
+    .patient-list {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+    
+    .dashboard {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+    
+    .scales-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal {
+        width: 90%;
+    }
+}
+
+/* Breakpoint para pantallas grandes */
+@media (min-width: 1200px) {
+    .patient-list {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .modal {
+        max-width: 1100px;
+    }
+    
+    .content {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+}
+
+/* Arreglos específicos para Firefox */
+@-moz-document url-prefix() {
+    .scale-value {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .exercise-table td input {
+        height: 38px;
+    }
+}
+
+/* Arreglos específicos para Safari */
+@media not all and (min-resolution:.001dpcm) {
+    @supports (-webkit-appearance:none) {
+        .scale-slider, .psfs-slider {
+            height: 8px;
+        }
+        
+        .exercise-table td input {
+            height: 38px;
+        }
+    }
+}
+
+/* Mejoras de accesibilidad */
+input:focus, 
+select:focus, 
+textarea:focus, 
+button:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+/* Imprimir */
+@media print {
+    .sidebar, 
+    .header,
+    .add-evolution,
+    .modal-close,
+    .action-btn {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    .content {
+        padding: 0;
+    }
+    
+    body {
+        background-color: white;
+    }
+    
+    /* Asegurar que todo el contenido sea visible */
+    .modal, 
+    .modal-overlay {
+        position: static;
+        overflow: visible;
+        height: auto;
+        opacity: 1;
+        visibility: visible;
+        max-height: none;
+    }
+    
+    .modal-body {
+        max-height: none;
+        overflow: visible;
+    }
+    
+    .tab-content {
+        display: block !important;
+    }
+    
+    /* Escala de grises para ahorrar tinta */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+/* Mejora de animaciones para rendimiento */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Mejoras para la sección de documentos y archivos */
+.attachment {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.attachment img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#patientFilesPreview, #attachmentPreview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+/* Estilos para archivos PDF */
+.pdf-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.attachment-download {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.attachment-download:hover {
+    background-color: var(--primary);
+    transform: scale(1.1);
+}
+
+/* Mejora general de responsividad */
+@media (max-width: 768px) {
+    .accordion-body {
+        padding: 15px 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .form-col {
+        width: 100%;
+    }
+}
