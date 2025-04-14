@@ -13420,20 +13420,25 @@ function setupNavigation() {
             }
         });
 
-        // Manejar menú hamburguesa para móviles
-        const menuToggle = document.querySelector('.menu-toggle, .header-icon i.fa-bars')?.parentElement;
+        // Manejar menú hamburguesa para móviles - Ajustado para tu botón específico
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
         
-        if (menuToggle && sidebar) {
-            menuToggle.addEventListener('click', function() {
+        if (toggleSidebarBtn && sidebar) {
+            // Eliminar el manejador de eventos anterior (si existe)
+            const newToggleBtn = toggleSidebarBtn.cloneNode(true);
+            toggleSidebarBtn.parentNode.replaceChild(newToggleBtn, toggleSidebarBtn);
+            
+            // Añadir nuevo manejador de eventos
+            newToggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('sidebar-mobile-active');
                 if (mainContent) {
                     mainContent.classList.toggle('main-content-shifted');
                 }
                 
                 // Cambiar el ícono si es necesario
-                const icon = menuToggle.querySelector('i.fa-bars, i.fa-times');
+                const icon = newToggleBtn.querySelector('i');
                 if (icon) {
                     icon.classList.toggle('fa-bars');
                     icon.classList.toggle('fa-times');
@@ -13456,7 +13461,7 @@ function setupNavigation() {
                         }
                         
                         // Restaurar ícono
-                        const icon = menuToggle.querySelector('i.fa-times');
+                        const icon = newToggleBtn.querySelector('i');
                         if (icon) {
                             icon.classList.remove('fa-times');
                             icon.classList.add('fa-bars');
