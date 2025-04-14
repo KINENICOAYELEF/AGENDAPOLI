@@ -13408,56 +13408,36 @@ function setupNavigation() {
             }
         });
 
-        // Manejar menú hamburguesa para móviles - Ajustado para tu botón específico
+        // Restaurar y mejorar la función del botón del sidebar para móviles
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
         
-        if (toggleSidebarBtn && sidebar) {
-            // Eliminar el manejador de eventos anterior (si existe)
-            const newToggleBtn = toggleSidebarBtn.cloneNode(true);
-            toggleSidebarBtn.parentNode.replaceChild(newToggleBtn, toggleSidebarBtn);
-            
-            // Añadir nuevo manejador de eventos
-            newToggleBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-mobile-active');
-                if (mainContent) {
-                    mainContent.classList.toggle('main-content-shifted');
-                }
+        if (toggleSidebarBtn && sidebar && mainContent) {
+            // Preservar el comportamiento original
+            toggleSidebarBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-content-expanded');
                 
-                // Cambiar el ícono si es necesario
-                const icon = newToggleBtn.querySelector('i');
-                if (icon) {
-                    icon.classList.toggle('fa-bars');
-                    icon.classList.toggle('fa-times');
+                // Añadir comportamiento para móviles
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('sidebar-mobile-visible');
                 }
-            });
-            
-            // Añadir clase al body para identificar dispositivos móviles
-            if (window.innerWidth <= 768) {
-                document.body.classList.add('mobile-device');
-            }
-            
-            // Cerrar menú al hacer clic en una opción en móviles
-            const menuItems = sidebar.querySelectorAll('.menu-item');
-            menuItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.remove('sidebar-mobile-active');
-                        if (mainContent) {
-                            mainContent.classList.remove('main-content-shifted');
-                        }
-                        
-                        // Restaurar ícono
-                        const icon = newToggleBtn.querySelector('i');
-                        if (icon) {
-                            icon.classList.remove('fa-times');
-                            icon.classList.add('fa-bars');
-                        }
-                    }
-                });
             });
         }
+        
+        // Añadir detector de tamaño de pantalla
+        function checkMobileView() {
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('mobile-view');
+            } else {
+                document.body.classList.remove('mobile-view');
+            }
+        }
+        
+        // Ejecutar al inicio y cuando cambie el tamaño de la ventana
+        checkMobileView();
+        window.addEventListener('resize', checkMobileView);
     } catch (error) {
         console.error("Error configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
