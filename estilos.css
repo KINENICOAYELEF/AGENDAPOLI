@@ -3780,3 +3780,100 @@ button:focus {
 .logo span {
     display: inline-block !important;
 }
+
+/* Botón hamburguesa fijo para móviles */
+.mobile-menu-btn {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 9999;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu-btn i {
+    font-size: 20px;
+}
+
+.mobile-menu-btn:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+/* Mostrar el botón solo en móviles en vertical */
+@media (max-width: 576px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
+}
+
+/* Aplicar estilos al sidebar en móviles */
+@media (max-width: 576px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 80% !important; /* Ancho más grande en móviles */
+        max-width: 300px;
+        z-index: 9998;
+        transition: transform 0.3s ease;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    
+    /* Asegurarnos que los textos son visibles */
+    .sidebar .menu-item-text,
+    .sidebar .logo span {
+        display: inline-block !important;
+    }
+    
+    /* Ajuste a contenido principal */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* Overlay para cuando el menú está abierto */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 9997;
+    display: none;
+}
+
+.menu-overlay.active {
+    display: block;
+}
+
+
+/* Ocultar botones de toggle originales en móviles */
+@media (max-width: 576px) {
+    .toggle-btn {
+        display: none !important;
+    }
+    
+    /* Asegurar que el logo se vea bien */
+    .logo-container {
+        justify-content: center;
+        padding: 15px 0;
+    }
+}
