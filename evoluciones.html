@@ -13418,6 +13418,52 @@ function setupNavigation() {
                 }
             }
         });
+
+        // Manejar menú hamburguesa para móviles
+        const menuToggle = document.querySelector('.menu-toggle, .header-icon i.fa-bars')?.parentElement;
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('sidebar-mobile-active');
+                if (mainContent) {
+                    mainContent.classList.toggle('main-content-shifted');
+                }
+                
+                // Cambiar el ícono si es necesario
+                const icon = menuToggle.querySelector('i.fa-bars, i.fa-times');
+                if (icon) {
+                    icon.classList.toggle('fa-bars');
+                    icon.classList.toggle('fa-times');
+                }
+            });
+            
+            // Añadir clase al body para identificar dispositivos móviles
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('mobile-device');
+            }
+            
+            // Cerrar menú al hacer clic en una opción en móviles
+            const menuItems = sidebar.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('sidebar-mobile-active');
+                        if (mainContent) {
+                            mainContent.classList.remove('main-content-shifted');
+                        }
+                        
+                        // Restaurar ícono
+                        const icon = menuToggle.querySelector('i.fa-times');
+                        if (icon) {
+                            icon.classList.remove('fa-times');
+                            icon.classList.add('fa-bars');
+                        }
+                    }
+                });
+            });
+        }
     } catch (error) {
         console.error("Error configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
