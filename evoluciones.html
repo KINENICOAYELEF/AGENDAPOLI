@@ -13330,6 +13330,66 @@ if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0
 
         // Actualizar notificaciones periódicamente
         updateNotifications(); // Inicialmente
+
+        // Mejorar experiencia en dispositivos móviles
+        function enhanceMobileExperience() {
+            // Detectar si estamos en modo vertical u horizontal
+            const isPortrait = window.innerHeight > window.innerWidth;
+            
+            // Asegurar visibilidad de botones críticos
+            const toggleBtn = document.querySelector('#sidebar .logo-container .toggle-btn, .menu-toggle, .header-icon i.fa-bars');
+            const notificationBtn = document.querySelector('.notification-btn, button.notification-btn');
+            
+            if (toggleBtn) {
+                toggleBtn.style.display = 'flex';
+                toggleBtn.style.visibility = 'visible';
+                toggleBtn.style.opacity = '1';
+            }
+            
+            if (notificationBtn) {
+                notificationBtn.style.display = 'flex';
+                notificationBtn.style.visibility = 'visible';
+                notificationBtn.style.opacity = '1';
+            }
+            
+            // Hacer responsivas todas las tablas
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const parent = table.parentElement;
+                if (parent && !parent.classList.contains('table-container')) {
+                    // Crear contenedor de tabla si no existe
+                    const tableContainer = document.createElement('div');
+                    tableContainer.className = 'table-container';
+                    table.parentNode.insertBefore(tableContainer, table);
+                    tableContainer.appendChild(table);
+                }
+            });
+            
+            // Añadir indicación visual para tablas con scroll horizontal
+            document.querySelectorAll('.table-container').forEach(container => {
+                if (container.scrollWidth > container.clientWidth) {
+                    container.classList.add('has-scroll');
+                }
+            });
+            
+            // Corregir ancho de tablas de documentos
+            document.querySelectorAll('table').forEach(table => {
+                if (table.closest('.patient-files-container, .document-table-container')) {
+                    table.style.minWidth = '500px';
+                }
+            });
+        }
+        
+        // Ejecutar al inicio
+        enhanceMobileExperience();
+        
+        // Ejecutar cuando cambie el tamaño de la ventana
+        window.addEventListener('resize', enhanceMobileExperience);
+        
+        // Ejecutar cuando cambie la orientación del dispositivo
+        window.addEventListener('orientationchange', function() {
+            setTimeout(enhanceMobileExperience, 100);
+        });
         
         console.log("Inicialización completada correctamente");
         showToast("Sistema iniciado correctamente", "success");
