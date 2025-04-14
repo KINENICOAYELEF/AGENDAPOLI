@@ -13381,8 +13381,13 @@ function setupNavigation() {
         
         if (toggleSidebarBtn && sidebar && mainContent) {
             toggleSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-collapsed');
-                mainContent.classList.toggle('main-content-expanded');
+                // En móviles usamos 'active', en desktop usamos 'sidebar-collapsed'
+                if (window.innerWidth <= 576) {
+                    sidebar.classList.toggle('active');
+                } else {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                    mainContent.classList.toggle('main-content-expanded');
+                }
             });
         }
 
