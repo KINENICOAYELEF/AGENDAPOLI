@@ -3151,50 +3151,69 @@ select.form-control option:checked {
 }
 
 
-/* Estilos para mobile */
+/* Estilos responsivos revisados */
 @media screen and (max-width: 768px) {
-    /* Ocultar sidebar por defecto en móviles */
+    /* Sidebar para móviles - preservando comportamiento original */
     #sidebar {
         position: fixed;
+        width: 250px;
         left: -250px;
-        top: 0;
-        height: 100vh;
-        z-index: 1000;
         transition: left 0.3s ease;
-        box-shadow: none;
+        z-index: 1000;
+        height: 100vh;
     }
     
-    /* Clase para mostrar sidebar en móviles */
-    #sidebar.sidebar-mobile-active {
+    #sidebar.sidebar-collapsed {
+        width: 60px;
+        left: -60px;
+    }
+    
+    #sidebar.sidebar-mobile-visible {
         left: 0;
-        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     }
     
-    /* Ajustar contenido principal para ocupar toda la pantalla */
+    /* Contenido principal */
     #mainContent {
         margin-left: 0;
         width: 100%;
         transition: margin-left 0.3s ease;
     }
     
-    /* Mover contenido cuando se muestra el menú */
-    #mainContent.main-content-shifted {
-        margin-left: 250px;
-    }
-    
-    /* Estilos para el header */
-    .header {
-        padding: 10px;
-    }
-    
-    /* Asegurar que el botón de menú sea visible y tenga buen tamaño */
-    .menu-toggle, .header-icon {
-        display: flex;
+    /* Hacer visible el botón toggle en móvil */
+    .toggle-btn {
+        display: block !important;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1001;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 12px;
         cursor: pointer;
-        padding: 8px;
     }
     
-    /* Formularios y tarjetas a ancho completo */
+    /* Mejoras responsivas generales */
+    .dashboard {
+        flex-direction: column;
+    }
+    
+    .dashboard-card {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .patient-list {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+    }
+    
+    .patient-card {
+        width: 100%;
+    }
+    
+    /* Hacer que los formularios sean responsivos */
     .form-row {
         flex-direction: column;
     }
@@ -3204,93 +3223,54 @@ select.form-control option:checked {
         margin-right: 0;
     }
     
-    /* Tarjetas más amplias */
-    .card, .patient-card, .evolution-card {
-        width: 100%;
-        margin: 10px 0;
-    }
-    
-    /* Ajustar dashboard cards */
-    .dashboard-card {
-        width: 100%;
-        margin: 10px 0;
-    }
-    
-    /* Mejoras para tablas responsivas */
-    .table-responsive {
-        overflow-x: auto;
-    }
-    
-    /* Botones más grandes para mejor interacción tactil */
-    .action-btn {
-        padding: 12px;
-        margin: 5px;
-    }
-    
-    /* Ajustar inputs para mejor experiencia móvil */
-    input, select, textarea {
-        font-size: 16px; /* Evita zoom en iOS */
-    }
-    
-    /* Ajustar modales para móviles */
+    /* Modales más grandes en móvil */
     .modal {
         width: 95%;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-}
-
-/* Mejoras para tablets */
-@media screen and (min-width: 769px) and (max-width: 1024px) {
-    .dashboard {
-        flex-wrap: wrap;
+        max-width: 95%;
     }
     
-    .dashboard-card {
-        width: calc(50% - 20px);
-    }
-    
-    .form-row {
-        flex-wrap: wrap;
-    }
-    
-    .form-col {
-        width: 100%;
-        margin-bottom: 15px;
-    }
-}
-
-
-/* Mejorar visualización de detalles en móviles */
-@media screen and (max-width: 768px) {
-    /* Pestañas más visibles */
-    .tabs {
+    /* Hacer las tablas responsivas */
+    .table-wrapper {
         overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 5px;
+    }
+    
+    /* Mejorar pestañas en móviles */
+    .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .tab {
-        padding: 10px 15px;
+        flex: 0 0 auto;
+        white-space: nowrap;
     }
     
-    /* Acordeones con mejor visibilidad */
-    .accordion-header {
-        padding: 12px;
+    /* Mejorar visualización en dispositivos móviles */
+    .header-title {
+        font-size: 18px;
     }
     
-    /* Ajustar las escalas visuales */
-    .eva-scale, .groc-scale, .sane-bar {
-        width: 100%;
+    .section-title {
+        font-size: 16px;
     }
     
-    /* Mejores botones para registros */
+    /* Ajustar los botones para mejor toque */
     .action-btn {
-        width: 100%;
-        margin: 5px 0;
+        padding: 10px 15px;
+        margin: 5px;
     }
-    
-    /* Ajustar espaciado y tamaño para CIF y objetivos */
+}
+
+/* Estilo para que el botón de menú esté siempre visible en móviles */
+body.mobile-view .toggle-btn {
+    display: block !important;
+    position: fixed;
+    z-index: 1001;
+}
+/* Mejoras responsivas para tarjetas y gráficos */
+@media screen and (max-width: 768px) {
+    /* Objectivos y CIF más responsivos */
     .cif-categories {
         flex-direction: column;
     }
@@ -3300,12 +3280,40 @@ select.form-control option:checked {
         margin-bottom: 15px;
     }
     
-    /* Mejorar visualización de objetivos */
-    .objective-card {
+    /* Gráficos más pequeños en móvil */
+    #objectivesDonutChart, #objectivesGaugeChart {
+        height: 150px;
+    }
+    
+    /* Mejorar escalas visuales */
+    .eva-scale, .groc-scale, .sane-bar {
+        width: 100%;
+    }
+    
+    /* Mejorar vista de ejercicios */
+    .exercise-two-columns {
+        grid-template-columns: 1fr;
+    }
+    
+    .exercise-table {
+        font-size: 12px;
+    }
+    
+    .exercise-table th, .exercise-table td {
+        padding: 5px;
+    }
+    
+    /* Hacer la línea de tiempo más compacta */
+    .timeline-item {
         padding: 10px;
     }
     
-    .objective-progress-container {
-        flex-direction: column;
+    .timeline-dot {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .timeline-content {
+        margin-left: 40px;
     }
 }
