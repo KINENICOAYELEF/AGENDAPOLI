@@ -6461,6 +6461,9 @@ function createSpecificObjectiveCard(objective) {
         </div>
         
         <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 5px;">
+            <button type="button" class="action-btn btn-secondary record-progress-btn" style="padding: 3px 8px; font-size: 12px; background-color: var(--primary);">
+                <i class="fas fa-chart-line"></i> Registrar progreso
+            </button>
             <button type="button" class="action-btn btn-secondary edit-objective-btn" style="padding: 3px 8px; font-size: 12px;">
                 <i class="fas fa-edit"></i> Editar
             </button>
@@ -6478,11 +6481,13 @@ function createSpecificObjectiveCard(objective) {
         openViewSpecificObjectiveModal(objective);
     });
     
-    // Añadir eventos para los botones
+    // Añadir evento para el botón de editar
     const editBtn = card.querySelector('.edit-objective-btn');
     if (editBtn) {
         editBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
+            
+            // Abrir modal de edición directamente
             openSpecificObjectiveModal(currentPatientId, objective.id);
         });
     }
@@ -6492,6 +6497,54 @@ function createSpecificObjectiveCard(objective) {
         deleteBtn.addEventListener('click', function(e) {
             e.stopPropagation(); // Evitar que se abra el modal de detalles
             deleteSpecificObjective(currentPatientId, objective.id);
+        });
+    }
+
+    // Añadir evento para el botón de registrar progreso
+    const recordBtn = card.querySelector('.record-progress-btn');
+    if (recordBtn) {
+        recordBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Evitar que se propague el evento a la tarjeta
+            
+            // Abrir modal de progreso
+            const modal = document.getElementById('recordProgressModal');
+            if (modal) {
+                // Llenar datos del objetivo
+                const titleElement = document.getElementById('progressObjectiveTitle');
+                if (titleElement) titleElement.textContent = `${objective.verb} ${objective.structure}`;
+                
+                const detailElement = document.getElementById('progressObjectiveDetail');
+                if (detailElement) {
+                    detailElement.textContent = `Valor inicial: ${objective.initialValue} → Valor objetivo: ${objective.targetValue} (${objective.evaluationMethod})`;
+                }
+                
+                // Fecha actual
+                const dateInput = document.getElementById('progressDateInput');
+                if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+                
+                // Valor actual
+                const currentValueInput = document.getElementById('currentValueInput');
+                if (currentValueInput) {
+                    currentValueInput.value = objective.currentValue || objective.initialValue || '';
+                }
+                
+                // Mostrar modal
+                modal.style.display = 'block';
+                setTimeout(() => modal.classList.add('active'), 50);
+                
+                // Configurar botón guardar
+                const saveBtn = document.getElementById('saveProgressBtn');
+                if (saveBtn) {
+                    // Eliminar eventos anteriores
+                    const newSaveBtn = saveBtn.cloneNode(true);
+                    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+                    
+                    // Añadir nuevo evento
+                    newSaveBtn.addEventListener('click', function() {
+                        saveObjectiveProgress(currentPatientId, objective.id);
+                    });
+                }
+            }
         });
     }
     
@@ -7130,6 +7183,11 @@ async function saveObjectiveProgress(patientId, objectiveId) {
         
         hideLoading();
         showToast("Progreso guardado correctamente", "success");
+        
+        // Actualizar UI
+        setTimeout(() => {
+            updateObjectivesUI(patientId);
+        }, 500);
     } catch (error) {
         hideLoading();
         console.error("Error al guardar progreso:", error);
