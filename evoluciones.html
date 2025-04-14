@@ -13380,10 +13380,11 @@ function setupNavigation() {
         
         if (toggleSidebarBtn && sidebar && mainContent) {
             toggleSidebarBtn.addEventListener('click', function() {
-                // En móviles usamos 'active', en desktop usamos 'sidebar-collapsed'
-                if (window.innerWidth <= 576) {
-                    sidebar.classList.toggle('active');
-                } else {
+                // En todos los tamaños de pantalla cambiamos la clase active
+                sidebar.classList.toggle('active');
+                
+                // En pantallas grandes también aplicamos estas clases
+                if (window.innerWidth > 576) {
                     sidebar.classList.toggle('sidebar-collapsed');
                     mainContent.classList.toggle('main-content-expanded');
                 }
