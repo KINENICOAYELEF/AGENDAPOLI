@@ -78,19 +78,23 @@
             <div class="header-actions">
                 <button class="notification-btn">
                     <i class="fas fa-bell"></i>
+                    <span id="notificationsBadge" class="notification-badge">0</span>
                 </button>
-                    <div id="notificationsDropdown" class="notifications-dropdown">
-                        <div class="notifications-header">
-                            <h3>Notificaciones</h3>
-                            <button id="closeNotificationsBtn" class="close-notifications-btn">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div id="notificationsContainer" class="notifications-container">
-                            <!-- Las notificaciones se cargarán aquí dinámicamente -->
-                            <p style="text-align: center; color: var(--text-secondary);">Cargando notificaciones...</p>
-                        </div>
+                
+                <!-- Añade el desplegable de notificaciones aquí -->
+                <div id="notificationsDropdown" class="notifications-dropdown">
+                    <div class="notifications-header">
+                        <h3>Notificaciones</h3>
+                        <button id="closeNotificationsBtn" class="close-notifications-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
+                    <div id="notificationsContainer" class="notifications-container">
+                        <!-- Las notificaciones se cargarán aquí dinámicamente -->
+                        <p style="text-align: center; color: var(--text-secondary);">Cargando notificaciones...</p>
+                    </div>
+                </div>
+            </div>
                 <button class="profile-btn">
                     <i class="fas fa-user"></i>
                 </button>
@@ -13382,41 +13386,39 @@ function setupNavigation() {
         }
 
         // Configurar el botón de notificaciones y el desplegable
-const notificationsBell = document.querySelector('.menu-item i.fa-bell, .header-icon i.fa-bell');
-const notificationsDropdown = document.getElementById('notificationsDropdown');
-const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
-
-if (notificationsBell && notificationsDropdown) {
-    notificationsBell.parentElement.style.cursor = 'pointer';
-    
-    notificationsBell.parentElement.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+        const notificationBtn = document.querySelector('.notification-btn');
+        const notificationsDropdown = document.getElementById('notificationsDropdown');
+        const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
         
-        // Actualizar notificaciones antes de mostrar
-        updateNotifications();
+        if (notificationBtn && notificationsDropdown) {
+            notificationBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Actualizar notificaciones antes de mostrar
+                updateNotifications();
+                
+                // Mostrar/ocultar el desplegable
+                notificationsDropdown.classList.toggle('show');
+            });
+        }
         
-        // Mostrar/ocultar el desplegable
-        notificationsDropdown.classList.toggle('show');
-    });
-}
-
-if (closeNotificationsBtn) {
-    closeNotificationsBtn.addEventListener('click', function() {
-        if (notificationsDropdown) {
-            notificationsDropdown.classList.remove('show');
+        if (closeNotificationsBtn) {
+            closeNotificationsBtn.addEventListener('click', function() {
+                if (notificationsDropdown) {
+                    notificationsDropdown.classList.remove('show');
+                }
+            });
         }
-    });
-}
-
-// Cerrar las notificaciones al hacer clic fuera
-document.addEventListener('click', function(e) {
-    if (notificationsDropdown && notificationsDropdown.classList.contains('show')) {
-        if (!notificationsDropdown.contains(e.target) && e.target !== notificationsBell) {
-            notificationsDropdown.classList.remove('show');
-        }
-    }
-});
+        
+        // Cerrar las notificaciones al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (notificationsDropdown && notificationsDropdown.classList.contains('show')) {
+                if (!notificationsDropdown.contains(e.target) && !notificationBtn.contains(e.target)) {
+                    notificationsDropdown.classList.remove('show');
+                }
+            }
+        });
     } catch (error) {
         console.error("Error configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
