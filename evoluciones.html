@@ -21,6 +21,11 @@
 
 </head>
 <body>
+
+    <!-- Botón hamburguesa fijo para móviles -->
+    <button id="mobileMenuBtn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+    </button>
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner"></div>
@@ -13224,6 +13229,31 @@ if (deletePatientBtn) {
                         observations: document.getElementById('evolutionObservations')?.value || '',
                         attachments: []
                     };
+
+
+                    // Conectar el botón móvil con el sidebar
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Crear overlay para cuando el menú está abierto
+                        const overlay = document.createElement('div');
+                        overlay.className = 'menu-overlay';
+                        document.body.appendChild(overlay);
+                        
+                        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+                        const sidebar = document.getElementById('sidebar');
+                        
+                        if (mobileMenuBtn && sidebar) {
+                            mobileMenuBtn.addEventListener('click', function() {
+                                sidebar.classList.toggle('active');
+                                overlay.classList.toggle('active');
+                            });
+                            
+                            // Cerrar menú al hacer clic en el overlay
+                            overlay.addEventListener('click', function() {
+                                sidebar.classList.remove('active');
+                                overlay.classList.remove('active');
+                            });
+                        }
+                    });
 
                     // Procesar archivos adjuntos
 const attachmentInput = document.getElementById('evolutionAttachments');
