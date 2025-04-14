@@ -3617,3 +3617,62 @@ button:focus {
         width: 100%;
     }
 }
+
+/* Mejoras para sidebar en móviles */
+@media (max-width: 576px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 240px !important;
+        z-index: 1001;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+    
+    .sidebar.active .menu-item-text,
+    .sidebar.active .logo span,
+    .sidebar.active .user-info {
+        display: block !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* Mejora para el botón de hamburguesa */
+.toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover, .toggle-btn:focus {
+    background-color: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.toggle-btn i {
+    font-size: 20px;
+}
+
+/* Estilo para el logo principal sin corazón */
+.logo i.fas.fa-heartbeat {
+    display: none;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+}
