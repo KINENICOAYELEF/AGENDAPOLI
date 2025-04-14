@@ -3259,3 +3259,53 @@ select.form-control option:checked {
         margin-bottom: 15px;
     }
 }
+
+
+/* Mejorar visualización de detalles en móviles */
+@media screen and (max-width: 768px) {
+    /* Pestañas más visibles */
+    .tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+    
+    .tab {
+        padding: 10px 15px;
+    }
+    
+    /* Acordeones con mejor visibilidad */
+    .accordion-header {
+        padding: 12px;
+    }
+    
+    /* Ajustar las escalas visuales */
+    .eva-scale, .groc-scale, .sane-bar {
+        width: 100%;
+    }
+    
+    /* Mejores botones para registros */
+    .action-btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    /* Ajustar espaciado y tamaño para CIF y objetivos */
+    .cif-categories {
+        flex-direction: column;
+    }
+    
+    .cif-category {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    /* Mejorar visualización de objetivos */
+    .objective-card {
+        padding: 10px;
+    }
+    
+    .objective-progress-container {
+        flex-direction: column;
+    }
+}
