@@ -3149,3 +3149,113 @@ select.form-control option:checked {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* Estilos para mobile */
+@media screen and (max-width: 768px) {
+    /* Ocultar sidebar por defecto en móviles */
+    #sidebar {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: none;
+    }
+    
+    /* Clase para mostrar sidebar en móviles */
+    #sidebar.sidebar-mobile-active {
+        left: 0;
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ajustar contenido principal para ocupar toda la pantalla */
+    #mainContent {
+        margin-left: 0;
+        width: 100%;
+        transition: margin-left 0.3s ease;
+    }
+    
+    /* Mover contenido cuando se muestra el menú */
+    #mainContent.main-content-shifted {
+        margin-left: 250px;
+    }
+    
+    /* Estilos para el header */
+    .header {
+        padding: 10px;
+    }
+    
+    /* Asegurar que el botón de menú sea visible y tenga buen tamaño */
+    .menu-toggle, .header-icon {
+        display: flex;
+        cursor: pointer;
+        padding: 8px;
+    }
+    
+    /* Formularios y tarjetas a ancho completo */
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-col {
+        width: 100%;
+        margin-right: 0;
+    }
+    
+    /* Tarjetas más amplias */
+    .card, .patient-card, .evolution-card {
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    /* Ajustar dashboard cards */
+    .dashboard-card {
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    /* Mejoras para tablas responsivas */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    /* Botones más grandes para mejor interacción tactil */
+    .action-btn {
+        padding: 12px;
+        margin: 5px;
+    }
+    
+    /* Ajustar inputs para mejor experiencia móvil */
+    input, select, textarea {
+        font-size: 16px; /* Evita zoom en iOS */
+    }
+    
+    /* Ajustar modales para móviles */
+    .modal {
+        width: 95%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
+
+/* Mejoras para tablets */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    .dashboard {
+        flex-wrap: wrap;
+    }
+    
+    .dashboard-card {
+        width: calc(50% - 20px);
+    }
+    
+    .form-row {
+        flex-wrap: wrap;
+    }
+    
+    .form-col {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+}
