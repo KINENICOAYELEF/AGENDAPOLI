@@ -3676,3 +3676,107 @@ button:focus {
     font-weight: 600;
     color: var(--primary);
 }
+
+/* Mejoras para el botón de menú y sidebar */
+.toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex !important; /* Asegura que siempre sea visible */
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    position: fixed; /* Mantiene el botón visible */
+    top: 10px;
+    right: 10px;
+    z-index: 1002; /* Asegura que esté por encima de otros elementos */
+}
+
+.toggle-btn:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.toggle-btn i {
+    font-size: 20px;
+}
+
+/* Ajustes para sidebar en móviles */
+@media (max-width: 576px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 240px !important;
+        z-index: 1001;
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+    
+    /* Asegura que los textos sean visibles cuando el sidebar está activo */
+    .sidebar .menu-item-text,
+    .sidebar .logo span,
+    .sidebar .user-info {
+        display: inline-block !important; /* Cambio de block a inline-block */
+    }
+    
+    .sidebar.active .menu-item-text,
+    .sidebar.active .logo span,
+    .sidebar.active .user-info {
+        display: inline-block !important;
+    }
+    
+    /* Ajusta el contenido principal */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* Quitar reglas que ocultan texto en sidebar */
+.sidebar-collapsed .menu-item-text,
+.sidebar-collapsed .logo span,
+.sidebar-collapsed .user-info {
+    /* Anulamos la regla anterior */
+    display: inline-block !important;
+}
+
+/* Asegurar que el botón de menú siempre sea visible en móviles */
+@media (max-width: 576px) {
+    /* Botón de menú fijo */
+    .toggle-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed;
+        top: 15px;
+        right: 15px;
+    }
+    
+    /* Ajustar la posición del contenido para evitar que se oculte bajo el botón */
+    .main-content {
+        padding-top: 60px;
+    }
+    
+    /* Ocultar cualquier otro botón de menú duplicado */
+    .header .toggle-btn {
+        display: none !important;
+    }
+}
+/* Ajustes para el contenedor del logo */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+/* Asegurar que el logo es visible */
+.logo span {
+    display: inline-block !important;
+}
