@@ -1769,48 +1769,32 @@
 
         /* Responsive */
         @media (max-width: 992px) {
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: -260px; /* Oculto inicialmente */
-        width: 260px;
-        height: 100vh;
-        transition: left 0.3s ease;
-        z-index: 1000;
-        background-color: var(--background);
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    }
+            .sidebar {
+                width: 70px;
+            }
 
-    .sidebar.active {
-        left: 0; /* Mostrar cuando está activo */
-    }
+            .sidebar .menu-item-text,
+            .sidebar .logo span,
+            .sidebar .user-info {
+                display: none;
+            }
 
-    .main-content {
-        margin-left: 0;
-        width: 100%;
-    }
+            .main-content {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
 
-    /* Estilo para el botón de hamburguesa */
-    .toggle-btn {
-        z-index: 1100;
-    }
+            .personal-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
 
-    /* Overlay para cerrar el menú cuando está abierto */
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-        display: none;
-    }
-
-    .sidebar-overlay.active {
-        display: block;
-    }
-}
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
 
         @media (max-width: 768px) {
             .header {
@@ -3164,85 +3148,4 @@ select.form-control option:checked {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-/* Mejoras para tablas y contenido ancho */
-.table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Hacer que las tablas sean completamente responsivas */
-.table-responsive table {
-    width: 100%;
-    min-width: 600px; /* Ancho mínimo para asegurar legibilidad */
-}
-
-/* Ajustes generales para contenido responsivo */
-@media (max-width: 992px) {
-    .content {
-        padding: 15px;
-    }
-
-    /* Asegurar que los elementos no excedan el ancho de la pantalla */
-    * {
-        max-width: 100%;
-        overflow-x: auto;
-    }
-
-    /* Containers que pueden tener desbordamiento */
-    .dashboard, 
-    .patient-list, 
-    .scales-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 992px) {
-    .toggle-btn {
-        display: block !important;
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        z-index: 1100;
-        background: none;
-        border: none;
-        cursor: pointer;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: -260px; /* Oculto inicialmente */
-        width: 260px;
-        height: 100vh;
-        transition: left 0.3s ease;
-        z-index: 1000;
-        background-color: var(--background);
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    }
-
-    .sidebar.active {
-        left: 0; /* Mostrar cuando está activo */
-    }
-
-    .main-content {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-        display: none;
-    }
-
-    .sidebar-overlay.active {
-        display: block;
-    }
 }
