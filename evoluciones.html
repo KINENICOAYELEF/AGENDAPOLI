@@ -13380,6 +13380,43 @@ function setupNavigation() {
                 mainContent.classList.toggle('main-content-expanded');
             });
         }
+
+        // Configurar el botón de notificaciones y el desplegable
+const notificationsBell = document.querySelector('.menu-item i.fa-bell, .header-icon i.fa-bell');
+const notificationsDropdown = document.getElementById('notificationsDropdown');
+const closeNotificationsBtn = document.getElementById('closeNotificationsBtn');
+
+if (notificationsBell && notificationsDropdown) {
+    notificationsBell.parentElement.style.cursor = 'pointer';
+    
+    notificationsBell.parentElement.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Actualizar notificaciones antes de mostrar
+        updateNotifications();
+        
+        // Mostrar/ocultar el desplegable
+        notificationsDropdown.classList.toggle('show');
+    });
+}
+
+if (closeNotificationsBtn) {
+    closeNotificationsBtn.addEventListener('click', function() {
+        if (notificationsDropdown) {
+            notificationsDropdown.classList.remove('show');
+        }
+    });
+}
+
+// Cerrar las notificaciones al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (notificationsDropdown && notificationsDropdown.classList.contains('show')) {
+        if (!notificationsDropdown.contains(e.target) && e.target !== notificationsBell) {
+            notificationsDropdown.classList.remove('show');
+        }
+    }
+});
     } catch (error) {
         console.error("Error configurando navegación:", error);
         showToast("Error al configurar navegación: " + error.message, "error");
@@ -14807,61 +14844,78 @@ function updateNotificationsUI(patientsWithoutFollowup) {
     }
 }
 
-        // Función para actualizar las notificaciones
+// Función para actualizar las notificaciones
 function updateNotifications() {
     try {
         const patientsWithoutFollowup = checkPatientsWithoutFollowup();
         const notificationsContainer = document.getElementById('notificationsContainer');
+        const notificationsBadge = document.getElementById('notificationsBadge');
         
         if (!notificationsContainer) return;
         
+        // Actualizar el contenedor de notificaciones
         if (patientsWithoutFollowup.length === 0) {
             notificationsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No hay pacientes sin seguimiento</p>';
-            return;
+        } else {
+            notificationsContainer.innerHTML = '';
+            
+            patientsWithoutFollowup.forEach(patient => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = 'notification-item';
+                
+                // Calcular días desde la última sesión
+                let daysSinceLastSession = 'Nunca';
+                
+                if (patient.lastSession) {
+                    const lastSessionParts = patient.lastSession.split('/');
+                    if (lastSessionParts.length === 3) {
+                        const lastSessionDate = new Date(
+                            parseInt(lastSessionParts[2]), // año
+                            parseInt(lastSessionParts[1]) - 1, // mes (0-11)
+                            parseInt(lastSessionParts[0]) // día
+                        );
+                        
+                        const diffTime = Math.abs(new Date() - lastSessionDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        daysSinceLastSession = `${diffDays} días`;
+                    }
+                }
+                
+                notificationItem.innerHTML = `
+                    <div class="notification-icon">
+                        <i class="fas fa-exclamation"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${patient.name}</div>
+                        <div class="notification-desc">Sin seguimiento desde hace ${daysSinceLastSession}</div>
+                    </div>
+                `;
+                
+                // Añadir evento para abrir ficha del paciente
+                notificationItem.addEventListener('click', function() {
+                    openPatientModal(patient.id);
+                    
+                    // Cerrar desplegable de notificaciones
+                    const notificationsDropdown = document.getElementById('notificationsDropdown');
+                    if (notificationsDropdown) {
+                        notificationsDropdown.classList.remove('show');
+                    }
+                });
+                
+                notificationsContainer.appendChild(notificationItem);
+            });
         }
         
-        notificationsContainer.innerHTML = '';
-        
-        patientsWithoutFollowup.forEach(patient => {
-            const notificationItem = document.createElement('div');
-            notificationItem.className = 'notification-item';
-            
-            // Calcular días desde la última sesión
-            let daysSinceLastSession = 'Nunca';
-            
-            if (patient.lastSession) {
-                const lastSessionParts = patient.lastSession.split('/');
-                if (lastSessionParts.length === 3) {
-                    const lastSessionDate = new Date(
-                        parseInt(lastSessionParts[2]), // año
-                        parseInt(lastSessionParts[1]) - 1, // mes (0-11)
-                        parseInt(lastSessionParts[0]) // día
-                    );
-                    
-                    const diffTime = Math.abs(new Date() - lastSessionDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
-                    daysSinceLastSession = `${diffDays} días`;
-                }
+        // Actualizar el badge de notificaciones
+        if (notificationsBadge) {
+            if (patientsWithoutFollowup.length > 0) {
+                notificationsBadge.style.display = 'flex';
+                notificationsBadge.textContent = patientsWithoutFollowup.length;
+            } else {
+                notificationsBadge.style.display = 'none';
             }
-            
-            notificationItem.innerHTML = `
-                <div class="notification-icon">
-                    <i class="fas fa-exclamation"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${patient.name}</div>
-                    <div class="notification-desc">Sin seguimiento desde hace ${daysSinceLastSession}</div>
-                </div>
-            `;
-            
-            // Añadir evento para abrir ficha del paciente
-            notificationItem.addEventListener('click', function() {
-                openPatientModal(patient.id);
-            });
-            
-            notificationsContainer.appendChild(notificationItem);
-        });
+        }
     } catch (error) {
         console.error("Error al actualizar notificaciones:", error);
     }
