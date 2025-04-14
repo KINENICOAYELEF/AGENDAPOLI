@@ -13372,18 +13372,6 @@ function setupNavigation() {
                 changeView(viewName);
             });
         });
-        
-        // Manejar toggle del sidebar
-        const toggleSidebarBtn = document.getElementById('toggleSidebar');
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        
-        if (toggleSidebarBtn && sidebar && mainContent) {
-            toggleSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('sidebar-collapsed');
-                mainContent.classList.toggle('main-content-expanded');
-            });
-        }
 
         // Configurar el botón de notificaciones y el desplegable
         const notificationBtn = document.querySelector('.notification-btn');
