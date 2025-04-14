@@ -13231,29 +13231,17 @@ if (deletePatientBtn) {
                     };
 
 
-                    // Conectar el botón móvil con el sidebar
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Crear overlay para cuando el menú está abierto
-                        const overlay = document.createElement('div');
-                        overlay.className = 'menu-overlay';
-                        document.body.appendChild(overlay);
-                        
-                        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-                        const sidebar = document.getElementById('sidebar');
-                        
-                        if (mobileMenuBtn && sidebar) {
-                            mobileMenuBtn.addEventListener('click', function() {
-                                sidebar.classList.toggle('active');
-                                overlay.classList.toggle('active');
-                            });
-                            
-                            // Cerrar menú al hacer clic en el overlay
-                            overlay.addEventListener('click', function() {
-                                sidebar.classList.remove('active');
-                                overlay.classList.remove('active');
-                            });
-                        }
-                    });
+                    var mobileMenuBtn = document.getElementById('mobileMenuBtn');
+                    var sidebar = document.getElementById('sidebar');
+                    
+                    if (mobileMenuBtn && sidebar) {
+                        // Añadir evento de clic directamente
+                        mobileMenuBtn.onclick = function() {
+                            console.log("Botón móvil presionado");
+                            sidebar.classList.toggle('active');
+                            document.body.classList.toggle('sidebar-open');
+                        };
+                    }
 
                     // Procesar archivos adjuntos
 const attachmentInput = document.getElementById('evolutionAttachments');
