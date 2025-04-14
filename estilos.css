@@ -3877,3 +3877,73 @@ button:focus {
         padding: 15px 0;
     }
 }
+
+/* Estilos para el sidebar en móviles */
+@media (max-width: 576px) {
+    /* Estilo para sidebar en móviles */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Inicialmente fuera de la pantalla */
+        width: 280px !important;
+        height: 100vh;
+        background: white;
+        z-index: 9999;
+        transition: left 0.3s ease;
+        box-shadow: none;
+    }
+    
+    /* Cuando está activo */
+    .sidebar.active {
+        left: 0; /* Mueve el sidebar a la vista */
+        box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Aseguramos que el texto es visible */
+    .sidebar .menu-item-text,
+    .sidebar .logo span,
+    .sidebar .user-info {
+        display: block !important;
+    }
+    
+    /* Fondo oscuro cuando el sidebar está abierto */
+    body.sidebar-open::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9998;
+    }
+    
+    /* Ajustes para contenido principal */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* Estilo del botón móvil */
+.mobile-menu-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 9999;
+    cursor: pointer;
+}
+
+.mobile-menu-btn i {
+    font-size: 20px;
+}
