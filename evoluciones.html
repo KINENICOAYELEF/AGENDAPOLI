@@ -2782,6 +2782,20 @@ function fillEvolutionsTab(evolutions) {
             return;
         }
         
+        // AÑADE ESTO: Ordenar evoluciones - más reciente primero
+        evolutions.sort((a, b) => {
+            if (!a.date || !b.date) return 0;
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (dateA.getTime() === dateB.getTime()) {
+                // Si tienen la misma fecha, comparar hora
+                if (a.time && b.time) {
+                    return a.time > b.time ? -1 : 1;
+                }
+            }
+            return dateA > dateB ? -1 : 1;
+        });
+        
         evolutions.forEach(evolution => {
             const evolutionItem = document.createElement('div');
             evolutionItem.classList.add('evolution-item', 'fade-in');
