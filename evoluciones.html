@@ -13253,15 +13253,10 @@ if (deletePatientBtn) {
                     // Recopilar datos de ejercicios
                     const exercises = getExercisesData();
                     
-                    // Forzar fecha seleccionada y hora actual
-                    const ahora = new Date();
-                    const fechaSeleccionada = document.getElementById('evolutionDate')?.value || '';
-                    const horaSeleccionada = document.getElementById('evolutionTime')?.value || '';
-                    
                     // Obtener valores de los controles de formulario
                     const evolutionData = {
-                        date: fechaSeleccionada, // Usar fecha seleccionada
-                        time: horaSeleccionada, // Usar hora seleccionada
+                        date: document.getElementById('evolutionDate')?.value,
+                        time: document.getElementById('evolutionTime')?.value,
                         student: document.getElementById('evolutionStudent')?.value,
                         patientState: document.getElementById('evolutionPatientState')?.value,
                         treatment: document.getElementById('evolutionTreatment')?.value,
