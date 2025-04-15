@@ -8786,7 +8786,7 @@ function showNewEvolutionModal() {
     }
 }
 
-        // Función para editar una evolución existente
+// Función para editar una evolución existente
 function editEvolution(patientId, evolution) {
     try {
         if (!patientId || !evolution) {
@@ -8943,105 +8943,19 @@ function editEvolution(patientId, evolution) {
             exerciseTableBody.innerHTML = '';
         }
         
+        // Reiniciar setupExerciseTable para asegurar que los botones funcionen bien
+        setupExerciseTable();
+        
         // Modificar evento de envío del formulario para actualizar en lugar de crear
         const form = document.getElementById('evolutionForm');
         if (form) {
-           // No clonar todo el formulario, solo guardar una referencia a la función original
-const originalSubmitHandler = form.onsubmit;
-form.setAttribute('data-editing', 'true');
-form.setAttribute('data-evolution-id', evolution.id);
-
-// Cambiar temporalmente el handler de submit
-form.onsubmit = async function(e) {
-    e.preventDefault();
-    
-    try {
-        showLoading();
-        
-        // Recopilar datos
-        const psfsActivities = getPsfsActivities();
-        const exercises = getExercisesData();
-        
-        // Construir datos actualizados
-        const updatedData = {
-            date: document.getElementById('evolutionDate')?.value || evolution.date,
-            time: document.getElementById('evolutionTime')?.value || evolution.time,
-            student: document.getElementById('evolutionStudent')?.value || evolution.student,
-            patientState: document.getElementById('evolutionPatientState')?.value || evolution.patientState,
-            treatment: document.getElementById('evolutionTreatment')?.value || evolution.treatment,
-            response: document.getElementById('evolutionResponse')?.value || evolution.response,
-            scales: {
-                eva: parseInt(document.getElementById('evaRange')?.value || evolution.scales?.eva || 5),
-                groc: parseInt(document.getElementById('grocRange')?.value || evolution.scales?.groc || 0),
-                sane: parseInt(document.getElementById('saneRange')?.value || evolution.scales?.sane || 70),
-                saneText: document.getElementById('saneCustomText')?.value || evolution.scales?.saneText || '',
-                psfs: psfsActivities
-            },
-            exercises: exercises,
-            trainingPlan: document.getElementById('evolutionTrainingPlan')?.value || evolution.trainingPlan || '',
-            observations: document.getElementById('evolutionObservations')?.value || evolution.observations || '',
-            updatedAt: new Date().toISOString()
-        };
-        
-        // Actualizar en Firebase
-        const evolutionRef = doc(db, "patients", patientId, "evolutions", evolution.id);
-        await updateDoc(evolutionRef, updatedData);
-        
-        // Verificar si la fecha cambió y es la última evolución
-        if (updatedData.date !== evolution.date) {
-            const evolutions = await getEvolutions(patientId);
+            // Guardar referencia a la función original
+            const originalSubmitHandler = form.onsubmit;
+            form.setAttribute('data-editing', 'true');
+            form.setAttribute('data-evolution-id', evolution.id);
             
-            if (evolutions.length > 0) {
-                // Ordenar por fecha (la más reciente primero)
-                evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                // Actualizar lastSession si esta evolución es ahora la más reciente
-                const formattedDate = formatDate(new Date(evolutions[0].date));
-                await updateDoc(doc(db, "patients", patientId), {
-                    lastSession: formattedDate,
-                    updatedAt: new Date().toISOString()
-                });
-                
-                // Actualizar caché
-                const cachedPatientIndex = patientsCache.findIndex(p => p.id === patientId);
-                if (cachedPatientIndex >= 0) {
-                    patientsCache[cachedPatientIndex].lastSession = formattedDate;
-                    patientsCache[cachedPatientIndex].updatedAt = new Date().toISOString();
-                }
-            }
-        }
-        
-        // Actualizar la interfaz
-        const updatedEvolutions = await getEvolutions(patientId);
-        fillEvolutionsTab(updatedEvolutions);
-        
-        // Cerrar modal
-        modal.classList.remove('active');
-        
-        // Refrescar lista de pacientes
-        await getPatients();
-        
-        // Restaurar el handler original
-        form.onsubmit = originalSubmitHandler;
-        form.removeAttribute('data-editing');
-        form.removeAttribute('data-evolution-id');
-        
-        hideLoading();
-        showToast("Evolución actualizada correctamente", "success");
-    } catch (error) {
-        hideLoading();
-        console.error("Error al actualizar evolución:", error);
-        showToast("Error al actualizar evolución: " + error.message, "error");
-        
-        // Restaurar el handler original incluso en caso de error
-        form.onsubmit = originalSubmitHandler;
-        form.removeAttribute('data-editing');
-        form.removeAttribute('data-evolution-id');
-    }
-};
-            
-            // Añadir nuevo event listener
-            newForm.addEventListener('submit', async function(e) {
+            // Reemplazar el evento submit
+            form.onsubmit = async function(e) {
                 e.preventDefault();
                 
                 try {
@@ -9110,14 +9024,34 @@ form.onsubmit = async function(e) {
                     // Refrescar lista de pacientes
                     await getPatients();
                     
+                    // Restaurar el handler original
+                    form.onsubmit = originalSubmitHandler;
+                    form.removeAttribute('data-editing');
+                    form.removeAttribute('data-evolution-id');
+                    
+                    // Reiniciar setupExerciseTable después de restaurar el formulario
+                    setTimeout(() => {
+                        setupExerciseTable();
+                    }, 300);
+                    
                     hideLoading();
                     showToast("Evolución actualizada correctamente", "success");
                 } catch (error) {
                     hideLoading();
                     console.error("Error al actualizar evolución:", error);
                     showToast("Error al actualizar evolución: " + error.message, "error");
+                    
+                    // Restaurar el handler original incluso en caso de error
+                    form.onsubmit = originalSubmitHandler;
+                    form.removeAttribute('data-editing');
+                    form.removeAttribute('data-evolution-id');
+                    
+                    // Reiniciar setupExerciseTable después de restaurar el formulario
+                    setTimeout(() => {
+                        setupExerciseTable();
+                    }, 300);
                 }
-            });
+            };
         }
         
         // Mostrar modal
@@ -13029,16 +12963,16 @@ if (patientFilesInput) {
                 if (parent) {
                     parent.classList.remove('active');
                     
-                    // Si es el modal de evolución, verificar si estaba en modo edición
+                    // Si es el modal de evolución y estamos en modo edición, reiniciar setupExerciseTable
                     if (parent.id === 'newEvolutionModal') {
                         const form = document.getElementById('evolutionForm');
                         if (form && form.getAttribute('data-editing') === 'true') {
-                            // Restaurar el comportamiento original
+                            // Restaurar comportamiento original
                             form.onsubmit = null;
                             form.removeAttribute('data-editing');
                             form.removeAttribute('data-evolution-id');
                             
-                            // Reiniciar setupExerciseTable para asegurar que los botones funcionen
+                            // Reiniciar setupExerciseTable
                             setTimeout(() => {
                                 setupExerciseTable();
                             }, 300);
