@@ -2878,31 +2878,14 @@ function fillEvolutionsTab(evolutions) {
     }
 }
 
-// Función mejorada para renderizar ejercicios con tooltips y 2 columnas
+// Función para renderizar ejercicios con tooltips y 2 columnas
 function renderExercises(exercises) {
     if (!exercises || exercises.length === 0) return '';
-    
-    // Información para tooltips
-    const tooltips = {
-        rpe: "RPE (Rating of Perceived Exertion): Escala de 0-10 que indica qué tan duro fue el ejercicio. 1 = muy fácil, 10 = máximo esfuerzo posible.",
-        rir: "RIR (Repeticiones en Reserva): Número de repeticiones que podrías haber hecho pero no hiciste. RIR 2 significa que podrías haber hecho 2 reps más.",
-        series: "Número de veces que se realiza el conjunto completo de repeticiones.",
-        reps: "Número de movimientos completos o repeticiones por serie.",
-        carga: "Peso o resistencia utilizada durante el ejercicio."
-    };
     
     let exercisesHTML = `
         <div class="evolution-section">
             <div class="evolution-section-title">
-                <div class="tooltip-container">
-                    Ejercicios prescritos
-                    <i class="fas fa-info-circle tooltip-icon"></i>
-                    <div class="tooltip-content">
-                        <p><strong>Ejercicios personalizados para la rehabilitación y/o entrenamiento del paciente.</strong></p>
-                        <p><strong>RPE:</strong> Rating of Perceived Exertion (0-10)</p>
-                        <p><strong>RIR:</strong> Repeticiones en Reserva</p>
-                    </div>
-                </div>
+                Ejercicios prescritos
             </div>
     `;
     
@@ -2920,12 +2903,7 @@ function renderExercises(exercises) {
         if (exercise.effortType && exercise.effortValue) {
             effortStr = `${exercise.effortType} ${exercise.effortValue}`;
         } else if (exercise.intensity) {
-            // Parsear la intensidad para retrocompatibilidad
-            if (exercise.intensity === 'Baja' || exercise.intensity === 'Media' || exercise.intensity === 'Alta') {
-                effortStr = exercise.intensity;
-            } else {
-                effortStr = exercise.intensity;
-            }
+            effortStr = exercise.intensity;
         }
         
         // Si effortStr está vacío, usar un valor por defecto
@@ -2962,53 +2940,31 @@ function renderExercises(exercises) {
                 <div class="exercise-detail-grid">
                     <div class="exercise-detail-item">
                         <div class="exercise-detail-label">
-                            <div class="tooltip-container">
-                                Series
-                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                <div class="tooltip-content">${tooltips.series}</div>
-                            </div>
+                            Series
                         </div>
                         <div class="exercise-detail-value">${exercise.sets || '3'}</div>
                     </div>
                     <div class="exercise-detail-item">
                         <div class="exercise-detail-label">
-                            <div class="tooltip-container">
-                                Repeticiones
-                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                <div class="tooltip-content">${tooltips.reps}</div>
-                            </div>
+                            Repeticiones
                         </div>
                         <div class="exercise-detail-value">${exercise.reps || '10'}</div>
                     </div>
                     <div class="exercise-detail-item">
                         <div class="exercise-detail-label">
-                            <div class="tooltip-container">
-                                Implemento
-                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                <div class="tooltip-content">Material o equipo utilizado para realizar el ejercicio.</div>
-                            </div>
+                            Implemento
                         </div>
                         <div class="exercise-detail-value">${implementStr}</div>
                     </div>
                     <div class="exercise-detail-item">
                         <div class="exercise-detail-label">
-                            <div class="tooltip-container">
-                                Carga
-                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                <div class="tooltip-content">${tooltips.carga}</div>
-                            </div>
+                            Carga
                         </div>
                         <div class="exercise-detail-value">${loadStr}</div>
                     </div>
                     <div class="exercise-detail-item">
                         <div class="exercise-detail-label">
-                            <div class="tooltip-container">
-                                Intensidad
-                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                <div class="tooltip-content">
-                                    ${effortType === 'RPE' ? tooltips.rpe : tooltips.rir}
-                                </div>
-                            </div>
+                            Intensidad
                         </div>
                         <div class="exercise-detail-value ${intensityClass}">${effortStr}</div>
                     </div>
@@ -3079,34 +3035,9 @@ function renderExercises(exercises) {
                 <td>${exercise.sets || '3'} x ${exercise.reps || '10'}</td>
                 <td>${loadStr}</td>
                 <td>
-                    <div class="tooltip-container" style="display: inline-block;">
-                        <span class="intensity-badge ${intensityClass}">
-                            ${effortStr}
-                        </span>
-                        <div class="tooltip-content" style="width: 280px; left: -120px; top: 25px;">
-                            ${exercise.effortType === 'RIR' ? `
-                                <p><strong>RIR: Repeticiones en Reserva</strong></p>
-                                <p>0 = No podría realizar ni una repetición más (fallo muscular)</p>
-                                <p>1 = Podría realizar 1 repetición más</p>
-                                <p>2 = Podría realizar 2 repeticiones más</p>
-                                <p>3 = Podría realizar 3 repeticiones más</p>
-                                <p>4 = Podría realizar 4 repeticiones más</p>
-                                <p>5+ = Podría realizar 5 o más repeticiones adicionales</p>
-                            ` : `
-                                <p><strong>RPE: Rating of Perceived Exertion (0-10)</strong></p>
-                                <p>0 = Reposo absoluto</p>
-                                <p>1 = Esfuerzo muy, muy ligero</p>
-                                <p>2 = Esfuerzo muy ligero</p>
-                                <p>3 = Esfuerzo ligero</p>
-                                <p>4 = Esfuerzo moderado</p>
-                                <p>5 = Esfuerzo algo duro</p>
-                                <p>6 = Esfuerzo duro</p>
-                                <p>7-8 = Esfuerzo muy duro</p>
-                                <p>9 = Esfuerzo extremadamente duro</p>
-                                <p>10 = Esfuerzo máximo (imposible continuar)</p>
-                            `}
-                        </div>
-                    </div>
+                    <span class="intensity-badge ${intensityClass}">
+                        ${effortStr}
+                    </span>
                 </td>
                 <td>${exercise.notes || ''}</td>
             </tr>
@@ -3125,25 +3056,6 @@ function renderExercises(exercises) {
         </div>
     </div>
     `;
-    
-    // Añadir función global para alternar entre vistas
-    if (typeof window.toggleExerciseView !== 'function') {
-        window.toggleExerciseView = function(button) {
-            const currentView = button.getAttribute('data-view');
-            const columnView = button.closest('.evolution-section').querySelector('.exercise-two-columns');
-            const tableView = button.closest('.evolution-section').querySelector('.exercise-table-view');
-            
-            if (currentView === 'column') {
-                // Cambiar a vista de tabla
-                columnView.style.display = 'none';
-                tableView.style.display = 'block';
-            } else {
-                // Cambiar a vista de columnas
-                columnView.style.display = 'grid';
-                tableView.style.display = 'none';
-            }
-        };
-    }
     
     return exercisesHTML;
 }
