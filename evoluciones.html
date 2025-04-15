@@ -1748,7 +1748,8 @@ function formatDate(date) {
     if (!date) return 'No registrada';
     
     try {
-        let d = new Date(date); // Cambiado a let en lugar de const
+        // Asegurarse de que estamos trabajando con un objeto Date
+        let d = new Date(date);
         if (isNaN(d.getTime())) {
             // Intenta parsear formato dd/mm/yyyy
             const parts = date.split('/');
@@ -1761,10 +1762,13 @@ function formatDate(date) {
             }
         }
         
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
+        // Usar toLocaleDateString para formatear la fecha según la configuración regional
+        return d.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'America/Santiago' // Ajusta esto a tu zona horaria
+        });
     } catch (error) {
         console.error("Error al formatear fecha:", error);
         return 'Error de formato';
@@ -2085,15 +2089,44 @@ async function addEvolution(patientId, evolutionData) {
 
         
 // Get patient evolutions
+// Get patient evolutions
 async function getEvolutions(patientId) {
     try {
         showLoading();
         const evolutionsRef = collection(db, "patients", patientId, "evolutions");
+        // Ordena explícitamente por fecha descendente
         const evolutionsQuery = query(evolutionsRef, orderBy("date", "desc"));
         const evolutionsSnapshot = await getDocs(evolutionsQuery);
         
         const evolutionsList = evolutionsSnapshot.docs.map(doc => {
             return { id: doc.id, ...doc.data() };
+        });
+        
+        // Segundo ordenamiento en JavaScript para garantizar que las más recientes estén primero
+        evolutionsList.sort((a, b) => {
+            // Si no hay fechas, mantén el orden original
+            if (!a.date && !b.date) return 0;
+            if (!a.date) return 1; // a va después
+            if (!b.date) return -1; // b va después
+            
+            // Convertir ambas a objetos Date para comparación adecuada
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            
+            // Si las fechas son iguales, usar la hora
+            if (dateA.getTime() === dateB.getTime()) {
+                // Si hay hora, usarla para desempatar
+                if (a.time && b.time) {
+                    return b.time.localeCompare(a.time);
+                }
+                // Si no hay hora, usar createdAt o updatedAt como desempate
+                if (a.createdAt && b.createdAt) {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                }
+            }
+            
+            // Ordenar por fecha descendente (más reciente primero)
+            return dateB - dateA;
         });
         
         hideLoading();
@@ -2105,7 +2138,6 @@ async function getEvolutions(patientId) {
         return [];
     }
 }
-
 
         // Función para eliminar una evolución
 async function deleteEvolution(patientId, evolutionId) {
@@ -2771,6 +2803,25 @@ function fillEvolutionsTab(evolutions) {
             console.error("Contenedor de timeline de evoluciones no encontrado");
             return;
         }
+
+        // Ordenar evoluciones - más reciente primero
+        evolutions.sort((a, b) => {
+            if (!a.date || !b.date) return 0;
+            
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            
+            // Si las fechas son iguales, comparar por hora
+            if (dateA.getTime() === dateB.getTime()) {
+                if (a.time && b.time) {
+                    return b.time.localeCompare(a.time);
+                }
+            }
+            
+            return dateB - dateA;
+        });
+        
+        evolutions.forEach(evolution => {
         
         // Limpiar evoluciones existentes
         timelineContainer.innerHTML = '';
@@ -8614,15 +8665,16 @@ function showNewEvolutionModal() {
         }
         
         // Establecer fecha y hora actuales
-        const today = new Date().toISOString().split('T')[0];
-        const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
-        
+        const today = new Date();
         const dateInput = document.getElementById('evolutionDate');
-        const timeInput = document.getElementById('evolutionTime');
-        
-        if (dateInput) dateInput.value = today;
-        if (timeInput) timeInput.value = now;
-        
+        if (dateInput) {
+            // Formato ISO con ajuste a zona horaria local
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+        }
+                
         // Limpiar campos previos
         const stateInput = document.getElementById('evolutionPatientState');
         const treatmentInput = document.getElementById('evolutionTreatment');
