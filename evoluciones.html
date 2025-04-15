@@ -8946,9 +8946,99 @@ function editEvolution(patientId, evolution) {
         // Modificar evento de envío del formulario para actualizar en lugar de crear
         const form = document.getElementById('evolutionForm');
         if (form) {
-            // Clonar y reemplazar para eliminar event listeners anteriores
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
+           // No clonar todo el formulario, solo guardar una referencia a la función original
+const originalSubmitHandler = form.onsubmit;
+form.setAttribute('data-editing', 'true');
+form.setAttribute('data-evolution-id', evolution.id);
+
+// Cambiar temporalmente el handler de submit
+form.onsubmit = async function(e) {
+    e.preventDefault();
+    
+    try {
+        showLoading();
+        
+        // Recopilar datos
+        const psfsActivities = getPsfsActivities();
+        const exercises = getExercisesData();
+        
+        // Construir datos actualizados
+        const updatedData = {
+            date: document.getElementById('evolutionDate')?.value || evolution.date,
+            time: document.getElementById('evolutionTime')?.value || evolution.time,
+            student: document.getElementById('evolutionStudent')?.value || evolution.student,
+            patientState: document.getElementById('evolutionPatientState')?.value || evolution.patientState,
+            treatment: document.getElementById('evolutionTreatment')?.value || evolution.treatment,
+            response: document.getElementById('evolutionResponse')?.value || evolution.response,
+            scales: {
+                eva: parseInt(document.getElementById('evaRange')?.value || evolution.scales?.eva || 5),
+                groc: parseInt(document.getElementById('grocRange')?.value || evolution.scales?.groc || 0),
+                sane: parseInt(document.getElementById('saneRange')?.value || evolution.scales?.sane || 70),
+                saneText: document.getElementById('saneCustomText')?.value || evolution.scales?.saneText || '',
+                psfs: psfsActivities
+            },
+            exercises: exercises,
+            trainingPlan: document.getElementById('evolutionTrainingPlan')?.value || evolution.trainingPlan || '',
+            observations: document.getElementById('evolutionObservations')?.value || evolution.observations || '',
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Actualizar en Firebase
+        const evolutionRef = doc(db, "patients", patientId, "evolutions", evolution.id);
+        await updateDoc(evolutionRef, updatedData);
+        
+        // Verificar si la fecha cambió y es la última evolución
+        if (updatedData.date !== evolution.date) {
+            const evolutions = await getEvolutions(patientId);
+            
+            if (evolutions.length > 0) {
+                // Ordenar por fecha (la más reciente primero)
+                evolutions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Actualizar lastSession si esta evolución es ahora la más reciente
+                const formattedDate = formatDate(new Date(evolutions[0].date));
+                await updateDoc(doc(db, "patients", patientId), {
+                    lastSession: formattedDate,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                // Actualizar caché
+                const cachedPatientIndex = patientsCache.findIndex(p => p.id === patientId);
+                if (cachedPatientIndex >= 0) {
+                    patientsCache[cachedPatientIndex].lastSession = formattedDate;
+                    patientsCache[cachedPatientIndex].updatedAt = new Date().toISOString();
+                }
+            }
+        }
+        
+        // Actualizar la interfaz
+        const updatedEvolutions = await getEvolutions(patientId);
+        fillEvolutionsTab(updatedEvolutions);
+        
+        // Cerrar modal
+        modal.classList.remove('active');
+        
+        // Refrescar lista de pacientes
+        await getPatients();
+        
+        // Restaurar el handler original
+        form.onsubmit = originalSubmitHandler;
+        form.removeAttribute('data-editing');
+        form.removeAttribute('data-evolution-id');
+        
+        hideLoading();
+        showToast("Evolución actualizada correctamente", "success");
+    } catch (error) {
+        hideLoading();
+        console.error("Error al actualizar evolución:", error);
+        showToast("Error al actualizar evolución: " + error.message, "error");
+        
+        // Restaurar el handler original incluso en caso de error
+        form.onsubmit = originalSubmitHandler;
+        form.removeAttribute('data-editing');
+        form.removeAttribute('data-evolution-id');
+    }
+};
             
             // Añadir nuevo event listener
             newForm.addEventListener('submit', async function(e) {
@@ -11489,26 +11579,30 @@ function addPsfsActivity() {
 }
 
 // Configurar la tabla de ejercicios
+// Configurar la tabla de ejercicios
 function setupExerciseTable() {
+    // Primero desconectar todos los event listeners existentes
     const addExerciseBtn = document.getElementById('addExerciseBtn');
     if (addExerciseBtn) {
-        // Eliminar manejadores previos
+        // Clonar el botón para eliminar todos los event listeners anteriores
         const newAddExerciseBtn = addExerciseBtn.cloneNode(true);
         addExerciseBtn.parentNode.replaceChild(newAddExerciseBtn, addExerciseBtn);
         
+        // Añadir nuevo event listener
         newAddExerciseBtn.addEventListener('click', function() {
             addExerciseRow();
         });
     }
 
-    // Configurar plantillas de ejercicios
+    // Configurar plantillas de ejercicios - mismo enfoque
     const templateBtns = document.querySelectorAll('.template-btn');
     if (templateBtns.length > 0) {
         templateBtns.forEach(btn => {
-            // Eliminar manejadores previos
+            // Clonar para eliminar event listeners antiguos
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
+            // Añadir nuevo event listener
             newBtn.addEventListener('click', function() {
                 const template = this.getAttribute('data-template');
                 if (template) {
@@ -11522,6 +11616,18 @@ function setupExerciseTable() {
             });
         });
     }
+    
+    // Botón para gestionar plantillas personalizadas
+    const manageCustomTemplatesBtn = document.getElementById('manageCustomTemplatesBtn');
+    if (manageCustomTemplatesBtn) {
+        // Mismo enfoque: clonar y reemplazar
+        const newManageBtn = manageCustomTemplatesBtn.cloneNode(true);
+        manageCustomTemplatesBtn.parentNode.replaceChild(newManageBtn, manageCustomTemplatesBtn);
+        
+        newManageBtn.addEventListener('click', showCustomTemplatesModal);
+    }
+    
+    console.log("Tabla de ejercicios reinicializada correctamente");
 }
 
 // Función mejorada para añadir una fila de ejercicio con tooltips
@@ -12923,6 +13029,22 @@ if (patientFilesInput) {
                 if (parent) {
                     parent.classList.remove('active');
                     
+                    // Si es el modal de evolución, verificar si estaba en modo edición
+                    if (parent.id === 'newEvolutionModal') {
+                        const form = document.getElementById('evolutionForm');
+                        if (form && form.getAttribute('data-editing') === 'true') {
+                            // Restaurar el comportamiento original
+                            form.onsubmit = null;
+                            form.removeAttribute('data-editing');
+                            form.removeAttribute('data-evolution-id');
+                            
+                            // Reiniciar setupExerciseTable para asegurar que los botones funcionen
+                            setTimeout(() => {
+                                setupExerciseTable();
+                            }, 300);
+                        }
+                    }
+                    
                     // Limpiar contenedores de archivos
                     const patientFilesPreview = document.getElementById('patientFilesPreview');
                     if (patientFilesPreview) {
@@ -12937,7 +13059,7 @@ if (patientFilesInput) {
                 }
             });
         });
-        
+                
         // Botones de cancelar específicos
         const cancelEvolutionBtn = document.getElementById('cancelEvolutionBtn');
 if (cancelEvolutionBtn) {
@@ -12949,6 +13071,32 @@ if (cancelEvolutionBtn) {
         const modal = document.getElementById('newEvolutionModal');
         if (modal) {
             modal.classList.remove('active');
+            
+            // Restaurar el formulario original si está en modo edición
+            const form = document.getElementById('evolutionForm');
+            if (form && form.getAttribute('data-editing') === 'true') {
+                // Buscar si hay una referencia al handler original en algún lugar
+                const originalSubmitHandler = form.getAttribute('data-original-submit');
+                if (originalSubmitHandler) {
+                    try {
+                        // Intentar restaurar el handler original si está disponible
+                        form.onsubmit = new Function(originalSubmitHandler);
+                    } catch (e) {
+                        console.error("Error al restaurar handler original:", e);
+                        // Simplemente limpiar el onsubmit
+                        form.onsubmit = null;
+                    }
+                } else {
+                    // Si no hay referencia, simplemente limpiamos
+                    form.onsubmit = null;
+                }
+                
+                // Eliminar atributos de edición
+                form.removeAttribute('data-editing');
+                form.removeAttribute('data-evolution-id');
+                
+                showToast("Edición cancelada", "info");
+            }
             
             // Recargar el formulario después de un breve retraso para que se limpie
             setTimeout(() => {
@@ -12985,6 +13133,9 @@ if (cancelEvolutionBtn) {
                 // Limpiar ejercicios
                 const exerciseTableBody = document.getElementById('exerciseTableBody');
                 if (exerciseTableBody) exerciseTableBody.innerHTML = '';
+                
+                // Reiniciar setupExerciseTable para asegurar que los botones funcionen
+                setupExerciseTable();
             }, 300);
         }
     });
