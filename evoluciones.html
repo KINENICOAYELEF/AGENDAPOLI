@@ -11722,14 +11722,14 @@ function getExercisesData() {
     const rows = document.querySelectorAll('#exerciseTableBody tr');
     
     rows.forEach(row => {
-        const nameInput = row.querySelector('td:nth-child(1) input');
+        const nameInput = row.querySelector('td:nth-child(1) textarea');
         const implementSelect = row.querySelector('td:nth-child(2) select');
         const setsInput = row.querySelector('td:nth-child(3) input');
         const repsInput = row.querySelector('td:nth-child(4) input');
         const loadInput = row.querySelector('td:nth-child(5) input');
         const effortTypeSelect = row.querySelector('td:nth-child(6) select');
         const effortValueInput = row.querySelector('td:nth-child(6) input[type="number"]');
-        const notesInput = row.querySelector('td:nth-child(7) input');
+        const notesInput = row.querySelector('td:nth-child(7) textarea');
         
         if (nameInput && nameInput.value.trim() !== '') {
             // Construir cadena de intensidad combinando carga y esfuerzo
