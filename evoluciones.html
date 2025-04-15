@@ -8629,14 +8629,50 @@ function showNewEvolutionModal() {
         }
         
         // Establecer fecha y hora actuales
-        const today = new Date().toISOString().split('T')[0];
-        const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
+        const ahora = new Date();
+        const año = ahora.getFullYear();
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        const horas = String(ahora.getHours()).padStart(2, '0');
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        
+        const fechaActual = `${año}-${mes}-${dia}`;
+        const horaActual = `${horas}:${minutos}`;
         
         const dateInput = document.getElementById('evolutionDate');
         const timeInput = document.getElementById('evolutionTime');
         
-        if (dateInput) dateInput.value = today;
-        if (timeInput) timeInput.value = now;
+        if (dateInput) {
+            dateInput.value = fechaActual;
+            dateInput.disabled = true; // Deshabilitar campo de fecha
+            
+            // Añadir mensaje explicativo
+            const dateParent = dateInput.parentElement;
+            // Verificar si ya existe un mensaje
+            const existingMessage = dateParent.querySelector('small');
+            if (!existingMessage) {
+                const dateMessage = document.createElement('small');
+                dateMessage.style.color = '#777';
+                dateMessage.textContent = 'Se usa automáticamente la fecha actual';
+                dateParent.appendChild(dateMessage);
+            }
+        }
+        
+        if (timeInput) {
+            timeInput.value = horaActual;
+            timeInput.disabled = true; // Deshabilitar campo de hora
+            
+            // Añadir mensaje explicativo
+            const timeParent = timeInput.parentElement;
+            // Verificar si ya existe un mensaje
+            const existingMessage = timeParent.querySelector('small');
+            if (!existingMessage) {
+                const timeMessage = document.createElement('small');
+                timeMessage.style.color = '#777';
+                timeMessage.textContent = 'Se usa automáticamente la hora actual';
+                timeParent.appendChild(timeMessage);
+            }
+        }
         
         // Limpiar campos previos
         const stateInput = document.getElementById('evolutionPatientState');
@@ -13216,10 +13252,21 @@ if (deletePatientBtn) {
                     // Recopilar datos de ejercicios
                     const exercises = getExercisesData();
                     
+                    // Obtener fecha y hora actuales en formato específico
+                    const ahora = new Date();
+                    const año = ahora.getFullYear();
+                    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+                    const dia = String(ahora.getDate()).padStart(2, '0');
+                    const horas = String(ahora.getHours()).padStart(2, '0');
+                    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+                    
+                    const fechaActual = `${año}-${mes}-${dia}`;
+                    const horaActual = `${horas}:${minutos}`;
+                    
                     // Obtener valores de los controles de formulario
                     const evolutionData = {
-                        date: document.getElementById('evolutionDate')?.value,
-                        time: document.getElementById('evolutionTime')?.value,
+                        date: fechaActual, // Usar fecha actual del sistema
+                        time: horaActual, // Usar hora actual del sistema
                         student: document.getElementById('evolutionStudent')?.value,
                         patientState: document.getElementById('evolutionPatientState')?.value,
                         treatment: document.getElementById('evolutionTreatment')?.value,
