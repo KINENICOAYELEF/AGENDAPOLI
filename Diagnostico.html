@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantilla Interactiva de Plan Kinésico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+        }
+        .input-field {
+            width: 100%;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1; /* slate-300 */
+            padding: 0.75rem 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field::placeholder {
+            color: #94a3b8; /* slate-400 */
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 2px #bfdbfe; /* blue-200 */
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+        .btn-secondary {
+            background-color: #e2e8f0; /* slate-200 */
+            color: #475569; /* slate-600 */
+        }
+        .btn-secondary:hover {
+            background-color: #cbd5e1; /* slate-300 */
+        }
+        .btn-danger {
+            background-color: #fee2e2; /* red-100 */
+            color: #dc2626; /* red-600 */
+        }
+        .btn-danger:hover {
+            background-color: #fecaca; /* red-200 */
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b; /* slate-800 */
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0; /* slate-200 */
+        }
+        @media print {
+            body {
+                background-color: white;
+            }
+            .no-print {
+                display: none;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+                page-break-inside: avoid;
+            }
+            .input-field {
+                border: 1px solid transparent;
+                padding: 0.75rem 0;
+            }
+            textarea.input-field {
+                resize: none;
+                height: auto;
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Lienzo Interactivo de Planificación Kinésica</h1>
+            <p class="text-slate-500 mt-2">Una herramienta para estructurar el razonamiento clínico desde la CIF hasta la sesión.</p>
+        </header>
+
+        <!-- Información General -->
+        <div class="card">
+            <h2 class="section-title">Información General</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" placeholder="Nombre del Estudiante" class="input-field">
+                <input type="text" placeholder="Docente Revisor" class="input-field">
+                <input type="text" placeholder="Iniciales del Paciente" class="input-field">
+                <input type="text" placeholder="Edad" class="input-field">
+                <div class="md:col-span-2">
+                    <label class="font-semibold text-slate-700 mb-1 block">Diagnóstico Kinesiológico</label>
+                    <textarea class="input-field" rows="3" placeholder="Describa el diagnóstico funcional del paciente..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis CIF -->
+        <div class="card">
+            <h2 class="section-title">1. Análisis Funcional (Síntesis CIF)</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="font-semibold text-slate-700">Deficiencias (Estructura/Función)</label>
+                    <textarea class="input-field mt-1" rows="3" placeholder="Listar los problemas a nivel corporal (dolor, rango, fuerza...)..."></textarea>
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700">Limitaciones (Actividad)</label>
+                    <textarea class="input-field mt-1" rows="3" placeholder="Listar las dificultades para ejecutar acciones (caminar, subir escaleras...)..."></textarea>
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700">Restricciones (Participación)</label>
+                    <textarea class="input-field mt-1" rows="3" placeholder="Listar los problemas para involucrarse en situaciones vitales (trabajo, hobbies...)..."></textarea>
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700">Factores Contextuales</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                        <textarea class="input-field" rows="2" placeholder="Barreras (ambientales o personales)..."></textarea>
+                        <textarea class="input-field" rows="2" placeholder="Facilitadores (ambientales o personales)..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jerarquía de Objetivos -->
+        <div class="card">
+            <h2 class="section-title">2. Jerarquía de Objetivos</h2>
+            <div class="mb-6">
+                <label class="font-semibold text-slate-700 text-lg">🎯 Objetivo General <span class="text-sm font-normal text-slate-500">(Basado en la Participación)</span></label>
+                <input type="text" class="input-field mt-1" placeholder="Definir el objetivo final centrado en la participación del paciente">
+            </div>
+
+            <div id="specific-objectives-container">
+                <!-- Los objetivos específicos se añadirán aquí -->
+            </div>
+            <button id="add-oe-btn" class="btn btn-primary mt-4 no-print">
+                <i class="fas fa-plus"></i> Añadir Objetivo Específico
+            </button>
+        </div>
+
+        <!-- Diseño de Sesión Tipo -->
+        <div class="card">
+            <h2 class="section-title">3. Diseño de Sesión Tipo</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="p-3 font-semibold">Fase</th>
+                            <th class="p-3 font-semibold">Actividad Clave</th>
+                            <th class="p-3 font-semibold">Link a OO</th>
+                            <th class="p-3 font-semibold text-center no-print">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="session-plan-body">
+                        <!-- Las actividades de la sesión se añadirán aquí -->
+                    </tbody>
+                </table>
+            </div>
+            <button id="add-session-activity-btn" class="btn btn-secondary mt-4 no-print">
+                <i class="fas fa-plus"></i> Añadir Actividad a la Sesión
+            </button>
+        </div>
+        
+        <!-- Botón de Imprimir -->
+        <div class="text-center mt-4 no-print text-sm text-slate-500">
+            <p><strong>Nota:</strong> La función "Imprimir / Guardar como PDF" funciona mejor al abrir este archivo directamente en un navegador (Chrome, Firefox, etc.).</p>
+        </div>
+        <div class="text-center mt-4 no-print">
+            <button onclick="window.print()" class="btn btn-primary btn-lg text-lg">
+                <i class="fas fa-print"></i> Imprimir / Guardar como PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <template id="oe-template">
+        <div class="oe-card bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+            <div class="flex justify-between items-center mb-3">
+                <label class="font-semibold text-slate-700">🏁 Objetivo Específico <span class="text-sm font-normal text-slate-500">(Basado en la Actividad)</span></label>
+                <button class="btn btn-danger btn-sm no-print remove-oe-btn"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <input type="text" class="input-field" placeholder="Definir un hito medible centrado en una actividad">
+            
+            <div class="oo-container pl-4 mt-4 border-l-2 border-slate-300">
+                <!-- Los objetivos operacionales se añadirán aquí -->
+            </div>
+            <button class="btn btn-secondary btn-sm mt-3 no-print add-oo-btn">
+                <i class="fas fa-plus"></i> Añadir Objetivo Operacional
+            </button>
+        </div>
+    </template>
+
+    <template id="oo-template">
+        <div class="oo-card bg-white rounded-md p-3 mb-3 shadow-sm">
+             <div class="flex justify-between items-center mb-2">
+                <label class="font-semibold text-slate-600">🔧 Objetivo Operacional <span class="text-sm font-normal text-slate-500">(Medible)</span></label>
+                <button class="btn btn-danger btn-sm no-print remove-oo-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <input type="text" class="input-field oo-title" placeholder="Definir una meta medible para abordar una deficiencia" onkeyup="updateSessionOODropdown()">
+            
+            <div class="interventions-container mt-3 space-y-2">
+                <!-- Las intervenciones se añadirán aquí -->
+            </div>
+            <button class="btn btn-secondary btn-sm mt-2 no-print add-intervention-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                <i class="fas fa-plus"></i> Añadir Intervención
+            </button>
+        </div>
+    </template>
+    
+    <template id="intervention-template">
+        <div class="intervention-item flex items-center gap-2">
+            <input type="text" class="input-field flex-grow" placeholder="Ej: Sentadillas isométricas en pared">
+            <input type="text" class="input-field flex-grow" placeholder="Dosis: 3x30s, RPE 6/10, 3/sem">
+            <button class="btn btn-danger btn-sm no-print remove-intervention-btn"><i class="fas fa-times"></i></button>
+        </div>
+    </template>
+
+    <template id="session-activity-template">
+        <tr class="session-activity-row border-b border-slate-200">
+            <td class="p-2">
+                <select class="input-field">
+                    <option>Activación / Calentamiento</option>
+                    <option>Parte Central</option>
+                    <option>Vuelta a la Calma / Cierre</option>
+                </select>
+            </td>
+            <td class="p-2"><input type="text" class="input-field" placeholder="Descripción de la actividad"></td>
+            <td class="p-2">
+                <select class="input-field oo-link-select">
+                    <option value="">-- Vincular a OO --</option>
+                </select>
+            </td>
+            <td class="p-2 text-center no-print">
+                <button class="btn btn-danger btn-sm remove-session-activity-btn"><i class="fas fa-trash-alt"></i></button>
+            </td>
+        </tr>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const oeContainer = document.getElementById('specific-objectives-container');
+            const addOEBtn = document.getElementById('add-oe-btn');
+
+            const sessionPlanBody = document.getElementById('session-plan-body');
+            const addSessionActivityBtn = document.getElementById('add-session-activity-btn');
+
+            let oeCounter = 0;
+            let ooCounter = 0;
+
+            // Función para añadir Objetivo Específico (OE)
+            addOEBtn.addEventListener('click', () => {
+                oeCounter++;
+                const template = document.getElementById('oe-template');
+                const clone = template.content.cloneNode(true);
+                const oeCard = clone.querySelector('.oe-card');
+                
+                oeCard.dataset.oeId = oeCounter;
+                oeCard.querySelector('label').prepend(`OE ${oeCounter}: `);
+
+                oeContainer.appendChild(clone);
+                updateEventListeners();
+            });
+
+            // Función para añadir Objetivo Operacional (OO)
+            function addOO(e) {
+                ooCounter++;
+                const ooTemplate = document.getElementById('oo-template');
+                const clone = ooTemplate.content.cloneNode(true);
+                const ooCard = clone.querySelector('.oo-card');
+                const ooTitleInput = ooCard.querySelector('.oo-title');
+                
+                ooCard.dataset.ooId = ooCounter;
+                ooTitleInput.dataset.ooId = ooCounter;
+                ooCard.querySelector('label').prepend(`OO ${ooCounter}: `);
+
+                const parentOECard = e.target.closest('.oe-card');
+                parentOECard.querySelector('.oo-container').appendChild(clone);
+                
+                updateEventListeners();
+                updateSessionOODropdown();
+            }
+
+            // Función para añadir Intervención
+            function addIntervention(e) {
+                const interventionTemplate = document.getElementById('intervention-template');
+                const clone = interventionTemplate.content.cloneNode(true);
+                const parentOOCard = e.target.closest('.oo-card');
+                parentOOCard.querySelector('.interventions-container').appendChild(clone);
+                updateEventListeners();
+            }
+
+            // Función para añadir Actividad a la Sesión
+            addSessionActivityBtn.addEventListener('click', () => {
+                const sessionTemplate = document.getElementById('session-activity-template');
+                const clone = sessionTemplate.content.cloneNode(true);
+                sessionPlanBody.appendChild(clone);
+                updateSessionOODropdown();
+                updateEventListeners();
+            });
+
+            // Actualizar el menú desplegable de OOs en la tabla de sesión
+            window.updateSessionOODropdown = function() {
+                const ooTitles = Array.from(document.querySelectorAll('.oo-title'));
+                const ooOptions = ooTitles.map(input => {
+                    const id = input.dataset.ooId;
+                    const text = input.value.trim() || `Objetivo Operacional ${id}`;
+                    return { id, text };
+                });
+
+                const allSelects = document.querySelectorAll('.oo-link-select');
+                allSelects.forEach(select => {
+                    const selectedValue = select.value;
+                    // Limpiar opciones excepto la primera
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    // Poblar con nuevas opciones
+                    ooOptions.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.id;
+                        optionElement.textContent = `OO ${option.id}: ${option.text}`;
+                        select.appendChild(optionElement);
+                    });
+                    select.value = selectedValue; // Re-seleccionar valor si aún existe
+                });
+            }
+
+            // Delegación de eventos para botones de añadir y eliminar
+            function updateEventListeners() {
+                document.querySelectorAll('.add-oo-btn').forEach(btn => btn.onclick = addOO);
+                document.querySelectorAll('.add-intervention-btn').forEach(btn => btn.onclick = addIntervention);
+
+                document.querySelectorAll('.remove-oe-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.target.closest('.oe-card').remove();
+                        updateSessionOODropdown();
+                    }
+                });
+                document.querySelectorAll('.remove-oo-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.target.closest('.oo-card').remove();
+                        updateSessionOODropdown();
+                    }
+                });
+                document.querySelectorAll('.remove-intervention-btn').forEach(btn => btn.onclick = (e) => e.target.closest('.intervention-item').remove());
+                document.querySelectorAll('.remove-session-activity-btn').forEach(btn => btn.onclick = (e) => e.target.closest('.session-activity-row').remove());
+            }
+
+            // Iniciar con un OE para guiar al usuario
+            addOEBtn.click();
+        });
+    </script>
+</body>
+</html>
