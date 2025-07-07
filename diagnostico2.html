@@ -103,9 +103,9 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-        .priority-low { border-left: 4px solid #3b82f6; /* blue-500 */ }
-        .priority-medium { border-left: 4px solid #f97316; /* orange-500 */ }
-        .priority-high { border-left: 4px solid #ef4444; /* red-500 */ }
+        .priority-low { background-color: #f0fdf4; border-left: 4px solid #4ade80; } /* green-50, green-400 */
+        .priority-medium { background-color: #fefce8; border-left: 4px solid #facc15; } /* yellow-50, yellow-400 */
+        .priority-high { background-color: #fee2e2; border-left: 4px solid #f87171; } /* red-100, red-400 */
         
         @media print {
             body {
@@ -132,6 +132,7 @@
             }
             .priority-low, .priority-medium, .priority-high {
                 border-left: 4px solid #e2e8f0 !important;
+                background-color: #fafafa !important;
             }
         }
     </style>
@@ -205,7 +206,7 @@
                         <div class="col-span-2">Prioridad</div>
                     </div>
                     <div id="structural-deficiencies-container" class="space-y-2"></div>
-                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="deficiency" data-target="structural-deficiencies-container" data-placeholder1="Ej: desgarro/tendinopatia" data-placeholder2="Ej: ecografia/test">
+                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="deficiency" data-target="structural-deficiencies-container" data-placeholder1="Ej: Edema en tobillo" data-placeholder2="Ej: Signo de Godet ++">
                         <i class="fas fa-plus"></i> Añadir Deficiencia Estructural
                     </button>
                 </div>
@@ -413,18 +414,18 @@
     </template>
 
     <template id="oe-template">
-        <div class="oe-card bg-slate-50 rounded-lg p-4 mb-4">
+        <div class="oe-card rounded-lg p-4 mb-4">
             <div class="flex justify-between items-start mb-3">
                 <div>
                     <label class="font-semibold text-slate-700">🏁 Objetivo Específico</label>
                     <div class="mt-2">
-                         <label class="text-sm font-semibold text-slate-600 block mb-1">Basado en la Limitación Priorizada:</label>
-                         <select class="input-field prioritized-limitation-select"></select>
+                         <label class="text-sm font-semibold text-slate-600 block mb-1">Basado en el Problema Priorizado:</label>
+                         <select class="input-field prioritized-problem-select"></select>
                     </div>
                 </div>
                 <button class="btn btn-danger btn-sm no-print remove-oe-btn"><i class="fas fa-trash-alt"></i></button>
             </div>
-            <input type="text" class="input-field mt-2" placeholder="Describa el objetivo específico para esta limitación...">
+            <input type="text" class="input-field mt-2" placeholder="Describa el objetivo específico para este problema...">
             <div class="oo-container pl-4 mt-4 border-l-2 border-slate-300"></div>
             <button class="btn btn-secondary btn-sm mt-3 no-print add-oo-btn">
                 <i class="fas fa-plus"></i> Añadir Objetivo Operacional
@@ -495,25 +496,25 @@
                 startDateInput.value = new Date().toISOString().split('T')[0];
             }
 
-            // --- Hypothesis Modal Logic ---
             const modal = document.getElementById('hypothesis-modal');
-            const openModalBtn = document.getElementById('open-hypothesis-modal-btn');
-            const cancelBtn = document.getElementById('cancel-hypothesis-btn');
-            const saveBtn = document.getElementById('save-hypothesis-btn');
 
-            openModalBtn.addEventListener('click', () => {
-                prepareHypothesisModal();
-                modal.classList.remove('hidden');
-            });
-
-            cancelBtn.addEventListener('click', () => {
-                modal.classList.add('hidden');
-            });
-
-            saveBtn.addEventListener('click', () => {
-                saveHypothesis();
-                modal.classList.add('hidden');
-            });
+            function getCifItems(type) {
+                let selector;
+                if (type === 'limitation') {
+                    selector = '#limitations-container .cif-item';
+                } else if (type === 'deficiency') {
+                    selector = '#structural-deficiencies-container .cif-item, #functional-deficiencies-container .cif-item';
+                } else {
+                    return [];
+                }
+                return Array.from(document.querySelectorAll(selector))
+                    .map(item => {
+                        const description = item.querySelector('.cif-item-description')?.value.trim();
+                        const priority = item.querySelector('.priority-select')?.value;
+                        return { description, priority };
+                    })
+                    .filter(item => item.description && item.description !== '');
+            }
 
             function prepareHypothesisModal() {
                 const limitationSelect = document.getElementById('modal-limitation-select');
@@ -533,7 +534,7 @@
                     deficiencies.forEach(def => {
                         const div = document.createElement('div');
                         div.className = 'flex items-center';
-                        div.innerHTML = `<input id="def-${def.description}" type="checkbox" value="${def.description}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="def-${def.description}" class="ml-3 text-sm text-gray-600">${def.description}</label>`;
+                        div.innerHTML = `<input id="def-${def.description.replace(/\s+/g, '-')}" type="checkbox" value="${def.description}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="def-${def.description.replace(/\s+/g, '-')}" class="ml-3 text-sm text-gray-600">${def.description}</label>`;
                         deficienciesCheckboxes.appendChild(div);
                     });
                 } else {
@@ -572,49 +573,26 @@
                 template.querySelector('.contextual-impact').textContent = document.getElementById('modal-context').value || 'No se proporcionó análisis de contexto.';
                 
                 container.appendChild(template);
-                updateEventListeners();
             }
 
-            function getCifItems(type) {
-                let selector;
-                if (type === 'limitation') {
-                    selector = '#limitations-container .cif-item';
-                } else if (type === 'deficiency') {
-                    selector = '#structural-deficiencies-container .cif-item, #functional-deficiencies-container .cif-item';
-                } else {
-                    return [];
-                }
-                return Array.from(document.querySelectorAll(selector))
-                    .map(item => {
-                        const description = item.querySelector('.cif-item-description')?.value.trim();
-                        const priority = item.querySelector('.priority-select')?.value;
-                        return { description, priority };
-                    })
-                    .filter(item => item.description !== '');
-            }
-
-            function addCifItem(e) {
-                const targetId = e.target.dataset.target;
+            function addCifItem(button) {
+                const targetId = button.dataset.target;
                 const container = document.getElementById(targetId);
                 const template = document.getElementById('cif-item-template').content.cloneNode(true);
                 const item = template.querySelector('.cif-item');
                 
-                template.querySelector('.cif-item-description').placeholder = e.target.dataset.placeholder1;
-                template.querySelector('.cif-item-measurement').placeholder = e.target.dataset.placeholder2;
+                template.querySelector('.cif-item-description').placeholder = button.dataset.placeholder1;
+                template.querySelector('.cif-item-measurement').placeholder = button.dataset.placeholder2;
                 
-                if (e.target.dataset.type === 'restriction') {
+                if (button.dataset.type === 'restriction') {
                     template.querySelector('.priority-select').parentElement.remove();
                     template.querySelector('.cif-item-description').parentElement.classList.replace('col-span-5', 'col-span-6');
                     template.querySelector('.cif-item-measurement').parentElement.classList.replace('col-span-4', 'col-span-5');
-                } else {
-                     template.querySelector('.priority-select').addEventListener('change', (event) => {
-                        updatePriorityVisuals(event.target);
-                    });
                 }
-
+                
                 container.appendChild(template);
                 updatePriorityVisuals(item.querySelector('.priority-select'));
-                updateEventListeners();
+                updateAllPrioritizedProblemDropdowns();
             }
 
             function updatePriorityVisuals(selectElement) {
@@ -623,39 +601,53 @@
                 parentItem.classList.remove('priority-low', 'priority-medium', 'priority-high');
                 parentItem.classList.add(`priority-${selectElement.value}`);
             }
+            
+            function updateAllPrioritizedProblemDropdowns() {
+                const limitations = getCifItems('limitation');
+                const deficiencies = getCifItems('deficiency');
+
+                document.querySelectorAll('.prioritized-problem-select').forEach(problemSelect => {
+                    const currentValue = problemSelect.value;
+                    problemSelect.innerHTML = '<option value="">Seleccione un problema priorizado...</option>';
+
+                    if (limitations.length > 0) {
+                        const groupLim = document.createElement('optgroup');
+                        groupLim.label = 'Limitaciones en la Actividad';
+                        limitations.forEach(lim => {
+                            const option = document.createElement('option');
+                            option.value = lim.description;
+                            option.textContent = `${lim.description} [Prioridad: ${lim.priority.charAt(0).toUpperCase() + lim.priority.slice(1)}]`;
+                            option.dataset.priority = lim.priority;
+                            groupLim.appendChild(option);
+                        });
+                        problemSelect.appendChild(groupLim);
+                    }
+
+                    if (deficiencies.length > 0) {
+                        const groupDef = document.createElement('optgroup');
+                        groupDef.label = 'Deficiencias';
+                        deficiencies.forEach(def => {
+                            const option = document.createElement('option');
+                            option.value = def.description;
+                            option.textContent = `${def.description} [Prioridad: ${def.priority.charAt(0).toUpperCase() + def.priority.slice(1)}]`;
+                            option.dataset.priority = def.priority;
+                            groupDef.appendChild(option);
+                        });
+                        problemSelect.appendChild(groupDef);
+                    }
+                    
+                    problemSelect.value = currentValue;
+                });
+            }
 
             function addOE() {
                 oeCounter++;
                 const template = document.getElementById('oe-template').content.cloneNode(true);
-                const oeCard = template.querySelector('.oe-card');
-                oeCard.dataset.oeId = oeCounter;
-                
-                const limitationSelect = template.querySelector('.prioritized-limitation-select');
-                limitationSelect.innerHTML = '<option value="">Seleccione una limitación priorizada...</option>';
-                const limitations = getCifItems('limitation');
-                limitations.forEach(lim => {
-                    const option = document.createElement('option');
-                    option.value = lim.description;
-                    option.textContent = `${lim.description} [Prioridad: ${lim.priority.charAt(0).toUpperCase() + lim.priority.slice(1)}]`;
-                    option.dataset.priority = lim.priority;
-                    limitationSelect.appendChild(option);
-                });
-
-                limitationSelect.addEventListener('change', (e) => {
-                    const selectedOption = e.target.options[e.target.selectedIndex];
-                    const priority = selectedOption.dataset.priority;
-                    const card = e.target.closest('.oe-card');
-                    card.classList.remove('priority-low', 'priority-medium', 'priority-high');
-                    if (priority) {
-                        card.classList.add(`priority-${priority}`);
-                    }
-                });
-
                 document.getElementById('specific-objectives-container').appendChild(template);
-                updateEventListeners();
+                updateAllPrioritizedProblemDropdowns();
             }
 
-            function addOO(e) {
+            function addOO(button) {
                 ooCounter++;
                 const template = document.getElementById('oo-template').content.cloneNode(true);
                 const ooCard = template.querySelector('.oo-card');
@@ -663,24 +655,21 @@
                 ooCard.dataset.ooId = ooCounter;
                 ooTitleInput.dataset.ooId = ooCounter;
                 ooCard.querySelector('label').prepend(`OO ${ooCounter}: `);
-                const parentOECard = e.target.closest('.oe-card');
+                const parentOECard = button.closest('.oe-card');
                 parentOECard.querySelector('.oo-container').appendChild(template);
-                updateEventListeners();
                 updateSessionOODropdown();
             }
 
-            function addIntervention(e) {
+            function addIntervention(button) {
                 const template = document.getElementById('intervention-template').content.cloneNode(true);
-                const parentOOCard = e.target.closest('.oo-card');
+                const parentOOCard = button.closest('.oo-card');
                 parentOOCard.querySelector('.interventions-container').appendChild(template);
-                updateEventListeners();
             }
 
             function addSessionActivity() {
                 const template = document.getElementById('session-activity-template').content.cloneNode(true);
                 document.getElementById('session-plan-body').appendChild(template);
                 updateSessionOODropdown();
-                updateEventListeners();
             }
 
             window.updateSessionOODropdown = function() {
@@ -706,28 +695,56 @@
                 });
             }
 
-            function updateEventListeners() {
-                document.querySelectorAll('.add-cif-item-btn:not(.listener-added), #add-oe-btn:not(.listener-added), .add-oo-btn:not(.listener-added), .add-intervention-btn:not(.listener-added), #add-session-activity-btn:not(.listener-added)').forEach(btn => {
-                    btn.classList.add('listener-added');
-                    if (btn.id === 'add-oe-btn') btn.addEventListener('click', addOE);
-                    else if (btn.id === 'add-session-activity-btn') btn.addEventListener('click', addSessionActivity);
-                    else if (btn.classList.contains('add-cif-item-btn')) btn.addEventListener('click', addCifItem);
-                    else if (btn.classList.contains('add-oo-btn')) btn.addEventListener('click', addOO);
-                    else if (btn.classList.contains('add-intervention-btn')) btn.addEventListener('click', addIntervention);
-                });
+            // Delegated Event Listener
+            document.body.addEventListener('click', (e) => {
+                const target = e.target;
 
-                document.querySelectorAll('.remove-cif-item-btn:not(.listener-added), .remove-oe-btn:not(.listener-added), .remove-oo-btn:not(.listener-added), .remove-intervention-btn:not(.listener-added), .remove-session-activity-btn:not(.listener-added), .remove-hypothesis-btn:not(.listener-added)').forEach(btn => {
-                    btn.classList.add('listener-added');
-                    if (btn.classList.contains('remove-cif-item-btn')) btn.addEventListener('click', (e) => e.target.closest('.cif-item').remove());
-                    else if (btn.classList.contains('remove-oe-btn')) btn.addEventListener('click', (e) => { e.target.closest('.oe-card').remove(); updateSessionOODropdown(); });
-                    else if (btn.classList.contains('remove-oo-btn')) btn.addEventListener('click', (e) => { e.target.closest('.oo-card').remove(); updateSessionOODropdown(); });
-                    else if (btn.classList.contains('remove-intervention-btn')) btn.addEventListener('click', (e) => e.target.closest('.intervention-item').remove());
-                    else if (btn.classList.contains('remove-session-activity-btn')) btn.addEventListener('click', (e) => e.target.closest('.session-activity-row').remove());
-                    else if (btn.classList.contains('remove-hypothesis-btn')) btn.addEventListener('click', (e) => e.target.closest('.hypothesis-card').remove());
-                });
-            }
+                if (target.closest('#add-oe-btn')) addOE();
+                else if (target.closest('.add-cif-item-btn')) addCifItem(target.closest('.add-cif-item-btn'));
+                else if (target.closest('.add-oo-btn')) addOO(target.closest('.add-oo-btn'));
+                else if (target.closest('.add-intervention-btn')) addIntervention(target.closest('.add-intervention-btn'));
+                else if (target.closest('#add-session-activity-btn')) addSessionActivity();
+                else if (target.closest('#open-hypothesis-modal-btn')) {
+                    prepareHypothesisModal();
+                    modal.classList.remove('hidden');
+                }
+                else if (target.closest('#cancel-hypothesis-btn')) modal.classList.add('hidden');
+                else if (target.closest('#save-hypothesis-btn')) {
+                    saveHypothesis();
+                    modal.classList.add('hidden');
+                }
+                else if (target.closest('.remove-cif-item-btn')) {
+                    target.closest('.cif-item').remove();
+                    updateAllPrioritizedProblemDropdowns();
+                }
+                else if (target.closest('.remove-oe-btn')) target.closest('.oe-card').remove();
+                else if (target.closest('.remove-oo-btn')) {
+                    target.closest('.oo-card').remove();
+                    updateSessionOODropdown();
+                }
+                else if (target.closest('.remove-intervention-btn')) target.closest('.intervention-item').remove();
+                else if (target.closest('.remove-session-activity-btn')) target.closest('.session-activity-row').remove();
+                else if (target.closest('.remove-hypothesis-btn')) target.closest('.hypothesis-card').remove();
+            });
+
+            document.body.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.matches('.priority-select')) {
+                    updatePriorityVisuals(target);
+                    updateAllPrioritizedProblemDropdowns();
+                } else if (target.matches('.prioritized-problem-select')) {
+                    const selectedOption = target.options[target.selectedIndex];
+                    const priority = selectedOption.dataset.priority;
+                    const card = target.closest('.oe-card');
+                    card.classList.remove('priority-low', 'priority-medium', 'priority-high');
+                    if (priority) {
+                        card.classList.add(`priority-${priority}`);
+                    }
+                } else if(target.matches('.cif-item-description')) {
+                    updateAllPrioritizedProblemDropdowns();
+                }
+            });
             
-            updateEventListeners();
             addOE();
         });
     </script>
