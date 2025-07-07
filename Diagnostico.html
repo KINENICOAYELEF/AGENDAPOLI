@@ -74,6 +74,10 @@
             padding-bottom: 0.5rem;
             border-bottom: 2px solid #e2e8f0; /* slate-200 */
         }
+        .red-flag-card {
+            background-color: #fff1f2; /* red-50 */
+            border-left: 4px solid #f87171; /* red-400 */
+        }
         @media print {
             body {
                 background-color: white;
@@ -122,29 +126,102 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Precauciones y Banderas Rojas -->
+        <div class="card red-flag-card">
+            <h2 class="section-title"><i class="fas fa-flag text-red-500 mr-2"></i>Precauciones y Banderas Rojas</h2>
+            <textarea class="input-field bg-white" rows="3" placeholder="Anotar cualquier contraindicación, precaución especial o señal de alerta..."></textarea>
+        </div>
+
+        <!-- Fase de Rehabilitación y Cronograma -->
+        <div class="card">
+            <h2 class="section-title">Fase de Rehabilitación y Cronograma</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="lg:col-span-2">
+                    <label class="font-semibold text-slate-700 mb-1 block">Fase de Rehabilitación</label>
+                    <input type="text" placeholder="Ej: Fase Inicial - Control de Dolor" class="input-field">
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700 mb-1 block">Fecha de Inicio</label>
+                    <input type="date" id="start-date" class="input-field">
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700 mb-1 block">N° Sesiones Estimadas</label>
+                    <input type="number" placeholder="Ej: 10" class="input-field">
+                </div>
+                <div class="lg:col-span-4">
+                    <label class="font-semibold text-slate-700 mb-1 block">Fecha de Reevaluación / Fin de Fase</label>
+                    <input type="date" class="input-field">
+                </div>
+                <div class="lg:col-span-4">
+                    <label class="font-semibold text-slate-700 mb-1 block">Criterios de Progresión a Siguiente Fase</label>
+                    <textarea class="input-field" rows="2" placeholder="¿Qué debe cumplir el paciente para avanzar? (EVA < 2, ROM > 90°, etc.)"></textarea>
+                </div>
+            </div>
+        </div>
 
         <!-- Análisis CIF -->
         <div class="card">
             <h2 class="section-title">1. Análisis Funcional (Síntesis CIF)</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="font-semibold text-slate-700">Deficiencias (Estructura/Función)</label>
-                    <textarea class="input-field mt-1" rows="3" placeholder="Listar los problemas a nivel corporal (dolor, rango, fuerza...)..."></textarea>
+            
+            <!-- Deficiencias Estructurales -->
+            <div class="cif-section mb-6">
+                <h3 class="font-bold text-slate-700 mb-2">Deficiencias Estructurales</h3>
+                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                    <div class="col-span-6">Hallazgo</div>
+                    <div class="col-span-5">Cómo se midió / medirá</div>
                 </div>
-                <div>
-                    <label class="font-semibold text-slate-700">Limitaciones (Actividad)</label>
-                    <textarea class="input-field mt-1" rows="3" placeholder="Listar las dificultades para ejecutar acciones (caminar, subir escaleras...)..."></textarea>
+                <div id="structural-deficiencies-container" class="space-y-2"></div>
+                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="structural-deficiencies-container" data-placeholder1="Ej: Edema en tobillo" data-placeholder2="Ej: Signo de Godet ++">
+                    <i class="fas fa-plus"></i> Añadir Deficiencia Estructural
+                </button>
+            </div>
+
+            <!-- Deficiencias Funcionales -->
+            <div class="cif-section mb-6">
+                <h3 class="font-bold text-slate-700 mb-2">Deficiencias Funcionales</h3>
+                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                    <div class="col-span-6">Hallazgo</div>
+                    <div class="col-span-5">Cómo se midió / medirá</div>
                 </div>
-                <div>
-                    <label class="font-semibold text-slate-700">Restricciones (Participación)</label>
-                    <textarea class="input-field mt-1" rows="3" placeholder="Listar los problemas para involucrarse en situaciones vitales (trabajo, hobbies...)..."></textarea>
+                <div id="functional-deficiencies-container" class="space-y-2"></div>
+                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="functional-deficiencies-container" data-placeholder1="Ej: Dolor en rodilla" data-placeholder2="Ej: EVA 7/10">
+                    <i class="fas fa-plus"></i> Añadir Deficiencia Funcional
+                </button>
+            </div>
+
+            <!-- Limitaciones en la Actividad -->
+            <div class="cif-section mb-6">
+                <h3 class="font-bold text-slate-700 mb-2">Limitaciones en la Actividad</h3>
+                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                    <div class="col-span-6">Hallazgo</div>
+                    <div class="col-span-5">Cómo se midió / medirá</div>
                 </div>
-                <div>
-                    <label class="font-semibold text-slate-700">Factores Contextuales</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
-                        <textarea class="input-field" rows="2" placeholder="Barreras (ambientales o personales)..."></textarea>
-                        <textarea class="input-field" rows="2" placeholder="Facilitadores (ambientales o personales)..."></textarea>
-                    </div>
+                <div id="limitations-container" class="space-y-2"></div>
+                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="limitations-container" data-placeholder1="Ej: Dificultad para subir escaleras" data-placeholder2="Ej: Test de escalón (tiempo)">
+                    <i class="fas fa-plus"></i> Añadir Limitación
+                </button>
+            </div>
+
+            <!-- Restricciones en la Participación -->
+            <div class="cif-section mb-6">
+                <h3 class="font-bold text-slate-700 mb-2">Restricciones en la Participación</h3>
+                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                    <div class="col-span-6">Hallazgo</div>
+                    <div class="col-span-5">Cómo se midió / medirá</div>
+                </div>
+                <div id="restrictions-container" class="space-y-2"></div>
+                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="restrictions-container" data-placeholder1="Ej: Abandono de club de baile" data-placeholder2="Ej: Cuestionario SF-36">
+                    <i class="fas fa-plus"></i> Añadir Restricción
+                </button>
+            </div>
+
+            <!-- Factores Contextuales -->
+             <div>
+                <h3 class="font-bold text-slate-700 mb-2">Factores Contextuales</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                    <textarea class="input-field" rows="2" placeholder="Barreras (ambientales o personales)..."></textarea>
+                    <textarea class="input-field" rows="2" placeholder="Facilitadores (ambientales o personales)..."></textarea>
                 </div>
             </div>
         </div>
@@ -157,9 +234,7 @@
                 <input type="text" class="input-field mt-1" placeholder="Definir el objetivo final centrado en la participación del paciente">
             </div>
 
-            <div id="specific-objectives-container">
-                <!-- Los objetivos específicos se añadirán aquí -->
-            </div>
+            <div id="specific-objectives-container"></div>
             <button id="add-oe-btn" class="btn btn-primary mt-4 no-print">
                 <i class="fas fa-plus"></i> Añadir Objetivo Específico
             </button>
@@ -178,14 +253,24 @@
                             <th class="p-3 font-semibold text-center no-print">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="session-plan-body">
-                        <!-- Las actividades de la sesión se añadirán aquí -->
-                    </tbody>
+                    <tbody id="session-plan-body"></tbody>
                 </table>
             </div>
             <button id="add-session-activity-btn" class="btn btn-secondary mt-4 no-print">
                 <i class="fas fa-plus"></i> Añadir Actividad a la Sesión
             </button>
+        </div>
+        
+        <!-- Plan de Educación y Tareas para el Hogar (HEP) -->
+        <div class="card">
+            <h2 class="section-title"><i class="fas fa-house-user mr-2 text-sky-600"></i>Plan de Educación y Tareas para el Hogar (HEP)</h2>
+            <textarea class="input-field" rows="4" placeholder="Detallar qué se le enseñará al paciente y qué ejercicios específicos debe realizar en casa..."></textarea>
+        </div>
+
+        <!-- Pronóstico y Resultados Esperados -->
+        <div class="card">
+            <h2 class="section-title"><i class="fas fa-chart-line mr-2 text-emerald-600"></i>Pronóstico y Resultados Esperados</h2>
+            <textarea class="input-field" rows="4" placeholder="Basado en la evidencia y el caso, describir la proyección de la rehabilitación..."></textarea>
         </div>
         
         <!-- Botón de Imprimir -->
@@ -200,6 +285,20 @@
     </div>
 
     <!-- TEMPLATES -->
+    <template id="cif-item-template">
+        <div class="cif-item grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-6">
+                <input type="text" class="input-field !py-1.5 cif-item-description" placeholder="Descripción del hallazgo">
+            </div>
+            <div class="col-span-5">
+                <input type="text" class="input-field !py-1.5 cif-item-measurement" placeholder="Medición">
+            </div>
+            <div class="col-span-1 text-right">
+                <button class="btn btn-danger btn-sm !p-2 no-print remove-cif-item-btn"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    </template>
+
     <template id="oe-template">
         <div class="oe-card bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
             <div class="flex justify-between items-center mb-3">
@@ -207,10 +306,7 @@
                 <button class="btn btn-danger btn-sm no-print remove-oe-btn"><i class="fas fa-trash-alt"></i></button>
             </div>
             <input type="text" class="input-field" placeholder="Definir un hito medible centrado en una actividad">
-            
-            <div class="oo-container pl-4 mt-4 border-l-2 border-slate-300">
-                <!-- Los objetivos operacionales se añadirán aquí -->
-            </div>
+            <div class="oo-container pl-4 mt-4 border-l-2 border-slate-300"></div>
             <button class="btn btn-secondary btn-sm mt-3 no-print add-oo-btn">
                 <i class="fas fa-plus"></i> Añadir Objetivo Operacional
             </button>
@@ -224,16 +320,11 @@
                 <button class="btn btn-danger btn-sm no-print remove-oo-btn"><i class="fas fa-times"></i></button>
             </div>
             <input type="text" class="input-field oo-title" placeholder="Definir una meta medible para abordar una deficiencia" onkeyup="updateSessionOODropdown()">
-            
-            <!-- Intervention Headers -->
             <div class="intervention-header grid grid-cols-12 gap-2 mt-4 mb-1 font-semibold text-xs text-slate-500 uppercase">
                 <div class="col-span-6">Intervención / Ejercicio</div>
                 <div class="col-span-5">Dosificación</div>
             </div>
-
-            <div class="interventions-container mt-1 space-y-2">
-                <!-- Las intervenciones se añadirán aquí -->
-            </div>
+            <div class="interventions-container mt-1 space-y-2"></div>
             <button class="btn btn-secondary btn-sm mt-2 no-print add-intervention-btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
                 <i class="fas fa-plus"></i> Añadir Intervención
             </button>
@@ -277,67 +368,66 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const oeContainer = document.getElementById('specific-objectives-container');
-            const addOEBtn = document.getElementById('add-oe-btn');
-
-            const sessionPlanBody = document.getElementById('session-plan-body');
-            const addSessionActivityBtn = document.getElementById('add-session-activity-btn');
-
             let oeCounter = 0;
             let ooCounter = 0;
 
-            // Función para añadir Objetivo Específico (OE)
-            addOEBtn.addEventListener('click', () => {
-                oeCounter++;
-                const template = document.getElementById('oe-template');
-                const clone = template.content.cloneNode(true);
-                const oeCard = clone.querySelector('.oe-card');
+            const startDateInput = document.getElementById('start-date');
+            if(startDateInput) {
+                startDateInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            function addCifItem(e) {
+                const targetId = e.target.dataset.target;
+                const placeholder1 = e.target.dataset.placeholder1;
+                const placeholder2 = e.target.dataset.placeholder2;
+                const container = document.getElementById(targetId);
+                const template = document.getElementById('cif-item-template').content.cloneNode(true);
                 
+                template.querySelector('.cif-item-description').placeholder = placeholder1;
+                template.querySelector('.cif-item-measurement').placeholder = placeholder2;
+
+                container.appendChild(template);
+                updateEventListeners();
+            }
+
+            function addOE() {
+                oeCounter++;
+                const template = document.getElementById('oe-template').content.cloneNode(true);
+                const oeCard = template.querySelector('.oe-card');
                 oeCard.dataset.oeId = oeCounter;
                 oeCard.querySelector('label').prepend(`OE ${oeCounter}: `);
-
-                oeContainer.appendChild(clone);
+                document.getElementById('specific-objectives-container').appendChild(template);
                 updateEventListeners();
-            });
+            }
 
-            // Función para añadir Objetivo Operacional (OO)
             function addOO(e) {
                 ooCounter++;
-                const ooTemplate = document.getElementById('oo-template');
-                const clone = ooTemplate.content.cloneNode(true);
-                const ooCard = clone.querySelector('.oo-card');
+                const template = document.getElementById('oo-template').content.cloneNode(true);
+                const ooCard = template.querySelector('.oo-card');
                 const ooTitleInput = ooCard.querySelector('.oo-title');
-                
                 ooCard.dataset.ooId = ooCounter;
                 ooTitleInput.dataset.ooId = ooCounter;
                 ooCard.querySelector('label').prepend(`OO ${ooCounter}: `);
-
                 const parentOECard = e.target.closest('.oe-card');
-                parentOECard.querySelector('.oo-container').appendChild(clone);
-                
+                parentOECard.querySelector('.oo-container').appendChild(template);
                 updateEventListeners();
                 updateSessionOODropdown();
             }
 
-            // Función para añadir Intervención
             function addIntervention(e) {
-                const interventionTemplate = document.getElementById('intervention-template');
-                const clone = interventionTemplate.content.cloneNode(true);
+                const template = document.getElementById('intervention-template').content.cloneNode(true);
                 const parentOOCard = e.target.closest('.oo-card');
-                parentOOCard.querySelector('.interventions-container').appendChild(clone);
+                parentOOCard.querySelector('.interventions-container').appendChild(template);
                 updateEventListeners();
             }
 
-            // Función para añadir Actividad a la Sesión
-            addSessionActivityBtn.addEventListener('click', () => {
-                const sessionTemplate = document.getElementById('session-activity-template');
-                const clone = sessionTemplate.content.cloneNode(true);
-                sessionPlanBody.appendChild(clone);
+            function addSessionActivity() {
+                const template = document.getElementById('session-activity-template').content.cloneNode(true);
+                document.getElementById('session-plan-body').appendChild(template);
                 updateSessionOODropdown();
                 updateEventListeners();
-            });
+            }
 
-            // Actualizar el menú desplegable de OOs en la tabla de sesión
             window.updateSessionOODropdown = function() {
                 const ooTitles = Array.from(document.querySelectorAll('.oo-title'));
                 const ooOptions = ooTitles.map(input => {
@@ -345,48 +435,77 @@
                     const text = input.value.trim() || `Objetivo Operacional ${id}`;
                     return { id, text };
                 });
-
                 const allSelects = document.querySelectorAll('.oo-link-select');
                 allSelects.forEach(select => {
                     const selectedValue = select.value;
-                    // Limpiar opciones excepto la primera
                     while (select.options.length > 1) {
                         select.remove(1);
                     }
-                    // Poblar con nuevas opciones
                     ooOptions.forEach(option => {
                         const optionElement = document.createElement('option');
                         optionElement.value = option.id;
                         optionElement.textContent = `OO ${option.id}: ${option.text}`;
                         select.appendChild(optionElement);
                     });
-                    select.value = selectedValue; // Re-seleccionar valor si aún existe
+                    select.value = selectedValue;
                 });
             }
 
-            // Delegación de eventos para botones de añadir y eliminar
             function updateEventListeners() {
-                document.querySelectorAll('.add-oo-btn').forEach(btn => btn.onclick = addOO);
-                document.querySelectorAll('.add-intervention-btn').forEach(btn => btn.onclick = addIntervention);
+                // Add Listeners
+                document.querySelectorAll('.add-cif-item-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', addCifItem);
+                    btn.classList.add('listener-added');
+                });
+                document.querySelectorAll('#add-oe-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', addOE);
+                    btn.classList.add('listener-added');
+                });
+                document.querySelectorAll('.add-oo-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', addOO);
+                    btn.classList.add('listener-added');
+                });
+                document.querySelectorAll('.add-intervention-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', addIntervention);
+                    btn.classList.add('listener-added');
+                });
+                document.querySelectorAll('#add-session-activity-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', addSessionActivity);
+                    btn.classList.add('listener-added');
+                });
 
-                document.querySelectorAll('.remove-oe-btn').forEach(btn => {
-                    btn.onclick = (e) => {
+                // Remove Listeners
+                document.querySelectorAll('.remove-cif-item-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', (e) => e.target.closest('.cif-item').remove());
+                    btn.classList.add('listener-added');
+                });
+                document.querySelectorAll('.remove-oe-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
                         e.target.closest('.oe-card').remove();
                         updateSessionOODropdown();
-                    }
+                    });
+                    btn.classList.add('listener-added');
                 });
-                document.querySelectorAll('.remove-oo-btn').forEach(btn => {
-                    btn.onclick = (e) => {
+                document.querySelectorAll('.remove-oo-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
                         e.target.closest('.oo-card').remove();
                         updateSessionOODropdown();
-                    }
+                    });
+                     btn.classList.add('listener-added');
                 });
-                document.querySelectorAll('.remove-intervention-btn').forEach(btn => btn.onclick = (e) => e.target.closest('.intervention-item').remove());
-                document.querySelectorAll('.remove-session-activity-btn').forEach(btn => btn.onclick = (e) => e.target.closest('.session-activity-row').remove());
+                document.querySelectorAll('.remove-intervention-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', (e) => e.target.closest('.intervention-item').remove());
+                    btn.classList.add('listener-added');
+});
+                document.querySelectorAll('.remove-session-activity-btn:not(.listener-added)').forEach(btn => {
+                    btn.addEventListener('click', (e) => e.target.closest('.session-activity-row').remove());
+                    btn.classList.add('listener-added');
+                });
             }
-
-            // Iniciar con un OE para guiar al usuario
-            addOEBtn.click();
+            
+            // Initial setup
+            updateEventListeners();
+            addOE(); // Start with one Objective
         });
     </script>
 </body>
