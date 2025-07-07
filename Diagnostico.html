@@ -78,6 +78,35 @@
             background-color: #fff1f2; /* red-50 */
             border-left: 4px solid #f87171; /* red-400 */
         }
+        .reasoning-card {
+            background-color: #f0f9ff; /* sky-50 */
+            border-left: 4px solid #7dd3fc; /* sky-300 */
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 48rem; /* lg */
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .priority-low { border-left: 4px solid #3b82f6; /* blue-500 */ }
+        .priority-medium { border-left: 4px solid #f97316; /* orange-500 */ }
+        .priority-high { border-left: 4px solid #ef4444; /* red-500 */ }
+        
         @media print {
             body {
                 background-color: white;
@@ -100,6 +129,9 @@
                 resize: none;
                 height: auto;
                 overflow: hidden;
+            }
+            .priority-low, .priority-medium, .priority-high {
+                border-left: 4px solid #e2e8f0 !important;
             }
         }
     </style>
@@ -163,66 +195,80 @@
         <!-- Análisis CIF -->
         <div class="card">
             <h2 class="section-title">1. Análisis Funcional (Síntesis CIF)</h2>
-            
-            <!-- Deficiencias Estructurales -->
-            <div class="cif-section mb-6">
-                <h3 class="font-bold text-slate-700 mb-2">Deficiencias Estructurales</h3>
-                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
-                    <div class="col-span-6">Hallazgo</div>
-                    <div class="col-span-5">Cómo se midió / medirá</div>
+            <div id="cif-analysis-container">
+                <!-- Deficiencias Estructurales -->
+                <div class="cif-section mb-6">
+                    <h3 class="font-bold text-slate-700 mb-2">Deficiencias Estructurales</h3>
+                    <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                        <div class="col-span-5">Hallazgo</div>
+                        <div class="col-span-4">Cómo se midió / medirá</div>
+                        <div class="col-span-2">Prioridad</div>
+                    </div>
+                    <div id="structural-deficiencies-container" class="space-y-2"></div>
+                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="deficiency" data-target="structural-deficiencies-container" data-placeholder1="Ej: desgarro/tendinopatia" data-placeholder2="Ej: ecografia/test">
+                        <i class="fas fa-plus"></i> Añadir Deficiencia Estructural
+                    </button>
                 </div>
-                <div id="structural-deficiencies-container" class="space-y-2"></div>
-                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="structural-deficiencies-container" data-placeholder1="Ej: desgarro" data-placeholder2="Ej: ecografía ++">
-                    <i class="fas fa-plus"></i> Añadir Deficiencia Estructural
-                </button>
-            </div>
 
-            <!-- Deficiencias Funcionales -->
-            <div class="cif-section mb-6">
-                <h3 class="font-bold text-slate-700 mb-2">Deficiencias Funcionales</h3>
-                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
-                    <div class="col-span-6">Hallazgo</div>
-                    <div class="col-span-5">Cómo se midió / medirá</div>
+                <!-- Deficiencias Funcionales -->
+                <div class="cif-section mb-6">
+                    <h3 class="font-bold text-slate-700 mb-2">Deficiencias Funcionales</h3>
+                    <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                        <div class="col-span-5">Hallazgo</div>
+                        <div class="col-span-4">Cómo se midió / medirá</div>
+                        <div class="col-span-2">Prioridad</div>
+                    </div>
+                    <div id="functional-deficiencies-container" class="space-y-2"></div>
+                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="deficiency" data-target="functional-deficiencies-container" data-placeholder1="Ej: Dolor en rodilla" data-placeholder2="Ej: EVA 7/10">
+                        <i class="fas fa-plus"></i> Añadir Deficiencia Funcional
+                    </button>
                 </div>
-                <div id="functional-deficiencies-container" class="space-y-2"></div>
-                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="functional-deficiencies-container" data-placeholder1="Ej: Dolor en rodilla" data-placeholder2="Ej: EVA 7/10">
-                    <i class="fas fa-plus"></i> Añadir Deficiencia Funcional
-                </button>
-            </div>
 
-            <!-- Limitaciones en la Actividad -->
-            <div class="cif-section mb-6">
-                <h3 class="font-bold text-slate-700 mb-2">Limitaciones en la Actividad</h3>
-                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
-                    <div class="col-span-6">Hallazgo</div>
-                    <div class="col-span-5">Cómo se midió / medirá</div>
+                <!-- Limitaciones en la Actividad -->
+                <div class="cif-section mb-6">
+                    <h3 class="font-bold text-slate-700 mb-2">Limitaciones en la Actividad</h3>
+                    <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                        <div class="col-span-5">Hallazgo</div>
+                        <div class="col-span-4">Cómo se midió / medirá</div>
+                        <div class="col-span-2">Prioridad</div>
+                    </div>
+                    <div id="limitations-container" class="space-y-2"></div>
+                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="limitation" data-target="limitations-container" data-placeholder1="Ej: Dificultad para subir escaleras" data-placeholder2="Ej: Test de escalón (tiempo)">
+                        <i class="fas fa-plus"></i> Añadir Limitación
+                    </button>
                 </div>
-                <div id="limitations-container" class="space-y-2"></div>
-                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="limitations-container" data-placeholder1="Ej: Dificultad para subir escaleras" data-placeholder2="Ej: Test de escalón (tiempo)">
-                    <i class="fas fa-plus"></i> Añadir Limitación
-                </button>
-            </div>
 
-            <!-- Restricciones en la Participación -->
-            <div class="cif-section mb-6">
-                <h3 class="font-bold text-slate-700 mb-2">Restricciones en la Participación</h3>
-                <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
-                    <div class="col-span-6">Hallazgo</div>
-                    <div class="col-span-5">Cómo se midió / medirá</div>
+                <!-- Restricciones en la Participación -->
+                <div class="cif-section mb-6">
+                    <h3 class="font-bold text-slate-700 mb-2">Restricciones en la Participación</h3>
+                    <div class="grid grid-cols-12 gap-2 font-semibold text-xs text-slate-500 uppercase mb-1">
+                        <div class="col-span-6">Hallazgo</div>
+                        <div class="col-span-5">Cómo se midió / medirá</div>
+                    </div>
+                    <div id="restrictions-container" class="space-y-2"></div>
+                    <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-type="restriction" data-target="restrictions-container" data-placeholder1="Ej: Abandono de club de baile" data-placeholder2="Ej: Cuestionario SF-36">
+                        <i class="fas fa-plus"></i> Añadir Restricción
+                    </button>
                 </div>
-                <div id="restrictions-container" class="space-y-2"></div>
-                <button class="btn btn-secondary btn-sm mt-2 no-print add-cif-item-btn" data-target="restrictions-container" data-placeholder1="Ej: Abandono de club de baile" data-placeholder2="Ej: Cuestionario SF-36">
-                    <i class="fas fa-plus"></i> Añadir Restricción
-                </button>
-            </div>
 
-            <!-- Factores Contextuales -->
-             <div>
-                <h3 class="font-bold text-slate-700 mb-2">Factores Contextuales</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
-                    <textarea class="input-field" rows="2" placeholder="Barreras (ambientales o personales)..."></textarea>
-                    <textarea class="input-field" rows="2" placeholder="Facilitadores (ambientales o personales)..."></textarea>
+                <!-- Factores Contextuales -->
+                 <div>
+                    <h3 class="font-bold text-slate-700 mb-2">Factores Contextuales</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                        <textarea id="contextual-barriers" class="input-field" rows="2" placeholder="Barreras (ambientales o personales)..."></textarea>
+                        <textarea id="contextual-facilitators" class="input-field" rows="2" placeholder="Facilitadores (ambientales o personales)..."></textarea>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Generador de Hipótesis Kinésica -->
+        <div class="card reasoning-card no-print">
+            <h2 class="section-title"><i class="fas fa-lightbulb text-sky-600 mr-2"></i>Generador de Hipótesis Kinésica</h2>
+            <p class="text-sm text-slate-600 mb-4">Esta herramienta le guiará para construir una hipótesis clínica sólida para cada problema funcional principal, justificando así sus objetivos.</p>
+            <button id="open-hypothesis-modal-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Generar Nueva Hipótesis</button>
+            <div id="hypothesis-cards-container" class="mt-4 space-y-4">
+                <!-- Las tarjetas de hipótesis se añadirán aquí -->
             </div>
         </div>
 
@@ -284,14 +330,81 @@
         </div>
     </div>
 
+    <!-- MODAL PARA GENERADOR DE HIPÓTESIS -->
+    <div id="hypothesis-modal" class="modal-overlay hidden no-print">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold text-slate-800 mb-4">Asistente de Hipótesis Kinésica</h3>
+            
+            <!-- Paso 1 -->
+            <div class="mb-6">
+                <label class="font-semibold text-slate-700 block mb-2">Paso 1: Seleccione la Limitación principal a analizar</label>
+                <select id="modal-limitation-select" class="input-field"></select>
+            </div>
+
+            <!-- Paso 2 -->
+            <div class="mb-6">
+                <label class="font-semibold text-slate-700 block mb-2">Paso 2: Marque las Deficiencias que contribuyen a esta limitación</label>
+                <div id="modal-deficiencies-checkboxes" class="space-y-2 max-h-40 overflow-y-auto p-2 border rounded-md"></div>
+            </div>
+
+            <!-- Paso 3 -->
+            <div class="mb-6">
+                <label for="modal-explanation" class="font-semibold text-slate-700 block mb-2">Paso 3: Explique el "Porqué"</label>
+                <textarea id="modal-explanation" class="input-field" rows="3" placeholder="Explique la relación biomecánica/fisiopatológica. ¿Por qué estas deficiencias causan esta limitación?"></textarea>
+            </div>
+
+            <!-- Paso 4 -->
+            <div class="mb-6">
+                 <label class="font-semibold text-slate-700 block mb-2">Paso 4: Considere los Factores Contextuales</label>
+                 <textarea id="modal-context" class="input-field" rows="3" placeholder="¿Cómo las barreras o facilitadores influyen en ESTE problema específico?"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-4">
+                <button id="cancel-hypothesis-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="save-hypothesis-btn" class="btn btn-primary">Guardar Hipótesis</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TEMPLATES -->
+    <template id="hypothesis-card-template">
+        <div class="hypothesis-card border border-sky-200 rounded-lg p-4 bg-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs text-sky-600 font-bold uppercase">Hipótesis para la limitación:</p>
+                    <h4 class="text-lg font-bold text-slate-800 target-limitation"></h4>
+                </div>
+                <button class="btn btn-danger btn-sm !p-2 remove-hypothesis-btn"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm font-semibold text-slate-600">Deficiencias Contribuyentes:</p>
+                <ul class="list-disc list-inside text-slate-700 contributing-deficiencies"></ul>
+            </div>
+            <div class="mt-4">
+                <p class="text-sm font-semibold text-slate-600">Justificación Clínica (El "Porqué"):</p>
+                <p class="text-slate-700 text-sm italic p-2 bg-slate-50 rounded-md clinical-explanation"></p>
+            </div>
+             <div class="mt-4">
+                <p class="text-sm font-semibold text-slate-600">Impacto del Contexto:</p>
+                <p class="text-slate-700 text-sm p-2 bg-slate-50 rounded-md contextual-impact"></p>
+            </div>
+        </div>
+    </template>
+
     <template id="cif-item-template">
-        <div class="cif-item grid grid-cols-12 gap-2 items-center">
-            <div class="col-span-6">
+        <div class="cif-item grid grid-cols-12 gap-2 items-center p-2 rounded-lg">
+            <div class="col-span-5">
                 <input type="text" class="input-field !py-1.5 cif-item-description" placeholder="Descripción del hallazgo">
             </div>
-            <div class="col-span-5">
+            <div class="col-span-4">
                 <input type="text" class="input-field !py-1.5 cif-item-measurement" placeholder="Medición">
+            </div>
+            <div class="col-span-2">
+                <select class="input-field !py-1.5 priority-select">
+                    <option value="low">Baja</option>
+                    <option value="medium" selected>Media</option>
+                    <option value="high">Alta</option>
+                </select>
             </div>
             <div class="col-span-1 text-right">
                 <button class="btn btn-danger btn-sm !p-2 no-print remove-cif-item-btn"><i class="fas fa-times"></i></button>
@@ -300,12 +413,18 @@
     </template>
 
     <template id="oe-template">
-        <div class="oe-card bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-            <div class="flex justify-between items-center mb-3">
-                <label class="font-semibold text-slate-700">🏁 Objetivo Específico <span class="text-sm font-normal text-slate-500">(Basado en la Actividad)</span></label>
+        <div class="oe-card bg-slate-50 rounded-lg p-4 mb-4">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <label class="font-semibold text-slate-700">🏁 Objetivo Específico</label>
+                    <div class="mt-2">
+                         <label class="text-sm font-semibold text-slate-600 block mb-1">Basado en la Limitación Priorizada:</label>
+                         <select class="input-field prioritized-limitation-select"></select>
+                    </div>
+                </div>
                 <button class="btn btn-danger btn-sm no-print remove-oe-btn"><i class="fas fa-trash-alt"></i></button>
             </div>
-            <input type="text" class="input-field" placeholder="Definir un hito medible centrado en una actividad">
+            <input type="text" class="input-field mt-2" placeholder="Describa el objetivo específico para esta limitación...">
             <div class="oo-container pl-4 mt-4 border-l-2 border-slate-300"></div>
             <button class="btn btn-secondary btn-sm mt-3 no-print add-oo-btn">
                 <i class="fas fa-plus"></i> Añadir Objetivo Operacional
@@ -376,18 +495,133 @@
                 startDateInput.value = new Date().toISOString().split('T')[0];
             }
 
-            function addCifItem(e) {
-                const targetId = e.target.dataset.target;
-                const placeholder1 = e.target.dataset.placeholder1;
-                const placeholder2 = e.target.dataset.placeholder2;
-                const container = document.getElementById(targetId);
-                const template = document.getElementById('cif-item-template').content.cloneNode(true);
-                
-                template.querySelector('.cif-item-description').placeholder = placeholder1;
-                template.querySelector('.cif-item-measurement').placeholder = placeholder2;
+            // --- Hypothesis Modal Logic ---
+            const modal = document.getElementById('hypothesis-modal');
+            const openModalBtn = document.getElementById('open-hypothesis-modal-btn');
+            const cancelBtn = document.getElementById('cancel-hypothesis-btn');
+            const saveBtn = document.getElementById('save-hypothesis-btn');
 
+            openModalBtn.addEventListener('click', () => {
+                prepareHypothesisModal();
+                modal.classList.remove('hidden');
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            saveBtn.addEventListener('click', () => {
+                saveHypothesis();
+                modal.classList.add('hidden');
+            });
+
+            function prepareHypothesisModal() {
+                const limitationSelect = document.getElementById('modal-limitation-select');
+                limitationSelect.innerHTML = '<option value="">Seleccione una limitación...</option>';
+                const limitations = getCifItems('limitation');
+                limitations.forEach(lim => {
+                    const option = document.createElement('option');
+                    option.value = lim.description;
+                    option.textContent = lim.description;
+                    limitationSelect.appendChild(option);
+                });
+
+                const deficienciesCheckboxes = document.getElementById('modal-deficiencies-checkboxes');
+                deficienciesCheckboxes.innerHTML = '';
+                const deficiencies = getCifItems('deficiency');
+                if (deficiencies.length > 0) {
+                    deficiencies.forEach(def => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center';
+                        div.innerHTML = `<input id="def-${def.description}" type="checkbox" value="${def.description}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="def-${def.description}" class="ml-3 text-sm text-gray-600">${def.description}</label>`;
+                        deficienciesCheckboxes.appendChild(div);
+                    });
+                } else {
+                    deficienciesCheckboxes.innerHTML = `<p class="text-slate-500 text-sm">No hay deficiencias ingresadas.</p>`;
+                }
+
+                document.getElementById('modal-explanation').value = '';
+                document.getElementById('modal-context').value = '';
+            }
+
+            function saveHypothesis() {
+                const template = document.getElementById('hypothesis-card-template').content.cloneNode(true);
+                const container = document.getElementById('hypothesis-cards-container');
+                const targetLimitation = document.getElementById('modal-limitation-select').value;
+                if (!targetLimitation) return;
+
+                template.querySelector('.target-limitation').textContent = targetLimitation;
+                
+                const selectedDeficiencies = [];
+                document.querySelectorAll('#modal-deficiencies-checkboxes input:checked').forEach(checkbox => {
+                    selectedDeficiencies.push(checkbox.value);
+                });
+                
+                const ul = template.querySelector('.contributing-deficiencies');
+                if (selectedDeficiencies.length > 0) {
+                    selectedDeficiencies.forEach(def => {
+                        const li = document.createElement('li');
+                        li.textContent = def;
+                        ul.appendChild(li);
+                    });
+                } else {
+                    ul.innerHTML = '<li>No se seleccionaron deficiencias.</li>';
+                }
+
+                template.querySelector('.clinical-explanation').textContent = document.getElementById('modal-explanation').value || 'No se proporcionó justificación.';
+                template.querySelector('.contextual-impact').textContent = document.getElementById('modal-context').value || 'No se proporcionó análisis de contexto.';
+                
                 container.appendChild(template);
                 updateEventListeners();
+            }
+
+            function getCifItems(type) {
+                let selector;
+                if (type === 'limitation') {
+                    selector = '#limitations-container .cif-item';
+                } else if (type === 'deficiency') {
+                    selector = '#structural-deficiencies-container .cif-item, #functional-deficiencies-container .cif-item';
+                } else {
+                    return [];
+                }
+                return Array.from(document.querySelectorAll(selector))
+                    .map(item => {
+                        const description = item.querySelector('.cif-item-description')?.value.trim();
+                        const priority = item.querySelector('.priority-select')?.value;
+                        return { description, priority };
+                    })
+                    .filter(item => item.description !== '');
+            }
+
+            function addCifItem(e) {
+                const targetId = e.target.dataset.target;
+                const container = document.getElementById(targetId);
+                const template = document.getElementById('cif-item-template').content.cloneNode(true);
+                const item = template.querySelector('.cif-item');
+                
+                template.querySelector('.cif-item-description').placeholder = e.target.dataset.placeholder1;
+                template.querySelector('.cif-item-measurement').placeholder = e.target.dataset.placeholder2;
+                
+                if (e.target.dataset.type === 'restriction') {
+                    template.querySelector('.priority-select').parentElement.remove();
+                    template.querySelector('.cif-item-description').parentElement.classList.replace('col-span-5', 'col-span-6');
+                    template.querySelector('.cif-item-measurement').parentElement.classList.replace('col-span-4', 'col-span-5');
+                } else {
+                     template.querySelector('.priority-select').addEventListener('change', (event) => {
+                        updatePriorityVisuals(event.target);
+                    });
+                }
+
+                container.appendChild(template);
+                updatePriorityVisuals(item.querySelector('.priority-select'));
+                updateEventListeners();
+            }
+
+            function updatePriorityVisuals(selectElement) {
+                if (!selectElement) return;
+                const parentItem = selectElement.closest('.cif-item');
+                parentItem.classList.remove('priority-low', 'priority-medium', 'priority-high');
+                parentItem.classList.add(`priority-${selectElement.value}`);
             }
 
             function addOE() {
@@ -395,7 +629,28 @@
                 const template = document.getElementById('oe-template').content.cloneNode(true);
                 const oeCard = template.querySelector('.oe-card');
                 oeCard.dataset.oeId = oeCounter;
-                oeCard.querySelector('label').prepend(`OE ${oeCounter}: `);
+                
+                const limitationSelect = template.querySelector('.prioritized-limitation-select');
+                limitationSelect.innerHTML = '<option value="">Seleccione una limitación priorizada...</option>';
+                const limitations = getCifItems('limitation');
+                limitations.forEach(lim => {
+                    const option = document.createElement('option');
+                    option.value = lim.description;
+                    option.textContent = `${lim.description} [Prioridad: ${lim.priority.charAt(0).toUpperCase() + lim.priority.slice(1)}]`;
+                    option.dataset.priority = lim.priority;
+                    limitationSelect.appendChild(option);
+                });
+
+                limitationSelect.addEventListener('change', (e) => {
+                    const selectedOption = e.target.options[e.target.selectedIndex];
+                    const priority = selectedOption.dataset.priority;
+                    const card = e.target.closest('.oe-card');
+                    card.classList.remove('priority-low', 'priority-medium', 'priority-high');
+                    if (priority) {
+                        card.classList.add(`priority-${priority}`);
+                    }
+                });
+
                 document.getElementById('specific-objectives-container').appendChild(template);
                 updateEventListeners();
             }
@@ -452,60 +707,28 @@
             }
 
             function updateEventListeners() {
-                // Add Listeners
-                document.querySelectorAll('.add-cif-item-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', addCifItem);
+                document.querySelectorAll('.add-cif-item-btn:not(.listener-added), #add-oe-btn:not(.listener-added), .add-oo-btn:not(.listener-added), .add-intervention-btn:not(.listener-added), #add-session-activity-btn:not(.listener-added)').forEach(btn => {
                     btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('#add-oe-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', addOE);
-                    btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('.add-oo-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', addOO);
-                    btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('.add-intervention-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', addIntervention);
-                    btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('#add-session-activity-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', addSessionActivity);
-                    btn.classList.add('listener-added');
+                    if (btn.id === 'add-oe-btn') btn.addEventListener('click', addOE);
+                    else if (btn.id === 'add-session-activity-btn') btn.addEventListener('click', addSessionActivity);
+                    else if (btn.classList.contains('add-cif-item-btn')) btn.addEventListener('click', addCifItem);
+                    else if (btn.classList.contains('add-oo-btn')) btn.addEventListener('click', addOO);
+                    else if (btn.classList.contains('add-intervention-btn')) btn.addEventListener('click', addIntervention);
                 });
 
-                // Remove Listeners
-                document.querySelectorAll('.remove-cif-item-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', (e) => e.target.closest('.cif-item').remove());
+                document.querySelectorAll('.remove-cif-item-btn:not(.listener-added), .remove-oe-btn:not(.listener-added), .remove-oo-btn:not(.listener-added), .remove-intervention-btn:not(.listener-added), .remove-session-activity-btn:not(.listener-added), .remove-hypothesis-btn:not(.listener-added)').forEach(btn => {
                     btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('.remove-oe-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.target.closest('.oe-card').remove();
-                        updateSessionOODropdown();
-                    });
-                    btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('.remove-oo-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.target.closest('.oo-card').remove();
-                        updateSessionOODropdown();
-                    });
-                     btn.classList.add('listener-added');
-                });
-                document.querySelectorAll('.remove-intervention-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', (e) => e.target.closest('.intervention-item').remove());
-                    btn.classList.add('listener-added');
-});
-                document.querySelectorAll('.remove-session-activity-btn:not(.listener-added)').forEach(btn => {
-                    btn.addEventListener('click', (e) => e.target.closest('.session-activity-row').remove());
-                    btn.classList.add('listener-added');
+                    if (btn.classList.contains('remove-cif-item-btn')) btn.addEventListener('click', (e) => e.target.closest('.cif-item').remove());
+                    else if (btn.classList.contains('remove-oe-btn')) btn.addEventListener('click', (e) => { e.target.closest('.oe-card').remove(); updateSessionOODropdown(); });
+                    else if (btn.classList.contains('remove-oo-btn')) btn.addEventListener('click', (e) => { e.target.closest('.oo-card').remove(); updateSessionOODropdown(); });
+                    else if (btn.classList.contains('remove-intervention-btn')) btn.addEventListener('click', (e) => e.target.closest('.intervention-item').remove());
+                    else if (btn.classList.contains('remove-session-activity-btn')) btn.addEventListener('click', (e) => e.target.closest('.session-activity-row').remove());
+                    else if (btn.classList.contains('remove-hypothesis-btn')) btn.addEventListener('click', (e) => e.target.closest('.hypothesis-card').remove());
                 });
             }
             
-            // Initial setup
             updateEventListeners();
-            addOE(); // Start with one Objective
+            addOE();
         });
     </script>
 </body>
