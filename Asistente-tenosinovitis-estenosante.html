@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Clínica Inteligente: Tenosinovitis Estenosante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6; --primary-hover: #2563eb; --light-bg: #f8fafc;
+            --border-color: #e2e8f0; --text-dark: #1e293b; --text-light: #64748b;
+            --highlight-bg: #fefce8; --highlight-border: #fef9c3; --recommendation-bg: #eff6ff;
+            --recommendation-border: #bfdbfe; --generated-plan-bg: #f0fdf4; --generated-plan-border: #bbf7d0;
+            --danger-bg: #fef2f2; --danger-border: #fecaca; --danger-text: #b91c1c;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: var(--text-dark); }
+        .section-container { border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1.5rem 2rem; background-color: #ffffff; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); }
+        .section-title { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); border-bottom: 2px solid var(--primary-color); padding-bottom: 0.75rem; margin-bottom: 0.5rem; display: flex; align-items: center; }
+        .section-title i { margin-right: 0.75rem; color: var(--primary-color); }
+        .section-explanation, .eval-guide { font-style: italic; color: var(--text-light); margin-bottom: 1.5rem; }
+        .eval-guide { background-color: var(--light-bg); padding: 0.75rem; border-radius: 0.5rem; border-left: 4px solid var(--primary-color); }
+        .subsection-title { font-size: 1.1rem; font-weight: 600; color: var(--text-dark); margin-top: 1.5rem; margin-bottom: 1rem; }
+        .checklist-item { display: flex; align-items: center; padding: 0.75rem; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; border: 1px solid transparent; }
+        .checklist-item:hover { background-color: var(--light-bg); border-color: var(--border-color); }
+        .checklist-item input[type="checkbox"], .checklist-item input[type="radio"] { margin-right: 1rem; flex-shrink: 0; height: 1.25rem; width: 1.25rem; border-radius: 0.25rem; border-color: var(--border-color); color: var(--primary-color); }
+        .checklist-item.checked { background-color: var(--highlight-bg) !important; border-color: var(--highlight-border) !important; }
+        .input-group { margin-bottom: 1rem; }
+        .input-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--text-dark); }
+        input[type="text"], input[type="date"], input[type="number"], textarea, select { @apply w-full border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition; background-color: var(--light-bg); padding: 0.75rem; }
+        textarea { min-height: 80px; }
+        details > summary { font-size: 1.25rem; font-weight: 600; cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; transition: background-color 0.2s; list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary:before { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-right: 0.5rem; display: inline-block; transition: transform 0.2s; }
+        details[open] > summary:before { transform: rotate(-180deg); }
+        details > summary:hover { background-color: var(--light-bg); }
+        details[open] > summary { color: var(--primary-color); }
+        #generated-plan-box { background-color: var(--generated-plan-bg); border: 1px solid var(--generated-plan-border); padding: 1.5rem; border-radius: 0.5rem; margin-top: 1rem; }
+        #red-flag-alert { background-color: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger-text); }
+        @media print {
+            body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background-color: #ffffff; }
+            .no-print { display: none !important; } .section-container { box-shadow: none !important; border: 1px solid #cbd5e1 !important; }
+            .checklist-item.checked { background-color: var(--highlight-bg) !important; border-color: var(--highlight-border) !important; }
+            .checklist-item input[type="checkbox"] { display: none; }
+            .checklist-item.checked::before { content: '✔'; display: inline-block; color: black; font-weight: bold; margin-right: 0.5em; font-size: 1.2rem; }
+            details, details[open] { page-break-inside: avoid; } details > summary { display: none; } details .details-content { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div class="container mx-auto max-w-5xl p-4 sm:p-6 md:p-8">
+        
+        <header class="text-center mb-10 no-print">
+            <h1 class="text-4xl sm:text-5xl font-bold text-slate-900">Plataforma Clínica Inteligente</h1>
+            <p class="text-xl text-slate-600 mt-2">Tenosinovitis Estenosante (Dedo en Resorte)</p>
+        </header>
+
+        <form id="evaluationForm">
+            <main>
+                <!-- Patient Information -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-user"></i>Datos del Paciente</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div class="input-group"><label for="patientName">Nombre</label><input type="text" id="patientName"></div>
+                        <div class="input-group"><label for="evalDate">Fecha</label><input type="date" id="evalDate"></div>
+                        <div class="input-group"><label for="occupation">Ocupación / Hobbies</label><input type="text" id="occupation" placeholder="Ej: Oficinista, jardinero"></div>
+                        <div class="input-group"><label for="affectedFinger">Dedo(s) y Mano Afectada(s)</label><input type="text" id="affectedFinger" placeholder="Ej: 3er dedo mano derecha"></div>
+                    </div>
+                </section>
+
+                <!-- 1. Anamnesis -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-comments"></i>Anamnesis y Subjetivo</h2>
+                    <p class="section-explanation">Entender la experiencia del paciente, sus síntomas y cómo afectan su vida diaria.</p>
+                    
+                    <div class="subsection-title">Historia del Dolor y Síntomas Mecánicos</div>
+                    <p class="eval-guide"><b>Cómo Evaluar:</b> Cuantifique el dolor (EVA/NPRS), describa su naturaleza y pregunte por síntomas clave como chasquidos, bloqueos y rigidez matutina.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                        <div class="input-group"><label>Intensidad Dolor (EVA/NPRS 0-10)</label><input type="number" min="0" max="10" id="pain-score" placeholder="0-10"></div>
+                        <div class="input-group"><label>Duración de Síntomas (meses)</label><input type="number" min="0" id="symptom-duration" placeholder="Ej: 3"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        <div class="checklist-item"><input type="checkbox" id="m1"><label for="m1">Chasquido / Resalte audible</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="m2"><label for="m2">Bloqueo en flexión</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="m3"><label for="m3">Necesita ayuda pasiva para desbloquear</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="m4"><label for="m4">Rigidez matutina > 30 min</label></div>
+                    </div>
+
+                    <div class="subsection-title">Análisis Funcional y de Carga</div>
+                     <p class="eval-guide"><b>Cómo Evaluar:</b> Investigue las tareas específicas (laborales o de ocio) que provocan los síntomas. Esto es clave para la educación y el re-entrenamiento.</p>
+                     <div class="input-group mt-4">
+                        <label for="aggravating-activities">Actividades Agravantes Específicas</label>
+                        <textarea id="aggravating-activities" placeholder="Describir en detalle: tipo de agarre, duración, frecuencia. Ej: 'Uso de tijeras de podar por más de 15 min', 'Escribir en teclado por 1 hora'"></textarea>
+                     </div>
+
+                    <div class="subsection-title">Comorbilidades y Factores Psicosociales</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="checklist-item"><input type="checkbox" id="c1"><label for="c1">Diabetes Mellitus</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="c2"><label for="c2">Artritis Reumatoide</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="c3"><label for="c3">Hipotiroidismo</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="c4"><label for="c4">Ansiedad / Estrés elevado</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="c5"><label for="c5">Miedo al movimiento (Kinesiofobia)</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="c6"><label for="c6">Catastrofismo</label></div>
+                    </div>
+                    
+                    <div class="subsection-title">Objetivos Funcionales del Paciente</div>
+                    <textarea placeholder="¿Qué actividad específica le gustaría volver a hacer sin dolor? Ej: Tejer, tocar guitarra, trabajar..."></textarea>
+                </section>
+                
+                <!-- 2. Clasificación de Severidad -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-chart-simple"></i>Clasificación y Pronóstico</h2>
+                    <p class="section-explanation">Clasifica la severidad para guiar el tratamiento y estima un pronóstico.</p>
+                    <div class="subsection-title">Clasificación de Severidad (Green's)</div>
+                    <div class="space-y-3" id="severity-classification">
+                        <div class="checklist-item"><input type="radio" name="severity" id="g1" value="1"><label for="g1"><b>Grado I:</b> Dolor y sensibilidad en polea A1, sin resalte.</label></div>
+                        <div class="checklist-item"><input type="radio" name="severity" id="g2" value="2"><label for="g2"><b>Grado II:</b> Resalte activo, con extensión completa del dedo.</label></div>
+                        <div class="checklist-item"><input type="radio" name="severity" id="g3" value="3"><label for="g3"><b>Grado III:</b> Bloqueo demostrable. Requiere extensión pasiva (IIIA) o no puede flexionar activamente (IIIB).</label></div>
+                        <div class="checklist-item"><input type="radio" name="severity" id="g4" value="4"><label for="g4"><b>Grado IV:</b> Contractura fija en flexión de la articulación IFP.</label></div>
+                    </div>
+                    <div class="subsection-title">Pronóstico Estimado</div>
+                    <div id="prognosis-box" class="p-4 mt-2 rounded-lg bg-slate-100 border border-slate-200">
+                        <p id="prognosis-text">Seleccione un grado de severidad y marque las comorbilidades para estimar el pronóstico.</p>
+                    </div>
+                </section>
+
+                <!-- 3. Examen Físico -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-hand-paper"></i>Examen Físico</h2>
+                    <p class="section-explanation">Hallazgos objetivos obtenidos a través de la observación, palpación y movilización.</p>
+                    
+                    <div class="subsection-title">Inspección y Palpación</div>
+                    <p class="eval-guide"><b>Cómo Evaluar:</b> Observe la base del dedo. Palpe la polea A1 (en el pliegue palmar distal) buscando dolor puntual, y siga el tendón flexor para detectar un nódulo (Notta) que se mueva con la flexión/extensión del dedo. Busque signos de infección (calor, enrojecimiento intenso, edema fusiforme).</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div class="checklist-item"><input type="checkbox" id="p1"><label for="p1">Dolor exquisito en polea A1</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="p2"><label for="p2">Nódulo de Notta palpable</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="p3"><label for="p3">Dedo en semiflexión (contractura)</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="p4"><label for="p4">Tumefacción / Edema visible</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="p5"><label for="p5">Calor y Eritema intensos</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="p6"><label for="p6">Dolor a la extensión pasiva</label></div>
+                    </div>
+                    <div class="input-group mt-4"><label>Perimetría (Edema)</label><input type="text" placeholder="Afectado (cm) / Sano (cm)"></div>
+                    
+                    <div class="subsection-title">Rango de Movimiento (ROM) y Fuerza</div>
+                    <p class="eval-guide"><b>Cómo Evaluar:</b> Mida con goniómetro la flexo-extensión activa. Para la prueba de gatillo, pida al paciente que haga un puño y luego extienda los dedos activamente, observando si hay un bloqueo o resalte. Mida la fuerza de agarre y los 3 tipos de pinza.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                        <div class="input-group"><label>Flexión Activa (MCF/IFP/IFD)</label><input type="text" placeholder="Ej: 90°/100°/70°"></div>
+                        <div class="input-group"><label>Extensión Activa (MCF/IFP/IFD)</label><input type="text" placeholder="Ej: 0°/0°/-5°"></div>
+                        <div class="input-group"><label>Fuerza de Agarre (Jamar)</label><input type="text" placeholder="Afectado (Kg) / Sano (Kg)"></div>
+                        <div class="input-group"><label>Fuerza de Pinza (Trípode/Lateral/Punta)</label><input type="text" placeholder="Ej: 5/4/3 Kg"></div>
+                    </div>
+                    <div class="checklist-item"><input type="checkbox" id="pf1"><label for="pf1">Prueba de Gatillo Activa positiva</label></div>
+
+                    <div class="subsection-title">Evaluación Neurodinámica</div>
+                    <p class="eval-guide"><b>Cómo Evaluar:</b> Realice Test de Phalen y Tinel en la muñeca para descartar un Síndrome del Túnel Carpiano concomitante, que puede coexistir.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div class="checklist-item"><input type="checkbox" id="n1"><label for="n1">Test de Phalen Positivo</label></div>
+                        <div class="checklist-item"><input type="checkbox" id="n2"><label for="n2">Test de Tinel (mediano) Positivo</label></div>
+                    </div>
+                </section>
+
+                <!-- 4. Cuestionarios Funcionales -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-file-lines"></i>Cuestionarios Funcionales</h2>
+                    <p class="section-explanation">Medición estandarizada de la discapacidad y función percibida por el paciente.</p>
+                    
+                    <details class="mt-6">
+                        <summary>Cuestionario QuickDASH</summary>
+                        <div class="details-content mt-4 border-t pt-4">
+                            <p class="text-sm text-slate-500 mb-4">Indique la dificultad en la última semana (1=Ninguna, 5=Imposible).</p>
+                            <div id="quickdash-questions" class="space-y-4"></div>
+                            <div class="mt-6 p-4 bg-slate-100 rounded-lg flex justify-between items-center"><span class="font-bold text-lg">Puntaje QuickDASH:</span><input type="text" id="quickdash-score" readonly class="w-24 text-center font-bold text-lg bg-white"></div>
+                        </div>
+                    </details>
+
+                    <details class="mt-6">
+                        <summary>Cuestionario Michigan Hand (MHQ) - Abreviado</summary>
+                        <div class="details-content mt-4 border-t pt-4">
+                             <p class="text-sm text-slate-500 mb-4">Evalúe los siguientes ítems (1=Muy Mal, 5=Muy Bien).</p>
+                             <div id="mhq-questions" class="space-y-4"></div>
+                             <div class="mt-6 p-4 bg-slate-100 rounded-lg flex justify-between items-center"><span class="font-bold text-lg">Puntaje MHQ (Promedio):</span><input type="text" id="mhq-score" readonly class="w-24 text-center font-bold text-lg bg-white"></div>
+                        </div>
+                    </details>
+                </section>
+
+                <!-- 5. Plan de Tratamiento -->
+                <section class="section-container">
+                    <h2 class="section-title"><i class="fa-solid fa-clipboard-list-check"></i>Plan de Tratamiento Kinésico</h2>
+                    <p class="section-explanation">Utilice las sugerencias automáticas como guía y luego seleccione manualmente las intervenciones específicas a realizar.</p>
+
+                    <div id="generated-plan-box">
+                        <h3 class="font-bold text-lg text-green-800">Sugerencias Automáticas de Tratamiento</h3>
+                        <div id="generated-plan-text" class="text-green-700 mt-2 space-y-2">
+                            <p>Complete la Clasificación de Severidad y el Examen Físico para generar sugerencias.</p>
+                        </div>
+                    </div>
+
+                    <div class="subsection-title">A. Educación y Manejo de Carga</div>
+                    <div class="checklist-item"><input type="checkbox" id="t1_1"><label for="t1_1">Educación sobre la patología, causas y pronóstico.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t1_2"><label for="t1_2">Modificación de actividades y Pacing (dosificación).</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t1_3"><label for="t1_3">Instrucción en ergonomía y uso de herramientas adaptadas.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t1_4"><label for="t1_4">Educación en dolor y manejo de banderas amarillas.</label></div>
+
+                    <div class="subsection-title">B. Terapia Manual</div>
+                    <div class="checklist-item"><input type="checkbox" id="t2_3"><label for="t2_3">Movilización pasiva/accesoria de articulaciones (MCF, IFP, IFD).</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t2_4"><label for="t2_4">Técnicas de neurodinamia para nervio mediano.</label></div>
+
+                    <div class="subsection-title">C. Ejercicio Terapéutico y Re-entrenamiento</div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_1"><label for="t3_1">Ejercicios de deslizamiento tendinoso (Tendon Gliding).</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_2"><label for="t3_2">Ejercicios de "Hook Fist" (puño en gancho).</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_3"><label for="t3_3">Ejercicios "Place and Hold" para ROM completo.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_4"><label for="t3_4">Estiramiento suave de flexores de muñeca y dedos.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_5"><label for="t3_5">Ejercicios de fortalecimiento isométrico suave.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t3_6"><label for="t3_6">Re-entrenamiento de patrones de agarre funcional.</label></div>
+                    
+                    <div class="subsection-title">D. Órtesis (Splinting)</div>
+                    <div class="checklist-item"><input type="checkbox" id="t4_1"><label for="t4_1">Férula de bloqueo de MCF (0-15° flexión).</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t4_2"><label for="t4_2">Férula de bloqueo de IFP.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t4_3"><label for="t4_3">Férula de bloqueo de IFD.</label></div>
+                    
+                    <div class="subsection-title">E. Agentes Físicos (Manejo de Síntomas)</div>
+                    <div class="checklist-item"><input type="checkbox" id="t5_1"><label for="t5_1">Termoterapia superficial (calor) para rigidez.</label></div>
+                    <div class="checklist-item"><input type="checkbox" id="t5_2"><label for="t5_2">Crioterapia (hielo) para dolor agudo.</label></div>
+                </section>
+            </main>
+        </form>
+
+        <footer class="text-center mt-2 mb-8 space-x-4 no-print">
+            <button type="button" onclick="imprimirEvaluacion()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">Imprimir / Guardar PDF</button>
+            <button type="button" onclick="document.getElementById('evaluationForm').reset(); resetUI();" class="bg-slate-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">Reiniciar Ficha</button>
+        </footer>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('evalDate').valueAsDate = new Date();
+            setupQuickDASH();
+            setupMHQ();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            const form = document.getElementById('evaluationForm');
+            form.addEventListener('change', (event) => {
+                const target = event.target;
+                if (target.name && target.name.startsWith('qd-q')) calculateQuickDASH();
+                if (target.name && target.name.startsWith('mhq-q')) calculateMHQ();
+                
+                if (target.type === 'checkbox' || target.type === 'radio') {
+                    const parent = target.closest('.checklist-item');
+                    if (parent) {
+                        if (target.type === 'radio' && target.checked) {
+                            const groupName = target.name;
+                            document.querySelectorAll(`input[name="${groupName}"]`).forEach(rb => {
+                                const item = rb.closest('.checklist-item');
+                                if (item) item.classList.remove('checked');
+                            });
+                            parent.classList.add('checked');
+                        } else if (target.type === 'checkbox') {
+                             parent.classList.toggle('checked', target.checked);
+                        }
+                    }
+                }
+                generateTreatmentPlan();
+                updatePrognosis();
+            });
+            form.addEventListener('input', (event) => {
+                const target = event.target;
+                if (target.id === 'pain-score' || target.id === 'symptom-duration' || target.id.startsWith('qd-') || target.id.startsWith('mhq-')) {
+                    generateTreatmentPlan();
+                    updatePrognosis();
+                }
+            });
+        }
+        
+        function resetUI() {
+            document.getElementById('evalDate').valueAsDate = new Date();
+            document.querySelectorAll('.checklist-item.checked').forEach(item => item.classList.remove('checked'));
+            calculateQuickDASH();
+            calculateMHQ();
+            generateTreatmentPlan();
+            updatePrognosis();
+        }
+
+        function setupQuickDASH() {
+            const container = document.getElementById('quickdash-questions');
+            const questions = ["Abrir un frasco nuevo", "Escribir", "Girar una llave", "Preparar una comida", "Empujar una puerta pesada", "Colocar un objeto en un estante alto", "Tareas pesadas en casa", "Jardinería", "Hacer la cama", "Cargar una bolsa de compras", "Cargar un objeto pesado (>5kg)"];
+            container.innerHTML = questions.map((q, i) => createQuestionHTML(`qd-q${i}`, `${i + 1}. ${q}`, 5)).join('');
+        }
+        function setupMHQ() {
+            const container = document.getElementById('mhq-questions');
+            const questions = ["Función general de su mano", "Capacidad para realizar sus actividades diarias", "Capacidad para su trabajo", "Apariencia de su mano", "Satisfacción con el movimiento de su mano", "Satisfacción con la fuerza de su mano"];
+            container.innerHTML = questions.map((q, i) => createQuestionHTML(`mhq-q${i}`, q, 5)).join('');
+        }
+        function createQuestionHTML(name, text, options) {
+            let optionsHTML = '';
+            for (let i = 1; i <= options; i++) {
+                optionsHTML += `<div class="flex items-center mx-2 my-1"><input type="radio" name="${name}" id="${name}-${i}" value="${i}" class="h-4 w-4"><label for="${name}-${i}" class="ml-2 text-sm">${i}</label></div>`;
+            }
+            return `<div class="p-4 border rounded-lg"><p class="font-medium mb-2">${text}</p><div class="flex justify-around flex-wrap">${optionsHTML}</div></div>`;
+        }
+        function calculateQuickDASH() {
+            const inputs = document.querySelectorAll('#quickdash-questions input[type="radio"]:checked');
+            const scoreInput = document.getElementById('quickdash-score');
+            if (inputs.length === 0) { scoreInput.value = "N/A"; return; }
+            let sum = 0;
+            inputs.forEach(i => sum += parseInt(i.value));
+            const score = ((sum / inputs.length) - 1) * 25;
+            scoreInput.value = score.toFixed(2);
+            generateTreatmentPlan(); 
+        }
+        function calculateMHQ() {
+            const inputs = document.querySelectorAll('#mhq-questions input[type="radio"]:checked');
+            const scoreInput = document.getElementById('mhq-score');
+            if (inputs.length === 0) { scoreInput.value = "N/A"; return; }
+            let sum = 0;
+            inputs.forEach(i => sum += parseInt(i.value));
+            const score = sum / inputs.length;
+            scoreInput.value = score.toFixed(2);
+            generateTreatmentPlan();
+        }
+
+        function updatePrognosis() {
+            const prognosisText = document.getElementById('prognosis-text');
+            const grade = document.querySelector('input[name="severity"]:checked')?.value;
+            const hasDiabetes = document.getElementById('c1').checked;
+            const duration = parseFloat(document.getElementById('symptom-duration').value) || 0;
+
+            if (!grade) {
+                prognosisText.innerHTML = "Seleccione un grado de severidad y marque las comorbilidades para estimar el pronóstico.";
+                return;
+            }
+
+            let text = "";
+            let chronicityFactor = duration > 3 ? " La cronicidad (>3 meses) puede requerir un tratamiento más prolongado." : "";
+
+            if (grade <= 2) {
+                text = hasDiabetes ? `<b>Bueno a Reservado:</b> El tratamiento conservador suele ser efectivo, pero la diabetes puede enlentecer la recuperación.${chronicityFactor}` : `<b>Excelente:</b> Alta probabilidad de resolución con tratamiento conservador bien dirigido.${chronicityFactor}`;
+            } else if (grade == 3) {
+                text = hasDiabetes ? "<b>Reservado:</b> Frecuentemente requiere manejo médico (infiltración). La respuesta puede ser menor en pacientes con diabetes." : "<b>Bueno:</b> Generalmente responde muy bien a la infiltración. El tratamiento kinésico es un excelente coadyuvante.";
+            } else { // grade 4
+                text = "<b>Reservado a Malo:</b> La contractura fija usualmente requiere resolución quirúrgica para un resultado funcional óptimo.";
+            }
+            prognosisText.innerHTML = text;
+        }
+
+        function generateTreatmentPlan() {
+            const planContainer = document.getElementById('generated-plan-text');
+            const findings = {
+                grade: document.querySelector('input[name="severity"]:checked')?.value || null,
+                pain: parseFloat(document.getElementById('pain-score').value) || 0,
+                quickDASH: parseFloat(document.getElementById('quickdash-score').value) || 0,
+                mhq: parseFloat(document.getElementById('mhq-score').value) || 5,
+                nodule: document.getElementById('p2').checked,
+                stiffness: document.getElementById('m4').checked,
+                contracture: document.getElementById('p3').checked,
+                neuro: document.getElementById('n1').checked || document.getElementById('n2').checked,
+                yellowFlags: document.getElementById('c4').checked || document.getElementById('c5').checked || document.getElementById('c6').checked,
+                infectionSigns: document.getElementById('p5').checked && document.getElementById('p6').checked && document.getElementById('p4').checked,
+            };
+
+            if (findings.infectionSigns) {
+                planContainer.innerHTML = `<div id="red-flag-alert" class="p-4 rounded-lg"><h4 class='font-bold text-lg'><i class="fa-solid fa-triangle-exclamation mr-2"></i>¡ALERTA DE BANDERA ROJA!</h4><p class="mt-1">Los hallazgos (calor, eritema, edema, dolor a la extensión pasiva) son consistentes con los Signos de Kanavel. Esto sugiere una posible tenosinovitis infecciosa. <b>Se recomienda derivación médica URGENTE.</b></p></div>`;
+                return;
+            }
+
+            if (!findings.grade) {
+                planContainer.innerHTML = "<p>Complete la Clasificación de Severidad y el Examen Físico para generar sugerencias.</p>";
+                return;
+            }
+
+            let planHTML = "<div class='space-y-4'>";
+            
+            planHTML += "<div><h4 class='font-bold text-lg'>Prioridad 1: Control de Síntomas y Protección</h4><ul class='list-disc list-inside space-y-1 mt-1'>";
+            planHTML += "<li><b>Educación y Modificación de Actividad:</b> Esencial en todos los casos. <i><u>Por qué:</u> Evita la re-agravación y permite que el tejido descanse.</i> (Ej: Usar mangos más anchos, evitar agarres potentes).</li>";
+            if (findings.pain > 5 || findings.grade > 1) {
+                 planHTML += `<li><b>Órtesis / Férula:</b> Especialmente nocturna. <i><u>Por qué:</u> Limita el movimiento que causa el gatillo, justificado por el <b>dolor de ${findings.pain}/10</b> y/o el <b>Grado ${findings.grade}</b>.</i> (Ej: Férula de bloqueo de MCF en 10° de flexión).</li>`;
+            }
+            if (findings.pain > 6) {
+                 planHTML += `<li><b>Crioterapia:</b> Aplicar hielo en la polea A1. <i><u>Por qué:</u> Ayuda a modular el dolor agudo, justificado por un <b>EVA > 6/10</b>.</i> (Ej: 10-15 min, 2-3 veces al día).</li>`;
+            }
+            if (findings.yellowFlags) {
+                planHTML += "<li><b>Educación en Dolor:</b> Abordar creencias y miedos. <i><u>Por qué:</u> Se detectaron <b>banderas amarillas</b> que pueden perpetuar el dolor.</i> (Ej: Explicar que el dolor no siempre equivale a daño).</li>";
+            }
+            planHTML += "</ul></div>";
+
+            planHTML += "<div><h4 class='font-bold text-lg'>Prioridad 2: Restauración de Movilidad y Tejido</h4><ul class='list-disc list-inside space-y-1 mt-1'>";
+            if (findings.grade < 4) {
+                 planHTML += "<li><b>Ejercicios de Deslizamiento Tendinoso:</b> Pilar del tratamiento. <i><u>Por qué:</u> Promueven el movimiento suave del tendón a través de la polea.</i> (Ej: Secuencia de puño recto, gancho, puño completo, 3x10 repeticiones).</li>";
+            }
+            if (findings.contracture || findings.stiffness) {
+                 planHTML += `<li><b>Movilizaciones y Estiramientos:</b> Enfocarse en la extensión. <i><u>Por qué:</u> Combate directamente la <b>${findings.contracture ? 'contractura' : 'rigidez'}</b> detectada.</i> (Ej: Estiramiento pasivo mantenido 3x30 seg).</li>`;
+            }
+             if (findings.neuro) {
+                 planHTML += "<li><b>Neurodinamia del Nervio Mediano:</b> Deslizamientos suaves. <i><u>Por qué:</u> Aborda la posible <b>irritación nerviosa concomitante</b> detectada en los tests.</i></li>";
+            }
+            planHTML += "</ul></div>";
+
+            planHTML += "<div><h4 class='font-bold text-lg'>Prioridad 3: Recuperación Funcional y Derivación</h4><ul class='list-disc list-inside space-y-1 mt-1'>";
+             if (findings.grade < 3) {
+                 planHTML += `<li><b>Fortalecimiento y Re-entrenamiento Funcional:</b> Iniciar cuando el dolor disminuya. <i><u>Por qué:</u> Recupera la capacidad de carga. Especialmente importante dado el <b>QuickDASH de ${findings.quickDASH.toFixed(1)}</b> y/o <b>MHQ de ${findings.mhq.toFixed(1)}</b>.</i> (Ej: Isométricos suaves, progresar a pinzas y agarres funcionales).</li>`;
+            } else {
+                 planHTML += `<li><b>Plan de Derivación a Médico:</b> Considerar firmemente. <i><u>Por qué:</u> Los <b>grados III y IV</b> tienen una respuesta limitada al tratamiento conservador aislado y se benefician enormemente de la infiltración o cirugía.</i></li>`;
+            }
+            planHTML += "</ul></div>";
+
+            planHTML += "</div>";
+            planContainer.innerHTML = planHTML;
+        }
+
+        function imprimirEvaluacion() { window.print(); }
+    </script>
+</body>
+</html>
