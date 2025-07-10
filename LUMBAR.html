@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Razonamiento Clínico para Dolor Lumbar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .wizard-step {
+            display: none;
+        }
+        .wizard-step.active {
+            display: block;
+        }
+        .evidence-grade {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: white;
+            vertical-align: middle;
+        }
+        .grade-a { background-color: #16a34a; } /* Green-600 */
+        .grade-b { background-color: #f59e0b; } /* Amber-500 */
+        .grade-c { background-color: #ea580c; } /* Orange-600 */
+        .grade-d { background-color: #dc2626; } /* Red-600 */
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #334155; /* slate-700 */
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+        .checkbox-label:hover {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .checkbox-label input {
+            margin-right: 0.75rem;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-6 lg:p-8">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900">Asistente de Razonamiento Clínico</h1>
+            <p class="text-slate-600 mt-2 text-lg">Guía Interactiva para la Evaluación y Tratamiento del Dolor Lumbar</p>
+        </header>
+
+        <div id="wizard" class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <!-- Progress Bar -->
+            <div class="p-4 bg-slate-100 border-b border-slate-200">
+                <div class="flex justify-between items-center text-sm font-semibold text-slate-600">
+                    <div id="step-1-indicator" class="text-indigo-600">Paso 1: Anamnesis</div>
+                    <div id="step-2-indicator">Paso 2: Hipótesis y Examen</div>
+                    <div id="step-3-indicator">Paso 3: Tratamiento</div>
+                </div>
+            </div>
+
+            <!-- Wizard Content -->
+            <div class="p-6 md:p-8">
+                <!-- Step 1: Subjective Evaluation -->
+                <div id="step-1" class="wizard-step active">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Paso 1: Evaluación Subjetiva</h2>
+                    <p class="text-slate-600 mb-6">Selecciona todos los hallazgos que apliquen al caso de tu paciente para generar un perfil clínico.</p>
+                    
+                    <form id="subjective-form">
+                        <!-- Red Flags -->
+                        <div class="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg">
+                            <h3 class="text-xl font-bold text-red-700 mb-3 flex items-center"><i class="fas fa-flag mr-2"></i>Banderas Rojas (¡ALERTA!)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                                <label class="checkbox-label"><input type="checkbox" id="rf_ces" class="form-checkbox h-5 w-5 text-red-600">Pérdida de control de esfínteres / Anestesia en silla de montar</label>
+                                <label class="checkbox-label"><input type="checkbox" id="rf_cancer" class="form-checkbox h-5 w-5 text-red-600">Historia previa de cáncer / Pérdida de peso inexplicada</label>
+                                <label class="checkbox-label"><input type="checkbox" id="rf_infection" class="form-checkbox h-5 w-5 text-red-600">Fiebre / Uso de drogas IV / Infección reciente</label>
+                                <label class="checkbox-label"><input type="checkbox" id="rf_fracture" class="form-checkbox h-5 w-5 text-red-600">Trauma mayor / Uso prolongado de corticosteroides / Edad > 70</label>
+                                <label class="checkbox-label"><input type="checkbox" id="rf_inflammatory" class="form-checkbox h-5 w-5 text-red-600">Rigidez matutina > 30 min / Mejora con ejercicio, no con reposo / Edad < 40</label>
+                                <label class="checkbox-label"><input type="checkbox" id="rf_nightpain" class="form-checkbox h-5 w-5 text-red-600">Dolor nocturno constante y no mecánico</label>
+                            </div>
+                        </div>
+
+                        <!-- Pain Characteristics -->
+                        <div class="mb-6">
+                            <h3 class="text-xl font-bold text-slate-700 mb-3 flex items-center"><i class="fas fa-chart-line mr-2"></i>Características del Dolor y Síntomas</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h4 class="font-semibold text-slate-600 mb-2">Comportamiento del Dolor</h4>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_centralization" class="form-checkbox h-5 w-5 text-indigo-600">Se centraliza con movimientos repetidos</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_flexion_worse" class="form-checkbox h-5 w-5 text-indigo-600">Empeora con flexión / al sentarse</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_extension_worse" class="form-checkbox h-5 w-5 text-indigo-600">Empeora con extensión / al estar de pie</p></label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_walking_worse" class="form-checkbox h-5 w-5 text-indigo-600">Empeora al caminar (claudicación)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_sitting_better" class="form-checkbox h-5 w-5 text-indigo-600">Mejora al sentarse</label>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-slate-600 mb-2">Dolor Irradiado</h4>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_leg_pain" class="form-checkbox h-5 w-5 text-indigo-600">Dolor en la pierna presente</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_dermatomal" class="form-checkbox h-5 w-5 text-indigo-600">Dolor sigue un patrón dermatomal claro</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_leg_pain_worse" class="form-checkbox h-5 w-5 text-indigo-600">Dolor en la pierna > dolor lumbar</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_bilateral_leg" class="form-checkbox h-5 w-5 text-indigo-600">Dolor bilateral en piernas</p></label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_paresthesia" class="form-checkbox h-5 w-5 text-indigo-600">Parestesias / Adormecimiento</p></label>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-slate-600 mb-2">Otros Hallazgos</h4>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_age_over_48" class="form-checkbox h-5 w-5 text-indigo-600">Edad > 48 años</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_chronic" class="form-checkbox h-5 w-5 text-indigo-600">Síntomas > 12 semanas (Crónico)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_list" class="form-checkbox h-5 w-5 text-indigo-600">Desviación lateral (List) visible</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Psychosocial Factors -->
+                        <div class="mb-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                            <h3 class="text-xl font-bold text-yellow-700 mb-3 flex items-center"><i class="fas fa-brain mr-2"></i>Factores Psicosociales (Banderas Amarillas)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                                <label class="checkbox-label"><input type="checkbox" id="yf_fear" class="form-checkbox h-5 w-5 text-yellow-600">Miedo al movimiento / Kinesiofobia</label>
+                                <label class="checkbox-label"><input type="checkbox" id="yf_catastrophizing" class="form-checkbox h-5 w-5 text-yellow-600">Catastrofismo / Bajas expectativas</label>
+                                <label class="checkbox-label"><input type="checkbox" id="yf_depression" class="form-checkbox h-5 w-5 text-yellow-600">Síntomas de depresión / ansiedad (p.ej., PHQ-2 ≥ 3)</label>
+                                <label class="checkbox-label"><input type="checkbox" id="yf_start_risk" class="form-checkbox h-5 w-5 text-yellow-600">Riesgo medio/alto en STarT Back Tool</label>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="text-right mt-8">
+                        <button id="to-step-2" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Generar Hipótesis y Plan de Examen <i class="fas fa-arrow-right ml-2"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Hypothesis and Objective Plan -->
+                <div id="step-2" class="wizard-step">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Paso 2: Hipótesis Sugeridas y Plan de Evaluación Objetiva</h2>
+                    <p class="text-slate-600 mb-6">Basado en tus selecciones, estos son los patrones clínicos más probables y las pruebas recomendadas para tu examen físico.</p>
+                    <div id="hypothesis-container" class="space-y-6">
+                        <!-- Content will be generated by JS -->
+                    </div>
+                     <div class="flex justify-between mt-8">
+                        <button id="back-to-step-1" class="bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg hover:bg-slate-300 transition-colors"><i class="fas fa-arrow-left mr-2"></i>Anterior</button>
+                        <button id="to-step-3" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors">Continuar a Tratamiento <i class="fas fa-arrow-right ml-2"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Treatment Plan -->
+                <div id="step-3" class="wizard-step">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Paso 3: Guía de Tratamiento Basada en Evidencia</h2>
+                    <p class="text-slate-600 mb-6">Utiliza los siguientes esquemas de tratamiento multimodal, adaptados a los patrones clínicos identificados.</p>
+                    <div id="treatment-container" class="space-y-8">
+                        <!-- Content will be generated by JS -->
+                    </div>
+                    <div class="flex justify-between mt-8">
+                        <button id="back-to-step-2" class="bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg hover:bg-slate-300 transition-colors"><i class="fas fa-arrow-left mr-2"></i>Anterior</button>
+                        <button id="start-over" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors">Comenzar de Nuevo <i class="fas fa-redo ml-2"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="text-center mt-8 text-sm text-slate-500">
+            <p>Este asistente es una herramienta de apoyo educativo y no reemplaza el juicio clínico profesional.</p>
+            <p>Información basada en las guías clínicas de la AOPT 2021 y material de Cook, C. (2019).</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const wizard = {
+        steps: document.querySelectorAll('.wizard-step'),
+        indicators: {
+            step1: document.getElementById('step-1-indicator'),
+            step2: document.getElementById('step-2-indicator'),
+            step3: document.getElementById('step-3-indicator'),
+        },
+        buttons: {
+            toStep2: document.getElementById('to-step-2'),
+            toStep3: document.getElementById('to-step-3'),
+            backToStep1: document.getElementById('back-to-step-1'),
+            backToStep2: document.getElementById('back-to-step-2'),
+            startOver: document.getElementById('start-over'),
+        },
+        containers: {
+            hypothesis: document.getElementById('hypothesis-container'),
+            treatment: document.getElementById('treatment-container'),
+        },
+        currentStep: 0,
+        
+        init() {
+            this.buttons.toStep2.addEventListener('click', () => {
+                this.generateHypothesis();
+                this.goToStep(1);
+            });
+            this.buttons.toStep3.addEventListener('click', () => {
+                this.generateTreatmentPlan();
+                this.goToStep(2);
+            });
+            this.buttons.backToStep1.addEventListener('click', () => this.goToStep(0));
+            this.buttons.backToStep2.addEventListener('click', () => this.goToStep(1));
+            this.buttons.startOver.addEventListener('click', () => {
+                document.getElementById('subjective-form').reset();
+                this.goToStep(0);
+            });
+        },
+
+        goToStep(stepIndex) {
+            this.currentStep = stepIndex;
+            this.steps.forEach((step, index) => {
+                step.classList.toggle('active', index === stepIndex);
+            });
+            this.updateIndicators();
+        },
+
+        updateIndicators() {
+            Object.values(this.indicators).forEach(ind => ind.classList.remove('text-indigo-600'));
+            if (this.currentStep === 0) this.indicators.step1.classList.add('text-indigo-600');
+            if (this.currentStep === 1) this.indicators.step2.classList.add('text-indigo-600');
+            if (this.currentStep === 2) this.indicators.step3.classList.add('text-indigo-600');
+        },
+
+        getFormValues() {
+            const form = document.getElementById('subjective-form');
+            const inputs = form.querySelectorAll('input[type="checkbox"]');
+            const values = {};
+            inputs.forEach(input => {
+                values[input.id] = input.checked;
+            });
+            return values;
+        },
+
+        generateHypothesis() {
+            const values = this.getFormValues();
+            let html = '';
+
+            // Red Flag Check
+            if (values.rf_ces || values.rf_cancer || values.rf_infection || values.rf_fracture || values.rf_inflammatory || values.rf_nightpain) {
+                html += `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg mb-6" role="alert">
+                      <p class="font-bold text-lg">¡ALERTA DE BANDERA ROJA!</p>
+                      <p>Los hallazgos seleccionados sugieren una posible patología grave. Se requiere una evaluación cuidadosa y una posible derivación médica urgente.</p>
+                    </div>
+                `;
+            }
+
+            // Pattern Logic
+            const patterns = [];
+            if (values.symptom_dermatomal || values.symptom_leg_pain || values.symptom_paresthesia) {
+                patterns.push('radiculopathy');
+            }
+            if (values.symptom_walking_worse && values.symptom_sitting_better && values.symptom_age_over_48) {
+                patterns.push('stenosis');
+            }
+            if (values.symptom_centralization || values.symptom_flexion_worse || values.symptom_list) {
+                patterns.push('mechanical_disc');
+            }
+            if (values.yf_fear || values.yf_catastrophizing || values.yf_depression || values.yf_start_risk) {
+                patterns.push('psychosocial');
+            }
+            if (patterns.length === 0) {
+                 patterns.push('non_specific');
+            }
+
+            if (patterns.includes('radiculopathy')) {
+                html += this.getHypothesisCard({
+                    title: 'Radiculopatía Lumbar / Hernia Discal',
+                    icon: 'fa-bolt',
+                    color: 'sky',
+                    icf: 'Dolor con dolor irradiado (DPNI) / Dolor con dolor referido a la extremidad inferior (DPNEI)',
+                    tests: [
+                        { name: 'Examen Neurológico Completo', detail: 'Evaluar fuerza (MMT), sensibilidad (tacto ligero, agudo/romo) y reflejos (rotuliano, aquíleo).' },
+                        { name: 'SLR (Elevación Pierna Recta)', detail: 'Sens: ~91%, Espec: ~26%. Útil para descartar (SpIN). OR: 3.9' },
+                        { name: 'Crossed SLR', detail: 'Sens: ~29%, Espec: ~88%. Muy útil para confirmar (SnOUT).' },
+                        { name: 'Slump Test', detail: 'Prueba de tensión neural provocativa.' },
+                    ]
+                });
+            }
+            
+            if (patterns.includes('stenosis')) {
+                html += this.getHypothesisCard({
+                    title: 'Estenosis Espinal Lumbar',
+                    icon: 'fa-person-walking',
+                    color: 'amber',
+                    icf: 'Dolor con dolor referido a la extremidad inferior (DPNEI)',
+                    tests: [
+                        { name: 'Cluster de Cook (5 ítems)', detail: '4/5 hallazgos positivos tienen un LR+ de 4.6. 0/5 hallazgos tienen un LR- de 0.19.' },
+                        { name: 'Prueba de la cinta de correr de dos etapas', detail: 'Evalúa la claudicación neurógena.' },
+                        { name: 'Evaluación de la marcha', detail: 'Observar postura, base de sustentación y distancia recorrida.' },
+                        { name: 'Examen de movimiento', detail: 'Buscar reproducción de síntomas con extensión y alivio con flexión.' },
+                    ]
+                });
+            }
+
+            if (patterns.includes('mechanical_disc')) {
+                html += this.getHypothesisCard({
+                    title: 'Dolor Lumbar Mecánico / Discogénico',
+                    icon: 'fa-sync-alt',
+                    color: 'teal',
+                    icf: 'Dolor con déficit de movilidad (DDM) / Dolor con deterioro del control del movimiento (DDCM)',
+                    tests: [
+                        { name: 'Movimientos Repetidos (MDT)', detail: 'Buscar centralización/periferalización. Centralización tiene Espec: 94%, LR+ 6.7.' },
+                        { name: 'Evaluación de Desviación Lateral (List)', detail: 'Intentar corrección manual y observar respuesta sintomática.' },
+                        { name: 'Prueba de Extensión Lumbar Pasiva', detail: 'Para inestabilidad. Sens: 84%, Espec: 90%, LR+ 8.78.' },
+                        { name: 'Pruebas de Resistencia Muscular', detail: 'Biering-Sorensen, Planchas. Para evaluar deterioro del control de movimiento.' },
+                    ]
+                });
+            }
+            
+            if (patterns.includes('psychosocial')) {
+                 html += this.getHypothesisCard({
+                    title: 'LBP con Factores Psicosociales / Sensibilización Central',
+                    icon: 'fa-brain',
+                    color: 'yellow',
+                    icf: 'Dolor con tendencias cognitivas o afectivas relacionadas (DTCA)',
+                    tests: [
+                        { name: 'Cuestionarios Validados', detail: 'Confirmar con STarT Back, Örebro, FABQ, PHQ-9.' },
+                        { name: 'Examen Sensorial Cuantitativo (QST)', detail: 'Evaluar alodinia, hiperalgesia, umbrales de dolor a la presión.' },
+                        { name: 'Pruebas de Rendimiento Físico', detail: '6MWT, TUG, Sit-to-stand. Miden el impacto funcional y la evitación del movimiento.' },
+                    ]
+                });
+            }
+            
+            if (patterns.includes('non_specific')) {
+                 html += this.getHypothesisCard({
+                    title: 'Dolor Lumbar No Específico',
+                    icon: 'fa-question-circle',
+                    color: 'slate',
+                    icf: 'Dolor con déficit de movilidad (DDM) / Dolor con deterioro del control del movimiento (DDCM)',
+                    tests: [
+                        { name: 'Examen de Movimiento Completo', detail: 'Evaluar AROM, PROM, y movimientos accesorios (PAIVMs) para encontrar el signo concordante.' },
+                        { name: 'Palpación', detail: 'Identificar áreas de sensibilidad, espasmo muscular o puntos gatillo.' },
+                        { name: 'Pruebas de Rendimiento Físico', detail: 'Evaluar la capacidad funcional global del paciente.' },
+                    ]
+                });
+            }
+            
+            this.containers.hypothesis.innerHTML = html;
+        },
+
+        getHypothesisCard({title, icon, color, icf, tests}) {
+            let testHtml = tests.map(test => `
+                <li class="flex items-start">
+                    <i class="fas fa-flask text-${color}-500 mt-1 mr-3"></i>
+                    <div>
+                        <strong class="text-slate-700">${test.name}:</strong>
+                        <p class="text-sm text-slate-600">${test.detail}</p>
+                    </div>
+                </li>
+            `).join('');
+
+            return `
+                <div class="bg-white border border-${color}-200 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 bg-${color}-50 border-b border-${color}-200">
+                        <h3 class="text-xl font-bold text-${color}-800 flex items-center"><i class="fas ${icon} mr-3"></i>Hipótesis: ${title}</h3>
+                        <p class="text-sm font-semibold text-${color}-700 mt-1">Clasificación CIF Sugerida: ${icf}</p>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-slate-800 mb-2">Plan de Examen Objetivo Priorizado:</h4>
+                        <ul class="space-y-3">${testHtml}</ul>
+                    </div>
+                </div>
+            `;
+        },
+
+        generateTreatmentPlan() {
+            const values = this.getFormValues();
+            let html = '';
+            
+            // This is a simplified logic. A real app would have more complex state management.
+            // We'll generate sections for the most likely patterns based on step 1.
+            const patterns = [];
+            if (values.symptom_dermatomal || values.symptom_leg_pain) patterns.push('radiculopathy');
+            if (values.symptom_walking_worse && values.symptom_age_over_48) patterns.push('stenosis');
+            if (values.symptom_centralization) patterns.push('mechanical_mdt');
+            if (values.yf_fear || values.yf_start_risk || values.symptom_chronic) patterns.push('psychosocial');
+            if (patterns.length === 0) patterns.push('non_specific');
+
+            html += this.getTreatmentCard({
+                title: 'Fundamentos del Tratamiento (Aplicable a la mayoría de los casos)',
+                icon: 'fa-cogs',
+                color: 'slate',
+                interventions: [
+                    { name: 'Educación Activa', grade: 'b', detail: 'Informar sobre la naturaleza benigna del LBP, la importancia de mantenerse activo, y estrategias de autogestión. Evitar lenguaje alarmista.' },
+                    { name: 'Ejercicio General y Aeróbico', grade: 'a', detail: 'Promover la actividad física general (caminar, etc.) para mejorar la función y reducir el miedo. Los tratamientos activos son superiores a los pasivos.' },
+                ]
+            });
+            
+            if (patterns.includes('mechanical_mdt')) {
+                 html += this.getTreatmentCard({
+                    title: 'Tratamiento para Pacientes con Centralización (Clasificación MDT / TBC)',
+                    icon: 'fa-sync-alt',
+                    color: 'teal',
+                    interventions: [
+                        { name: 'Ejercicio Terapéutico', grade: 'b', detail: 'Ejercicios de preferencia direccional (extensión o flexión) basados en la respuesta sintomática. (Grado B para crónico, C para agudo).' },
+                        { name: 'Terapia Manual', grade: 'a', detail: 'Movilización/manipulación articular para modular el dolor y mejorar la movilidad, facilitando los ejercicios direccionales.' },
+                    ]
+                });
+            }
+            
+            if (patterns.includes('radiculopathy')) {
+                 html += this.getTreatmentCard({
+                    title: 'Tratamiento para Dolor con Irradiación / Radiculopatía',
+                    icon: 'fa-bolt',
+                    color: 'sky',
+                    interventions: [
+                        { name: 'Ejercicio Terapéutico', grade: 'b', detail: 'Fortalecimiento y activación del tronco y ejercicios de control motor para mejorar el soporte espinal.' },
+                        { name: 'Terapia Manual y Dirigida', grade: 'b', detail: 'Movilización neural para mejorar la mecanosensibilidad del nervio. Movilización articular como adyuvante.' },
+                        { name: 'Educación', grade: 'a', detail: 'Educación en Neurociencia del Dolor (PNE) para reconceptualizar el dolor, especialmente en casos crónicos.' },
+                        { name: '¡NO USAR!', grade: 'd', detail: 'La tracción mecánica ha demostrado falta de beneficio cuando se añade a otras intervenciones.' },
+                    ]
+                });
+            }
+            
+            if (patterns.includes('stenosis')) {
+                 html += this.getTreatmentCard({
+                    title: 'Tratamiento para Estenosis Espinal Sintomática',
+                    icon: 'fa-person-walking',
+                    color: 'amber',
+                    interventions: [
+                        { name: 'Ejercicio Terapéutico', grade: 'a', detail: 'Ejercicio general, aeróbico, y en flexión para aumentar el espacio foraminal. El ejercicio acuático es una excelente opción. (Grado A para adultos mayores).' },
+                        { name: 'Terapia Manual', grade: 'b', detail: 'Movilización de la columna lumbar y de la cadera para mejorar la movilidad global y reducir la carga en los segmentos estenóticos.' },
+                        { name: 'Educación', grade: 'b', detail: 'Estrategias de modificación de la actividad y posturas para evitar la extensión prolongada (p. ej., usar un carrito de la compra).' },
+                    ]
+                });
+            }
+
+            if (patterns.includes('psychosocial')) {
+                 html += this.getTreatmentCard({
+                    title: 'Tratamiento para LBP Crónico con Factores Psicosociales',
+                    icon: 'fa-brain',
+                    color: 'yellow',
+                    interventions: [
+                        { name: 'Educación (Piedra Angular)', grade: 'a', detail: 'Educación en Neurociencia del Dolor (PNE) para cambiar creencias y reducir el miedo. Siempre combinada con tratamiento activo.' },
+                        { name: 'Ejercicio Terapéutico', grade: 'a', detail: 'Enfoque en la función, no en el dolor. Exposición gradual al movimiento. Yoga, Pilates, y fortalecimiento general son efectivos.' },
+                        { name: 'Terapia Manual', grade: 'a', detail: 'Utilizar como adyuvante para modular el dolor a corto plazo, abrir "ventanas de oportunidad" para el movimiento y generar una experiencia positiva.' },
+                        { name: 'Otras Terapias', grade: 'c', detail: 'La punción seca puede considerarse como un adyuvante para el dolor muscular localizado.' },
+                    ]
+                });
+            }
+
+            this.containers.treatment.innerHTML = html;
+        },
+
+        getTreatmentCard({title, icon, color, interventions}) {
+             let interventionHtml = interventions.map(int => `
+                <li class="flex items-start mb-3">
+                     <span class="evidence-grade grade-${int.grade.toLowerCase()} mr-3 mt-1">${int.grade.toUpperCase()}</span>
+                    <div>
+                        <strong class="text-slate-700">${int.name}:</strong>
+                        <p class="text-sm text-slate-600">${int.detail}</p>
+                    </div>
+                </li>
+            `).join('');
+            
+            return `
+                <div class="bg-white border border-slate-200 rounded-lg shadow-md">
+                     <div class="p-4 bg-${color}-50 border-b border-${color}-200">
+                        <h3 class="text-xl font-bold text-${color}-800 flex items-center"><i class="fas ${icon} mr-3"></i>${title}</h3>
+                    </div>
+                    <div class="p-4">
+                        <ul class="space-y-2">${interventionHtml}</ul>
+                    </div>
+                </div>
+            `;
+        }
+    };
+
+    wizard.init();
+});
+</script>
+
+</body>
+</html>
