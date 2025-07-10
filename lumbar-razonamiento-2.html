@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control Clínico Avanzado para Dolor Lumbar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-a: #16a34a; /* Green-600 */
+            --color-b: #f59e0b; /* Amber-500 */
+            --color-c: #ea580c; /* Orange-600 */
+            --color-d: #dc2626; /* Red-600 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* slate-100 */
+        }
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (min-width: 1536px) {
+            .main-grid {
+                grid-template-columns: 45% 55%;
+            }
+        }
+        .dynamic-card {
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-origin: top;
+        }
+        .card-enter {
+            transform: scaleY(0.8) translateY(-20px);
+            opacity: 0;
+            max-height: 0;
+        }
+        .card-enter-active {
+            transform: scaleY(1) translateY(0);
+            opacity: 1;
+            max-height: 5000px; /* Increased max-height */
+        }
+        .evidence-grade {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+        }
+        .grade-a { background-color: var(--color-a); }
+        .grade-b { background-color: var(--color-b); }
+        .grade-c { background-color: var(--color-c); }
+        .grade-d { background-color: var(--color-d); }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            border-bottom: 1px dotted #64748b;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 320px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: left;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 10;
+            bottom: 135%;
+            left: 50%;
+            margin-left: -160px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            font-weight: normal;
+            line-height: 1.5;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .checkbox-label, .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            border: 1px solid #e2e8f0;
+            background-color: white;
+        }
+        .checkbox-label:hover, .radio-label:hover {
+            background-color: #f8fafc;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05);
+        }
+        .checkbox-label input[type="checkbox"], .radio-label input[type="radio"] {
+            margin-right: 0.75rem;
+            height: 1.15rem;
+            width: 1.15rem;
+            flex-shrink: 0;
+        }
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid #cbd5e1;
+        }
+        .control-panel-section {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .radio-group label {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            margin-left: 0.5rem;
+        }
+        .radio-group input {
+            margin-right: 0.25rem;
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details > summary::before {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 0.75rem;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        details[open] > summary::before {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">Panel de Control Clínico Avanzado</h1>
+            <p class="text-slate-600 mt-2 text-xl">Herramienta de Asistencia al Razonamiento Clínico para Dolor Lumbar</p>
+        </header>
+
+        <main class="main-grid gap-8">
+            <!-- Column 1: Control Panel -->
+            <div id="control-panel" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="section-title flex items-center !mb-0 !pb-0 !border-b-0"><i class="fas fa-tasks mr-3 text-indigo-600"></i>Panel de Hallazgos</h2>
+                    <button id="reset-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <i class="fas fa-undo mr-2"></i>Reiniciar
+                    </button>
+                </div>
+                <form id="clinical-form">
+                    <!-- Subjective Evaluation -->
+                    <div class="control-panel-section mb-6">
+                        <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center"><i class="fas fa-user-edit mr-2"></i>Evaluación Subjetiva</h3>
+                        <div class="space-y-4">
+                            <details class="bg-red-50 border border-red-200 p-3 rounded-lg">
+                                <summary class="font-bold text-red-700 cursor-pointer">Banderas Rojas (¡ALERTA!)</summary>
+                                <div class="space-y-3 mt-3">
+                                    <label class="checkbox-label"><input type="checkbox" id="rf_ces" class="form-checkbox text-red-600">Pérdida de control de esfínteres / Anestesia en silla de montar (Sínd. Cola de Caballo)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="rf_cancer" class="form-checkbox text-red-600">Historia de cáncer / Pérdida de peso inexplicada / Edad > 50 / Dolor nocturno constante</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="rf_infection" class="form-checkbox text-red-600">Fiebre / Uso de drogas IV / Infección reciente (Urinaria, Piel)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="rf_fracture" class="form-checkbox text-red-600">Trauma mayor / Uso prolongado de corticoides / Edad > 70</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="rf_inflammatory" class="form-checkbox text-red-600">Rigidez matutina > 30 min / Mejora con ejercicio / Dolor nocturno / Edad < 40 (Espondiloartritis)</label>
+                                </div>
+                            </details>
+                            <details open class="p-3 rounded-lg border bg-white">
+                                <summary class="font-bold text-slate-700 cursor-pointer">Características del Dolor y Síntomas</summary>
+                                <div class="space-y-3 mt-3">
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_centralization" class="form-checkbox text-indigo-600">Se centraliza con movimientos repetidos</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_flexion_worse" class="form-checkbox text-indigo-600">Empeora con flexión / al sentarse</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_extension_worse" class="form-checkbox text-indigo-600">Empeora con extensión / al estar de pie</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_leg_pain" class="form-checkbox text-indigo-600">Dolor en la pierna presente</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_dermatomal" class="form-checkbox text-indigo-600">Dolor sigue un patrón dermatomal claro</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_leg_pain_worse" class="form-checkbox text-indigo-600">Dolor en la pierna > dolor lumbar</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_paresthesia" class="form-checkbox text-indigo-600">Parestesias / Adormecimiento en la pierna</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="symptom_chronic" class="form-checkbox text-indigo-600">Síntomas > 12 semanas (Crónico)</label>
+                                </div>
+                            </details>
+                            <details class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                                <summary class="font-bold text-yellow-700 cursor-pointer">Factores Psicosociales (Banderas Amarillas)</summary>
+                                <div class="space-y-3 mt-3">
+                                    <label class="checkbox-label"><input type="checkbox" id="yf_fear" class="form-checkbox text-yellow-600">Miedo al movimiento / Kinesiofobia (ej. FABQ alto)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="yf_catastrophizing" class="form-checkbox text-yellow-600">Catastrofismo / Bajas expectativas de recuperación</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="yf_depression" class="form-checkbox text-yellow-600">Síntomas de depresión / ansiedad (p.ej., PHQ-2 ≥ 3)</label>
+                                    <label class="checkbox-label"><input type="checkbox" id="yf_start_risk" class="form-checkbox text-yellow-600">Riesgo medio/alto en STarT Back Tool</label>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                    <!-- Objective Evaluation -->
+                    <div class="control-panel-section">
+                        <h3 class="text-xl font-bold text-slate-700 mb-4 flex items-center"><i class="fas fa-ruler-combined mr-2"></i>Evaluación Objetiva</h3>
+                        <div class="space-y-4">
+                            <details class="p-3 rounded-lg border bg-white">
+                                <summary class="font-bold text-slate-700 cursor-pointer">Pruebas Neurológicas y de Tensión Neural</summary>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                    <div class="radio-label justify-between"><span>SLR</span> <div class="radio-group"><label><input type="radio" name="test_slr" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_slr" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Crossed SLR</span> <div class="radio-group"><label><input type="radio" name="test_crossed_slr" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_crossed_slr" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Slump Test</span> <div class="radio-group"><label><input type="radio" name="test_slump" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_slump" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Prueba Tensión Nervio Femoral</span> <div class="radio-group"><label><input type="radio" name="test_femoral_nerve" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_femoral_nerve" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Déficit de Fuerza (MMT)</span> <div class="radio-group"><label><input type="radio" name="test_mmt" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_mmt" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Déficit de Reflejos</span> <div class="radio-group"><label><input type="radio" name="test_reflex" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_reflex" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                </div>
+                            </details>
+                             <details class="p-3 rounded-lg border bg-white">
+                                <summary class="font-bold text-slate-700 cursor-pointer">Pruebas de Inestabilidad y Provocación Sacroilíaca</summary>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                    <div class="radio-label justify-between"><span>Extensión Lumbar Pasiva</span> <div class="radio-group"><label><input type="radio" name="test_ple" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_ple" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Prueba de la Cigüeña</span> <div class="radio-group"><label><input type="radio" name="test_stork" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_stork" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Thigh Thrust</span> <div class="radio-group"><label><input type="radio" name="test_thigh_thrust" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_thigh_thrust" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Gaenslen Test</span> <div class="radio-group"><label><input type="radio" name="test_gaenslen" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_gaenslen" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Compresión SIJ</span> <div class="radio-group"><label><input type="radio" name="test_sij_compression" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_sij_compression" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                    <div class="radio-label justify-between"><span>Distracción SIJ</span> <div class="radio-group"><label><input type="radio" name="test_sij_distraction" value="pos" class="form-radio text-indigo-600"> +</label><label><input type="radio" name="test_sij_distraction" value="neg" class="form-radio text-indigo-600" checked> -</label></div></div>
+                                </div>
+                            </details>
+                            <details class="p-3 rounded-lg border bg-white">
+                                <summary class="font-bold text-slate-700 cursor-pointer">Evaluación de Movimiento, Palpación y Articulaciones Aledañas</summary>
+                                <div class="space-y-4 mt-3">
+                                    <div>
+                                        <h4 class="font-semibold text-slate-600 mb-2">Rango de Movimiento Activo (AROM) Lumbar</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div class="radio-label justify-between"><span>Flexión</span> <div class="radio-group"><label><input type="radio" name="rom_flexion" value="limitado" class="form-radio text-indigo-600"> Lim.</label><label><input type="radio" name="rom_flexion" value="doloroso" class="form-radio text-indigo-600"> Dolor</label><label><input type="radio" name="rom_flexion" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                            <div class="radio-label justify-between"><span>Extensión</span> <div class="radio-group"><label><input type="radio" name="rom_extension" value="limitado" class="form-radio text-indigo-600"> Lim.</label><label><input type="radio" name="rom_extension" value="doloroso" class="form-radio text-indigo-600"> Dolor</label><label><input type="radio" name="rom_extension" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                            <label class="checkbox-label md:col-span-2"><input type="checkbox" id="test_aberrant" class="form-checkbox text-indigo-600">Movimientos Aberrantes presentes</label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-600 mb-2">Hallazgos a la Palpación</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <label class="checkbox-label"><input type="checkbox" id="palp_spinous" class="form-checkbox text-indigo-600">Sensibilidad en apófisis espinosas</label>
+                                            <label class="checkbox-label"><input type="checkbox" id="palp_paraspinal" class="form-checkbox text-indigo-600">Hipertonía paravertebral</label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-600 mb-2">Evaluación de Caderas y Zona Torácica</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div class="radio-label justify-between"><span>Flexión Cadera</span> <div class="radio-group"><label><input type="radio" name="hip_flexion" value="limitado" class="form-radio text-indigo-600"> Lim.</label><label><input type="radio" name="hip_flexion" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                            <div class="radio-label justify-between"><span>Rot. Int. Cadera</span> <div class="radio-group"><label><input type="radio" name="hip_ir" value="limitado" class="form-radio text-indigo-600"> Lim.</label><label><input type="radio" name="hip_ir" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                            <div class="radio-label justify-between"><span>Rotación Torácica</span> <div class="radio-group"><label><input type="radio" name="thoracic_rotation" value="limitado" class="form-radio text-indigo-600"> Lim.</label><label><input type="radio" name="thoracic_rotation" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-slate-600 mb-2">Evaluación de Fuerza Específica</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                             <div class="radio-label justify-between"><span>Glúteo Medio</span> <div class="radio-group"><label><input type="radio" name="strength_glutmed" value="debil" class="form-radio text-indigo-600"> Débil</label><label><input type="radio" name="strength_glutmed" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                             <div class="radio-label justify-between"><span>Glúteo Mayor</span> <div class="radio-group"><label><input type="radio" name="strength_glutmax" value="debil" class="form-radio text-indigo-600"> Débil</label><label><input type="radio" name="strength_glutmax" value="normal" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                            <details class="p-3 rounded-lg border bg-white">
+                                <summary class="font-bold text-slate-700 cursor-pointer">Pruebas de Resistencia y Rendimiento Físico</summary>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                    <div class="radio-label justify-between"><span>Test de Biering-Sorensen</span> <div class="radio-group"><label><input type="radio" name="test_sorensen" value="pos" class="form-radio text-indigo-600"> Déficit</label><label><input type="radio" name="test_sorensen" value="neg" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                    <div class="radio-label justify-between"><span>Test Resistencia Flexores</span> <div class="radio-group"><label><input type="radio" name="test_flexor_endurance" value="pos" class="form-radio text-indigo-600"> Déficit</label><label><input type="radio" name="test_flexor_endurance" value="neg" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                    <div class="radio-label justify-between"><span>Test Plancha Lateral</span> <div class="radio-group"><label><input type="radio" name="test_side_plank" value="pos" class="form-radio text-indigo-600"> Déficit</label><label><input type="radio" name="test_side_plank" value="neg" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                    <div class="radio-label justify-between"><span>5-Rep Sit-to-Stand</span> <div class="radio-group"><label><input type="radio" name="test_5x_sit_stand" value="pos" class="form-radio text-indigo-600"> Lento</label><label><input type="radio" name="test_5x_sit_stand" value="neg" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                    <div class="radio-label justify-between"><span>6-Minute Walk Test</span> <div class="radio-group"><label><input type="radio" name="test_6mwt" value="pos" class="form-radio text-indigo-600"> Reducido</label><label><input type="radio" name="test_6mwt" value="neg" class="form-radio text-indigo-600" checked> Normal</label></div></div>
+                                    <div class="radio-label justify-between"><span>Test del Calcetín</span> <div class="radio-group"><label><input type="radio" name="test_sock" value="pos" class="form-radio text-indigo-600"> Difícil</label><label><input type="radio" name="test_sock" value="neg" class="form-radio text-indigo-600" checked> Fácil</label></div></div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Column 2: Dynamic Output -->
+            <div id="reasoning-panel" class="space-y-8">
+                <div id="hypothesis-section">
+                    <h2 class="section-title flex items-center"><i class="fas fa-lightbulb mr-3 text-indigo-600"></i>Hipótesis Diagnósticas Probables</h2>
+                    <div id="hypothesis-container" class="space-y-4">
+                        <p class="text-slate-500 italic p-4 bg-white rounded-lg shadow-sm">Selecciona hallazgos para generar hipótesis. Las hipótesis se ordenarán por probabilidad según la evidencia seleccionada.</p>
+                    </div>
+                </div>
+                <div id="treatment-section">
+                    <h2 class="section-title flex items-center"><i class="fas fa-clipboard-list mr-3 text-indigo-600"></i>Guía de Tratamiento Personalizada</h2>
+                    <div id="treatment-container" class="space-y-4">
+                         <p class="text-slate-500 italic p-4 bg-white rounded-lg shadow-sm">Las recomendaciones de tratamiento aparecerán aquí basadas en las hipótesis activas y los hallazgos específicos.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DATABASE ---
+    const database = {
+        red_flag: {
+            title: '¡ALERTA DE BANDERA ROJA!',
+            icon: 'fa-triangle-exclamation',
+            color: 'red',
+            content: '<p class="font-bold text-lg">Posible Patología Grave</p><p>Los hallazgos seleccionados requieren una evaluación cuidadosa y una posible derivación médica urgente. Procede con precaución, realiza un screening neurológico y considera las pruebas de imagen.</p>',
+            treatments: [
+                { name: 'Acción Inmediata', grade: 'd', detail: 'NO INICIAR TRATAMIENTO DE FISIOTERAPIA. Derivar al médico especialista apropiado para descartar patología grave. Documentar exhaustivamente los hallazgos.' },
+            ]
+        },
+        radiculopathy: {
+            title: 'Dolor Lumbar con Dolor Irradiado (Radiculopatía)',
+            icon: 'fa-bolt',
+            color: 'sky',
+            icf: 'Dolor con dolor irradiado a la extremidad inferior',
+            tests: [
+                { name: 'Examen Neurológico Completo', detail: 'Evaluar fuerza (MMT), sensibilidad y reflejos (rotuliano L4, aquíleo S1).' },
+                { name: 'SLR, Crossed SLR, Slump Test', detail: 'Cluster de pruebas de tensión neural para confirmar la irritación de la raíz nerviosa.' },
+            ],
+            treatments: [
+                { name: 'Terapia Manual (Crónico)', grade: 'b', detail: 'Movilización neural para mejorar la mecanosensibilidad del nervio y movilización/manipulación articular como adyuvante.',
+                  progression: [
+                      {stage: 'Básico', detail: 'Deslizadores neurales (sliders) del nervio ciático en rango libre de dolor.'},
+                      {stage: 'Intermedio', detail: 'Tensionadores neurales (tensioners) suaves al final del rango.'},
+                      {stage: 'Avanzado', detail: 'Movilizaciones neurales combinadas con movimiento de otras articulaciones (ej. Slump en sedestación).'}
+                  ]},
+                { name: 'Educación (Crónico)', grade: 'a', detail: 'Educación en Neurociencia del Dolor (PNE) para reconceptualizar el dolor, combinada con terapia activa.' },
+                { name: 'Tracción Mecánica', grade: 'd', detail: 'NO USAR. Las guías de 2021 indican falta de beneficio cuando se añade a otras intervenciones en dolor crónico con radiculopatía.' },
+            ]
+        },
+        stenosis: {
+            title: 'Dolor Lumbar con Dolor Referido (Estenosis Espinal)',
+            icon: 'fa-person-walking-arrow-right',
+            color: 'amber',
+            icf: 'Dolor con dolor referido a la extremidad inferior',
+            tests: [
+                { name: 'Cluster de 5 ítems de Cook', detail: 'Evaluar: 1. Síntomas bilaterales, 2. Dolor pierna > espalda, 3. Dolor al caminar/estar de pie, 4. Alivio al sentarse, 5. Edad > 48. 4/5 hallazgos tienen un LR+ de 4.6.' },
+                { name: 'Prueba de la cinta de correr de dos etapas', detail: 'Evalúa la claudicación neurógena vs vascular.' },
+            ],
+            treatments: [
+                { name: 'Ejercicio Terapéutico (Adultos Mayores)', grade: 'a', detail: 'Ejercicio general (aeróbico, acuático) y en flexión para aumentar el espacio foraminal.',
+                  progression: [
+                      {stage: 'Básico', detail: 'Flexión de rodillas al pecho en supino, de forma individual y bilateral.'},
+                      {stage: 'Intermedio', detail: 'Bicicleta estática con el tronco ligeramente flexionado.'},
+                      {stage: 'Avanzado', detail: 'Caminata en cinta con inclinación para favorecer la flexión lumbar.'}
+                  ]},
+                { name: 'Terapia Manual', grade: 'b', detail: 'Movilización de la columna lumbar y de la cadera para mejorar la movilidad global y reducir la carga en los segmentos estenóticos.' },
+                { name: 'Educación', grade: 'b', detail: 'Estrategias de modificación de la actividad y posturas para evitar la extensión prolongada (p. ej., usar un carrito de la compra, sentarse en intervalos).' },
+            ]
+        },
+        mechanical_mdt: {
+            title: 'Dolor Lumbar con Déficit de Movilidad (TBC/MDT)',
+            icon: 'fa-arrows-up-down',
+            color: 'teal',
+            icf: 'Dolor con déficit de movilidad',
+            tests: [
+                { name: 'Movimientos Repetidos (MDT)', detail: 'Buscar centralización/periferalización. La centralización tiene una Espec: 94%, LR+ 6.7.' },
+                { name: 'Evaluación de AROM', detail: 'Identificar la dirección de movimiento limitada y/o dolorosa.' },
+            ],
+            treatments: [
+                { name: 'Terapia Manual (Agudo y Crónico)', grade: 'a', detail: 'Movilización/manipulación articular para modular el dolor y mejorar la movilidad, especialmente en agudo.' },
+                { name: 'Ejercicio de Preferencia Direccional', grade: 'b', detail: 'Ejercicios (extensión o flexión) basados en la respuesta sintomática de centralización.',
+                  progression: [
+                      {stage: 'Básico', detail: 'Extensión en prono sobre codos (press-up).'},
+                      {stage: 'Intermedio', detail: 'Extensión en prono con sobrepresión del terapeuta o auto-sobrepresión.'},
+                      {stage: 'Avanzado', detail: 'Extensión de pie contra la pared o sin apoyo.'}
+                  ]},
+            ]
+        },
+        mechanical_control: {
+            title: 'Dolor Lumbar con Deterioro del Control Motor (TBC)',
+            icon: 'fa-cogs',
+            color: 'cyan',
+            icf: 'Dolor con deterioro del control del movimiento',
+            tests: [
+                { name: 'Pruebas de Resistencia Muscular', detail: 'Déficit en Biering-Sorensen, Planchas (flexores, laterales). Ratio flex/ext < 1.0 es deseable.' },
+                { name: 'Observación del Movimiento', detail: 'Buscar movimientos aberrantes durante la flexo-extensión del tronco.' },
+                { name: 'Evaluación de Articulaciones Aledañas', detail: 'Déficits de movilidad en caderas o columna torácica pueden contribuir a este patrón.'}
+            ],
+            treatments: [
+                 { name: 'Ejercicio de Control Motor y Activación', grade: 'a', detail: 'Ejercicios de activación muscular específica (transverso, multífidos) y reentrenamiento del control motor para pacientes con dolor crónico y DDCM.',
+                   progression: [
+                      {stage: 'Básico', detail: 'Contracción isométrica del transverso ("meter ombligo") en supino, progresando a "Dead bug" con control.'},
+                      {stage: 'Intermedio', detail: 'Puente de glúteos y "Bird-dog", enfocando en la disociación lumbopélvica.'},
+                      {stage: 'Avanzado', detail: 'Sentadillas y peso muerto con poca carga, enfocando en la técnica y el control del movimiento lumbar.'}
+                  ]},
+                 { name: 'Terapia Manual', grade: 'b', detail: 'Utilizar para modular el dolor y tratar hipomovilidades en segmentos adyacentes (torácica, caderas) que contribuyan al mal control lumbar.' },
+                 { name: 'Punción Seca', grade: 'c', detail: 'Puede considerarse en conjunto con otras terapias para reducir el dolor y la discapacidad a corto plazo en dolor crónico.'}
+            ]
+        },
+        sij_dysfunction: {
+            title: 'Disfunción de la Articulación Sacroilíaca',
+            icon: 'fa-bone',
+            color: 'purple',
+            icf: 'Dolor con deterioro del control del movimiento',
+            tests: [
+                { name: 'Cluster de Provocación de Laslett', detail: '3 o más pruebas positivas (Thigh Thrust, Compresión, Distracción, Gaenslen, Sacral Thrust) tienen alta especificidad para dolor de origen sacroilíaco.' },
+                { name: 'Palpación', detail: 'Dolor localizado sobre la articulación sacroilíaca.'}
+            ],
+            treatments: [
+                 { name: 'Terapia Manual para SIJ', grade: 'b', detail: 'Técnicas de movilización o manipulación dirigidas a la articulación sacroilíaca para restaurar la mecánica y modular el dolor.'},
+                 { name: 'Ejercicio de Estabilización Pélvica', grade: 'b', detail: 'Fortalecimiento de glúteos, transverso del abdomen y suelo pélvico para dar estabilidad a la cintura pélvica.',
+                   progression: [
+                      {stage: 'Básico', detail: 'Activación de glúteo medio en decúbito lateral ("clamshells").'},
+                      {stage: 'Intermedio', detail: 'Puentes de glúteos con banda elástica en las rodillas.'},
+                      {stage: 'Avanzado', detail: 'Sentadillas monopodal (pistol squats) con control pélvico.'}
+                  ]},
+            ]
+        },
+        psychosocial: {
+            title: 'Dolor Lumbar con Factores Cognitivos/Afectivos',
+            icon: 'fa-brain',
+            color: 'yellow',
+            icf: 'Dolor con tendencias cognitivas o afectivas relacionadas',
+            tests: [
+                { name: 'Cuestionarios Validados', detail: 'Confirmar con STarT Back, Örebro, FABQ, PHQ-9, Escala de Catastrofismo.' },
+                { name: 'Examen Sensorial Cuantitativo (QST)', detail: 'Evaluar alodinia, hiperalgesia, umbrales de dolor a la presión para posible sensibilización central.' },
+            ],
+            treatments: [
+                { name: 'Educación en Neurociencia del Dolor (PNE)', grade: 'a', detail: 'Piedra angular del tratamiento. Cambiar creencias y reducir el miedo. SIEMPRE combinada con tratamiento activo.' },
+                { name: 'Ejercicio Terapéutico con Exposición Gradual', grade: 'a', detail: 'Enfoque en la función, no en el dolor. Yoga, Pilates, y fortalecimiento general son efectivos.',
+                  progression: [
+                      {stage: 'Básico', detail: 'Movimientos suaves y controlados en rangos cómodos para generar confianza (ej. Cat-Camel).'},
+                      {stage: 'Intermedio', detail: 'Introducir actividades funcionales temidas (ej. agacharse) de forma controlada y sin dolor.'},
+                      {stage: 'Avanzado', detail: 'Incrementar la carga, velocidad y complejidad de las actividades funcionales, reforzando la capacidad del cuerpo.'}
+                  ]},
+                { name: 'Terapia Manual', grade: 'b', detail: 'Utilizar como adyuvante para modular el dolor a corto plazo, abrir "ventanas de oportunidad" para el movimiento y generar una experiencia táctil positiva.' },
+            ]
+        },
+        non_specific: {
+            title: 'Dolor Lumbar Inespecífico',
+            icon: 'fa-question-circle',
+            color: 'slate',
+            icf: 'Dolor con déficit de movilidad o con deterioro del control del movimiento',
+            tests: [
+                { name: 'Examen de Movimiento Completo', detail: 'Evaluar AROM, PROM, y movimientos accesorios (PAIVMs) para encontrar el signo concordante.' },
+                { name: 'Palpación', detail: 'Identificar áreas de sensibilidad, espasmo muscular o puntos gatillo.' },
+            ],
+            treatments: [
+                { name: 'Ejercicio Terapéutico (Multimodal)', grade: 'a', detail: 'Un enfoque multimodal es clave: fortalecimiento, aeróbico, flexibilidad. Ningún tipo de ejercicio ha demostrado ser superior a otro.',
+                  progression: [
+                      {stage: 'Básico', detail: 'Ejercicios de movilidad como "Cat-Camel" y rotaciones de tronco suaves.'},
+                      {stage: 'Intermedio', detail: 'Fortalecimiento general: puentes de glúteos, planchas isométricas, remos con banda.'},
+                      {stage: 'Avanzado', detail: 'Integrar en actividades funcionales: sentadillas, levantamiento de objetos con técnica correcta, ejercicio aeróbico (caminata, natación).'}
+                  ]},
+                { name: 'Terapia Manual', grade: 'a', detail: 'Movilización/manipulación para el alivio del dolor a corto plazo y mejora de la movilidad en dolor agudo.' },
+                { name: 'Educación Activa', grade: 'b', detail: 'Fomentar la autogestión, el mantenimiento de la actividad física y explicar el pronóstico favorable.' },
+            ]
+        }
+    };
+    
+    // Rationale database to link specific findings to treatment justifications
+    const rationaleDB = {
+        'symptom_centralization': 'La centralización es un fuerte indicador pronóstico positivo. El tratamiento debe enfocarse en el movimiento que centraliza los síntomas para reducir y abolir el dolor.',
+        'symptom_flexion_worse': 'El empeoramiento con la flexión sugiere una sensibilidad de las estructuras posteriores o un componente discogénico. El tratamiento debe evitar la flexión repetida inicialmente y favorecer posiciones neutras o de extensión.',
+        'symptom_extension_worse': 'El empeoramiento con la extensión apunta hacia una estenosis foraminal o una artropatía facetaria. El tratamiento debe priorizar ejercicios y posturas en flexión para aumentar el espacio disponible para las raíces nerviosas.',
+        'symptom_leg_pain': 'La presencia de dolor en la pierna justifica una investigación exhaustiva de la implicación de la raíz nerviosa a través de pruebas de tensión neural y un examen neurológico.',
+        'yf_fear': 'La kinesiofobia es una barrera importante para la recuperación. Es crucial usar Educación en Neurociencia del Dolor (PNE) y exposición gradual al movimiento para reducir el miedo y restaurar la confianza.',
+        'yf_catastrophizing': 'El catastrofismo influye negativamente en el dolor y la discapacidad. El enfoque debe ser cognitivo-conductual, re-enfocando en la capacidad funcional y no solo en la eliminación del dolor.',
+        'test_slr_pos': 'Un SLR positivo confirma la mecanosensibilidad del nervio ciático. El tratamiento debe incluir técnicas de movilización neural para mejorar la tolerancia del nervio al movimiento.',
+        'test_crossed_slr_pos': 'Un Crossed SLR positivo es altamente específico para una hernia discal. Esto refuerza la necesidad de evitar cargas compresivas y de flexión en la columna.',
+        'test_ple_pos': 'Una prueba de extensión lumbar pasiva positiva sugiere inestabilidad. Los ejercicios de estabilización del core son fundamentales para proveer soporte dinámico a la columna.',
+        'test_aberrant': 'Los movimientos aberrantes indican un pobre control motor. El tratamiento debe incluir re-entrenamiento neuromuscular para corregir estos patrones disfuncionales.',
+        'test_thigh_thrust_pos': 'Una prueba de Thigh Thrust positiva es un fuerte indicador de disfunción de la articulación sacroilíaca. El tratamiento debe incluir técnicas dirigidas a la SIJ.',
+        'hip_ir_limitado': 'La rotación interna de cadera limitada puede causar un estrés compensatorio en la columna lumbar durante actividades como la marcha o la sentadilla. Es clave incluir terapia manual y ejercicios de movilidad para la cadera.',
+        'thoracic_rotation_limitado': 'Una columna torácica hipomóvil obliga a la columna lumbar a compensar el movimiento de rotación. Mejorar la movilidad torácica puede reducir la carga lumbar.',
+        'strength_glutmed_debil': 'La debilidad del glúteo medio puede llevar a una inestabilidad pélvica (caída de la pelvis contralateral) durante la marcha, aumentando el estrés en la zona lumbar. El fortalecimiento es esencial.',
+        'strength_glutmax_debil': 'La debilidad del glúteo mayor compromete la capacidad de extensión de la cadera, lo que puede llevar a una hiperextensión lumbar compensatoria. El fortalecimiento de este músculo es crucial para una mecánica lumbopélvica saludable.',
+        'test_sorensen_pos': 'Un déficit en la resistencia de los extensores de la espalda es un factor de riesgo conocido para el dolor lumbar. El fortalecimiento de la cadena posterior es una prioridad.',
+        'palp_paraspinal': 'La hipertonía paravertebral detectada sugiere una sobrecarga muscular o una respuesta protectora. La terapia manual, como el masaje o la punción seca, puede ser eficaz para modular este tono y reducir el dolor local.'
+    };
+
+    // --- SCRIPT LOGIC ---
+    const form = document.getElementById('clinical-form');
+    const hypothesisContainer = document.getElementById('hypothesis-container');
+    const treatmentContainer = document.getElementById('treatment-container');
+    const resetButton = document.getElementById('reset-button');
+
+    form.addEventListener('change', updateReasoningPanel);
+    resetButton.addEventListener('click', () => {
+        form.reset();
+        updateReasoningPanel();
+    });
+
+    function getFormValues() {
+        const values = {};
+        form.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+            values[input.id] = true;
+        });
+        form.querySelectorAll('input[type="radio"]:checked').forEach(input => {
+            if (input.value !== 'normal' && input.value !== 'neg' && input.value !== 'facil') {
+                 values[`${input.name}_${input.value}`] = true;
+            }
+        });
+        return values;
+    }
+
+    function determineActivePatterns(values) {
+        const scores = {
+            radiculopathy: 0,
+            stenosis: 0,
+            mechanical_mdt: 0,
+            mechanical_control: 0,
+            sij_dysfunction: 0,
+            psychosocial: 0,
+        };
+
+        // Scoring Logic
+        if (values.symptom_leg_pain) scores.radiculopathy += 1;
+        if (values.symptom_dermatomal) scores.radiculopathy += 2;
+        if (values.test_slr_pos) scores.radiculopathy += 1;
+        if (values.test_crossed_slr_pos) scores.radiculopathy += 3; // High specificity
+        if (values.test_slump_pos) scores.radiculopathy += 1;
+        if (values.test_mmt_pos || values.test_reflex_pos) scores.radiculopathy += 2;
+
+        if (values.symptom_extension_worse) scores.stenosis += 1;
+        if (values.symptom_chronic) scores.stenosis += 1;
+        
+        if (values.symptom_centralization) scores.mechanical_mdt += 4; // Very strong indicator
+        if (values.rom_flexion_limitado || values.rom_flexion_doloroso) scores.mechanical_mdt += 1;
+        if (values.rom_extension_limitado || values.rom_extension_doloroso) scores.mechanical_mdt += 1;
+
+        if (values.test_aberrant) scores.mechanical_control += 2;
+        if (values.test_sorensen_pos || values.test_flexor_endurance_pos || values.test_side_plank_pos) scores.mechanical_control += 1;
+        if (values.hip_ir_limitado || values.thoracic_rotation_limitado) scores.mechanical_control += 1;
+        if (values.strength_glutmed_debil || values.strength_glutmax_debil) scores.mechanical_control += 1;
+        
+        const sij_cluster = (values.test_thigh_thrust_pos ? 1 : 0) + (values.test_sij_compression_pos ? 1 : 0) + (values.test_sij_distraction_pos ? 1 : 0) + (values.test_gaenslen_pos ? 1 : 0);
+        if(sij_cluster >= 3) scores.sij_dysfunction += 4; // Strong cluster
+
+        if (values.yf_fear || values.yf_catastrophizing || values.yf_depression) scores.psychosocial += 2;
+        
+        // Determine active patterns based on scores
+        const patterns = new Set();
+        if (values.rf_ces || values.rf_cancer || values.rf_infection || values.rf_fracture || values.rf_inflammatory) {
+            patterns.add('red_flag');
+            return Array.from(patterns);
+        }
+
+        // Convert scores to a sortable array
+        const sortedPatterns = Object.entries(scores)
+            .filter(([key, value]) => value > 0)
+            .sort(([, a], [, b]) => b - a)
+            .map(([key]) => key);
+        
+        sortedPatterns.forEach(pattern => patterns.add(pattern));
+        
+        // Add psychosocial if present, regardless of other patterns
+        if (scores.psychosocial > 0) {
+            patterns.add('psychosocial');
+        }
+
+        if (patterns.size === 0) {
+            patterns.add('non_specific');
+        }
+
+        return Array.from(patterns);
+    }
+    
+    function renderHypothesis(patterns) {
+        const placeholder = `<p class="text-slate-500 italic p-4 bg-white rounded-lg shadow-sm">Selecciona hallazgos para generar hipótesis. Las hipótesis se ordenarán por probabilidad según la evidencia seleccionada.</p>`;
+        if (patterns.length === 0 || (patterns.length === 1 && patterns[0] === 'non_specific')) {
+            hypothesisContainer.innerHTML = placeholder;
+            return;
+        }
+        
+        let html = patterns.map(patternKey => {
+            const data = database[patternKey];
+            if (!data) return '';
+            
+            if (patternKey === 'red_flag') {
+                 return `<div class="dynamic-card bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-r-lg shadow-lg" role="alert">
+                            <div class="flex">
+                                <div class="py-1"><i class="fas ${data.icon} fa-2x mr-4 text-red-500"></i></div>
+                                <div>${data.content}</div>
+                            </div>
+                         </div>`;
+            }
+
+            let testHtml = data.tests.map(test => `
+                <li class="flex items-start">
+                    <i class="fas fa-flask text-${data.color}-500 mt-1 mr-3"></i>
+                    <div class="tooltip text-slate-800 font-semibold">${test.name}<span class="tooltiptext">${test.detail}</span></div>
+                </li>
+            `).join('');
+
+            return `
+                <div class="dynamic-card bg-white border border-slate-200 rounded-lg shadow-md overflow-hidden">
+                    <div class="p-4 bg-${data.color}-50 border-b-2 border-${data.color}-200">
+                        <h3 class="text-lg font-bold text-${data.color}-800 flex items-center"><i class="fas ${data.icon} mr-3"></i>${data.title}</h3>
+                        <p class="text-sm font-semibold text-${data.color}-700 mt-1">Clasificación Sugerida (GPC): ${data.icf}</p>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-slate-800 mb-2">Pruebas Clave a Considerar:</h4>
+                        <ul class="space-y-2">${testHtml}</ul>
+                    </div>
+                </div>`;
+        }).join('');
+        
+        hypothesisContainer.innerHTML = html || placeholder;
+        animateCards(hypothesisContainer);
+    }
+    
+    function renderTreatment(patterns, formValues) {
+        const placeholder = `<p class="text-slate-500 italic p-4 bg-white rounded-lg shadow-sm">Las recomendaciones de tratamiento aparecerán aquí basadas en las hipótesis activas y los hallazgos específicos.</p>`;
+        if (patterns.length === 0) {
+            treatmentContainer.innerHTML = placeholder;
+            return;
+        }
+
+        let treatmentHtml = '';
+        
+        if (patterns.includes('red_flag')) {
+            treatmentContainer.innerHTML = getTreatmentCard(database.red_flag, formValues);
+            animateCards(treatmentContainer);
+            return;
+        }
+
+        const renderedTreatments = new Set();
+        patterns.forEach(patternKey => {
+            const data = database[patternKey];
+            if (data && data.treatments && !renderedTreatments.has(patternKey)) {
+                treatmentHtml += getTreatmentCard(data, formValues);
+                renderedTreatments.add(patternKey);
+            }
+        });
+
+        if (treatmentHtml === '') {
+             treatmentHtml = getTreatmentCard(database.non_specific, formValues);
+        }
+
+        treatmentContainer.innerHTML = treatmentHtml;
+        animateCards(treatmentContainer);
+    }
+    
+    function getTreatmentCard(data, formValues) {
+        if (!data.treatments) return '';
+
+        // Generate personalized rationale
+        let rationaleHtml = '';
+        const relevantRationales = new Set();
+
+        Object.keys(formValues).forEach(key => {
+            if (rationaleDB[key]) {
+                relevantRationales.add(rationaleDB[key]);
+            }
+        });
+        
+        if(relevantRationales.size > 0){
+             rationaleHtml = Array.from(relevantRationales).map(rationale => 
+                `<li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i><span>${rationale}</span></li>`
+             ).join('');
+        }
+
+
+        let interventionHtml = data.treatments.map(int => {
+            let progressionHtml = '';
+            if (int.progression && int.progression.length > 0) {
+                progressionHtml = `
+                    <ul class="mt-2 pl-5 list-disc space-y-1 text-sm text-slate-500">
+                        ${int.progression.map(prog => `<li><strong>${prog.stage}:</strong> ${prog.detail}</li>`).join('')}
+                    </ul>`;
+            }
+
+            return `
+            <li class="flex items-start mb-3">
+                 <div class="evidence-grade grade-${int.grade.toLowerCase()} mr-3 mt-1 flex-shrink-0" title="Grado de Evidencia (GPC 2021): ${int.grade.toUpperCase()}">${int.grade.toUpperCase()}</div>
+                <div class="w-full">
+                    <strong class="text-slate-800">${int.name}:</strong>
+                    <p class="text-sm text-slate-600">${int.detail}</p>
+                    ${progressionHtml}
+                </div>
+            </li>
+        `}).join('');
+        
+        const cardColor = data.color || 'slate';
+        return `
+            <div class="dynamic-card bg-white border border-slate-200 rounded-lg shadow-md">
+                 <div class="p-4 bg-${cardColor}-50 border-b-2 border-${cardColor}-200">
+                    <h3 class="text-lg font-bold text-${cardColor}-800 flex items-center"><i class="fas ${data.icon} mr-3"></i>Plan para: ${data.title}</h3>
+                </div>
+                <div class="p-4">
+                    <h4 class="font-bold text-slate-800 mb-2">Recomendaciones Generales:</h4>
+                    <ul class="space-y-2">${interventionHtml}</ul>
+                    ${rationaleHtml ? `
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <h4 class="font-bold text-slate-800 mb-2 flex items-center"><i class="fas fa-bullseye mr-2 text-indigo-500"></i>Análisis y Focos de Tratamiento Personalizados:</h4>
+                            <ul class="space-y-2 text-sm text-slate-700">${rationaleHtml}</ul>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>`;
+    }
+
+    function animateCards(container) {
+        const cards = container.querySelectorAll('.dynamic-card');
+        cards.forEach((card, index) => {
+            card.classList.add('card-enter');
+            setTimeout(() => {
+                card.classList.add('card-enter-active');
+            }, 50 * index);
+        });
+    }
+    
+    function updateReasoningPanel() {
+        const values = getFormValues();
+        const activePatterns = determineActivePatterns(values);
+        
+        renderHypothesis(activePatterns);
+        renderTreatment(activePatterns, values);
+    }
+
+    // Initial call to set the default state
+    updateReasoningPanel();
+});
+</script>
+
+</body>
+</html>
