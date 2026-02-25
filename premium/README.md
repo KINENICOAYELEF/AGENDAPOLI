@@ -39,7 +39,17 @@ El nuevo sistema opera estrictamente bajo el "Plan Spark" de coste $0. Para evit
     4. Editar el campo `role` borrando "INTERNO" y escribiendo exactamente `"DOCENTE"` (en mayúsculas).
     5. Recargar la página web. Tu interfaz cambiará automáticamente desbloqueando el menú rojo "Admin Docente".
 
-> Este método garantiza escalabilidad gratuita para administrar al equipo clínico limitando privilegios y protegiendo el panel del semestre de las Personas Usuarias.
+### IMPORTANTÍSIMO: Reglas de Seguridad de Firestore
+Para que este ecosistema funcione y proteja los datos en el plan de $0, es **obligatorio** configurar las reglas de seguridad dentro de tu servidor. 
+En este repositorio encontrarás el archivo `firestore.rules`. 
+Debes hacer lo siguiente:
+1. Ve a Firebase Console -> Firestore Database.
+2. Abre la pestaña **Rules** (Reglas).
+3. Borra todo el texto que haya allí.
+4. Pega el contenido íntegro del archivo `premium/firestore.rules`.
+5. Dale a **Publicar**.
+
+> Con esas reglas, Firebase bloqueará mágicamente a cualquier intento malicioso de declararse "DOCENTE" creando una cuenta falsa, verificando la base de datos usando `get()` sin necesidad de usar Servidores Cloud (Functions).
 
 ## Learn More
 

@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Verifica que el usuario haya iniciado sesión
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Obtiene el rol del usuario conectado desde la base de datos
+    function isDocente() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "DOCENTE";
+    }
+
+    match /users/{userId} {
+      // Un usuario puede leer su propio perfil para saber su rol.
+      // Un DOCENTE puede leer el perfil de todos.
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+      
+      // La app solo puede crear el perfil si se asigna el rol "INTERNO" (Evita hackeos).
+      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == "INTERNO";
+      
+      // Prohibimos que la app actualice el rol (Solo se permite modificar desde Firebase Console).
+      allow update, delete: if false;
+    }
+
+    // (Aquí irán las futuras colecciones como 'programs' o 'patients')
+    // match /programs/{document=**} {
+    //   allow read, write: if isDocente();
+    // }
+  }
+}
