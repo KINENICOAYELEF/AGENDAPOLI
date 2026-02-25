@@ -1,6 +1,33 @@
+"use client";
+
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+    const { user, loading, logout } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-gray-600 font-medium">Verificando identidad...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If there's no user, we might be in the split second before redirect, so return null
+    if (!user) return null;
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar */}
@@ -19,8 +46,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         Admin Docente
                     </Link>
                 </nav>
-                <div className="p-4 border-t border-slate-800 text-sm opacity-70">
-                    Rol: Kinesiólogo/a
+                <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
+                    <div className="text-sm opacity-70 mb-2 truncate" title={user.email || ''}>
+                        {user.email}
+                    </div>
+                    <button
+                        onClick={logout}
+                        className="w-full py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded transition text-sm font-semibold"
+                    >
+                        Cerrar Sesión
+                    </button>
                 </div>
             </aside>
 

@@ -1,20 +1,26 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
     const router = useRouter();
+    const { user, loading } = useAuth();
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!loading && user) {
+            router.push('/app/dashboard');
+        }
+    }, [user, loading, router]);
 
     const handleGoogleLogin = async () => {
         try {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
-            // Por ahora solo probamos que Firebase conecta y redirigimos
             router.push('/app/dashboard');
         } catch (err: any) {
             console.error("Error conectando con Firebase Auth:", err);
@@ -36,7 +42,8 @@ export default function LoginPage() {
                 <div className="space-y-4">
                     <button
                         onClick={handleGoogleLogin}
-                        className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2 shadow-sm"
+                        disabled={loading}
+                        className={`w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 shadow-sm ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -46,18 +53,6 @@ export default function LoginPage() {
                         </svg>
                         Continuar con Google
                     </button>
-
-                    <div className="relative flex items-center py-2">
-                        <div className="flex-grow border-t border-gray-300"></div>
-                        <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">o</span>
-                        <div className="flex-grow border-t border-gray-300"></div>
-                    </div>
-
-                    <Link href="/app/dashboard" className="block w-full">
-                        <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                            Entrar (Demo sin Login)
-                        </button>
-                    </Link>
                 </div>
             </div>
         </div>
