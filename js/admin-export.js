@@ -60,6 +60,7 @@ function showAdminPanel() {
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel) adminPanel.style.display = 'flex';
 
+    loadAuditHistory();
     bindAdminButtons();
 }
 
