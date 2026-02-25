@@ -58,9 +58,13 @@
                 <i class="fas fa-cog"></i>
                 <span class="menu-item-text">Configuración</span>
             </a>
+            <a href="#" class="menu-item" id="adminMenuBtn" style="display:none;">
+                <i class="fas fa-user-shield"></i>
+                <span class="menu-item-text">Admin Docente</span>
+            </a>
         </div>
         <div class="user-container">
-            <div class="user-avatar">NA</div>
+            <div class="user-avatar" id="userAvatarBtn" title="Doble clic para acceso docente">NA</div>
             <div class="user-info">
                 <div class="user-name">Nicolás Ayelef</div>
                 <div class="user-role">Kinesiólogo</div>
@@ -158,6 +162,85 @@
                             <div class="patient-label">Progreso</div>
                             <div>--%</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Docente Panel (Pre-Fase) -->
+            <div class="admin-panel section-header" id="adminPanel" style="display: none; flex-direction: column; align-items: stretch;">
+                <h2 class="section-title"><i class="fas fa-user-shield"></i> Panel de Administración Docente</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Herramienta exclusiva para exportar datos del sistema legacy de usuarias y evoluciones.</p>
+                
+                <div class="advanced-card" style="background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px;">
+                    <h3 class="section-title">Opciones de Exportación</h3>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label class="form-label required">Año del Programa (programYear)</label>
+                                <input type="number" class="form-control" id="exportProgramYear" value="2026" min="2020" max="2050">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label class="form-label">Exportado Por (Opcional)</label>
+                                <input type="text" class="form-control" id="exportExportedBy" placeholder="Ej: Dr. Pérez">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                        <button class="action-btn btn-primary" id="btnAdminAnalyze">
+                            <i class="fas fa-search"></i> 1. Analizar Datos
+                        </button>
+                        <button class="action-btn btn-secondary" id="btnAdminExportJson" disabled>
+                            <i class="fas fa-file-code"></i> 2. Exportar JSON Completo
+                        </button>
+                        <button class="action-btn btn-secondary" id="btnAdminExportCsv" disabled>
+                            <i class="fas fa-file-csv"></i> 3. Exportar CSV Resumen
+                        </button>
+                    </div>
+
+                    <div id="adminProgressContainer" style="display: none; margin-top: 25px; background: var(--background-alt); padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span id="adminProgressText" style="font-weight: 500;">Preparando exportación...</span>
+                            <span id="adminProgressPercentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 12px; background-color: var(--background); border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
+                            <div id="adminProgressBar" class="progress-bar" style="height: 100%; width: 0%; background-color: var(--primary); border-radius: 6px; transition: width 0.3s;"></div>
+                        </div>
+                        <div id="adminExportErrors" style="color: #F44336; font-size: 13px; margin-bottom: 10px; display: none;"></div>
+                        <button class="action-btn btn-secondary" id="btnAdminCancel" style="background-color: #F44336; color: white; border: none;">
+                            <i class="fas fa-times"></i> Cancelar Operación
+                        </button>
+                    </div>
+                </div>
+
+                <div class="advanced-card" style="background-color: var(--background); border-radius: 10px; box-shadow: var(--shadow); padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 class="section-title" style="margin: 0;">Auditoría de Exportaciones Locales</h3>
+                        <button class="action-btn btn-secondary" id="btnAdminClearAudit" style="padding: 5px 10px; font-size: 12px;">
+                            <i class="fas fa-trash"></i> Limpiar Historial
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border-color);">
+                                    <th style="padding: 10px;">Fecha / Hora</th>
+                                    <th style="padding: 10px;">Exportador</th>
+                                    <th style="padding: 10px;">Año Prog.</th>
+                                    <th style="padding: 10px;">Usuarias</th>
+                                    <th style="padding: 10px;">Evoluciones</th>
+                                    <th style="padding: 10px;">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAuditTableBody">
+                                <!-- Filas generadas dinámicamente -->
+                                <tr>
+                                    <td colspan="6" style="padding: 15px; text-align: center; color: var(--text-secondary);">No hay registros de auditoría locales.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -15020,5 +15103,7 @@ function mostrarInfoIntensidad(tipo) {
     alert(mensaje);
 }
 </script>
+
+<script type="module" src="js/admin-export.js"></script>
 </body>
 </html>
