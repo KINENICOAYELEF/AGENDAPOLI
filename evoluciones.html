@@ -13716,8 +13716,8 @@
                         "Configuración": "configuracion"
                     };
 
-                    // Configurar eventos para cada ítem del menú
-                    document.querySelectorAll('.menu-item').forEach(item => {
+                    // Configurar eventos para cada ítem del menú (ignorando el de admin)
+                    document.querySelectorAll('.menu-item:not(#adminMenuBtn)').forEach(item => {
                         item.addEventListener('click', function (e) {
                             e.preventDefault();
 
