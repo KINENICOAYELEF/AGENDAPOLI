@@ -20,6 +20,27 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+1. La aplicación web construida en Next.js App Router (Fase 1 y siguientes).
+2. Conexión limpia y modular con este nuevo proyecto Firebase evitando duplicación de DBs.
+3. Se migrarán los 120 perfiles históricos mediante el JSON estandarizado generado aquí.
+
+---
+
+### Gestión de Roles y Accesos (Sistemakine Premium)
+
+El nuevo sistema opera estrictamente bajo el "Plan Spark" de coste $0. Para evitar la dependencia de Cloud Functions y Custom Claims de backend, los roles se controlan vía base de datos usando el documento del usuario:
+
+*   **Mecanismo**: Todos los usuarios nacen con el rol `"INTERNO"` al iniciar sesión por primera vez con Google (`users/{uid}`).
+*   **Restricciones**: Los usuarios con rol "INTERNO" no ven ni pueden forzar la entrada a paneles administrativos (ej. `/app/admin`).
+*   **Bootstrap Manual (Asignar Docente)**: Para ascender la cuenta principal a administrador docente, debes:
+    1. Iniciar sesión en la web de Premium con tu Google Auth.
+    2. Entrar a [Firebase Console](https://console.firebase.google.com/) -> `sistemakine-premium-2026` -> **Firestore Database**.
+    3. Buscar en la colección `users` tu documento (busca por el campo `email`).
+    4. Editar el campo `role` borrando "INTERNO" y escribiendo exactamente `"DOCENTE"` (en mayúsculas).
+    5. Recargar la página web. Tu interfaz cambiará automáticamente desbloqueando el menú rojo "Admin Docente".
+
+> Este método garantiza escalabilidad gratuita para administrar al equipo clínico limitando privilegios y protegiendo el panel del semestre de las Personas Usuarias.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -42,11 +42,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link href="/app/usuarios" className="block px-4 py-2 rounded hover:bg-slate-800 transition">
                         Personas Usuarias
                     </Link>
-                    <Link href="/app/admin" className="block px-4 py-2 rounded hover:bg-slate-800 transition text-red-300">
-                        Admin Docente
-                    </Link>
+                    {user.role === "DOCENTE" && (
+                        <Link href="/app/admin" className="block px-4 py-2 rounded hover:bg-slate-800 transition text-red-300">
+                            Admin Docente
+                        </Link>
+                    )}
                 </nav>
                 <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
+                    <div className="text-xs opacity-50 uppercase tracking-wider font-semibold">
+                        ROL: {user.role}
+                    </div>
                     <div className="text-sm opacity-70 mb-2 truncate" title={user.email || ''}>
                         {user.email}
                     </div>
