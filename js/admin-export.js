@@ -59,12 +59,53 @@ function showAdminPanel() {
     // Mostrar panel
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel) adminPanel.style.display = 'flex';
+
+    bindAdminButtons();
+}
+
+function bindAdminButtons() {
+    console.log("Forzando binding de botones admin");
+    const bAnalyze = document.getElementById('btnAdminAnalyze');
+    const bJson = document.getElementById('btnAdminExportJson');
+    const bCsv = document.getElementById('btnAdminExportCsv');
+    const bCancel = document.getElementById('btnAdminCancel');
+    const bClear = document.getElementById('btnAdminClearAudit');
+
+    if (bAnalyze) {
+        const newB = bAnalyze.cloneNode(true);
+        bAnalyze.parentNode.replaceChild(newB, bAnalyze);
+        newB.addEventListener('click', analyzeData);
+    }
+    if (bJson) {
+        const newJ = bJson.cloneNode(true);
+        bJson.parentNode.replaceChild(newJ, bJson);
+        newJ.addEventListener('click', exportJson);
+    }
+    if (bCsv) {
+        const newC = bCsv.cloneNode(true);
+        bCsv.parentNode.replaceChild(newC, bCsv);
+        newC.addEventListener('click', exportCsv);
+    }
+    if (bCancel) {
+        const newCa = bCancel.cloneNode(true);
+        bCancel.parentNode.replaceChild(newCa, bCancel);
+        newCa.addEventListener('click', cancelExport);
+    }
+    if (bClear) {
+        const newCl = bClear.cloneNode(true);
+        bClear.parentNode.replaceChild(newCl, bClear);
+        newCl.addEventListener('click', clearAuditHistory);
+    }
 }
 
 // Fase 1: Análisis (Solo lectura de usuarias)
 async function analyzeData() {
+    console.log("==> analyzeData EJECUTADO <==");
+    if (window.showToast) window.showToast("Iniciando análisis...", "info");
+
     if (!db) {
         if (window.showToast) window.showToast("Error: Base de datos no inicializada", "error");
+        alert("Error crítico: Firebase DB no cargada");
         return;
     }
 
