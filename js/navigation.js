@@ -14,7 +14,7 @@ export let currentPatientId = null;
 export function changeView(viewName) {
     try {
         console.log(`Cambiando a vista: ${viewName}`);
-        
+
         // Validar el nombre de la vista
         const views = {
             dashboard: window.dashboardContent || null,
@@ -23,32 +23,32 @@ export function changeView(viewName) {
             reportes: document.getElementById('reportesView')?.innerHTML,
             configuracion: document.getElementById('configuracionView')?.innerHTML
         };
-        
+
         if (!views.hasOwnProperty(viewName)) {
             console.error(`Nombre de vista inválido: ${viewName}`);
             showToast(`Error: Vista "${viewName}" no encontrada`, "error");
             return;
         }
-        
+
         const mainContent = document.getElementById('mainContent');
         if (!mainContent) {
             console.error("Contenedor principal no encontrado");
             return;
         }
-        
+
         // Guardar la referencia al header
         const header = mainContent.querySelector('.header');
         if (!header) {
             console.error("Elemento header no encontrado");
             return;
         }
-        
+
         // Actualizar título según la vista
         const pageTitle = header.querySelector('.page-title');
         if (pageTitle) {
             // Mantener solo el título sin los badges de paciente
             let newTitle;
-            switch(viewName) {
+            switch (viewName) {
                 case 'dashboard': newTitle = 'Evoluciones Polideportivo'; break;
                 case 'pacientes': newTitle = 'Gestión de Pacientes'; break;
                 case 'evoluciones': newTitle = 'Registro de Evoluciones'; break;
@@ -59,52 +59,58 @@ export function changeView(viewName) {
             pageTitle.innerHTML = newTitle;
             pageTitle.setAttribute('data-original-title', newTitle);
         }
-        
+
         // Eliminar contenido actual
         const currentContent = mainContent.querySelector('.content');
         if (currentContent) {
             currentContent.remove();
         }
-        
+
+        // Esconder panel de Admin Docente si está visible
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel) {
+            adminPanel.style.display = 'none';
+        }
+
         // Ocultar botón flotante de evolución en todas las vistas excepto dashboard
         const addEvolutionBtn = document.getElementById('addEvolutionBtn');
         if (addEvolutionBtn) {
             addEvolutionBtn.style.display = viewName === 'dashboard' ? 'flex' : 'none';
         }
-        
+
         // Manejar vista dashboard de forma especial
         if (viewName === 'dashboard') {
             if (window.dashboardContent) {
                 // Usar el contenido guardado del dashboard
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = window.dashboardContent;
-                
+
                 // Insertar después del header
                 header.after(tempDiv.firstElementChild);
-                
+
                 // Cargar pacientes para el dashboard
                 getPatients().then(patients => {
                     renderPatients(patients);
-                    
+
                     // Reconectar el botón de añadir paciente
                     const addBtn = document.getElementById('addPatientBtn');
                     if (addBtn) {
                         // Eliminar manejadores previos
                         const newAddBtn = addBtn.cloneNode(true);
                         addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-                        
-                        newAddBtn.addEventListener('click', function() {
+
+                        newAddBtn.addEventListener('click', function () {
                             const modal = document.getElementById('newPatientModal');
                             if (modal) modal.classList.add('active');
                         });
                     }
-                    
+
                     // Reconectar botón de añadir evolución
                     if (addEvolutionBtn) {
                         // Eliminar manejadores previos
                         const newAddEvolutionBtn = addEvolutionBtn.cloneNode(true);
                         addEvolutionBtn.parentNode.replaceChild(newAddEvolutionBtn, addEvolutionBtn);
-                        
+
                         newAddEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
                 });
@@ -180,26 +186,26 @@ export function changeView(viewName) {
                         </div>
                     </div>
                 `;
-                
+
                 // Insertar después del header
                 header.after(content);
-                
+
                 // Guardar para futuras referencias
                 window.dashboardContent = content.outerHTML;
-                
+
                 // Cargar datos
                 getPatients().then(patients => {
                     renderPatients(patients);
-                    
+
                     // Reconectar botones
                     const addBtn = document.getElementById('addPatientBtn');
                     if (addBtn) {
-                        addBtn.addEventListener('click', function() {
+                        addBtn.addEventListener('click', function () {
                             const modal = document.getElementById('newPatientModal');
                             if (modal) modal.classList.add('active');
                         });
                     }
-                    
+
                     if (addEvolutionBtn) {
                         addEvolutionBtn.addEventListener('click', showNewEvolutionModal);
                     }
@@ -209,9 +215,9 @@ export function changeView(viewName) {
             // Para otras vistas, crear un template HTML dinámico
             const tempContent = document.createElement('div');
             tempContent.className = 'content';
-            
+
             // Generar contenido según la vista
-            switch(viewName) {
+            switch (viewName) {
                 case 'pacientes':
                     tempContent.innerHTML = `
                         <h1 class="page-title">Gestión de Pacientes</h1>
@@ -224,7 +230,7 @@ export function changeView(viewName) {
                         <div class="patient-list" id="patientListView"></div>
                     `;
                     break;
-                    
+
                 case 'evoluciones':
                     tempContent.innerHTML = `
                         <h1 class="page-title">Registro de Evoluciones</h1>
@@ -274,7 +280,7 @@ export function changeView(viewName) {
                         <div class="patient-list" id="patientEvolutionsView"></div>
                     `;
                     break;
-                    
+
                 case 'reportes':
                     tempContent.innerHTML = `
                         <h1 class="page-title">Reportes y Estadísticas</h1>
@@ -377,7 +383,7 @@ export function changeView(viewName) {
                         </div>
                     `;
                     break;
-                    
+
                 case 'configuracion':
                     tempContent.innerHTML = `
                         <h1 class="page-title">Configuración del Sistema</h1>
@@ -475,85 +481,85 @@ export function changeView(viewName) {
                         </div>
                     `;
                     break;
-                    
+
                 default:
                     tempContent.innerHTML = '<p>Vista no disponible</p>';
             }
-            
+
             // Insertar después del header
             header.after(tempContent);
-            
+
             // Manejar lógica específica de cada vista
             if (viewName === 'pacientes') {
                 getPatients().then(patients => {
                     renderPatientsInView('patientListView', patients);
-                    
+
                     // Reconectar botón de nuevo paciente
                     const addBtn = document.getElementById('addPatientBtnView');
                     if (addBtn) {
                         // Eliminar manejadores previos
                         const newAddBtn = addBtn.cloneNode(true);
                         addBtn.parentNode.replaceChild(newAddBtn, addBtn);
-                        
-                        newAddBtn.addEventListener('click', function() {
+
+                        newAddBtn.addEventListener('click', function () {
                             const modal = document.getElementById('newPatientModal');
                             if (modal) modal.classList.add('active');
                         });
                     }
                 });
-            } 
+            }
             else if (viewName === 'evoluciones') {
                 getPatients().then(patients => {
                     // Inicializar selector de pacientes
                     initPatientSelector(patients);
-                    
+
                     // Mostrar pacientes en la vista principal
                     renderPatientsInView('patientEvolutionsView', patients);
                 });
             }
             else if (viewName === 'reportes') {
                 updateReportStatistics();
-                
+
                 // Cargar pacientes para el selector de informes
                 getPatients().then(patients => {
                     const reportSelect = document.getElementById('reportPatientSelect');
                     if (reportSelect) {
                         reportSelect.innerHTML = '<option value="">Seleccionar paciente...</option>';
-                        
+
                         patients.forEach(patient => {
                             reportSelect.innerHTML += `<option value="${patient.id}">${patient.name} (${patient.rut})</option>`;
                         });
                     }
-                    
+
                     // Inicializar fechas para informe estadístico
                     const today = new Date();
                     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
                     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                    
+
                     const startDateInput = document.getElementById('reportStartDate');
                     const endDateInput = document.getElementById('reportEndDate');
-                    
+
                     if (startDateInput && endDateInput) {
                         startDateInput.value = firstDayOfMonth.toISOString().split('T')[0];
                         endDateInput.value = lastDayOfMonth.toISOString().split('T')[0];
                     }
-                    
+
                     // Configurar botones de generación de informes
                     const patientReportBtn = document.getElementById('generatePatientReportBtn');
                     if (patientReportBtn) {
                         // Eliminar manejadores previos
                         const newPatientReportBtn = patientReportBtn.cloneNode(true);
                         patientReportBtn.parentNode.replaceChild(newPatientReportBtn, patientReportBtn);
-                        
+
                         newPatientReportBtn.addEventListener('click', generatePatientReport);
                     }
-                    
+
                     const statReportBtn = document.getElementById('generateStatReportBtn');
                     if (statReportBtn) {
                         // Eliminar manejadores previos
                         const newStatReportBtn = statReportBtn.cloneNode(true);
                         statReportBtn.parentNode.replaceChild(newStatReportBtn, statReportBtn);
-                        
+
                         newStatReportBtn.addEventListener('click', generateStatisticsReport);
                     }
                 });
@@ -561,44 +567,44 @@ export function changeView(viewName) {
             else if (viewName === 'configuracion') {
                 // Cargar configuración guardada (si existe)
                 loadConfiguration();
-                
+
                 // Configurar eventos
                 const saveConfigBtn = document.getElementById('saveConfigBtn');
                 if (saveConfigBtn) {
                     // Eliminar manejadores previos
                     const newSaveConfigBtn = saveConfigBtn.cloneNode(true);
                     saveConfigBtn.parentNode.replaceChild(newSaveConfigBtn, saveConfigBtn);
-                    
+
                     newSaveConfigBtn.addEventListener('click', saveConfiguration);
                 }
-                
+
                 const resetConfigBtn = document.getElementById('resetConfigBtn');
                 if (resetConfigBtn) {
                     // Eliminar manejadores previos
                     const newResetConfigBtn = resetConfigBtn.cloneNode(true);
                     resetConfigBtn.parentNode.replaceChild(newResetConfigBtn, resetConfigBtn);
-                    
+
                     newResetConfigBtn.addEventListener('click', resetConfiguration);
                 }
-                
+
                 // Inicializar selector de tema
                 const colorThemeSelect = document.getElementById('colorTheme');
                 if (colorThemeSelect) {
                     // Eliminar manejadores previos
                     const newColorThemeSelect = colorThemeSelect.cloneNode(true);
                     colorThemeSelect.parentNode.replaceChild(newColorThemeSelect, colorThemeSelect);
-                    
-                    newColorThemeSelect.addEventListener('change', function() {
+
+                    newColorThemeSelect.addEventListener('change', function () {
                         applyColorTheme(this.value);
                     });
                 }
             }
         }
-        
+
         // Actualizar barra de navegación
         document.querySelectorAll('.menu-item').forEach(item => {
             item.classList.remove('active');
-            
+
             const itemText = item.querySelector('.menu-item-text');
             if (itemText && itemText.textContent.trim().toLowerCase() === viewName.toLowerCase()) {
                 item.classList.add('active');
@@ -612,7 +618,7 @@ export function changeView(viewName) {
                 item.classList.add('active');
             }
         });
-        
+
         showToast(`Vista cargada: ${viewName}`, "info");
     } catch (error) {
         console.error(`Error cambiando a vista ${viewName}:`, error);
@@ -625,23 +631,23 @@ export async function selectPatient(patientId) {
     try {
         // Actualizar ID del paciente actual
         currentPatientId = patientId;
-        
+
         // Marcar visualmente el paciente seleccionado
         document.querySelectorAll('.patient-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         document.querySelectorAll(`.patient-card[data-id="${patientId}"]`).forEach(card => {
             card.classList.add('selected');
         });
-        
+
         // Obtener datos del paciente
         const patient = await getPatient(patientId);
         if (!patient) {
             showToast("Error: Paciente no encontrado", "error");
             return;
         }
-        
+
         // Si estamos en la vista de evoluciones, actualizar selector
         const patientSelectorHeader = document.getElementById('patientSelectorHeader');
         if (patientSelectorHeader) {
@@ -650,44 +656,44 @@ export async function selectPatient(patientId) {
                 <span>Paciente: ${patient.name}</span>
                 <i class="fas fa-chevron-down" style="margin-left: auto;"></i>
             `;
-            
+
             // Cerrar el dropdown si está abierto
             const dropdown = document.getElementById('patientSelectorDropdown');
             if (dropdown) {
                 dropdown.classList.remove('show');
             }
-            
+
             // Mostrar información del paciente seleccionado
             const selectedPatientInfo = document.getElementById('selectedPatientInfo');
             if (selectedPatientInfo) {
                 selectedPatientInfo.style.display = 'block';
-                
+
                 // Actualizar información
                 const nameElement = document.getElementById('selectedPatientName');
                 if (nameElement) nameElement.textContent = patient.name;
-                
+
                 const rutElement = document.getElementById('selectedPatientRUT');
                 if (rutElement) rutElement.textContent = patient.rut;
-                
+
                 const lastSessionElement = document.getElementById('selectedPatientLastSession');
                 if (lastSessionElement) lastSessionElement.textContent = patient.lastSession || 'No hay sesiones registradas';
-                
+
                 // Obtener conteo de evoluciones
                 const evolutionsCount = await getEvolutionsCount(patientId);
                 const totalEvolutionsElement = document.getElementById('selectedPatientTotalEvolutions');
                 if (totalEvolutionsElement) totalEvolutionsElement.textContent = evolutionsCount;
-                
+
                 // Calcular y mostrar progreso
                 const progress = calculatePatientProgress(patient);
                 const progressElement = document.getElementById('selectedPatientProgress');
                 if (progressElement) progressElement.textContent = `${progress}%`;
-                
+
                 // Configurar botones
                 const addEvolutionBtn = document.getElementById('addEvolutionForSelectedBtn');
                 if (addEvolutionBtn) {
                     addEvolutionBtn.onclick = () => showNewEvolutionModal();
                 }
-                
+
                 const viewDetailsBtn = document.getElementById('viewPatientDetailsBtn');
                 if (viewDetailsBtn) {
                     viewDetailsBtn.onclick = () => openPatientModal(patientId);
@@ -708,7 +714,7 @@ export function showNewEvolutionModal() {
             const patientCards = document.querySelectorAll('.patient-card');
             if (patientCards.length > 0) {
                 showToast("Por favor, seleccione un paciente primero", "info");
-                
+
                 // Destacar visualmente las tarjetas de pacientes para indicar que debe seleccionar uno
                 patientCards.forEach(card => {
                     card.style.animation = 'pulse 1s';
@@ -719,7 +725,7 @@ export function showNewEvolutionModal() {
             } else {
                 // Si no hay pacientes, sugerir crear uno
                 showToast("No hay pacientes registrados. Añada un paciente primero", "info");
-                
+
                 // Destacar el botón de añadir paciente
                 const addPatientBtn = document.getElementById('addPatientBtn');
                 if (addPatientBtn) {
@@ -731,30 +737,30 @@ export function showNewEvolutionModal() {
             }
             return;
         }
-        
+
         // Establecer fecha y hora actuales
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
-        
+
         const dateInput = document.getElementById('evolutionDate');
         const timeInput = document.getElementById('evolutionTime');
-        
+
         if (dateInput) dateInput.value = today;
         if (timeInput) timeInput.value = now;
-        
+
         // Limpiar campos previos
         const stateInput = document.getElementById('evolutionPatientState');
         const treatmentInput = document.getElementById('evolutionTreatment');
         const responseInput = document.getElementById('evolutionResponse');
         const planInput = document.getElementById('evolutionTrainingPlan');
         const observationsInput = document.getElementById('evolutionObservations');
-        
+
         if (stateInput) stateInput.value = '';
         if (treatmentInput) treatmentInput.value = '';
         if (responseInput) responseInput.value = '';
         if (planInput) planInput.value = '';
         if (observationsInput) observationsInput.value = '';
-        
+
         // Obtener el usuario actual (kinesiólogo/estudiante) de la configuración o usar valor predeterminado
         let currentUser = "Estudiante";
         try {
@@ -766,48 +772,48 @@ export function showNewEvolutionModal() {
         } catch (e) {
             console.error("Error al obtener usuario de configuración:", e);
         }
-        
+
         const studentInput = document.getElementById('evolutionStudent');
         if (studentInput) studentInput.value = currentUser;
-        
+
         // Actualizar título del modal con el nombre del paciente
         getPatient(currentPatientId).then(patient => {
             const patientName = patient ? patient.name : "paciente";
             const modalTitle = document.getElementById('evolutionModalTitle');
             if (modalTitle) modalTitle.textContent = `Nueva evolución - ${patientName}`;
         });
-        
+
         // Restablecer valores predeterminados de las escalas
         const evaRange = document.getElementById('evaRange');
         const evaValue = document.getElementById('evaValue');
-        
+
         if (evaRange) evaRange.value = 5;
         if (evaValue) evaValue.textContent = '5/10';
-        
+
         const grocRange = document.getElementById('grocRange');
         const grocValue = document.getElementById('grocValue');
-        
+
         if (grocRange) grocRange.value = 3;
         if (grocValue) grocValue.textContent = '+3';
-        
+
         const saneRange = document.getElementById('saneRange');
         const saneValue = document.getElementById('saneValue');
-        
+
         if (saneRange) saneRange.value = 70;
         if (saneValue) saneValue.textContent = '70%';
-        
+
         // Limpiar actividades PSFS previas
         const psfsContainer = document.getElementById('psfsActivities');
         if (psfsContainer) psfsContainer.innerHTML = '';
-        
+
         // Limpiar ejercicios previos
         const exerciseTableBody = document.getElementById('exerciseTableBody');
         if (exerciseTableBody) exerciseTableBody.innerHTML = '';
-        
+
         // Limpiar vista previa de adjuntos
         const attachmentPreview = document.getElementById('attachmentPreview');
         if (attachmentPreview) attachmentPreview.innerHTML = '';
-        
+
         // Mostrar modal
         const newEvolutionModal = document.getElementById('newEvolutionModal');
         if (newEvolutionModal) newEvolutionModal.classList.add('active');
@@ -824,14 +830,14 @@ export async function openPatientModal(patientId) {
         document.querySelectorAll('.patient-card').forEach(card => {
             card.classList.remove('selected');
         });
-        
+
         // Añadir selección al paciente actual
         document.querySelectorAll('.patient-card[data-id="' + patientId + '"]').forEach(card => {
             card.classList.add('selected');
         });
-        
+
         currentPatientId = patientId;
-        
+
         // Mostrar indicador en la interfaz
         const headerTitle = document.querySelector('.page-title');
         if (headerTitle) {
@@ -845,29 +851,29 @@ export async function openPatientModal(patientId) {
                 </span>
             `;
         }
-        
+
         // Obtener datos del paciente
         const patient = await getPatient(patientId);
         if (!patient) return;
-        
+
         // Actualizar título del modal
         const titleElement = document.getElementById('patientModalTitle');
         if (titleElement) {
             titleElement.textContent = patient.name;
         }
-        
+
         // Llenar datos personales
         fillPersonalData(patient);
-        
+
         // Obtener evoluciones
         const evolutions = await getEvolutions(patientId);
-        
+
         // Llenar pestaña de evoluciones
         fillEvolutionsTab(evolutions);
 
         // Inicializar pestaña de diagnóstico
         initDiagnosisTab(patientId);
-        
+
         // Abrir modal
         const patientModal = document.getElementById('patientModal');
         if (patientModal) {
@@ -887,7 +893,7 @@ function fillPersonalData(patient) {
         if (avatar) {
             avatar.textContent = getInitials(patient.name);
         }
-        
+
         // Llenar campos del formulario
         const fields = {
             'patientName': patient.name || '',
@@ -902,7 +908,7 @@ function fillPersonalData(patient) {
             'patientEmergencyContact': patient.emergencyContact || '',
             'patientEmergencyPhone': patient.emergencyPhone || ''
         };
-        
+
         // Establecer cada campo si el elemento existe
         for (const [id, value] of Object.entries(fields)) {
             const element = document.getElementById(id);
@@ -927,36 +933,36 @@ export function setupNavigation() {
             "Reportes": "reportes",
             "Configuración": "configuracion"
         };
-        
-        // Configurar eventos para cada ítem del menú
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function(e) {
+
+        // Configurar eventos para cada ítem del menú (excepto el de admin)
+        document.querySelectorAll('.menu-item:not(#adminMenuBtn)').forEach(item => {
+            item.addEventListener('click', function (e) {
                 e.preventDefault();
-                
+
                 // Quitar clase active de todos los ítems
                 document.querySelectorAll('.menu-item').forEach(mi => {
                     mi.classList.remove('active');
                 });
-                
+
                 // Añadir clase active al ítem clicado
                 this.classList.add('active');
-                
+
                 // Obtener el texto del ítem y convertirlo al nombre de vista correspondiente
                 const menuText = this.querySelector('.menu-item-text')?.textContent.trim();
                 const viewName = menuToView[menuText] || (menuText ? menuText.toLowerCase() : 'dashboard');
-                
+
                 console.log("Cambiando a vista:", viewName);
                 changeView(viewName);
             });
         });
-        
+
         // Manejar toggle del sidebar
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
-        
+
         if (toggleSidebarBtn && sidebar && mainContent) {
-            toggleSidebarBtn.addEventListener('click', function() {
+            toggleSidebarBtn.addEventListener('click', function () {
                 sidebar.classList.toggle('sidebar-collapsed');
                 mainContent.classList.toggle('main-content-expanded');
             });
@@ -976,23 +982,23 @@ export async function updateReportStatistics() {
         if (totalElement) {
             totalElement.textContent = patients.length;
         }
-        
+
         // Contar todas las evoluciones
         let totalEvolutions = 0;
         let monthEvolutions = 0;
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
-        
+
         for (const patient of patients) {
             const evolutions = await getEvolutions(patient.id);
             totalEvolutions += evolutions.length;
-            
+
             // Contar evoluciones del mes actual
             evolutions.forEach(evolution => {
                 if (evolution.date) {
                     const evolutionDate = new Date(evolution.date);
                     if (
-                        evolutionDate.getMonth() === currentMonth && 
+                        evolutionDate.getMonth() === currentMonth &&
                         evolutionDate.getFullYear() === currentYear
                     ) {
                         monthEvolutions++;
@@ -1000,17 +1006,17 @@ export async function updateReportStatistics() {
                 }
             });
         }
-        
+
         const evolutionsElement = document.getElementById('totalEvolutionsReport');
         if (evolutionsElement) {
             evolutionsElement.textContent = totalEvolutions;
         }
-        
+
         const monthEvolutionsElement = document.getElementById('monthEvolutionsReport');
         if (monthEvolutionsElement) {
             monthEvolutionsElement.textContent = monthEvolutions;
         }
-        
+
         // Mostrar número de estudiantes activos (simulado)
         const studentsElement = document.getElementById('activeStudentsReport');
         if (studentsElement) {
@@ -1029,41 +1035,41 @@ export function generatePatientReport() {
         showToast("Error: Selector de paciente no encontrado", "error");
         return;
     }
-    
+
     const patientId = patientSelect.value;
-    
+
     if (!patientId) {
         showToast("Debe seleccionar un paciente para generar el informe", "error");
         return;
     }
-    
+
     // Redirigir al exportar PDF del paciente
     currentPatientId = patientId;
-    
+
     // Mostrar opciones de exportación
     const pdfOptionsContainer = document.getElementById('pdfOptionsContainer');
     if (pdfOptionsContainer) {
         pdfOptionsContainer.style.display = 'block';
-        
+
         // Configurar botones
         const cancelBtn = document.getElementById('cancelPdfExport');
         if (cancelBtn) {
             // Eliminar manejadores previos
             const newCancelBtn = cancelBtn.cloneNode(true);
             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-            
-            newCancelBtn.addEventListener('click', function() {
+
+            newCancelBtn.addEventListener('click', function () {
                 pdfOptionsContainer.style.display = 'none';
             });
         }
-        
+
         const generateBtn = document.getElementById('generatePdfBtn');
         if (generateBtn) {
             // Eliminar manejadores previos
             const newGenerateBtn = generateBtn.cloneNode(true);
             generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
-            
-            newGenerateBtn.addEventListener('click', function() {
+
+            newGenerateBtn.addEventListener('click', function () {
                 // Esta función debe ser importada desde pdf-export.js
                 exportToPDF(patientId);
                 pdfOptionsContainer.style.display = 'none';
@@ -1076,20 +1082,20 @@ export function generatePatientReport() {
 export function generateStatisticsReport() {
     const startDateInput = document.getElementById('reportStartDate');
     const endDateInput = document.getElementById('reportEndDate');
-    
+
     if (!startDateInput || !endDateInput) {
         showToast("Error: Campos de fecha no encontrados", "error");
         return;
     }
-    
+
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
-    
+
     if (!startDate || !endDate) {
         showToast("Debe seleccionar fechas para generar el informe", "error");
         return;
     }
-    
+
     showToast("Generando informe estadístico...", "info");
     // Aquí iría la lógica para generar un informe estadístico
     setTimeout(() => {

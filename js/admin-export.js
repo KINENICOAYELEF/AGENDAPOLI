@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupAdminUI() {
     const userAvatar = document.getElementById('userAvatarBtn');
     const adminMenuBtn = document.getElementById('adminMenuBtn');
-    
+
     // 1. Doble clic para activar panel admin (Oculto)
     if (userAvatar) {
         userAvatar.addEventListener('dblclick', () => {
@@ -27,7 +27,7 @@ function setupAdminUI() {
             if (code === ADMIN_PASSCODE) {
                 if (window.showToast) window.showToast("Acceso de Docente Concedido", "success");
                 if (adminMenuBtn) adminMenuBtn.style.display = 'flex';
-                
+
                 // Activar comportamiento del botón menú admin
                 adminMenuBtn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -48,19 +48,14 @@ function setupAdminUI() {
 }
 
 function showAdminPanel() {
-    // Esconder otras secciones
-    const dashboard = document.querySelector('.dashboard');
-    const patientList = document.querySelector('.patient-list');
-    const sectionHeader = document.querySelector('.section-header');
-    
-    if (dashboard) dashboard.style.display = 'none';
-    if (patientList) patientList.style.display = 'none';
-    if (sectionHeader && !sectionHeader.classList.contains('admin-panel')) sectionHeader.style.display = 'none';
-    
+    // Esconder el visor normal de contenido
+    const currentContent = document.getElementById('mainContent')?.querySelector('.content');
+    if (currentContent) currentContent.style.display = 'none';
+
     // Quitar active a otros items
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
     document.getElementById('adminMenuBtn').classList.add('active');
-    
+
     // Mostrar panel
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel) adminPanel.style.display = 'flex';
@@ -77,7 +72,7 @@ async function analyzeData() {
         const analyzeBtn = document.getElementById('btnAdminAnalyze');
         const jsonBtn = document.getElementById('btnAdminExportJson');
         const csvBtn = document.getElementById('btnAdminExportCsv');
-        
+
         analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando...';
         analyzeBtn.disabled = true;
         jsonBtn.disabled = true;
@@ -86,7 +81,7 @@ async function analyzeData() {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
         const patientsRef = collection(db, "patients");
         const snapshot = await getDocs(patientsRef);
-        
+
         analyzedPatients = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -94,7 +89,7 @@ async function analyzeData() {
 
         const totalCount = analyzedPatients.length;
         if (window.showToast) window.showToast(`Análisis completado: Se detectaron ${totalCount} usuarias.`, "info");
-        
+
         const exportBy = document.getElementById('exportExportedBy');
         if (!exportBy.value) {
             const userRole = document.querySelector('.user-name')?.innerText || 'Docente';
@@ -104,7 +99,7 @@ async function analyzeData() {
         analyzeBtn.innerHTML = '<i class="fas fa-check"></i> Análisis Listo (' + totalCount + ' usuarias)';
         jsonBtn.disabled = false;
         csvBtn.disabled = false;
-        
+
     } catch (error) {
         console.error("Error en análisis:", error);
         if (window.showToast) window.showToast("Error al analizar datos: " + error.message, "error");
@@ -124,17 +119,17 @@ async function performDeepExtraction() {
     const progressText = document.getElementById('adminProgressText');
     const progressPercentage = document.getElementById('adminProgressPercentage');
     const errorsContainer = document.getElementById('adminExportErrors');
-    
+
     progressContainer.style.display = 'block';
     errorsContainer.style.display = 'none';
     errorsContainer.innerHTML = '';
-    
+
     const errors = [];
     const total = analyzedPatients.length;
     let completed = 0;
     let totalEvolutions = 0;
     const programYear = parseInt(document.getElementById('exportProgramYear').value) || new Date().getFullYear();
-    
+
     const fullData = [];
 
     try {
@@ -159,7 +154,7 @@ async function performDeepExtraction() {
                 // Cargar Subcolección
                 const evolutionsRef = collection(db, "patients", patient.id, "evolutions");
                 const evoSnapshot = await getDocs(evolutionsRef);
-                
+
                 const patientEvolutions = evoSnapshot.docs.map(evoDoc => {
                     const data = evoDoc.data();
                     // Normalizar Fechas y añadir programYear
@@ -251,13 +246,13 @@ async function exportCsv() {
     extracted.data.forEach(item => {
         const u = item.usuaria;
         const evos = item.evoluciones;
-        
+
         const name = escapeCsvRule(u.name || "Sin nombre");
         const rut = escapeCsvRule(u.rut || u.id);
         const count = evos.length;
         const first = evos.length > 0 ? evos[0].normalizedDate : "N/A";
         const last = evos.length > 0 ? evos[evos.length - 1].normalizedDate : "N/A";
-        
+
         csvContent += `${name},${rut},${count},${first},${last},${extracted.programYear}\n`;
     });
 
@@ -295,7 +290,7 @@ function triggerDownload(dataUri, filename) {
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataUri);
     downloadAnchorNode.setAttribute("download", filename);
-    document.body.appendChild(downloadAnchorNode); 
+    document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
 }
@@ -312,10 +307,10 @@ function recordAudit(exportedBy, year, usuariasCount, evosCount, status, errors)
         status,
         errorIfAny: errors.length > 0 ? errors.length + " errores" : null
     });
-    
+
     // Mantener los últimos 50
     if (history.length > 50) history.pop();
-    
+
     localStorage.setItem('exportAuditHist', JSON.stringify(history));
     loadAuditHistory();
 }
@@ -323,14 +318,14 @@ function recordAudit(exportedBy, year, usuariasCount, evosCount, status, errors)
 function loadAuditHistory() {
     const tbody = document.getElementById('adminAuditTableBody');
     if (!tbody) return;
-    
+
     const history = JSON.parse(localStorage.getItem('exportAuditHist') || '[]');
-    
+
     if (history.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="padding: 15px; text-align: center; color: var(--text-secondary);">No hay registros de auditoría locales.</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = '';
     history.forEach(log => {
         const dateStr = new Date(log.exportedAtISO).toLocaleString();
