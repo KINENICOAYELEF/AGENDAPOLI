@@ -98,14 +98,31 @@ function bindAdminButtons() {
     }
 }
 
+async function getValidDb() {
+    try {
+        const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js");
+        const { getFirestore } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
+        const { firebaseConfig } = await import('./firebase-config.js');
+
+        const apps = getApps();
+        const app = apps.length === 0 ? initializeApp(firebaseConfig) : getApp();
+        return getFirestore(app);
+    } catch (e) {
+        console.error("Error obteniendo DB validada:", e);
+        return null;
+    }
+}
+
 // Fase 1: Análisis (Solo lectura de usuarias)
 async function analyzeData() {
     console.log("==> analyzeData EJECUTADO <==");
     if (window.showToast) window.showToast("Iniciando análisis...", "info");
 
-    if (!db) {
+    const firestoreDb = await getValidDb();
+
+    if (!firestoreDb) {
         if (window.showToast) window.showToast("Error: Base de datos no inicializada", "error");
-        alert("Error crítico: Firebase DB no cargada");
+        alert("Error crítico: No se pudo conectar a Firebase Firestore");
         return;
     }
 
@@ -120,7 +137,7 @@ async function analyzeData() {
         csvBtn.disabled = true;
 
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
-        const patientsRef = collection(db, "patients");
+        const patientsRef = collection(firestoreDb, "patients");
         const snapshot = await getDocs(patientsRef);
 
         analyzedPatients = snapshot.docs.map(doc => ({
@@ -172,6 +189,7 @@ async function performDeepExtraction() {
     const programYear = parseInt(document.getElementById('exportProgramYear').value) || new Date().getFullYear();
 
     const fullData = [];
+    const firestoreDb = await getValidDb();
 
     try {
         const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js");
@@ -193,7 +211,7 @@ async function performDeepExtraction() {
                 patient.programYear = programYear;
 
                 // Cargar Subcolección
-                const evolutionsRef = collection(db, "patients", patient.id, "evolutions");
+                const evolutionsRef = collection(firestoreDb, "patients", patient.id, "evolutions");
                 const evoSnapshot = await getDocs(evolutionsRef);
 
                 const patientEvolutions = evoSnapshot.docs.map(evoDoc => {
