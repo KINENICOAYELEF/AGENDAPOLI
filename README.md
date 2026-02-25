@@ -1,24 +1,18 @@
-# Sistema Médico Polideportivo (Legacy 2024-2025)
+# SISTEMAKINE - Proyecto Polideportivo (Legacy Edition)
 
-> ⚠️ **ESTADO DEL PROYECTO: CONGELADO (READ-ONLY)** ⚠️
+⚠️ **IMPORTANTE: ESTE REPOSITORIO ES READ-ONLY** ⚠️
 
-Este repositorio contiene la versión original (Legacy) del Sistema Clínico del Polideportivo construida con Vanilla JavaScript, HTML y CSS.
+A partir de Febrero de 2026, el código fuente original de este repositorio (basado en HTML/CSS/Vanilla JS) ha sido **OFICIALMENTE CONGELADO**. 
 
-## Declaración de Arquitectura (FASE 0.0)
+No se realizarán más desarrollos, nuevas funcionalidades ni parches en esta base de código, ya que su arquitectura monolítica se ha considerado no escalable para futuras integraciones de Inteligencia Artificial. 
 
-Según las directrices establecidas en la Fase 0.0 de la migración:
-1. **Este proyecto Legacy queda intacto y en modo de solo lectura.**
-2. **No se vuelve a desarrollar ni se añadirán nuevas funcionalidades a este código.**
-3. Este sistema sirve única y exclusivamente como referencia histórica y puente de extracción de los registros de las usuarias y evoluciones mediante la herramienta exportadora (Admin Docente).
+## Estado Actual
+El sistema contenido aquí sigue funcionando **únicamente como referencia histórica** y para mantener la continuidad operativa temporal de los alumnos actuales del Polideportivo. 
 
-## Migración a Premium 2026
+El repositorio cuenta con una herramienta integrada y oculta de exportación de datos (`Admin Docente`) que permite extraer la información histórica de las **Personas Usuarias** de forma segura hacia formatos estandarizados (JSON/CSV).
 
-El sistema se migrará a una nueva plataforma "Premium 2026" (Next.js + TypeScript + Tailwind) en un proyecto y repositorio **completamente separados**.
-
-### Convenciones de Datos de la Nueva Arquitectura
-- El nuevo sistema no dependerá de las estructuras de datos anidadas antiguas.
-- **Colecciones por Año:** Los datos estarán segmentados fuertemente por cohorte, utilizando rutas como `/programs/{year}/...`.
-- **Año Activo por Defecto:** Se establece `programYear = 2026` como el año en curso para la nueva plataforma.
-
----
-*Este repositorio permanecerá activo únicamente para asegurar la continuidad del servicio de los alumnos de la cohorte anterior hasta que la nueva plataforma esté completamente operativa.*
+## Próximos Pasos (Premium App 2026)
+1. **Nuevo Repositorio:** Se construirá un sistema "Premium" totalmente aparte usando Next.js y React.
+2. **Desacoplamiento Base de Datos:** El nuevo sistema utilizará un proyecto fresco en Firebase (con sus propias reglas de Firestore y Auth).
+3. **Estructuras de Datos:** El modelo de datos adoptará de forma estandarizada el término "Usuario(a)" o "Persona Usuaria" en pro de la neutralidad. La metadata incluirá una categorización estricta por años (e.g., `programYear: 2026` usando colecciones aisladas `/programs/{year}/...`).
+4. **Migración:** Los archivos `.json` extraídos de este sistema legacy servirán de puente semilla para la nueva base de datos.
