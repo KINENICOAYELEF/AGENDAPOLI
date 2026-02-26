@@ -2,35 +2,85 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Verifica que el usuario haya iniciado sesión
+    // --------------------------------------------------------------------
+    // Funciones Auxiliares de Seguridad
+    // --------------------------------------------------------------------
+    
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Obtiene el rol del usuario conectado desde la base de datos
-    function isDocente() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "DOCENTE";
+    function getUserRole() {
+      // Solo evalúa esto si el usuario está autenticado
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    function isDocente() {
+      return isAuthenticated() && getUserRole() == "DOCENTE";
+    }
+
+    function isInterno() {
+      return isAuthenticated() && getUserRole() == "INTERNO";
+    }
+
+    function isProgramActive(year) {
+      // Verifica usando un 'get' al documento de settings de ese año
+      return get(/databases/$(database)/documents/programs/$(year)/meta/settings).data.isActive == true;
+    }
+
+    // --------------------------------------------------------------------
+    // REGLA MAESTRA: DENY-BY-DEFAULT
+    // Si la request intenta explorar una colección no expresamente catalogada
+    // abajo (ej: un nodo legacy o un nodo global), será rechazada.
+    // --------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --------------------------------------------------------------------
+    // 1. Colección de Perfiles de Usuario
+    // --------------------------------------------------------------------
     match /users/{userId} {
-      // Un usuario puede leer su propio perfil para saber su rol.
-      // Un DOCENTE puede leer el perfil de todos.
+      // Privacidad: El dueño lee su documento, El Docente lee todos los documentos.
       allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente());
       
-      // La app solo puede crear el perfil si se asigna el rol "INTERNO" (Evita hackeos).
-      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == "INTERNO";
-      
-      // Prohibimos que la app actualice el rol (Solo se permite modificar desde Firebase Console).
+      // Prevención de Hackeo de Elevación de Rol:
+      // La app local solo tiene permitido mandar un 'CREATE' si obligatoriamente
+      // etiqueta su profile como "INTERNO".
+      allow create: if isAuthenticated() 
+                    && request.auth.uid == userId 
+                    && request.resource.data.role == "INTERNO";
+                    
+      // Los roles NO se pueden mutar o eliminar desde la página web, solo
+      // por administradores directamente en la Consola Oficial Firestore.
       allow update, delete: if false;
     }
 
-    // (Aquí irán las colecciones como 'programs' separadas por años)
-    match /programs/{document=**} {
-      // DOCENTE puede leer y escribir (crear años, borrar ajustes).
-      // INTERNO solo puede leer cosas (como sus clínicas, setting activo, etc). 
-      // Luego ajustaremos esto cuando los internos solo deban ver sus propias cosas.
-      allow read: if isAuthenticated();
-      allow write: if isDocente();
+    // --------------------------------------------------------------------
+    // 2. Colecciones del Sistema (Silos en Espacios de Nombre por Año)
+    // --------------------------------------------------------------------
+    match /programs/{year} {
+      
+      // 2.A - Meta / Configuraciones (Selector de año, switchs globales)
+      match /meta/settings {
+        // Necesario que INTERNOS y DOCENTES lo lean, para que el React Global Context
+        // 'YearContext.tsx' logre enterarse cuál año está "isActive: true".
+        allow read: if isAuthenticated();
+        
+        // Solo un DOCENTE autorizado via su UID puede editar switches.
+        allow write: if isDocente();
+      }
+
+      // 2.B - Contenido Clínico (Usuarias, Episodios, Sesiones, etc)
+      match /{subcollection}/{document=**} {
+        // Acceso omnipotente al DOCENTE (Consultar e interactuar con años pasados o cerrados)
+        allow read, write: if isDocente();
+        
+        // El INTERNO solo puede leer y escribir SI ese programa ({year})
+        // se encuentra marcado como 'isActive: true' en su archivo de configuración.
+        // Si el DOCENTE apaga ese año, automáticamente el INTERNO pierde el acceso de lectura/escritura a sus carpetas.
+        allow read, write: if isInterno() && isProgramActive(year);
+      }
     }
   }
 }
