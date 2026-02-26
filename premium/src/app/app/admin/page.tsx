@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useState } from "react";
 import Link from "next/link";
+import { LegacyImporter } from "@/components/LegacyImporter";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -188,6 +189,9 @@ export default function AdminDocentePage() {
                     </table>
                 </div>
             </div>
+
+            {/* Zona de Importación Histórica */}
+            <LegacyImporter />
         </div>
     );
 }
