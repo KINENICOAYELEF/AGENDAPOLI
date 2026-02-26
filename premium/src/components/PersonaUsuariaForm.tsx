@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PersonaUsuaria } from "@/app/app/usuarios/page";
+import { PersonaUsuaria } from "@/types/personaUsuaria";
 import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
@@ -176,7 +176,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                 <div className="border border-indigo-100 bg-indigo-50/50 rounded-xl p-5 mt-8 space-y-4">
                     <div>
                         <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Módulos Clínicos Asociados</h3>
-                        <p className="text-xs text-indigo-600">Acceso directo a la ficha y anexos de la usuaria en el periodo {globalActiveYear}</p>
+                        <p className="text-xs text-indigo-600">Acceso directo a la ficha y anexos de la persona usuaria en el periodo {globalActiveYear}</p>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

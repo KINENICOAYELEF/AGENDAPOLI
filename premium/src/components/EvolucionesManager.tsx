@@ -75,7 +75,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
             }
 
         } catch (error: any) {
-            console.error("Error Obteniendo Evoluciones de Usuaria", error);
+            console.error("Error Obteniendo Evoluciones de Persona Usuaria", error);
             // Firebase tira un link directo en el error.message si es FAILED_PRECONDITION (Falta Index)
             if (error.message && error.message.includes("indexes?create_composite")) {
                 setIndexError(error.message);
@@ -167,7 +167,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                     {evoluciones.length === 0 && !loadingData && (
                         <div className="p-8 text-center text-slate-400 font-medium">
-                            Esta usuaria no posee evoluciones clínicas registradas históricamente para el año activo.
+                            Esta persona usuaria no posee evoluciones clínicas registradas históricamente para el año activo.
                         </div>
                     )}
 

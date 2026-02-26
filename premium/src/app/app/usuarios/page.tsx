@@ -1,21 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, limit, getDocs, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useYear } from "@/context/YearContext";
 import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
-
-// Tipado base
-export interface PersonaUsuaria {
-    id?: string;
-    nombreCompleto: string;
-    rut: string;
-    telefono: string;
-    email: string;
-    notasAdministrativas: string;
-    createdAt?: Date | string;
-}
+import { PersonaUsuaria } from "@/types/personaUsuaria";
+import { PersonasUsuariasService } from "@/services/personasUsuarias";
 
 export default function UsuariosPage() {
     const { globalActiveYear, loadingYear } = useYear();
@@ -25,7 +15,7 @@ export default function UsuariosPage() {
     const [selectedUser, setSelectedUser] = useState<PersonaUsuaria | null>(null);
 
     // Lista y Paginación
-    const [usuarias, setUsuarias] = useState<PersonaUsuaria[]>([]);
+    const [personasUsuarias, setPersonasUsuarias] = useState<PersonaUsuaria[]>([]);
     const [loadingData, setLoadingData] = useState(false);
     const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
     const [hasMore, setHasMore] = useState(true);
@@ -36,51 +26,29 @@ export default function UsuariosPage() {
     // PAGE SIZE SEGURO PARA FIRESTORE (Ahorra reads locales)
     const PAGE_LIMIT = 20;
 
-    // ----- MOTOR DE CONSULTA DB PROTEGIDO (GETDOCS IMPERATIVO) -----
+    // ----- MOTOR DE CONSULTA PROTEGIDO VÍA DATA ACCESS -----
     const fetchUsuariosBatch = async (reset: boolean = false) => {
         if (!globalActiveYear) return;
 
         try {
             setLoadingData(true);
-            const usuariasRef = collection(db, "programs", globalActiveYear, "usuarias");
 
-            // Si reseteamos, partimos desde el final (más reciente)
-            let q = query(
-                usuariasRef,
-                // Ideal agregar un timestamp createdAt en los docs exportados o manejarse por ID local
-                // orderBy("createdAt", "desc"), // Requiere Indice Compuesto o existencia del campo en data migrada
-                limit(PAGE_LIMIT)
+            const response = await PersonasUsuariasService.getPaginated(
+                globalActiveYear,
+                reset ? null : lastDoc
             );
 
-            // Si es cargar más, partimos desde el último doc guardado en estado
-            if (!reset && lastDoc) {
-                q = query(usuariasRef, limit(PAGE_LIMIT), startAfter(lastDoc));
-            }
-
-            // <-- ACÁ SUCEDE EL GASTO. Contabiliza max 20 lecturas de Firebase.
-            const querySnapshot = await getDocs(q);
-
-            const fetchedList = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as PersonaUsuaria[];
-
-            // Actualizamos el puntero para página siguiente o cortamos
-            if (querySnapshot.docs.length < PAGE_LIMIT) {
-                setHasMore(false);
-            } else {
-                setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-                setHasMore(true);
-            }
+            setLastDoc(response.lastDoc);
+            setHasMore(response.hasMore);
 
             if (reset) {
-                setUsuarias(fetchedList);
+                setPersonasUsuarias(response.data);
             } else {
-                setUsuarias(prev => [...prev, ...fetchedList]);
+                setPersonasUsuarias(prev => [...prev, ...response.data]);
             }
 
         } catch (error) {
-            console.error("Error Obteniendo Usuarias Limite 20", error);
+            console.error("Error Obteniendo Personas Usuarias", error);
             alert("Ocurrió un error cargando el listado. Puede ser problema de red o falta de índice en Firebase.");
         } finally {
             setLoadingData(false);
@@ -92,7 +60,7 @@ export default function UsuariosPage() {
     // Ignora si está tecleando (SearchTerm)
     useEffect(() => {
         if (!loadingYear && globalActiveYear) {
-            setUsuarias([]);
+            setPersonasUsuarias([]);
             setLastDoc(null);
             setHasMore(true);
             fetchUsuariosBatch(true);
@@ -103,7 +71,7 @@ export default function UsuariosPage() {
     // ----- BÚSQUEDA LOCAL OFFLINE -----
     // Usamos el listado ya descargado guardado en estado, previniendo GASTAR FIREBASE.
     // Para búsquedas absolutas pesadas habría que conectarse (algolia, meilisearch).
-    const filteredUsers = usuarias.filter(u => {
+    const filteredUsers = personasUsuarias.filter(u => {
         const str = `${u.nombreCompleto} ${u.rut} ${u.telefono}`.toLowerCase();
         return str.includes(searchTerm.toLowerCase());
     });
@@ -112,10 +80,10 @@ export default function UsuariosPage() {
         setIsFormOpen(false);
         if (isNew) {
             // Lo insertamos artificialmente al principio del arreglo en memoria para evitar resfrescar la base de datos
-            setUsuarias(prev => [savedUser, ...prev]);
+            setPersonasUsuarias(prev => [savedUser, ...prev]);
         } else {
             // Actualizamos en memoria
-            setUsuarias(prev => prev.map(u => u.id === savedUser.id ? savedUser : u));
+            setPersonasUsuarias(prev => prev.map(u => u.id === savedUser.id ? savedUser : u));
         }
     };
 
@@ -184,7 +152,7 @@ export default function UsuariosPage() {
                             {filteredUsers.length === 0 && !loadingData && (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
-                                        No se encontraron personas usuarias cargadas que coincidan en este espacio temporal.
+                                        No se encontraron personas usuarias registradas en este espacio temporal.
                                     </td>
                                 </tr>
                             )}
@@ -228,13 +196,13 @@ export default function UsuariosPage() {
                         >
                             Cargar siguientes {PAGE_LIMIT} registros ↓
                         </button>
-                    ) : (searchTerm.length === 0 && usuarias.length > 0) ? (
-                        <span className="text-sm text-slate-400">Has llegado al final del archivo ({usuarias.length} usuarias en total).</span>
+                    ) : (searchTerm.length === 0 && personasUsuarias.length > 0) ? (
+                        <span className="text-sm text-slate-400">Has llegado al final del archivo ({personasUsuarias.length} personas usuarias en total).</span>
                     ) : null}
                 </div>
             </div>
 
-            {/* OVERLAY: FORMULARIO Y FICHA DE USUARIA (En fase de Refactor de UI separada) */}
+            {/* OVERLAY: FORMULARIO Y FICHA DE PERSONA USUARIA */}
             {/* Construiremos un modal flotante o una vista lateral para aislar el CRUD del dashboard maestro */}
             {isFormOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
