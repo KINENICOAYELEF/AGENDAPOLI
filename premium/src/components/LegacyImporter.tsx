@@ -20,7 +20,6 @@ export function LegacyImporter() {
     const [targetYear, setTargetYear] = useState<string>("");
     const [fileData, setFileData] = useState<LegacyJSON | null>(null);
     const [fileName, setFileName] = useState<string>("");
-    const [isDryRun, setIsDryRun] = useState<boolean>(true);
 
     const [status, setStatus] = useState<"IDLE" | "PARSED" | "IMPORTING" | "DONE" | "ERROR">("IDLE");
     const [report, setReport] = useState({
@@ -80,11 +79,7 @@ export function LegacyImporter() {
 
         if (!fileData) return;
 
-        const warningMsg = isDryRun
-            ? `⚠️ MODO SIMULACRO (DRY-RUN) ACTIVO ⚠️\n\nSolo se inyectarán un MÁXIMO DE 5 USUARIAS y 5 EPISODIOS en el universo ${targetYear} para validar que nada explote.\n\n¿Continuar con la simulación?`
-            : `🚨 ALERTA DE IMPORTACIÓN MASIVA 🚨\n\nVas a importar TODA la data legacy en el universo ${targetYear}.\n\nRevisa el contador:\n- Usuarias Totales: ${report.totalUsersDetected}\n- Episodios Totales: ${report.totalEvolDetected}\n\nEsto consumirá intensivamente tus cuotas de Firebase gratuitas. ¿Ejecutar inyección FULL?`;
-
-        const confirm = window.confirm(warningMsg);
+        const confirm = window.confirm(`Vas a importar data legacy en el universo ${targetYear}.\n\nRevisa el contador:\n- Usuarias Totales: ${report.totalUsersDetected}\n- Episodios Totales: ${report.totalEvolDetected}\n\nEsto consumirá tus cuotas de Firebase. ¿Ejecutar inyección FULL?`);
 
         if (!confirm) return;
 
@@ -97,9 +92,8 @@ export function LegacyImporter() {
         try {
             // 1. IMPORTAR USERS
             const usersEntries = Object.entries(fileData.usuarios || {});
-            const usersTarget = isDryRun ? usersEntries.slice(0, 5) : usersEntries;
 
-            for (const [uid, uData] of usersTarget) {
+            for (const [uid, uData] of usersEntries) {
                 try {
                     const docRef = doc(db, "programs", targetYear, "usuarias", uid);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,9 +112,8 @@ export function LegacyImporter() {
 
             // 2. IMPORTAR EVOLUCIONES
             const evolEntries = Object.entries(fileData.evoluciones || {});
-            const evolTarget = isDryRun ? evolEntries.slice(0, 5) : evolEntries;
 
-            for (const [eid, eData] of evolTarget) {
+            for (const [eid, eData] of evolEntries) {
                 try {
                     const docRef = doc(db, "programs", targetYear, "episodios", eid);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,7 +149,6 @@ export function LegacyImporter() {
         setFileData(null);
         setFileName("");
         setTargetYear("");
-        setIsDryRun(true);
         setReport({ totalUsersDetected: 0, totalEvolDetected: 0, importedUsers: 0, importedEvolutions: 0, errors: 0 });
     };
 
@@ -217,26 +209,12 @@ export function LegacyImporter() {
                                             <option key={yr} value={yr}>Año {yr}</option>
                                         ))}
                                     </select>
-                                </div>
-                                <div className="flex items-center gap-2 mt-4 mb-2 bg-amber-50 p-3 rounded border border-amber-200">
-                                    <input
-                                        type="checkbox"
-                                        id="dryRunFlag"
-                                        checked={isDryRun}
-                                        onChange={(e) => setIsDryRun(e.target.checked)}
-                                        className="w-4 h-4 text-amber-600 rounded"
-                                    />
-                                    <label htmlFor="dryRunFlag" className="font-semibold text-sm cursor-pointer text-amber-900">
-                                        Modo Dry-Run activado (Sólo Inyectará 5 registros de prueba primero)
-                                    </label>
-                                </div>
-                                <div className="flex justify-end mt-4">
                                     <button
                                         onClick={handleImport}
                                         disabled={!targetYear}
                                         className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 py-2 rounded shadow-sm disabled:opacity-50 transition"
                                     >
-                                        {isDryRun ? "🧪 Ejecutar Simulación (Dry-Run)" : "🚨 EJECUTAR INYECCIÓN FULL"}
+                                        Ejecutar Inyección Segura
                                     </button>
                                 </div>
                             </div>
