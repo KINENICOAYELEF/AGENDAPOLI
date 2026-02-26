@@ -13,6 +13,7 @@ interface LogEntry extends TelemetryEvent {
 export function DebugOverlay() {
     const { user } = useAuth();
     const pathname = usePathname();
+    const [queries, setQueries] = useState(0);
     const [reads, setReads] = useState(0);
     const [writes, setWrites] = useState(0);
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -23,6 +24,7 @@ export function DebugOverlay() {
             const customEvent = e as CustomEvent<TelemetryEvent>;
             const data = customEvent.detail;
 
+            setQueries((prev) => prev + (data.queries || 0));
             setReads((prev) => prev + data.estimatedReads);
             setWrites((prev) => prev + data.estimatedWrites);
 
@@ -48,6 +50,7 @@ export function DebugOverlay() {
     }, []);
 
     const handleReset = () => {
+        setQueries(0);
         setReads(0);
         setWrites(0);
         setLogs([]);
@@ -62,7 +65,7 @@ export function DebugOverlay() {
                 onClick={() => setIsOpen(true)}
                 className="fixed bottom-4 right-4 bg-slate-900 text-green-400 font-mono text-xs px-3 py-2 rounded-lg shadow-lg border border-slate-700 z-50 hover:bg-slate-800"
             >
-                [{reads}R|{writes}W] TELEMETRY
+                [{queries}Q|{reads}R|{writes}W] TELEMETRY
             </button>
         )
     }
@@ -81,14 +84,18 @@ export function DebugOverlay() {
             </div>
 
             {/* Stats */}
-            <div className="p-3 grid grid-cols-2 gap-2 border-b border-slate-700">
+            <div className="p-3 grid grid-cols-3 gap-2 border-b border-slate-700">
                 <div className="bg-slate-950 rounded p-2 text-center">
-                    <div className="text-slate-500 text-[10px] uppercase mb-1">Reads (Max 50k)</div>
-                    <div className={`text-xl font-bold ${reads > 0 ? "text-blue-400" : "text-slate-300"}`}>{reads}</div>
+                    <div className="text-slate-500 text-[9px] uppercase mb-1">Queries</div>
+                    <div className={`text-lg font-bold ${queries > 0 ? "text-yellow-400" : "text-slate-300"}`}>{queries}</div>
                 </div>
                 <div className="bg-slate-950 rounded p-2 text-center">
-                    <div className="text-slate-500 text-[10px] uppercase mb-1">Writes (Max 20k)</div>
-                    <div className={`text-xl font-bold ${writes > 0 ? "text-purple-400" : "text-slate-300"}`}>{writes}</div>
+                    <div className="text-slate-500 text-[9px] uppercase mb-1">Docs Read</div>
+                    <div className={`text-lg font-bold ${reads > 0 ? "text-blue-400" : "text-slate-300"}`}>{reads}</div>
+                </div>
+                <div className="bg-slate-950 rounded p-2 text-center">
+                    <div className="text-slate-500 text-[9px] uppercase mb-1">Writes</div>
+                    <div className={`text-lg font-bold ${writes > 0 ? "text-purple-400" : "text-slate-300"}`}>{writes}</div>
                 </div>
             </div>
 
