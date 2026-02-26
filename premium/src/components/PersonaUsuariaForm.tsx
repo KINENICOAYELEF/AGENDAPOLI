@@ -4,6 +4,7 @@ import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
+import { EvolucionesManager } from "@/components/EvolucionesManager";
 
 // Simple unificador de ID UUID/Timestamp para nuevas creaciones
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -21,6 +22,9 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
     const isEditMode = !!initialData;
 
     const [loading, setLoading] = useState(false);
+
+    // Control de Sub- vistas (Navegación esclava en modal)
+    const [subView, setSubView] = useState<'main' | 'evoluciones'>('main');
 
     // Estado interno del formulario
     const [formData, setFormData] = useState<PersonaUsuaria>({
@@ -79,6 +83,17 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             setLoading(false);
         }
     };
+
+    // --- RENDER CONDICIONAL SUB-VISTAS ---
+    if (subView === 'evoluciones' && initialData?.id) {
+        return (
+            <EvolucionesManager
+                usuariaId={initialData.id}
+                usuariaName={initialData.nombreCompleto}
+                onBack={() => setSubView('main')}
+            />
+        );
+    }
 
     return (
         <form onSubmit={handleSave} className="space-y-6">
@@ -171,10 +186,14 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                             <span className="text-[10px] text-amber-500 font-medium">Próximamente</span>
                         </button>
 
-                        <button type="button" className="flex flex-col items-center justify-center p-3 border border-indigo-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-not-allowed opacity-80 group">
+                        <button
+                            type="button"
+                            onClick={() => setSubView('evoluciones')}
+                            className="flex flex-col items-center justify-center p-3 border-2 border-indigo-400 bg-indigo-50 rounded-lg shadow-md hover:shadow-lg hover:border-indigo-500 transition group"
+                        >
                             <span className="text-2xl mb-1 group-hover:scale-110 transition">📝</span>
-                            <span className="text-sm font-bold text-slate-700 text-center">Evoluciones</span>
-                            <span className="text-[10px] text-indigo-400 font-medium">(Fase 1.2)</span>
+                            <span className="text-sm font-bold text-indigo-900 text-center">Evoluciones</span>
+                            <span className="text-[10px] text-indigo-600 font-bold bg-indigo-200 px-2 py-0.5 rounded-full mt-1">Activo</span>
                         </button>
 
                         <button type="button" className="flex flex-col items-center justify-center p-3 border border-indigo-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-not-allowed opacity-80 group">
