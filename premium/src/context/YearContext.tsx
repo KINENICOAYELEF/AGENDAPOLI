@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getDocCounted } from "@/services/firestore";
 import { useAuth } from "./AuthContext";
 
 interface YearContextType {
@@ -42,7 +43,7 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
             // Validamos sin CollectionGroup (para evitar errores de indexación en plan Spark)
             for (const yr of yearsToCheck) {
                 const docRef = doc(db, "programs", yr, "meta", "settings");
-                const snap = await getDoc(docRef);
+                const snap = await getDocCounted(docRef);
                 if (snap.exists()) {
                     available.push(yr);
                     if (snap.data().isActive === true) {

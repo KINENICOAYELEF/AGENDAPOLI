@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useYear } from '@/context/YearContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { DebugOverlay } from '@/components/DebugOverlay';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading: authLoading, logout } = useAuth();
@@ -99,6 +100,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {children}
                 </div>
             </main>
+
+            {/* Inyección de Telemetría Docente (Solo renderiza si ROL === DOCENTE internamente) */}
+            <DebugOverlay />
         </div>
     );
 }

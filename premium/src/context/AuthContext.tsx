@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { getDocCounted, setDocCounted } from "@/services/firestore";
 
 export type Role = "DOCENTE" | "INTERNO";
 
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // Consultar su documento en Firestore
                 try {
                     const userDocRef = doc(db, "users", firebaseUser.uid);
-                    const userDocSnap = await getDoc(userDocRef);
+                    const userDocSnap = await getDocCounted(userDocRef);
 
                     let userRole: Role = "INTERNO";
 
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         userRole = userDocSnap.data().role as Role;
                     } else {
                         // Primer inicio de sesión histórico: Creamos el documento "INTERNO"
-                        await setDoc(userDocRef, {
+                        await setDocCounted(userDocRef, {
                             displayName: firebaseUser.displayName || "",
                             email: firebaseUser.email || "",
                             role: "INTERNO",
