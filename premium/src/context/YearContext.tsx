@@ -36,7 +36,9 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
     const fetchActiveYear = async () => {
         try {
             setLoadingYear(true);
-            const yearsToCheck = ["2024", "2025", "2026", "2027"]; // Espacios de prueba
+            const currentYear = new Date().getFullYear();
+            // Genera un rango de 11 años: desde hace 5 años hasta 5 años en el futuro. Ej (2021-2031)
+            const yearsToCheck = Array.from({ length: 11 }, (_, i) => (currentYear - 5 + i).toString());
             let foundYear = "2026";
             const available: string[] = [];
 
