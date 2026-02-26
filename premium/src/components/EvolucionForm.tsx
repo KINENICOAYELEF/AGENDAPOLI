@@ -63,6 +63,10 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
     // Para poder cancelar el intento de cierre y pedir texto:
     const [isAttemptingClose, setIsAttemptingClose] = useState(false);
 
+    // Dropdown + Texto para justificación
+    const [lateCategory, setLateCategory] = useState("");
+    const [lateText, setLateText] = useState("");
+
     useEffect(() => {
         if (initialData) {
             setFormData(initialData);
@@ -171,11 +175,16 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
     // Cuando superó 36hrs y ahora escribe la justificación para confirmar el cierre final
     const confirmLateClose = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.lateCloseReason || formData.lateCloseReason.length < 10) {
-            alert("Debe justificar el motivo del cierre tardío (mínimo 10 caracteres).");
+        if (!lateCategory) {
+            alert("Debe seleccionar una Categoría de Motivo para el cierre tardío.");
             return;
         }
-        const copy = { ...formData, estado: "CERRADA" as const };
+        if (lateText.trim().length < 5) {
+            alert("Debe agregar un detalle específico del motivo (mínimo 5 caracteres).");
+            return;
+        }
+        const finalReason = `[${lateCategory}] ${lateText}`;
+        const copy = { ...formData, estado: "CERRADA" as const, lateCloseReason: finalReason };
         executeSave(copy, true);
     };
 
@@ -344,14 +353,29 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
                         </div>
                     </div>
 
-                    <textarea
-                        value={formData.lateCloseReason}
-                        onChange={handleChange}
-                        name="lateCloseReason"
-                        placeholder="Escriba la justificación legal o administrativa de este atraso (ej. Fallo en el sistema, documentación en papel, etc.)"
-                        className="w-full p-3 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 bg-white"
-                        rows={3}
-                    />
+                    <div className="space-y-3">
+                        <select
+                            value={lateCategory}
+                            onChange={(e) => setLateCategory(e.target.value)}
+                            className="w-full p-3 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 bg-white font-medium text-amber-900"
+                        >
+                            <option value="" disabled>Seleccione el motivo médico/administrativo...</option>
+                            <option value="Corte de Energía/Internet">Corte de Energía / Sin Internet en Clínica</option>
+                            <option value="Traspaso desde Papel">Traspaso de registro físico (Papel) al sistema</option>
+                            <option value="Emergencia Clínica">Emergencia Clínica / Paciente Descompensado</option>
+                            <option value="Error de Sistema">Fallo temporal de la plataforma o dispositivo</option>
+                            <option value="Olvido/Omisión Administrativa">Olvido u Omisión Administrativa</option>
+                            <option value="Otro">Otro motivo (Especificar debajo)</option>
+                        </select>
+
+                        <textarea
+                            value={lateText}
+                            onChange={(e) => setLateText(e.target.value)}
+                            placeholder="Detalle obligatoriamente la justificación del cierre extemporáneo..."
+                            className="w-full p-3 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 bg-white"
+                            rows={2}
+                        />
+                    </div>
 
                     <div className="flex justify-end gap-2">
                         <button
