@@ -2,25 +2,27 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useYear } from '@/context/YearContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, logout } = useAuth();
+    const { user, loading: authLoading, logout } = useAuth();
+    const { activeYear, availableYears, setWorkingYear, loadingYear } = useYear();
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && !user) {
+        if (!authLoading && !user) {
             router.push('/login');
         }
-    }, [user, loading, router]);
+    }, [user, authLoading, router]);
 
-    if (loading) {
+    if (authLoading || loadingYear) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-gray-600 font-medium">Verificando identidad...</p>
+                    <p className="text-gray-600 font-medium">Verificando sesión y entorno...</p>
                 </div>
             </div>
         );
@@ -48,6 +50,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </Link>
                     )}
                 </nav>
+
+                {/* Separador de Espacio de Nombres (Año) */}
+                <div className="px-4 py-4 border-t border-slate-800">
+                    <div className="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2">
+                        Entorno de Datos
+                    </div>
+                    {user?.role === "DOCENTE" ? (
+                        <select
+                            value={activeYear}
+                            onChange={(e) => setWorkingYear(e.target.value)}
+                            className="w-full bg-slate-800 text-white rounded p-2 text-sm border border-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            {availableYears.map(y => (
+                                <option key={y} value={y}>Año: {y}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="text-sm font-medium text-blue-300">
+                            Año activo: {activeYear}
+                        </div>
+                    )}
+                </div>
+
+                {/* User Card Logout */}
                 <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
                     <div className="text-xs opacity-50 uppercase tracking-wider font-semibold">
                         ROL: {user.role}

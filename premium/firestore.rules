@@ -24,9 +24,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // (Aquí irán las futuras colecciones como 'programs' o 'patients')
-    // match /programs/{document=**} {
-    //   allow read, write: if isDocente();
-    // }
+    // (Aquí irán las colecciones como 'programs' separadas por años)
+    match /programs/{document=**} {
+      // DOCENTE puede leer y escribir (crear años, borrar ajustes).
+      // INTERNO solo puede leer cosas (como sus clínicas, setting activo, etc). 
+      // Luego ajustaremos esto cuando los internos solo deban ver sus propias cosas.
+      allow read: if isAuthenticated();
+      allow write: if isDocente();
+    }
   }
 }
