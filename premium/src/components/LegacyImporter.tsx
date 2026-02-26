@@ -115,11 +115,12 @@ export function LegacyImporter() {
 
             for (const [eid, eData] of evolEntries) {
                 try {
-                    const docRef = doc(db, "programs", targetYear, "episodios", eid);
+                    const docRef = doc(db, "programs", targetYear, "evoluciones", eid);
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const safeEvol: any = typeof eData === "object" ? eData : { legacyValue: eData };
 
                     safeEvol._migratedFromLegacy = true;
+                    safeEvol._sourcePath = "json_import";
 
                     await setDocCounted(docRef, safeEvol, { merge: true });
                     evolSuccess++;
@@ -232,7 +233,7 @@ export function LegacyImporter() {
                                 <h4 className="text-green-800 font-bold mb-2">¡Inyección Completada en el Año {targetYear}!</h4>
                                 <ul className="text-sm text-green-700 space-y-1">
                                     <li>📦 {report.importedUsers} de {report.totalUsersDetected} Usuarias guardadas en <code>programs/{targetYear}/usuarias</code></li>
-                                    <li>📄 {report.importedEvolutions} de {report.totalEvolDetected} Episodios guardados en <code>programs/{targetYear}/episodios</code></li>
+                                    <li>📄 {report.importedEvolutions} de {report.totalEvolDetected} Evoluciones guardadas en <code>programs/{targetYear}/evoluciones</code></li>
                                     {report.errors > 0 && (
                                         <li className="text-red-600 font-bold mt-2">❌ Se encontraron {report.errors} errores de formato y se omitieron.</li>
                                     )}

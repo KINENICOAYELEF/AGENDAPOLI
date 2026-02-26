@@ -8,6 +8,7 @@ import { setDocCounted } from "@/services/firestore";
 import { useState } from "react";
 import Link from "next/link";
 import { LegacyImporter } from "@/components/LegacyImporter";
+import { EvolutionsMigrator } from "@/components/EvolutionsMigrator";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -190,7 +191,10 @@ export default function AdminDocentePage() {
                 </div>
             </div>
 
-            {/* Zona de Importación Histórica */}
+            {/* Script Migrador Histórico (Fase 1.0) */}
+            <EvolutionsMigrator />
+
+            {/* Zona de Importación Histórica (JSON) */}
             <LegacyImporter />
         </div>
     );
