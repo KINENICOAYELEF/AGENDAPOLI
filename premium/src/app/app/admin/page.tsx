@@ -2,15 +2,17 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
-import { doc, setDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { setDocCounted } from "@/services/firestore";
 import { useState } from "react";
 import Link from "next/link";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
-    const { globalActiveYear, refreshYears } = useYear();
-    const [isGenerating, setIsGenerating] = useState(false);
+    const { globalActiveYear, availableYears, refreshYears } = useYear();
+    const [newYearInput, setNewYearInput] = useState("");
+    const [isProcessing, setIsProcessing] = useState(false);
 
     if (loading || !user) return null;
 
@@ -33,69 +35,157 @@ export default function AdminDocentePage() {
         );
     }
 
-    const handleGenerateYears = async () => {
-        setIsGenerating(true);
+    const handleCreateYear = async () => {
+        const yearToCreate = newYearInput.trim();
+
+        // Validaciones básicas UX
+        if (!yearToCreate || yearToCreate.length !== 4 || isNaN(Number(yearToCreate))) {
+            alert("Por favor ingresa un formato de año válido. Ejemplo: 2027");
+            return;
+        }
+
+        if (availableYears.includes(yearToCreate)) {
+            alert(`El año ${yearToCreate} ya existe en la base de datos.`);
+            return;
+        }
+
+        setIsProcessing(true);
         try {
-            await setDoc(doc(db, "programs", "2025", "meta", "settings"), { isActive: false, description: "Año Pasado" }, { merge: true });
-            await setDoc(doc(db, "programs", "2026", "meta", "settings"), { isActive: true, description: "Año Actual" }, { merge: true });
+            // Creamos el entorno (nace inactivo y seguro)
+            await setDocCounted(doc(db, "programs", yearToCreate, "meta", "settings"), {
+                isActive: false,
+                description: `Periodo Académico ${yearToCreate}`
+            }, { merge: true });
+
             await refreshYears();
-            alert("Entornos básicos generados correctamente en Firestore.");
+            setNewYearInput("");
         } catch (e) {
             console.error(e);
-            alert("Error al generar años.");
+            alert("Error de permisos al generar el nuevo año.");
         } finally {
-            setIsGenerating(false);
+            setIsProcessing(false);
         }
     };
 
     const handleToggleActiveYear = async (targetYear: string) => {
+        if (targetYear === globalActiveYear) return;
+
+        const confirm = window.confirm(
+            `⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nEstás a punto de forzar el año ${targetYear} como ACTIVO GLOBAL.\n\nEsto re-encauzará inmediatamente a todos los INTERNOS al universo de datos del ${targetYear} y nadie podrá ver consultas del ${globalActiveYear}.\n\n¿Estás seguro que deseas accionar esta palanca global?`
+        );
+
+        if (!confirm) return;
+
+        setIsProcessing(true);
         try {
-            const otherYear = targetYear === "2026" ? "2025" : "2026";
-            await setDoc(doc(db, "programs", otherYear, "meta", "settings"), { isActive: false }, { merge: true });
-            await setDoc(doc(db, "programs", targetYear, "meta", "settings"), { isActive: true }, { merge: true });
+            // 1. Apagamos el año actual
+            await setDocCounted(doc(db, "programs", globalActiveYear, "meta", "settings"), { isActive: false }, { merge: true });
+            // 2. Encendemos el año destino
+            await setDocCounted(doc(db, "programs", targetYear, "meta", "settings"), { isActive: true }, { merge: true });
+
+            // 3. Forzamos recálculo en la UI del docente
             await refreshYears();
         } catch (e) {
             console.error(e);
+            alert("Operación denegada por reglas de seguridad de Firestore.");
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-4xl mx-auto">
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Panel Docente (Admin)</h1>
-                <p className="text-gray-600">Configuraciones avanzadas de la plataforma clínica.</p>
+                <h1 className="text-3xl font-bold text-gray-900">Panel Docente</h1>
+                <p className="text-gray-600">Configuración global de espacios temporales académicos.</p>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Control del Espacio-Tiempo (Años de Programa)</h3>
-                <p className="text-gray-600 mb-4">
-                    Crea las claves base para los universos de datos de Kinesiología y selecciona cuál será el "año en vivo"
-                    que los estudiantes (INTERNOS) visualizarán obligatoriamente (Global DB Actual: <strong className="text-blue-600">{globalActiveYear}</strong>).
-                </p>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 
-                <div className="flex gap-4 mb-6">
+                {/* Cabecera del Panel */}
+                <div className="bg-slate-900 px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Gestor de Universos (Años de Programa)</h3>
+                        <p className="text-slate-400 text-sm">El año global restringe las lecturas para el Rol INTERNO.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-slate-400 font-medium">AÑO GLOBAL ACTIVO:</span>
+                        <span className="bg-blue-600 outline outline-offset-2 outline-blue-600 text-white font-black px-3 py-1 rounded shadow-lg text-lg">
+                            {globalActiveYear}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Creador de Años */}
+                <div className="p-6 border-b border-slate-100 flex gap-4 items-end bg-slate-50">
+                    <div className="flex-1">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Aperturar Nuevo Periodo Académico</label>
+                        <input
+                            type="text"
+                            value={newYearInput}
+                            onChange={(e) => setNewYearInput(e.target.value)}
+                            placeholder="Ej. 2027"
+                            maxLength={4}
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                        />
+                    </div>
                     <button
-                        onClick={handleGenerateYears}
-                        disabled={isGenerating}
-                        className="px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition"
+                        onClick={handleCreateYear}
+                        disabled={isProcessing || !newYearInput}
+                        className="px-6 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isGenerating ? "Creando Tablas..." : "1. Generar Entornos Base (2025 y 2026)"}
+                        {isProcessing ? "Procesando..." : "Crear Entorno"}
                     </button>
                 </div>
 
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => handleToggleActiveYear("2025")}
-                        className={`px-4 py-2 border rounded-lg font-medium transition ${globalActiveYear === "2025" ? "bg-blue-50 border-blue-500 text-blue-700" : "border-slate-300 hover:bg-slate-50"}`}
-                    >
-                        ← Forzar 2025 Global
-                    </button>
-                    <button
-                        onClick={() => handleToggleActiveYear("2026")}
-                        className={`px-4 py-2 border rounded-lg font-medium transition ${globalActiveYear === "2026" ? "bg-blue-50 border-blue-500 text-blue-700" : "border-slate-300 hover:bg-slate-50"}`}
-                    >
-                        Forzar 2026 Global →
-                    </button>
+                {/* Tabla de Años */}
+                <div className="p-0">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white text-slate-500 text-sm uppercase tracking-wider border-b border-slate-100">
+                                <th className="px-6 py-4 font-semibold">Año Académico</th>
+                                <th className="px-6 py-4 font-semibold">Status Real DB</th>
+                                <th className="px-6 py-4 font-semibold text-right">Controles Globales</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-800">
+                            {[...availableYears].sort((a, b) => Number(b) - Number(a)).map(year => {
+                                const isGlobalActive = year === globalActiveYear;
+
+                                return (
+                                    <tr key={year} className={`hover:bg-slate-50 transition ${isGlobalActive ? 'bg-blue-50/50' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-lg">{year}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {isGlobalActive ? (
+                                                <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-blue-600/20">
+                                                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                                                    ACTIVO GLOBAL
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-slate-400/20">
+                                                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                                                    INACTIVO (Hibernado)
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {!isGlobalActive && (
+                                                <button
+                                                    onClick={() => handleToggleActiveYear(year)}
+                                                    disabled={isProcessing}
+                                                    className="px-4 py-1.5 text-sm font-semibold bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition shadow-sm disabled:opacity-50"
+                                                >
+                                                    Activar este Año
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
