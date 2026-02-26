@@ -1,3 +1,28 @@
+/**
+ * PROCESO CLÍNICO (Atención Activa)
+ * Contenedor macro que agrupa Sesiones y Evoluciones de una persona
+ */
+export interface Proceso {
+    id?: string;
+    personaUsuariaId: string;
+
+    // Estado de la relación clínica
+    estado: 'ACTIVO' | 'PAUSADO' | 'ALTA' | 'CERRADO_ADMIN';
+
+    // Control Temporal
+    fechaInicio: string; // ISO String
+    fechaAlta?: string | null; // ISO String o nulo si sigue activo
+
+    // Razón de consulta general
+    motivoIngresoLibre: string;
+
+    // Trazabilidad
+    createdAt?: string;
+    updatedAt?: string;
+    createdByUid: string;
+    createdByName: string;
+}
+
 export interface Evolucion {
     id?: string;
     usuariaId: string;

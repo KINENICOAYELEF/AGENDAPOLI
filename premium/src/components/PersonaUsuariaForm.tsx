@@ -4,7 +4,7 @@ import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
-import { EvolucionesManager } from "@/components/EvolucionesManager";
+import { ProcesosManager } from "@/components/ProcesosManager";
 
 // Simple unificador de ID UUID/Timestamp para nuevas creaciones
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -24,7 +24,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
     const [loading, setLoading] = useState(false);
 
     // Control de Sub- vistas (Navegación esclava en modal)
-    const [subView, setSubView] = useState<'main' | 'evoluciones'>('main');
+    const [subView, setSubView] = useState<'main' | 'procesos'>('main');
 
     // Estado interno del formulario
     const [formData, setFormData] = useState<PersonaUsuaria>({
@@ -85,11 +85,11 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
     };
 
     // --- RENDER CONDICIONAL SUB-VISTAS ---
-    if (subView === 'evoluciones' && initialData?.id) {
+    if (subView === 'procesos' && initialData?.id) {
         return (
-            <EvolucionesManager
-                usuariaId={initialData.id}
-                usuariaName={initialData.nombreCompleto}
+            <ProcesosManager
+                personaUsuariaId={initialData.id}
+                personaUsuariaName={initialData.nombreCompleto}
                 onBack={() => setSubView('main')}
             />
         );
@@ -171,41 +171,32 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                 </div>
             </div>
 
-            {/* SECCIÓN placeholders de ENLACES CLÍNICOS (SOLO VISIBLE EN EDICIÓN/FICHA CLINICA YA CREADA) */}
+            {/* SECCIÓN GESTIÓN DE PROCESOS CLÍNICOS (SOLO VISIBLE EN EDICIÓN/FICHA CLINICA YA CREADA) */}
             {isEditMode && (
                 <div className="border border-indigo-100 bg-indigo-50/50 rounded-xl p-5 mt-8 space-y-4">
-                    <div>
-                        <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Módulos Clínicos Asociados</h3>
-                        <p className="text-xs text-indigo-600">Acceso directo a la ficha y anexos de la persona usuaria en el periodo {globalActiveYear}</p>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Flujo de Atención Clínica</h3>
+                            <p className="text-xs text-indigo-600 mt-1">
+                                Las atenciones (Evaluaciones, Evoluciones, etc.) se agrupan dentro de **Procesos** Activos o Históricos.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <button type="button" className="flex flex-col items-center justify-center p-3 border border-indigo-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-not-allowed opacity-80 group">
-                            <span className="text-2xl mb-1 group-hover:scale-110 transition">📋</span>
-                            <span className="text-sm font-bold text-slate-700 text-center">Casos Abiertos</span>
-                            <span className="text-[10px] text-amber-500 font-medium">Próximamente</span>
-                        </button>
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* ACCESO AL GESTOR DE PROCESOS (Reemplaza los antiguos placeholders rotos) */}
                         <button
                             type="button"
-                            onClick={() => setSubView('evoluciones')}
-                            className="flex flex-col items-center justify-center p-3 border-2 border-indigo-400 bg-indigo-50 rounded-lg shadow-md hover:shadow-lg hover:border-indigo-500 transition group"
+                            onClick={() => setSubView('procesos')}
+                            className="flex items-center justify-between p-4 border-2 border-indigo-400 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-indigo-500 transition group text-left"
                         >
-                            <span className="text-2xl mb-1 group-hover:scale-110 transition">📝</span>
-                            <span className="text-sm font-bold text-indigo-900 text-center">Evoluciones</span>
-                            <span className="text-[10px] text-indigo-600 font-bold bg-indigo-200 px-2 py-0.5 rounded-full mt-1">Activo</span>
-                        </button>
-
-                        <button type="button" className="flex flex-col items-center justify-center p-3 border border-indigo-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-not-allowed opacity-80 group">
-                            <span className="text-2xl mb-1 group-hover:scale-110 transition">⚕️</span>
-                            <span className="text-sm font-bold text-slate-700 text-center">Evaluaciones</span>
-                            <span className="text-[10px] text-amber-500 font-medium">Próximamente</span>
-                        </button>
-
-                        <button type="button" className="flex flex-col items-center justify-center p-3 border border-indigo-200 bg-white rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-not-allowed opacity-80 group">
-                            <span className="text-2xl mb-1 group-hover:scale-110 transition">📊</span>
-                            <span className="text-sm font-bold text-slate-700 text-center">Outcomes</span>
-                            <span className="text-[10px] text-amber-500 font-medium">Próximamente</span>
+                            <div>
+                                <h4 className="text-lg font-bold text-indigo-900 group-hover:text-indigo-700 transition">Caja de Procesos</h4>
+                                <p className="text-xs text-slate-500 mt-1">Ingresar para abrir atenciones o registrar Evoluciones en procesos activos.</p>
+                            </div>
+                            <div className="bg-indigo-50 text-indigo-600 p-3 rounded-lg group-hover:scale-110 transition">
+                                📂
+                            </div>
                         </button>
                     </div>
                 </div>
