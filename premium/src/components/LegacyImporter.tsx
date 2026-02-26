@@ -79,7 +79,7 @@ export function LegacyImporter() {
 
         if (!fileData) return;
 
-        const confirm = window.confirm(`Vas a importar data legacy en el universo ${targetYear}.\n\nRevisa el contador:\n- Usuarias Totales: ${report.totalUsersDetected}\n- Episodios Totales: ${report.totalEvolDetected}\n\nEsto consumirá tus cuotas de Firebase. ¿Ejecutar inyección FULL?`);
+        const confirm = window.confirm(`Vas a importar data legacy en el universo ${targetYear}.\n\nRevisa el contador:\n- Personas Usuarias Totales: ${report.totalUsersDetected}\n- Episodios Totales: ${report.totalEvolDetected}\n\nEsto consumirá tus cuotas de Firebase. ¿Ejecutar inyección FULL?`);
 
         if (!confirm) return;
 
@@ -187,7 +187,7 @@ export function LegacyImporter() {
                             <div>
                                 <h4 className="font-bold text-slate-800 break-all text-sm">Archivo: {fileName}</h4>
                                 <div className="text-slate-500 text-xs mt-1 space-y-1">
-                                    <p>✅ {report.totalUsersDetected} Usuarias detectadas.</p>
+                                    <p>✅ {report.totalUsersDetected} Personas Usuarias detectadas.</p>
                                     <p>✅ {report.totalEvolDetected} Episodios detectados.</p>
                                 </div>
                             </div>
@@ -232,7 +232,7 @@ export function LegacyImporter() {
                             <div className="mt-4 pt-4 border-t border-slate-200 bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
                                 <h4 className="text-green-800 font-bold mb-2">¡Inyección Completada en el Año {targetYear}!</h4>
                                 <ul className="text-sm text-green-700 space-y-1">
-                                    <li>📦 {report.importedUsers} de {report.totalUsersDetected} Usuarias guardadas en <code>programs/{targetYear}/usuarias</code></li>
+                                    <li>📦 {report.importedUsers} de {report.totalUsersDetected} Personas Usuarias guardadas en <code>programs/{targetYear}/usuarias</code></li>
                                     <li>📄 {report.importedEvolutions} de {report.totalEvolDetected} Evoluciones guardadas en <code>programs/{targetYear}/evoluciones</code></li>
                                     {report.errors > 0 && (
                                         <li className="text-red-600 font-bold mt-2">❌ Se encontraron {report.errors} errores de formato y se omitieron.</li>
