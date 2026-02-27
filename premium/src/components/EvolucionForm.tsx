@@ -119,6 +119,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     // Control para la regla de las 36 Horas
     const [requiresLateReason, setRequiresLateReason] = useState(false);
     const [isAttemptingClose, setIsAttemptingClose] = useState(false);
+    const [isLateDraft, setIsLateDraft] = useState(false);
 
     // UI Layout States
     const [activeSection, setActiveSection] = useState("admin"); // "admin", "soap", "interventions", "results"
@@ -132,6 +133,16 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             setFormData(mapLegacyToPro(initialData, usuariaId));
         }
     }, [initialData, usuariaId]);
+
+    // Calcular permanentemente si la ficha lleva más de 36h en borrador desde la fecha indicada
+    useEffect(() => {
+        if (!isClosed && formData.sessionAt) {
+            const h = getDifferenceInHours(formData.sessionAt, new Date().toISOString());
+            setIsLateDraft(h > 36);
+        } else {
+            setIsLateDraft(false);
+        }
+    }, [isClosed, formData.sessionAt]);
 
     const handleNestedChange = (parent: "pain" | "interventions" | "outcomesSnapshot", field: string, value: any) => {
         setFormData((prev: any) => ({
@@ -384,6 +395,52 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         executeSave(false);
     };
 
+    // Handler SECRETO PARA DOCENTES: Reabrir una Ficha
+    const handleReopen = async () => {
+        if (!globalActiveYear) {
+            alert("No hay programa activo configurado en este momento.");
+            return;
+        }
+        if (user?.role !== "DOCENTE") {
+            alert("Solo Rol DOCENTE o Coordinador puede reabrir evoluciones firmadas.");
+            return;
+        }
+
+        const override = prompt("AUDITORÍA DE REAPERTURA:\n\nIngrese motivo clínico o de docencia (min. 10 chars) para romper el sello de firma:");
+        if (!override || override.length < 10) {
+            alert("Operación cancelada. El motivo debe ser extenso y explícito por razones médico-legales.");
+            return;
+        }
+
+        if (!initialData?.id) {
+            alert("Error crítico: La evolución no tiene un ID válido para reabrir.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const docRef = doc(db, "programs", globalActiveYear, "evoluciones", initialData.id);
+            const auditPayload = {
+                ...formData.audit,
+                updatedAt: new Date().toISOString(),
+                updatedBy: user.uid,
+                reopenReason: override,
+                reopenedAt: new Date().toISOString(),
+                reopenedBy: user.uid
+            };
+
+            await setDocCounted(docRef, { status: "DRAFT", audit: auditPayload }, { merge: true });
+
+            alert("Ficha reabierta exitosamente bajo la responsabilidad y huella de DOCENTE. Actualice la vista.");
+            onClose(); // Forzamos al usuario a recargar la UI descartándola
+        } catch (error) {
+            console.error(error);
+            alert("Hubo un error de base de datos reabriendo la evolución.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Handler para apretar "Cerrar Evolución"
     const handleAttemptClose = () => {
         if (isClosed) return;
@@ -601,12 +658,17 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                             <h2 className="text-sm font-bold text-slate-800 truncate max-w-[200px] md:max-w-xs">
                                 {isEditMode ? "Evolución Clínica" : "Nueva Evolución"}
                             </h2>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border ${isClosed ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                <span className={`flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border shrink-0 ${isClosed ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${isClosed ? 'bg-rose-500' : 'bg-blue-500 animate-pulse'}`}></span>
                                     {isClosed ? 'Cerrada' : 'Borrador'}
                                 </span>
-                                {loading && <span className="text-xs text-slate-400 font-medium">Guardando...</span>}
+                                {isLateDraft && (
+                                    <span className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border shrink-0 bg-orange-50 text-orange-700 border-orange-200">
+                                        ATRASADA
+                                    </span>
+                                )}
+                                {loading && <span className="text-[10px] text-slate-400 font-bold ml-1 shrink-0">Guardando...</span>}
                             </div>
                         </div>
                     </div>
@@ -1134,8 +1196,13 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     )}
 
                     {isClosed && (
-                        <div className="flex-1 flex justify-center text-center items-center py-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <p className="text-slate-500 font-bold text-sm tracking-wide">DOCUMENTO FIRMADO Y SELLADO</p>
+                        <div className="flex-1 flex justify-between items-center bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                            <p className="text-slate-500 font-bold text-sm tracking-wide py-4 w-full text-center">DOCUMENTO FIRMADO Y SELLADO</p>
+                            {user?.role === "DOCENTE" && (
+                                <button type="button" onClick={handleReopen} disabled={loading} className="px-6 py-4 bg-orange-100/50 hover:bg-orange-100 text-orange-700 font-black tracking-wide border-l border-slate-200 transition-colors text-xs whitespace-nowrap active:bg-orange-200">
+                                    Reabrir <span className="hidden md:inline opacity-60">(Docente)</span>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
