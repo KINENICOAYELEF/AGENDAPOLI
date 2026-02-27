@@ -22,8 +22,11 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
     };
 
     const handleCommit = () => {
-        if (localVal !== value) {
-            onChange(localVal);
+        if (localVal !== undefined) {
+            const finalVal = Math.round(localVal);
+            if (finalVal !== value) {
+                onChange(finalVal);
+            }
         }
     };
 
@@ -65,8 +68,8 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
 
             {/* Slider Track */}
             <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner font-black text-xl text-white transition-colors duration-300 ${localVal !== undefined ? getBgColor(localVal) : "bg-slate-300"}`}>
-                    {localVal !== undefined ? localVal : "-"}
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner font-black text-xl text-white transition-colors duration-300 ${localVal !== undefined ? getBgColor(Math.round(localVal)) : "bg-slate-300"}`}>
+                    {localVal !== undefined ? Math.round(localVal) : "-"}
                 </div>
 
                 <div className="flex-1 relative pb-1">
@@ -74,7 +77,7 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
                         type="range"
                         min="0"
                         max="10"
-                        step="1"
+                        step="0.01"
                         value={localVal !== undefined ? localVal : 0}
                         onChange={handleLocalChange}
                         onMouseUp={handleCommit}
@@ -98,7 +101,7 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
                         type="button"
                         disabled={disabled}
                         onClick={() => setQuickValue(v)}
-                        className={`flex-1 py-2 rounded-xl text-xs font-black transition-all border shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${localVal === v ? 'bg-slate-800 text-white border-slate-800 scale-105' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                        className={`flex-1 py-2 rounded-xl text-xs font-black transition-all border shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${localVal !== undefined && Math.round(localVal) === v ? 'bg-slate-800 text-white border-slate-800 scale-105' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
                     >
                         {v}
                     </button>
