@@ -123,10 +123,16 @@ export function InterventionPanel({ interventions, onChange, disabled }: Interve
                                     />
                                 </div>
                                 <div className="col-span-1 md:col-span-9">
-                                    <label className="block text-[9px] font-bold text-amber-700/70 mb-1 ml-1 uppercase">Nota Corta</label>
+                                    <div className="flex justify-between items-end mb-1 ml-1">
+                                        <label className="block text-[9px] font-bold text-amber-700/70 uppercase">Nota Corta</label>
+                                        <span className={`text-[9px] font-bold ${rec.note && rec.note.length >= 135 ? 'text-rose-500' : 'text-amber-500/60'}`}>
+                                            {rec.note?.length || 0}/140
+                                        </span>
+                                    </div>
                                     <input
                                         type="text"
-                                        placeholder="Observación rápida..."
+                                        maxLength={140}
+                                        placeholder="Observación rápida (ej: paciente relata alivio inmediato)..."
                                         disabled={disabled}
                                         value={rec.note || ""}
                                         onChange={(e) => updateRecord(rec.id, 'note', e.target.value)}
