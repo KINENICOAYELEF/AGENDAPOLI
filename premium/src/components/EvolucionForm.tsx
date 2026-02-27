@@ -103,7 +103,7 @@ interface EvolucionFormProps {
     procesoId?: string;
     initialData: Evolucion | null;
     onClose: () => void;
-    onSaveSuccess: (evolucion: Evolucion, isNew: boolean) => void;
+    onSaveSuccess: (evolucion: Evolucion, isNew: boolean, willClose?: boolean) => void;
 }
 
 export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSaveSuccess }: EvolucionFormProps) {
@@ -118,6 +118,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
     // Estado interno del formulario (Copia Inicial mode Pro)
     const [formData, setFormData] = useState<Partial<Evolucion>>(() => mapLegacyToPro(initialData, usuariaId));
+
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
     // Control para la regla de las 36 Horas
     const [requiresLateReason, setRequiresLateReason] = useState(false);
@@ -368,7 +370,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
         try {
             setLoading(true);
-            const targetId = isEditMode && initialData?.id ? initialData.id : generateId();
+            setSaveStatus('saving');
+            const targetId = formData.id || (isEditMode && initialData?.id ? initialData.id : generateId());
 
             const currentAudit = formData.audit || {};
             const finalAudit = {
@@ -408,10 +411,17 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             const docRef = doc(db, "programs", globalActiveYear, "evoluciones", targetId);
 
             await setDocCounted(docRef, payload, { merge: true });
-            onSaveSuccess(payload as Evolucion, !isEditMode);
+
+            setFormData(prev => ({ ...prev, id: targetId }));
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+
+            onSaveSuccess(payload as Evolucion, (!isEditMode && !formData.id), willClose);
 
         } catch (error) {
             console.error("Error al guardar Evolución", error);
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 5000);
             alert("Ha ocurrido un error al conectar con la base de datos.");
         } finally {
             setLoading(false);
@@ -733,7 +743,9 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         ATRASADA
                                     </span>
                                 )}
-                                {loading && <span className="text-[10px] text-slate-400 font-bold ml-1 shrink-0">Guardando...</span>}
+                                {(saveStatus === 'saving' || loading) && <span className="text-[10px] text-slate-400 font-bold ml-1 shrink-0">Guardando...</span>}
+                                {saveStatus === 'saved' && <span className="text-[10px] text-emerald-500 font-bold ml-1 shrink-0">Guardado ✓</span>}
+                                {saveStatus === 'error' && <span className="text-[10px] text-rose-500 font-bold ml-1 shrink-0">Error ✗</span>}
                             </div>
                         </div>
                     </div>
@@ -1254,9 +1266,20 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 type="submit"
                                 form="evolution-form" // Triggers onSaveDraft
                                 disabled={loading}
-                                className="flex-1 max-w-[200px] py-4 md:py-3 rounded-2xl border-2 border-slate-200 font-bold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                                className={`flex-1 max-w-[200px] py-4 md:py-3 rounded-2xl border-2 font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50
+                                    ${saveStatus === 'saved' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+                                        saveStatus === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' :
+                                            'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300'}`}
                             >
-                                {loading ? <span className="animate-spin text-slate-400 font-normal">↻</span> : <span>Guardar Borrador</span>}
+                                {saveStatus === 'saving' || loading ? (
+                                    <><span className="animate-spin text-slate-400 font-normal">↻</span> <span>Guardando...</span></>
+                                ) : saveStatus === 'saved' ? (
+                                    <><span className="text-emerald-500 font-black">✓</span> <span>Guardado</span></>
+                                ) : saveStatus === 'error' ? (
+                                    <><span className="text-rose-500 font-black">✗</span> <span>Error</span></>
+                                ) : (
+                                    <span>Guardar Borrador</span>
+                                )}
                             </button>
                             <button
                                 type="button"

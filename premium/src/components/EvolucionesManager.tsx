@@ -107,8 +107,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
         setSelectedEvolucion(evo);
         setView('formulario');
     };
-
-    const handleFormSaved = (savedConfig: Evolucion, isNew: boolean) => {
+    const handleFormSaved = (savedConfig: Evolucion, isNew: boolean, willClose: boolean = true) => {
         // En lugar de golpear Firebase, hacemos un update optimista local
         if (isNew) {
             setEvoluciones(prev => [savedConfig, ...prev]
@@ -118,7 +117,11 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
         } else {
             setEvoluciones(prev => prev.map(e => e.id === savedConfig.id ? savedConfig : e));
         }
-        setView('lista');
+
+        // Solo cerramos el modal si se indicó desde el hijo o por defecto
+        if (willClose) {
+            setView('lista');
+        }
     };
 
     if (view === 'formulario') {
