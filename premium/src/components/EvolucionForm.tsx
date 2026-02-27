@@ -23,7 +23,10 @@ import {
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-const mapLegacyToPro = (data: Partial<Evolucion> | null, defaultUsuariaId: string): Partial<Evolucion> => {
+// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS
+const globalEvalCache: Record<string, { objectives: TreatmentObjective[], versionId: string, timestamp: number }> = {};
+
+function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion> {
     if (!data) return {
         usuariaId: defaultUsuariaId,
         status: 'DRAFT',
@@ -177,6 +180,21 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         if (!procesoId || !globalActiveYear) return;
 
         const fetchLatestEval = async () => {
+            const cacheKey = `${globalActiveYear}_${procesoId}`;
+            const timeNow = Date.now();
+
+            // Retornamos desde caché en memoria si existe y tiene menos de 10 minutos de antigüedad (SPA Optimization)
+            if (globalEvalCache[cacheKey] && (timeNow - globalEvalCache[cacheKey].timestamp < 600000)) {
+                const cached = globalEvalCache[cacheKey];
+                const isOldVersion = formData.objectivesWorked?.objectiveSetVersionId
+                    && formData.objectivesWorked.objectiveSetVersionId !== cached.versionId;
+                if (isOldVersion && isClosed) return;
+
+                setAvailableObjectives(cached.objectives);
+                setCurrentVersionId(cached.versionId);
+                return;
+            }
+
             setLoadingObjectives(true);
             try {
                 const q = query(
@@ -190,20 +208,28 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 if (!querySnapshot.empty) {
                     const evDoc = querySnapshot.docs[0];
                     const evData = evDoc.data() as Evaluacion;
+                    const finalVersion = evData.versionId || evDoc.id;
+                    const finalObjectives = evData.objectives?.filter(o => o.status === 'ACTIVE') || [];
+
+                    // Guardamos la consulta costosa de Firebase en el caché local
+                    globalEvalCache[cacheKey] = {
+                        objectives: finalObjectives,
+                        versionId: finalVersion,
+                        timestamp: timeNow
+                    };
 
                     // Si ya tenía objetivos guardados (legacy borrador o edit mode) e intentamos cargar
                     const isOldVersion = formData.objectivesWorked?.objectiveSetVersionId
-                        && formData.objectivesWorked.objectiveSetVersionId !== (evData.versionId || evDoc.id);
+                        && formData.objectivesWorked.objectiveSetVersionId !== finalVersion;
 
                     if (isOldVersion && isClosed) {
-                        // Modo read-only antiguo (quizás podríamos mostrar texto plano o nada)
                         return;
                     }
 
-                    setAvailableObjectives(evData.objectives?.filter(o => o.status === 'ACTIVE') || []);
-                    setCurrentVersionId(evData.versionId || evDoc.id);
+                    setAvailableObjectives(finalObjectives);
+                    setCurrentVersionId(finalVersion);
                 } else {
-                    // MOCK: Si no hay evaluación, mostramos una simulada temporalmente para poder usar la UI.
+                    // MOCK Fallback rápido
                     setAvailableObjectives([
                         { id: "obj-mock-001", description: "Lograr flexión de rodilla a 120° sin dolor", status: "ACTIVE", category: "ROM" },
                         { id: "obj-mock-002", description: "Reducir respuesta inflamatoria aguda (VAS < 3)", status: "ACTIVE", category: "Pain" },
@@ -279,10 +305,14 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     };
 
     const duplicatePreviousExercises = async () => {
+        if (!globalActiveYear) {
+            alert("Seleccione el año de operación actual para duplicar.");
+            return;
+        }
         if (isClosed || !user) return;
         try {
             // Busca la última evolución cerrada de este proceso (o usuario globalmente)
-            const evolsRef = collection(db, "evoluciones");
+            const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
             let q;
             if (procesoId) {
                 q = query(evolsRef, where("procesoId", "==", procesoId), orderBy("sessionAt", "desc"), limit(2));
