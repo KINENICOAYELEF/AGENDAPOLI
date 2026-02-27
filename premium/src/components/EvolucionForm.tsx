@@ -1016,11 +1016,27 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                         <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 py-2 text-sm font-black text-white outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30 h-10" />
                                                     </div>
                                                     <div className="col-span-1 md:col-span-4">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Implementos Principales</label>
-                                                        <input type="text" placeholder="Mancuerna, Banda, etc." disabled={isClosed} value={ex.equipment?.join(', ') || ''} onChange={e => {
-                                                            const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                                                            updateExercise(ex.id, "equipment", val.length ? val : undefined as any);
-                                                        }} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 py-2 text-sm font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all placeholder:text-indigo-400/30 h-10" />
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-2 ml-1 uppercase">Implementos (Múltiple)</label>
+                                                        <div className="flex flex-wrap gap-1.5 min-h-[40px] items-center">
+                                                            {['Banda', 'Mancuerna', 'Kettlebell', 'Polea', 'TRX', 'Fitball', 'Barra', 'Máquina', 'P. Corporal', 'Otro'].map(eq => {
+                                                                const isSelected = ex.equipment?.includes(eq);
+                                                                return (
+                                                                    <button
+                                                                        key={eq}
+                                                                        type="button"
+                                                                        disabled={isClosed}
+                                                                        onClick={() => {
+                                                                            const current = ex.equipment || [];
+                                                                            const newVal = isSelected ? current.filter(e => e !== eq) : [...current, eq];
+                                                                            updateExercise(ex.id, "equipment", newVal.length ? newVal : undefined as any);
+                                                                        }}
+                                                                        className={`px-2 py-1 text-[10px] rounded-lg font-bold transition-all border ${isSelected ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-slate-950/40 text-indigo-300 hover:text-white border-indigo-800/50 hover:bg-slate-800'}`}
+                                                                    >
+                                                                        {eq}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
                                                     <div className="col-span-1 md:col-span-3">
                                                         <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Patrón / Lado</label>
@@ -1061,21 +1077,34 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                     </div>
 
                                                     {/* ROW 3: Progresión y Ajustes */}
-                                                    <div className="col-span-1 md:col-span-4 mt-2">
+                                                    <div className="col-span-1 md:col-span-3 mt-2">
                                                         <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Clave de Progresión</label>
                                                         <select disabled={isClosed} value={ex.mainVariable || ""} onChange={e => updateExercise(ex.id, "mainVariable", e.target.value || undefined as any)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
-                                                            <option value="">¿Qué variable progresar?</option>
-                                                            <option value="Carga">Subir Carga</option>
-                                                            <option value="Volumen">Subir Volumen (Reps/Series)</option>
-                                                            <option value="Densidad">Bajar Descanso (Densidad)</option>
-                                                            <option value="ROM">Aumentar Rango (ROM)</option>
-                                                            <option value="Velocidad">Mayor Velocidad</option>
-                                                            <option value="Técnica">Mejora Técnica / Biomecánica</option>
+                                                            <option value="">Variable dominante...</option>
+                                                            <option value="Carga">Carga</option>
+                                                            <option value="Volumen">Volumen</option>
+                                                            <option value="Densidad">Densidad</option>
+                                                            <option value="ROM">ROM</option>
+                                                            <option value="Velocidad">Velocidad</option>
+                                                            <option value="Técnica">Técnica</option>
                                                         </select>
                                                     </div>
-                                                    <div className="col-span-1 md:col-span-8 mt-2">
+                                                    <div className="col-span-1 md:col-span-3 mt-2">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Criterio de Progresión</label>
+                                                        <select disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value || undefined as any)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
+                                                            <option value="">Define el criterio...</option>
+                                                            <option value="Subir Carga">Subir Carga</option>
+                                                            <option value="Subir Reps">Subir Reps</option>
+                                                            <option value="Bajar RIR">Bajar RIR</option>
+                                                            <option value="Subir RPE">Subir RPE</option>
+                                                            <option value="+ Velocidad">+ Velocidad intencional</option>
+                                                            <option value="+ ROM">+ ROM tolerado</option>
+                                                            <option value="Sostenido">Mantener estímulo</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-span-1 md:col-span-6 mt-2">
                                                         <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Ajustes Biomecánicos / Notas</label>
-                                                        <input type="text" placeholder="Ej: Foco en rotación externa, elástico amarillo..." disabled={isClosed} value={ex.notes || ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30" />
+                                                        <input type="text" placeholder="Ej: Foco en rotación externa, elástico amarillo..." disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30" />
                                                     </div>
 
                                                 </div>
