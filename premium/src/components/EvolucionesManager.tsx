@@ -120,7 +120,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
 
     if (view === 'formulario') {
         return (
-            <div className="bg-white rounded p-4 border border-slate-200 shadow-sm animate-in fade-in slide-in-from-right-4">
+            <div className="md:bg-white md:rounded-2xl md:p-6 md:border md:border-slate-200 md:shadow-sm animate-in fade-in slide-in-from-right-4">
                 <EvolucionForm
                     usuariaId={usuariaId}
                     initialData={selectedEvolucion}

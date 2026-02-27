@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Evolucion } from "@/types/clinica";
 import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
+import { Disclosure, Transition } from '@headlessui/react';
+import { ChevronUpIcon, ChevronLeftIcon } from '@heroicons/react/20/solid';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -60,8 +62,10 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
 
     // Control para la regla de las 36 Horas
     const [requiresLateReason, setRequiresLateReason] = useState(false);
-    // Para poder cancelar el intento de cierre y pedir texto:
     const [isAttemptingClose, setIsAttemptingClose] = useState(false);
+
+    // UI Layout States
+    const [activeSection, setActiveSection] = useState("admin"); // "admin", "soap", "interventions", "results"
 
     // Dropdown + Texto para justificación
     const [lateCategory, setLateCategory] = useState("");
@@ -75,13 +79,13 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (!val) return;
-        setFormData(prev => ({ ...prev, fechaHoraAtencion: new Date(val).toISOString() }));
+        setFormData((prev: any) => ({ ...prev, fechaHoraAtencion: new Date(val).toISOString() }));
     };
 
     // Método universal de Guardado para Borrador o Cierre
@@ -188,290 +192,414 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
         executeSave(copy, true);
     };
 
-    return (
-        <div className="space-y-6">
+    // --- RENDER HELPERS PARA ACORDEÓN ---
+    const AccordionSection = ({
+        id,
+        title,
+        icon,
+        children,
+        defaultOpen = false,
+        theme = "indigo"
+    }: {
+        id: string,
+        title: string,
+        icon: React.ReactNode,
+        children: React.ReactNode,
+        defaultOpen?: boolean
+        theme?: "indigo" | "emerald" | "amber" | "rose" | "slate"
+    }) => {
 
-            {/* Cabecera Estado */}
-            <div className={`p-4 rounded-lg flex justify-between items-center ${isClosed ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'}`}>
-                <div>
-                    <h3 className="font-bold uppercase tracking-wider text-xs mb-1 opacity-70">Estado del Registro</h3>
-                    <div className="font-medium">
-                        {isClosed ? (
-                            <span className="text-red-700">🔒 Evolución Cerrada e Inmutable</span>
-                        ) : (
-                            <span className="text-blue-700">📝 En Borrador (Editable)</span>
-                        )}
+        const themes = {
+            indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
+            emerald: "text-emerald-600 bg-emerald-50 border-emerald-100",
+            amber: "text-amber-600 bg-amber-50 border-amber-100",
+            rose: "text-rose-600 bg-rose-50 border-rose-100",
+            slate: "text-slate-600 bg-slate-50 border-slate-100",
+        };
+
+        const activeTheme = themes[theme] || themes.indigo;
+
+        return (
+            <Disclosure defaultOpen={defaultOpen} as="div" id={id} className="scroll-mt-32">
+                {({ open }: { open: boolean }) => (
+                    <div className={`bg-white rounded-2xl border ${open ? 'border-slate-300 shadow-md ring-1 ring-slate-100' : 'border-slate-200 shadow-sm'} transition-all overflow-hidden mb-4`}>
+                        <Disclosure.Button className={`w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}>
+                            <div className="flex items-center gap-3">
+                                <span className={`p-2 rounded-xl ${activeTheme} shadow-sm border`}>
+                                    {icon}
+                                </span>
+                                <h3 className="font-extrabold text-slate-800 text-sm tracking-wide">{title}</h3>
+                            </div>
+                            <ChevronUpIcon
+                                className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-slate-400 transition-transform duration-300`}
+                            />
+                        </Disclosure.Button>
+                        <Transition
+                            enter="transition duration-200 ease-out"
+                            enterFrom="transform scale-95 opacity-0 -translate-y-4"
+                            enterTo="transform scale-100 opacity-100 translate-y-0"
+                            leave="transition duration-150 ease-in"
+                            leaveFrom="transform scale-100 opacity-100 translate-y-0"
+                            leaveTo="transform scale-95 opacity-0 -translate-y-4"
+                        >
+                            <Disclosure.Panel className="px-5 pb-6 pt-2 bg-slate-50/50 border-t border-slate-100">
+                                {children}
+                            </Disclosure.Panel>
+                        </Transition>
                     </div>
+                )}
+            </Disclosure>
+        );
+    };
+
+    const scrollToSection = (id: string) => {
+        setActiveSection(id);
+        const element = document.getElementById(id);
+        if (element) {
+            // Offset para no quedar tapado por las barras fijas
+            const y = element.getBoundingClientRect().top + window.scrollY - 130;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 bg-slate-50 md:relative md:z-auto md:bg-transparent flex flex-col h-[100dvh] md:h-auto overflow-hidden">
+
+            {/* TOP BAR FIJA (Mobile First) */}
+            <div className="bg-white border-b border-slate-200 shadow-sm z-40 sticky top-0 shrink-0">
+                <div className="flex items-center justify-between p-4 md:px-6">
+                    <div className="flex items-center gap-3">
+                        {/* Botón Volver solo en versión Móvil Total */}
+                        <button onClick={onClose} className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                            <ChevronLeftIcon className="w-6 h-6" />
+                        </button>
+
+                        <div>
+                            <h2 className="text-sm font-bold text-slate-800 truncate max-w-[200px] md:max-w-xs">
+                                {isEditMode ? "Evolución Clínica" : "Nueva Evolución"}
+                            </h2>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border ${isClosed ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isClosed ? 'bg-rose-500' : 'bg-blue-500 animate-pulse'}`}></span>
+                                    {isClosed ? 'Cerrada' : 'Borrador'}
+                                </span>
+                                {loading && <span className="text-xs text-slate-400 font-medium">Guardando...</span>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Botón Volver Desktop */}
+                    <button onClick={onClose} className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
+                        Descartar / Volver
+                    </button>
                 </div>
-                {!isEditMode && <span className="text-xs bg-white/50 px-2 py-1 rounded text-slate-500 font-mono">ID: Autogenerado</span>}
-                {isEditMode && <span className="text-xs bg-white/50 px-2 py-1 rounded text-slate-500 font-mono">ID: {initialData?.id}</span>}
+
+                {/* SCROLL SPY CHIPS - Navegación Rápida */}
+                <div className="px-4 md:px-6 pb-3 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x">
+                    {[
+                        { id: 'sec-admin', label: 'Info Sesión' },
+                        { id: 'sec-soap', label: 'S.O.A.P.' },
+                        { id: 'sec-interv', label: 'Intervenciones' },
+                        { id: 'sec-ejerc', label: 'Ejercicios (Módulo)' },
+                        { id: 'sec-result', label: 'Pronóstico' }
+                    ].map(chip => (
+                        <button
+                            key={chip.id}
+                            type="button"
+                            onClick={() => scrollToSection(chip.id)}
+                            className={`snap-start whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${activeSection === chip.id
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-md transform scale-105'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                }`}
+                        >
+                            {chip.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* FORMULARIO CLINICO */}
-            <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-8">
+            {/* CONTENIDO PRINCIPAL SCROLLEABLE */}
+            <div className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto p-4 md:p-6 pb-32 md:pb-8">
+                <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-2">
 
-                {/* 1. Métrica Base */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 transition-all hover:border-slate-300">
-                    <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        Datos Administrativos de Sesión
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Fecha y Hora Real de Atención <span className="text-rose-500">*</span></label>
-                            <input
-                                type="datetime-local"
-                                value={toDateTimeLocal(formData.fechaHoraAtencion as string)}
-                                onChange={handleDateChange}
-                                disabled={isClosed}
-                                max={toDateTimeLocal(new Date().toISOString())}
-                                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-sm"
-                                required
-                            />
-                            <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Momento bioético del servicio. Un atraso al registrar mayor a 36hrs exigirá justificación de auditoría.</p>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Clínico Responsable</label>
-                            <input
-                                type="text"
-                                disabled
-                                value={initialData?.autorName || user?.email || "Cargando..."}
-                                className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. Subjetivo y Objetivos */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 transition-all hover:border-slate-300">
-                    <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                        Evaluación y Planificación (S.O.A.P)
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-3">
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Dolor Inicio (EVA) <span className="text-rose-500">*</span></label>
-                            <div className="relative">
-                                <input
-                                    type="number" min="0" max="10"
-                                    name="dolorInicio"
-                                    value={formData.dolorInicio}
-                                    onChange={handleChange}
-                                    disabled={isClosed}
-                                    placeholder="0-10"
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-50 transition-all font-bold text-slate-800 shadow-sm"
-                                />
-                                <span className="absolute right-4 top-2.5 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
-                            </div>
-                        </div>
-                        <div className="md:col-span-9">
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Objetivo Específico de la Sesión <span className="text-rose-500">*</span></label>
-                            <input
-                                type="text"
-                                name="objetivoSesion"
-                                value={formData.objetivoSesion}
-                                onChange={handleChange}
-                                disabled={isClosed}
-                                placeholder="Ej: Disminuir dolor peripatelar y reactivación de cuádriceps post-operatorio."
-                                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-50 transition-all font-medium text-slate-700 shadow-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. CORE: Tratamientos y Ejercicios */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Terapias Pasivas */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs lg:col-span-4 flex flex-col transition-all hover:border-slate-300">
-                        <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2 mb-4">
-                            <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>
-                            Intervenciones / Agentes
-                        </h3>
-                        <textarea
-                            name="intervenciones"
-                            value={formData.intervenciones}
-                            onChange={handleChange}
-                            disabled={isClosed}
-                            placeholder="Manejo de tejidos blandos, TENS, educación de dolor..."
-                            className="flex-1 w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:bg-slate-50 transition-all font-medium text-slate-700 shadow-sm min-h-[160px]"
-                        />
-                    </div>
-
-                    {/* Prescripción Ejercicio PREMIUM */}
-                    <div className="bg-gradient-to-br from-indigo-50 via-blue-50/50 to-white p-6 rounded-2xl border-2 border-indigo-100 shadow-sm lg:col-span-8 flex flex-col relative overflow-hidden group hover:border-indigo-300 transition-all">
-                        {/* Motif bg */}
-                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-3xl group-hover:bg-indigo-500/10 transition-colors pointer-events-none"></div>
-
-                        <div className="flex justify-between items-start mb-4 relative z-10 border-b border-indigo-200/60 pb-3">
+                    {/* 1. SECCIÓN ADMINISTRATIVA */}
+                    <AccordionSection
+                        id="sec-admin"
+                        title="Datos Administrativos de Sesión"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                        defaultOpen={true}
+                        theme="slate"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
                             <div>
-                                <h3 className="text-[11px] font-black text-indigo-800 uppercase tracking-widest flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z" /></svg>
-                                    Prescripción de Ejercicio Clínico
-                                </h3>
-                                <p className="text-[10px] text-indigo-600/80 font-bold mt-1 max-w-sm">Módulo central para analítica de datos futura. Es vital estructurar Carga, Series y Repeticiones.</p>
-                            </div>
-                            <span className="bg-indigo-100 text-indigo-700 text-[9px] font-black px-2 py-1 rounded uppercase tracking-wider">Prioridad Analítica</span>
-                        </div>
-
-                        <textarea
-                            name="ejerciciosPrescritos"
-                            value={formData.ejerciciosPrescritos}
-                            onChange={handleChange}
-                            disabled={isClosed}
-                            placeholder="Ejemplo de estructura recomendada:&#10;&#10;1. Sentadilla Búlgara | 3 x 12 | Mancuernas 10kg | RIR 2&#10;2. Puente Glúteo Unipedal | 4 x 15 | Bande Elástica Fuerte&#10;3. Control Motor Lumbo-pélvico | 3 x 1 min | Fitball"
-                            className="flex-1 w-full bg-white/80 border border-indigo-200/80 backdrop-blur-sm rounded-xl px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-y disabled:bg-slate-50 transition-all font-medium text-slate-800 shadow-inner min-h-[160px] relative z-10 placeholder:text-indigo-300/80 placeholder:font-normal leading-relaxed"
-                        />
-                    </div>
-                </div>
-
-                {/* 4. Cierre y Pronostico */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 transition-all hover:border-slate-300">
-                    <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                        Resultados y Pronóstico
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        <div className="md:col-span-3">
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Dolor Salida (EVA) <span className="text-rose-500">*</span></label>
-                            <div className="relative">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha y Hora Real <span className="text-rose-500">*</span></label>
                                 <input
-                                    type="number" min="0" max="10"
-                                    name="dolorSalida"
-                                    value={formData.dolorSalida}
+                                    type="datetime-local"
+                                    value={toDateTimeLocal(formData.fechaHoraAtencion as string)}
+                                    onChange={handleDateChange}
+                                    disabled={isClosed}
+                                    max={toDateTimeLocal(new Date().toISOString())}
+                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
+                                    required
+                                />
+                                <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Clínico / Interno</label>
+                                <input
+                                    type="text"
+                                    disabled
+                                    value={initialData?.autorName || user?.email || "Cargando..."}
+                                    className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
+                                />
+                            </div>
+                        </div>
+                    </AccordionSection>
+
+                    {/* 2. SECCIÓN S.O.A.P. */}
+                    <AccordionSection
+                        id="sec-soap"
+                        title="Evaluación y Planificación (S.O.A.P)"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
+                        theme="emerald"
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                            <div className="md:col-span-4 lg:col-span-3">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Inicio (EVA) <span className="text-emerald-600">*</span></label>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="number" min="0" max="10"
+                                        name="dolorInicio"
+                                        value={formData.dolorInicio}
+                                        onChange={handleChange}
+                                        disabled={isClosed}
+                                        placeholder="0-10"
+                                        className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
+                                    />
+                                    <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
+                                </div>
+                            </div>
+                            <div className="md:col-span-8 lg:col-span-9">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Objetivo de la Sesión <span className="text-emerald-600">*</span></label>
+                                <textarea
+                                    name="objetivoSesion"
+                                    value={formData.objetivoSesion}
                                     onChange={handleChange}
                                     disabled={isClosed}
-                                    placeholder="0-10"
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-50 transition-all font-bold text-slate-800 shadow-sm"
+                                    rows={2}
+                                    placeholder="Ej: Disminuir dolor peripatelar y reactivar cuádriceps..."
+                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
                                 />
-                                <span className="absolute right-4 top-2.5 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
                             </div>
                         </div>
-                        <div className="md:col-span-9">
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Hito Logrado y Tarea Próxima Sesión <span className="text-rose-500">*</span></label>
-                            <input
-                                type="text"
-                                name="planProximaSesion"
-                                value={formData.planProximaSesion}
+                    </AccordionSection>
+
+                    {/* 3. SECCIÓN INTERVENCIONES PASIVAS */}
+                    <AccordionSection
+                        id="sec-interv"
+                        title="Intervenciones y Agentes Físicos"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>}
+                        theme="amber"
+                    >
+                        <div className="mt-2">
+                            <textarea
+                                name="intervenciones"
+                                value={formData.intervenciones}
                                 onChange={handleChange}
                                 disabled={isClosed}
-                                placeholder="Ej: Disminuyó el dolor un 40%. Próxima sesión progresar cargas excéntricas."
-                                className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-50 transition-all font-medium text-slate-700 shadow-sm"
+                                placeholder="Terapias manuales, MEP, Punción Seca, Criomedicina, TENS, Ondas de Choque..."
+                                className="w-full border border-slate-300 rounded-xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner min-h-[120px]"
                             />
                         </div>
-                    </div>
-                </div>
+                    </AccordionSection>
 
-                {isClosed && initialData?.lateCloseReason && (
-                    <div className="bg-amber-50 p-5 border border-amber-200 rounded-xl mt-4 flex items-start gap-4 shadow-sm">
-                        <div className="bg-amber-100 p-2 rounded-full mt-1">
-                            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    {/* 4. SECCIÓN EJERCICIOS (Módulo Premium) */}
+                    <div id="sec-ejerc" className="scroll-mt-32">
+                        <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-indigo-800 p-6 md:p-8 rounded-3xl border border-indigo-950 shadow-xl relative overflow-hidden group mb-4">
+                            {/* Visual Noise & Glow */}
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+
+                            <div className="relative z-10">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-indigo-700/50 pb-5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
+                                            <svg className="w-6 h-6 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z" /></svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-white uppercase tracking-widest">
+                                                Prescripción de Ejercicio
+                                            </h3>
+                                            <p className="text-xs text-indigo-200/80 font-medium mt-1">Estructura para Machine Learning y Progreso Físico.</p>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex max-w-max items-center bg-indigo-800 text-indigo-100 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-indigo-600/50 shadow-inner">
+                                        Módulo Analítico Principal
+                                    </span>
+                                </div>
+
+                                <label className="block text-xs font-bold text-indigo-300 mb-2 uppercase tracking-wide ml-1">Detalle (Ejercicio | Sets | Reps | Carga | Opcionales)</label>
+                                <textarea
+                                    name="ejerciciosPrescritos"
+                                    value={formData.ejerciciosPrescritos}
+                                    onChange={handleChange}
+                                    disabled={isClosed}
+                                    placeholder="Ej:&#10;1) Sentadilla Búlgara | 3 x 12 | Mancuernas 10kg | RIR 2&#10;2) Puente Glúteo | 4 x 15 | Banda Elástica Roja&#10;3) Plancha Frontal | 3 x 45 seg | Peso Corporal"
+                                    className="w-full bg-slate-900/50 border-2 border-indigo-700/50 hover:border-indigo-500/80 focus:border-indigo-400 focus:bg-slate-900 backdrop-blur-md rounded-2xl px-5 py-5 text-sm text-indigo-50 outline-none transition-all resize-y disabled:bg-slate-900/80 disabled:opacity-70 shadow-inner min-h-[180px] leading-relaxed placeholder:text-indigo-400/40 font-medium"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <h4 className="text-sm font-extrabold text-amber-900 border-b border-amber-200/50 pb-1 mb-2">Justificación de Auditoría por Cierre Extraordinario (&gt;36 hrs)</h4>
-                            <p className="text-sm text-amber-800 font-medium italic bg-amber-100/50 p-3 rounded-lg border border-amber-200/50">"{initialData.lateCloseReason}"</p>
+                    </div>
+
+                    {/* 5. SECCIÓN RESULTADOS */}
+                    <AccordionSection
+                        id="sec-result"
+                        title="Resultados y Pronóstico"
+                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+                        theme="rose"
+                        defaultOpen={true}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                            <div className="md:col-span-4 lg:col-span-3">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Salida (EVA) <span className="text-rose-600">*</span></label>
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="number" min="0" max="10"
+                                        name="dolorSalida"
+                                        value={formData.dolorSalida}
+                                        onChange={handleChange}
+                                        disabled={isClosed}
+                                        placeholder="0-10"
+                                        className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
+                                    />
+                                    <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
+                                </div>
+                            </div>
+                            <div className="md:col-span-8 lg:col-span-9">
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
+                                <textarea
+                                    name="planProximaSesion"
+                                    value={formData.planProximaSesion}
+                                    onChange={handleChange}
+                                    disabled={isClosed}
+                                    rows={2}
+                                    placeholder="Ej: Bajó dolor general. Próxima: Iniciar cargas excéntricas..."
+                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
+                                />
+                            </div>
+                        </div>
+                    </AccordionSection>
+
+                    {/* ALERTA: AUDITORÍA CIERRE TARDÍO PREEXISTENTE */}
+                    {isClosed && initialData?.lateCloseReason && (
+                        <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 mt-6 flex items-start gap-4 shadow-sm mb-8">
+                            <div className="bg-amber-100 p-2.5 rounded-full mt-1 shrink-0">
+                                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            </div>
+                            <div>
+                                <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-widest border-b border-amber-200/50 pb-2 mb-2">Auditoría: Cierre Extemporáneo Registrado</h4>
+                                <p className="text-sm text-amber-800 font-medium bg-amber-100/50 p-4 rounded-xl border border-amber-200/50 italic leadning-relaxed hover:bg-amber-100 transition-colors">"{initialData.lateCloseReason}"</p>
+                            </div>
+                        </div>
+                    )}
+                </form>
+
+                {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
+                {isAttemptingClose && requiresLateReason && (
+                    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
+                        <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
+                                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
+                                Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
+                                Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
+                            </p>
+
+                            <div className="space-y-4 mb-8">
+                                <select
+                                    value={lateCategory}
+                                    onChange={(e) => setLateCategory(e.target.value)}
+                                    className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
+                                >
+                                    <option value="" disabled>Seleccione Causal Directa...</option>
+                                    <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
+                                    <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
+                                    <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
+                                    <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
+                                    <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
+                                    <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
+                                </select>
+
+                                <textarea
+                                    value={lateText}
+                                    onChange={(e) => setLateText(e.target.value)}
+                                    placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
+                                    className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
+                                />
+                            </div>
+
+                            <div className="flex flex-col-reverse md:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAttemptingClose(false)}
+                                    className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
+                                >
+                                    Cancelar (Dejar Abierto)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmLateClose}
+                                    className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
+                                >
+                                    Firmar y Cerrar Evolución
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
-            </form>
+            </div>
 
-            <hr className="border-slate-200 my-6" />
-
-            {/* SECCIÓN ACCIONES LEGALES Y 36 HORAS */}
-            {isAttemptingClose && requiresLateReason ? (
-                // PANTALLA TRAMPA 36 HORAS
-                <div className="bg-amber-100 p-6 rounded-xl border border-amber-300 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-start gap-3">
-                        <div className="text-amber-600 mt-1">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-amber-900 border-b border-amber-200 pb-1 inline-block">Cierre Extemporáneo Detectado</h4>
-                            <p className="text-sm text-amber-800 mt-2">
-                                Han transcurrido <b>más de 36 horas</b> desde la fecha médica indicada de la sesión.
-                                Por protocolo bioético, para cerrar permanentemente esta evolución debe justificar el motivo del atraso al completar el legajo. Éste no podrá modificarse luego de firmarlo.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <select
-                            value={lateCategory}
-                            onChange={(e) => setLateCategory(e.target.value)}
-                            className="w-full p-3 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 bg-white font-medium text-amber-900"
-                        >
-                            <option value="" disabled>Seleccione el motivo médico/administrativo...</option>
-                            <option value="Corte de Energía/Internet">Corte de Energía / Sin Internet en Clínica</option>
-                            <option value="Traspaso desde Papel">Traspaso de registro físico (Papel) al sistema</option>
-                            <option value="Emergencia Clínica">Emergencia Clínica / Paciente Descompensado</option>
-                            <option value="Error de Sistema">Fallo temporal de la plataforma o dispositivo</option>
-                            <option value="Olvido/Omisión Administrativa">Olvido u Omisión Administrativa</option>
-                            <option value="Otro">Otro motivo (Especificar debajo)</option>
-                        </select>
-
-                        <textarea
-                            value={lateText}
-                            onChange={(e) => setLateText(e.target.value)}
-                            placeholder="Detalle obligatoriamente la justificación del cierre extemporáneo..."
-                            className="w-full p-3 border border-amber-300 rounded focus:ring-2 focus:ring-amber-500 bg-white"
-                            rows={2}
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setIsAttemptingClose(false)}
-                            className="bg-white px-4 py-2 font-medium text-slate-600 hover:bg-slate-50 rounded border border-slate-200 transition"
-                        >
-                            Quiero dejar el registro abierto en Borrador
-                        </button>
-                        <button
-                            type="button"
-                            onClick={confirmLateClose}
-                            className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded shadow-sm transition"
-                        >
-                            Firmar Justificativo y Cerrar Evolución
-                        </button>
-                    </div>
-                </div>
-
-            ) : (
-                // BARRA BOTONES HABITUAL (Solo visuales si no está CERRADA)
-                <div className="flex justify-between items-center">
-                    <div>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={loading}
-                            className="px-5 py-2 rounded font-medium text-slate-600 hover:bg-slate-100 transition"
-                        >
-                            Volver Atrás
-                        </button>
-                    </div>
+            {/* BOTTOM BAR FIJA (Thumb-friendly Actions) */}
+            <div className="bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 pb-6 md:pb-4 fixed bottom-0 left-0 right-0 z-40 md:sticky md:bottom-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+                <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
 
                     {!isClosed && (
-                        <div className="flex gap-2">
+                        <>
                             <button
                                 type="submit"
                                 form="evolution-form" // Triggers onSaveDraft
                                 disabled={loading}
-                                className="px-5 py-2 rounded border border-slate-300 font-medium text-slate-700 bg-white hover:bg-slate-50 transition flex items-center gap-2 shadow-sm"
+                                className="flex-1 max-w-[200px] py-4 md:py-3 rounded-2xl border-2 border-slate-200 font-bold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                             >
-                                {loading && <span className="animate-spin text-slate-400">↻</span>}
-                                Guardar Borrador
+                                {loading ? <span className="animate-spin text-slate-400 font-normal">↻</span> : <span>Guardar Borrador</span>}
                             </button>
                             <button
                                 type="button"
                                 onClick={handleAttemptClose}
                                 disabled={loading}
-                                className="px-6 py-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm transition"
+                                className="flex-1 py-4 md:py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50"
                             >
-                                Validar y Cierre Total
+                                Cerrar Evolución
                             </button>
+                        </>
+                    )}
+
+                    {isClosed && (
+                        <div className="flex-1 flex justify-center text-center items-center py-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <p className="text-slate-500 font-bold text-sm tracking-wide">DOCUMENTO FIRMADO Y SELLADO</p>
                         </div>
                     )}
                 </div>
-            )}
+            </div>
+
         </div>
     );
 }
