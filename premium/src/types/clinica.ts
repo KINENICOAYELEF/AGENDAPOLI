@@ -57,6 +57,9 @@ export interface ExercisePrescription {
     repsOrTime: string;
     loadKg?: string;
     rpeOrRir?: string;
+    rest?: string;
+    frequency?: string;
+    progressionCriteria?: string;
     notes?: string;
 }
 
@@ -68,6 +71,7 @@ export interface AuditTrail {
     closedAt?: string;
     closedBy?: string;
     lateReason?: string;
+    copiedFromEvolutionId?: string; // Para FASE 2.1.6
 }
 
 export interface Evolucion {

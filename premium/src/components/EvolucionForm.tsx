@@ -6,7 +6,7 @@ import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Disclosure, Transition } from '@headlessui/react';
-import { ChevronUpIcon, ChevronLeftIcon, PlusIcon, TrashIcon } from '@heroicons/react/20/solid';
+import { ChevronUpIcon, ChevronLeftIcon, PlusIcon, TrashIcon, DocumentDuplicateIcon } from '@heroicons/react/20/solid';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -238,6 +238,57 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             ...prev,
             exercises: prev.exercises?.filter((ex: ExercisePrescription) => ex.id !== id)
         }));
+    };
+
+    const duplicatePreviousExercises = async () => {
+        if (isClosed || !user) return;
+        try {
+            // Busca la última evolución cerrada de este proceso (o usuario globalmente)
+            const evolsRef = collection(db, "evoluciones");
+            let q;
+            if (procesoId) {
+                q = query(evolsRef, where("procesoId", "==", procesoId), orderBy("sessionAt", "desc"), limit(2));
+            } else {
+                q = query(evolsRef, where("usuariaId", "==", usuariaId), orderBy("sessionAt", "desc"), limit(2));
+            }
+            const querySnapshot = await getDocs(q);
+            // La primera podría ser ESTA MISMA si ya guardamos un draft. 
+            // Buscamos la primera evolución distinta a la actual que tenga ejercicios.
+            let lastEvol: any = null;
+            querySnapshot.forEach(doc => {
+                if (doc.id !== initialData?.id && !lastEvol) {
+                    lastEvol = { id: doc.id, ...doc.data() };
+                }
+            });
+
+            if (!lastEvol || !lastEvol.exercises || lastEvol.exercises.length === 0) {
+                alert("No se encontró una evolución médica previa con ejercicios para duplicar.");
+                return;
+            }
+
+            // Duplicar creando IDs frescos para la UI, copiando propiedades
+            const duplicatedExercises = lastEvol.exercises.map((ex: any) => ({
+                ...ex,
+                id: generateId()
+            }));
+
+            setFormData(prev => ({
+                ...prev,
+                exercises: [
+                    ...(prev.exercises || []),
+                    ...duplicatedExercises
+                ],
+                audit: {
+                    ...(prev.audit || {}),
+                    copiedFromEvolutionId: lastEvol.id
+                }
+            }));
+
+            alert(`✅ Se han copiado ${duplicatedExercises.length} ejercicios desde una evolución anterior.`);
+        } catch (error) {
+            console.error("Error al duplicar ejercicios:", error);
+            alert("Hubo un error al intentar acceder a los ejercicios anteriores.");
+        }
     };
 
     // Método universal de Guardado para Borrador o Cierre
@@ -643,31 +694,52 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                                            <div className="md:col-span-5">
-                                                <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
+                                            <div className="col-span-1 md:col-span-12">
+                                                <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
                                             </div>
-                                            <div className="md:col-span-2 col-span-1">
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Series</label>
                                                 <input type="text" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={e => updateExercise(ex.id, "sets", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
                                             </div>
-                                            <div className="md:col-span-3 col-span-1">
+                                            <div className="col-span-1 md:col-span-3">
+                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Repeticiones / Tiempo</label>
                                                 <input type="text" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={e => updateExercise(ex.id, "repsOrTime", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
                                             </div>
-                                            <div className="md:col-span-2 col-span-1">
-                                                <input type="text" placeholder="Carga/RIR" disabled={isClosed} value={ex.loadKg} onChange={e => updateExercise(ex.id, "loadKg", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Carga (Kg)</label>
+                                                <input type="text" placeholder="Carga" disabled={isClosed} value={ex.loadKg || ""} onChange={e => updateExercise(ex.id, "loadKg", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
                                             </div>
-                                            <div className="md:col-span-12">
-                                                <input type="text" placeholder="Notas/Ajustes biomecánicos (Opcional)" disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                            <div className="col-span-1 md:col-span-2">
+                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Percepción (RIR/RPE)</label>
+                                                <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                            </div>
+                                            <div className="col-span-1 md:col-span-3">
+                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Descanso (Seg/Min)</label>
+                                                <input type="text" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={e => updateExercise(ex.id, "rest", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                            </div>
+
+                                            <div className="col-span-1 md:col-span-6">
+                                                <input type="text" placeholder="Criterio de Progresión (Ej: Subir carga si RIR > 2)" disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                            </div>
+                                            <div className="col-span-1 md:col-span-6">
+                                                <input type="text" placeholder="Notas / Frecuencia / Ajustes biomecánicos" disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
                                             </div>
                                         </div>
                                     </div>
                                 ))}
 
                                 {!isClosed && (
-                                    <button type="button" onClick={addExercise} className="w-full mt-2 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
-                                        <PlusIcon className="w-5 h-5" />
-                                        Agregar Ejercicio Específico
-                                    </button>
+                                    <div className="flex flex-col md:flex-row gap-3 mt-4">
+                                        <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
+                                            <PlusIcon className="w-5 h-5" />
+                                            Agregar Fila de Ejercicio
+                                        </button>
+                                        <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm backdrop-blur-sm group">
+                                            <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
+                                            Duplicar Evolución Anterior
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
