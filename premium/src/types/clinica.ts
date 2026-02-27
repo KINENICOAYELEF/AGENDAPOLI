@@ -52,13 +52,21 @@ export interface Evaluacion {
 
 export interface ExercisePrescription {
     id: string; // ID local para key mapping en UI
-    name: string;
+    name: string; // Obligatorio
+    pattern?: 'Sentadilla' | 'Bisagra' | 'Empuje' | 'Tracción' | 'Core' | 'Movilidad' | 'Respiratorio' | 'Potencia' | 'Otro';
+    side?: 'Bilateral' | 'Unilateral Izq' | 'Unilateral Der';
+    equipment?: string[]; // Array de items (Banda, Mancuerna, etc.)
     sets: string;
     repsOrTime: string;
     loadKg?: string;
-    rpeOrRir?: string;
+    rpe?: string; // Nuevo exclusivo
+    rir?: string; // Nuevo exclusivo
+    rpeOrRir?: string; // Legacy field
     rest?: string;
     frequency?: string;
+
+    // Variables premium
+    mainVariable?: 'Carga' | 'ROM' | 'Velocidad' | 'Volumen' | 'Densidad' | 'Técnica';
     progressionCriteria?: string;
     notes?: string;
 }
@@ -100,6 +108,9 @@ export interface Evolucion {
     };
 
     sessionGoal: string; // Antes objetivoSesion
+
+    // Preferencias y UI State guardadas en DB
+    perceptionMode?: 'RIR' | 'RPE'; // Modo perceptual del kinesiólogo
 
     // Soporte Legacy y Pro para refactor progresivo
     interventions: InterventionRecord[] | {

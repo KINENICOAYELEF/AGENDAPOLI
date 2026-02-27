@@ -281,7 +281,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }));
     };
 
-    const updateExercise = (id: string, field: keyof ExercisePrescription, value: string) => {
+    const updateExercise = (id: string, field: keyof ExercisePrescription, value: any) => {
         setFormData((prev: any) => ({
             ...prev,
             exercises: prev.exercises?.map((ex: ExercisePrescription) => ex.id === id ? { ...ex, [field]: value } : ex)
@@ -933,68 +933,155 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                 <h3 className="text-base font-black text-white uppercase tracking-widest">
                                                     Prescripción de Ejercicio
                                                 </h3>
-                                                <p className="text-xs text-indigo-200/80 font-medium mt-1">Estructura para Machine Learning y Progreso Físico.</p>
+                                                <p className="text-xs text-indigo-200/80 font-medium mt-1">Estructura clínica con variables biomédicas.</p>
                                             </div>
                                         </div>
-                                        <span className="inline-flex max-w-max items-center bg-indigo-800 text-indigo-100 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-indigo-600/50 shadow-inner">
-                                            Módulo Analítico Principal
-                                        </span>
+
+                                        {/* PERCEPTION MODE SELECTOR GLOBAL */}
+                                        <div className="flex items-center gap-1 bg-indigo-950/70 p-1 rounded-xl border border-indigo-800/60 shadow-inner">
+                                            <button
+                                                type="button"
+                                                disabled={isClosed}
+                                                onClick={() => setFormData(prev => ({ ...prev, perceptionMode: 'RIR' }))}
+                                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${(!formData.perceptionMode || formData.perceptionMode === 'RIR') ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-200'}`}
+                                            >
+                                                Usar RIR
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isClosed}
+                                                onClick={() => setFormData(prev => ({ ...prev, perceptionMode: 'RPE' }))}
+                                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${formData.perceptionMode === 'RPE' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-200'}`}
+                                            >
+                                                Usar RPE
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <label className="block text-[11px] font-bold text-indigo-300 mb-2 uppercase tracking-wide ml-1">Planilla Dinámica de Ejercicios</label>
+                                    <div className="flex items-end justify-between mb-3">
+                                        <label className="block text-[11px] font-bold text-indigo-300 uppercase tracking-wide ml-1">Planilla Dinámica de Ejercicios</label>
+                                        <span className="text-[10px] text-indigo-400 font-medium">{formData.exercises?.length || 0} cargados</span>
+                                    </div>
 
-                                    {formData.exercises?.map((ex, index) => (
-                                        <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80">
-                                            <div className="flex justify-between items-center mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black text-indigo-400/80 uppercase tracking-widest bg-indigo-950/50 px-2 py-1 rounded shadow-inner border border-indigo-800/50">Ejercicio {index + 1}</span>
-                                                    {!isClosed && (
-                                                        <div className="flex bg-slate-900/50 rounded-lg border border-indigo-900/50 overflow-hidden">
-                                                            <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
-                                                                <ChevronUpIcon className="w-4 h-4" />
+                                    {formData.exercises?.map((ex, index) => {
+                                        const currentPerception = formData.perceptionMode || 'RIR';
+
+                                        return (
+                                            <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80 shadow-md">
+                                                {/* HEADER DEL EJERCICIO */}
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-black text-white bg-indigo-600 px-2.5 py-1.5 rounded uppercase tracking-widest shadow-md border border-indigo-500">Ej. {index + 1}</span>
+                                                        {!isClosed && (
+                                                            <div className="flex bg-slate-950/50 rounded-lg border border-indigo-900/50 overflow-hidden shadow-inner ml-2">
+                                                                <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
+                                                                    <ChevronUpIcon className="w-4 h-4" />
+                                                                </button>
+                                                                <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
+                                                                    <ChevronDownIcon className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {!isClosed && index > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const prevEx = formData.exercises![index - 1];
+                                                                    const duplicated = { ...prevEx, id: generateId() };
+                                                                    const newList = [...formData.exercises!];
+                                                                    newList.splice(index, 1, duplicated);
+                                                                    setFormData(prev => ({ ...prev, exercises: newList }));
+                                                                }}
+                                                                title="Copiar datos del ejercicio anterior"
+                                                                className="text-[10px] font-bold text-indigo-400 bg-indigo-950/40 hover:bg-indigo-800 px-2 py-1.5 rounded-lg border border-indigo-800 transition-all"
+                                                            >
+                                                                Copiar de Arriba
                                                             </button>
-                                                            <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
-                                                                <ChevronDownIcon className="w-4 h-4" />
+                                                        )}
+                                                        {!isClosed && (
+                                                            <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400 hover:text-white bg-rose-950/40 hover:bg-rose-700 p-1.5 rounded-lg transition-all border border-rose-900 shadow-sm">
+                                                                <TrashIcon className="w-4 h-4" />
                                                             </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* BODY DEL EJERCICIO */}
+                                                <div className="grid grid-cols-1 md:grid-cols-12 gap-y-4 gap-x-3 mt-3">
+                                                    {/* ROW 1: Nombre y Clasificación */}
+                                                    <div className="col-span-1 md:col-span-5">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Nombre Ejercicio <span className="text-rose-500">*</span></label>
+                                                        <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 py-2 text-sm font-black text-white outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30 h-10" />
+                                                    </div>
+                                                    <div className="col-span-1 md:col-span-4">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Implementos Principales</label>
+                                                        <input type="text" placeholder="Mancuerna, Banda, etc." disabled={isClosed} value={ex.equipment?.join(', ') || ''} onChange={e => {
+                                                            const val = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                                            updateExercise(ex.id, "equipment", val.length ? val : undefined as any);
+                                                        }} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 py-2 text-sm font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all placeholder:text-indigo-400/30 h-10" />
+                                                    </div>
+                                                    <div className="col-span-1 md:col-span-3">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Patrón / Lado</label>
+                                                        <div className="flex gap-1 h-10">
+                                                            <select disabled={isClosed} value={ex.pattern || ""} onChange={e => updateExercise(ex.id, "pattern", e.target.value || undefined as any)} className="w-[60%] bg-slate-950/70 border border-indigo-800/80 rounded-l-xl px-1 text-[11px] font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
+                                                                <option value="">Patrón...</option>
+                                                                <option value="Sentadilla">Sentadilla</option>
+                                                                <option value="Bisagra">Bisagra</option>
+                                                                <option value="Empuje">Empuje</option>
+                                                                <option value="Tracción">Tracción</option>
+                                                                <option value="Core">Core</option>
+                                                                <option value="Movilidad">Movilidad</option>
+                                                                <option value="Otro">Otro</option>
+                                                            </select>
+                                                            <select disabled={isClosed} value={ex.side || ""} onChange={e => updateExercise(ex.id, "side", e.target.value || undefined as any)} className="w-[40%] bg-slate-950/70 border border-indigo-800/80 border-l-0 rounded-r-xl px-1 text-[11px] font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
+                                                                <option value="">Lado...</option>
+                                                                <option value="Bilateral">Bi</option>
+                                                                <option value="Unilateral Izq">Izq</option>
+                                                                <option value="Unilateral Der">Der</option>
+                                                            </select>
                                                         </div>
-                                                    )}
-                                                </div>
-                                                {!isClosed && (
-                                                    <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400/70 hover:text-rose-400 bg-rose-950/30 hover:bg-rose-950/80 p-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-900">
-                                                        <TrashIcon className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
-                                                <div className="col-span-1 md:col-span-12">
-                                                    <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <NumericStepper label="Series" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={val => updateExercise(ex.id, "sets", val)} />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-3">
-                                                    <NumericStepper label="Repeticiones / Tiempo" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={val => updateExercise(ex.id, "repsOrTime", val)} />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <NumericStepper label="Carga (Kg)" placeholder="Carga" step={2.5} disabled={isClosed} value={ex.loadKg || ""} onChange={val => updateExercise(ex.id, "loadKg", val)} />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1.5 ml-1 uppercase tracking-wider">Percepción (RIR/RPE)</label>
-                                                    <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center h-11" />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-3">
-                                                    <NumericStepper label="Descanso (Seg/Min)" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={val => updateExercise(ex.id, "rest", val)} />
-                                                </div>
+                                                    </div>
 
-                                                <div className="col-span-1 md:col-span-6">
-                                                    <input type="text" placeholder="Criterio de Progresión (Ej: Subir carga si RIR > 2)" disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
-                                                </div>
-                                                <div className="col-span-1 md:col-span-6">
-                                                    <input type="text" placeholder="Notas / Frecuencia / Ajustes biomecánicos" disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                                    {/* ROW 2: Steppers Dosis */}
+                                                    <div className="col-span-1 md:col-span-12 my-1 border-t border-indigo-900/30 pt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+                                                        <NumericStepper label="Series" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={val => updateExercise(ex.id, "sets", val)} />
+                                                        <NumericStepper label="Reps/Tiempo" placeholder="Reps" disabled={isClosed} value={ex.repsOrTime} onChange={val => updateExercise(ex.id, "repsOrTime", val)} />
+                                                        <NumericStepper label="Carga" placeholder="Kg" step={2.5} disabled={isClosed} value={ex.loadKg || ""} onChange={val => updateExercise(ex.id, "loadKg", val)} />
+
+                                                        {/* Selector Dinámico de Percepción RIR/RPE */}
+                                                        {currentPerception === 'RIR' ? (
+                                                            <NumericStepper label="RIR (Reserva)" placeholder="0-10" step={1} min={0} max={10} disabled={isClosed} value={ex.rir || ex.rpeOrRir || ""} onChange={val => updateExercise(ex.id, "rir", val)} />
+                                                        ) : (
+                                                            <NumericStepper label="RPE (Esfuerzo)" placeholder="1-10" step={1} min={1} max={10} disabled={isClosed} value={ex.rpe || ex.rpeOrRir || ""} onChange={val => updateExercise(ex.id, "rpe", val)} />
+                                                        )}
+
+                                                        <NumericStepper label="Descanso" placeholder="Seg/Min" disabled={isClosed} value={ex.rest || ""} onChange={val => updateExercise(ex.id, "rest", val)} />
+                                                    </div>
+
+                                                    {/* ROW 3: Progresión y Ajustes */}
+                                                    <div className="col-span-1 md:col-span-4 mt-2">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Clave de Progresión</label>
+                                                        <select disabled={isClosed} value={ex.mainVariable || ""} onChange={e => updateExercise(ex.id, "mainVariable", e.target.value || undefined as any)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
+                                                            <option value="">¿Qué variable progresar?</option>
+                                                            <option value="Carga">Subir Carga</option>
+                                                            <option value="Volumen">Subir Volumen (Reps/Series)</option>
+                                                            <option value="Densidad">Bajar Descanso (Densidad)</option>
+                                                            <option value="ROM">Aumentar Rango (ROM)</option>
+                                                            <option value="Velocidad">Mayor Velocidad</option>
+                                                            <option value="Técnica">Mejora Técnica / Biomecánica</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-span-1 md:col-span-8 mt-2">
+                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Ajustes Biomecánicos / Notas</label>
+                                                        <input type="text" placeholder="Ej: Foco en rotación externa, elástico amarillo..." disabled={isClosed} value={ex.notes || ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30" />
+                                                    </div>
+
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
 
                                     {!isClosed && (
                                         <div className="flex flex-col md:flex-row gap-3 mt-4">
