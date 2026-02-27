@@ -120,7 +120,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }
     }, [initialData, usuariaId]);
 
-    const handleNestedChange = (parent: "pain" | "interventions", field: string, value: any) => {
+    const handleNestedChange = (parent: "pain" | "interventions" | "outcomesSnapshot", field: string, value: any) => {
         setFormData((prev: any) => ({
             ...prev,
             [parent]: {
@@ -280,6 +280,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 nextPlan: formData.nextPlan || "",
                 educationNotes: formData.educationNotes || "",
                 objectivesWorked: formData.objectivesWorked,
+                outcomesSnapshot: formData.outcomesSnapshot,
 
                 audit: finalAudit,
                 notesLegacy: formData.notesLegacy
@@ -704,6 +705,61 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                     placeholder="Ej: Bajó dolor general. Próxima: Iniciar cargas excéntricas..."
                                     className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
                                 />
+                            </div>
+
+                            {/* OUTCOMES RÁPIDOS (FASE 2.1.5) */}
+                            <div className="md:col-span-12 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                <div>
+                                    <div className="flex justify-between items-end mb-3">
+                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                            GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
+                                        </label>
+                                        <span className="text-sm font-black text-rose-600 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
+                                            {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
+                                                ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
+                                                : "0"}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="-7" max="7" step="1"
+                                        disabled={isClosed}
+                                        value={formData.outcomesSnapshot?.groc || 0}
+                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
+                                        className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                        <span>Mucho Peor (-7)</span>
+                                        <span>Igual (0)</span>
+                                        <span>Mucho Mejor (+7)</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between items-end mb-3">
+                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                            SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
+                                        </label>
+                                        <span className="text-sm font-black text-blue-600 bg-blue-100 px-2.5 py-0.5 rounded-full border border-blue-200">
+                                            {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
+                                                ? `${formData.outcomesSnapshot.sane}%`
+                                                : "0%"}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0" max="100" step="5"
+                                        disabled={isClosed}
+                                        value={formData.outcomesSnapshot?.sane || 0}
+                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
+                                        className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                        <span>0% (Pésimo)</span>
+                                        <span>50%</span>
+                                        <span>100% (Normal)</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </AccordionSection>
