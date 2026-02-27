@@ -28,7 +28,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
         if (!globalActiveYear || !personaUsuariaId) return;
         try {
             setLoading(true);
-            setIndexError(false);
+            setIndexError(null);
             const data = await ProcesosService.getByPersona(globalActiveYear, personaUsuariaId);
             setProcesos(data);
         } catch (error: any) {
