@@ -103,7 +103,7 @@ export interface Evolucion {
     clinicianResponsible: string; // Antes autorUid/autorName
 
     // Estado principal de la sesión (Fase 2.1.14)
-    sessionStatus?: 'Realizada' | 'No asiste' | 'Cancelada' | 'Suspendida';
+    sessionStatus?: 'Realizada' | 'No asiste' | 'Cancelada' | 'Suspendida por mal estado';
 
     // Bloque extra opcional de signos vitales (Fase 2.1.14)
     vitalSigns?: {

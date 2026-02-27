@@ -838,7 +838,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                     <div className="md:col-span-2 mt-1 pt-4 border-t border-slate-200">
                                         <label className="block text-[11px] font-bold text-slate-600 mb-2 uppercase tracking-wide">Estado de la Sesión <span className="text-rose-500">*</span></label>
                                         <div className="flex flex-wrap gap-2">
-                                            {['Realizada', 'No asiste', 'Cancelada', 'Suspendida'].map(status => (
+                                            {['Realizada', 'No asiste', 'Cancelada', 'Suspendida por mal estado'].map(status => (
                                                 <button
                                                     key={status}
                                                     type="button"
