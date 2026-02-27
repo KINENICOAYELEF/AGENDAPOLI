@@ -6,7 +6,7 @@ import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Disclosure, Transition } from '@headlessui/react';
-import { ChevronUpIcon, ChevronLeftIcon, PlusIcon, TrashIcon, DocumentDuplicateIcon } from '@heroicons/react/20/solid';
+import { ChevronUpIcon, ChevronLeftIcon, PlusIcon, TrashIcon, DocumentDuplicateIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -240,6 +240,20 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }));
     };
 
+    const moveExercise = (index: number, direction: 'up' | 'down') => {
+        if (isClosed) return;
+        setFormData((prev: any) => {
+            if (!prev.exercises) return prev;
+            const newExercises = [...prev.exercises];
+            if (direction === 'up' && index > 0) {
+                [newExercises[index - 1], newExercises[index]] = [newExercises[index], newExercises[index - 1]];
+            } else if (direction === 'down' && index < newExercises.length - 1) {
+                [newExercises[index + 1], newExercises[index]] = [newExercises[index], newExercises[index + 1]];
+            }
+            return { ...prev, exercises: newExercises };
+        });
+    };
+
     const duplicatePreviousExercises = async () => {
         if (isClosed || !user) return;
         try {
@@ -368,6 +382,15 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         if (!hasValidStart || !formData.sessionGoal || !hasValidEnd || !formData.nextPlan) {
             alert("Para CERRAR la evolución debe completar los campos clínicos mínimos (EVAs, Objetivos y Plan). El EVA puede ser 0.");
             return;
+        }
+
+        // Validación Suave: Al menos los ejercicios deben tener nombre
+        if (formData.exercises && formData.exercises.length > 0) {
+            const hasEmptyNames = formData.exercises.some((ex: ExercisePrescription) => !ex.name.trim());
+            if (hasEmptyNames) {
+                alert("Todos los ejercicios prescritos deben tener un Nombre válido. Elimine las filas vacías si no se usarán.");
+                return;
+            }
         }
 
         // Validación 2: Regla Estricta 36 Horas
@@ -687,7 +710,19 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 {formData.exercises?.map((ex, index) => (
                                     <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80">
                                         <div className="flex justify-between items-center mb-3">
-                                            <span className="text-[10px] font-black text-indigo-400/80 uppercase tracking-widest bg-indigo-950/50 px-2 py-1 rounded shadow-inner border border-indigo-800/50">Ejercicio {index + 1}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-indigo-400/80 uppercase tracking-widest bg-indigo-950/50 px-2 py-1 rounded shadow-inner border border-indigo-800/50">Ejercicio {index + 1}</span>
+                                                {!isClosed && (
+                                                    <div className="flex bg-slate-900/50 rounded-lg border border-indigo-900/50 overflow-hidden">
+                                                        <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
+                                                            <ChevronUpIcon className="w-4 h-4" />
+                                                        </button>
+                                                        <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
+                                                            <ChevronDownIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                             {!isClosed && (
                                                 <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400/70 hover:text-rose-400 bg-rose-950/30 hover:bg-rose-950/80 p-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-900">
                                                     <TrashIcon className="w-4 h-4" />
