@@ -388,22 +388,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const handleAttemptClose = () => {
         if (isClosed) return;
 
-        // Validación 1: Campos mínimos
-        const hasValidStart = formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "";
-        const hasValidEnd = formData.pain?.evaEnd !== undefined && formData.pain?.evaEnd !== "";
-
-        if (!hasValidStart || !formData.sessionGoal || !hasValidEnd || !formData.nextPlan) {
-            alert("Para CERRAR la evolución debe completar los campos clínicos mínimos (EVAs, Objetivos y Plan). El EVA puede ser 0.");
+        // Validación 1: Campos mínimos y asistentes (Lógica unificada)
+        if (missingFields.length > 0) {
+            alert(`Para CERRAR la evolución debe corregir los siguientes requisitos clínicos:\n\n- ${missingFields.join("\n- ")}`);
             return;
-        }
-
-        // Validación Suave: Al menos los ejercicios deben tener nombre
-        if (formData.exercises && formData.exercises.length > 0) {
-            const hasEmptyNames = formData.exercises.some((ex: ExercisePrescription) => !ex.name.trim());
-            if (hasEmptyNames) {
-                alert("Todos los ejercicios prescritos deben tener un Nombre válido. Elimine las filas vacías si no se usarán.");
-                return;
-            }
         }
 
         // Validación 2: Regla Estricta 36 Horas
@@ -552,15 +540,16 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             const evaOut = Number(formData.pain?.evaEnd);
             if (evaOut > evaIn) {
                 const txt = (formData.nextPlan || "").toLowerCase();
-                const posWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito"];
+                const posWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito", "buen", "favorable", "progreso"];
                 if (posWords.some(w => txt.includes(w))) {
+                    missingFields.push("Aclaración de Contradicción Clínica (Dolor aumentó pero texto sugiere mejora)");
                     assistantCards.push({
                         id: 'contradiction',
-                        type: 'warning',
-                        title: 'Posible Contradicción Clínica',
-                        message: `El EVA reporta un aumento de dolor (${evaIn} a ${evaOut}), pero el plan sugiere mejora o alivio. Asegúrate de aclararlo.`,
-                        icon: <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />,
-                        style: "bg-amber-50 border-amber-200 text-amber-800"
+                        type: 'error',
+                        title: 'Contradicción Clínica Detectada',
+                        message: `El EVA reporta un aumento de dolor (${evaIn} a ${evaOut}), pero el texto sugiere mejoría. Corrija los EVAs o elimine las palabras ambiguas del texto para liberar la firma.`,
+                        icon: <ExclamationCircleIcon className="w-5 h-5 text-rose-500" />,
+                        style: "bg-rose-50 border-rose-200 text-rose-800"
                     });
                 }
             }
