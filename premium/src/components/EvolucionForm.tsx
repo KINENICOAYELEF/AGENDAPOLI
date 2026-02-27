@@ -20,6 +20,8 @@ import {
     ClockIcon,
     SparklesIcon
 } from '@heroicons/react/20/solid';
+import { EvaSlider } from "./ui/EvaSlider";
+import { NumericStepper } from "./ui/NumericStepper";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -829,22 +831,15 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 theme="emerald"
                             >
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
-                                    <div className="md:col-span-4 lg:col-span-3">
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Inicio (EVA) <span className="text-emerald-600">*</span></label>
-                                        <div className="relative flex items-center">
-                                            <input
-                                                type="number" min="0" max="10"
-                                                name="evaStart"
-                                                value={formData.pain?.evaStart || ""}
-                                                onChange={(e) => handleNestedChange("pain", "evaStart", e.target.value)}
-                                                disabled={isClosed}
-                                                placeholder="0-10"
-                                                className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
-                                            />
-                                            <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
-                                        </div>
+                                    <div className="col-span-1 md:col-span-12">
+                                        <EvaSlider
+                                            label="Dolor Inicio (EVA)"
+                                            value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
+                                            onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
+                                            disabled={isClosed}
+                                        />
                                     </div>
-                                    <div className="md:col-span-8 lg:col-span-9">
+                                    <div className="col-span-1 md:col-span-12">
                                         <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Objetivo de la Sesión <span className="text-emerald-600">*</span></label>
                                         <textarea
                                             name="sessionGoal"
@@ -974,24 +969,20 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                     <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Series</label>
-                                                    <input type="text" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={e => updateExercise(ex.id, "sets", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                    <NumericStepper label="Series" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={val => updateExercise(ex.id, "sets", val)} />
                                                 </div>
                                                 <div className="col-span-1 md:col-span-3">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Repeticiones / Tiempo</label>
-                                                    <input type="text" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={e => updateExercise(ex.id, "repsOrTime", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                    <NumericStepper label="Repeticiones / Tiempo" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={val => updateExercise(ex.id, "repsOrTime", val)} />
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Carga (Kg)</label>
-                                                    <input type="text" placeholder="Carga" disabled={isClosed} value={ex.loadKg || ""} onChange={e => updateExercise(ex.id, "loadKg", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                    <NumericStepper label="Carga (Kg)" placeholder="Carga" step={2.5} disabled={isClosed} value={ex.loadKg || ""} onChange={val => updateExercise(ex.id, "loadKg", val)} />
                                                 </div>
                                                 <div className="col-span-1 md:col-span-2">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Percepción (RIR/RPE)</label>
-                                                    <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1.5 ml-1 uppercase tracking-wider">Percepción (RIR/RPE)</label>
+                                                    <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center h-11" />
                                                 </div>
                                                 <div className="col-span-1 md:col-span-3">
-                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Descanso (Seg/Min)</label>
-                                                    <input type="text" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={e => updateExercise(ex.id, "rest", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                    <NumericStepper label="Descanso (Seg/Min)" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={val => updateExercise(ex.id, "rest", val)} />
                                                 </div>
 
                                                 <div className="col-span-1 md:col-span-6">
@@ -1030,22 +1021,21 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 defaultOpen={true}
                             >
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
-                                    <div className="md:col-span-4 lg:col-span-3">
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Salida (EVA) <span className="text-rose-600">*</span></label>
-                                        <div className="relative flex items-center">
-                                            <input
-                                                type="number" min="0" max="10"
-                                                name="evaEnd"
-                                                value={formData.pain?.evaEnd || ""}
-                                                onChange={(e) => handleNestedChange("pain", "evaEnd", e.target.value)}
-                                                disabled={isClosed}
-                                                placeholder="0-10"
-                                                className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
-                                            />
-                                            <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
-                                        </div>
+                                    <div className="col-span-1 md:col-span-12">
+                                        <EvaSlider
+                                            label="Dolor Salida (EVA)"
+                                            value={formData.pain?.evaEnd !== "" && formData.pain?.evaEnd !== undefined ? Number(formData.pain.evaEnd) : undefined}
+                                            onChange={(val) => handleNestedChange("pain", "evaEnd", val !== undefined ? String(val) : "")}
+                                            disabled={isClosed}
+                                            isEnd={true}
+                                            onSameAsStart={() => {
+                                                if (formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "") {
+                                                    handleNestedChange("pain", "evaEnd", formData.pain.evaStart);
+                                                }
+                                            }}
+                                        />
                                     </div>
-                                    <div className="md:col-span-8 lg:col-span-9">
+                                    <div className="col-span-1 md:col-span-12">
                                         <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
                                         <textarea
                                             name="nextPlan"
