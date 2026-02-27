@@ -279,6 +279,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 exercises: formData.exercises || [],
                 nextPlan: formData.nextPlan || "",
                 educationNotes: formData.educationNotes || "",
+                objectivesWorked: formData.objectivesWorked,
 
                 audit: finalAudit,
                 notesLegacy: formData.notesLegacy
