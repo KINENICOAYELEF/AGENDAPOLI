@@ -102,6 +102,26 @@ export interface Evolucion {
     sessionAt: string; // ISO string (Antes fechaHoraAtencion)
     clinicianResponsible: string; // Antes autorUid/autorName
 
+    // Estado principal de la sesión (Fase 2.1.14)
+    sessionStatus?: 'Realizada' | 'No asiste' | 'Cancelada' | 'Suspendida';
+
+    // Bloque extra opcional de signos vitales (Fase 2.1.14)
+    vitalSigns?: {
+        bloodPressureSys?: number | '';
+        bloodPressureDia?: number | '';
+        heartRate?: number | '';
+        spO2?: number | '';
+        acuteSymptoms?: string[];
+        symptomNote?: string;
+    };
+
+    // Sub-bloque si la sesión fue Suspendida/Cancelada
+    suspensionDetails?: {
+        reason: string;
+        action: string;
+        note?: string;
+    };
+
     pain: {
         evaStart: number | string;
         evaEnd: number | string;

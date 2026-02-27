@@ -60,6 +60,9 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
     return {
         ...data,
         status: data.status || (legacyData.estado === 'CERRADA' ? 'CLOSED' : 'DRAFT'),
+        sessionStatus: data.sessionStatus || 'Realizada',
+        vitalSigns: data.vitalSigns || { acuteSymptoms: [] },
+        suspensionDetails: data.suspensionDetails || { reason: '', action: '' },
         sessionAt: data.sessionAt || legacyData.fechaHoraAtencion || new Date().toISOString(),
         pain: data.pain || {
             evaStart: legacyData.dolorInicio ?? "",
@@ -152,7 +155,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }
     }, [isClosed, formData.sessionAt]);
 
-    const handleNestedChange = (parent: "pain" | "interventions" | "outcomesSnapshot", field: string, value: any) => {
+    const handleNestedChange = (parent: "pain" | "interventions" | "outcomesSnapshot" | "vitalSigns" | "suspensionDetails", field: string, value: any) => {
         setFormData((prev: any) => ({
             ...prev,
             [parent]: {
@@ -631,25 +634,31 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const missingFields: string[] = [];
 
     if (!isClosed) {
-        // Faltantes de cierre
         const hasValidStart = formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "";
         const hasValidEnd = formData.pain?.evaEnd !== undefined && formData.pain?.evaEnd !== "";
 
-        if (!hasValidStart) missingFields.push("EVA Inicio");
-        if (!hasValidEnd) missingFields.push("EVA Salida");
-        if (!formData.sessionGoal?.trim()) missingFields.push("Objetivo de Sesión");
-        if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
+        if (formData.sessionStatus === 'Realizada') {
+            // Faltantes de cierre normal
+            if (!hasValidStart) missingFields.push("EVA Inicio");
+            if (!hasValidEnd) missingFields.push("EVA Salida");
+            if (!formData.sessionGoal?.trim()) missingFields.push("Objetivo de Sesión");
+            if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
 
-        const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
-        if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
+            const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
+            if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
 
-        const hasIntervenciones = Array.isArray(formData.interventions)
-            ? formData.interventions.length > 0
-            : !!(formData.interventions && 'notes' in formData.interventions && formData.interventions.notes?.trim());
+            const hasIntervenciones = Array.isArray(formData.interventions)
+                ? formData.interventions.length > 0
+                : !!(formData.interventions && 'notes' in formData.interventions && formData.interventions.notes?.trim());
 
-        const hasEjercicios = formData.exercises && formData.exercises.length > 0;
-        if (!hasIntervenciones && !hasEjercicios) {
-            missingFields.push("Intervenciones Manuales o al menos 1 Ejercicio");
+            const hasEjercicios = formData.exercises && formData.exercises.length > 0;
+            if (!hasIntervenciones && !hasEjercicios) {
+                missingFields.push("Intervenciones Manuales o al menos 1 Ejercicio");
+            }
+        } else {
+            // Validaciones si la sesión no se realiza efectivamente
+            if (!formData.suspensionDetails?.reason?.trim()) missingFields.push("Auditoría: Motivo Principal");
+            if (!formData.suspensionDetails?.action?.trim()) missingFields.push("Auditoría: Acción Tomada");
         }
 
         if (missingFields.length > 0) {
@@ -823,6 +832,167 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                             value={initialData?.autorName || user?.email || "Cargando..."}
                                             className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
                                         />
+                                    </div>
+
+                                    {/* ESTADO DE SESIÓN (FASE 2.1.14) */}
+                                    <div className="md:col-span-2 mt-1 pt-4 border-t border-slate-200">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-2 uppercase tracking-wide">Estado de la Sesión <span className="text-rose-500">*</span></label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['Realizada', 'No asiste', 'Cancelada', 'Suspendida'].map(status => (
+                                                <button
+                                                    key={status}
+                                                    type="button"
+                                                    disabled={isClosed}
+                                                    onClick={() => setFormData(prev => ({ ...prev, sessionStatus: status as any }))}
+                                                    className={`px-4 py-2.5 rounded-xl text-[11px] tracking-wide uppercase font-black transition-all border ${formData.sessionStatus === status
+                                                        ? (status === 'Realizada' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md ring-1 ring-emerald-400 ring-offset-1' : 'bg-rose-600 text-white border-rose-500 shadow-md ring-1 ring-rose-400 ring-offset-1')
+                                                        : 'bg-slate-50 text-slate-500 border-slate-300 hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800'
+                                                        }`}
+                                                >
+                                                    {status}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* MÓDULO DE SUSPENSIÓN (Condicional) */}
+                                    {formData.sessionStatus && formData.sessionStatus !== 'Realizada' && (
+                                        <div className="md:col-span-2 mt-1 p-5 bg-rose-50/70 border border-rose-200 rounded-2xl shadow-inner">
+                                            <h4 className="text-[11px] uppercase tracking-wider font-black text-rose-800 mb-3 flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                                                Auditoría de Sesión {formData.sessionStatus}
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Motivo Principal <span className="text-rose-600">*</span></label>
+                                                    <select
+                                                        disabled={isClosed}
+                                                        value={formData.suspensionDetails?.reason || ""}
+                                                        onChange={(e) => handleNestedChange("suspensionDetails", "reason", e.target.value)}
+                                                        className="w-full border border-rose-200/80 bg-white rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 text-rose-900 shadow-sm transition-all"
+                                                    >
+                                                        <option value="">Seleccionar motivo...</option>
+                                                        <option value="Enfermedad aguda sistémica">Enfermedad aguda sistémica (Fiebre, viral...)</option>
+                                                        <option value="Dolor incapacitante">Dolor elevado limitante al movimiento</option>
+                                                        <option value="Problemas personales/laborales">Conflicto laboral o personal</option>
+                                                        <option value="Olvido o Confusión">Olvido o Confusión de horario</option>
+                                                        <option value="Falta de transporte">Ausencia de locomoción para asistir</option>
+                                                        <option value="Criterio clínico kinésico">Suspendido por Criterio Clínico intensesión</option>
+                                                        <option value="Otro justificativo">Otro justificativo</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Acción Tomada <span className="text-rose-600">*</span></label>
+                                                    <select
+                                                        disabled={isClosed}
+                                                        value={formData.suspensionDetails?.action || ""}
+                                                        onChange={(e) => handleNestedChange("suspensionDetails", "action", e.target.value)}
+                                                        className="w-full border border-rose-200/80 bg-white rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 text-rose-900 shadow-sm transition-all"
+                                                    >
+                                                        <option value="">Decisión clínica u operativa...</option>
+                                                        <option value="Educación y Auto-manejo">Entregar pautas de Auto-manejo</option>
+                                                        <option value="Derivación médica">Indicar Reposo y Derivar a médico general</option>
+                                                        <option value="Derivación a Urgencia">Derivación inminente a Urgencia Hospitalaria</option>
+                                                        <option value="Reagendamiento y Cobro">Registrar atención, cobrar y Reagendar</option>
+                                                        <option value="Solo Reagendamiento">Reagendar flexibilidad operativa (Sin cobro)</option>
+                                                        <option value="Otra acción">Otra acción clínica/administrativa</option>
+                                                    </select>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Nota Aclaratoria Extra</label>
+                                                    <input
+                                                        type="text"
+                                                        disabled={isClosed}
+                                                        value={formData.suspensionDetails?.note || ""}
+                                                        onChange={(e) => handleNestedChange("suspensionDetails", "note", e.target.value)}
+                                                        placeholder="Detalles sobre por qué se canceló y quién avisó..."
+                                                        className="w-full border border-rose-200/80 bg-white rounded-xl px-3 py-2.5 text-xs font-medium outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 text-rose-900 shadow-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* SIGNOS VITALES OPTATIVOS (TRIAJE) */}
+                                    <div className="md:col-span-2 mt-1">
+                                        <Disclosure as="div" className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                            {({ open }) => (
+                                                <>
+                                                    <Disclosure.Button className="w-full px-4 py-3 flex justify-between items-center hover:bg-slate-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                                                        <div className="flex items-center gap-2 text-emerald-600">
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                                            <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Triaje y Signos Vitales al Llegar</span>
+                                                            <span className="text-[9px] font-medium text-slate-400 ml-1">(Opcional)</span>
+                                                        </div>
+                                                        <ChevronDownIcon className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-slate-400 transition-transform`} />
+                                                    </Disclosure.Button>
+                                                    <Transition
+                                                        enter="transition duration-100 ease-out"
+                                                        enterFrom="transform scale-95 opacity-0"
+                                                        enterTo="transform scale-100 opacity-100"
+                                                        leave="transition duration-75 ease-out"
+                                                        leaveFrom="transform scale-100 opacity-100"
+                                                        leaveTo="transform scale-95 opacity-0"
+                                                    >
+                                                        <Disclosure.Panel className="p-4 border-t border-slate-200 bg-white gap-4 grid grid-cols-2 md:grid-cols-4">
+                                                            <div>
+                                                                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">PA Sistólica</label>
+                                                                <div className="relative">
+                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.bloodPressureSys || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureSys", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">SYS</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">PA Diastólica</label>
+                                                                <div className="relative">
+                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.bloodPressureDia || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureDia", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">DIA</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Frec. Cardíaca</label>
+                                                                <div className="relative">
+                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.heartRate || ""} onChange={(e) => handleNestedChange("vitalSigns", "heartRate", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">BPM</span>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Saturación SpO2</label>
+                                                                <div className="relative">
+                                                                    <input type="number" step="0.1" disabled={isClosed} value={formData.vitalSigns?.spO2 || ""} onChange={(e) => handleNestedChange("vitalSigns", "spO2", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">%</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="col-span-2 md:col-span-4 mt-2 border-t border-slate-100 pt-3">
+                                                                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase">Monitor de Síntomas Referidos Clínicamente</label>
+                                                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                                                    {['Fiebre', 'Mareos', 'Náuseas', 'Vómitos', 'Fatiga Extrema', 'Cefalea Severa', 'Disnea', 'Sudoración fría'].map(sint => {
+                                                                        const isSelected = formData.vitalSigns?.acuteSymptoms?.includes(sint);
+                                                                        return (
+                                                                            <button
+                                                                                key={sint}
+                                                                                type="button"
+                                                                                disabled={isClosed}
+                                                                                onClick={() => {
+                                                                                    const current = formData.vitalSigns?.acuteSymptoms || [];
+                                                                                    const newVal = isSelected ? current.filter(s => s !== sint) : [...current, sint];
+                                                                                    handleNestedChange("vitalSigns", "acuteSymptoms", newVal);
+                                                                                }}
+                                                                                className={`px-3 py-1.5 text-[10px] uppercase tracking-wider rounded-lg font-bold transition-all border ${isSelected ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-sm hover:bg-amber-200' : 'bg-white text-slate-500 hover:text-slate-800 border-slate-300 hover:bg-slate-50'}`}
+                                                                            >
+                                                                                {sint}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                <input type="text" placeholder="Observaciones extras de Triaje..." disabled={isClosed} value={formData.vitalSigns?.symptomNote || ""} onChange={(e) => handleNestedChange("vitalSigns", "symptomNote", e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium outline-none focus:border-emerald-500 text-slate-700 shadow-inner hover:border-slate-300" />
+                                                            </div>
+                                                        </Disclosure.Panel>
+                                                    </Transition>
+                                                </>
+                                            )}
+                                        </Disclosure>
                                     </div>
                                 </div>
                             </AccordionSection>
