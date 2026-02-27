@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { EvaSlider } from "./ui/EvaSlider";
 import { NumericStepper } from "./ui/NumericStepper";
+import { InterventionPanel } from "./ui/InterventionPanel";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -642,7 +643,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
         if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
 
-        const hasIntervenciones = (formData.interventions?.notes?.trim().length || 0) > 0;
+        const hasIntervenciones = Array.isArray(formData.interventions)
+            ? formData.interventions.length > 0
+            : !!(formData.interventions && 'notes' in formData.interventions && formData.interventions.notes?.trim());
+
         const hasEjercicios = formData.exercises && formData.exercises.length > 0;
         if (!hasIntervenciones && !hasEjercicios) {
             missingFields.push("Intervenciones Manuales o al menos 1 Ejercicio");
@@ -903,13 +907,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 theme="amber"
                             >
                                 <div className="mt-2">
-                                    <textarea
-                                        name="interventions.notes"
-                                        value={formData.interventions?.notes || ""}
-                                        onChange={(e) => handleNestedChange("interventions", "notes", e.target.value)}
+                                    <InterventionPanel
+                                        interventions={formData.interventions || []}
+                                        onChange={(newInterventions) => handleNestedChange("interventions", "", newInterventions)}
                                         disabled={isClosed}
-                                        placeholder="Terapias manuales, MEP, Punción Seca, Criomedicina, TENS, Ondas de Choque..."
-                                        className="w-full border border-slate-300 rounded-xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner min-h-[120px]"
                                     />
                                 </div>
                             </AccordionSection>

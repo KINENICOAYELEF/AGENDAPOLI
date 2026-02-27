@@ -63,6 +63,16 @@ export interface ExercisePrescription {
     notes?: string;
 }
 
+export interface InterventionRecord {
+    id: string; // ID local para mapeo de React
+    type: string; // Ej: 'Educación', 'Terapia manual', etc.
+    doseValue?: string;
+    doseUnit?: string;
+    region?: string;
+    intensity?: string;
+    note?: string;
+}
+
 export interface AuditTrail {
     createdAt?: string;
     createdBy?: string;
@@ -91,7 +101,8 @@ export interface Evolucion {
 
     sessionGoal: string; // Antes objetivoSesion
 
-    interventions: {
+    // Soporte Legacy y Pro para refactor progresivo
+    interventions: InterventionRecord[] | {
         categories: string[];
         notes: string; // Antes intervenciones (texto)
     };
