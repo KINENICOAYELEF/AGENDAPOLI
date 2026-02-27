@@ -176,31 +176,36 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                 <div className="border border-indigo-100 bg-indigo-50/50 rounded-xl p-5 mt-8 space-y-4">
                     <div className="flex justify-between items-center">
                         <div>
-                            <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider">Flujo de Atención Clínica</h3>
-                            <p className="text-xs text-indigo-600 mt-1">
-                                Las atenciones (Evaluaciones, Evoluciones, etc.) se agrupan dentro de **Procesos** Activos o Históricos.
+                            <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2">
+                                <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                Historial y Atenciones Clínicas
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                                Gestione los tratamientos, evoluciones y evaluaciones agrupándolos por procesos clínicos.
                             </p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* ACCESO AL GESTOR DE PROCESOS (Reemplaza los antiguos placeholders rotos) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        {/* ACCESO AL GESTOR DE PROCESOS */}
                         <button
                             type="button"
                             onClick={() => setSubView('procesos')}
-                            className="flex items-center justify-between p-4 border-2 border-indigo-400 bg-white rounded-xl shadow-sm hover:shadow-md hover:border-indigo-500 transition group text-left"
+                            className="group relative flex items-center justify-between p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all text-left overflow-hidden"
                         >
-                            <div>
-                                <h4 className="text-lg font-bold text-indigo-900 group-hover:text-indigo-700 transition">Caja de Procesos</h4>
-                                <p className="text-xs text-slate-500 mt-1">Ingresar para abrir atenciones o registrar Evoluciones en procesos activos.</p>
+                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/0 via-indigo-50/0 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="relative z-10">
+                                <h4 className="text-lg font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">Procesos Clínicos</h4>
+                                <p className="text-xs text-slate-500 mt-1 font-medium">Abrir o continuar tratamientos</p>
                             </div>
-                            <div className="bg-indigo-50 text-indigo-600 p-3 rounded-lg group-hover:scale-110 transition">
-                                📂
+                            <div className="relative z-10 bg-slate-50 text-slate-400 p-3 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm group-hover:shadow-indigo-200">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                             </div>
                         </button>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* BOTONES ACCION MANTENEDOR */}
             <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
@@ -223,6 +228,6 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                     {isEditMode ? "Guardar Cambios" : "Crear Persona Usuaria"}
                 </button>
             </div>
-        </form>
+        </form >
     );
 }
