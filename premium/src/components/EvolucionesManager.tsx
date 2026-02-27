@@ -36,11 +36,13 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
 
             const evolucionesRef = collection(db, "programs", globalActiveYear, "evoluciones");
 
-            // Requiere composite index en Firebase: usuariaId (Asc/Desc) + fechaHoraAtencion (Desc)
+            // Requiere composite index: usuariaId (Asc/Desc) + sessionAt o fechaHoraAtencion (Desc)
+            // Ya que migramos, pediremos ordenar por 'sessionAt'. Sin embargo, para retrocompatibilidad
+            // el orderBy buscará 'sessionAt'. Si no existe, no lo traerá (Aviso: un script masivo sería ideal, por ahora ordenamos los nuevos).
             let q = query(
                 evolucionesRef,
                 where("usuariaId", "==", usuariaId),
-                orderBy("fechaHoraAtencion", "desc"),
+                orderBy("sessionAt", "desc"),
                 limit(PAGE_LIMIT)
             );
 
@@ -48,7 +50,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
                 q = query(
                     evolucionesRef,
                     where("usuariaId", "==", usuariaId),
-                    orderBy("fechaHoraAtencion", "desc"),
+                    orderBy("sessionAt", "desc"),
                     startAfter(lastDoc),
                     limit(PAGE_LIMIT)
                 );
@@ -110,7 +112,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
         if (isNew) {
             setEvoluciones(prev => [savedConfig, ...prev]
                 // Re-ordenar por fecha manual post-inserción local
-                .sort((a, b) => new Date(b.fechaHoraAtencion).getTime() - new Date(a.fechaHoraAtencion).getTime())
+                .sort((a, b) => new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime() - new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime())
             );
         } else {
             setEvoluciones(prev => prev.map(e => e.id === savedConfig.id ? savedConfig : e));
@@ -196,12 +198,12 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
                             <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
                                 <span className="font-medium text-slate-700 flex items-center gap-2">
                                     <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    {new Date(evo.fechaHoraAtencion).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
+                                    {new Date(evo.sessionAt || (evo as any).fechaHoraAtencion || new Date()).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
                                 </span>
                                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wide 
-                                    ${evo.estado === 'CERRADA' ? 'bg-slate-200 text-slate-600' : 'bg-amber-100 text-amber-700'}
+                                    ${(evo.status === 'CLOSED' || (evo as any).estado === 'CERRADA') ? 'bg-slate-200 text-slate-600' : 'bg-amber-100 text-amber-700'}
                                 `}>
-                                    {evo.estado}
+                                    {evo.status === 'CLOSED' || (evo as any).estado === 'CERRADA' ? 'CERRADA' : 'BORRADOR'}
                                 </span>
                             </div>
 
@@ -210,16 +212,16 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
                                 <div className="flex-1 space-y-4">
                                     <div>
                                         <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Subjetivo inicial (SOAP)</h5>
-                                        <p className="text-slate-800 leading-relaxed font-medium">{evo.objetivoSesion || "No especificado"}</p>
+                                        <p className="text-slate-800 leading-relaxed font-medium">{evo.sessionGoal || (evo as any).objetivoSesion || "No especificado"}</p>
                                     </div>
                                     <div className="flex gap-6 mt-2">
                                         <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                             <span className="text-xs text-slate-400 font-semibold block mb-0.5">EVA. Inic</span>
-                                            <span className="font-bold text-slate-700 text-base">{evo.dolorInicio || "-"} / 10</span>
+                                            <span className="font-bold text-slate-700 text-base">{evo.pain?.evaStart || (evo as any).dolorInicio || "-"} / 10</span>
                                         </div>
                                         <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                             <span className="text-xs text-slate-400 font-semibold block mb-0.5">EVA. Final</span>
-                                            <span className="font-bold text-slate-700 text-base">{evo.dolorSalida || "-"} / 10</span>
+                                            <span className="font-bold text-slate-700 text-base">{evo.pain?.evaEnd || (evo as any).dolorSalida || "-"} / 10</span>
                                         </div>
                                     </div>
                                 </div>

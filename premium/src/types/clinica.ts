@@ -23,35 +23,80 @@ export interface Proceso {
     createdByName: string;
 }
 
+export interface ExercisePrescription {
+    id: string; // ID local para key mapping en UI
+    name: string;
+    sets: string;
+    repsOrTime: string;
+    loadKg?: string;
+    rpeOrRir?: string;
+    notes?: string;
+}
+
+export interface AuditTrail {
+    createdAt?: string;
+    createdBy?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    closedAt?: string;
+    closedBy?: string;
+    lateReason?: string;
+}
+
 export interface Evolucion {
     id?: string;
     usuariaId: string;
     casoId?: string | null;
     sesionId?: string | null;
-    fechaHoraAtencion: string; // ISO string
 
-    // Trazabilidad de Autor (Firebase Auth)
-    autorUid: string;
-    autorName: string;
+    status: 'DRAFT' | 'CLOSED';
+    sessionAt: string; // ISO string (Antes fechaHoraAtencion)
+    clinicianResponsible: string; // Antes autorUid/autorName
 
-    // Clínica (Campos mínimos sugeridos)
-    dolorInicio: number | string; // EVA 0-10, lo dejamos string para que el input type="number" fluya o vacío
-    objetivoSesion: string;
-    intervenciones: string;
-    ejerciciosPrescritos: string;
-    dolorSalida: number | string; // EVA 0-10
-    planProximaSesion: string;
+    pain: {
+        evaStart: number | string;
+        evaEnd: number | string;
+    };
 
-    // Estado Legal Médico
-    estado: 'BORRADOR' | 'CERRADA';
-    lateCloseReason?: string;
+    sessionGoal: string; // Antes objetivoSesion
 
-    // Timestamps
-    createdAt?: string;
-    updatedAt?: string;
-    closedAt?: string;
+    interventions: {
+        categories: string[];
+        notes: string; // Antes intervenciones (texto)
+    };
 
-    // Flags de migración temporal
+    exercises: ExercisePrescription[]; // El Módulo estrella (Reemplaza ejerciciosPrescritos string)
+
+    educationNotes?: string;
+    nextPlan: string; // Antes planProximaSesion
+
+    objectivesWorked?: {
+        objectiveIds: string[];
+        objectiveSetVersionId?: string;
+    };
+
+    outcomesSnapshot?: {
+        groc?: number | string;
+        sane?: number | string;
+    };
+
+    audit: AuditTrail;
+
+    // Campos Antiguos Legacy / Migración
+    notesLegacy?: string;
     _migratedFromLegacy?: boolean;
     _sourcePath?: string;
+
+    // Campos en Desuso (Deprecados progresivamente, se mapean a los nuevos al leer/guardar)
+    fechaHoraAtencion?: string;
+    autorUid?: string;
+    autorName?: string;
+    dolorInicio?: number | string;
+    objetivoSesion?: string;
+    intervencionesLegacy?: string;
+    ejerciciosPrescritos?: string;
+    dolorSalida?: number | string;
+    planProximaSesionLegacy?: string;
+    estado?: 'BORRADOR' | 'CERRADA';
+    lateCloseReason?: string;
 }
