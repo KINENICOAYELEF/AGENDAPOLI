@@ -6,7 +6,20 @@ import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Disclosure, Transition } from '@headlessui/react';
-import { ChevronUpIcon, ChevronLeftIcon, PlusIcon, TrashIcon, DocumentDuplicateIcon, ChevronDownIcon } from '@heroicons/react/20/solid';
+import {
+    ChevronUpIcon,
+    ChevronLeftIcon,
+    PlusIcon,
+    TrashIcon,
+    DocumentDuplicateIcon,
+    ChevronDownIcon,
+    ExclamationCircleIcon,
+    CheckCircleIcon,
+    ExclamationTriangleIcon,
+    LightBulbIcon,
+    ClockIcon,
+    SparklesIcon
+} from '@heroicons/react/20/solid';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -490,6 +503,99 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }
     };
 
+    // --- CÁLCULO DEL ASISTENTE INTELIGENTE (FASE 2.1.7) ---
+    const assistantCards: any[] = [];
+    const missingFields: string[] = [];
+
+    if (!isClosed) {
+        // Faltantes de cierre
+        const hasValidStart = formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "";
+        const hasValidEnd = formData.pain?.evaEnd !== undefined && formData.pain?.evaEnd !== "";
+
+        if (!hasValidStart) missingFields.push("EVA Inicio");
+        if (!hasValidEnd) missingFields.push("EVA Salida");
+        if (!formData.sessionGoal?.trim()) missingFields.push("Objetivo de Sesión");
+        if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
+
+        const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
+        if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
+
+        const hasIntervenciones = (formData.interventions?.notes?.trim().length || 0) > 0;
+        const hasEjercicios = formData.exercises && formData.exercises.length > 0;
+        if (!hasIntervenciones && !hasEjercicios) {
+            missingFields.push("Intervenciones Manuales o al menos 1 Ejercicio");
+        }
+
+        if (missingFields.length > 0) {
+            assistantCards.push({
+                id: 'missing_fields',
+                type: 'error',
+                title: 'Bloqueo de Cierre Clínico',
+                message: `Faltan campos mínimos para firmar: ${missingFields.join(", ")}.`,
+                icon: <ExclamationCircleIcon className="w-5 h-5 text-rose-500" />,
+                style: "bg-rose-50 border-rose-200 text-rose-800"
+            });
+        } else {
+            assistantCards.push({
+                id: 'ready_to_close',
+                type: 'success',
+                title: 'Ficha Lista para Firma',
+                message: 'Los requisitos clínicos mínimos están completos. Autorizado para cerrar.',
+                icon: <CheckCircleIcon className="w-5 h-5 text-emerald-500" />,
+                style: "bg-emerald-50 border-emerald-200 text-emerald-800"
+            });
+        }
+
+        // Contradicción Clínica (Ej. Dolor Sube + Texto Positivo)
+        if (hasValidStart && hasValidEnd) {
+            const evaIn = Number(formData.pain?.evaStart);
+            const evaOut = Number(formData.pain?.evaEnd);
+            if (evaOut > evaIn) {
+                const txt = (formData.nextPlan || "").toLowerCase();
+                const posWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito"];
+                if (posWords.some(w => txt.includes(w))) {
+                    assistantCards.push({
+                        id: 'contradiction',
+                        type: 'warning',
+                        title: 'Posible Contradicción Clínica',
+                        message: `El EVA reporta un aumento de dolor (${evaIn} a ${evaOut}), pero el plan sugiere mejora o alivio. Asegúrate de aclararlo.`,
+                        icon: <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />,
+                        style: "bg-amber-50 border-amber-200 text-amber-800"
+                    });
+                }
+            }
+        }
+
+        // Objetivos No Marcados
+        if (availableObjectives.length > 0 && (!formData.objectivesWorked?.objectiveIds || formData.objectivesWorked.objectiveIds.length === 0)) {
+            assistantCards.push({
+                id: 'objectives_missing',
+                type: 'info',
+                title: 'Objetivos Transversales Aislados',
+                message: "Existen objetivos de tratamiento planificados. Sugerimos vincular los abordados hoy.",
+                icon: <LightBulbIcon className="w-5 h-5 text-sky-500" />,
+                style: "bg-sky-50 border-sky-200 text-sky-800"
+            });
+        }
+
+        // Fuera de Plazo
+        if (formData.sessionAt) {
+            const hoursPassed = getDifferenceInHours(formData.sessionAt, new Date().toISOString());
+            if (hoursPassed > 36) {
+                assistantCards.push({
+                    id: 'late_closure',
+                    type: 'alert',
+                    title: 'Excedido Plazo Bioético (>36h)',
+                    message: `Han pasado ${hoursPassed.toFixed(1)} horas. Se exigirá causal de auditoría al cerrar.`,
+                    icon: <ClockIcon className="w-5 h-5 text-orange-500" />,
+                    style: "bg-orange-50 border-orange-200 text-orange-800"
+                });
+            }
+        }
+    }
+
+    const canClose = missingFields.length === 0;
+
     return (
         <div className="fixed inset-0 z-50 bg-slate-50 md:relative md:z-auto md:bg-transparent flex flex-col h-[100dvh] md:h-auto overflow-hidden">
 
@@ -924,6 +1030,30 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                             </pre>
                         </div>
                     )}
+
+                    {/* TARJETAS DEL ASISTENTE CLÍNICO */}
+                    {!isClosed && (
+                        <div className="mt-8 mb-4 border-2 border-dashed border-indigo-200 bg-indigo-50/30 rounded-3xl p-5">
+                            <div className="flex items-center gap-2 mb-4">
+                                <SparklesIcon className="w-5 h-5 text-indigo-500" />
+                                <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider">Análisis Inteligente Clínico</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {assistantCards.map(card => (
+                                    <div key={card.id} className={`flex items-start gap-3 p-4 rounded-2xl border shadow-sm ${card.style} transition-all`}>
+                                        <div className="shrink-0 mt-0.5 bg-white p-1 rounded-full shadow-sm">
+                                            {card.icon}
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">{card.title}</h4>
+                                            <p className="text-xs font-medium leading-relaxed opacity-90">{card.message}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                 </form>
 
                 {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
@@ -1006,10 +1136,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                             <button
                                 type="button"
                                 onClick={handleAttemptClose}
-                                disabled={loading}
-                                className="flex-1 py-4 md:py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50"
+                                disabled={loading || !canClose}
+                                className="flex-1 py-4 md:py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:bg-slate-300 disabled:shadow-none"
                             >
-                                Cerrar Evolución
+                                {canClose ? "Cerrar Evolución" : "Faltan Campos Clínicos"}
                             </button>
                         </>
                     )}
