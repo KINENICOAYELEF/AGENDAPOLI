@@ -95,6 +95,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                 <EvolucionesManager
                     usuariaId={personaUsuariaId}
                     usuariaName={personaUsuariaName}
+                    procesoId={selectedProceso.id}
                     onBack={() => setView('lista')}
                 />
             </div>

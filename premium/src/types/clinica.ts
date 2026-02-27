@@ -23,6 +23,33 @@ export interface Proceso {
     createdByName: string;
 }
 
+export interface TreatmentObjective {
+    id: string; // ID local único
+    description: string;
+    category?: 'Pain' | 'ROM' | 'Strength' | 'Function' | 'Other';
+    status: 'ACTIVE' | 'ACHIEVED' | 'DROPPED';
+    targetDate?: string;
+}
+
+export interface Evaluacion {
+    id?: string;
+    usuariaId: string;
+    procesoId: string;
+
+    // Identificador de la versión para congelar objetivos
+    versionId: string; // Usualmente igual al id o a un timestamp
+    type: 'INITIAL' | 'REEVALUATION';
+    status: 'DRAFT' | 'CLOSED';
+
+    sessionAt: string; // Fecha de la sesión de evaluación
+    clinicianResponsible: string;
+
+    // Solo pondremos la colección de objetivos por ahora (lo que importa en 2.1.4)
+    objectives: TreatmentObjective[];
+
+    audit: AuditTrail;
+}
+
 export interface ExercisePrescription {
     id: string; // ID local para key mapping en UI
     name: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Evolucion, ExercisePrescription } from "@/types/clinica";
-import { doc } from "firebase/firestore";
+import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from "@/types/clinica";
+import { doc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
@@ -84,12 +84,13 @@ const toDateTimeLocal = (isoString?: string) => {
 
 interface EvolucionFormProps {
     usuariaId: string;
+    procesoId?: string;
     initialData: Evolucion | null;
     onClose: () => void;
     onSaveSuccess: (evolucion: Evolucion, isNew: boolean) => void;
 }
 
-export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }: EvolucionFormProps) {
+export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -138,6 +139,80 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
         const val = e.target.value;
         if (!val) return;
         setFormData((prev: any) => ({ ...prev, sessionAt: new Date(val).toISOString() }));
+    };
+
+    // --- MANEJO DE OBJETIVOS VIGENTES (FASE 2.1.4) ---
+    const [availableObjectives, setAvailableObjectives] = useState<TreatmentObjective[]>([]);
+    const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
+    const [loadingObjectives, setLoadingObjectives] = useState(false);
+
+    useEffect(() => {
+        // En modo edición de evoluciones cerradas o antiguas que no son de la versión actual,
+        // no re-escribiremos sus versionIds asique solo mostramos las elegidas (read-only real),
+        // pero por ahora para poder cambiarlos si es borrador, cargamos la última meta.
+        if (!procesoId || !globalActiveYear) return;
+
+        const fetchLatestEval = async () => {
+            setLoadingObjectives(true);
+            try {
+                const q = query(
+                    collection(db, "programs", globalActiveYear, "evaluaciones"),
+                    where("procesoId", "==", procesoId),
+                    orderBy("sessionAt", "desc"),
+                    limit(1)
+                );
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const evDoc = querySnapshot.docs[0];
+                    const evData = evDoc.data() as Evaluacion;
+
+                    // Si ya tenía objetivos guardados (legacy borrador o edit mode) e intentamos cargar
+                    const isOldVersion = formData.objectivesWorked?.objectiveSetVersionId
+                        && formData.objectivesWorked.objectiveSetVersionId !== (evData.versionId || evDoc.id);
+
+                    if (isOldVersion && isClosed) {
+                        // Modo read-only antiguo (quizás podríamos mostrar texto plano o nada)
+                        return;
+                    }
+
+                    setAvailableObjectives(evData.objectives?.filter(o => o.status === 'ACTIVE') || []);
+                    setCurrentVersionId(evData.versionId || evDoc.id);
+                } else {
+                    // MOCK: Si no hay evaluación, mostramos una simulada temporalmente para poder usar la UI.
+                    setAvailableObjectives([
+                        { id: "obj-mock-001", description: "Lograr flexión de rodilla a 120° sin dolor", status: "ACTIVE", category: "ROM" },
+                        { id: "obj-mock-002", description: "Reducir respuesta inflamatoria aguda (VAS < 3)", status: "ACTIVE", category: "Pain" },
+                        { id: "obj-mock-003", description: "Dominio de marcha sin ayudas técnicas", status: "ACTIVE", category: "Function" }
+                    ]);
+                    setCurrentVersionId("mock-version-eval-001");
+                }
+            } catch (err) {
+                console.error("Error cargando objetivos", err);
+            } finally {
+                setLoadingObjectives(false);
+            }
+        };
+
+        fetchLatestEval();
+    }, [procesoId, globalActiveYear, formData.objectivesWorked?.objectiveSetVersionId, isClosed]);
+
+    const toggleObjective = (objId: string) => {
+        if (isClosed) return;
+        const currentIds = formData.objectivesWorked?.objectiveIds || [];
+        const isSelected = currentIds.includes(objId);
+
+        const newIds = isSelected
+            ? currentIds.filter(id => id !== objId)
+            : [...currentIds, objId];
+
+        setFormData(prev => ({
+            ...prev,
+            objectivesWorked: {
+                objectiveIds: newIds,
+                objectiveSetVersionId: currentVersionId
+            }
+        }));
     };
 
     // --- MANEJO DE EJERCICIOS DINÁMICOS ---
@@ -460,11 +535,50 @@ export function EvolucionForm({ usuariaId, initialData, onClose, onSaveSuccess }
                                     value={formData.sessionGoal}
                                     onChange={handleChange}
                                     disabled={isClosed}
-                                    rows={2}
+                                    rows={1}
                                     placeholder="Ej: Disminuir dolor peripatelar y reactivar cuádriceps..."
                                     className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
                                 />
                             </div>
+
+                            {/* OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS) */}
+                            {availableObjectives.length > 0 && (
+                                <div className="md:col-span-12 mt-2 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                                    <h4 className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-3">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Objetivos Clínicos Vigentes
+                                        {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
+                                    </h4>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {availableObjectives.map(obj => {
+                                            const isSelected = formData.objectivesWorked?.objectiveIds?.includes(obj.id);
+                                            return (
+                                                <button
+                                                    key={obj.id}
+                                                    type="button"
+                                                    disabled={isClosed}
+                                                    onClick={() => toggleObjective(obj.id)}
+                                                    className={`
+                                                        px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border
+                                                        ${isSelected
+                                                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                                            : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                        }
+                                                        ${isClosed && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    {isSelected && <span className="mr-1.5">✓</span>}
+                                                    {obj.description}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-[10px] text-emerald-600/70 mt-3 font-semibold text-right">
+                                        Última v. Evaluación activa
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </AccordionSection>
 

@@ -8,10 +8,11 @@ import { EvolucionForm } from "@/components/EvolucionForm";
 interface EvolucionesManagerProps {
     usuariaId: string;
     usuariaName: string;
+    procesoId?: string;
     onBack: () => void;
 }
 
-export function EvolucionesManager({ usuariaId, usuariaName, onBack }: EvolucionesManagerProps) {
+export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }: EvolucionesManagerProps) {
     const { globalActiveYear } = useYear();
 
     // Vistas: 'lista', 'formulario'
@@ -125,6 +126,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, onBack }: Evolucion
             <div className="md:bg-white md:rounded-2xl md:p-6 md:border md:border-slate-200 md:shadow-sm animate-in fade-in slide-in-from-right-4">
                 <EvolucionForm
                     usuariaId={usuariaId}
+                    procesoId={procesoId}
                     initialData={selectedEvolucion}
                     onClose={() => setView('lista')}
                     onSaveSuccess={handleFormSaved}
