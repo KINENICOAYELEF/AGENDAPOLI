@@ -311,8 +311,11 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         if (isClosed) return;
 
         // Validación 1: Campos mínimos
-        if (!formData.pain?.evaStart || !formData.sessionGoal || !formData.pain?.evaEnd || !formData.nextPlan) {
-            alert("Para CERRAR la evolución debe completar los campos clínicos mínimos (EVAs, Objetivos y Plan).");
+        const hasValidStart = formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "";
+        const hasValidEnd = formData.pain?.evaEnd !== undefined && formData.pain?.evaEnd !== "";
+
+        if (!hasValidStart || !formData.sessionGoal || !hasValidEnd || !formData.nextPlan) {
+            alert("Para CERRAR la evolución debe completar los campos clínicos mínimos (EVAs, Objetivos y Plan). El EVA puede ser 0.");
             return;
         }
 
@@ -714,25 +717,38 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
                                             GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
                                         </label>
-                                        <span className="text-sm font-black text-rose-600 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-200">
-                                            {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
-                                                ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
-                                                : "0"}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {formData.outcomesSnapshot?.groc !== undefined && !isClosed && (
+                                                <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors">Borrar ✕</button>
+                                            )}
+                                            <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.groc !== undefined ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
+                                                    ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
+                                                    : "N/A"}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="-7" max="7" step="1"
-                                        disabled={isClosed}
-                                        value={formData.outcomesSnapshot?.groc || 0}
-                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
-                                        className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                    />
-                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                        <span>Mucho Peor (-7)</span>
-                                        <span>Igual (0)</span>
-                                        <span>Mucho Mejor (+7)</span>
-                                    </div>
+                                    {formData.outcomesSnapshot?.groc !== undefined ? (
+                                        <>
+                                            <input
+                                                type="range"
+                                                min="-7" max="7" step="1"
+                                                disabled={isClosed}
+                                                value={formData.outcomesSnapshot?.groc || 0}
+                                                onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
+                                                className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                            />
+                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                <span>Mucho Peor (-7)</span>
+                                                <span>Igual (0)</span>
+                                                <span>Mucho Mejor (+7)</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "groc", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-rose-300 hover:text-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                            + Registrar GROC
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div>
@@ -740,25 +756,38 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
                                             SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
                                         </label>
-                                        <span className="text-sm font-black text-blue-600 bg-blue-100 px-2.5 py-0.5 rounded-full border border-blue-200">
-                                            {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
-                                                ? `${formData.outcomesSnapshot.sane}%`
-                                                : "0%"}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {formData.outcomesSnapshot?.sane !== undefined && !isClosed && (
+                                                <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">Borrar ✕</button>
+                                            )}
+                                            <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.sane !== undefined ? 'text-blue-600 bg-blue-100 border-blue-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
+                                                    ? `${formData.outcomesSnapshot.sane}%`
+                                                    : "N/A"}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0" max="100" step="5"
-                                        disabled={isClosed}
-                                        value={formData.outcomesSnapshot?.sane || 0}
-                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
-                                        className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                    />
-                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                        <span>0% (Pésimo)</span>
-                                        <span>50%</span>
-                                        <span>100% (Normal)</span>
-                                    </div>
+                                    {formData.outcomesSnapshot?.sane !== undefined ? (
+                                        <>
+                                            <input
+                                                type="range"
+                                                min="0" max="100" step="5"
+                                                disabled={isClosed}
+                                                value={formData.outcomesSnapshot?.sane || 0}
+                                                onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
+                                                className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                            />
+                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                <span>0% (Pésimo)</span>
+                                                <span>50%</span>
+                                                <span>100% (Normal)</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "sane", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                            + Registrar SANE
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
