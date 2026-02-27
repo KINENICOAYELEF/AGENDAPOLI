@@ -570,13 +570,48 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
     const scrollToSection = (id: string) => {
         setActiveSection(id);
+        const container = document.getElementById('evo-scroll-container');
         const element = document.getElementById(id);
-        if (element) {
-            // Offset para no quedar tapado por las barras fijas
-            const y = element.getBoundingClientRect().top + window.scrollY - 130;
-            window.scrollTo({ top: y, behavior: 'smooth' });
+        if (element && container) {
+            // Offset del top de element comparado con el top del scroll container
+            const topPos = element.offsetTop;
+            container.scrollTo({ top: topPos - 16, behavior: 'smooth' });
         }
     };
+
+    // Scroll Spy Nativo 2.1.10
+    useEffect(() => {
+        const container = document.getElementById('evo-scroll-container');
+        if (!container) return;
+
+        const observerOptions = {
+            root: container,
+            rootMargin: "-20% 0px -70% 0px",
+            threshold: 0
+        };
+
+        const observerCallback: IntersectionObserverCallback = (entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    setActiveSection(entry.target.id);
+                    // Centrar el chip en la barra de scroll horizontal móvil
+                    const chipBtn = document.getElementById(`chip-${entry.target.id}`);
+                    if (chipBtn) chipBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(observerCallback, observerOptions);
+        // Pequeño delay para asegurar que el DOM pintó tras el primer render
+        setTimeout(() => {
+            ['sec-esencial', 'interv', 'sec-ejerc', 'sec-result'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) observer.observe(el);
+            });
+        }, 100);
+
+        return () => observer.disconnect();
+    }, [isAttemptingClose, loading]);
 
     // --- CÁLCULO DEL ASISTENTE INTELIGENTE (FASE 2.1.7) ---
     const assistantCards: any[] = [];
@@ -712,19 +747,19 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 {/* SCROLL SPY CHIPS - Navegación Rápida */}
                 <div className="px-4 md:px-6 pb-3 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x">
                     {[
-                        { id: 'sec-admin', label: 'Info Sesión' },
-                        { id: 'sec-soap', label: 'S.O.A.P.' },
+                        { id: 'sec-esencial', label: 'Esencial' },
                         { id: 'sec-interv', label: 'Intervenciones' },
-                        { id: 'sec-ejerc', label: 'Ejercicios (Módulo)' },
-                        { id: 'sec-result', label: 'Pronóstico' }
+                        { id: 'sec-ejerc', label: 'Ejercicios' },
+                        { id: 'sec-result', label: 'Cierre y Resultados' }
                     ].map(chip => (
                         <button
                             key={chip.id}
+                            id={`chip-${chip.id}`}
                             type="button"
                             onClick={() => scrollToSection(chip.id)}
-                            className={`snap-start whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${activeSection === chip.id
+                            className={`snap-start whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all border ${activeSection === chip.id
                                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-md transform scale-105'
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
                                 }`}
                         >
                             {chip.label}
@@ -734,408 +769,417 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>
 
             {/* CONTENIDO PRINCIPAL SCROLLEABLE */}
-            <div className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto p-4 md:p-6 pb-32 md:pb-8">
-                <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-2">
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto w-full mx-auto relative px-4 md:px-6 pb-40 scroll-smooth">
+                <div className="max-w-4xl mx-auto mt-2">
+                    <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-4">
 
-                    {/* 1. SECCIÓN ADMINISTRATIVA */}
-                    <AccordionSection
-                        id="sec-admin"
-                        title="Datos Administrativos de Sesión"
-                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                        defaultOpen={true}
-                        theme="slate"
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-                            <div>
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha y Hora Real <span className="text-rose-500">*</span></label>
-                                <input
-                                    type="datetime-local"
-                                    value={toDateTimeLocal(formData.sessionAt as string)}
-                                    onChange={handleDateChange}
-                                    disabled={isClosed}
-                                    max={toDateTimeLocal(new Date().toISOString())}
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
-                                    required
-                                />
-                                <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
-                            </div>
-                            <div>
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Clínico / Interno</label>
-                                <input
-                                    type="text"
-                                    disabled
-                                    value={initialData?.autorName || user?.email || "Cargando..."}
-                                    className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
-                                />
-                            </div>
-                        </div>
-                    </AccordionSection>
-
-                    {/* 2. SECCIÓN S.O.A.P. */}
-                    <AccordionSection
-                        id="sec-soap"
-                        title="Evaluación y Planificación (S.O.A.P)"
-                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
-                        theme="emerald"
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
-                            <div className="md:col-span-4 lg:col-span-3">
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Inicio (EVA) <span className="text-emerald-600">*</span></label>
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="number" min="0" max="10"
-                                        name="evaStart"
-                                        value={formData.pain?.evaStart || ""}
-                                        onChange={(e) => handleNestedChange("pain", "evaStart", e.target.value)}
-                                        disabled={isClosed}
-                                        placeholder="0-10"
-                                        className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
-                                    />
-                                    <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
+                        {/* GRUPO ESENCIAL DEL PACIENTE (Scroll Spy agrupa estos acórdeones) */}
+                        <div id="sec-esencial" className="space-y-4 scroll-mt-6">
+                            {/* 1. SECCIÓN ADMINISTRATIVA */}
+                            <AccordionSection
+                                id="sec-admin"
+                                title="Datos Administrativos de Sesión"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                                defaultOpen={true}
+                                theme="slate"
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha y Hora Real <span className="text-rose-500">*</span></label>
+                                        <input
+                                            type="datetime-local"
+                                            value={toDateTimeLocal(formData.sessionAt as string)}
+                                            onChange={handleDateChange}
+                                            disabled={isClosed}
+                                            max={toDateTimeLocal(new Date().toISOString())}
+                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
+                                            required
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Clínico / Interno</label>
+                                        <input
+                                            type="text"
+                                            disabled
+                                            value={initialData?.autorName || user?.email || "Cargando..."}
+                                            className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="md:col-span-8 lg:col-span-9">
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Objetivo de la Sesión <span className="text-emerald-600">*</span></label>
-                                <textarea
-                                    name="sessionGoal"
-                                    value={formData.sessionGoal}
-                                    onChange={handleChange}
-                                    disabled={isClosed}
-                                    rows={1}
-                                    placeholder="Ej: Disminuir dolor peripatelar y reactivar cuádriceps..."
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
-                                />
-                            </div>
+                            </AccordionSection>
 
-                            {/* OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS) */}
-                            {availableObjectives.length > 0 && (
-                                <div className="md:col-span-12 mt-2 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                                    <h4 className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-3">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        Objetivos Clínicos Vigentes
-                                        {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
-                                    </h4>
+                            {/* 2. SECCIÓN S.O.A.P. */}
+                            <AccordionSection
+                                id="sec-soap"
+                                title="Evaluación y Planificación (S.O.A.P)"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
+                                theme="emerald"
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                                    <div className="md:col-span-4 lg:col-span-3">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Inicio (EVA) <span className="text-emerald-600">*</span></label>
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="number" min="0" max="10"
+                                                name="evaStart"
+                                                value={formData.pain?.evaStart || ""}
+                                                onChange={(e) => handleNestedChange("pain", "evaStart", e.target.value)}
+                                                disabled={isClosed}
+                                                placeholder="0-10"
+                                                className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
+                                            />
+                                            <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-8 lg:col-span-9">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Objetivo de la Sesión <span className="text-emerald-600">*</span></label>
+                                        <textarea
+                                            name="sessionGoal"
+                                            value={formData.sessionGoal}
+                                            onChange={handleChange}
+                                            disabled={isClosed}
+                                            rows={1}
+                                            placeholder="Ej: Disminuir dolor peripatelar y reactivar cuádriceps..."
+                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
+                                        />
+                                    </div>
 
-                                    <div className="flex flex-wrap gap-2">
-                                        {availableObjectives.map(obj => {
-                                            const isSelected = formData.objectivesWorked?.objectiveIds?.includes(obj.id);
-                                            return (
-                                                <button
-                                                    key={obj.id}
-                                                    type="button"
-                                                    disabled={isClosed}
-                                                    onClick={() => toggleObjective(obj.id)}
-                                                    className={`
+                                    {/* OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS) */}
+                                    {availableObjectives.length > 0 && (
+                                        <div className="md:col-span-12 mt-2 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                                            <h4 className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-3">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Objetivos Clínicos Vigentes
+                                                {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
+                                            </h4>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {availableObjectives.map(obj => {
+                                                    const isSelected = formData.objectivesWorked?.objectiveIds?.includes(obj.id);
+                                                    return (
+                                                        <button
+                                                            key={obj.id}
+                                                            type="button"
+                                                            disabled={isClosed}
+                                                            onClick={() => toggleObjective(obj.id)}
+                                                            className={`
                                                         px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border
                                                         ${isSelected
-                                                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                                                            : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                                        }
+                                                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                                                    : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                                }
                                                         ${isClosed && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}
                                                     `}
-                                                >
-                                                    {isSelected && <span className="mr-1.5">✓</span>}
-                                                    {obj.description}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    <p className="text-[10px] text-emerald-600/70 mt-3 font-semibold text-right">
-                                        Última v. Evaluación activa
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </AccordionSection>
-
-                    {/* 3. SECCIÓN INTERVENCIONES PASIVAS */}
-                    <AccordionSection
-                        id="sec-interv"
-                        title="Intervenciones y Agentes Físicos"
-                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>}
-                        theme="amber"
-                    >
-                        <div className="mt-2">
-                            <textarea
-                                name="interventions.notes"
-                                value={formData.interventions?.notes || ""}
-                                onChange={(e) => handleNestedChange("interventions", "notes", e.target.value)}
-                                disabled={isClosed}
-                                placeholder="Terapias manuales, MEP, Punción Seca, Criomedicina, TENS, Ondas de Choque..."
-                                className="w-full border border-slate-300 rounded-xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner min-h-[120px]"
-                            />
-                        </div>
-                    </AccordionSection>
-
-                    {/* 4. SECCIÓN EJERCICIOS (Módulo Premium) */}
-                    <div id="sec-ejerc" className="scroll-mt-32">
-                        <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-indigo-800 p-6 md:p-8 rounded-3xl border border-indigo-950 shadow-xl relative overflow-hidden group mb-4">
-                            {/* Visual Noise & Glow */}
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
-
-                            <div className="relative z-10">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-indigo-700/50 pb-5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
-                                            <svg className="w-6 h-6 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z" /></svg>
+                                                        >
+                                                            {isSelected && <span className="mr-1.5">✓</span>}
+                                                            {obj.description}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <p className="text-[10px] text-emerald-600/70 mt-3 font-semibold text-right">
+                                                Última v. Evaluación activa
+                                            </p>
                                         </div>
-                                        <div>
-                                            <h3 className="text-base font-black text-white uppercase tracking-widest">
-                                                Prescripción de Ejercicio
-                                            </h3>
-                                            <p className="text-xs text-indigo-200/80 font-medium mt-1">Estructura para Machine Learning y Progreso Físico.</p>
-                                        </div>
-                                    </div>
-                                    <span className="inline-flex max-w-max items-center bg-indigo-800 text-indigo-100 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-indigo-600/50 shadow-inner">
-                                        Módulo Analítico Principal
-                                    </span>
+                                    )}
                                 </div>
+                            </AccordionSection>
+                        </div> {/* Fin Envoltura Esencial */}
 
-                                <label className="block text-[11px] font-bold text-indigo-300 mb-2 uppercase tracking-wide ml-1">Planilla Dinámica de Ejercicios</label>
+                        {/* 3. SECCIÓN INTERVENCIONES PASIVAS */}
+                        <div id="sec-interv" className="scroll-mt-6">
+                            <AccordionSection
+                                id="interv-pass"
+                                title="Intervenciones y Agentes Físicos"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>}
+                                theme="amber"
+                            >
+                                <div className="mt-2">
+                                    <textarea
+                                        name="interventions.notes"
+                                        value={formData.interventions?.notes || ""}
+                                        onChange={(e) => handleNestedChange("interventions", "notes", e.target.value)}
+                                        disabled={isClosed}
+                                        placeholder="Terapias manuales, MEP, Punción Seca, Criomedicina, TENS, Ondas de Choque..."
+                                        className="w-full border border-slate-300 rounded-xl px-4 py-4 text-sm outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner min-h-[120px]"
+                                    />
+                                </div>
+                            </AccordionSection>
+                        </div>
 
-                                {formData.exercises?.map((ex, index) => (
-                                    <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-black text-indigo-400/80 uppercase tracking-widest bg-indigo-950/50 px-2 py-1 rounded shadow-inner border border-indigo-800/50">Ejercicio {index + 1}</span>
+                        {/* 4. SECCIÓN EJERCICIOS (Módulo Premium) */}
+                        <div id="sec-ejerc" className="scroll-mt-6">
+                            <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-indigo-800 p-6 md:p-8 rounded-3xl border border-indigo-950 shadow-xl relative overflow-hidden group mb-4">
+                                {/* Visual Noise & Glow */}
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+
+                                <div className="relative z-10">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-indigo-700/50 pb-5">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
+                                                <svg className="w-6 h-6 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43L20.57 12L17 15.57L8.43 7L12 3.43L10.57 2L9.14 3.43L7.71 2L5.57 4.14L4.14 2.71L2.71 4.14L4.14 5.57L2 7.71L3.43 9.14L2 10.57L3.43 12L7 8.43L15.57 17L12 20.57L13.43 22L14.86 20.57L16.29 22L18.43 19.86L19.86 21.29L21.29 19.86L19.86 18.43L22 16.29L20.57 14.86Z" /></svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-black text-white uppercase tracking-widest">
+                                                    Prescripción de Ejercicio
+                                                </h3>
+                                                <p className="text-xs text-indigo-200/80 font-medium mt-1">Estructura para Machine Learning y Progreso Físico.</p>
+                                            </div>
+                                        </div>
+                                        <span className="inline-flex max-w-max items-center bg-indigo-800 text-indigo-100 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider border border-indigo-600/50 shadow-inner">
+                                            Módulo Analítico Principal
+                                        </span>
+                                    </div>
+
+                                    <label className="block text-[11px] font-bold text-indigo-300 mb-2 uppercase tracking-wide ml-1">Planilla Dinámica de Ejercicios</label>
+
+                                    {formData.exercises?.map((ex, index) => (
+                                        <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-indigo-400/80 uppercase tracking-widest bg-indigo-950/50 px-2 py-1 rounded shadow-inner border border-indigo-800/50">Ejercicio {index + 1}</span>
+                                                    {!isClosed && (
+                                                        <div className="flex bg-slate-900/50 rounded-lg border border-indigo-900/50 overflow-hidden">
+                                                            <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
+                                                                <ChevronUpIcon className="w-4 h-4" />
+                                                            </button>
+                                                            <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
+                                                                <ChevronDownIcon className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 {!isClosed && (
-                                                    <div className="flex bg-slate-900/50 rounded-lg border border-indigo-900/50 overflow-hidden">
-                                                        <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
-                                                            <ChevronUpIcon className="w-4 h-4" />
-                                                        </button>
-                                                        <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1 text-indigo-400 hover:text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
-                                                            <ChevronDownIcon className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
+                                                    <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400/70 hover:text-rose-400 bg-rose-950/30 hover:bg-rose-950/80 p-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-900">
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </button>
                                                 )}
                                             </div>
-                                            {!isClosed && (
-                                                <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400/70 hover:text-rose-400 bg-rose-950/30 hover:bg-rose-950/80 p-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-900">
-                                                    <TrashIcon className="w-4 h-4" />
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
+                                                <div className="col-span-1 md:col-span-12">
+                                                    <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Series</label>
+                                                    <input type="text" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={e => updateExercise(ex.id, "sets", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-3">
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Repeticiones / Tiempo</label>
+                                                    <input type="text" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={e => updateExercise(ex.id, "repsOrTime", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Carga (Kg)</label>
+                                                    <input type="text" placeholder="Carga" disabled={isClosed} value={ex.loadKg || ""} onChange={e => updateExercise(ex.id, "loadKg", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-2">
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Percepción (RIR/RPE)</label>
+                                                    <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-3">
+                                                    <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Descanso (Seg/Min)</label>
+                                                    <input type="text" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={e => updateExercise(ex.id, "rest", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
+                                                </div>
+
+                                                <div className="col-span-1 md:col-span-6">
+                                                    <input type="text" placeholder="Criterio de Progresión (Ej: Subir carga si RIR > 2)" disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                                </div>
+                                                <div className="col-span-1 md:col-span-6">
+                                                    <input type="text" placeholder="Notas / Frecuencia / Ajustes biomecánicos" disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {!isClosed && (
+                                        <div className="flex flex-col md:flex-row gap-3 mt-4">
+                                            <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
+                                                <PlusIcon className="w-5 h-5" />
+                                                Agregar Fila de Ejercicio
+                                            </button>
+                                            <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm backdrop-blur-sm group">
+                                                <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
+                                                Duplicar Evolución Anterior
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 5. SECCIÓN RESULTADOS */}
+                        <div id="sec-result" className="scroll-mt-6">
+                            <AccordionSection
+                                id="result-panel"
+                                title="Resultados y Pronóstico"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+                                theme="rose"
+                                defaultOpen={true}
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                                    <div className="md:col-span-4 lg:col-span-3">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Salida (EVA) <span className="text-rose-600">*</span></label>
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="number" min="0" max="10"
+                                                name="evaEnd"
+                                                value={formData.pain?.evaEnd || ""}
+                                                onChange={(e) => handleNestedChange("pain", "evaEnd", e.target.value)}
+                                                disabled={isClosed}
+                                                placeholder="0-10"
+                                                className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
+                                            />
+                                            <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-8 lg:col-span-9">
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
+                                        <textarea
+                                            name="nextPlan"
+                                            value={formData.nextPlan}
+                                            onChange={handleChange}
+                                            disabled={isClosed}
+                                            rows={2}
+                                            placeholder="Ej: Bajó dolor general. Próxima: Iniciar cargas excéntricas..."
+                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
+                                        />
+                                    </div>
+
+                                    {/* OUTCOMES RÁPIDOS (FASE 2.1.5) */}
+                                    <div className="md:col-span-12 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                        <div>
+                                            <div className="flex justify-between items-end mb-3">
+                                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                                    GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    {formData.outcomesSnapshot?.groc !== undefined && !isClosed && (
+                                                        <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors">Borrar ✕</button>
+                                                    )}
+                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.groc !== undefined ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                        {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
+                                                            ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
+                                                            : "N/A"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {formData.outcomesSnapshot?.groc !== undefined ? (
+                                                <>
+                                                    <input
+                                                        type="range"
+                                                        min="-7" max="7" step="1"
+                                                        disabled={isClosed}
+                                                        value={formData.outcomesSnapshot?.groc || 0}
+                                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
+                                                        className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                    />
+                                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                        <span>Mucho Peor (-7)</span>
+                                                        <span>Igual (0)</span>
+                                                        <span>Mucho Mejor (+7)</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "groc", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-rose-300 hover:text-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    + Registrar GROC
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-3">
-                                            <div className="col-span-1 md:col-span-12">
-                                                <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm font-bold text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-2">
-                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Series</label>
-                                                <input type="text" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={e => updateExercise(ex.id, "sets", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-3">
-                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Repeticiones / Tiempo</label>
-                                                <input type="text" placeholder="Reps / Tiempo" disabled={isClosed} value={ex.repsOrTime} onChange={e => updateExercise(ex.id, "repsOrTime", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-2">
-                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Carga (Kg)</label>
-                                                <input type="text" placeholder="Carga" disabled={isClosed} value={ex.loadKg || ""} onChange={e => updateExercise(ex.id, "loadKg", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-2">
-                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Percepción (RIR/RPE)</label>
-                                                <input type="text" placeholder="RIR/RPE" disabled={isClosed} value={ex.rpeOrRir || ""} onChange={e => updateExercise(ex.id, "rpeOrRir", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-3">
-                                                <label className="block text-[9px] font-bold text-indigo-400 mb-1 ml-1 uppercase">Descanso (Seg/Min)</label>
-                                                <input type="text" placeholder="Rest" disabled={isClosed} value={ex.rest || ""} onChange={e => updateExercise(ex.id, "rest", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2.5 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40 text-center" />
-                                            </div>
 
-                                            <div className="col-span-1 md:col-span-6">
-                                                <input type="text" placeholder="Criterio de Progresión (Ej: Subir carga si RIR > 2)" disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
-                                            </div>
-                                            <div className="col-span-1 md:col-span-6">
-                                                <input type="text" placeholder="Notas / Frecuencia / Ajustes biomecánicos" disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/50 border border-indigo-800/50 rounded-xl px-3 py-2 text-sm text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/40" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {!isClosed && (
-                                    <div className="flex flex-col md:flex-row gap-3 mt-4">
-                                        <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
-                                            <PlusIcon className="w-5 h-5" />
-                                            Agregar Fila de Ejercicio
-                                        </button>
-                                        <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm backdrop-blur-sm group">
-                                            <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
-                                            Duplicar Evolución Anterior
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 5. SECCIÓN RESULTADOS */}
-                    <AccordionSection
-                        id="sec-result"
-                        title="Resultados y Pronóstico"
-                        icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
-                        theme="rose"
-                        defaultOpen={true}
-                    >
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
-                            <div className="md:col-span-4 lg:col-span-3">
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dolor Salida (EVA) <span className="text-rose-600">*</span></label>
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="number" min="0" max="10"
-                                        name="evaEnd"
-                                        value={formData.pain?.evaEnd || ""}
-                                        onChange={(e) => handleNestedChange("pain", "evaEnd", e.target.value)}
-                                        disabled={isClosed}
-                                        placeholder="0-10"
-                                        className="w-full border border-slate-300 rounded-xl pl-4 pr-12 py-3 text-lg outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100 transition-all font-black text-slate-800 shadow-inner"
-                                    />
-                                    <span className="absolute right-4 text-slate-400 font-bold text-sm pointer-events-none">/ 10</span>
-                                </div>
-                            </div>
-                            <div className="md:col-span-8 lg:col-span-9">
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
-                                <textarea
-                                    name="nextPlan"
-                                    value={formData.nextPlan}
-                                    onChange={handleChange}
-                                    disabled={isClosed}
-                                    rows={2}
-                                    placeholder="Ej: Bajó dolor general. Próxima: Iniciar cargas excéntricas..."
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
-                                />
-                            </div>
-
-                            {/* OUTCOMES RÁPIDOS (FASE 2.1.5) */}
-                            <div className="md:col-span-12 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                <div>
-                                    <div className="flex justify-between items-end mb-3">
-                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-                                            GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
-                                        </label>
-                                        <div className="flex items-center gap-2">
-                                            {formData.outcomesSnapshot?.groc !== undefined && !isClosed && (
-                                                <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors">Borrar ✕</button>
-                                            )}
-                                            <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.groc !== undefined ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
-                                                {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
-                                                    ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
-                                                    : "N/A"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {formData.outcomesSnapshot?.groc !== undefined ? (
-                                        <>
-                                            <input
-                                                type="range"
-                                                min="-7" max="7" step="1"
-                                                disabled={isClosed}
-                                                value={formData.outcomesSnapshot?.groc || 0}
-                                                onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
-                                                className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            />
-                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                                <span>Mucho Peor (-7)</span>
-                                                <span>Igual (0)</span>
-                                                <span>Mucho Mejor (+7)</span>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "groc", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-rose-300 hover:text-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                            + Registrar GROC
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between items-end mb-3">
-                                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-                                            SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
-                                        </label>
-                                        <div className="flex items-center gap-2">
-                                            {formData.outcomesSnapshot?.sane !== undefined && !isClosed && (
-                                                <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">Borrar ✕</button>
-                                            )}
-                                            <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.sane !== undefined ? 'text-blue-600 bg-blue-100 border-blue-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
-                                                {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
-                                                    ? `${formData.outcomesSnapshot.sane}%`
-                                                    : "N/A"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {formData.outcomesSnapshot?.sane !== undefined ? (
-                                        <>
-                                            <input
-                                                type="range"
-                                                min="0" max="100" step="5"
-                                                disabled={isClosed}
-                                                value={formData.outcomesSnapshot?.sane || 0}
-                                                onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
-                                                className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                            />
-                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                                <span>0% (Pésimo)</span>
-                                                <span>50%</span>
-                                                <span>100% (Normal)</span>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "sane", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                            + Registrar SANE
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </AccordionSection>
-
-                    {/* ALERTA: AUDITORÍA CIERRE TARDÍO PREEXISTENTE */}
-                    {isClosed && formData.audit?.lateReason && (
-                        <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 mt-6 flex items-start gap-4 shadow-sm mb-8">
-                            <div className="bg-amber-100 p-2.5 rounded-full mt-1 shrink-0">
-                                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            </div>
-                            <div>
-                                <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-widest border-b border-amber-200/50 pb-2 mb-2">Auditoría: Cierre Extemporáneo Registrado</h4>
-                                <p className="text-sm text-amber-800 font-medium bg-amber-100/50 p-4 rounded-xl border border-amber-200/50 italic leading-relaxed hover:bg-amber-100 transition-colors">"{formData.audit.lateReason}"</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* DUMP LEGACY (Si la evolución migrada contiene texto antiguo rescatado) */}
-                    {formData.notesLegacy && (
-                        <div className="bg-slate-100 p-5 rounded-2xl border border-slate-300 mt-4 shadow-sm">
-                            <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-2 mb-3">
-                                Notas Históricas (Antes de actualización)
-                            </h4>
-                            <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap">
-                                {formData.notesLegacy}
-                            </pre>
-                        </div>
-                    )}
-
-                    {/* TARJETAS DEL ASISTENTE CLÍNICO */}
-                    {!isClosed && (
-                        <div className="mt-8 mb-4 border-2 border-dashed border-indigo-200 bg-indigo-50/30 rounded-3xl p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <SparklesIcon className="w-5 h-5 text-indigo-500" />
-                                <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider">Análisis Inteligente Clínico</h3>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {assistantCards.map(card => (
-                                    <div key={card.id} className={`flex items-start gap-3 p-4 rounded-2xl border shadow-sm ${card.style} transition-all`}>
-                                        <div className="shrink-0 mt-0.5 bg-white p-1 rounded-full shadow-sm">
-                                            {card.icon}
-                                        </div>
                                         <div>
-                                            <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">{card.title}</h4>
-                                            <p className="text-xs font-medium leading-relaxed opacity-90">{card.message}</p>
+                                            <div className="flex justify-between items-end mb-3">
+                                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                                    SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
+                                                </label>
+                                                <div className="flex items-center gap-2">
+                                                    {formData.outcomesSnapshot?.sane !== undefined && !isClosed && (
+                                                        <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">Borrar ✕</button>
+                                                    )}
+                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.sane !== undefined ? 'text-blue-600 bg-blue-100 border-blue-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                        {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
+                                                            ? `${formData.outcomesSnapshot.sane}%`
+                                                            : "N/A"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {formData.outcomesSnapshot?.sane !== undefined ? (
+                                                <>
+                                                    <input
+                                                        type="range"
+                                                        min="0" max="100" step="5"
+                                                        disabled={isClosed}
+                                                        value={formData.outcomesSnapshot?.sane || 0}
+                                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
+                                                        className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                    />
+                                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                        <span>0% (Pésimo)</span>
+                                                        <span>50%</span>
+                                                        <span>100% (Normal)</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "sane", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    + Registrar SANE
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            </AccordionSection>
                         </div>
-                    )}
 
-                </form>
+                        {/* ALERTA: AUDITORÍA CIERRE TARDÍO PREEXISTENTE */}
+                        {isClosed && formData.audit?.lateReason && (
+                            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200 mt-6 flex items-start gap-4 shadow-sm mb-8">
+                                <div className="bg-amber-100 p-2.5 rounded-full mt-1 shrink-0">
+                                    <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-[11px] font-black text-amber-900 uppercase tracking-widest border-b border-amber-200/50 pb-2 mb-2">Auditoría: Cierre Extemporáneo Registrado</h4>
+                                    <p className="text-sm text-amber-800 font-medium bg-amber-100/50 p-4 rounded-xl border border-amber-200/50 italic leading-relaxed hover:bg-amber-100 transition-colors">"{formData.audit.lateReason}"</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* DUMP LEGACY (Si la evolución migrada contiene texto antiguo rescatado) */}
+                        {formData.notesLegacy && (
+                            <div className="bg-slate-100 p-5 rounded-2xl border border-slate-300 mt-4 shadow-sm">
+                                <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200 pb-2 mb-3">
+                                    Notas Históricas (Antes de actualización)
+                                </h4>
+                                <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap">
+                                    {formData.notesLegacy}
+                                </pre>
+                            </div>
+                        )}
+
+                        {/* TARJETAS DEL ASISTENTE CLÍNICO */}
+                        {!isClosed && (
+                            <div className="mt-8 mb-4 border-2 border-dashed border-indigo-200 bg-indigo-50/30 rounded-3xl p-5">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <SparklesIcon className="w-5 h-5 text-indigo-500" />
+                                    <h3 className="text-sm font-black text-indigo-900 uppercase tracking-wider">Análisis Inteligente Clínico</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {assistantCards.map(card => (
+                                        <div key={card.id} className={`flex items-start gap-3 p-4 rounded-2xl border shadow-sm ${card.style} transition-all`}>
+                                            <div className="shrink-0 mt-0.5 bg-white p-1 rounded-full shadow-sm">
+                                                {card.icon}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">{card.title}</h4>
+                                                <p className="text-xs font-medium leading-relaxed opacity-90">{card.message}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                    </form>
+                </div>
 
                 {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
                 {isAttemptingClose && requiresLateReason && (
@@ -1200,8 +1244,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 )}
             </div>
 
-            {/* BOTTOM BAR FIJA (Thumb-friendly Actions) */}
-            <div className="bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 pb-6 md:pb-4 fixed bottom-0 left-0 right-0 z-40 md:sticky md:bottom-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+            {/* BOTTOM BAR FIJA (Thumb-friendly Actions con Safe-Area) */}
+            <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-4 fixed bottom-0 left-0 right-0 z-40 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)]">
                 <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
 
                     {!isClosed && (
