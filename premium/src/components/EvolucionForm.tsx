@@ -978,9 +978,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                         </div>
                     </div>
 
-                    {/* Botón Volver Desktop */}
-                    <button onClick={onClose} className="hidden md:flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
-                        Descartar / Volver
+                    {/* Botón Volver Mobile/Desktop */}
+                    <button onClick={onClose} className="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto bg-slate-100 hover:bg-slate-200 md:bg-transparent md:hover:bg-transparent rounded-full md:rounded-none gap-1.5 text-slate-500 hover:text-slate-800 transition-colors">
+                        <svg className="w-5 h-5 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        <span className="hidden md:inline text-sm font-semibold">Descartar / Volver</span>
                     </button>
                 </div>
 

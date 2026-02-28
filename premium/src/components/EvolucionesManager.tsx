@@ -126,7 +126,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
 
     if (view === 'formulario') {
         return (
-            <div className="md:bg-white md:rounded-2xl md:p-6 md:border md:border-slate-200 md:shadow-sm animate-in fade-in slide-in-from-right-4">
+            <div className="fixed inset-0 z-[100] bg-white w-full h-full overflow-hidden flex flex-col md:relative md:z-auto md:inset-auto md:w-auto md:h-auto md:bg-white md:rounded-2xl md:p-6 md:border md:border-slate-200 md:shadow-sm animate-in fade-in slide-in-from-right-4 lg:min-h-[80vh]">
                 <EvolucionForm
                     usuariaId={usuariaId}
                     procesoId={procesoId}
