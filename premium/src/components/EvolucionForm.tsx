@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from "@/types/clinica";
-import { doc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
@@ -22,12 +22,13 @@ import {
 } from '@heroicons/react/20/solid';
 import { EvaSlider } from "./ui/EvaSlider";
 import { NumericStepper } from "./ui/NumericStepper";
+import { ExerciseRow } from "./ui/ExerciseRow";
 import { InterventionPanel } from "./ui/InterventionPanel";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 // CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS
-const globalEvalCache: Record<string, { objectives: TreatmentObjective[], versionId: string, timestamp: number }> = {};
+const globalEvalCache: Record<string, { objectives: { id: string, label: string, status?: string }[], versionId: string, timestamp: number }> = {};
 
 function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion> {
     if (!data) return {
@@ -47,6 +48,13 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
     // Migración Legacy -> Pro
     const legacyData = data as any;
     const isLegacy = legacyData.estado !== undefined || legacyData.dolorInicio !== undefined;
+
+    // Tratamiento para "interventions" que venían como objeto { categories, notes }
+    let interventionsArray: any[] = [];
+    if (Array.isArray(data.interventions)) {
+        interventionsArray = data.interventions;
+    }
+
     let notesLegacy = legacyData.notesLegacy || "";
 
     if (isLegacy) {
@@ -71,10 +79,7 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
             evaEnd: legacyData.dolorSalida ?? ""
         },
         sessionGoal: data.sessionGoal || legacyData.objetivoSesion || "",
-        interventions: data.interventions || {
-            categories: [],
-            notes: legacyData.intervenciones || ""
-        },
+        interventions: interventionsArray, // Now directly an array
         exercises: data.exercises || [],
         nextPlan: data.nextPlan || legacyData.planProximaSesion || "",
         audit: data.audit || {
@@ -213,6 +218,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     // UI Layout States
     const [activeSection, setActiveSection] = useState("admin"); // "admin", "soap", "interventions", "results"
 
+    // FASE 2.1.21: Continuidad
+    const [lastClosedEvol, setLastClosedEvol] = useState<Evolucion | null>(null);
+    const [isLoadingContinuity, setIsLoadingContinuity] = useState(false);
+
     // Dropdown + Texto para justificación
     const [lateCategory, setLateCategory] = useState("");
     const [lateText, setLateText] = useState("");
@@ -232,6 +241,37 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             setIsLateDraft(false);
         }
     }, [isClosed, formData.sessionAt]);
+
+    // FASE 2.1.21: Obtener Última Evolución Cerrada (Continuidad)
+    useEffect(() => {
+        const fetchContinuity = async () => {
+            if (!globalActiveYear || isClosed) return; // Solo importa si estamos llenando una nueva/draft
+            setIsLoadingContinuity(true);
+            try {
+                const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
+                // Traer la última cerrada del usuario o proceso
+                let qQuery;
+                if (procesoId) {
+                    qQuery = query(evolsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"), orderBy("sessionAt", "desc"), limit(1));
+                } else {
+                    qQuery = query(evolsRef, where("usuariaId", "==", usuariaId), where("status", "==", "CLOSED"), orderBy("sessionAt", "desc"), limit(1));
+                }
+                const snap = await getDocs(qQuery);
+                if (!snap.empty) {
+                    const data = snap.docs[0].data() as Evolucion;
+                    // No mostrarse a sí misma si por algún motivo la query nos trajo
+                    if (data.id !== initialData?.id) {
+                        setLastClosedEvol(data);
+                    }
+                }
+            } catch (err) {
+                console.error("No se pudo cargar la continuidad histórica", err);
+            } finally {
+                setIsLoadingContinuity(false);
+            }
+        };
+        fetchContinuity();
+    }, [globalActiveYear, procesoId, usuariaId, isClosed, initialData?.id]);
 
     // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms)
     useEffect(() => {
@@ -301,26 +341,23 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         setFormData((prev: any) => ({ ...prev, sessionAt: new Date(val).toISOString() }));
     };
 
-    // --- MANEJO DE OBJETIVOS VIGENTES (FASE 2.1.4) ---
-    const [availableObjectives, setAvailableObjectives] = useState<TreatmentObjective[]>([]);
+    // --- MANEJO DE OBJETIVOS VIGENTES (FASE 2.1.18) ---
+    const [availableObjectives, setAvailableObjectives] = useState<{ id: string, label: string, status?: string }[]>([]);
     const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
     const [loadingObjectives, setLoadingObjectives] = useState(false);
 
     useEffect(() => {
-        // En modo edición de evoluciones cerradas o antiguas que no son de la versión actual,
-        // no re-escribiremos sus versionIds asique solo mostramos las elegidas (read-only real),
-        // pero por ahora para poder cambiarlos si es borrador, cargamos la última meta.
         if (!procesoId || !globalActiveYear) return;
 
-        const fetchLatestEval = async () => {
-            const cacheKey = `${globalActiveYear}_${procesoId}`;
+        const fetchObjectiveSet = async () => {
+            const cacheKey = `objSet_${globalActiveYear}_${procesoId}`;
             const timeNow = Date.now();
 
-            // Retornamos desde caché en memoria si existe y tiene menos de 10 minutos de antigüedad (SPA Optimization)
+            // Cache local para SPA
             if (globalEvalCache[cacheKey] && (timeNow - globalEvalCache[cacheKey].timestamp < 600000)) {
                 const cached = globalEvalCache[cacheKey];
-                const isOldVersion = formData.objectivesWorked?.objectiveSetVersionId
-                    && formData.objectivesWorked.objectiveSetVersionId !== cached.versionId;
+                // Evitamos pisar si estamos en Edit Mode de una sesión con una versión anterior
+                const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== cached.versionId;
                 if (isOldVersion && isClosed) return;
 
                 setAvailableObjectives(cached.objectives);
@@ -330,72 +367,85 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
             setLoadingObjectives(true);
             try {
-                const q = query(
-                    collection(db, "programs", globalActiveYear, "evaluaciones"),
-                    where("procesoId", "==", procesoId),
-                    orderBy("sessionAt", "desc"),
-                    limit(1)
-                );
-                const querySnapshot = await getDocs(q);
+                // FASE 2.1.18: Leer DESDE el Proceso
+                const docRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
+                const docSnap = await getDoc(docRef);
 
-                if (!querySnapshot.empty) {
-                    const evDoc = querySnapshot.docs[0];
-                    const evData = evDoc.data() as Evaluacion;
-                    const finalVersion = evData.versionId || evDoc.id;
-                    const finalObjectives = evData.objectives?.filter(o => o.status === 'ACTIVE') || [];
+                if (docSnap.exists()) {
+                    const procesoData = docSnap.data();
+                    const activeSet = procesoData.activeObjectiveSet;
 
-                    // Guardamos la consulta costosa de Firebase en el caché local
-                    globalEvalCache[cacheKey] = {
-                        objectives: finalObjectives,
-                        versionId: finalVersion,
-                        timestamp: timeNow
-                    };
+                    if (activeSet && activeSet.objectives) {
+                        const actives = activeSet.objectives.filter((o: any) => o.status !== 'logrado' && o.status !== 'pausado');
 
-                    // Si ya tenía objetivos guardados (legacy borrador o edit mode) e intentamos cargar
-                    const isOldVersion = formData.objectivesWorked?.objectiveSetVersionId
-                        && formData.objectivesWorked.objectiveSetVersionId !== finalVersion;
+                        globalEvalCache[cacheKey] = {
+                            objectives: actives,
+                            versionId: activeSet.versionId,
+                            timestamp: timeNow
+                        };
 
-                    if (isOldVersion && isClosed) {
-                        return;
+                        const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== activeSet.versionId;
+                        if (isOldVersion && isClosed) return;
+
+                        setAvailableObjectives(actives);
+                        setCurrentVersionId(activeSet.versionId);
+                    } else {
+                        // El proceso no tiene un set
+                        setAvailableObjectives([]);
+                        setCurrentVersionId(undefined);
                     }
-
-                    setAvailableObjectives(finalObjectives);
-                    setCurrentVersionId(finalVersion);
-                } else {
-                    // MOCK Fallback rápido
-                    setAvailableObjectives([
-                        { id: "obj-mock-001", description: "Lograr flexión de rodilla a 120° sin dolor", status: "ACTIVE", category: "ROM" },
-                        { id: "obj-mock-002", description: "Reducir respuesta inflamatoria aguda (VAS < 3)", status: "ACTIVE", category: "Pain" },
-                        { id: "obj-mock-003", description: "Dominio de marcha sin ayudas técnicas", status: "ACTIVE", category: "Function" }
-                    ]);
-                    setCurrentVersionId("mock-version-eval-001");
                 }
             } catch (err) {
-                console.error("Error cargando objetivos", err);
+                console.error("Error cargando el Set de Objetivos desde el Proceso", err);
             } finally {
                 setLoadingObjectives(false);
             }
         };
 
-        fetchLatestEval();
-    }, [procesoId, globalActiveYear, formData.objectivesWorked?.objectiveSetVersionId, isClosed]);
+        fetchObjectiveSet();
+    }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosed]);
 
-    const toggleObjective = (objId: string) => {
+    const toggleObjective = (objId: string, customStatus?: 'trabajado' | 'avanzó' | 'logrado' | 'sin cambio') => {
         if (isClosed) return;
-        const currentIds = formData.objectivesWorked?.objectiveIds || [];
-        const isSelected = currentIds.includes(objId);
 
-        const newIds = isSelected
-            ? currentIds.filter(id => id !== objId)
-            : [...currentIds, objId];
+        setFormData(prev => {
+            const currentWork = Array.isArray(prev.objectiveWork) ? [...prev.objectiveWork] : [];
+            const existingIndex = currentWork.findIndex(w => w.id === objId);
 
-        setFormData(prev => ({
-            ...prev,
-            objectivesWorked: {
-                objectiveIds: newIds,
-                objectiveSetVersionId: currentVersionId
+            if (existingIndex >= 0) {
+                if (!customStatus) {
+                    // Clic estándar: removerlo
+                    currentWork.splice(existingIndex, 1);
+                } else {
+                    // Updatear el status
+                    currentWork[existingIndex].sessionStatus = customStatus;
+                }
+            } else {
+                // Agregar nuevo
+                currentWork.push({ id: objId, sessionStatus: customStatus || 'trabajado' });
             }
-        }));
+
+            // Sync legacy arrays para retrocompatibilidad
+            const currentIds = currentWork.map(w => w.id);
+
+            // Snapshot para inmutabilidad del registro
+            const snapshot = availableObjectives
+                .filter(o => currentIds.includes(o.id))
+                .map(o => ({ id: o.id, label: o.label }));
+
+            return {
+                ...prev,
+                objectiveWork: currentWork,
+                selectedObjectiveIds: currentIds,
+                selectedObjectivesSnapshot: snapshot,
+                objectiveSetVersionId: currentVersionId,
+                // Mantener legacy hidratado preventivamente
+                objectivesWorked: {
+                    objectiveIds: currentIds,
+                    objectiveSetVersionId: currentVersionId
+                }
+            };
+        });
     };
 
     // --- MANEJO DE EJERCICIOS DINÁMICOS ---
@@ -413,6 +463,13 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         setFormData((prev: any) => ({
             ...prev,
             exercises: prev.exercises?.map((ex: ExercisePrescription) => ex.id === id ? { ...ex, [field]: value } : ex)
+        }));
+    };
+
+    const updateExerciseFull = (updatedEx: ExercisePrescription) => {
+        setFormData((prev: any) => ({
+            ...prev,
+            exercises: prev.exercises?.map((ex: ExercisePrescription) => ex.id === updatedEx.id ? updatedEx : ex)
         }));
     };
 
@@ -453,8 +510,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 q = query(evolsRef, where("usuariaId", "==", usuariaId), orderBy("sessionAt", "desc"), limit(2));
             }
             const querySnapshot = await getDocs(q);
-            // La primera podría ser ESTA MISMA si ya guardamos un draft. 
-            // Buscamos la primera evolución distinta a la actual que tenga ejercicios.
+
             let lastEvol: any = null;
             querySnapshot.forEach(doc => {
                 if (doc.id !== initialData?.id && !lastEvol) {
@@ -462,14 +518,24 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 }
             });
 
-            if (!lastEvol || !lastEvol.exercises || lastEvol.exercises.length === 0) {
-                alert("No se encontró una evolución médica previa con ejercicios para duplicar.");
+            // Compatibilidad Transversal Fase 2.1.19 / 2.1.20
+            const oldExercises = lastEvol?.exerciseRx?.rows || lastEvol?.exercises || [];
+            const oldInterventions = Array.isArray(lastEvol?.interventions) ? lastEvol.interventions : [];
+            const oldEffortMode = lastEvol?.exerciseRx?.effortMode || lastEvol?.perceptionMode;
+
+            if (oldExercises.length === 0 && oldInterventions.length === 0) {
+                alert("No se encontró una evolución médica previa con ejercicios o intervenciones válidas para duplicar.");
                 return;
             }
 
-            // Duplicar creando IDs frescos para la UI, copiando propiedades
-            const duplicatedExercises = lastEvol.exercises.map((ex: any) => ({
+            // Duplicar creando IDs frescos para la UI
+            const duplicatedExercises = oldExercises.map((ex: any) => ({
                 ...ex,
+                id: generateId()
+            }));
+
+            const duplicatedInterventions = oldInterventions.map((int: any) => ({
+                ...int,
                 id: generateId()
             }));
 
@@ -479,16 +545,23 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     ...(prev.exercises || []),
                     ...duplicatedExercises
                 ],
+                interventions: [
+                    ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                    ...duplicatedInterventions
+                ],
+                // Si el anterior tenía un effort mode forzado explícitamente, heredarlo
+                perceptionMode: oldEffortMode || prev.perceptionMode,
+
                 audit: {
                     ...(prev.audit || {}),
                     copiedFromEvolutionId: lastEvol.id
                 }
             }));
 
-            alert(`✅ Se han copiado ${duplicatedExercises.length} ejercicios desde una evolución anterior.`);
+            alert(`✅ Se han copiado ${duplicatedExercises.length} ejercicios y ${duplicatedInterventions.length} intervenciones desde una evolución anterior.`);
         } catch (error) {
-            console.error("Error al duplicar ejercicios:", error);
-            alert("Hubo un error al intentar acceder a los ejercicios anteriores.");
+            console.error("Error al duplicar componentes:", error);
+            alert("Hubo un error al intentar acceder a los registros previos.");
         }
     };
 
@@ -533,11 +606,24 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
                 pain: formData.pain || { evaStart: "", evaEnd: "" },
                 sessionGoal: formData.sessionGoal || "",
-                interventions: formData.interventions || { categories: [], notes: "" },
-                exercises: formData.exercises || [],
+                interventions: formData.interventions || [],
+
+                // Mapeo FASE 2.1.20
+                exerciseRx: {
+                    effortMode: formData.perceptionMode || 'RIR',
+                    rows: formData.exercises || []
+                },
+
                 nextPlan: formData.nextPlan || "",
                 educationNotes: formData.educationNotes || "",
-                objectivesWorked: formData.objectivesWorked,
+
+                // Mapeo Objetivos Activos (Fase 2.1.18)
+                objectiveSetVersionId: formData.objectiveSetVersionId || undefined,
+                objectiveWork: formData.objectiveWork || [],
+                selectedObjectiveIds: formData.selectedObjectiveIds || [],
+                selectedObjectivesSnapshot: formData.selectedObjectivesSnapshot || [],
+                objectivesWorked: formData.objectivesWorked, // Legacy
+
                 outcomesSnapshot: formData.outcomesSnapshot,
 
                 audit: finalAudit,
@@ -727,6 +813,13 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
 
             const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
+            // Validaciones
+            const hasCheckin = (formData.pain?.evaStart && formData.sessionGoal);
+            const intervs = Array.isArray(formData.interventions) ? formData.interventions : (formData.interventions?.categories || []);
+            const hasWork = (intervs.length > 0) || ((formData.exercises?.length || 0) > 0);
+            const hasResponse = (formData.pain?.evaEnd && formData.responseImmediate);
+            const hasNext = !!formData.nextPlan;
+
             if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
 
             const hasIntervenciones = Array.isArray(formData.interventions)
@@ -769,28 +862,34 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             const evaOut = Number(formData.pain?.evaEnd);
             if (evaOut > evaIn) {
                 const txt = (formData.nextPlan || "").toLowerCase();
-                const posWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito", "buen", "favorable", "progreso"];
-                if (posWords.some(w => txt.includes(w))) {
-                    missingFields.push("Aclaración de Contradicción Clínica (Dolor aumentó pero texto sugiere mejora)");
+                const progWords = ["mejor", "alivio", "disminuy", "baj", "positivo", "excelent", "exito", "buen", "favorable", "progreso", "progres", "aument", "subir carga"];
+
+                if (progWords.some(w => txt.includes(w))) {
+                    const justification = formData.pain?.contradictionReason || "";
+                    if (justification.trim().length < 5) {
+                        missingFields.push("Justificación de Agudización (El Dolor aumentó pero el Plan sugiere progreso)");
+                    }
                     assistantCards.push({
                         id: 'contradiction',
                         type: 'error',
-                        title: 'Contradicción Clínica Detectada',
-                        message: `El EVA reporta un aumento de dolor (${evaIn} a ${evaOut}), pero el texto sugiere mejoría. Corrija los EVAs o elimine las palabras ambiguas del texto para liberar la firma.`,
+                        title: 'Alerta de Coherencia Clínica',
+                        message: `El EVA reporta un aumento de dolor (${evaIn} a ${evaOut}), pero la narrativa sugiere mejoría o progresión. Ajuste su plan o brinde una justificación inferior obligatoria.`,
                         icon: <ExclamationCircleIcon className="w-5 h-5 text-rose-500" />,
-                        style: "bg-rose-50 border-rose-200 text-rose-800"
+                        style: "bg-rose-50 border-rose-200 text-rose-800",
+                        requiresAction: true,
+                        actionType: 'contradictionReason'
                     });
                 }
             }
         }
 
         // Objetivos No Marcados
-        if (availableObjectives.length > 0 && (!formData.objectivesWorked?.objectiveIds || formData.objectivesWorked.objectiveIds.length === 0)) {
+        if (availableObjectives.length > 0 && (!formData.selectedObjectiveIds || formData.selectedObjectiveIds.length === 0)) {
             assistantCards.push({
                 id: 'objectives_missing',
                 type: 'info',
-                title: 'Objetivos Transversales Aislados',
-                message: "Existen objetivos de tratamiento planificados. Sugerimos vincular los abordados hoy.",
+                title: 'Objetivos del Proceso Aislados',
+                message: "Existen objetivos trazados para este proceso clínico. Te recomendamos marcar cuáles trabajaste hoy.",
                 icon: <LightBulbIcon className="w-5 h-5 text-sky-500" />,
                 style: "bg-sky-50 border-sky-200 text-sky-800"
             });
@@ -815,7 +914,18 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const canClose = missingFields.length === 0;
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-50 md:relative md:z-auto md:bg-transparent flex flex-col h-[100dvh] md:h-auto overflow-hidden">
+        <form onSubmit={handleSaveDraft} className="space-y-4 max-w-6xl mx-auto pb-44" id="evo-scroll-container">
+
+            {/* ERROR DE TIEMPO LEGAL (36hr Rule) */}
+            {isLateDraft && !requiresLateReason && (
+                <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-4 rounded-r-xl sticky top-4 z-50 shadow-md flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
+                    <ExclamationTriangleIcon className="w-8 h-8 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="text-rose-800 font-bold text-sm tracking-wide">Ficha Expirada Legalmente (&gt;36 Hrs)</h4>
+                        <p className="text-rose-700/80 text-xs mt-1 leading-relaxed">Esta evolución clínica lleva configurada con una fecha de sesión mayor a 36 horas en el pasado. Su cierre requerirá una justificación administrativa formal (AuditTrail) que quedará visible permanentemente.</p>
+                    </div>
+                </div>
+            )}
 
             {/* TOP BAR FIJA (Mobile First) */}
             <div className="bg-white border-b border-slate-200 shadow-sm z-40 sticky top-0 shrink-0">
@@ -898,7 +1008,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                         )}
                     </div>
 
-                    <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-4">
+                    <div id="evolution-form" className="space-y-4">
 
                         {/* GRUPO ESENCIAL DEL PACIENTE (Scroll Spy agrupa estos acórdeones) */}
                         <div id="sec-esencial" className="space-y-4 scroll-mt-6">
@@ -1097,82 +1207,132 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 </div>
                             </AccordionSection>
 
-                            {/* 2. SECCIÓN S.O.A.P. */}
+                            {/* FASE 2.1.17: REGISTRO CLÍNICO GUIADO (4 PASOS) */}
                             <AccordionSection
-                                id="sec-soap"
-                                title="Evaluación y Planificación (S.O.A.P)"
-                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
+                                id="sec-guiado"
+                                title="Registro Clínico de la Sesión (Guiado)"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
                                 theme="emerald"
                             >
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
-                                    <div className="col-span-1 md:col-span-12">
-                                        <EvaSlider
-                                            label="Dolor Inicio (EVA)"
-                                            value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
-                                            onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                    <div className="col-span-1 md:col-span-12">
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Objetivo de la Sesión <span className="text-emerald-600">*</span></label>
-                                        <textarea
-                                            name="sessionGoal"
-                                            value={formData.sessionGoal}
-                                            onChange={handleChange}
-                                            disabled={isClosed}
-                                            rows={1}
-                                            placeholder="Ej: Disminuir dolor peripatelar y reactivar cuádriceps..."
-                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
-                                        />
-                                    </div>
-
-                                    {/* OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS) */}
-                                    {availableObjectives.length > 0 && (
-                                        <div className="md:col-span-12 mt-2 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                                            <h4 className="flex items-center gap-2 text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-3">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                Objetivos Clínicos Vigentes
-                                                {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
-                                            </h4>
-
-                                            <div className="flex flex-wrap gap-2">
-                                                {availableObjectives.map(obj => {
-                                                    const isSelected = formData.objectivesWorked?.objectiveIds?.includes(obj.id);
-                                                    return (
-                                                        <button
-                                                            key={obj.id}
-                                                            type="button"
-                                                            disabled={isClosed}
-                                                            onClick={() => toggleObjective(obj.id)}
-                                                            className={`
-                                                        px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border
-                                                        ${isSelected
-                                                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
-                                                                    : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                                                }
-                                                        ${isClosed && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}
-                                                    `}
-                                                        >
-                                                            {isSelected && <span className="mr-1.5">✓</span>}
-                                                            {obj.description}
-                                                        </button>
-                                                    );
-                                                })}
+                                <div className="space-y-8 mt-2">
+                                    {/* BLOQUE A: CHECK-IN */}
+                                    <div className="bg-white border-2 border-emerald-100/50 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-2 h-full bg-emerald-400"></div>
+                                        <h3 className="text-[12px] font-black uppercase tracking-widest text-emerald-800 mb-4 flex items-center gap-2">
+                                            <span className="bg-emerald-100 text-emerald-700 w-5 h-5 rounded flex items-center justify-center text-[10px]">A</span>
+                                            Check-in del Paciente
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-5">
+                                            <div className="col-span-1">
+                                                <EvaSlider
+                                                    label="Dolor al Ingresar (EVA)"
+                                                    value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
+                                                    onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
+                                                    disabled={isClosed}
+                                                />
                                             </div>
-                                            <p className="text-[10px] text-emerald-600/70 mt-3 font-semibold text-right">
-                                                Última v. Evaluación activa
-                                            </p>
+                                            <div className="col-span-1">
+                                                <div className="flex justify-between items-end mb-1.5">
+                                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                        Principal molestia o meta para hoy
+                                                        {availableObjectives.length === 0 && <span className="text-slate-400 font-medium normal-case ml-1">(Objetivo temporal)</span>}
+                                                        <span className="text-emerald-600 ml-1">*</span>
+                                                    </label>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const goals = formData.selectedObjectiveIds
+                                                                ?.map((id: string) => {
+                                                                    const obj = availableObjectives.find(o => o.id === id);
+                                                                    return obj ? obj.label : null;
+                                                                })
+                                                                .filter(Boolean)
+                                                                .join(", ");
+                                                            if (goals) {
+                                                                setFormData((prev: any) => ({ ...prev, sessionGoal: `Enfocado en: ${goals}.` }));
+                                                            }
+                                                        }}
+                                                        className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200"
+                                                    >
+                                                        <SparklesIcon className="w-3 h-3" /> Sugerir desde Metas
+                                                    </button>
+                                                </div>
+                                                <textarea
+                                                    name="sessionGoal"
+                                                    value={formData.sessionGoal}
+                                                    onChange={handleChange}
+                                                    disabled={isClosed}
+                                                    rows={2}
+                                                    placeholder="Ej: Viene con molestia en rodilla derecha 6/10. Meta: Disminuir dolor y reactivar propiocepción básica..."
+                                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
+                                                />
+                                            </div>
+
+                                            {/* FASE 2.1.18: OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS MEJORADOS) */}
+                                            <div className="col-span-1 mt-1 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                                                <h4 className="flex items-center gap-2 text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-2">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    Objetivos Activos del Proceso
+                                                    {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
+                                                </h4>
+
+                                                {availableObjectives.length > 0 ? (
+                                                    <div className="flex flex-col gap-3">
+                                                        {availableObjectives.map(obj => {
+                                                            const record = formData.objectiveWork?.find(w => w.id === obj.id);
+                                                            const isSelected = !!record;
+                                                            return (
+                                                                <div key={obj.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2 rounded-xl transition-all border ${isSelected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={isClosed}
+                                                                        onClick={() => toggleObjective(obj.id)}
+                                                                        className={`flex-1 text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${isSelected ? 'text-emerald-800' : 'text-slate-600'} ${isClosed && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                    >
+                                                                        {isSelected ? <span className="mr-1.5 font-normal text-emerald-600 text-[10px]">☑</span> : <span className="mr-1.5 font-normal text-slate-300 text-[10px]">☐</span>}
+                                                                        {obj.label}
+                                                                    </button>
+
+                                                                    {/* Selector Rápido de Estado (Solo aparece si está seleccionado) */}
+                                                                    {isSelected && (
+                                                                        <div className="flex flex-wrap gap-1 px-3 sm:px-0">
+                                                                            {['trabajado', 'avanzó', 'sin cambio', 'logrado'].map(st => (
+                                                                                <button
+                                                                                    key={st}
+                                                                                    type="button"
+                                                                                    disabled={isClosed}
+                                                                                    onClick={(e) => { e.stopPropagation(); toggleObjective(obj.id, st as any); }}
+                                                                                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md border 
+                                                                                        ${record.sessionStatus === st
+                                                                                            ? (st === 'logrado' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-emerald-600 text-white border-emerald-700 shadow-sm')
+                                                                                            : 'bg-white text-slate-400 border-slate-200 hover:text-emerald-600 hover:border-emerald-200'}`}
+                                                                                >
+                                                                                    {st}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-3 bg-white/60 border border-emerald-50 rounded-lg shadow-sm">
+                                                        <p className="text-[11px] text-slate-500 italic font-medium">Sin objetivos activos todavía. Crea evaluación inicial/reevaluación para habilitarlos.</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </AccordionSection>
-                        </div> {/* Fin Envoltura Esencial */}
+                        </div> {/* Fin Envoltura Esencial A */}
 
-                        {/* 3. SECCIÓN INTERVENCIONES PASIVAS */}
+                        {/* BLOQUE B: QUÉ SE HIZO (Intervenciones + Ejercicios) */}
                         <div id="sec-interv" className="scroll-mt-6">
                             <AccordionSection
                                 id="interv-pass"
-                                title="Intervenciones y Agentes Físicos"
+                                title="B. Qué se Ejecutó (Procedimientos)"
                                 icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" /></svg>}
                                 theme="amber"
                             >
@@ -1180,6 +1340,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                     <InterventionPanel
                                         interventions={formData.interventions || []}
                                         onChange={(newInterventions) => handleNestedChange("interventions", "", newInterventions)}
+                                        activeObjectives={availableObjectives.filter(obj => formData.selectedObjectiveIds?.includes(obj.id))}
                                         disabled={isClosed}
                                     />
                                 </div>
@@ -1237,149 +1398,27 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         const currentPerception = formData.perceptionMode || 'RIR';
 
                                         return (
-                                            <div key={ex.id} className="bg-slate-900/50 border border-indigo-700/50 rounded-2xl p-4 mb-3 relative group transition-all hover:border-indigo-500/80 shadow-md">
-                                                {/* HEADER DEL EJERCICIO */}
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black text-white bg-indigo-600 px-2.5 py-1.5 rounded uppercase tracking-widest shadow-md border border-indigo-500">Ej. {index + 1}</span>
-                                                        {!isClosed && (
-                                                            <div className="flex bg-slate-950/50 rounded-lg border border-indigo-900/50 overflow-hidden shadow-inner ml-2">
-                                                                <button type="button" onClick={() => moveExercise(index, 'up')} disabled={index === 0} className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
-                                                                    <ChevronUpIcon className="w-4 h-4" />
-                                                                </button>
-                                                                <button type="button" onClick={() => moveExercise(index, 'down')} disabled={index === (formData.exercises?.length || 0) - 1} className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-indigo-900/50">
-                                                                    <ChevronDownIcon className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {!isClosed && index > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const prevEx = formData.exercises![index - 1];
-                                                                    const duplicated = { ...prevEx, id: generateId() };
-                                                                    const newList = [...formData.exercises!];
-                                                                    newList.splice(index, 1, duplicated);
-                                                                    setFormData(prev => ({ ...prev, exercises: newList }));
-                                                                }}
-                                                                title="Copiar datos del ejercicio anterior"
-                                                                className="text-[10px] font-bold text-indigo-400 bg-indigo-950/40 hover:bg-indigo-800 px-2 py-1.5 rounded-lg border border-indigo-800 transition-all"
-                                                            >
-                                                                Copiar de Arriba
-                                                            </button>
-                                                        )}
-                                                        {!isClosed && (
-                                                            <button type="button" onClick={() => removeExercise(ex.id)} className="text-rose-400 hover:text-white bg-rose-950/40 hover:bg-rose-700 p-1.5 rounded-lg transition-all border border-rose-900 shadow-sm">
-                                                                <TrashIcon className="w-4 h-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* BODY DEL EJERCICIO */}
-                                                <div className="grid grid-cols-1 md:grid-cols-12 gap-y-4 gap-x-3 mt-3">
-                                                    {/* ROW 1: Nombre y Clasificación */}
-                                                    <div className="col-span-1 md:col-span-5">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Nombre Ejercicio <span className="text-rose-500">*</span></label>
-                                                        <input type="text" placeholder="Ej: Sentadilla Búlgara" disabled={isClosed} value={ex.name} onChange={e => updateExercise(ex.id, "name", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 py-2 text-sm font-black text-white outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30 h-10" />
-                                                    </div>
-                                                    <div className="col-span-1 md:col-span-4">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-2 ml-1 uppercase">Implementos (Múltiple)</label>
-                                                        <div className="flex flex-wrap gap-1.5 min-h-[40px] items-center">
-                                                            {['Banda', 'Mancuerna', 'Kettlebell', 'Polea', 'TRX', 'Fitball', 'Barra', 'Máquina', 'P. Corporal', 'Otro'].map(eq => {
-                                                                const isSelected = ex.equipment?.includes(eq);
-                                                                return (
-                                                                    <button
-                                                                        key={eq}
-                                                                        type="button"
-                                                                        disabled={isClosed}
-                                                                        onClick={() => {
-                                                                            const current = ex.equipment || [];
-                                                                            const newVal = isSelected ? current.filter(e => e !== eq) : [...current, eq];
-                                                                            updateExercise(ex.id, "equipment", newVal.length ? newVal : undefined as any);
-                                                                        }}
-                                                                        className={`px-2 py-1 text-[10px] rounded-lg font-bold transition-all border ${isSelected ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-slate-950/40 text-indigo-300 hover:text-white border-indigo-800/50 hover:bg-slate-800'}`}
-                                                                    >
-                                                                        {eq}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-span-1 md:col-span-3">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Patrón / Lado</label>
-                                                        <div className="flex gap-1 h-10">
-                                                            <select disabled={isClosed} value={ex.pattern || ""} onChange={e => updateExercise(ex.id, "pattern", e.target.value || undefined as any)} className="w-[60%] bg-slate-950/70 border border-indigo-800/80 rounded-l-xl px-1 text-[11px] font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
-                                                                <option value="">Patrón...</option>
-                                                                <option value="Sentadilla">Sentadilla</option>
-                                                                <option value="Bisagra">Bisagra</option>
-                                                                <option value="Empuje">Empuje</option>
-                                                                <option value="Tracción">Tracción</option>
-                                                                <option value="Core">Core</option>
-                                                                <option value="Movilidad">Movilidad</option>
-                                                                <option value="Otro">Otro</option>
-                                                            </select>
-                                                            <select disabled={isClosed} value={ex.side || ""} onChange={e => updateExercise(ex.id, "side", e.target.value || undefined as any)} className="w-[40%] bg-slate-950/70 border border-indigo-800/80 border-l-0 rounded-r-xl px-1 text-[11px] font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
-                                                                <option value="">Lado...</option>
-                                                                <option value="Bilateral">Bi</option>
-                                                                <option value="Unilateral Izq">Izq</option>
-                                                                <option value="Unilateral Der">Der</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* ROW 2: Steppers Dosis */}
-                                                    <div className="col-span-1 md:col-span-12 my-1 border-t border-indigo-900/30 pt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-                                                        <NumericStepper label="Series" placeholder="Sets" disabled={isClosed} value={ex.sets} onChange={val => updateExercise(ex.id, "sets", val)} />
-                                                        <NumericStepper label="Reps/Tiempo" placeholder="Reps" disabled={isClosed} value={ex.repsOrTime} onChange={val => updateExercise(ex.id, "repsOrTime", val)} />
-                                                        <NumericStepper label="Carga" placeholder="Kg" step={2.5} disabled={isClosed} value={ex.loadKg || ""} onChange={val => updateExercise(ex.id, "loadKg", val)} />
-
-                                                        {/* Selector Dinámico de Percepción RIR/RPE */}
-                                                        {currentPerception === 'RIR' ? (
-                                                            <NumericStepper label="RIR (Reserva)" placeholder="0-10" step={1} min={0} max={10} disabled={isClosed} value={ex.rir || ex.rpeOrRir || ""} onChange={val => updateExercise(ex.id, "rir", val)} />
-                                                        ) : (
-                                                            <NumericStepper label="RPE (Esfuerzo)" placeholder="1-10" step={1} min={1} max={10} disabled={isClosed} value={ex.rpe || ex.rpeOrRir || ""} onChange={val => updateExercise(ex.id, "rpe", val)} />
-                                                        )}
-
-                                                        <NumericStepper label="Descanso" placeholder="Seg/Min" disabled={isClosed} value={ex.rest || ""} onChange={val => updateExercise(ex.id, "rest", val)} />
-                                                    </div>
-
-                                                    {/* ROW 3: Progresión y Ajustes */}
-                                                    <div className="col-span-1 md:col-span-3 mt-2">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Clave de Progresión</label>
-                                                        <select disabled={isClosed} value={ex.mainVariable || ""} onChange={e => updateExercise(ex.id, "mainVariable", e.target.value || undefined as any)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
-                                                            <option value="">Variable dominante...</option>
-                                                            <option value="Carga">Carga</option>
-                                                            <option value="Volumen">Volumen</option>
-                                                            <option value="Densidad">Densidad</option>
-                                                            <option value="ROM">ROM</option>
-                                                            <option value="Velocidad">Velocidad</option>
-                                                            <option value="Técnica">Técnica</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="col-span-1 md:col-span-3 mt-2">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Criterio de Progresión</label>
-                                                        <select disabled={isClosed} value={ex.progressionCriteria || ""} onChange={e => updateExercise(ex.id, "progressionCriteria", e.target.value || undefined as any)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs font-bold text-indigo-100 outline-none focus:border-indigo-400 transition-all">
-                                                            <option value="">Define el criterio...</option>
-                                                            <option value="Subir Carga">Subir Carga</option>
-                                                            <option value="Subir Reps">Subir Reps</option>
-                                                            <option value="Bajar RIR">Bajar RIR</option>
-                                                            <option value="Subir RPE">Subir RPE</option>
-                                                            <option value="+ Velocidad">+ Velocidad intencional</option>
-                                                            <option value="+ ROM">+ ROM tolerado</option>
-                                                            <option value="Sostenido">Mantener estímulo</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="col-span-1 md:col-span-6 mt-2">
-                                                        <label className="block text-[9px] font-bold text-indigo-400/70 mb-1 ml-1 uppercase">Ajustes Biomecánicos / Notas</label>
-                                                        <input type="text" placeholder="Ej: Foco en rotación externa, elástico amarillo..." disabled={isClosed} value={ex.notes || ""} onChange={e => updateExercise(ex.id, "notes", e.target.value)} className="w-full bg-slate-950/70 border border-indigo-800/80 rounded-xl px-3 h-10 text-xs text-indigo-50 outline-none focus:border-indigo-400 focus:bg-slate-900 transition-all placeholder:text-indigo-400/30" />
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                        )
+                                            <ExerciseRow
+                                                key={ex.id}
+                                                exercise={ex}
+                                                index={index}
+                                                effortMode={currentPerception as 'RIR' | 'RPE'}
+                                                isClosed={isClosed}
+                                                isFirst={index === 0}
+                                                isLast={index === (formData.exercises?.length || 0) - 1}
+                                                onChange={(updatedEx) => updateExerciseFull(updatedEx)}
+                                                onRemove={() => removeExercise(ex.id)}
+                                                onMoveUp={() => moveExercise(index, 'up')}
+                                                onMoveDown={() => moveExercise(index, 'down')}
+                                                onDuplicateFromAbove={index > 0 ? () => {
+                                                    const prevEx = formData.exercises![index - 1];
+                                                    const duplicated = { ...prevEx, id: generateId() };
+                                                    const newList = [...formData.exercises!];
+                                                    newList.splice(index, 1, duplicated);
+                                                    setFormData(prev => ({ ...prev, exercises: newList }));
+                                                } : undefined}
+                                            />
+                                        );
                                     })}
 
                                     {!isClosed && (
@@ -1398,16 +1437,104 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                             </div>
                         </div>
 
-                        {/* 5. SECCIÓN RESULTADOS */}
+                        {/* BLOQUE C & D: RESPUESTA Y QUÉ SIGUE */}
                         <div id="sec-result" className="scroll-mt-6">
                             <AccordionSection
                                 id="result-panel"
-                                title="Resultados y Pronóstico"
+                                title="C y D. Respuesta al Tratamiento y Handoff"
                                 icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
                                 theme="rose"
                                 defaultOpen={true}
                             >
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-2">
+                                <div className="space-y-8 mt-2">
+
+                                    {/* ----- BLOQUE C: RESPUESTA INMEDIATA ----- */}
+                                    <div className="bg-white border-2 border-rose-100/50 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-2 h-full bg-rose-400"></div>
+                                        <h3 className="text-[12px] font-black uppercase tracking-widest text-rose-800 mb-4 flex items-center gap-2">
+                                            <span className="bg-rose-100 text-rose-700 w-5 h-5 rounded flex items-center justify-center text-[10px]">C</span>
+                                            Respuesta Perceptual Inmediata
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-6">
+                                            <div className="col-span-1">
+                                                <EvaSlider
+                                                    label="Dolor al Salir (EVA)"
+                                                    value={formData.pain?.evaEnd !== "" && formData.pain?.evaEnd !== undefined ? Number(formData.pain.evaEnd) : undefined}
+                                                    onChange={(val) => handleNestedChange("pain", "evaEnd", val !== undefined ? String(val) : "")}
+                                                    disabled={isClosed}
+                                                    isEnd={true}
+                                                    onSameAsStart={() => {
+                                                        if (formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "") {
+                                                            handleNestedChange("pain", "evaEnd", formData.pain.evaStart);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+
+                                            {/* Selector Guiado Peor/Igual/Mejor */}
+                                            <div className="col-span-1 border-t border-slate-100 pt-5">
+                                                <label className="block text-[11px] font-bold text-slate-600 mb-3 uppercase tracking-wide">Reporte Inmediato de Síntomas <span className="text-rose-600">*</span></label>
+                                                <div className="flex gap-3">
+                                                    {['Mejor', 'Igual', 'Peor'].map(status => (
+                                                        <button
+                                                            key={status}
+                                                            type="button"
+                                                            disabled={isClosed}
+                                                            onClick={() => setFormData(prev => ({ ...prev, responseImmediate: status as any }))}
+                                                            className={`flex-1 py-3 rounded-xl text-sm font-black transition-all border-2 
+                                                                ${formData.responseImmediate === status
+                                                                    ? (status === 'Mejor' ? 'bg-emerald-50 text-emerald-600 border-emerald-400 shadow-sm' : status === 'Peor' ? 'bg-rose-50 text-rose-600 border-rose-400 shadow-sm' : 'bg-amber-50 text-amber-600 border-amber-400 shadow-sm')
+                                                                    : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'}`}
+                                                        >
+                                                            {status}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={formData.responseNote || ""}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, responseNote: e.target.value }))}
+                                                    disabled={isClosed}
+                                                    placeholder="Nota opcional (Ej: Sensación de alivio en arco de movimiento, pero persiste click...)"
+                                                    className="w-full mt-3 border border-slate-200 rounded-lg px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 disabled:bg-slate-100 transition-all text-slate-700"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ----- BLOQUE D: QUÉ SIGUE (Traceability) ----- */}
+                                    <div className="bg-slate-50 border-2 border-indigo-100/50 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-2 h-full bg-indigo-400"></div>
+                                        <h3 className="text-[12px] font-black uppercase tracking-widest text-indigo-800 mb-4 flex items-center gap-2">
+                                            <span className="bg-indigo-100 text-indigo-700 w-5 h-5 rounded flex items-center justify-center text-[10px]">D</span>
+                                            Trazabilidad y Cierre Clínico
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-5">
+                                            <div className="col-span-1">
+                                                <label className="block text-[11px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Plan para la próxima sesión <span className="text-indigo-600">*</span></label>
+                                                <textarea
+                                                    name="nextPlan"
+                                                    value={formData.nextPlan}
+                                                    onChange={handleChange}
+                                                    disabled={isClosed}
+                                                    rows={2}
+                                                    placeholder="Ej: Iniciar cargas excéntricas. Focalizar en abductores y sumar 10 min de elíptica."
+                                                    className="w-full border border-slate-200 bg-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-sm"
+                                                />
+                                            </div>
+                                            <div className="col-span-1">
+                                                <label className="block text-[11px] font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Handoff para el próximo interno (Optativo)</label>
+                                                <textarea
+                                                    value={formData.handoffText || ""}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, handoffText: e.target.value }))}
+                                                    disabled={isClosed}
+                                                    rows={2}
+                                                    placeholder="Pasa el dato o advierte algo: 'Le molesta la camilla dura', 'Llega siempre atrasado'..."
+                                                    className="w-full border border-indigo-200/60 bg-white/50 rounded-xl px-4 py-3 text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none disabled:bg-slate-100 transition-all text-slate-600 italic placeholder:not-italic shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="col-span-1 md:col-span-12">
                                         <EvaSlider
                                             label="Dolor Salida (EVA)"
@@ -1423,7 +1550,40 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         />
                                     </div>
                                     <div className="col-span-1 md:col-span-12">
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
+                                        <div className="flex justify-between items-end mb-1.5">
+                                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
+                                            <button
+                                                type="button"
+                                                disabled={isClosed}
+                                                onClick={() => {
+                                                    const basePlan: string[] = [];
+                                                    const resp = formData.responseImmediate;
+                                                    if (resp === "Mejor") basePlan.push("Mantener pauta actual y continuar dosis de carga dada la mejora clínica.");
+                                                    else if (resp === "Peor") basePlan.push("Reevaluar volumen y variables críticas dada la agudización reportada.");
+                                                    else if (resp === "Igual") basePlan.push("Aumentar demanda metabólica intentando romper el estancamiento fisiológico actual.");
+
+                                                    const evaIn = Number(formData.pain?.evaStart);
+                                                    const evaOut = Number(formData.pain?.evaEnd);
+                                                    if (!isNaN(evaIn) && !isNaN(evaOut)) {
+                                                        if (evaOut > evaIn) basePlan.push(`(Monitorizar agudización: EVA ${evaIn} -> ${evaOut}).`);
+                                                        else if (evaOut < evaIn) basePlan.push(`(Buen alivio analgésico: EVA ${evaIn} -> ${evaOut}).`);
+                                                    }
+
+                                                    const ex = formData.exercises?.[0];
+                                                    if (ex && 'mainVariable' in ex && ex.mainVariable) {
+                                                        basePlan.push(`Progresar priorizando la variable: ${ex.mainVariable}.`);
+                                                    }
+
+                                                    const finalP = basePlan.join(" ");
+                                                    if (finalP) {
+                                                        setFormData(prev => ({ ...prev, nextPlan: finalP }));
+                                                    }
+                                                }}
+                                                className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 hover:text-rose-800 transition-colors bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded shadow-sm border border-rose-200"
+                                            >
+                                                <SparklesIcon className="w-3 h-3" /> Sugerir Plan Automático
+                                            </button>
+                                        </div>
                                         <textarea
                                             name="nextPlan"
                                             value={formData.nextPlan}
@@ -1435,88 +1595,156 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         />
                                     </div>
 
-                                    {/* OUTCOMES RÁPIDOS (FASE 2.1.5) */}
-                                    <div className="md:col-span-12 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                                        <div>
-                                            <div className="flex justify-between items-end mb-3">
-                                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-                                                    GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    {formData.outcomesSnapshot?.groc !== undefined && !isClosed && (
-                                                        <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors">Borrar ✕</button>
-                                                    )}
-                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.groc !== undefined ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
-                                                        {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
-                                                            ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
-                                                            : "N/A"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {formData.outcomesSnapshot?.groc !== undefined ? (
-                                                <>
-                                                    <input
-                                                        type="range"
-                                                        min="-7" max="7" step="1"
-                                                        disabled={isClosed}
-                                                        value={formData.outcomesSnapshot?.groc || 0}
-                                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
-                                                        className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                    />
-                                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                                        <span>Mucho Peor (-7)</span>
-                                                        <span>Igual (0)</span>
-                                                        <span>Mucho Mejor (+7)</span>
+                                    {/* MANTENIDO: Herramientas GROC y SANE */}
+                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mt-2">
+                                        <h4 className="text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 pb-2 mb-3">Métricas Optativas Formales</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <div className="flex justify-between items-end mb-3">
+                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                                        GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        {formData.outcomesSnapshot?.groc !== undefined && !isClosed && (
+                                                            <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors">Borrar ✕</button>
+                                                        )}
+                                                        <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.groc !== undefined ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                            {formData.outcomesSnapshot?.groc !== undefined && formData.outcomesSnapshot?.groc !== "" && !isNaN(Number(formData.outcomesSnapshot.groc))
+                                                                ? (Number(formData.outcomesSnapshot.groc) > 0 ? `+${formData.outcomesSnapshot.groc}` : formData.outcomesSnapshot.groc)
+                                                                : "N/A"}
+                                                        </span>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "groc", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-rose-300 hover:text-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    + Registrar GROC
-                                                </button>
-                                            )}
-                                        </div>
+                                                </div>
+                                                {formData.outcomesSnapshot?.groc !== undefined ? (
+                                                    <>
+                                                        <input
+                                                            type="range"
+                                                            min="-7" max="7" step="1"
+                                                            disabled={isClosed}
+                                                            value={formData.outcomesSnapshot?.groc || 0}
+                                                            onChange={(e) => handleNestedChange("outcomesSnapshot", "groc", Number(e.target.value))}
+                                                            className="w-full accent-rose-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                        />
+                                                        <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                            <span>Mucho Peor (-7)</span>
+                                                            <span>Igual (0)</span>
+                                                            <span>Mucho Mejor (+7)</span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "groc", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-rose-300 hover:text-rose-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        + Registrar GROC
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                        <div>
-                                            <div className="flex justify-between items-end mb-3">
-                                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
-                                                    SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    {formData.outcomesSnapshot?.sane !== undefined && !isClosed && (
-                                                        <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">Borrar ✕</button>
-                                                    )}
-                                                    <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.sane !== undefined ? 'text-blue-600 bg-blue-100 border-blue-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
-                                                        {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
-                                                            ? `${formData.outcomesSnapshot.sane}%`
-                                                            : "N/A"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {formData.outcomesSnapshot?.sane !== undefined ? (
-                                                <>
-                                                    <input
-                                                        type="range"
-                                                        min="0" max="100" step="5"
-                                                        disabled={isClosed}
-                                                        value={formData.outcomesSnapshot?.sane || 0}
-                                                        onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
-                                                        className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                                    />
-                                                    <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                                        <span>0% (Pésimo)</span>
-                                                        <span>50%</span>
-                                                        <span>100% (Normal)</span>
+                                            <div>
+                                                <div className="flex justify-between items-end mb-3">
+                                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                                                        SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Evaluación Numérica)</span>
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        {formData.outcomesSnapshot?.sane !== undefined && !isClosed && (
+                                                            <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors">Borrar ✕</button>
+                                                        )}
+                                                        <span className={`text-sm font-black px-2.5 py-0.5 rounded-full border ${formData.outcomesSnapshot?.sane !== undefined ? 'text-blue-600 bg-blue-100 border-blue-200' : 'text-slate-400 bg-slate-200 border-slate-300'}`}>
+                                                            {formData.outcomesSnapshot?.sane !== undefined && formData.outcomesSnapshot?.sane !== "" && !isNaN(Number(formData.outcomesSnapshot.sane))
+                                                                ? `${formData.outcomesSnapshot.sane}%`
+                                                                : "N/A"}
+                                                        </span>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "sane", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                    + Registrar SANE
-                                                </button>
-                                            )}
+                                                </div>
+                                                {formData.outcomesSnapshot?.sane !== undefined ? (
+                                                    <>
+                                                        <input
+                                                            type="range"
+                                                            min="0" max="100" step="5"
+                                                            disabled={isClosed}
+                                                            value={formData.outcomesSnapshot?.sane || 0}
+                                                            onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
+                                                            className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                                        />
+                                                        <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
+                                                            <span>0% (Pésimo)</span>
+                                                            <span>50%</span>
+                                                            <span>100% (Normal)</span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <button type="button" disabled={isClosed} onClick={() => handleNestedChange("outcomesSnapshot", "sane", 0)} className="w-full py-2 bg-white border-2 border-dashed border-slate-300 text-slate-500 font-bold text-xs rounded-xl hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        + Registrar SANE
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </AccordionSection>
+                        </div>
+
+                        {/* FASE 2.1.17: DISCLOSURE MODULAR MODO SOAP AVANZADO */}
+                        <div className="mb-8 mt-2">
+                            <Disclosure as="div" className="bg-slate-50/50 border border-slate-200 border-dashed rounded-xl overflow-hidden shadow-sm">
+                                {({ open }) => (
+                                    <>
+                                        <Disclosure.Button className="w-full px-4 py-3 flex justify-between items-center hover:bg-slate-100/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500">
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <svg className="w-5 h-5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">{open ? "Ocultar Formato SOAP Libre" : "Mostrar Formato SOAP Antiguo (Avanzado)"}</span>
+                                            </div>
+                                            <ChevronDownIcon className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-slate-400 transition-transform`} />
+                                        </Disclosure.Button>
+                                        <Transition
+                                            enter="transition duration-150 ease-out"
+                                            enterFrom="transform scale-95 opacity-0 h-0"
+                                            enterTo="transform scale-100 opacity-100 h-auto"
+                                            leave="transition duration-100 ease-out"
+                                            leaveFrom="transform scale-100 opacity-100"
+                                            leaveTo="transform scale-95 opacity-0"
+                                        >
+                                            <Disclosure.Panel className="p-5 border-t border-slate-200/50 bg-white grid grid-cols-1 gap-5">
+                                                <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 mb-2">
+                                                    <p className="text-[10px] text-amber-800 font-medium"><b>Atención:</b> El uso de texto libre SOAP ya no es obligatorio para firmar evoluciones. Recomendamos usar el registro guiado (A, B, C, D) superior.</p>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">S. Subjetivo (y Anamnesis)</label>
+                                                    <textarea
+                                                        name="subjetivo"
+                                                        value={formData.subjetivo}
+                                                        onChange={handleChange}
+                                                        disabled={isClosed}
+                                                        rows={2}
+                                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-600 shadow-inner italic"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">O. Objetivo Tradicional (Texto libre)</label>
+                                                    <textarea
+                                                        name="textoCorto"
+                                                        value={formData.textoCorto}
+                                                        onChange={handleChange}
+                                                        disabled={isClosed}
+                                                        rows={2}
+                                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-600 shadow-inner italic"
+                                                    />
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">A. Apreciación General</label>
+                                                    <textarea
+                                                        name="apreciacion"
+                                                        value={formData.apreciacion}
+                                                        onChange={handleChange}
+                                                        disabled={isClosed}
+                                                        rows={2}
+                                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-600 shadow-inner italic"
+                                                    />
+                                                </div>
+                                            </Disclosure.Panel>
+                                        </Transition>
+                                    </>
+                                )}
+                            </Disclosure>
                         </div>
 
                         {/* ALERTA: AUDITORÍA CIERRE TARDÍO PREEXISTENTE */}
@@ -1557,81 +1785,92 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                             <div className="shrink-0 mt-0.5 bg-white p-1 rounded-full shadow-sm">
                                                 {card.icon}
                                             </div>
-                                            <div>
+                                            <div className="flex-1">
                                                 <h4 className="text-[11px] font-black uppercase tracking-wider mb-1">{card.title}</h4>
                                                 <p className="text-xs font-medium leading-relaxed opacity-90">{card.message}</p>
+                                                {card.requiresAction && card.actionType === 'contradictionReason' && (
+                                                    <div className="mt-3">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Ingrese aquí una justificación clínica breve (>5 carácteres)..."
+                                                            value={formData.pain?.contradictionReason || ""}
+                                                            disabled={isClosed}
+                                                            onChange={(e) => handleNestedChange("pain", "contradictionReason", e.target.value)}
+                                                            className="w-full border border-rose-300 bg-white rounded-lg px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-rose-500 transition-all font-medium text-slate-700 shadow-sm"
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
+                    </div>{/* Fin Div espaciador Accordiones principales */}
+                </div>{/* Fin padding body */}
+            </div>{/* Fin scroll container */}
 
-                    </form>
-                </div>
-
-                {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
-                {isAttemptingClose && requiresLateReason && (
-                    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
-                        <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
-                                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
-                                </div>
+            {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
+            {isAttemptingClose && requiresLateReason && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
+                    <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                             </div>
-
-                            <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
-                                Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
-                                Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
-                            </p>
-
-                            <div className="space-y-4 mb-8">
-                                <select
-                                    value={lateCategory}
-                                    onChange={(e) => setLateCategory(e.target.value)}
-                                    className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
-                                >
-                                    <option value="" disabled>Seleccione Causal Directa...</option>
-                                    <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
-                                    <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
-                                    <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
-                                    <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
-                                    <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
-                                    <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
-                                </select>
-
-                                <textarea
-                                    value={lateText}
-                                    onChange={(e) => setLateText(e.target.value)}
-                                    placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
-                                    className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
-                                />
-                            </div>
-
-                            <div className="flex flex-col-reverse md:flex-row gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAttemptingClose(false)}
-                                    className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
-                                >
-                                    Cancelar (Dejar Abierto)
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={confirmLateClose}
-                                    className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
-                                >
-                                    Firmar y Cerrar Evolución
-                                </button>
+                            <div>
+                                <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
+                                <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
                             </div>
                         </div>
+
+                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
+                            Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
+                            Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
+                        </p>
+
+                        <div className="space-y-4 mb-8">
+                            <select
+                                value={lateCategory}
+                                onChange={(e) => setLateCategory(e.target.value)}
+                                className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
+                            >
+                                <option value="" disabled>Seleccione Causal Directa...</option>
+                                <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
+                                <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
+                                <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
+                                <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
+                                <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
+                                <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
+                            </select>
+
+                            <textarea
+                                value={lateText}
+                                onChange={(e) => setLateText(e.target.value)}
+                                placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
+                                className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
+                            />
+                        </div>
+
+                        <div className="flex flex-col-reverse md:flex-row gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsAttemptingClose(false)}
+                                className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
+                            >
+                                Cancelar (Dejar Abierto)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmLateClose}
+                                className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
+                            >
+                                Firmar y Cerrar Evolución
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* BOTTOM BAR FIJA (Thumb-friendly Actions con Safe-Area) */}
             <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-4 fixed bottom-0 left-0 right-0 z-40 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)]">
@@ -1682,6 +1921,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 </div>
             </div>
 
-        </div>
+        </form>
     );
 }

@@ -21,6 +21,17 @@ export interface Proceso {
     updatedAt?: string;
     createdByUid: string;
     createdByName: string;
+
+    // FASE 2.1.18: Contenedor global de los objetivos de atención
+    activeObjectiveSet?: {
+        versionId: string;
+        updatedAt: string;
+        objectives: Array<{
+            id: string;
+            label: string;
+            status?: 'activo' | 'pausado' | 'logrado';
+        }>;
+    };
 }
 
 export interface TreatmentObjective {
@@ -71,14 +82,19 @@ export interface ExercisePrescription {
     notes?: string;
 }
 
+export interface ExerciseRx {
+    effortMode: 'RIR' | 'RPE';
+    rows: Array<ExercisePrescription>;
+}
+
 export interface InterventionRecord {
-    id: string; // ID local para mapeo de React
-    type: string; // Ej: 'Educación', 'Terapia manual', etc.
-    doseValue?: string;
-    doseUnit?: string;
-    region?: string;
-    intensity?: string;
-    note?: string;
+    id: string; // Para iterar en React
+    category: 'Educación' | 'Terapia manual' | 'Modalidades físicas' | 'Vendaje/soporte' | 'Exposición/retorno' | 'Respiratorio/relajación' | 'Otras';
+    subType: string; // Seleccionado de lista sugerida o 'Otro'
+    dose?: string; // Ej: 15 min, 3x10
+    intensity?: 'Baja' | 'Media' | 'Alta';
+    notes?: string; // Máx 200 chars
+    objectiveIds?: string[]; // IDs vinculados de los meta-objetivos
 }
 
 export interface AuditTrail {
@@ -126,6 +142,7 @@ export interface Evolucion {
     pain: {
         evaStart: number | string;
         evaEnd: number | string;
+        contradictionReason?: string; // FASE 2.1.21: Justificación requerida si dolor aumenta y plan progresa.
     };
 
     sessionGoal: string; // Antes objetivoSesion
@@ -133,17 +150,35 @@ export interface Evolucion {
     // Preferencias y UI State guardadas en DB
     perceptionMode?: 'RIR' | 'RPE'; // Modo perceptual del kinesiólogo
 
+    // FASE 2.1.17 - Campos de Registro Guiado
+    responseImmediate?: 'Mejor' | 'Igual' | 'Peor' | '';
+    responseNote?: string;
+    handoffText?: string;
+
+    // Campos S.O.A.P Legacy (Optativos)
+    subjetivo?: string;
+    textoCorto?: string;
+    apreciacion?: string;
+
     // Soporte Legacy y Pro para refactor progresivo
     interventions: InterventionRecord[] | {
         categories: string[];
         notes: string; // Antes intervenciones (texto)
     };
 
-    exercises: ExercisePrescription[]; // El Módulo estrella (Reemplaza ejerciciosPrescritos string)
+    exercises?: ExercisePrescription[]; // Legacy FASE 2.1.19
+    exerciseRx?: ExerciseRx; // Nuevo FASE 2.1.20
 
     educationNotes?: string;
     nextPlan: string; // Antes planProximaSesion
 
+    // FASE 2.1.18: Selección granular de objetivos macro trabajados hoy
+    objectiveSetVersionId?: string;
+    selectedObjectiveIds?: string[]; // Array simple de IDs para checkboxes
+    selectedObjectivesSnapshot?: Array<{ id: string, label: string }>; // Foto para inmutabilidad del registro
+    objectiveWork?: Array<{ id: string, sessionStatus: 'trabajado' | 'avanzó' | 'logrado' | 'sin cambio' }>;
+
+    // Legacy FASE 2.1.4 (será reemplazado por objectiveWork en UI, mantenido por safety)
     objectivesWorked?: {
         objectiveIds: string[];
         objectiveSetVersionId?: string;
