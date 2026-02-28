@@ -841,13 +841,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
 
             const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());
-            // Validaciones
-            const hasCheckin = (formData.pain?.evaStart && formData.sessionGoal);
-            const intervs = Array.isArray(formData.interventions) ? formData.interventions : (formData.interventions?.categories || []);
-            const hasWork = (intervs.length > 0) || ((formData.exercises?.length || 0) > 0);
-            const hasResponse = (formData.pain?.evaEnd && formData.responseImmediate);
-            const hasNext = !!formData.nextPlan;
-
             if (hasEmptyNames) missingFields.push("Nombre en Fila de Ejercicio");
 
             const hasIntervenciones = Array.isArray(formData.interventions)
@@ -1463,7 +1456,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 <div className="mt-2">
                                     <InterventionPanel
                                         interventions={formData.interventions || []}
-                                        onChange={(newInterventions) => handleNestedChange("interventions", "", newInterventions)}
+                                        onChange={(newInterventions) => setFormData(prev => ({ ...prev, interventions: newInterventions as any }))}
                                         activeObjectives={availableObjectives.filter(obj => formData.selectedObjectiveIds?.includes(obj.id))}
                                         disabled={isClosed}
                                     />
