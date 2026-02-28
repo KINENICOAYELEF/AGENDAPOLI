@@ -1009,7 +1009,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>
 
             {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
-            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[env(safe-area-inset-bottom,20px)+20vh] md:pb-24 scroll-smooth hide-scrollbar bg-transparent">
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-40 md:pb-24 scroll-smooth hide-scrollbar bg-transparent">
                 <div className="max-w-4xl mx-auto mt-4 space-y-6">
 
                     {/* FASE 2.1.16: BANNER DE TIEMPOS DUALES */}
@@ -1562,7 +1562,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
                                 <div className="col-span-1 md:col-span-12 border-b border-slate-100 pb-5 mb-1">
                                     <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-3">EVA Salida (0-10) al terminar <span className="text-rose-600">*</span></label>
-                                    <div className="w-1/2 md:w-3/4">
+                                    <div className="w-full">
                                         <EvaSlider
                                             label=""
                                             value={formData.pain?.evaEnd !== "" && formData.pain?.evaEnd !== undefined ? Number(formData.pain.evaEnd) : undefined}
