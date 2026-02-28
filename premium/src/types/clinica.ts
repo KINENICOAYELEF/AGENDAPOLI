@@ -150,15 +150,21 @@ export interface Evolucion {
     // Preferencias y UI State guardadas en DB
     perceptionMode?: 'RIR' | 'RPE'; // Modo perceptual del kinesiólogo
 
-    // FASE 2.1.17 - Campos de Registro Guiado
-    responseImmediate?: 'Mejor' | 'Igual' | 'Peor' | '';
-    responseNote?: string;
-    handoffText?: string;
+    // FASE 2.1.22 - Readiness y Wellness Check-In
+    sessionNumber?: number; // Contador correlativo (Sesión N/M)
+    readiness?: {
+        sleepQuality?: 'Pobre' | 'Normal' | 'Óptimo';
+        stressLevel?: 'Alto' | 'Moderado' | 'Bajo';
+        energy?: 'Baja' | 'Normal' | 'Alta';
+        homeTasksCompleted?: 'No Aplica' | 'No' | 'Parcial' | 'Sí';
+    };
+    outcomesSnapshot?: { // Optativo, para cierres analíticos.
+        groc?: number;
+        sane?: number;
+    };
 
-    // Campos S.O.A.P Legacy (Optativos)
-    subjetivo?: string;
-    textoCorto?: string;
-    apreciacion?: string;
+    // Campos FASE 2.1.17 - Registro Clínico y Cierre
+    handoffText?: string;
 
     // Soporte Legacy y Pro para refactor progresivo
     interventions: InterventionRecord[] | {
@@ -182,11 +188,6 @@ export interface Evolucion {
     objectivesWorked?: {
         objectiveIds: string[];
         objectiveSetVersionId?: string;
-    };
-
-    outcomesSnapshot?: {
-        groc?: number | string;
-        sane?: number | string;
     };
 
     audit: AuditTrail;
