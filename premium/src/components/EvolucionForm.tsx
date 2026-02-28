@@ -782,12 +782,9 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
     const scrollToSection = (id: string) => {
         setActiveSection(id);
-        const container = document.getElementById('evo-scroll-container');
         const element = document.getElementById(id);
-        if (element && container) {
-            // Offset del top de element comparado con el top del scroll container
-            const topPos = element.offsetTop;
-            container.scrollTo({ top: topPos - 16, behavior: 'smooth' });
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
@@ -816,7 +813,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         const observer = new IntersectionObserver(observerCallback, observerOptions);
         // Pequeño delay para asegurar que el DOM pintó tras el primer render
         setTimeout(() => {
-            ['sec-esencial', 'interv', 'sec-ejerc', 'sec-result'].forEach(id => {
+            ['sec-esencial', 'sec-interv', 'sec-ejerc', 'sec-result'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) observer.observe(el);
             });
@@ -1565,24 +1562,20 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
                                 <div className="col-span-1 md:col-span-12 border-b border-slate-100 pb-5 mb-1">
                                     <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-3">EVA Salida (0-10) al terminar <span className="text-rose-600">*</span></label>
-                                    <div className="flex items-center gap-4">
-                                        <input
-                                            type="number"
-                                            name="evaEnd"
-                                            min="0" max="10"
-                                            value={formData.pain?.evaEnd || ""}
+                                    <div className="w-1/2 md:w-3/4">
+                                        <EvaSlider
+                                            label=""
+                                            value={formData.pain?.evaEnd !== "" && formData.pain?.evaEnd !== undefined ? Number(formData.pain.evaEnd) : undefined}
+                                            onChange={(val) => handleNestedChange("pain", "evaEnd", val !== undefined ? String(val) : "")}
                                             disabled={isClosed}
-                                            onChange={(e) => handleNestedChange("pain", "evaEnd", e.target.value)}
-                                            className="w-1/3 md:w-48 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-bold text-center"
-                                            placeholder="Ej. 2"
                                         />
-                                        {Number(formData.pain?.evaEnd) > Number(formData.pain?.evaStart) && formData.pain?.evaEnd !== "" && formData.pain?.evaStart !== "" && (
-                                            <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full flex items-center gap-1">
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                                                Dolor aumentó
-                                            </span>
-                                        )}
                                     </div>
+                                    {Number(formData.pain?.evaEnd) > Number(formData.pain?.evaStart) && formData.pain?.evaEnd !== "" && formData.pain?.evaStart !== "" && formData.pain?.evaEnd !== undefined && formData.pain?.evaStart !== undefined && (
+                                        <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full flex items-center gap-1">
+                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                            Dolor aumentó
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="col-span-1 md:col-span-12">
@@ -1826,66 +1819,68 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>{/* Fin scroll container */}
 
             {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
-            {isAttemptingClose && requiresLateReason && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
-                    <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            {
+                isAttemptingClose && requiresLateReason && (
+                    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
+                        <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
+                                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
-                                <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
+
+                            <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
+                                Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
+                                Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
+                            </p>
+
+                            <div className="space-y-4 mb-8">
+                                <select
+                                    value={lateCategory}
+                                    onChange={(e) => setLateCategory(e.target.value)}
+                                    className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
+                                >
+                                    <option value="" disabled>Seleccione Causal Directa...</option>
+                                    <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
+                                    <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
+                                    <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
+                                    <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
+                                    <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
+                                    <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
+                                </select>
+
+                                <textarea
+                                    value={lateText}
+                                    onChange={(e) => setLateText(e.target.value)}
+                                    placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
+                                    className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
+                                />
                             </div>
-                        </div>
 
-                        <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
-                            Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
-                            Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
-                        </p>
-
-                        <div className="space-y-4 mb-8">
-                            <select
-                                value={lateCategory}
-                                onChange={(e) => setLateCategory(e.target.value)}
-                                className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
-                            >
-                                <option value="" disabled>Seleccione Causal Directa...</option>
-                                <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
-                                <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
-                                <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
-                                <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
-                                <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
-                                <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
-                            </select>
-
-                            <textarea
-                                value={lateText}
-                                onChange={(e) => setLateText(e.target.value)}
-                                placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
-                                className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
-                            />
-                        </div>
-
-                        <div className="flex flex-col-reverse md:flex-row gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsAttemptingClose(false)}
-                                className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
-                            >
-                                Cancelar (Dejar Abierto)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={confirmLateClose}
-                                className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
-                            >
-                                Firmar y Cerrar Evolución
-                            </button>
+                            <div className="flex flex-col-reverse md:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAttemptingClose(false)}
+                                    className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
+                                >
+                                    Cancelar (Dejar Abierto)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmLateClose}
+                                    className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
+                                >
+                                    Firmar y Cerrar Evolución
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* BOTTOM BAR FIJA (Thumb-friendly Actions con Safe-Area) */}
             <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-4 fixed bottom-0 left-0 right-0 z-40 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)]">
@@ -1936,6 +1931,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 </div>
             </div>
 
-        </form>
+        </form >
     );
 }
