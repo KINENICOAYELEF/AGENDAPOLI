@@ -86,6 +86,7 @@ export interface AuditTrail {
     createdBy?: string;
     updatedAt?: string;
     updatedBy?: string;
+    lastEditedAt?: string; // FASE 2.1.16
     closedAt?: string;
     closedBy?: string;
     lateReason?: string;

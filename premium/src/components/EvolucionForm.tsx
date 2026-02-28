@@ -39,7 +39,9 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
         interventions: { categories: [], notes: "" },
         exercises: [],
         nextPlan: "",
-        audit: {}
+        audit: {
+            createdAt: new Date().toISOString()
+        }
     };
 
     // Migración Legacy -> Pro
@@ -508,6 +510,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 createdAt: currentAudit.createdAt || new Date().toISOString(),
                 createdBy: currentAudit.createdBy || user.uid,
                 updatedAt: new Date().toISOString(),
+                lastEditedAt: new Date().toISOString(), // FASE 2.1.16
                 updatedBy: user.uid,
                 closedAt: willClose ? new Date().toISOString() : currentAudit.closedAt,
                 closedBy: willClose ? user.uid : currentAudit.closedBy,
@@ -877,6 +880,24 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
             <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[45vh] md:pb-24 scroll-smooth hide-scrollbar">
                 <div className="max-w-4xl mx-auto mt-2">
+
+                    {/* FASE 2.1.16: BANNER DE TIEMPOS DUALES */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 shadow-sm flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+                        <div className="text-[11px] text-slate-600 space-y-1">
+                            <div><span className="font-bold">Hora real de atención:</span> <span className="text-indigo-700 font-semibold">{formData.sessionAt ? new Date(formData.sessionAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---'}</span></div>
+                            <div><span className="font-bold">Registro creado:</span> <span className="text-slate-900">{formData.audit?.createdAt ? new Date(formData.audit.createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---'}</span></div>
+                            <div><span className="font-bold">Última edición:</span> <span className="text-slate-900">{formData.audit?.lastEditedAt || formData.audit?.updatedAt ? new Date((formData.audit?.lastEditedAt || formData.audit?.updatedAt)!).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : 'Aún no guardado'}</span></div>
+                            {isClosed && formData.audit?.closedAt && (
+                                <div><span className="font-bold text-slate-800">Cierre total:</span> <span className="text-slate-900">{new Date(formData.audit.closedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                            )}
+                        </div>
+                        {formData.sessionAt && formData.audit?.createdAt && getDifferenceInHours(formData.sessionAt, formData.audit.createdAt) > 0.5 && (
+                            <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 rounded-lg text-[10px] font-bold text-center shrink-0 shadow-sm">
+                                Diferencia: {getDifferenceInHours(formData.sessionAt, formData.audit.createdAt).toFixed(1)} hrs
+                            </div>
+                        )}
+                    </div>
+
                     <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-4">
 
                         {/* GRUPO ESENCIAL DEL PACIENTE (Scroll Spy agrupa estos acórdeones) */}
