@@ -1304,20 +1304,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div className="md:col-span-2 border-t pt-4 border-slate-100 mt-2">
-                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">EVA Entrada (0-10) al iniciar sesión <span className="text-rose-600">*</span></label>
-                                        <input
-                                            type="number"
-                                            name="evaStart"
-                                            min="0" max="10"
-                                            value={formData.pain?.evaStart || ""}
-                                            disabled={isClosed}
-                                            onChange={(e) => handleNestedChange("pain", "evaStart", e.target.value)}
-                                            className="w-full md:w-1/3 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-                                            placeholder="Dolor al llegar..."
-                                        />
-                                    </div>
                                 </div>
                             </div>
 
