@@ -875,7 +875,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>
 
             {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
-            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none touch-pan-y w-full mx-auto relative px-4 md:px-6 pb-[45vh] scroll-smooth hide-scrollbar">
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[45vh] md:pb-24 scroll-smooth hide-scrollbar">
                 <div className="max-w-4xl mx-auto mt-2">
                     <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-4">
 
