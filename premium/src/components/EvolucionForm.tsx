@@ -932,7 +932,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const canClose = missingFields.length === 0;
 
     return (
-        <form onSubmit={handleSaveDraft} className="space-y-4 max-w-6xl mx-auto pb-44" id="evo-scroll-container">
+        <form onSubmit={handleSaveDraft} className="flex flex-col h-full w-full mx-auto overflow-hidden bg-slate-50/50 md:bg-transparent" id="evolution-form">
 
             {/* ERROR DE TIEMPO LEGAL (36hr Rule) */}
             {isLateDraft && !requiresLateReason && (
@@ -946,7 +946,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             )}
 
             {/* TOP BAR FIJA (Mobile First) */}
-            <div className="bg-white border-b border-slate-200 shadow-sm z-40 sticky top-0 shrink-0">
+            <div className="bg-white border-b border-slate-200 shadow-sm z-40 shrink-0">
                 <div className="flex items-center justify-between p-4 md:px-6">
                     <div className="flex items-center gap-3">
                         {/* Botón Volver solo en versión Móvil Total */}
@@ -985,7 +985,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     </button>
                 </div>
 
-                <div className="px-4 md:px-6 pb-2 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x bg-white relative z-10 border-b border-slate-100 shadow-sm mb-2">
+                <div className="px-4 md:px-6 pb-2 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x bg-white relative z-10 border-b border-slate-100 shadow-sm mb-2 shrink-0">
                     {[
                         { id: 'sec-esencial', label: 'Esencial' },
                         { id: 'sec-interv', label: 'Intervenciones' },
@@ -1009,8 +1009,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>
 
             {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
-            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[35vh] md:pb-24 scroll-smooth hide-scrollbar">
-                <div className="max-w-4xl mx-auto mt-2">
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[env(safe-area-inset-bottom,20px)+20vh] md:pb-24 scroll-smooth hide-scrollbar bg-transparent">
+                <div className="max-w-4xl mx-auto mt-4 space-y-6">
 
                     {/* FASE 2.1.16: BANNER DE TIEMPOS DUALES */}
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 shadow-sm flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
