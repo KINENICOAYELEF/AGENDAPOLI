@@ -182,8 +182,24 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
     const [loading, setLoading] = useState(false);
 
-    // Estado interno del formulario (Copia Inicial mode Pro)
-    const [formData, setFormData] = useState<Partial<Evolucion>>(() => mapLegacyToPro(initialData, usuariaId));
+    // FASE 2.1.15: Clave Única de Borrador Local
+    const draftKey = `evoDraft_${initialData?.id || 'new_' + usuariaId}`;
+
+    // Estado interno del formulario (Copia Inicial mode Pro + LocalStorage recovery)
+    const [formData, setFormData] = useState<Partial<Evolucion>>(() => {
+        const basePro = mapLegacyToPro(initialData, usuariaId);
+        if (!initialData || (initialData.status !== "CLOSED" && initialData.estado !== "CERRADA")) {
+            try {
+                const localDraft = localStorage.getItem(draftKey);
+                if (localDraft) {
+                    return { ...basePro, ...JSON.parse(localDraft) };
+                }
+            } catch (e) {
+                console.warn("No se pudo cargar el borrador local", e);
+            }
+        }
+        return basePro;
+    });
 
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -229,6 +245,17 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando formData (texto, inputs) mute
+
+    // FASE 2.1.15: PERSISTENCIA LOCAL LIGERA (Inmediata y en caché físico)
+    useEffect(() => {
+        if (!isClosed && formData && formData.usuariaId) {
+            try {
+                localStorage.setItem(draftKey, JSON.stringify(formData));
+            } catch (e) {
+                console.warn("Error guardando progreso en localStorage", e);
+            }
+        }
+    }, [formData, isClosed, draftKey]);
 
     // FASE 2.1.15: OPTIMIZACIÓN TECLADO MÓVIL
     useEffect(() => {
@@ -519,6 +546,15 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             await setDocCounted(docRef, payload, { merge: true });
 
             setFormData(prev => ({ ...prev, id: targetId }));
+
+            // FASE 2.1.15: Purgar borrador local en cache si fue firmada/cerrada.
+            if (willClose) {
+                try {
+                    localStorage.removeItem(draftKey);
+                    localStorage.removeItem(`evoDraft_new_${usuariaId}`); // Por si cambió de draftKey temporal a targetId
+                } catch (e) { }
+            }
+
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 3000);
 
