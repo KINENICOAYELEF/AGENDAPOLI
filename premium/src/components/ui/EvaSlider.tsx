@@ -59,7 +59,7 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
                         type="button"
                         onClick={onSameAsStart}
                         disabled={disabled}
-                        className="text-[10px] bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-bold px-3 py-1 rounded-full transition-colors disabled:opacity-50"
+                        className="text-[10px] bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-bold px-3 py-1 rounded-full transition-colors disabled:opacity-50 mt-2 sm:mt-0"
                     >
                         Igual que Inicio
                     </button>
@@ -67,12 +67,12 @@ export function EvaSlider({ label, value, onChange, disabled, isEnd, onSameAsSta
             </div>
 
             {/* Slider Track */}
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner font-black text-xl text-white transition-colors duration-300 ${localVal !== undefined ? getBgColor(Math.round(localVal)) : "bg-slate-300"}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className={`w-14 h-14 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner font-black text-2xl sm:text-xl text-white transition-colors duration-300 mx-auto sm:mx-0 ${localVal !== undefined ? getBgColor(Math.round(localVal)) : "bg-slate-300"}`}>
                     {localVal !== undefined ? Math.round(localVal) : "-"}
                 </div>
 
-                <div className="flex-1 relative pb-1">
+                <div className="flex-1 relative pb-1 w-full">
                     <input
                         type="range"
                         min="0"

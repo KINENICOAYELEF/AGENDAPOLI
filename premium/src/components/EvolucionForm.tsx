@@ -984,8 +984,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     </button>
                 </div>
 
-                {/* SCROLL SPY CHIPS - Navegación Rápida */}
-                <div className="px-4 md:px-6 pb-3 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x">
+                <div className="px-4 md:px-6 pb-2 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x bg-white relative z-10 border-b border-slate-100 shadow-sm mb-2">
                     {[
                         { id: 'sec-esencial', label: 'Esencial' },
                         { id: 'sec-interv', label: 'Intervenciones' },
@@ -1009,7 +1008,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             </div>
 
             {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
-            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[45vh] md:pb-24 scroll-smooth hide-scrollbar">
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-[35vh] md:pb-24 scroll-smooth hide-scrollbar">
                 <div className="max-w-4xl mx-auto mt-2">
 
                     {/* FASE 2.1.16: BANNER DE TIEMPOS DUALES */}
@@ -1210,7 +1209,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                                                     const newVal = isSelected ? current.filter(s => s !== sint) : [...current, sint];
                                                                                     handleNestedChange("vitalSigns", "acuteSymptoms", newVal);
                                                                                 }}
-                                                                                className={`px-3 py-1.5 text-[10px] uppercase tracking-wider rounded-lg font-bold transition-all border ${isSelected ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-sm hover:bg-amber-200' : 'bg-white text-slate-500 hover:text-slate-800 border-slate-300 hover:bg-slate-50'}`}
+                                                                                className={`px-3 py-1.5 text-[10px] uppercase tracking-wider rounded-lg font-bold transition-all ${isSelected ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-sm hover:bg-amber-200' : 'bg-white text-slate-500 hover:text-slate-800 border border-slate-300 hover:bg-slate-50'}`}
                                                                             >
                                                                                 {sint}
                                                                             </button>
