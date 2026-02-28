@@ -112,6 +112,66 @@ interface EvolucionFormProps {
     onSaveSuccess: (evolucion: Evolucion, isNew: boolean, willClose?: boolean) => void;
 }
 
+// --- RENDER HELPERS PARA ACORDEÓN EXTRAÍDO (FASE 2.1.15) ---
+const AccordionSection = ({
+    id,
+    title,
+    icon,
+    children,
+    defaultOpen = false,
+    theme = "indigo"
+}: {
+    id: string,
+    title: string,
+    icon: React.ReactNode,
+    children: React.ReactNode,
+    defaultOpen?: boolean
+    theme?: "indigo" | "emerald" | "amber" | "rose" | "slate"
+}) => {
+
+    const themes = {
+        indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
+        emerald: "text-emerald-600 bg-emerald-50 border-emerald-100",
+        amber: "text-amber-600 bg-amber-50 border-amber-100",
+        rose: "text-rose-600 bg-rose-50 border-rose-100",
+        slate: "text-slate-600 bg-slate-50 border-slate-100",
+    };
+
+    const activeTheme = themes[theme] || themes.indigo;
+
+    return (
+        <Disclosure defaultOpen={defaultOpen} as="div" id={id} className="scroll-mt-32">
+            {({ open }: { open: boolean }) => (
+                <div className={`bg-white rounded-2xl border ${open ? 'border-slate-300 shadow-md ring-1 ring-slate-100' : 'border-slate-200 shadow-sm'} transition-all overflow-hidden mb-4`}>
+                    <Disclosure.Button className={`w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}>
+                        <div className="flex items-center gap-3">
+                            <span className={`p-2 rounded-xl ${activeTheme} shadow-sm border`}>
+                                {icon}
+                            </span>
+                            <h3 className="font-extrabold text-slate-800 text-sm tracking-wide">{title}</h3>
+                        </div>
+                        <ChevronUpIcon
+                            className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-slate-400 transition-transform duration-300`}
+                        />
+                    </Disclosure.Button>
+                    <Transition
+                        enter="transition duration-200 ease-out"
+                        enterFrom="transform scale-95 opacity-0 -translate-y-4"
+                        enterTo="transform scale-100 opacity-100 translate-y-0"
+                        leave="transition duration-150 ease-in"
+                        leaveFrom="transform scale-100 opacity-100 translate-y-0"
+                        leaveTo="transform scale-95 opacity-0 -translate-y-4"
+                    >
+                        <Disclosure.Panel className="px-5 pb-6 pt-2 bg-slate-50/50 border-t border-slate-100">
+                            {children}
+                        </Disclosure.Panel>
+                    </Transition>
+                </div>
+            )}
+        </Disclosure>
+    );
+};
+
 export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
@@ -154,6 +214,42 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             setIsLateDraft(false);
         }
     }, [isClosed, formData.sessionAt]);
+
+    // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms)
+    useEffect(() => {
+        if (isClosed || loading || isAttemptingClose || !formData.usuariaId) return;
+
+        const timer = setTimeout(() => {
+            // Ignoramos auto-save si ya hay un guardado en curso para prevenir cuellos de botella
+            if (saveStatus !== 'saving') {
+                executeSave(false, undefined, true);
+            }
+        }, 1200);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando formData (texto, inputs) mute
+
+    // FASE 2.1.15: OPTIMIZACIÓN TECLADO MÓVIL
+    useEffect(() => {
+        const container = document.getElementById('evo-scroll-container');
+        if (!container) return;
+
+        const handleFocus = (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    // Mover scroll con suavidad para evitar que el input quede techado por el teclado
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        };
+
+        container.addEventListener('focusin', handleFocus);
+        return () => {
+            container.removeEventListener('focusin', handleFocus);
+        };
+    }, []);
 
     const handleNestedChange = (parent: "pain" | "interventions" | "outcomesSnapshot" | "vitalSigns" | "suspensionDetails", field: string, value: any) => {
         setFormData((prev: any) => ({
@@ -368,14 +464,14 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     };
 
     // Método universal de Guardado para Borrador o Cierre
-    const executeSave = async (willClose: boolean, overrideReason?: string) => {
+    const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false) => {
         if (!globalActiveYear || !user) {
-            alert("No hay un Año de Programa activo seleccionado o sesión inválida.");
+            if (!isAutoSave) alert("No hay un Año de Programa activo seleccionado o sesión inválida.");
             return;
         }
 
         try {
-            setLoading(true);
+            if (!isAutoSave) setLoading(true);
             setSaveStatus('saving');
             const targetId = formData.id || (isEditMode && initialData?.id ? initialData.id : generateId());
 
@@ -401,6 +497,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 sessionAt: formData.sessionAt!,
                 clinicianResponsible: user.uid,
 
+                sessionStatus: formData.sessionStatus || 'Realizada',
+                vitalSigns: formData.vitalSigns,
+                suspensionDetails: formData.suspensionDetails,
+
                 pain: formData.pain || { evaStart: "", evaEnd: "" },
                 sessionGoal: formData.sessionGoal || "",
                 interventions: formData.interventions || { categories: [], notes: "" },
@@ -422,16 +522,19 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 3000);
 
-            onSaveSuccess(payload as Evolucion, (!isEditMode && !formData.id), willClose);
+            // Solo notificamos success si es un guardado explícito.
+            if (!isAutoSave) onSaveSuccess(payload as Evolucion, (!isEditMode && !formData.id), willClose);
 
         } catch (error) {
             console.error("Error al guardar Evolución", error);
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 5000);
-            alert("Ha ocurrido un error al conectar con la base de datos.");
+            if (!isAutoSave) alert("Ha ocurrido un error al conectar con la base de datos.");
         } finally {
-            setLoading(false);
-            setIsAttemptingClose(false);
+            if (!isAutoSave) {
+                setLoading(false);
+                setIsAttemptingClose(false);
+            }
         }
     };
 
@@ -522,66 +625,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }
         const finalReason = `[${lateCategory}] ${lateText}`;
         executeSave(true, finalReason);
-    };
-
-    // --- RENDER HELPERS PARA ACORDEÓN ---
-    const AccordionSection = ({
-        id,
-        title,
-        icon,
-        children,
-        defaultOpen = false,
-        theme = "indigo"
-    }: {
-        id: string,
-        title: string,
-        icon: React.ReactNode,
-        children: React.ReactNode,
-        defaultOpen?: boolean
-        theme?: "indigo" | "emerald" | "amber" | "rose" | "slate"
-    }) => {
-
-        const themes = {
-            indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
-            emerald: "text-emerald-600 bg-emerald-50 border-emerald-100",
-            amber: "text-amber-600 bg-amber-50 border-amber-100",
-            rose: "text-rose-600 bg-rose-50 border-rose-100",
-            slate: "text-slate-600 bg-slate-50 border-slate-100",
-        };
-
-        const activeTheme = themes[theme] || themes.indigo;
-
-        return (
-            <Disclosure defaultOpen={defaultOpen} as="div" id={id} className="scroll-mt-32">
-                {({ open }: { open: boolean }) => (
-                    <div className={`bg-white rounded-2xl border ${open ? 'border-slate-300 shadow-md ring-1 ring-slate-100' : 'border-slate-200 shadow-sm'} transition-all overflow-hidden mb-4`}>
-                        <Disclosure.Button className={`w-full px-5 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}>
-                            <div className="flex items-center gap-3">
-                                <span className={`p-2 rounded-xl ${activeTheme} shadow-sm border`}>
-                                    {icon}
-                                </span>
-                                <h3 className="font-extrabold text-slate-800 text-sm tracking-wide">{title}</h3>
-                            </div>
-                            <ChevronUpIcon
-                                className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-slate-400 transition-transform duration-300`}
-                            />
-                        </Disclosure.Button>
-                        <Transition
-                            enter="transition duration-200 ease-out"
-                            enterFrom="transform scale-95 opacity-0 -translate-y-4"
-                            enterTo="transform scale-100 opacity-100 translate-y-0"
-                            leave="transition duration-150 ease-in"
-                            leaveFrom="transform scale-100 opacity-100 translate-y-0"
-                            leaveTo="transform scale-95 opacity-0 -translate-y-4"
-                        >
-                            <Disclosure.Panel className="px-5 pb-6 pt-2 bg-slate-50/50 border-t border-slate-100">
-                                {children}
-                            </Disclosure.Panel>
-                        </Transition>
-                    </div>
-                )}
-            </Disclosure>
-        );
     };
 
     const scrollToSection = (id: string) => {
@@ -795,8 +838,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 </div>
             </div>
 
-            {/* CONTENIDO PRINCIPAL SCROLLEABLE */}
-            <div id="evo-scroll-container" className="flex-1 overflow-y-auto w-full mx-auto relative px-4 md:px-6 pb-40 scroll-smooth">
+            {/* CONTENIDO PRINCIPAL SCROLLEABLE (Optimizado 2.1.15) */}
+            <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none touch-pan-y w-full mx-auto relative px-4 md:px-6 pb-[45vh] scroll-smooth hide-scrollbar">
                 <div className="max-w-4xl mx-auto mt-2">
                     <form onSubmit={handleSaveDraft} id="evolution-form" className="space-y-4">
 
