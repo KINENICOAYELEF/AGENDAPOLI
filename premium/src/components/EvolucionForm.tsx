@@ -978,11 +978,45 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                         </div>
                     </div>
 
-                    {/* Botón Volver Mobile/Desktop */}
-                    <button onClick={onClose} className="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto bg-slate-100 hover:bg-slate-200 md:bg-transparent md:hover:bg-transparent rounded-full md:rounded-none gap-1.5 text-slate-500 hover:text-slate-800 transition-colors">
-                        <svg className="w-5 h-5 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        <span className="hidden md:inline text-sm font-semibold">Descartar / Volver</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {!isClosed && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (window.confirm("¿Estás seguro de que quieres borrar todos los datos ingresados hasta ahora? Se vaciarán los campos de este borrador.")) {
+                                        setFormData({
+                                            procesoId: procesoId || "",
+                                            sessionAt: new Date().toISOString(),
+                                            durationMinutes: 45,
+                                            professionalName: user?.displayName || user?.email || "",
+                                            sessionGoal: "",
+                                            pain: { evaStart: "" as any, evaEnd: "" as any },
+                                            readiness: { sleepQuality: undefined, stressLevel: undefined, energy: undefined, homeTasksCompleted: undefined },
+                                            outcomesSnapshot: { groc: undefined, sane: undefined },
+                                            audit: { createdAt: new Date().toISOString() } as any,
+                                            exercises: [],
+                                            interventions: [],
+                                            selectedObjectiveIds: [],
+                                            objectiveWork: [],
+                                            isDraft: true,
+                                            isClosed: false,
+                                            nextPlan: "",
+                                            sessionStatus: "Realizada"
+                                        } as any);
+                                    }
+                                }}
+                                className="flex text-xs font-bold text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 md:py-2 rounded-xl transition-colors items-center gap-1.5 border border-rose-200"
+                            >
+                                <svg className="w-4 h-4 md:w-3.5 md:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <span className="hidden md:inline">Limpiar Borrador</span>
+                            </button>
+                        )}
+                        {/* Botón Volver Mobile/Desktop */}
+                        <button onClick={onClose} className="flex items-center justify-center w-8 h-8 md:w-auto md:h-auto bg-slate-100 hover:bg-slate-200 md:bg-transparent md:hover:bg-transparent rounded-full md:rounded-none gap-1.5 text-slate-500 hover:text-slate-800 transition-colors">
+                            <svg className="w-5 h-5 md:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span className="hidden md:inline text-sm font-semibold">Descartar / Volver</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="px-4 md:px-6 pb-2 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x bg-white relative z-10 border-b border-slate-100 shadow-sm mb-2 shrink-0">
