@@ -230,6 +230,9 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const [lateCategory, setLateCategory] = useState("");
     const [lateText, setLateText] = useState("");
 
+    // Ref para evitar loops de autoguardado (FASE 2.1.15)
+    const lastSavedDataRef = React.useRef<string>("");
+
     // FASE 2.1.26: Quick Add Ejercicios por Consola
     const [quickAddText, setQuickAddText] = useState("");
 
@@ -287,20 +290,28 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         fetchContinuityAndNumber();
     }, [globalActiveYear, procesoId, usuariaId, isClosed, initialData?.id]);
 
-    // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms)
+    // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms) Anti-Loop
     useEffect(() => {
         if (isClosed || loading || isAttemptingClose || !formData.usuariaId) return;
+
+        // Omitimos 'audit' e 'id' para evitar bucles de autoguardado generados por el mismo save (inyección de fechas)
+        const { audit, id, _migratedFromLegacy, ...dataToCompare } = formData as any;
+        const currentDataStr = JSON.stringify(dataToCompare);
+
+        // Si el contenido vital no ha mutado respecto a lo que se guardó, abortar debounce
+        if (currentDataStr === lastSavedDataRef.current) return;
 
         const timer = setTimeout(() => {
             // Ignoramos auto-save si ya hay un guardado en curso para prevenir cuellos de botella
             if (saveStatus !== 'saving') {
+                lastSavedDataRef.current = currentDataStr; // Actualizar snapshot
                 executeSave(false, undefined, true);
             }
         }, 1200);
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando formData (texto, inputs) mute
+    }, [formData, isClosed, loading, isAttemptingClose, saveStatus]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando muta el contenido real
 
     // FASE 2.1.15: PERSISTENCIA LOCAL LIGERA (Inmediata y en caché físico)
     useEffect(() => {
@@ -1756,6 +1767,64 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                     disabled={isClosed}
                                                 />
                                             </div>
+
+                                            {/* FASE 2.1.24: OBJETIVOS VIGENTES DEL PROCESO */}
+                                            {availableObjectives.length > 0 && (
+                                                <div className="col-span-1 bg-sky-50/50 p-4 rounded-xl border border-sky-100 shadow-sm">
+                                                    <label className="block text-[11px] font-bold text-sky-700 uppercase tracking-wide mb-3 flex items-center justify-between">
+                                                        <span>Objetivos Vigentes del Proceso</span>
+                                                        <span className="text-[9px] bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full border border-sky-200">Requerido</span>
+                                                    </label>
+                                                    <div className="flex flex-col gap-3">
+                                                        {availableObjectives.map(obj => {
+                                                            const isSelected = formData.selectedObjectiveIds?.includes(obj.id);
+                                                            const workObj = formData.objectiveWork?.find(w => w.id === obj.id);
+
+                                                            return (
+                                                                <div key={obj.id} className={`p-3 rounded-xl border transition-all ${isSelected ? 'bg-white border-sky-300 shadow-sm ring-1 ring-sky-100' : 'bg-white/60 border-slate-200 hover:border-sky-200'}`}>
+                                                                    <div className="flex items-start gap-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={isClosed}
+                                                                            onClick={() => toggleObjective(obj.id)}
+                                                                            className={`mt-0.5 shrink-0 w-5 h-5 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-sky-500 border-sky-600 text-white' : 'bg-slate-100 border-slate-300'}`}
+                                                                        >
+                                                                            {isSelected && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                                                                        </button>
+                                                                        <div className="flex-1">
+                                                                            <p className={`text-xs font-medium leading-relaxed ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{obj.label}</p>
+
+                                                                            {/* Mini-estado si está seleccionado */}
+                                                                            {isSelected && (
+                                                                                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                                                                    {(['trabajado', 'avanzó', 'sin cambio', 'empeoró'] as const).map(status => (
+                                                                                        <button
+                                                                                            key={status}
+                                                                                            type="button"
+                                                                                            disabled={isClosed}
+                                                                                            onClick={() => toggleObjective(obj.id, status)}
+                                                                                            className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md transition-all border ${workObj?.sessionStatus === status ?
+                                                                                                (status === 'avanzó' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                                                                                    status === 'empeoró' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                                                                                                        status === 'sin cambio' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                                                                                            'bg-sky-100 text-sky-800 border-sky-300') :
+                                                                                                'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                                                                                                }`}
+                                                                                        >
+                                                                                            {status}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="col-span-1">
                                                 <div className="flex justify-between items-end mb-1.5">
                                                     <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">
