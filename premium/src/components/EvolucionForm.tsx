@@ -1832,24 +1832,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                         {availableObjectives.length === 0 && <span className="text-slate-400 font-medium normal-case ml-1">(Objetivo temporal)</span>}
                                                         <span className="text-emerald-600 ml-1">*</span>
                                                     </label>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const goals = formData.selectedObjectiveIds
-                                                                ?.map((id: string) => {
-                                                                    const obj = availableObjectives.find(o => o.id === id);
-                                                                    return obj ? obj.label : null;
-                                                                })
-                                                                .filter(Boolean)
-                                                                .join(", ");
-                                                            if (goals) {
-                                                                setFormData((prev: any) => ({ ...prev, sessionGoal: `Enfocado en: ${goals}.` }));
-                                                            }
-                                                        }}
-                                                        className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200"
-                                                    >
-                                                        <SparklesIcon className="w-3 h-3" /> Sugerir desde Metas
-                                                    </button>
                                                 </div>
                                                 <textarea
                                                     name="sessionGoal"
@@ -2089,33 +2071,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 <div className="col-span-1 md:col-span-12">
                                     <div className="flex justify-between items-end mb-1.5">
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">Hito Logrado y Plan Próxima Sesión <span className="text-rose-600">*</span></label>
-                                        <button
-                                            type="button"
-                                            disabled={isClosed}
-                                            onClick={() => {
-                                                const basePlan: string[] = [];
-                                                const evaIn = Number(formData.pain?.evaStart);
-                                                const evaOut = Number(formData.pain?.evaEnd);
-
-                                                if (!isNaN(evaIn) && !isNaN(evaOut)) {
-                                                    if (evaOut > evaIn) basePlan.push(`Monitorizar agudización actual (EVA ${evaIn} -> ${evaOut}). Reevaluar volumen de carga.`);
-                                                    else if (evaOut <= evaIn) basePlan.push(`Buen alivio analgésico y tolerancia al esfuerzo. Mantener pauta actual y continuar dosis de carga.`);
-                                                }
-
-                                                const ex = formData.exercises?.[0];
-                                                if (ex && 'mainVariable' in ex && ex.mainVariable) {
-                                                    basePlan.push(`Progresar priorizando la variable: ${ex.mainVariable}.`);
-                                                }
-
-                                                const finalP = basePlan.join(" ");
-                                                if (finalP) {
-                                                    setFormData(prev => ({ ...prev, nextPlan: finalP }));
-                                                }
-                                            }}
-                                            className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 hover:text-rose-800 transition-colors bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded shadow-sm border border-rose-200"
-                                        >
-                                            <SparklesIcon className="w-3 h-3" /> Sugerir Plan Automático
-                                        </button>
                                     </div>
                                     <textarea
                                         name="nextPlan"
@@ -2132,37 +2087,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">
                                             Resumen de Traspaso (Handoff) Inter-Colegas
                                         </label>
-                                        <button
-                                            type="button"
-                                            disabled={isClosed}
-                                            onClick={() => {
-                                                const ivs = formData.interventions;
-                                                let mainInt = "";
-                                                if (ivs && Array.isArray(ivs) && ivs.length > 0) {
-                                                    mainInt = ivs[0].category;
-                                                } else if (ivs && !Array.isArray(ivs) && ivs.categories && ivs.categories.length > 0) {
-                                                    mainInt = ivs.categories[0];
-                                                }
-
-                                                const parts: string[] = [];
-                                                const evaIn = Number(formData.pain?.evaStart);
-                                                const evaOut = Number(formData.pain?.evaEnd);
-                                                if (!isNaN(evaIn) && !isNaN(evaOut)) {
-                                                    if (evaOut > evaIn) parts.push(`Reporta agudización (EVA sube a ${evaOut}).`);
-                                                    else if (evaOut < evaIn) parts.push(`Progresa favorablemente (EVA cede a ${evaOut}).`);
-                                                    else parts.push(`Dolor estable en sesión (EVA ${evaIn}).`);
-                                                }
-
-                                                if (mainInt) parts.push(`Se enfatizó el uso de ${mainInt}.`);
-                                                const gen = parts.join(" ");
-                                                if (gen) {
-                                                    setFormData(prev => ({ ...prev, handoffText: gen }));
-                                                }
-                                            }}
-                                            className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded shadow-sm border border-indigo-200"
-                                        >
-                                            <SparklesIcon className="w-3 h-3" /> Sugerir Texto Handoff
-                                        </button>
                                     </div>
                                     <textarea
                                         name="handoffText"
