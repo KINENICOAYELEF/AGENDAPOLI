@@ -119,6 +119,7 @@ interface EvolucionFormProps {
     usuariaId: string;
     procesoId?: string;
     initialData: Evolucion | null;
+    evolucionesAnteriores?: Evolucion[];
     onClose: () => void;
     onSaveSuccess: (evolucion: Evolucion, isNew: boolean, willClose?: boolean) => void;
 }
@@ -183,7 +184,7 @@ const AccordionSection = ({
     );
 };
 
-export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSaveSuccess }: EvolucionFormProps) {
+export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAnteriores, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -399,9 +400,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         }
     };
 
-    // --- MANEJO DE OBJETIVOS VIGENTES (FASE 2.1.18) ---
+    // --- MANEJO DE OBJETIVOS VIGENTES Y CONTEXTO PROCESO (FASE 2.1.18 y 2.1.30) ---
     const [availableObjectives, setAvailableObjectives] = useState<{ id: string, label: string, status?: string }[]>([]);
     const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
+    const [procesoContext, setProcesoContext] = useState<{ motivoIngresoLibre?: string, evaluacionesStr?: string }>({});
     const [loadingObjectives, setLoadingObjectives] = useState(false);
 
     // --- MANEJO DE COPIA SELECTIVA (FASE 2.1.25) ---
@@ -432,13 +434,34 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
             setLoadingObjectives(true);
             try {
-                // FASE 2.1.18: Leer DESDE el Proceso
+                // FASE 2.1.18 y 2.1.30: Leer DESDE el Proceso + Evaluaciones
                 const docRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
                 const docSnap = await getDoc(docRef);
+
+                let evalsStr = "";
+                try {
+                    const evalsQ = query(collection(db, "programs", globalActiveYear, "evaluaciones"), where("procesoId", "==", procesoId));
+                    const evalsSnap = await getDocs(evalsQ);
+
+                    const evalLines: string[] = [];
+                    evalsSnap.forEach(doc => {
+                        const dat = doc.data();
+                        if (dat.type) {
+                            evalLines.push(`Evaluación ${dat.type} (${dat.sessionAt}): ${dat.objectives?.map((o: any) => o.description).join(', ') || 'Sin notas'}`);
+                        }
+                    });
+                    if (evalLines.length > 0) evalsStr = evalLines.join(" | ");
+                } catch (e) { console.error("Error trayendo evaluaciones", e); }
 
                 if (docSnap.exists()) {
                     const procesoData = docSnap.data();
                     const activeSet = procesoData.activeObjectiveSet;
+                    if (procesoData.motivoIngresoLibre || evalsStr) {
+                        setProcesoContext({
+                            motivoIngresoLibre: procesoData.motivoIngresoLibre,
+                            evaluacionesStr: evalsStr
+                        });
+                    }
 
                     if (activeSet && activeSet.objectives) {
                         const actives = activeSet.objectives.filter((o: any) => o.status !== 'logrado' && o.status !== 'pausado');
@@ -739,7 +762,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     // Función determinista para crear un hash string de estado clínico actual
     const getClinicalContextHash = () => {
         const payload = {
-            lastClosedEvolGoal: lastClosedEvol?.sessionGoal,
+            procesoContext,
+            evolucionesCount: evolucionesAnteriores?.length,
             selectedObjectives: formData.selectedObjectiveIds,
             objectiveWork: formData.objectiveWork,
             interventions: formData.interventions,
@@ -766,22 +790,37 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         setAiLoading(actionType);
         setAiError(null); // Clear previous errors
         try {
+            // Transformar objetivos a texto
+            const objetivosHoyStr = (formData.selectedObjectiveIds || []).map(id => {
+                const statusObj = formData.objectiveWork?.find(w => w.id === id);
+                const objMeta = availableObjectives.find(o => o.id === id);
+                return { objetivo: objMeta ? objMeta.label : id, estado: statusObj?.sessionStatus || 'trabajado' };
+            });
+
+            // Compactar historial de evoluciones para no exceder token limits drásticamente, pero proveer info rica
+            const historialResumido = (evolucionesAnteriores || []).map(evo => ({
+                fecha: evo.sessionAt,
+                metaSesion: evo.sessionGoal,
+                dolor: `${evo.pain?.evaStart || '-'} -> ${evo.pain?.evaEnd || '-'}`,
+                intervenciones: Array.isArray(evo.interventions) ? evo.interventions.map((i: any) => i.category || i.subType).filter(Boolean).join(', ') : '',
+                ejercicios: evo.exercises?.map(e => e.name).join(', '),
+                planDejado: evo.nextPlan
+            }));
+
             const contextPayload = {
-                ultimaEvolucionCerrada: lastClosedEvol ? {
-                    fecha: lastClosedEvol.sessionAt,
-                    planAnterior: lastClosedEvol.sessionGoal,
-                    dolorFin: lastClosedEvol.pain?.evaEnd
-                } : "No disponible",
-                objetivosTrabajadosHoy: (formData.selectedObjectiveIds || []).map(id => {
-                    const statusObj = formData.objectiveWork?.find(w => w.id === id);
-                    return { objetivoId: id, estado: statusObj?.sessionStatus || 'trabajado' };
-                }),
+                // FASE 2.1.30: CONTEXTO MACRO DEL PROCESO
+                motivoIngresoGeneral: procesoContext.motivoIngresoLibre || "No especificado",
+                evaluacionesHistoricas: procesoContext.evaluacionesStr || "No disponible",
+                historialEvolucionesAnteriores: historialResumido,
+
+                // CONTEXTO MICRO DE HOY
+                objetivosTrabajadosHoy: objetivosHoyStr,
+                estadoSesionHoy: formData.sessionStatus,
+                readinessUsuarioHoy: formData.readiness,
+                dolorInicioHoy: formData.pain?.evaStart,
                 intervencionesHoy: formData.interventions || [],
                 ejerciciosHoy: formData.exercises?.map(e => `${e.name} ${e.sets}x${e.repsOrTime} ${e.loadKg ? e.loadKg + 'kg' : ''} ${e.rir ? 'RIR ' + e.rir : ''}`) || [],
-                dolorInicio: formData.pain?.evaStart,
-                dolorFinal: formData.pain?.evaEnd,
-                estadoSesion: formData.sessionStatus,
-                readinessUsuario: formData.readiness
+                dolorFinalHoy: formData.pain?.evaEnd
             };
 
             const response = await fetch('/api/ai/suggest', {

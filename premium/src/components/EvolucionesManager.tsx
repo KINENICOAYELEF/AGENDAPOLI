@@ -131,6 +131,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
                     usuariaId={usuariaId}
                     procesoId={procesoId}
                     initialData={selectedEvolucion}
+                    evolucionesAnteriores={evoluciones}
                     onClose={() => setView('lista')}
                     onSaveSuccess={handleFormSaved}
                 />

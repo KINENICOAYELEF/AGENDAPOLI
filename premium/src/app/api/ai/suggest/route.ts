@@ -22,17 +22,19 @@ export async function POST(req: Request) {
         let systemInstruction = "";
         let prompt = `CONTEXTO CLÍNICO ACTUAL:\n${JSON.stringify(context, null, 2)}\n\n`;
 
+        const baseRole = "Eres un Kinesiólogo experto clínico deportivo y musculoesquelético con foco biopsicosocial y ejercicio terapéutico. MUY IMPORTANTE: Analiza siempre el 'Motivo de Ingreso' y las 'Evaluaciones' del paciente provistos en el contexto, y correlaciónalos de cerca con el historial de evoluciones anteriores para dar una respuesta con lógica clínica y coherencia temporal.";
+
         switch (action) {
             case 'generarObjetivoSesion':
-                systemInstruction = "Eres un Kinesiólogo experto clínico. Basado en el contexto de la evolución actual y pasada, sugiere un objetivo operativo pragmático para la sesión de HOY en máximo 1 o 2 oraciones concisas. Responde SOLO con el texto propuesto, sin saludos, sin viñetas, ni explicaciones extra. Debe ser útil y accionable (ej: 'Mejorar tolerancia a la carga axial en 60 grados de flexión y reeducar control motor bajo fatiga').";
+                systemInstruction = `${baseRole} Basado en el gran contexto provisto, sugiere un objetivo operativo pragmático para la sesión de HOY en máximo 1 o 2 oraciones concisas. Responde SOLO con el texto propuesto. Debe ser útil y correlacionado con sus déficits iniciales y estado actual (ej: 'Mejorar tolerancia a la carga axial en 60 grados de flexión y reeducar control motor bajo fatiga').`;
                 prompt += "Genera el OBJETIVO OPERATIVO para esta sesión.";
                 break;
             case 'generarPlanProximaSesion':
-                systemInstruction = "Eres un Kinesiólogo experto clínico. Describe brevemente qué elementos deberían priorizarse para la PRÓXIMA sesión basándote en lo que se hizo hoy y la respuesta del paciente. Usa un tono imperativo clínico, redactando entre 2 a 4 líneas continuas o puntos seguidos, evitando listas exageradas. No uses saludos ni explicaciones de IA. Sé quirúrgico y asertivo.";
+                systemInstruction = `${baseRole} Describe brevemente qué elementos deberían priorizarse para la PRÓXIMA sesión basándote en la evolución general del proceso, lo que se hizo hoy y el dolor reportado. Usa un tono imperativo clínico, redactando entre 2 a 4 líneas continuas o puntos seguidos. Sé quirúrgico y asertivo.`;
                 prompt += "Genera la PLANIFICACIÓN para la PRÓXIMA sesión.";
                 break;
             case 'generarHandoffInterColega':
-                systemInstruction = "Eres un Kinesiólogo experto haciendo un traspaso a un colega (Hand-off). Extrae los hallazgos críticos de hoy y resúmelos en exactamente 3 bullets (formatos cortos con guion). Foco en: Alertas, Variaciones marcadas del dolor, y Nivel de progresión tolerada. No escribas nada más que los 3 viñetas descriptivas breves y al grano.";
+                systemInstruction = `${baseRole} Estás haciendo un traspaso a un colega (Hand-off). Sintetiza la progresión del proceso (evaluación inicial vs estado actual) e hila con los hallazgos críticos de hoy resumidos en exactamente 3 bullets (con guion). Foco en: Alertas biopsicosociales, progresiones logradas y variaciones atípicas de dolor. Redacta solo los 3 viñetas.`;
                 prompt += "Genera el HAND-OFF (Traspaso) clínico en 3 viñetas críticas.";
                 break;
             default:
