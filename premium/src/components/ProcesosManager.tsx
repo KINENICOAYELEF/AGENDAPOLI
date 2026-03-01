@@ -4,6 +4,7 @@ import { ProcesosService } from "@/services/procesos";
 import { useYear } from "@/context/YearContext";
 import { ProcesoForm } from "@/components/ProcesoForm";
 import { EvolucionesManager } from "@/components/EvolucionesManager";
+import { EvaluacionesManager } from "@/components/EvaluacionesManager";
 
 interface ProcesosManagerProps {
     personaUsuariaId: string;
@@ -15,7 +16,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
     const { globalActiveYear } = useYear();
 
     // router interno de este panel
-    const [view, setView] = useState<'lista' | 'formulario' | 'evoluciones'>('lista');
+    const [view, setView] = useState<'lista' | 'formulario' | 'evoluciones' | 'evaluaciones'>('lista');
 
     // items
     const [procesos, setProcesos] = useState<Proceso[]>([]);
@@ -96,6 +97,31 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                     usuariaId={personaUsuariaId}
                     usuariaName={personaUsuariaName}
                     procesoId={selectedProceso.id}
+                    onBack={() => setView('lista')}
+                />
+            </div>
+        );
+    }
+
+    if (view === 'evaluaciones' && selectedProceso) {
+        return (
+            <div className="animate-in fade-in slide-in-from-right-4">
+                <div className="mb-4 bg-slate-50 border-l-4 border-emerald-500 p-4 rounded-r-xl">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" /><path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" /></svg>
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-slate-700 font-medium">
+                                Evaluaciones Clínicas en: <span className="font-bold">{selectedProceso.motivoIngresoLibre}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <EvaluacionesManager
+                    usuariaId={personaUsuariaId}
+                    usuariaName={personaUsuariaName}
+                    proceso={selectedProceso}
                     onBack={() => setView('lista')}
                 />
             </div>
@@ -196,19 +222,28 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-row md:flex-col gap-2 shrink-0">
-                                                <button
-                                                    onClick={() => { setSelectedProceso(proc); setView('evoluciones'); }}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 flex items-center justify-center gap-2 group/btn"
-                                                >
-                                                    Abrir Evoluciones
-                                                    <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                                                </button>
+                                            <div className="flex flex-col gap-2 shrink-0">
+                                                <div className="flex flex-row md:flex-col gap-2">
+                                                    <button
+                                                        onClick={() => { setSelectedProceso(proc); setView('evoluciones'); }}
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 flex-1 flex items-center justify-center gap-2 group/btn"
+                                                    >
+                                                        Evoluciones
+                                                        <svg className="hidden md:block w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setSelectedProceso(proc); setView('evaluaciones'); }}
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all shadow-sm flex-1 flex items-center justify-center gap-2 group/eval"
+                                                    >
+                                                        Evaluaciones
+                                                        <svg className="hidden md:block w-4 h-4 group-hover/eval:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                                                    </button>
+                                                </div>
                                                 <button
                                                     onClick={() => { setSelectedProceso(proc); setView('formulario'); }}
-                                                    className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                                                    className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs md:text-sm font-semibold px-4 border-t-0 py-2 md:px-5 md:py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 w-full"
                                                 >
-                                                    Detalles y Estado
+                                                    Ajustes del Proceso
                                                 </button>
                                             </div>
                                         </div>
@@ -241,7 +276,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                             </div>
                                             <p className="text-slate-700 font-medium line-clamp-2">{proc.motivoIngresoLibre}</p>
                                         </div>
-                                        <div className="flex flex-row gap-2 shrink-0">
+                                        <div className="flex flex-row gap-2 shrink-0 flex-wrap justify-end">
                                             <button
                                                 onClick={() => { setSelectedProceso(proc); setView('evoluciones'); }}
                                                 className="bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2 border border-slate-200 rounded-lg shadow-sm transition-all"
@@ -249,10 +284,16 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                                 Evoluciones
                                             </button>
                                             <button
+                                                onClick={() => { setSelectedProceso(proc); setView('evaluaciones'); }}
+                                                className="bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-2 border border-emerald-200 rounded-lg shadow-sm transition-all"
+                                            >
+                                                Evaluaciones
+                                            </button>
+                                            <button
                                                 onClick={() => { setSelectedProceso(proc); setView('formulario'); }}
                                                 className="bg-white hover:bg-slate-50 text-slate-500 text-xs font-semibold px-4 py-2 border border-slate-200 rounded-lg shadow-sm transition-all"
                                             >
-                                                Ver Detalles
+                                                Ajustes
                                             </button>
                                         </div>
                                     </div>

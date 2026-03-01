@@ -37,6 +37,19 @@ export async function POST(req: Request) {
                 systemInstruction = `${baseRole} Estás haciendo un traspaso a un colega (Hand-off). Sintetiza la progresión del proceso (evaluación inicial vs estado actual) e hila con los hallazgos críticos de hoy resumidos en exactamente 3 bullets (con guion). Foco en: Alertas biopsicosociales, progresiones logradas y variaciones atípicas de dolor. Redacta solo los 3 viñetas.`;
                 prompt += "Genera el HAND-OFF (Traspaso) clínico en 3 viñetas críticas.";
                 break;
+            // --- FASE 2.2: EVALUACIONES INICIALES Y REEVALUACIONES ---
+            case 'generarSintesisEvaluacion':
+                systemInstruction = `${baseRole} Eres un redactor clínico experto. Lee la entrevista subjetiva, las red flags y el examen físico objetivo de los motivos de consulta provistos en el contexto. Redacta un SOLO párrafo integrador (Síntesis Biopsicosocial) que resuma la presentación clínica, factores agravantes/limitantes principales y la severidad/irritabilidad sin mencionar datos irrelevantes.`;
+                prompt += "Genera la Síntesis Clínica Biopsicosocial de esta evaluación en 1 párrafo fluido.";
+                break;
+            case 'generarDxKinesiologico':
+                systemInstruction = `${baseRole} Basado en la anamnesis y examen físico del paciente provisto, elabora un Diagnóstico Kinesiológico estructural-funcional definitivo (Ej: 'Disfunción patelofemoral derecha secundaria a valgo dinámico alterado'). Debe ser 1 oración concisa, usando nomenclatura técnica (MIF o CIF asimilada).`;
+                prompt += "Genera el Diagnóstico Kinesiológico en 1 oración.";
+                break;
+            case 'generarPlanPronostico':
+                systemInstruction = `${baseRole} Basado en todos los hallazgos de esta evaluación, sugiere un Pronóstico Médico-Kinésico y los Criterios de Alta proyectados. Devuelve un texto de máximo 3 oraciones.`;
+                prompt += "Genera un texto sugerido para el Pronóstico Funcional y los Criterios proyectados de Alta.";
+                break;
             default:
                 return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
         }

@@ -32,6 +32,11 @@ export interface Proceso {
             status?: 'activo' | 'pausado' | 'logrado';
         }>;
     };
+
+    // FASE 2.2: Punteros Master de Evaluaciones
+    activeEvaluationId?: string;
+    activeObjectiveSetVersionId?: string; // Alias pointer estricto para versiones
+    timelineIndex?: number;
 }
 
 export interface TreatmentObjective {
@@ -42,21 +47,86 @@ export interface TreatmentObjective {
     targetDate?: string;
 }
 
+export interface MotivoEvaluacion {
+    id: string; // ID local único
+    motivoLabel: string; // Ej: 'Principal', 'Secundario'
+    region: string;
+    lado: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A';
+
+    // Entrevista / Subjetivo
+    subjective: {
+        mecanismo: string;
+        tiempoEvolucion: string;
+        irritabilidad: 'Baja' | 'Media' | 'Alta';
+        agravantes: string;
+        alivios: string;
+        limitacionFuncional: string;
+        metasPersonaUsuaria: string;
+    };
+
+    // Banderas Rojas (Checklist obligatorio)
+    redFlagsChecklist: Record<string, boolean>;
+    redFlagsActionText?: string; // Obligatorio si alguna flag es true
+
+    // Examen Físico / Objetivo
+    objectiveMeasures: {
+        rom: string;
+        fuerza: string;
+        pruebasEspeciales: string;
+        dolorConPruebas: string;
+        controlMotor: string;
+        textoLibre: string;
+    };
+
+}
+
 export interface Evaluacion {
     id?: string;
-    usuariaId: string;
+    usuariaId: string; // Equivalent a personId
     procesoId: string;
+    year?: string; // FASE 2.2: para un query de historial rápido
 
-    // Identificador de la versión para congelar objetivos
-    versionId: string; // Usualmente igual al id o a un timestamp
     type: 'INITIAL' | 'REEVALUATION';
     status: 'DRAFT' | 'CLOSED';
 
-    sessionAt: string; // Fecha de la sesión de evaluación
+    sessionAt: string; // Fecha de la sesión de evaluación (real evaluationAt)
+    timeSpentSeconds?: number; // FASE 2.2: Temporizador cronometrado de docencia
+
     clinicianResponsible: string;
 
-    // Solo pondremos la colección de objetivos por ahora (lo que importa en 2.1.4)
-    objectives: TreatmentObjective[];
+    // IA y Síntesis Centralizada (Fase 2.2)
+    clinicalSynthesis?: string;
+    dxKinesiologico?: string;
+    planAsistenciaRecomendado?: string;
+
+    // FASE 2.2: Estructura modular Múltiples Motivos
+    motivos?: MotivoEvaluacion[];
+
+    // Identificador legacy (2.1) temporalmente deprecado a favor de objectivesVersion
+    versionId?: string;
+    objectives?: TreatmentObjective[];
+
+    // FASE 2.2: Versionamiento Maestro de Objetivos al Cerrar
+    objectivesVersion?: {
+        objectiveSetVersionId: string;
+        isActiveForProcess?: boolean;
+        objectives: Array<{
+            id: string;
+            texto: string; // Reemplaza "label" y "description"
+            tipo: 'General' | 'Específico';
+            medidaAsociada?: string;
+            criterioExito?: string;
+        }>;
+    };
+
+    // FASE 2.2: Plan de Asignación y Pronóstico
+    planPronostico?: {
+        frecuenciaSemanal: string;
+        duracionEstimadaSemanas: string;
+        criteriosProgresion: string;
+        criteriosAlta: string;
+        pronosticoTexto: string;
+    };
 
     audit: AuditTrail;
 }
