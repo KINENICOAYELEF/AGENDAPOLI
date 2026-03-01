@@ -80,6 +80,9 @@ export interface ExercisePrescription {
     mainVariable?: 'Carga' | 'ROM' | 'Velocidad' | 'Volumen' | 'Densidad' | 'Técnica';
     progressionCriteria?: string;
     notes?: string;
+
+    // FASE 2.1.24 Integración
+    objectiveIds?: string[];
 }
 
 export interface ExerciseRx {
@@ -93,16 +96,22 @@ export interface InterventionRecord {
     subType: string; // Seleccionado de lista sugerida o 'Otro'
     dose?: string; // Ej: 15 min, 3x10
     intensity?: 'Baja' | 'Media' | 'Alta';
+    durationMinutes?: number; // FASE 2.1.25: Analitica de tiempos
     notes?: string; // Máx 200 chars
     objectiveIds?: string[]; // IDs vinculados de los meta-objetivos
+    createdAt?: string;
+    createdBy?: string;
+    copiedFromEvolutionId?: string; // Trazabilidad
 }
 
 export interface AuditTrail {
-    createdAt?: string;
+    draftCreatedAt?: string; // FASE 2.1.23: Apertura del borrador
+    firstSavedAt?: string;   // FASE 2.1.23: Primer guardado real en DB
+    createdAt?: string;      // Fecha en que se creó el registro final (si no era draft)
     createdBy?: string;
     updatedAt?: string;
     updatedBy?: string;
-    lastEditedAt?: string; // FASE 2.1.16
+    lastEditedAt?: string; // FASE 2.1.16: Última edición
     closedAt?: string;
     closedBy?: string;
     lateReason?: string;
@@ -117,6 +126,16 @@ export interface Evolucion {
 
     status: 'DRAFT' | 'CLOSED';
     sessionAt: string; // ISO string (Antes fechaHoraAtencion)
+    sessionAtChangeReason?: string; // FASE 2.1.23: Justificación de cambio de sessionAt
+    sessionAtHistory?: Array<{
+        before: string;
+        after: string;
+        reason: string;
+        changedAt: string;
+        changedByUid: string;
+        changedByName: string;
+    }>; // FASE 2.1.23: Trazabilidad de corrección de fecha/hora de atención
+
     clinicianResponsible: string; // Antes autorUid/autorName
 
     // Estado principal de la sesión (Fase 2.1.14)
@@ -178,11 +197,12 @@ export interface Evolucion {
     educationNotes?: string;
     nextPlan: string; // Antes planProximaSesion
 
-    // FASE 2.1.18: Selección granular de objetivos macro trabajados hoy
-    objectiveSetVersionId?: string;
-    selectedObjectiveIds?: string[]; // Array simple de IDs para checkboxes
-    selectedObjectivesSnapshot?: Array<{ id: string, label: string }>; // Foto para inmutabilidad del registro
-    objectiveWork?: Array<{ id: string, sessionStatus: 'trabajado' | 'avanzó' | 'logrado' | 'sin cambio' }>;
+    // FASE 2.1.18: Selección granular    // FASE 2.1.24: Objetivos del Proceso trabajados intra-sesión
+    objectiveSetVersionId?: string; // Heredada del Proceso Clínico
+    selectedObjectiveIds?: string[];
+    selectedObjectivesSnapshot?: Array<{ id: string, label: string }>;
+    objectiveWork?: Array<{ id: string, sessionStatus: 'trabajado' | 'avanzó' | 'sin cambio' | 'empeoró' }>;
+    objectiveSelectionReason?: string; // Para justificar dejar en 0 si había objetivos.
 
     // Legacy FASE 2.1.4 (será reemplazado por objectiveWork en UI, mantenido por safety)
     objectivesWorked?: {

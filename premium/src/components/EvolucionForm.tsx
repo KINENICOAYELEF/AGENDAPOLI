@@ -18,7 +18,8 @@ import {
     ExclamationTriangleIcon,
     LightBulbIcon,
     ClockIcon,
-    SparklesIcon
+    SparklesIcon,
+    XMarkIcon
 } from '@heroicons/react/20/solid';
 import { EvaSlider } from "./ui/EvaSlider";
 import { NumericStepper } from "./ui/NumericStepper";
@@ -41,6 +42,7 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
         exercises: [],
         nextPlan: "",
         audit: {
+            draftCreatedAt: new Date().toISOString(), // FASE 2.1.23
             createdAt: new Date().toISOString()
         }
     };
@@ -83,6 +85,8 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
         exercises: data.exercises || [],
         nextPlan: data.nextPlan || legacyData.planProximaSesion || "",
         audit: data.audit || {
+            draftCreatedAt: legacyData.createdAt || new Date().toISOString(), // FASE 2.1.23 fallback
+            firstSavedAt: legacyData.createdAt || undefined, // Si viene de legacy, asumiremos que se creó en ese momento
             createdAt: legacyData.createdAt,
             createdBy: legacyData.autorUid,
             closedAt: legacyData.closedAt,
@@ -226,6 +230,9 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const [lateCategory, setLateCategory] = useState("");
     const [lateText, setLateText] = useState("");
 
+    // FASE 2.1.26: Quick Add Ejercicios por Consola
+    const [quickAddText, setQuickAddText] = useState("");
+
     useEffect(() => {
         if (initialData) {
             setFormData(mapLegacyToPro(initialData, usuariaId));
@@ -352,13 +359,46 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (!val) return;
-        setFormData((prev: any) => ({ ...prev, sessionAt: new Date(val).toISOString() }));
+        const newVal = new Date(val).toISOString();
+
+        // FASE 2.1.23: Auditoría de corrección de fecha/hora de atención en BD
+        const initialSessionAt = initialData?.sessionAt;
+        if (isEditMode && initialSessionAt && Math.abs(new Date(initialSessionAt).getTime() - new Date(newVal).getTime()) > 60000) {
+            const reason = window.prompt("AUDITORÍA DE FECHA/HORA:\n\nEstá alterando la hora oficial de la atención.\nIngrese un motivo obligatorio (mínimo 5 caracteres):");
+            if (!reason || reason.trim().length < 5) {
+                alert("Cambio cancelado. Motivo inválido o insuficiente.");
+                return;
+            }
+            const logEntry = {
+                before: initialSessionAt,
+                after: newVal,
+                reason: reason.trim(),
+                changedAt: new Date().toISOString(),
+                changedByUid: user?.uid || "unknown",
+                changedByName: user?.displayName || user?.email || "unknown"
+            };
+            setFormData((prev: any) => ({
+                ...prev,
+                sessionAt: newVal,
+                sessionAtChangeReason: reason.trim(),
+                sessionAtHistory: [...(prev.sessionAtHistory || []), logEntry]
+            }));
+        } else {
+            setFormData((prev: any) => ({ ...prev, sessionAt: newVal }));
+        }
     };
 
     // --- MANEJO DE OBJETIVOS VIGENTES (FASE 2.1.18) ---
     const [availableObjectives, setAvailableObjectives] = useState<{ id: string, label: string, status?: string }[]>([]);
     const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
     const [loadingObjectives, setLoadingObjectives] = useState(false);
+
+    // --- MANEJO DE COPIA SELECTIVA (FASE 2.1.25) ---
+    const [showCopyModal, setShowCopyModal] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [copyCandidates, setCopyCandidates] = useState<{ exercises: any[], interventions: any[], evolutionId: string, oldGoal: string, oldEffortMode: string } | null>(null);
+    const [selectedExercisesToCopy, setSelectedExercisesToCopy] = useState<Set<string>>(new Set());
+    const [selectedInterventionsToCopy, setSelectedInterventionsToCopy] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (!procesoId || !globalActiveYear) return;
@@ -419,7 +459,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
         fetchObjectiveSet();
     }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosed]);
 
-    const toggleObjective = (objId: string, customStatus?: 'trabajado' | 'avanzó' | 'logrado' | 'sin cambio') => {
+    const toggleObjective = (objId: string, customStatus?: 'trabajado' | 'avanzó' | 'sin cambio' | 'empeoró') => {
         if (isClosed) return;
 
         setFormData(prev => {
@@ -431,12 +471,12 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     // Clic estándar: removerlo
                     currentWork.splice(existingIndex, 1);
                 } else {
-                    // Updatear el status
-                    currentWork[existingIndex].sessionStatus = customStatus;
+                    // Updatear el status asegurando tipo estricto
+                    currentWork[existingIndex].sessionStatus = customStatus as any; // Cast inofensivo interno para evadir la mutabilidad array de TS.
                 }
             } else {
                 // Agregar nuevo
-                currentWork.push({ id: objId, sessionStatus: customStatus || 'trabajado' });
+                currentWork.push({ id: objId, sessionStatus: (customStatus as any) || 'trabajado' });
             }
 
             // Sync legacy arrays para retrocompatibilidad
@@ -463,6 +503,67 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
     };
 
     // --- MANEJO DE EJERCICIOS DINÁMICOS ---
+    const processQuickAdd = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!quickAddText.trim()) return;
+
+        let text = quickAddText;
+        let name = text;
+        let sets: number | undefined;
+        let reps: string | undefined;
+        let loadKg: number | undefined;
+        let effort: number | undefined;
+        let rest: string | undefined;
+
+        // Extract sets x reps (ej: 3x10, 4xMax)
+        const setsRepsMatch = text.match(/\b(\d+)\s*[xX*]\s*([a-zA-Z0-9]+)\b/);
+        if (setsRepsMatch) {
+            sets = parseInt(setsRepsMatch[1], 10);
+            reps = setsRepsMatch[2];
+            name = name.replace(setsRepsMatch[0], '');
+        }
+
+        // Extract load (ej: 20kg, 15.5kilos)
+        const loadMatch = text.match(/\b(\d+(?:\.\d+)?)\s*(kg|kilos|k)\b/i);
+        if (loadMatch) {
+            loadKg = parseFloat(loadMatch[1]);
+            name = name.replace(loadMatch[0], '');
+        }
+
+        // Extract effort (ej: esfuerzo 8, rir 2, rpe 7.5)
+        const effortMatch = text.match(/\b(?:esfuerzo|rir|rpe)\s*(\d+(?:\.\d+)?)\b/i);
+        if (effortMatch) {
+            effort = parseFloat(effortMatch[1]);
+            name = name.replace(effortMatch[0], '');
+        }
+
+        // Extract rest (ej: descanso 90, pausa 60s)
+        const restMatch = text.match(/\b(?:descanso|pausa|rest)\s*(\d+)(?:s|m|)\b/i);
+        if (restMatch) {
+            rest = restMatch[1];
+            name = name.replace(restMatch[0], '');
+        }
+
+        const isRir = formData.perceptionMode === 'RIR';
+
+        const newEx: ExercisePrescription = {
+            id: generateId(),
+            name: name.trim().replace(/\s+/g, ' ').replace(/^-\s*|-$/g, ''), // Limpiar espacios y guiones sueltos
+            sets: sets ? String(sets) : "",
+            repsOrTime: reps ? String(reps) : "",
+            loadKg: loadKg !== undefined ? String(loadKg) : undefined,
+            rir: isRir && effort !== undefined ? String(effort) : undefined,
+            rpe: !isRir && effort !== undefined ? String(effort) : undefined,
+            rest: rest ? String(rest) : undefined,
+        };
+
+        setFormData((prev: any) => ({
+            ...prev,
+            exercises: [...(prev.exercises || []), newEx]
+        }));
+        setQuickAddText("");
+    };
+
     const addExercise = () => {
         setFormData((prev: any) => ({
             ...prev,
@@ -542,56 +643,230 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 return;
             }
 
-            // Duplicar creando IDs frescos para la UI
-            const duplicatedExercises = oldExercises.map((ex: any) => ({
-                ...ex,
-                id: generateId()
-            }));
+            // Preparar modal (FASE 2.1.25)
+            // Llenar sets con todos por defecto para agilizar UX
+            setSelectedExercisesToCopy(new Set(oldExercises.map((e: any, i: number) => e.id || `ex-${i}`)));
+            setSelectedInterventionsToCopy(new Set(oldInterventions.map((i: any, j: number) => i.id || `int-${j}`)));
 
-            const duplicatedInterventions = oldInterventions.map((int: any) => ({
-                ...int,
-                id: generateId()
-            }));
+            setCopyCandidates({
+                // Re-mapear IDs temporales por si acaso, para los que no tienen ID
+                exercises: oldExercises.map((e: any, i: number) => ({ ...e, _tempId: e.id || `ex-${i}` })),
+                interventions: oldInterventions.map((i: any, j: number) => ({ ...i, _tempId: i.id || `int-${j}` })),
+                evolutionId: lastEvol.id,
+                oldGoal: lastEvol.nextPlan || "",
+                oldEffortMode: oldEffortMode || 'RIR'
+            });
 
-            setFormData(prev => ({
-                ...prev,
-                exercises: [
-                    ...(prev.exercises || []),
-                    ...duplicatedExercises
-                ],
-                interventions: [
-                    ...(Array.isArray(prev.interventions) ? prev.interventions : []),
-                    ...duplicatedInterventions
-                ],
-                // Heredar el "NextPlan" previo como la meta de la sesión de hoy
-                sessionGoal: lastEvol.nextPlan || prev.sessionGoal || "",
+            setShowCopyModal(true);
 
-                // Limpiar EVAs y CheckIn (Condición Clínica Estricta: Se miden de 0 en la sesión de Hoy)
-                pain: {
-                    ...prev.pain,
-                    evaStart: "",
-                    evaEnd: ""
-                },
-                readiness: undefined,
-
-                // Si el anterior tenía un effort mode forzado explícitamente, heredarlo
-                perceptionMode: oldEffortMode || prev.perceptionMode,
-
-                audit: {
-                    ...(prev.audit || {}),
-                    copiedFromEvolutionId: lastEvol.id
-                }
-            }));
-
-            alert(`✅ Se han copiado ${duplicatedExercises.length} ejercicios y ${duplicatedInterventions.length} intervenciones desde una evolución anterior.`);
         } catch (error) {
-            console.error("Error al duplicar componentes:", error);
+            console.error("Error al buscar evolución para duplicar:", error);
             alert("Hubo un error al intentar acceder a los registros previos.");
         }
     };
 
+    const confirmDuplicate = () => {
+        if (!copyCandidates) return;
+
+        // Filtrar y regenerar IDs reales
+        const duplicatedExercises = copyCandidates.exercises
+            .filter(ex => selectedExercisesToCopy.has(ex._tempId))
+            .map((ex: any) => ({
+                ...ex,
+                id: generateId()
+            }));
+
+        const duplicatedInterventions = copyCandidates.interventions
+            .filter(int => selectedInterventionsToCopy.has(int._tempId))
+            .map((int: any) => ({
+                ...int,
+                id: generateId(),
+                copiedFromEvolutionId: copyCandidates.evolutionId // Tracking estricto FASE 2.1.25
+            }));
+
+        setFormData((prev: any) => ({
+            ...prev,
+            exercises: [
+                ...(prev.exercises || []),
+                ...duplicatedExercises
+            ],
+            interventions: [
+                ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                ...duplicatedInterventions
+            ],
+            // Heredar el "NextPlan" previo como la meta de la sesión de hoy
+            sessionGoal: copyCandidates.oldGoal || prev.sessionGoal || "",
+
+            // Limpiar EVAs y CheckIn (Condición Clínica Estricta: Se miden de 0 en la sesión de Hoy)
+            pain: {
+                ...prev.pain,
+                evaStart: "",
+                evaEnd: ""
+            },
+            readiness: undefined,
+
+            // Si el anterior tenía un effort mode forzado explícitamente, heredarlo
+            perceptionMode: copyCandidates.oldEffortMode || prev.perceptionMode,
+
+            audit: {
+                ...(prev.audit || {}),
+                copiedFromEvolutionId: copyCandidates.evolutionId
+            }
+        }));
+
+        alert(`✅ Se reciclaron ${duplicatedExercises.length} ejercicios y ${duplicatedInterventions.length} intervenciones específicas.`);
+        setShowCopyModal(false);
+        setCopyCandidates(null);
+    };
+
+    // --- FASE 2.1.28: INTEGRACIÓN GEMINI AI ---
+    // States para Gemini AI
+    const [aiLoading, setAiLoading] = useState<string | null>(null); // 'generarObjetivoSesion', 'generarPlanProximaSesion', 'generarHandoffInterColega'
+    const [aiCache, setAiCache] = useState<Record<string, { hash: string; text: string }>>({});
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    // Función determinista para crear un hash string de estado clínico actual
+    const getClinicalContextHash = () => {
+        const payload = {
+            lastClosedEvolGoal: lastClosedEvol?.sessionGoal,
+            selectedObjectives: formData.selectedObjectiveIds,
+            objectiveWork: formData.objectiveWork,
+            interventions: formData.interventions,
+            exercises: formData.exercises?.map(e => ({ name: e.name, sets: e.sets, reps: e.repsOrTime, load: e.loadKg })),
+            evaStart: formData.pain?.evaStart,
+            evaEnd: formData.pain?.evaEnd,
+            readiness: formData.readiness,
+            sessionStatus: formData.sessionStatus
+        };
+        return JSON.stringify(payload);
+    };
+
+    const handleGeminiSuggest = async (actionType: 'generarObjetivoSesion' | 'generarPlanProximaSesion' | 'generarHandoffInterColega') => {
+        if (isClosed) return;
+
+        const currentHash = getClinicalContextHash();
+
+        // Caching: Si el contexto no ha cambiado, usa memoria
+        if (aiCache[actionType]?.hash === currentHash) {
+            applyGeminiText(actionType, aiCache[actionType].text);
+            return;
+        }
+
+        setAiLoading(actionType);
+        setAiError(null); // Clear previous errors
+        try {
+            const contextPayload = {
+                ultimaEvolucionCerrada: lastClosedEvol ? {
+                    fecha: lastClosedEvol.sessionAt,
+                    planAnterior: lastClosedEvol.sessionGoal,
+                    dolorFin: lastClosedEvol.pain?.evaEnd
+                } : "No disponible",
+                objetivosTrabajadosHoy: (formData.selectedObjectiveIds || []).map(id => {
+                    const statusObj = formData.objectiveWork?.find(w => w.id === id);
+                    return { objetivoId: id, estado: statusObj?.sessionStatus || 'trabajado' };
+                }),
+                intervencionesHoy: formData.interventions || [],
+                ejerciciosHoy: formData.exercises?.map(e => `${e.name} ${e.sets}x${e.repsOrTime} ${e.loadKg ? e.loadKg + 'kg' : ''} ${e.rir ? 'RIR ' + e.rir : ''}`) || [],
+                dolorInicio: formData.pain?.evaStart,
+                dolorFinal: formData.pain?.evaEnd,
+                estadoSesion: formData.sessionStatus,
+                readinessUsuario: formData.readiness
+            };
+
+            const response = await fetch('/api/ai/suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: actionType,
+                    context: contextPayload
+                })
+            });
+
+            if (!response.ok) throw new Error("Error en API de Gemini");
+
+            const data = await response.json();
+            if (data.result) {
+                // Guardar en cache local
+                setAiCache(prev => ({
+                    ...prev,
+                    [actionType]: { hash: currentHash, text: data.result }
+                }));
+                // Aplicar al formulario
+                applyGeminiText(actionType, data.result);
+            }
+        } catch (error) {
+            console.error("AI Assistant Error:", error);
+            setAiError("No se pudo conectar con el Asistente Clínico (Gemini). Inténtalo más tarde.");
+        } finally {
+            setAiLoading(null);
+        }
+    };
+
+    const applyGeminiText = (actionType: string, text: string) => {
+        setFormData(prev => {
+            if (actionType === 'generarObjetivoSesion' || actionType === 'generarGuiaHoy') return { ...prev, sessionGoal: text };
+            if (actionType === 'generarPlanProximaSesion') return { ...prev, nextPlan: text }; // Changed from nextSessionPlan to nextPlan
+            if (actionType === 'generarHandoffInterColega') return { ...prev, handoffText: (prev.handoffText ? prev.handoffText + '\n\n' : '') + '--- AI HANDOFF ---\n' + text };
+            return prev;
+        });
+    };
+
+    const handleGeminiGuideAll = async () => {
+        if (isClosed || aiLoading === 'generarGuiaHoy') return;
+
+        setAiLoading('generarGuiaHoy');
+        setAiError(null);
+        try {
+            const contextPayload = {
+                ultimaEvolucionCerrada: lastClosedEvol ? {
+                    fecha: lastClosedEvol.sessionAt,
+                    planAnterior: lastClosedEvol.sessionGoal,
+                    dolorFin: lastClosedEvol.pain?.evaEnd
+                } : "No disponible",
+                objetivosTrabajadosHoy: (formData.selectedObjectiveIds || []).map(id => {
+                    const statusObj = formData.objectiveWork?.find(w => w.id === id);
+                    return { objetivoId: id, estado: statusObj?.sessionStatus || 'trabajado' };
+                }),
+                intervencionesHoy: formData.interventions || [],
+                ejerciciosHoy: formData.exercises?.map(e => `${e.name} ${e.sets}x${e.repsOrTime} ${e.loadKg ? e.loadKg + 'kg' : ''} ${e.rir ? 'RIR ' + e.rir : ''}`) || [],
+                dolorInicio: formData.pain?.evaStart,
+                dolorFinal: formData.pain?.evaEnd,
+                estadoSesion: formData.sessionStatus,
+                readinessUsuario: formData.readiness
+            };
+
+            // Ejecuta los 3 llamados en paralelo (o uno consolidado en el backend ideal, pero por ahora reusamos el route existene x3)
+            const actions: ('generarObjetivoSesion' | 'generarPlanProximaSesion' | 'generarHandoffInterColega')[] = ['generarObjetivoSesion', 'generarPlanProximaSesion', 'generarHandoffInterColega'];
+
+            const results = await Promise.all(actions.map(action =>
+                fetch('/api/ai/suggest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, context: contextPayload })
+                }).then(res => res.json())
+            ));
+
+            results.forEach((data, index) => {
+                if (data.result) applyGeminiText(actions[index], data.result);
+            });
+
+        } catch (error) {
+            console.error("AI Guide Error:", error);
+            setAiError("Falló la generación masiva de la Guía de Hoy.");
+        } finally {
+            setAiLoading(null);
+        }
+    };
+
+    // Render Helpers para UI
+    const getGeminiIcon = () => (
+        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11.6667 0.666656C12.0526 6.32742 16.6348 10.9096 22.2956 11.2955C22.6844 11.3219 22.9556 11.6579 22.9556 12C22.9556 12.3421 22.6844 12.6781 22.2956 12.7045C16.6348 13.0904 12.0526 17.6726 11.6667 23.3333C11.6402 23.7222 11.3042 23.9933 10.9622 23.9933C10.6202 23.9933 10.2842 23.7222 10.2578 23.3333C9.87189 17.6726 5.28967 13.0904 -0.371109 12.7045C-0.759949 12.6781 -1.03111 12.3421 -1.03111 12C-1.03111 11.6579 -0.759949 11.3219 -0.371109 11.2955C5.28967 10.9096 9.87189 6.32742 10.2578 0.666656C10.2842 0.277817 10.6202 0.00665283 10.9622 0.00665283C11.3042 0.00665283 11.6402 0.277817 11.6667 0.666656Z" fill="currentColor" />
+        </svg>
+    );
+
     // Método universal de Guardado para Borrador o Cierre
-    const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false) => {
+    const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false, extraProps?: Partial<Evolucion>) => {
         if (!globalActiveYear || !user) {
             if (!isAutoSave) alert("No hay un Año de Programa activo seleccionado o sesión inválida.");
             return;
@@ -605,6 +880,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             const currentAudit = formData.audit || {};
             const finalAudit = {
                 ...currentAudit,
+                draftCreatedAt: currentAudit.draftCreatedAt || currentAudit.createdAt || new Date().toISOString(),
+                firstSavedAt: currentAudit.firstSavedAt || new Date().toISOString(), // FASE 2.1.23
                 createdAt: currentAudit.createdAt || new Date().toISOString(),
                 createdBy: currentAudit.createdBy || user.uid,
                 updatedAt: new Date().toISOString(),
@@ -623,6 +900,8 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
                 status: willClose ? 'CLOSED' : 'DRAFT',
                 sessionAt: formData.sessionAt!,
+                sessionAtChangeReason: formData.sessionAtChangeReason || undefined,
+                sessionAtHistory: formData.sessionAtHistory || undefined,
                 clinicianResponsible: user.uid,
 
                 sessionStatus: formData.sessionStatus || 'Realizada',
@@ -645,12 +924,15 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                 nextPlan: formData.nextPlan || '',
                 educationNotes: formData.educationNotes || "",
 
-                // Mapeo Objetivos Activos (Fase 2.1.18)
+                // Mapeo Objetivos Activos (Fase 2.1.24)
                 objectiveSetVersionId: formData.objectiveSetVersionId || undefined,
                 objectiveWork: formData.objectiveWork || [],
                 selectedObjectiveIds: formData.selectedObjectiveIds || [],
                 selectedObjectivesSnapshot: formData.selectedObjectivesSnapshot || [],
+                objectiveSelectionReason: formData.objectiveSelectionReason || undefined,
                 objectivesWorked: formData.objectivesWorked, // Legacy
+
+                ...extraProps,
 
                 outcomesSnapshot: formData.outcomesSnapshot,
 
@@ -662,7 +944,11 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
 
             await setDocCounted(docRef, payload, { merge: true });
 
-            setFormData(prev => ({ ...prev, id: targetId }));
+            setFormData(prev => ({
+                ...prev,
+                id: targetId,
+                audit: finalAudit
+            }));
 
             // FASE 2.1.15: Purgar borrador local en cache si fue firmada/cerrada.
             if (willClose) {
@@ -753,6 +1039,40 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             return;
         }
 
+        let tempObjectiveReason: string | undefined = undefined;
+
+        // Validación 1.5 (FASE 2.1.24): Exigir al menos 1 objetivo si el proceso los tiene habilitados, o justificación.
+        if (availableObjectives.length > 0 && (!formData.selectedObjectiveIds || formData.selectedObjectiveIds.length === 0)) {
+            // El proceso TIENE objetivos, pero el doc no marcó ninguno.
+            const reason = window.prompt("ATENCIÓN: Cierre de Sesión\n\nEl paciente tiene Objetivos de Proceso definidos, pero no ha marcado ninguno como trabajado hoy.\n\nPor favor justifique clínicamente la no adherencia al plan general para autorizar el cierre (ej. 'Sesión enfocada en urgencia', 'Falta de tiempo'):");
+
+            if (!reason || reason.trim().length < 4) {
+                alert("Cierre cancelado. Debe justificar la omisión de objetivos.");
+                return;
+            }
+
+            tempObjectiveReason = reason.trim();
+            // Actualizar state para consistencia UI (aunque la DB se guardará por la vía paralela)
+            setFormData(prev => ({
+                ...prev,
+                objectiveSelectionReason: tempObjectiveReason
+            }));
+        }
+
+        // Validación 1.6 (FASE 2.1.25): Sesiones "Realizadas" obligatorias
+        if (formData.sessionStatus === 'Realizada') {
+            const hasInterventions = Array.isArray(formData.interventions)
+                ? formData.interventions.length > 0
+                : !!(formData.interventions?.categories && formData.interventions.categories.length > 0);
+            const hasExercises = formData.exercises && formData.exercises.length > 0;
+
+            if (!hasInterventions && !hasExercises) {
+                alert("Para cerrar la sesión como 'Realizada', debe registrar al menos 1 Intervención Médica o 1 Ejercicio Prescrito.");
+                return;
+            }
+        }
+
+
         // Validación 2: Regla Estricta 36 Horas
         const hoursPassed = getDifferenceInHours(formData.sessionAt!, new Date().toISOString());
 
@@ -762,7 +1082,10 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             return; // Cortamos flujo si falta el motivo
         }
 
-        executeSave(true);
+        const extraProps: Partial<Evolucion> = {};
+        if (tempObjectiveReason) extraProps.objectiveSelectionReason = tempObjectiveReason;
+
+        executeSave(true, undefined, false, extraProps);
     };
 
     // Cuando superó 36hrs y ahora escribe la justificación para confirmar el cierre final
@@ -1046,24 +1369,92 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
             <div id="evo-scroll-container" className="flex-1 overflow-y-auto overscroll-none md:overscroll-auto touch-pan-y md:touch-auto w-full mx-auto relative px-4 md:px-6 pb-40 md:pb-24 scroll-smooth hide-scrollbar bg-transparent">
                 <div className="max-w-4xl mx-auto mt-4 space-y-6">
 
-                    {/* FASE 2.1.16: BANNER DE TIEMPOS DUALES */}
+                    {/* FASE 2.1.16 y 2.1.23: BANNER DE TIEMPOS DUALES Y AUDITORÍA PRO */}
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 shadow-sm flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
                         <div className="text-[11px] text-slate-600 space-y-1">
                             <div><span className="font-bold">Hora real de atención:</span> <span className="text-indigo-700 font-semibold">{formData.sessionAt ? new Date(formData.sessionAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---'}</span></div>
-                            <div><span className="font-bold">Registro creado:</span> <span className="text-slate-900">{formData.audit?.createdAt ? new Date(formData.audit.createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---'}</span></div>
+                            <div><span className="font-bold">Apertura del borrador:</span> <span className="text-slate-900">{formData.audit?.draftCreatedAt ? new Date(formData.audit.draftCreatedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : (formData.audit?.createdAt ? new Date(formData.audit.createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---')}</span></div>
+                            <div><span className="font-bold">Primer guardado:</span> <span className="text-slate-900">{formData.audit?.firstSavedAt ? new Date(formData.audit.firstSavedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : 'Aún no en BD'}</span></div>
                             <div><span className="font-bold">Última edición:</span> <span className="text-slate-900">{formData.audit?.lastEditedAt || formData.audit?.updatedAt ? new Date((formData.audit?.lastEditedAt || formData.audit?.updatedAt)!).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : 'Aún no guardado'}</span></div>
                             {isClosed && formData.audit?.closedAt && (
                                 <div><span className="font-bold text-slate-800">Cierre total:</span> <span className="text-slate-900">{new Date(formData.audit.closedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                             )}
                         </div>
-                        {formData.sessionAt && formData.audit?.createdAt && getDifferenceInHours(formData.sessionAt, formData.audit.createdAt) > 0.5 && (
-                            <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 rounded-lg text-[10px] font-bold text-center shrink-0 shadow-sm">
-                                Diferencia: {getDifferenceInHours(formData.sessionAt, formData.audit.createdAt).toFixed(1)} hrs
+                        {formData.sessionAt && formData.audit?.firstSavedAt && getDifferenceInHours(formData.sessionAt, formData.audit.firstSavedAt) > 0.5 && (
+                            <div className="bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 rounded-lg text-[10px] font-bold text-center shrink-0 shadow-sm flex flex-col justify-center">
+                                <span>Demora de Registro</span>
+                                <span className="text-xs">{getDifferenceInHours(formData.sessionAt, formData.audit.firstSavedAt).toFixed(1)} hrs</span>
                             </div>
                         )}
                     </div>
 
                     <div id="evolution-form" className="space-y-4">
+
+                        {/* --- FASE 2.1.29: BANNER DE CONTINUIDAD --- */}
+                        {lastClosedEvol ? (
+                            <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 p-5 rounded-2xl border border-indigo-500/30 shadow-md animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden">
+                                {/* Decoración de fondo */}
+                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+
+                                <div className="flex items-center gap-2 mb-4 relative z-10">
+                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-black text-xs border border-indigo-400/30">
+                                        <ClockIcon className="w-3.5 h-3.5" />
+                                    </span>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Última Sesión Cerrada</h3>
+                                    <span className="ml-auto text-xs font-medium text-indigo-300">
+                                        hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs relative z-10">
+                                    <div className="bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
+                                        <h4 className="text-[10px] font-bold text-indigo-400 mb-1.5 uppercase">Plan y Objetivos Previos</h4>
+                                        <p className="text-slate-200 line-clamp-2">{lastClosedEvol.sessionGoal || "Sin objetivo declarado"}</p>
+                                        <p className="text-indigo-200 mt-1 italic line-clamp-1">{lastClosedEvol.nextPlan || "Sin plan pautado"}</p>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
+                                        <h4 className="text-[10px] font-bold text-rose-400 mb-1.5 uppercase">Métricas Clínicas (EVA)</h4>
+                                        <div className="flex justify-between items-center text-slate-200">
+                                            <span>Inicio: <strong className="text-white">{lastClosedEvol.pain?.evaStart || "-"}</strong></span>
+                                            <svg className="w-3 h-3 text-slate-500 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                            <span>Salida: <strong className="text-white">{lastClosedEvol.pain?.evaEnd || "-"}</strong></span>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2 bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
+                                        <h4 className="text-[10px] font-bold text-amber-400 mb-1.5 uppercase">Hand-off (Traspaso Colega)</h4>
+                                        <p className="text-slate-200 whitespace-pre-wrap">{lastClosedEvol.handoffText || "No dejó notas de traspaso."}</p>
+                                    </div>
+                                </div>
+
+                                {/* Generador "Qué se espera hoy" */}
+                                {!isClosed && formData.sessionStatus === 'Realizada' && (
+                                    <div className="mt-4 pt-4 border-t border-indigo-800/50 flex flex-col md:flex-row items-center justify-between gap-3 relative z-10">
+                                        <div className="text-xs text-indigo-200">
+                                            Acelera el proceso y obtén los lineamientos de la sesión en 1 click.
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleGeminiGuideAll}
+                                            disabled={aiLoading === 'generarGuiaHoy'}
+                                            className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group border border-indigo-400"
+                                        >
+                                            {aiLoading === 'generarGuiaHoy' ? (
+                                                <div className="w-4 h-4 border-2 border-indigo-200 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <SparklesIcon className="w-5 h-5 text-indigo-200 group-hover:text-white transition-colors" />
+                                            )}
+                                            Usar como Guía de Hoy (Autocompletar)
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center flex items-center justify-center gap-2">
+                                <LightBulbIcon className="w-5 h-5 text-amber-400" />
+                                <span className="text-sm text-slate-500 font-medium">Primera sesión clínica. No hay evoluciones cerradas previas en este proceso.</span>
+                            </div>
+                        )}
 
                         {/* GRUPO ESENCIAL DEL PACIENTE (Scroll Spy agrupa estos acórdeones) */}
                         <div id="sec-esencial" className="space-y-4 scroll-mt-6">
@@ -1401,61 +1792,6 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
                                                 />
                                             </div>
-
-                                            {/* FASE 2.1.18: OBJETIVOS VIGENTES DE LA EVALUACIÓN (CHIPS MEJORADOS) */}
-                                            <div className="col-span-1 mt-1 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                                                <h4 className="flex items-center gap-2 text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-2">
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                    Objetivos Activos del Proceso
-                                                    {loadingObjectives && <span className="text-xs text-emerald-500 lowercase ml-2 font-normal animate-pulse">(Cargando...)</span>}
-                                                </h4>
-
-                                                {availableObjectives.length > 0 ? (
-                                                    <div className="flex flex-col gap-3">
-                                                        {availableObjectives.map(obj => {
-                                                            const record = formData.objectiveWork?.find(w => w.id === obj.id);
-                                                            const isSelected = !!record;
-                                                            return (
-                                                                <div key={obj.id} className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2 rounded-xl transition-all border ${isSelected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled={isClosed}
-                                                                        onClick={() => toggleObjective(obj.id)}
-                                                                        className={`flex-1 text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${isSelected ? 'text-emerald-800' : 'text-slate-600'} ${isClosed && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                                    >
-                                                                        {isSelected ? <span className="mr-1.5 font-normal text-emerald-600 text-[10px]">☑</span> : <span className="mr-1.5 font-normal text-slate-300 text-[10px]">☐</span>}
-                                                                        {obj.label}
-                                                                    </button>
-
-                                                                    {/* Selector Rápido de Estado (Solo aparece si está seleccionado) */}
-                                                                    {isSelected && (
-                                                                        <div className="flex flex-wrap gap-1 px-3 sm:px-0">
-                                                                            {['trabajado', 'avanzó', 'sin cambio', 'logrado'].map(st => (
-                                                                                <button
-                                                                                    key={st}
-                                                                                    type="button"
-                                                                                    disabled={isClosed}
-                                                                                    onClick={(e) => { e.stopPropagation(); toggleObjective(obj.id, st as any); }}
-                                                                                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-md border 
-                                                                                        ${record.sessionStatus === st
-                                                                                            ? (st === 'logrado' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-emerald-600 text-white border-emerald-700 shadow-sm')
-                                                                                            : 'bg-white text-slate-400 border-slate-200 hover:text-emerald-600 hover:border-emerald-200'}`}
-                                                                                >
-                                                                                    {st}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-3 bg-white/60 border border-emerald-50 rounded-lg shadow-sm">
-                                                        <p className="text-[11px] text-slate-500 italic font-medium">Sin objetivos activos todavía. Crea evaluación inicial/reevaluación para habilitarlos.</p>
-                                                    </div>
-                                                )}
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1551,6 +1887,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                                 isClosed={isClosed}
                                                 isFirst={index === 0}
                                                 isLast={index === (formData.exercises?.length || 0) - 1}
+                                                activeObjectives={availableObjectives.filter(obj => formData.selectedObjectiveIds?.includes(obj.id))}
                                                 onChange={(updatedEx) => updateExerciseFull(updatedEx)}
                                                 onRemove={() => removeExercise(ex.id)}
                                                 onMoveUp={() => moveExercise(index, 'up')}
@@ -1566,16 +1903,41 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                         );
                                     })}
 
+                                    {/* CONTROLES DE AÑADIR EJERCICIO (FASE 2.1.26) */}
                                     {!isClosed && (
-                                        <div className="flex flex-col md:flex-row gap-3 mt-4">
-                                            <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
-                                                <PlusIcon className="w-5 h-5" />
-                                                Agregar Fila de Ejercicio
-                                            </button>
-                                            <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-sm backdrop-blur-sm group">
-                                                <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
-                                                Duplicar Evolución Anterior
-                                            </button>
+                                        <div className="mt-4 flex flex-col gap-3">
+                                            {/* Quick Add por línea */}
+                                            <form onSubmit={processQuickAdd} className="flex flex-col md:flex-row gap-2 w-full bg-slate-900/50 p-2 md:p-1 rounded-2xl border border-indigo-900/40 focus-within:border-indigo-500/80 transition-all shadow-inner">
+                                                <div className="flex-1 relative flex items-center">
+                                                    <SparklesIcon className="w-5 h-5 text-indigo-400 absolute left-3" />
+                                                    <input
+                                                        type="text"
+                                                        value={quickAddText}
+                                                        onChange={e => setQuickAddText(e.target.value)}
+                                                        placeholder="Pega o escribe. Ej: Sentadilla Búlgara 3x10 20kg RIR 2 descanso 90"
+                                                        className="w-full bg-transparent border-none pl-10 pr-4 h-12 text-[13px] md:text-sm font-medium text-white outline-none placeholder:text-indigo-400/50"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="submit"
+                                                    disabled={!quickAddText.trim()}
+                                                    className="md:w-36 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-bold h-10 md:h-12 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md border border-indigo-500"
+                                                >
+                                                    <PlusIcon className="w-4 h-4" /> Inteligente
+                                                </button>
+                                            </form>
+
+                                            {/* Opciones clásicas */}
+                                            <div className="flex flex-col md:flex-row gap-3">
+                                                <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3 md:py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs md:text-sm">
+                                                    <PlusIcon className="w-5 h-5" />
+                                                    Formulario Tradicional
+                                                </button>
+                                                <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3 md:py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs md:text-sm shadow-sm backdrop-blur-sm group">
+                                                    <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
+                                                    Duplicar Evolución Anterior
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1588,6 +1950,52 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-200 text-amber-800 font-black text-xs">C</span>
                                 <h3 className="text-sm font-black text-amber-900 uppercase tracking-widest">Cierre y Planificación</h3>
                             </div>
+
+                            {/* GEMINI AI ASSISTANT PANEL */}
+                            {!isClosed && formData.sessionStatus === 'Realizada' && (
+                                <div className="bg-gradient-to-r from-indigo-950 to-blue-950 p-4 md:p-5 rounded-2xl border border-indigo-500/30 shadow-sm relative overflow-hidden mb-6">
+                                    <div className="absolute top-0 right-0 -mr-6 -mt-6 opacity-10 blur-xl">
+                                        {getGeminiIcon()}
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-3 z-10 relative">
+                                        <div className="text-blue-400">{getGeminiIcon()}</div>
+                                        <h4 className="text-white font-bold text-sm">Asistente Clínico (Gemini)</h4>
+                                        <span className="bg-blue-500/20 text-blue-300 text-[10px] uppercase font-black px-2 py-0.5 rounded border border-blue-500/30">BETA</span>
+                                    </div>
+                                    <p className="text-sm text-indigo-200/80 mb-4 font-medium leading-relaxed max-w-2xl">
+                                        Genera automáticamente borradores de alta calidad analizando tu prescripción actual, dolores y variables de sesión. Los borradores sobreescriben los campos pero puedes editarlos manualmente después.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 z-10 relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleGeminiSuggest('generarObjetivoSesion')}
+                                            disabled={aiLoading !== null}
+                                            className="bg-slate-900/60 hover:bg-indigo-600 outline outline-1 outline-indigo-500/50 hover:outline-indigo-400 text-indigo-100 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative group"
+                                        >
+                                            {aiLoading === 'generarObjetivoSesion' ? <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-white rounded-full animate-spin"></div> : <SparklesIcon className="w-3.5 h-3.5" />}
+                                            1. Sugerir Objetivo de Sesión (Hoy)
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleGeminiSuggest('generarPlanProximaSesion')}
+                                            disabled={aiLoading !== null}
+                                            className="bg-slate-900/60 hover:bg-indigo-600 outline outline-1 outline-indigo-500/50 hover:outline-indigo-400 text-indigo-100 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative"
+                                        >
+                                            {aiLoading === 'generarPlanProximaSesion' ? <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-white rounded-full animate-spin"></div> : <SparklesIcon className="w-3.5 h-3.5" />}
+                                            2. Sugerir Plan Próxima Sesión
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleGeminiSuggest('generarHandoffInterColega')}
+                                            disabled={aiLoading !== null}
+                                            className="bg-slate-900/60 hover:bg-slate-800 outline outline-1 outline-slate-700 hover:outline-slate-500 text-slate-300 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative"
+                                        >
+                                            {aiLoading === 'generarHandoffInterColega' ? <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-white rounded-full animate-spin"></div> : <DocumentDuplicateIcon className="w-3.5 h-3.5" />}
+                                            3. Hand-off (Notas Privadas)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
 
@@ -1910,6 +2318,137 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, onClose, onSa
                     </div>
                 )
             }
+
+            {/* MODAL COPIA SELECTIVA (FASE 2.1.25) */}
+            {showCopyModal && copyCandidates && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh]">
+                        {/* HEADER MODAL */}
+                        <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-800/50 rounded-t-2xl">
+                            <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                <DocumentDuplicateIcon className="w-6 h-6 text-indigo-400" />
+                                Importador Selectivo Clínico
+                            </h3>
+                            <button onClick={() => setShowCopyModal(false)} className="text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* BODY MODAL */}
+                        <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-6">
+                            <p className="text-sm text-slate-300">Seleccione qué registros de la <b>sesión anterior</b> desea rescatar a la sesión actual. Se mantendrá trazabilidad de clonación.</p>
+
+                            {/* BLOQUE INTERVENCIONES */}
+                            {copyCandidates.interventions.length > 0 && (
+                                <div className="bg-slate-950/40 rounded-xl p-4 border border-slate-800">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="text-[11px] font-black tracking-widest text-indigo-300 uppercase">Intervenciones ({copyCandidates.interventions.length})</h4>
+                                        <button
+                                            onClick={() => {
+                                                if (selectedInterventionsToCopy.size === copyCandidates.interventions.length) {
+                                                    setSelectedInterventionsToCopy(new Set());
+                                                } else {
+                                                    setSelectedInterventionsToCopy(new Set(copyCandidates.interventions.map(i => i._tempId)));
+                                                }
+                                            }}
+                                            className="text-[10px] text-indigo-400 font-bold hover:text-white underline"
+                                        >
+                                            Invertir / Todos
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {copyCandidates.interventions.map((int: any) => (
+                                            <label key={int._tempId} className="flex items-start gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/50 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedInterventionsToCopy.has(int._tempId)}
+                                                    onChange={() => {
+                                                        const newSet = new Set(selectedInterventionsToCopy);
+                                                        if (newSet.has(int._tempId)) newSet.delete(int._tempId);
+                                                        else newSet.add(int._tempId);
+                                                        setSelectedInterventionsToCopy(newSet);
+                                                    }}
+                                                    className="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-950"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-white leading-tight">{int.category} <span className="text-slate-400">({int.subType})</span></span>
+                                                    {int.notes && <span className="text-[10px] text-slate-500 line-clamp-1">{int.notes}</span>}
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* BLOQUE EJERCICIOS */}
+                            {copyCandidates.exercises.length > 0 && (
+                                <div className="bg-slate-950/40 rounded-xl p-4 border border-slate-800">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="text-[11px] font-black tracking-widest text-emerald-300 uppercase">Ejercicios Prescritos ({copyCandidates.exercises.length})</h4>
+                                        <button
+                                            onClick={() => {
+                                                if (selectedExercisesToCopy.size === copyCandidates.exercises.length) {
+                                                    setSelectedExercisesToCopy(new Set());
+                                                } else {
+                                                    setSelectedExercisesToCopy(new Set(copyCandidates.exercises.map(i => i._tempId)));
+                                                }
+                                            }}
+                                            className="text-[10px] text-emerald-400 font-bold hover:text-white underline"
+                                        >
+                                            Invertir / Todos
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {copyCandidates.exercises.map((ex: any) => (
+                                            <label key={ex._tempId} className="flex items-start gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedExercisesToCopy.has(ex._tempId)}
+                                                    onChange={() => {
+                                                        const newSet = new Set(selectedExercisesToCopy);
+                                                        if (newSet.has(ex._tempId)) newSet.delete(ex._tempId);
+                                                        else newSet.add(ex._tempId);
+                                                        setSelectedExercisesToCopy(newSet);
+                                                    }}
+                                                    className="mt-0.5 rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 bg-slate-950"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-bold text-white leading-tight">{ex.name || 'Sin nombre'}</span>
+                                                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium">
+                                                        <span>{ex.sets || '-'} series</span> •
+                                                        <span>{ex.repsOrTime || '-'} reps</span> •
+                                                        <span>Carga: {ex.loadKg || '-'}kg</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* FOOTER MODAL */}
+                        <div className="p-4 border-t border-slate-800 bg-slate-900/80 rounded-b-2xl flex justify-between items-center">
+                            <span className="text-xs text-slate-500 font-medium">
+                                Seleccionados: {selectedInterventionsToCopy.size} intervs. / {selectedExercisesToCopy.size} ejs.
+                            </span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowCopyModal(false)} className="px-5 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition">
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmDuplicate}
+                                    disabled={selectedInterventionsToCopy.size === 0 && selectedExercisesToCopy.size === 0}
+                                    className="px-6 py-2 rounded-xl text-sm font-black text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 transition"
+                                >
+                                    Importar Seleccionados
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
 
             {/* BOTTOM BAR FIJA (Thumb-friendly Actions con Safe-Area) */}
             <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-4 fixed bottom-0 left-0 right-0 z-40 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)]">

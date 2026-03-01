@@ -29,14 +29,16 @@ interface InterventionPanelProps {
     disabled?: boolean;
 }
 
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+
 export function InterventionPanel({ interventions, onChange, activeObjectives = [], disabled }: InterventionPanelProps) {
     // Modo borrador para el "mini panel" (estricto como pide el usuario)
     const [draft, setDraft] = useState<InterventionRecord | null>(null);
 
-    const currentList: InterventionRecord[] = (() => {
+    const currentList: InterventionRecord[] = React.useMemo(() => {
         if (Array.isArray(interventions)) {
-            return interventions.map((i: any) => ({
-                id: i.id || Date.now().toString(36) + Math.random().toString(36).substring(2),
+            return interventions.map((i: any, idx: number) => ({
+                id: i.id || `legacy-int-${idx}`,
                 category: i.category || (INTERVENTION_CATEGORIES.includes(i.type as any) ? i.type : 'Otras'),
                 subType: i.subType || i.region || 'Especificar...',
                 dose: i.dose || i.doseValue ? `${i.doseValue || ''} ${i.doseUnit || ''}`.trim() : '',
@@ -45,20 +47,20 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                 objectiveIds: i.objectiveIds || []
             }));
         } else if (interventions?.categories) {
-            return interventions.categories.map(cat => ({
-                id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+            return interventions.categories.map((cat, idx) => ({
+                id: `legacy-cat-${idx}`,
                 category: (INTERVENTION_CATEGORIES.includes(cat as any) ? cat : 'Otras') as any,
                 subType: 'Legado Genérico',
                 notes: interventions.notes || ''
             }));
         }
         return [];
-    })();
+    }, [interventions]);
 
     const handleOpenDraft = (category: typeof INTERVENTION_CATEGORIES[number]) => {
         if (disabled) return;
         setDraft({
-            id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+            id: generateId(),
             category,
             subType: SUBTYPES_BY_CATEGORY[category][0] || 'Otro',
             dose: '',
@@ -76,12 +78,15 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
     const handleSaveDraft = () => {
         if (!draft) return;
 
+        const draftToSave = { ...draft };
+        if (!draftToSave.createdAt) draftToSave.createdAt = new Date().toISOString();
+
         // Verifica si ya existe (edición) o es nuevo
-        const isEditing = currentList.some(r => r.id === draft.id);
+        const isEditing = currentList.some(r => r.id === draftToSave.id);
         if (isEditing) {
-            onChange(currentList.map(rec => rec.id === draft.id ? draft : rec));
+            onChange(currentList.map(rec => rec.id === draftToSave.id ? draftToSave : rec));
         } else {
-            onChange([...currentList, draft]);
+            onChange([...currentList, draftToSave]);
         }
         setDraft(null); // Cierra el mini-panel
     };
@@ -137,8 +142,22 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                             )}
                         </div>
 
+                        {/* Duración (Nueva Fase 2.1.25) */}
+                        <div className="col-span-1 md:col-span-2">
+                            <label className="block text-[10px] font-bold text-amber-800 mb-1.5 uppercase">Minutos</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={120}
+                                placeholder="Ej: 15"
+                                value={draft.durationMinutes || ""}
+                                onChange={(e) => setDraft({ ...draft, durationMinutes: parseInt(e.target.value) || undefined })}
+                                className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 shadow-sm transition-all"
+                            />
+                        </div>
+
                         {/* Dosis y Intensidad */}
-                        <div className="col-span-1 md:col-span-3">
+                        <div className="col-span-1 md:col-span-2">
                             <label className="block text-[10px] font-bold text-amber-800 mb-1.5 uppercase">Dosis (Opcional)</label>
                             <input
                                 type="text"
@@ -148,10 +167,11 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                                 className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 shadow-sm transition-all"
                             />
                         </div>
-                        <div className="col-span-1 md:col-span-3">
+                        <div className="col-span-1 md:col-span-2">
                             <label className="block text-[10px] font-bold text-amber-800 mb-1.5 uppercase">Intensidad</label>
                             <select
                                 value={draft.intensity || ""}
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 onChange={(e) => setDraft({ ...draft, intensity: e.target.value as any })}
                                 className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 shadow-sm transition-all"
                             >
@@ -241,8 +261,10 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                                         {rec.category}
                                     </span>
                                     <span className="text-sm font-bold text-slate-700">{rec.subType === 'Otro' ? 'Técnica Manual' : rec.subType}</span>
+                                    {rec.durationMinutes && <span className="text-xs font-bold text-slate-500 flex items-center gap-0.5"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>{rec.durationMinutes}m</span>}
                                     {rec.dose && <span className="text-xs font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{rec.dose}</span>}
                                     {rec.intensity && <span className="text-[10px] font-bold text-emerald-600 border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 rounded">{rec.intensity}</span>}
+                                    {rec.copiedFromEvolutionId && <span className="text-[9px] font-bold text-indigo-500 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded flex items-center gap-1" title="Copiada de sesión anterior"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg> Copiada</span>}
                                 </div>
                                 {rec.notes && <p className="text-xs text-slate-500 italic mt-0.5">{rec.notes}</p>}
 
