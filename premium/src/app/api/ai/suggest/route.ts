@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
-// Instanciación "Lazy" para que el Build de Next (Vercel) no colapse si las claves no están inyectadas
-let aiClient: GoogleGenAI | null = null;
-const getAIClient = () => {
-    if (!aiClient) aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    return aiClient;
-};
-
 export const dynamic = 'force-dynamic'; // FASE 2.1.28 - Previene crash estático en Vercel Build
 
 export async function POST(req: Request) {
@@ -54,7 +47,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
         }
 
-        const ai = getAIClient();
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,

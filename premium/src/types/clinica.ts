@@ -33,10 +33,16 @@ export interface Proceso {
         }>;
     };
 
-    // FASE 2.2: Punteros Master de Evaluaciones
+    // FASE 2.2.1 V2: Master Pointers y Snapshots
     activeEvaluationId?: string;
-    activeObjectiveSetVersionId?: string; // Alias pointer estricto para versiones
+    activeObjectiveSetVersionId?: string;
     timelineIndex?: number;
+    caseSnapshot?: {
+        // Un resumen compacto en texto o tags que deja la evaluación M13 para leer rápido
+        summary: string;
+        lastUpdated: string;
+        trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
+    };
 }
 
 export interface TreatmentObjective {
@@ -49,20 +55,18 @@ export interface TreatmentObjective {
 
 export interface MotivoEvaluacion {
     id: string; // ID local único
-    motivoLabel: string; // Ej: 'Principal', 'Secundario'
+    motivoLabel: string; // Ej: 'Principal', 'Secundario' (M0)
     region: string;
     lado: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A';
 
-    // FASE 2.2.1: Nueva estructura jerárquica
     priority?: number;
     active?: boolean;
 
-    // Entrevista / Subjetivo
+    // Entrevista / Subjetivo (M2)
     subjective: {
-        // FASE 2.2.1: Campos Estructurados
-        onsetType?: string;
+        onsetType?: 'Agudo' | 'Insidioso' | 'Post-quirúrgico' | string;
         onsetDateOrDuration?: string;
-        mechanism?: string; // Antes "mecanismo"
+        mechanism?: 'Puro' | 'Mixto' | string;
         symptomLocationMap?: string;
         painPattern?: string;
         irritability?: 'Baja' | 'Media' | 'Alta' | '';
@@ -83,12 +87,25 @@ export interface MotivoEvaluacion {
         metasPersonaUsuaria?: string;
     };
 
-    // Banderas Rojas (Checklist obligatorio)
+    // Banderas Rojas (M1)
     redFlagsChecklist: Record<string, boolean>;
-    redFlagsActionText?: string; // Obligatorio si alguna flag es true
+    redFlagsActionText?: string;
+    safetyStatusSuggested?: 'Verde' | 'Amarillo' | 'Rojo'; // IA / Determinista flag
 
-    // Examen Físico / Objetivo (Fase 2.2.1)
+    // Comparable Sign (M6)
+    comparableSign?: {
+        asteriscoPrincipal?: {
+            tipo: string;
+            condiciones: string;
+            dolor: string;
+            afterEffect: string;
+        };
+        secundarios?: Array<{ descripcion: string, dolor: string }>;
+    };
+
+    // Examen Físico / Objetivo (M7)
     objectiveExam?: {
+        // Universal
         rom?: Array<{ mov: string, lado: string, val: string, dolor: boolean, notes: string }>;
         strength?: Array<{ group: string, lado: string, method: string, val: string, dolor: boolean, notes: string }>;
         specialTests?: Array<{ test: string, result: string, dolor: boolean, notes: string }>;
@@ -97,9 +114,27 @@ export interface MotivoEvaluacion {
         painProvokers?: Array<{ action: string, context: string }>;
         movementQuality?: { tags: string[], notes: string };
         palpationOther?: string;
+        // Condicionales M7
+        loadRelatedTests?: Array<{ test: string, result: string, notes: string }>;
+        instabilityTests?: Array<{ test: string, result: string, notes: string }>;
+        motorControlTests?: string;
     };
 
-    // Resumen Analítico
+    // Hallazgos Estructurales vs Funcionales (M8)
+    structuralVsFunctional?: {
+        estructurales: string[];
+        funcionales: string[];
+        driverPrincipal?: 'Estructural' | 'Funcional' | 'Mixto';
+    };
+
+    // Clasificación Inteligente (M9)
+    classification?: {
+        irritabilityFinal?: 'Alta' | 'Media' | 'Baja';
+        mecanismoDolorDefinitivo?: 'Nociceptivo' | 'Neuropático' | 'Nociplástico' | 'Mixto';
+        tags?: string[];
+    };
+
+    // Resumen Analítico (Previo / Legacy)
     impairmentSummary?: {
         mobilityDeficit?: boolean;
         strengthDeficit?: boolean;
@@ -124,12 +159,15 @@ export interface Evaluacion {
     id?: string;
     usuariaId: string; // Equivalent a personId
     procesoId: string;
-    year?: string; // FASE 2.2: para un query de historial rápido
+    year?: string;
 
-    type: 'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL'; // Añadido NEW_MOTIVE_EVAL
+    type: 'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL';
     status: 'DRAFT' | 'CLOSED';
-
     sessionAt: string; // Fecha de la sesión de evaluación (real evaluationAt)
+
+    // M0: Inicio Rápido Global
+    urgencyFilter?: boolean;
+    evaActualGlobal?: string | number;
 
     // Control Reloj (FASE 2.2.1)
     timer?: {
@@ -152,8 +190,30 @@ export interface Evaluacion {
         errors?: string[];
     };
 
-    // Fase 2.2.1: Diagnóstico Estructurado
+    // M4: Factores BPS Global
+    bpsFactors?: {
+        flagsChecklist?: { [key: string]: boolean };
+        positiveFactors?: string[];
+        negativeFactors?: string[];
+        bpsImpactSuggested?: 'Bajo' | 'Moderado' | 'Alto';
+    };
+
+    // M5: Función y Actividad Global (PSFS)
+    psfs?: {
+        activities: Array<{ activity: string, score: number }>;
+        quickActivitiesTags?: string[];
+    };
+
+    // FASE 2.2: Estructura modular Múltiples Motivos (M2, M6, M7, M8, M9)
+    motivos?: MotivoEvaluacion[];
+
+    // M11: Dx kinésico y BPS (IA)
     dxKinesico?: {
+        narrative?: string; // Síntesis clínica final editable
+        icfStructure?: string; // Estructuración ICF-like
+        differentialFunctional?: string; // Diagnóstico Diferencial Funcional
+
+        // Legacy
         primary?: string;
         differentialList?: string[];
         classificationTags?: string[];
@@ -169,14 +229,7 @@ export interface Evaluacion {
     dxKinesiologico?: string;
     planAsistenciaRecomendado?: string;
 
-    // FASE 2.2: Estructura modular Múltiples Motivos
-    motivos?: MotivoEvaluacion[];
-
-    // Identificador legacy (2.1) temporalmente deprecado a favor de objectivesVersion
-    versionId?: string;
-    objectives?: TreatmentObjective[];
-
-    // FASE 2.2: Versionamiento Maestro de Objetivos al Cerrar
+    // M12: Objetivos + Semáforo + Pronóstico (IA)
     objectivesVersion?: {
         objectiveSetVersionId: string;
         isActiveForProcess?: boolean;
@@ -203,6 +256,11 @@ export interface Evaluacion {
         prognosisFunctional?: string;
         dischargeCriteria?: string;
     };
+    loadTrafficLight?: 'Verde' | 'Amarillo' | 'Rojo'; // M12
+
+    // Identificador legacy (2.1) temporalmente deprecado a favor de objectivesVersion
+    versionId?: string;
+    objectives?: TreatmentObjective[];
 
     // FASE 2.2: Plan de Asignación y Pronóstico (Legacy)
     planPronostico?: {

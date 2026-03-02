@@ -28,6 +28,9 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
 
     // Estado interno del formulario
     const [formData, setFormData] = useState<PersonaUsuaria>({
+        identity: { fullName: "", ageRange: "" },
+        consent: { accepted: false },
+        meta: {},
         nombreCompleto: "",
         rut: "",
         telefono: "",
@@ -54,7 +57,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             return;
         }
 
-        if (formData.nombreCompleto.trim() === "" || formData.rut.trim() === "") {
+        if ((formData.nombreCompleto || "").trim() === "" || (formData.rut || "").trim() === "") {
             alert("El Nombre Completo y el Identificador/RUT son obligatorios.");
             return;
         }
@@ -89,7 +92,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
         return (
             <ProcesosManager
                 personaUsuariaId={initialData.id}
-                personaUsuariaName={initialData.nombreCompleto}
+                personaUsuariaName={initialData.nombreCompleto || ""}
                 onBack={() => setSubView('main')}
             />
         );
