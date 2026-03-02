@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 // Instanciación "Lazy" para que el Build de Next (Vercel) no colapse si las claves no están inyectadas
 let aiClient: GoogleGenAI | null = null;
 const getAIClient = () => {
-    if (!aiClient) aiClient = new GoogleGenAI({});
+    if (!aiClient) aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     return aiClient;
 };
 

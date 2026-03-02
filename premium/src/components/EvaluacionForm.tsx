@@ -242,8 +242,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                             key={s.id}
                             onClick={() => setStep(s.id)}
                             className={`flex items-center gap-2 shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${step === s.id
-                                    ? 'bg-indigo-600 text-white border-indigo-700 shadow-md'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-md'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                 }`}
                         >
                             <span>{s.icon}</span>
@@ -253,6 +253,20 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                     ))}
                 </div>
             </div>
+
+            {/* ERROR BANNER DE IA */}
+            {aiError && (
+                <div className="bg-rose-50 border-y border-rose-200 px-4 py-3 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                    <svg className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="flex-1">
+                        <h4 className="text-sm font-bold text-rose-800">Error de Asistente IA</h4>
+                        <p className="text-xs text-rose-600 mt-0.5">{aiError}</p>
+                    </div>
+                    <button onClick={() => setAiError(null)} className="text-rose-400 hover:text-rose-600 transition-colors p-1">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            )}
 
             {/* CONTENIDO PRINCIPAL SCROLL */}
             <div className="flex-1 overflow-y-auto pb-32 pt-6 px-3 md:px-6 max-w-5xl mx-auto w-full">
@@ -279,8 +293,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                             onClick={() => handleSave(true)}
                             disabled={loading}
                             className={`flex-1 font-bold py-3.5 px-4 rounded-xl transition-all shadow-sm text-sm flex justify-center items-center gap-2 ${getValidationContext.allValid
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                 }`}
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
