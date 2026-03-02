@@ -53,23 +53,64 @@ export interface MotivoEvaluacion {
     region: string;
     lado: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A';
 
+    // FASE 2.2.1: Nueva estructura jerárquica
+    priority?: number;
+    active?: boolean;
+
     // Entrevista / Subjetivo
     subjective: {
-        mecanismo: string;
-        tiempoEvolucion: string;
-        irritabilidad: 'Baja' | 'Media' | 'Alta';
-        agravantes: string;
-        alivios: string;
-        limitacionFuncional: string;
-        metasPersonaUsuaria: string;
+        // FASE 2.2.1: Campos Estructurados
+        onsetType?: string;
+        onsetDateOrDuration?: string;
+        mechanism?: string; // Antes "mecanismo"
+        symptomLocationMap?: string;
+        painPattern?: string;
+        irritability?: 'Baja' | 'Media' | 'Alta' | '';
+        aggravatingFactors?: string[];
+        easingFactors?: string[];
+        functionalLimitationPrimary?: string;
+        otherLimitations?: string[];
+        sportOrWorkDemand?: string;
+        beliefsFearAvoidanceQuick?: string;
+        goalOfPerson?: string;
+
+        // Legacy (mantener para compatibilidad transicional si es necesario)
+        mecanismo?: string;
+        tiempoEvolucion?: string;
+        agravantes?: string;
+        alivios?: string;
+        limitacionFuncional?: string;
+        metasPersonaUsuaria?: string;
     };
 
     // Banderas Rojas (Checklist obligatorio)
     redFlagsChecklist: Record<string, boolean>;
     redFlagsActionText?: string; // Obligatorio si alguna flag es true
 
-    // Examen Físico / Objetivo
-    objectiveMeasures: {
+    // Examen Físico / Objetivo (Fase 2.2.1)
+    objectiveExam?: {
+        rom?: Array<{ mov: string, lado: string, val: string, dolor: boolean, notes: string }>;
+        strength?: Array<{ group: string, lado: string, method: string, val: string, dolor: boolean, notes: string }>;
+        specialTests?: Array<{ test: string, result: string, dolor: boolean, notes: string }>;
+        functionalTests?: Array<{ test: string, metric: string, result: string, dolor: boolean, notes: string }>;
+        neuroScreen?: { tags: string[], notes: string };
+        painProvokers?: Array<{ action: string, context: string }>;
+        movementQuality?: { tags: string[], notes: string };
+        palpationOther?: string;
+    };
+
+    // Resumen Analítico
+    impairmentSummary?: {
+        mobilityDeficit?: boolean;
+        strengthDeficit?: boolean;
+        loadIntolerance?: boolean;
+        movementCoordinationDeficit?: boolean;
+        sensitizationFeatures?: boolean;
+        otherDrivers?: string[];
+    };
+
+    // Legacy Examen (2.2)
+    objectiveMeasures?: {
         rom: string;
         fuerza: string;
         pruebasEspeciales: string;
@@ -77,7 +118,6 @@ export interface MotivoEvaluacion {
         controlMotor: string;
         textoLibre: string;
     };
-
 }
 
 export interface Evaluacion {
@@ -86,15 +126,45 @@ export interface Evaluacion {
     procesoId: string;
     year?: string; // FASE 2.2: para un query de historial rápido
 
-    type: 'INITIAL' | 'REEVALUATION';
+    type: 'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL'; // Añadido NEW_MOTIVE_EVAL
     status: 'DRAFT' | 'CLOSED';
 
     sessionAt: string; // Fecha de la sesión de evaluación (real evaluationAt)
-    timeSpentSeconds?: number; // FASE 2.2: Temporizador cronometrado de docencia
+
+    // Control Reloj (FASE 2.2.1)
+    timer?: {
+        startedAt?: string;
+        totalSeconds?: number;
+        pausedSeconds?: number;
+        pauses?: Array<{ start: string, end: string }>;
+    };
+    timeSpentSeconds?: number; // Legacy cronometraje
 
     clinicianResponsible: string;
 
-    // IA y Síntesis Centralizada (Fase 2.2)
+    // AI Tracker (FASE 2.2.1)
+    ai?: {
+        enabled?: boolean;
+        lastRunAt?: string;
+        inputHash?: string;
+        outputs?: Record<string, any>;
+        appliedFlags?: Record<string, boolean>;
+        errors?: string[];
+    };
+
+    // Fase 2.2.1: Diagnóstico Estructurado
+    dxKinesico?: {
+        primary?: string;
+        differentialList?: string[];
+        classificationTags?: string[];
+        confidenceLowMedHigh?: string;
+        notes?: string;
+    };
+    integration?: {
+        synthesis?: string;
+    };
+
+    // IA y Síntesis Centralizada (Legacy 2.2)
     clinicalSynthesis?: string;
     dxKinesiologico?: string;
     planAsistenciaRecomendado?: string;
@@ -119,7 +189,22 @@ export interface Evaluacion {
         }>;
     };
 
-    // FASE 2.2: Plan de Asignación y Pronóstico
+    // FASE 2.2.1: Planes Separados
+    operationalPlan?: {
+        interventionsPlanned?: string[];
+        dosagePrinciples?: string;
+        educationPlan?: string;
+        homePlan?: string;
+        constraints?: string;
+    };
+    attendancePlan?: {
+        recommendedFrequencyWeekly?: string;
+        estimatedDurationWeeks?: string;
+        prognosisFunctional?: string;
+        dischargeCriteria?: string;
+    };
+
+    // FASE 2.2: Plan de Asignación y Pronóstico (Legacy)
     planPronostico?: {
         frecuenciaSemanal: string;
         duracionEstimadaSemanas: string;

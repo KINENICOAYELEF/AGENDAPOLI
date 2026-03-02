@@ -19,7 +19,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
 
     const [view, setView] = useState<'lista' | 'formulario'>('lista');
     const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
-    const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION'>('INITIAL');
+    const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL'>('INITIAL');
 
     const [evaluaciones, setEvaluaciones] = useState<Evaluacion[]>([]);
     const [loadingData, setLoadingData] = useState(false);
