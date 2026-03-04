@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Evaluacion, FocusArea, EvaluacionInicial, EvaluacionReevaluacion, Proceso } from "@/types/clinica";
+import { Evaluacion, KineFocusArea, EvaluacionInicial, EvaluacionReevaluacion, Proceso } from "@/types/clinica";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
@@ -94,26 +94,34 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
     // Auto-create first focus if empty
     useEffect(() => {
         if (!isEditMode && (!formData.interview?.focos || formData.interview.focos.length === 0)) {
-            const newFoco: FocusArea = {
+            const newFoco = {
                 id: generateId(),
                 isPrincipal: true,
                 region: '',
-                lado: 'N/A',
+                side: 'N/A',
                 onsetType: '',
                 onsetDuration: '',
-                context: '',
-                dominantSymptoms: [],
+                course2w: '',
+                mainLimitation: '',
+                freeNarrative: '',
+                painScaleId: 'EVA',
                 painCurrent: '',
                 painWorst24h: '',
                 painBest24h: '',
                 pattern24h: '',
                 morningStiffness: '',
-                aggravatingFactors: [],
-                easingFactors: [],
-                afterEffect: 'Nunca',
+                wakesAtNight: false,
+                afterEffectFreq: 'Nunca',
                 settlingTime: '',
-                associatedSymptoms: []
-            };
+                provocationEase: 'Media',
+                symptomNature: [],
+                symptomRadiates: 'Local',
+                symptomAssociated: [],
+                psfs: [],
+                fastIcfActivities: [],
+                sportContextActive: false,
+                prevTreatmentsTags: []
+            } as unknown as KineFocusArea;
             setFormData((prev: any) => ({
                 ...prev,
                 interview: {
@@ -137,10 +145,17 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const hasFocos = (fd.interview?.focos?.length || 0) > 0;
             if (!hasFocos) missing.push("Foco Principal de Consulta");
 
-            const hasPsfs = (fd.interview?.psfs?.length || 0) > 0;
+            // PSFS may be inside the new `focos` array or in the legacy `interview.psfs` array
+            const hasPsfsParams = ((fd as any).interview?.psfs?.length || 0) > 0;
+            const hasFocosPsfs = fd.interview?.focos?.some(f => f.psfs && f.psfs.length > 0) || false;
+            const hasPsfs = hasPsfsParams || hasFocosPsfs;
             if (!hasPsfs) missing.push("Al menos 1 PSFS (Escala Funcional)");
 
-            const hasComparable = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
+            // Comparable sign may be inside new `primaryComparable` or legacy fields
+            const hasComparableV2 = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
+            const hasComparableFoco = fd.interview?.focos?.some(f => f.primaryComparable && f.primaryComparable.name) || false;
+            const hasComparable = hasComparableV2 || hasComparableFoco;
+
             if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
 
             const hasSx = (fd.autoSynthesis?.structuralSuspicions?.length || 0) > 0;
@@ -227,7 +242,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     activeObjectiveSetVersionId: versionId,
                     diagnosisVigente: fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                     flags: {
-                        redFlagsSummary: fd.interview?.redFlagsAction || '',
+                        redFlagsSummary: (fd as any).interview?.redFlagsAction || '',
                         consideracionesClinicas: fd.geminiDiagnostic?.clinicalConsiderations || []
                     },
                     loadManagementVigente: {
@@ -241,7 +256,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
-                        psfsBaseline: fd.interview?.psfs || [],
+                        psfsBaseline: (fd as any).interview?.psfs || [],
                         topDeficits: fd.autoSynthesis?.functionalDeficits || []
                     },
                     activeObjectiveSet: {
@@ -257,7 +272,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 await setDoc(docRef, { activeObjectiveSetVersionId: versionId }, { merge: true });
 
                 // FASE 2.2.6: Despachar Outcomes iniciales (PSFS y SANE opcional)
-                if (fd.interview?.psfs && fd.interview.psfs.length > 0) {
+                if ((fd as any).interview?.psfs && (fd as any).interview.psfs.length > 0) {
                     const outcomeId = `psfs_${Date.now()}`;
                     await OutcomesService.save(globalActiveYear, procesoId, {
                         id: outcomeId,
@@ -266,7 +281,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         type: 'PSFS',
                         capturedAt: new Date().toISOString(),
                         context: 'EVALUACION_INICIAL',
-                        values: { items: fd.interview.psfs },
+                        values: { items: (fd as any).interview.psfs },
                         createdByUid: user.uid,
                         createdAt: new Date().toISOString()
                     }).catch(err => console.error("Error saving PSFS outcome:", err));

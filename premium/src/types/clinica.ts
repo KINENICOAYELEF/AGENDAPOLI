@@ -170,40 +170,135 @@ export interface TreatmentObjective {
     targetDate?: string;
 }
 
-export interface FocusArea {
+export interface TreatmentObjective {
     id: string; // ID local único
-    isPrincipal: boolean;
-    region: string;
-    lado: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A';
-    onsetType: 'Súbito' | 'Insidioso' | 'Post-quirúrgico' | string;
-    onsetDuration: string; // Ej: "1-2 semanas"
-    context: string; // Ej: "Deporte", "Trabajo"
-    dominantSymptoms: string[]; // Chips: Dolor, Pinchazo, Quemazón, etc.
+    description: string;
+    category?: 'Pain' | 'ROM' | 'Strength' | 'Function' | 'Other';
+    status: 'ACTIVE' | 'ACHIEVED' | 'DROPPED';
+    targetDate?: string;
+}
 
-    // Dolor y Conducta
+// ---------------------------------------------------------
+// FASE 2.2.X: ANAMNESIS PRÓXIMA ULTRA (KINE REAL) TIPADOS
+// ---------------------------------------------------------
+
+export interface KineComparableSign {
+    type: 'Tarea funcional' | 'Movimiento' | 'Test clínico' | 'Gesto deportivo' | 'Modo seguro';
+    name: string; // ej. Agacharse, Flexión lumbar, Salto
+    conditions: string; // ej. Rango completo, 10 reps, con barra 20kg
+    achieves: 'Sí' | 'No' | 'Parcial';
+    painLevel: number | string;
+    quality: 'Normal' | 'Compensado' | 'Sin control';
+    expectedAfterEffect: 'Nunca' | 'A veces' | 'Frecuente';
+    isSafeMode?: boolean; // Para cuando triage o irritabilidad limitan el test real
+    safeModeJustification?: string;
+}
+
+export interface KineFocusArea {
+    id: string;
+    isPrincipal: boolean;
+
+    // A) Definición
+    region: string; // Jerárquico: Columna cervical, etc.
+    subRegion?: string;
+    side: 'Derecho' | 'Izquierdo' | 'Bilateral' | 'N/A';
+    onsetDuration: 'Hoy' | '1–7 días' | '2–6 sem' | '6–12 sem' | '3–6 meses' | '>6 meses';
+    onsetType: 'Súbito' | 'Gradual';
+    course2w: 'Mejorando' | 'Igual' | 'Empeorando' | 'Fluctuante';
+
+    // B) Limitaciones Activas
+    mainLimitation: string; // Caminar, Correr, etc.
+    freeNarrative: string; // Relato libre del episodio
+    clinicalNotes?: string;
+
+    // C) Dolor y 24h
+    painScaleId: 'EVA' | 'ENA';
     painCurrent: number | string;
     painWorst24h: number | string;
     painBest24h: number | string;
-    pattern24h: string;
-    morningStiffness: string;
-    aggravatingFactors: string[];
-    easingFactors: string[];
-    afterEffect: 'Nunca' | 'A veces' | 'Siempre';
-    settlingTime: string;
-    associatedSymptoms: string[]; // Inflamación, Inestabilidad, Bloqueo, etc.
-    imaging?: string;
+    painDuringLimitation?: number | string;
+    pattern24h: 'Mañana peor' | 'Tarde peor' | 'Noche peor' | 'Variable';
+    morningStiffness: '0' | '1–10' | '11–30' | '31–60' | '>60';
+    wakesAtNight: boolean;
+    afterEffectFreq: 'Nunca' | 'A veces' | 'Frecuente';
+    settlingTime: '<15 min' | '15–60 min' | '1–24 h' | '>24 h';
+    provocationEase: 'Baja' | 'Media' | 'Alta';
 
-    // Comparable
-    comparableSign?: {
-        type: string;
-        name: string;
-        conditions: string;
-        painLevel: number | string;
-        reproducesSymptom: boolean;
-        afterEffect: string;
-        severity: string;
+    // D) Ramas de Inicio
+    // Solo si Súbito
+    suddenContact?: 'Con contacto' | 'Sin contacto';
+    suddenKinematics?: string[];
+    suddenSound?: 'Chasquido' | 'Tirón' | 'Desgarro' | 'Nada';
+    suddenImmediateCapacity?: 'Igual' | 'Con molestia' | 'Detenerse' | 'Incapaz';
+    suddenSwellingVisible?: 'Sí' | 'No' | 'No sabe';
+
+    // Solo si Gradual
+    gradualVolumeChange?: '0–10' | '10–30' | '30–50' | '>50' | 'No sabe';
+    gradualIntensityChange?: '0–10' | '10–30' | '30–50' | '>50' | 'No sabe';
+    gradualFreqChange?: 'Igual' | '+1' | '+2' | '+3 o más' | 'No sabe';
+    gradualRecovery?: 'Durmiendo menos' | 'Igual' | 'Más';
+    gradualPainAppears?: 'Al inicio' | 'Durante' | 'Después' | 'Al día siguiente';
+
+    // E) Perfil de síntomas
+    symptomNature: string[]; // Punzante, Opresivo, etc.
+    symptomRadiates: 'Local' | 'Se extiende' | 'Sube-baja' | 'Migratorio';
+    symptomAssociated: string[]; // Mecánicos, Neuro, Sistémicos
+
+    // F) PSF y Función 
+    psfs: Array<{ activity: string, score: number, reproduces: boolean, impact: 'Bajo' | 'Medio' | 'Alto' }>;
+    fastIcfActivities: Array<{ category: string, name: string, difficulty: number, reproduces: boolean }>;
+
+    // G) Deporte y Carga
+    sportContextActive: boolean;
+    sportMain?: string;
+    sportDaysPerWeek?: number;
+    sportSessionDuration?: number;
+    sportIntensity?: 'Baja' | 'Media' | 'Alta';
+    sportUpcomingCompetition?: boolean;
+    sportCurrentState?: 'Reposo' | 'Modificado' | 'Cruzado' | 'Normal con dolor';
+    sportChangeSurface?: string;
+    sportChangeShoes?: string;
+    sportChangeTechnique?: string;
+    sportChangeEquipment?: string;
+
+    // H) Tratamientos Previos
+    prevTreatmentsTags: string[];
+    prevTreatmentsResult?: 'Mejoró' | 'Igual' | 'Empeoró' | 'No sabe';
+    prevKineSessions?: '1–3' | '4–8' | '9–15' | '>15';
+    prevKineOpinion?: string;
+
+    // I) Signos Comparables
+    primaryComparable?: KineComparableSign;
+    secondaryComparables?: KineComparableSign[];
+}
+
+export interface KineAutoOutputs {
+    // Foco Local Outputs
+    perFocus: Record<string, { // focusId -> outputs
+        irritabilityLevel: 'Baja' | 'Media' | 'Alta';
+        irritabilityReasons: string[];
+        painMechanismLabel: string; // ej "Aparente nociceptivo inflamatorio local"
+        painMechanismReasons: string[];
+    }>;
+
+    // Evaluación Global
+    globalSafetyTriage: 'Verde' | 'Amarillo' | 'Rojo';
+    globalSafetyReasons: string[];
+    globalSafetyChecklist: string[];
+
+    globalBpsImpact: 'Bajo' | 'Medio' | 'Alto';
+    globalBpsTips: string[];
+
+    functionalTags: string[]; // Sugerencias cruzadas (Inestabilidad, Control Motor, etc)
+
+    // Preparación Pantalla 2
+    examChecklistSelected: {
+        essentials: Array<{ title: string, rationale: string, lookFor: string[] }>;
+        recommended: Array<{ title: string, rationale: string, lookFor: string[] }>;
+        avoidOrPostpone: Array<{ title: string, rationale: string, lookFor: string[] }>;
     };
 }
+
 
 export interface BaseEvaluacion {
     id?: string;
@@ -258,29 +353,48 @@ export interface BaseEvaluacion {
 
 export interface EvaluacionInicial extends BaseEvaluacion {
     type: 'INITIAL';
-    // PANTALLA 1: ENTREVISTA INTEGRAL
+    // PANTALLA 1: ENTREVISTA INTEGRAL (FASE 2.2.X ACTUALIZADA)
     interview?: {
+        // B) SEGURIDAD GLOBAL
+        redFlagsSystemic?: boolean;
+        redFlagsWeightLoss?: boolean;
+        redFlagsNightPain?: boolean;
+        redFlagsTraumaHigh?: boolean;
+        redFlagsFractureParams?: boolean;
+        redFlagsNeuroSevere?: boolean;
+        redFlagsThoracic?: boolean;
+        redFlagsDvtTep?: boolean; // Condicional a foco de extremidad inferior
+        redFlagsDetailsText?: string; // Para explayar cualquiera que sea Si
+
+        orangeFlagPersonalRisk?: boolean;
+        orangeFlagDetailsText?: string;
+
+        yellowFlags: { // 0-2 intensidad
+            sleepImpact: number;
+            highStress: number;
+            kinesiophobia: number;
+            damageWorry: number;
+            lowSelfEfficacy: number;
+            catastrophizing: number;
+            returnPressure: number;
+            highFrustration: number;
+        };
+
+        // Rework Profundo Multi-foco "Kine Real"
+        focos: KineFocusArea[];
+
+        // Outputs Calculados In-Vivo
+        autoOutputs?: KineAutoOutputs;
+
+        // --- Atributos deprecados de vieja version (Mantenidos para compatibilidad local de viejos form data) ---
         hasUrgency?: boolean;
-        redFlagsCheck?: Record<string, boolean>;
-        redFlagsAction?: string;
-        safetyStatusSuggested?: 'Verde' | 'Amarillo' | 'Rojo';
-
-        focos: FocusArea[];
-
-        irritabilityCalculated?: 'Alta' | 'Media' | 'Baja';
-        irritabilityExplanation?: string;
-
-        mechanismSuggested?: 'Nociceptivo' | 'Neuropático' | 'Nociplástico' | 'Mixto';
-        mechanismReasons?: string;
-
         functionalLimitationPrimary?: string;
         personGoal?: string;
-        psfs: Array<{ activity: string, score: number, linkedFocusId: string }>;
         sane?: number;
         groc?: number;
-
         bpsFactors?: string[];
-        bpsImpactSuggested?: 'Bajo' | 'Moderado' | 'Alto';
+        irritabilityCalculated?: string;
+        mechanismSuggested?: string;
     };
 
     // PANTALLA 2: EXAMEN FISICO GUIADO

@@ -135,10 +135,45 @@ export type EvalMinimoType = z.infer<typeof EvalMinimoSchema>;
 export type DiagnosisType = z.infer<typeof DiagnosisSchema>;
 export type PlanType = z.infer<typeof PlanSchema>;
 
-// NUEVO: Schema para Reevaluación (Retest IA)
 export const ReevaluationPlanSchema = z.object({
     progress_summary: z.string().describe("Resumen narrativo del progreso basado en los reteseos ingresados (max 500 chars)."),
     plan_modifications: z.string().describe("Sugerencia de ajustes, progresiones o regresiones al plan activo, justificadas por el retest clínico (max 500 chars)."),
     clinical_alerts: z.array(z.string()).optional().describe("Si el paciente empeoró o hay red flags detectadas en el retest, listarlas aquí.")
 });
 export type ReevaluationPlanType = z.infer<typeof ReevaluationPlanSchema>;
+
+// ----------------------------------------------------------------------------------
+// FASE 2.2.X (ANAMNESIS OMNIPOTENTE KINE REAL) - ASSISTANT ENDPOINTS
+// ----------------------------------------------------------------------------------
+
+// D) Asistencia en Entrevista (De Relato Libre -> Chips estructurados)
+export const InterviewAssistSchema = z.object({
+    proposedSelections: z.array(z.object({
+        field: z.enum(["nature", "aggravators", "branch_hypothesis"]),
+        value: z.string(),
+        rationale: z.string()
+    })).describe("Sugerencias para auto-completado de tags (ej. Punzante, Torsión, Nociceptivo) inferidas del relato."),
+    confidence: z.enum(["baja", "media", "alta"]),
+    missingQuestions: z.array(z.string()).describe("Lista de preguntas esenciales omitidas en el relato libre que el clínico debería preguntar (max 3).")
+});
+export type InterviewAssistType = z.infer<typeof InterviewAssistSchema>;
+
+// E) Priorizador de Examen (De Anamnesis Estructurada -> Checklist Física Sugerida)
+export const ExamPrioritizerSchema = z.object({
+    essentials: z.array(z.string()).describe("Pruebas o regiones de evaluación estrictamente obligatorias según el relato."),
+    recommended: z.array(z.string()).describe("Pruebas sugeridas confirmatorias."),
+    avoid: z.array(z.string()).describe("Maniobras contraindicadas por triage rojo o dolor limitante severo reportado."),
+    ifPositiveThen: z.array(z.string()).describe("Bloques condicionales: 'Si X sale positivo en test físico => evaluar Y'."),
+    missingCriticalData: z.array(z.string()).describe("Agujeros lógicos en la anamnesis documentada.")
+});
+export type ExamPrioritizerType = z.infer<typeof ExamPrioritizerSchema>;
+
+// F) Validador de Agujeros Lógicos Clínicos
+export const MissingnessCheckSchema = z.object({
+    missingCriticalData: z.array(z.object({
+        severity: z.enum(["bloqueante", "advertencia"]),
+        message: z.string(),
+        suggestedFix: z.string()
+    })).describe("Ej. 'Falta documentar si el dolor despierta de noche'. Solo datos que puedan afectar triage funcional o estructural.")
+});
+export type MissingnessCheckType = z.infer<typeof MissingnessCheckSchema>;

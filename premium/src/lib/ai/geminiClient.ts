@@ -44,3 +44,19 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
         throw new Error(`Fallo en llamada a Gemini: ${error.message}`);
     }
 }
+
+export const geminiClient = {
+    generateStructuredObject: async (params: { schema: any, systemMessage: string, userMessage: string, temperature?: number }) => {
+        const text = await callGemini({
+            systemInstruction: params.systemMessage,
+            userPrompt: params.userMessage,
+            temperature: params.temperature
+        });
+
+        let cleaned = text.trim();
+        if (cleaned.startsWith('```json')) cleaned = cleaned.substring(7);
+        if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3);
+
+        return JSON.parse(cleaned.trim());
+    }
+};

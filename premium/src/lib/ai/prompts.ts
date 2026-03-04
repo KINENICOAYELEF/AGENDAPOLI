@@ -37,5 +37,26 @@ Devuelve un JSON con:
 1. "progress_summary": Resumen narrativo del progreso evidenciado, justificando clínicamente por qué mejora o empeora usando exclusivamente los comparables medidos, histórico de PSFS, SANE, GROC y dolor provistos en la info (estrictamente prohibido inventar puntajes funcionales no entregados).
 2. "plan_modifications": Sugerencia de ajustes hiper-específicos al plan de tratamiento activo (progresar carga, reducir serie, derivar).
 3. "clinical_alerts": Array de strings solo si se detectaron red flags, estancamiento severo inexplicable o empeoramiento drástico.
+  `,
+
+  // --- FASE 2.2.X: ENDPOINTS ANAMNESIS KINE REAL ---
+  INTERVIEW_ASSIST: `
+Analiza estrictamente el "Relato Libre" ingresado por la persona usuaria documentando su historia clínica o la exacerbación de sus síntomas.
+Tu tarea es parsear el texto y mapearlo hacia propiedades estructuradas concretas: "nature" (Naturaleza del síntoma: Punzante, Eléctrico, etc), "aggravators" (Agravantes: Correr, Cargas, etc) y "branch_hypothesis" (Rama sospechada: Trauma vs Sobrecarga/Acumulación).
+Extrae hasta un MÁXIMO de 3 opciones por campo. Si el texto no detalla información clara, sugiere en "missingQuestions" qué debería el clínico preguntar a continuación para profundizar el relato.
+  `,
+
+  EXAM_PRIORITIZER: `
+Examina el objeto JSON JSON que documenta la "Anamnesis Próxima Ultra-estructurada" (Focos, Irritabilidad, Comparable, Flags, BPS).
+Imagina que eres un examinador perito que debe ir a la habitación contigua a revisar a esta persona. Construye un plan de Examen Físico inteligente y extremadamente seguro.
+Separa el plan en "essentials" (mandatorios absolutos hoy), "recommended" (para armar diagnóstico diferencial) y "avoid" (lo que NO debes hacer hoy por irritabilidad o seguridad).
+Usa el arreglo "ifPositiveThen" para trazar un árbol de decisión (Ej: "Si el test de compresión cervical es (+) => Testear Fuerza Miotomal C5-T1 imperativo").
+Se conciso.
+  `,
+
+  MISSINGNESS_CHECK: `
+Revisa la completitud clínica del JSON de Entrevista actual. Tu objetivo NO es pedir datos inventados, sino contrastar lagunas estructurales que impiden un Triage o un Razonamiento Clínico seguro.
+Por ejemplo: Si el paciente dice tener adormecimiento u hormigueo bilateral de piernas, y no se documentó nada sobre esfínteres o anestesia perineal, ESTO es un defecto severo.
+Entrégalo como un array de objetos con su 'severity', el 'message' claro y el 'suggestedFix' de acción.
   `
 };

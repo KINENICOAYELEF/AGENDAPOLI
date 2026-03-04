@@ -1,4 +1,4 @@
-import { EvaluacionInicial, FocusArea } from "@/types/clinica";
+import { EvaluacionInicial, KineFocusArea } from "@/types/clinica";
 
 export interface IrritabilityResult {
     level: 'Baja' | 'Moderada' | 'Alta';
@@ -123,7 +123,7 @@ export function computeLoadTrafficLight(irritability: IrritabilityResult, interv
     let color: 'Verde' | 'Amarillo' | 'Rojo' = 'Verde';
 
     const hasUrgency = interview?.hasUrgency || false;
-    const hasRedFlags = Object.values(interview?.redFlagsCheck || {}).some(v => v === true);
+    const hasRedFlags = Object.values((interview as any)?.redFlagsCheck || {}).some(v => v === true);
 
     if (hasUrgency || hasRedFlags) {
         color = 'Rojo';
