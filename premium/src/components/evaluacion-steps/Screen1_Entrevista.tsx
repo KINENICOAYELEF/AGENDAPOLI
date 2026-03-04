@@ -367,14 +367,15 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Perfil Síntomas (Tags)</h4>
                                         <div className="flex flex-wrap gap-1.5">
                                             {SINTOMAS_DOMINANTES.map(sym => {
-                                                const isActive = foco.dominantSymptoms.includes(sym);
+                                                const currentTags = foco.symptomNature || foco.dominantSymptoms || [];
+                                                const isActive = currentTags.includes(sym);
                                                 return (
                                                     <button
                                                         key={sym}
                                                         onClick={() => {
                                                             if (isClosed) return;
-                                                            const next = isActive ? foco.dominantSymptoms.filter((s: string) => s !== sym) : [...foco.dominantSymptoms, sym];
-                                                            handleUpdateFoco(idx, { dominantSymptoms: next });
+                                                            const next = isActive ? currentTags.filter((s: string) => s !== sym) : [...currentTags, sym];
+                                                            handleUpdateFoco(idx, { symptomNature: next });
                                                         }}
                                                         className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-700 ring-1 ring-indigo-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                                                     >
