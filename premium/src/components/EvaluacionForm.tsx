@@ -1,63 +1,66 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Evaluacion, MotivoEvaluacion } from "@/types/clinica";
+import { Evaluacion, FocusArea, EvaluacionInicial, EvaluacionReevaluacion, Proceso } from "@/types/clinica";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
+import { OutcomesService } from "@/services/outcomes";
 
-// Import UI Steps (V2)
-import { M0_InicioRapido } from "./evaluacion-steps/M0_InicioRapido";
-import { M1_TriageRedFlags } from "./evaluacion-steps/M1_TriageRedFlags";
-import { M2_AnamnesisProxima } from "./evaluacion-steps/M2_AnamnesisProxima";
-import { M4_FactoresBPS } from "./evaluacion-steps/M4_FactoresBPS";
-import { M5_FuncionActividad } from "./evaluacion-steps/M5_FuncionActividad";
-import { M6_ComparableSign } from "./evaluacion-steps/M6_ComparableSign";
-import { M7_ExamenFisico } from "./evaluacion-steps/M7_ExamenFisico";
-import { M8_EstructuralFuncional } from "./evaluacion-steps/M8_EstructuralFuncional";
-import { M9_ClasificacionInteligente } from "./evaluacion-steps/M9_ClasificacionInteligente";
-import { M10_EvaluadorMinimo } from "./evaluacion-steps/M10_EvaluadorMinimo";
-import { M11_DiagnosticoKinesico } from "./evaluacion-steps/M11_DiagnosticoKinesico";
-import { M12_ObjetivosSemaforo } from "./evaluacion-steps/M12_ObjetivosSemaforo";
-import { M13_Cierre } from "./evaluacion-steps/M13_Cierre";
-import { M_ReevalStart } from "./evaluacion-steps/M_ReevalStart";
+// Nuevas 5 Pantallas Integrales
+import { Screen1_Entrevista } from "./evaluacion-steps/Screen1_Entrevista";
+import { Screen2_Examen } from "./evaluacion-steps/Screen2_Examen";
+import { Screen3_Sintesis } from "./evaluacion-steps/Screen3_Sintesis";
+import { Screen4_Diagnostico } from "./evaluacion-steps/Screen4_Diagnostico";
+import { Screen5_Reevaluacion } from "./evaluacion-steps/Screen5_Reevaluacion";
+// Perfil permanente (ahora es un drawer asíncrono, no una pantalla bloqueante)
 import { M3_PerfilPermanente } from "./evaluacion-steps/M3_PerfilPermanente";
-
-// V1 Legacy removed
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 export interface EvaluacionFormProps {
     usuariaId: string;
     procesoId: string;
-    type: 'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL';
+    type: 'INITIAL' | 'REEVALUATION';
     initialData: Evaluacion | null;
+    procesoContext?: Proceso; // FASE 2.2.5
     onClose: () => void;
     onSaveSuccess: (evaluacion: Evaluacion, isNew: boolean) => void;
 }
 
-export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClose, onSaveSuccess }: EvaluacionFormProps) {
+export function EvaluacionForm({ usuariaId, procesoId, type, initialData, procesoContext, onClose, onSaveSuccess }: EvaluacionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
     const isEditMode = !!initialData;
     const [isClosed, setIsClosed] = useState(initialData?.status === 'CLOSED');
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(type === 'REEVALUATION' ? -1 : 0); // V2 Empieza en M0 o M-1
+
+    // Si es reevaluación empezamos en Pantalla 5, si no en Pantalla 1
+    const [screen, setScreen] = useState<number>(type === 'REEVALUATION' ? 5 : 1);
 
     // AI Integration States
-    const [aiLoading, setAiLoading] = useState<string | null>(null);
     const [aiError, setAiError] = useState<string | null>(null);
 
-    // TEMPORIZADOR CLINICO DOCENTE (Fase 2.2.1)
-    const [secondsElapsed, setSecondsElapsed] = useState(initialData?.timer?.totalSeconds || initialData?.timeSpentSeconds || 0);
+    // TEMPORIZADOR CLINICO DOCENTE (Pill)
+    const [secondsElapsed, setSecondsElapsed] = useState(initialData?.timer?.totalSeconds || 0);
 
     useEffect(() => {
         if (isClosed) return;
         const interval = setInterval(() => {
             setSecondsElapsed(prev => prev + 1);
+            setFormData((prev: any) => {
+                const currentTimer = prev.timer || { screen1Seconds: 0, screen2Seconds: 0, screen3Seconds: 0, screen4Seconds: 0, screen5Seconds: 0, totalSeconds: 0 };
+                const updatedTimer = { ...currentTimer, totalSeconds: currentTimer.totalSeconds + 1 };
+                if (screen === 1) updatedTimer.screen1Seconds += 1;
+                else if (screen === 2) updatedTimer.screen2Seconds += 1;
+                else if (screen === 3) updatedTimer.screen3Seconds += 1;
+                else if (screen === 4) updatedTimer.screen4Seconds += 1;
+                else if (screen === 5) updatedTimer.screen5Seconds += 1;
+                return { ...prev, timer: updatedTimer };
+            });
         }, 1000);
         return () => clearInterval(interval);
-    }, [isClosed]);
+    }, [isClosed, screen]);
 
     const formatTime = (secs: number) => {
         const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -66,86 +69,126 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
     };
 
     const getTimerColor = (secs: number) => {
-        if (secs < 1800) return 'text-emerald-700 bg-emerald-100 border-emerald-300';
-        if (secs < 2700) return 'text-amber-700 bg-amber-100 border-amber-300';
-        return 'text-rose-700 bg-rose-100 border-rose-300';
+        if (secs < 600) return 'text-emerald-700 bg-emerald-100 border-emerald-300'; // 0-10 min
+        if (secs < 1200) return 'text-amber-700 bg-amber-100 border-amber-300'; // 10-20 min
+        return 'text-rose-700 bg-rose-100 border-rose-300'; // 20-30+ min
     };
 
     // FORM STATE
-    const [formData, setFormData] = useState<Partial<Evaluacion>>({
+    const [formData, setFormData] = useState<any>({
         usuariaId,
         procesoId,
         type,
         status: 'DRAFT',
         sessionAt: initialData?.sessionAt || new Date().toISOString(),
-        motivos: initialData?.motivos || [],
         clinicianResponsible: initialData?.clinicianResponsible || user?.email || '',
-        timer: initialData?.timer || { startedAt: new Date().toISOString(), totalSeconds: 0, pauses: [] },
-        ai: initialData?.ai || { enabled: true, errors: [] },
-        dxKinesico: initialData?.dxKinesico || { primary: '', differentialList: [] },
-        integration: initialData?.integration || { synthesis: '' },
-        objectivesVersion: initialData?.objectivesVersion || { objectiveSetVersionId: '', isActiveForProcess: false, objectives: [] },
-        operationalPlan: initialData?.operationalPlan || { interventionsPlanned: [], educationPlan: '', homePlan: '' },
-        attendancePlan: initialData?.attendancePlan || { recommendedFrequencyWeekly: '', estimatedDurationWeeks: '', prognosisFunctional: '', dischargeCriteria: '' },
+        timer: initialData?.timer || { screen1Seconds: 0, screen2Seconds: 0, screen3Seconds: 0, screen4Seconds: 0, screen5Seconds: 0, totalSeconds: 0, startedAt: new Date().toISOString() },
+        interview: (initialData as any)?.interview || { focos: [], psfs: [] },
+        guidedExam: (initialData as any)?.guidedExam || {},
+        autoSynthesis: (initialData as any)?.autoSynthesis || {},
+        geminiDiagnostic: (initialData as any)?.geminiDiagnostic || {},
+        reevaluation: (initialData as any)?.reevaluation || {},
         ...initialData
     });
 
-    // Auto-create first motivo if empty
+    // Auto-create first focus if empty
     useEffect(() => {
-        if (!isEditMode && (!formData.motivos || formData.motivos.length === 0)) {
-            const newMotivo: MotivoEvaluacion = {
+        if (!isEditMode && (!formData.interview?.focos || formData.interview.focos.length === 0)) {
+            const newFoco: FocusArea = {
                 id: generateId(),
-                motivoLabel: `Motivo Principal`,
+                isPrincipal: true,
                 region: '',
                 lado: 'N/A',
-                subjective: { mechanism: '', onsetDateOrDuration: '', irritability: 'Media', functionalLimitationPrimary: '' } as any,
-                redFlagsChecklist: {},
-                objectiveExam: {},
-                impairmentSummary: {}
+                onsetType: '',
+                onsetDuration: '',
+                context: '',
+                dominantSymptoms: [],
+                painCurrent: '',
+                painWorst24h: '',
+                painBest24h: '',
+                pattern24h: '',
+                morningStiffness: '',
+                aggravatingFactors: [],
+                easingFactors: [],
+                afterEffect: 'Nunca',
+                settlingTime: '',
+                associatedSymptoms: []
             };
-            setFormData(prev => ({ ...prev, motivos: [newMotivo] }));
+            setFormData((prev: any) => ({
+                ...prev,
+                interview: {
+                    ...prev.interview,
+                    focos: [newFoco],
+                    psfs: []
+                }
+            }));
         }
-    }, [isEditMode, formData.motivos]);
+    }, [isEditMode, formData.interview?.focos]);
 
     const updateFormData = (patch: Partial<Evaluacion> | ((prev: Partial<Evaluacion>) => Partial<Evaluacion>)) => {
-        setFormData(prev => typeof patch === 'function' ? patch(prev) : { ...prev, ...patch });
+        setFormData((prev: any) => typeof patch === 'function' ? patch(prev) : { ...prev, ...patch });
     };
 
-    // --- Validations para Cierre ---
     const getValidationContext = useMemo(() => {
-        const motivos = formData.motivos || [];
-        const hasMotivos = motivos.length > 0;
-        const validMotivoSubj = motivos.every(m => m.subjective?.mechanism?.trim() && m.subjective?.functionalLimitationPrimary?.trim());
-        const validRedFlags = motivos.every(m => {
-            const hasFlags = Object.values(m.redFlagsChecklist || {}).some(v => v === true);
-            if (hasFlags) return !!m.redFlagsActionText?.trim();
-            return true; // Si no hay banderas rojas marcadas o respondió todo ok
-        });
-        // Físico Mínimo (Rom o Fuerza o Tests)
-        const validPhysical = motivos.every(m => {
-            const ex = m.objectiveExam;
-            if (!ex) return false;
-            return (ex.rom && ex.rom.length > 0) || (ex.strength && ex.strength.length > 0) || (ex.specialTests && ex.specialTests.length > 0);
-        });
-        const hasDx = !!(formData.dxKinesico?.narrative?.trim() || formData.dxKinesico?.primary?.trim());
-        const objArr = formData.objectivesVersion?.objectives || [];
-        const validObjs = objArr.filter(o => o.tipo === 'General').length >= 1 && objArr.filter(o => o.tipo === 'Específico').length >= 2;
-        const validPlan = !!formData.operationalPlan?.educationPlan?.trim() || !!formData.operationalPlan?.interventionsPlanned?.length;
+        const missing: string[] = [];
 
-        const allValid = hasMotivos && validMotivoSubj && validRedFlags && validPhysical && hasDx && validObjs && validPlan;
+        if (type === 'INITIAL') {
+            const fd = formData as EvaluacionInicial;
+            const hasFocos = (fd.interview?.focos?.length || 0) > 0;
+            if (!hasFocos) missing.push("Foco Principal de Consulta");
 
-        return { hasMotivos, validMotivoSubj, validRedFlags, validPhysical, hasDx, validObjs, validPlan, allValid };
-    }, [formData]);
+            const hasPsfs = (fd.interview?.psfs?.length || 0) > 0;
+            if (!hasPsfs) missing.push("Al menos 1 PSFS (Escala Funcional)");
+
+            const hasComparable = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
+            if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
+
+            const hasSx = (fd.autoSynthesis?.structuralSuspicions?.length || 0) > 0;
+            if (!hasSx) missing.push("Sospecha Estructural (P3)");
+
+            const hasTraffic = !!(fd.autoSynthesis?.trafficLight);
+            if (!hasTraffic) missing.push("Semáforo de Carga");
+
+            const hasDx = !!(fd.geminiDiagnostic?.kinesiologicalDxNarrative?.trim());
+            if (!hasDx) missing.push("Diagnóstico Narrativo");
+
+            const hasSmartObs = (fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
+            if (!hasSmartObs) missing.push("Objetivos SMART");
+
+            return {
+                allValid: missing.length === 0,
+                missing,
+                hasFocos, hasDx, hasSmartObs // legacy retrocompatibilidad visual tabs
+            };
+        } else {
+            const fd = formData as EvaluacionReevaluacion;
+            const hasProgress = !!(fd.reevaluation?.progressSummary?.trim());
+            if (!hasProgress) missing.push("Resumen del Retest y Progreso");
+
+            const hasMods = !!(fd.reevaluation?.planModifications?.trim());
+            if (!hasMods) missing.push("Modificaciones al Plan Activo");
+
+            return {
+                allValid: missing.length === 0,
+                missing,
+                hasFocos: true, hasDx: true, hasSmartObs: true // fake legacy
+            };
+        }
+    }, [formData, type]);
 
     const handleSave = async (isClosing: boolean = false) => {
         if (!globalActiveYear || !user) return;
 
         if (isClosing && !getValidationContext.allValid) {
-            alert("Existen Hitos Duros pendientes. Revisa el Semáforo de Cierre en el Panel Inteligente.");
+            alert("⚠️ EXISTEN HITOS CLÍNICOS PENDIENTES\\n\\nFalta completar:\\n - " + getValidationContext.missing.join('\\n - ') + "\\n\\nNo puedes cerrar la evaluación hasta completarlos.");
             return;
         }
         if (isClosing && !window.confirm("¿Seguro que deseas Cerrar y Fijar esta evaluación? Generará el Set de Objetivos inmutable del Proceso.")) {
             return;
+        }
+
+        if (isClosing && secondsElapsed > 1800) {
+            window.alert(`Sugerencia de Eficiencia: Has tomado ${formatTime(secondsElapsed)} minutos en evaluar. Considera enfocar la entrevista y delegar el examen detallado en la próxima sesión (Time-Box ideal: < 30 min)`);
         }
 
         try {
@@ -157,10 +200,9 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                 id: targetId,
                 status: isClosing ? 'CLOSED' : 'DRAFT',
                 timer: {
-                    ...(formData.timer || { totalSeconds: 0 }),
+                    ...(formData.timer || { totalSeconds: 0 } as any),
                     totalSeconds: secondsElapsed
                 },
-                // Construcción V2 Payload
                 audit: {
                     ...(formData.audit || {}),
                     createdAt: isEditMode ? formData.audit!.createdAt : new Date().toISOString(),
@@ -174,28 +216,169 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, payload, { merge: true });
 
-            if (isClosing) {
+            if (isClosing && type === 'INITIAL') {
+                const fd = payload as EvaluacionInicial;
                 const versionId = `v_${Date.now()}`;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
                 await setDoc(procesoRef, {
+                    estado: 'ACTIVO',
                     activeEvaluationId: targetId,
+                    activeEvaluationIndexId: targetId,
                     activeObjectiveSetVersionId: versionId,
-                    caseSnapshot: { // M13 Snapshot
-                        summary: payload.integration?.synthesis?.slice(0, 100) + '...',
+                    diagnosisVigente: fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                    flags: {
+                        redFlagsSummary: fd.interview?.redFlagsAction || '',
+                        consideracionesClinicas: fd.geminiDiagnostic?.clinicalConsiderations || []
+                    },
+                    loadManagementVigente: {
+                        trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
+                        rules: []
+                    },
+                    caseSnapshot: { // M13 Snapshot equivalente mejorado
+                        summary: fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
-                        trafficLight: payload.loadTrafficLight || 'Verde'
+                        trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
+                        baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
+                            ? fd.guidedExam.comparableRetest[0]
+                            : ((fd as any).comparableSign || null),
+                        psfsBaseline: fd.interview?.psfs || [],
+                        topDeficits: fd.autoSynthesis?.functionalDeficits || []
                     },
                     activeObjectiveSet: {
                         versionId,
                         updatedAt: new Date().toISOString(),
-                        objectives: payload.objectivesVersion?.objectives?.map(o => ({
-                            id: o.id,
-                            label: o.texto,
+                        objectives: fd.geminiDiagnostic?.objectivesSmart?.map(o => ({
+                            id: generateId(),
+                            label: o.text,
                             status: 'activo'
                         })) || []
                     }
                 }, { merge: true });
-                await setDoc(docRef, { "objectivesVersion.objectiveSetVersionId": versionId, "objectivesVersion.isActiveForProcess": true }, { merge: true });
+                await setDoc(docRef, { activeObjectiveSetVersionId: versionId }, { merge: true });
+
+                // FASE 2.2.6: Despachar Outcomes iniciales (PSFS y SANE opcional)
+                if (fd.interview?.psfs && fd.interview.psfs.length > 0) {
+                    const outcomeId = `psfs_${Date.now()}`;
+                    await OutcomesService.save(globalActiveYear, procesoId, {
+                        id: outcomeId,
+                        procesoId,
+                        usuariaId,
+                        type: 'PSFS',
+                        capturedAt: new Date().toISOString(),
+                        context: 'EVALUACION_INICIAL',
+                        values: { items: fd.interview.psfs },
+                        createdByUid: user.uid,
+                        createdAt: new Date().toISOString()
+                    }).catch(err => console.error("Error saving PSFS outcome:", err));
+                }
+
+                if (fd.interview?.sane !== undefined && fd.interview.sane > 0) {
+                    const outcomeId = `sane_${Date.now()}`;
+                    await OutcomesService.save(globalActiveYear, procesoId, {
+                        id: outcomeId,
+                        procesoId,
+                        usuariaId,
+                        type: 'SANE',
+                        capturedAt: new Date().toISOString(),
+                        context: 'EVALUACION_INICIAL',
+                        values: { score: fd.interview.sane },
+                        createdByUid: user.uid,
+                        createdAt: new Date().toISOString()
+                    }).catch(err => console.error("Error saving SANE outcome:", err));
+                }
+
+            } else if (isClosing && type === 'REEVALUATION') {
+                const fd = payload as EvaluacionReevaluacion;
+                const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
+
+                const updatePayload: Record<string, any> = {
+                    "caseSnapshot.lastUpdated": new Date().toISOString(),
+                    "caseSnapshot.lastProgressSummary": fd.reevaluation?.progressSummary || '',
+                    // FASE 2.2.5 Guardar retrospectiva
+                    "caseSnapshot.lastRetest": typeof fd.reevaluation?.retest === 'string' ? fd.reevaluation.retest : JSON.stringify(fd.reevaluation?.retest || '')
+                };
+
+                if (typeof fd.reevaluation?.retest === 'object' && fd.reevaluation.retest?.psfsScores) {
+                    updatePayload["caseSnapshot.psfsLast"] = fd.reevaluation.retest.psfsScores;
+                }
+
+                // FASE 2.2.4: Actualizar dx vigente si fue modificado
+                if ((fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
+                    updatePayload.diagnosisVigente = (fd as any).geminiDiagnostic.kinesiologicalDxNarrative;
+                }
+
+                // FASE 2.2.4: Actualizar semáforo si fue modificado
+                if ((fd as any).autoSynthesis?.trafficLight) {
+                    updatePayload["loadManagementVigente.trafficLight"] = (fd as any).autoSynthesis.trafficLight;
+                }
+
+                // FASE 2.2.4: Crear nueva versión de objetivos si hay nuevos
+                // FASE 2.2.4 / 2.2.5: Crear nueva versión de objetivos si hay nuevos
+                let versionId = null;
+                // Intentar leer targets de objetivos editados en reevaluación (Screen5)
+                const newObjectives = (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
+                if (newObjectives && newObjectives.length > 0) {
+                    versionId = `v_${Date.now()}`;
+                    updatePayload.activeObjectiveSetVersionId = versionId;
+                    updatePayload.activeObjectiveSet = {
+                        versionId,
+                        updatedAt: new Date().toISOString(),
+                        objectives: newObjectives.map((o: any) => ({
+                            id: o.id || generateId(),
+                            label: o.text || o.label,
+                            status: o.status || 'activo'
+                        }))
+                    };
+                }
+
+                await setDoc(procesoRef, updatePayload, { merge: true });
+                if (versionId) {
+                    await setDoc(docRef, { activeObjectiveSetVersionId: versionId }, { merge: true });
+                }
+
+                // FASE 2.2.6: Despachar Outcomes de Reevaluación (PSFS, SANE, GROC opcionales)
+                const rTest = fd.reevaluation?.retest;
+                if (rTest && typeof rTest === 'object') {
+                    if (rTest.psfsScores && rTest.psfsScores.length > 0) {
+                        await OutcomesService.save(globalActiveYear, procesoId, {
+                            id: `psfs_re_${Date.now()}`,
+                            procesoId,
+                            usuariaId,
+                            type: 'PSFS',
+                            capturedAt: new Date().toISOString(),
+                            context: 'REEVALUACION',
+                            values: { items: rTest.psfsScores },
+                            createdByUid: user.uid,
+                            createdAt: new Date().toISOString()
+                        }).catch(err => console.error("Error saving PSFS outcome in reeval:", err));
+                    }
+                    if (rTest.saneScore !== undefined && rTest.saneScore > 0) {
+                        await OutcomesService.save(globalActiveYear, procesoId, {
+                            id: `sane_re_${Date.now()}`,
+                            procesoId,
+                            usuariaId,
+                            type: 'SANE',
+                            capturedAt: new Date().toISOString(),
+                            context: 'REEVALUACION',
+                            values: { score: rTest.saneScore },
+                            createdByUid: user.uid,
+                            createdAt: new Date().toISOString()
+                        }).catch(err => console.error("Error saving SANE outcome in reeval:", err));
+                    }
+                    if (rTest.grocScore !== undefined && rTest.grocScore !== 0) {
+                        await OutcomesService.save(globalActiveYear, procesoId, {
+                            id: `groc_re_${Date.now()}`,
+                            procesoId,
+                            usuariaId,
+                            type: 'GROC',
+                            capturedAt: new Date().toISOString(),
+                            context: 'REEVALUACION',
+                            values: { score: rTest.grocScore },
+                            createdByUid: user.uid,
+                            createdAt: new Date().toISOString()
+                        }).catch(err => console.error("Error saving GROC outcome in reeval:", err));
+                    }
+                }
             }
 
             onSaveSuccess(payload, !isEditMode);
@@ -208,29 +391,14 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
         }
     };
 
-    const isExpress = formData.ai?.appliedFlags?.expressReeval === true;
-
-    const M_STEPS = [
-        ...(type === 'REEVALUATION' ? [{ id: -1, label: 'M-1: Reeval', icon: '🔄' }] : []),
-        { id: 0, label: 'M0: Inicio', icon: '⚡' },
-        { id: 1, label: 'M1: Triage/Red Flags', icon: '🚩', warning: !getValidationContext.validRedFlags },
-        { id: 2, label: 'M2: Anamnesis', icon: '🗣️' },
-        { id: 3, label: 'M3: Perfil Perm.', icon: '📇' },
-        { id: 4, label: 'M4: Fac. BPS', icon: '🧠' },
-        { id: 5, label: 'M5: Función (PSFS)', icon: '🏃' },
-        { id: 6, label: 'M6: Comparable', icon: '⭐' },
-        { id: 7, label: 'M7: Ex. Físico', icon: '🩺', warning: !getValidationContext.validPhysical },
-        { id: 8, label: 'M8: Est. vs Func.', icon: '⚖️' },
-        { id: 9, label: 'M9: Clasificación', icon: '🏷️' },
-        { id: 10, label: 'M10: Eval Mínimo (IA)', icon: '🤖' },
-        { id: 11, label: 'M11: Dx (IA)', icon: '📝', warning: !getValidationContext.hasDx },
-        { id: 12, label: 'M12: Objetivos (IA)', icon: '🎯', warning: !getValidationContext.validObjs || !getValidationContext.validPlan },
-        { id: 13, label: 'M13: Cierre', icon: '✅' },
-    ].filter(s => {
-        if (!isExpress) return true;
-        // En Express Reevaluation conservamos solo lo esencial
-        return [-1, 0, 5, 6, 7, 11, 12, 13].includes(s.id);
-    });
+    const SCREENS = type === 'INITIAL' ? [
+        { id: 1, label: 'P1: Entrevista', icon: '🗣️' },
+        { id: 2, label: 'P2: Examen Físico', icon: '🩺' },
+        { id: 3, label: 'P3: Síntesis / Clasific.', icon: '⚖️' },
+        { id: 4, label: 'P4: IA Gemini + Metas', icon: '🤖', warning: !getValidationContext.hasDx || !getValidationContext.hasSmartObs }
+    ] : [
+        { id: 5, label: 'Retest y Reevaluación', icon: '🔄' }
+    ];
 
     const [isPerfilDrawerOpen, setIsPerfilDrawerOpen] = useState(false);
 
@@ -253,7 +421,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
             {/* CONTENEDOR PRINCIPAL */}
             <div className="flex flex-col flex-1 h-full relative">
 
-                {/* TOP BAR MOBILE-FIRST STICKY (Ultraversátil V2) */}
+                {/* TOP BAR MOBILE-FIRST STICKY */}
                 <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-2 md:py-3 gap-2">
                     <div className="flex items-center justify-between md:justify-start w-full md:w-auto gap-3">
                         <div className="flex items-center gap-3">
@@ -282,40 +450,40 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
 
                     <div className="flex items-center gap-2 justify-between w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0">
                         <div className="flex items-center gap-1.5 shrink-0">
-                            <div className="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
-                                Módulo {step}/13
-                            </div>
                             <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${isClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                 {isClosed ? 'Cerrada' : 'Borrador'}
                             </div>
-                            {/* Semáforo Load Traffic Light */}
-                            <div className="flex gap-0.5 items-center bg-slate-100 px-1.5 py-1 rounded-md border border-slate-200">
-                                <span className={`w-2 h-2 rounded-full ${formData.loadTrafficLight === 'Verde' ? 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)]' : 'bg-slate-300'} transition-all`} />
-                                <span className={`w-2 h-2 rounded-full ${formData.loadTrafficLight === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.8)]' : 'bg-slate-300'} transition-all`} />
-                                <span className={`w-2 h-2 rounded-full ${formData.loadTrafficLight === 'Rojo' ? 'bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]' : 'bg-slate-300'} transition-all`} />
-                            </div>
+                            {/* Semáforo Load Traffic Light Solo en INITIAL o si existe */}
+                            {type === 'INITIAL' && (
+                                <div className="flex gap-0.5 items-center bg-slate-100 px-1.5 py-1 rounded-md border border-slate-200">
+                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Verde' ? 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)]' : 'bg-slate-300'} transition-all`} />
+                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.8)]' : 'bg-slate-300'} transition-all`} />
+                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Rojo' ? 'bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]' : 'bg-slate-300'} transition-all`} />
+                                </div>
+                            )}
                         </div>
 
+                        {/* PILL CRONÓMETRO */}
                         {!isClosed && (
-                            <div className={`flex items-center shrink-0 gap-1.5 text-xs font-mono font-bold px-2 md:px-3 py-1 md:py-1.5 rounded-lg border shadow-inner cursor-pointer hover:opacity-80 transition-opacity ${getTimerColor(secondsElapsed)}`} title="Click para historial de pausas">
+                            <div className={`flex items-center shrink-0 gap-1.5 text-xs font-mono font-bold px-2 md:px-3 py-1 md:py-1.5 rounded-lg border shadow-inner cursor-pointer hover:opacity-80 transition-opacity ${getTimerColor(secondsElapsed)}`} title="Tiempo Global de Evaluación">
                                 <svg className="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 {formatTime(secondsElapsed)}
                             </div>
                         )}
                         <button onClick={() => setIsPerfilDrawerOpen(true)} className="hidden md:flex shrink-0 text-white bg-slate-800 hover:bg-slate-900 font-bold text-xs items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-sm transition-colors">
-                            <span>📇</span> Perfil Permanente (M3)
+                            <span>📇</span> Perfil Permanente (Remoto)
                         </button>
                     </div>
                 </div>
 
-                {/* STEPPER WIZARD HORIZONTAL M0 a M13 */}
+                {/* NAVEGACION HORIZONTAL ENTRE PANTALLAS */}
                 <div className="bg-white border-b border-slate-200 shadow-sm z-40 relative">
                     <div className="flex overflow-x-auto gap-2 px-3 md:px-6 py-2.5 items-center custom-scrollbar">
-                        {M_STEPS.map(s => (
+                        {SCREENS.map(s => (
                             <button
                                 key={s.id}
-                                onClick={() => setStep(s.id)}
-                                className={`flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-[11px] md:text-xs font-bold transition-all border whitespace-nowrap ${step === s.id
+                                onClick={() => setScreen(s.id)}
+                                className={`flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-[11px] md:text-xs font-bold transition-all border whitespace-nowrap ${screen === s.id
                                     ? 'bg-indigo-600 text-white border-indigo-700 shadow-[0_2px_10px_-2px_rgba(79,70,229,0.5)]'
                                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }`}
@@ -345,40 +513,19 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
                 <div className="flex-1 overflow-y-auto pb-32 pt-6 px-3 md:px-6 max-w-4xl mx-auto w-full">
 
-                    {/* Renderizado Activo de Módulos */}
-                    {step === -1 && <M_ReevalStart formData={formData} updateFormData={updateFormData} onProceed={() => setStep(0)} />}
-                    {step === 0 && <M0_InicioRapido formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 1 && <M1_TriageRedFlags formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 2 && <M2_AnamnesisProxima formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-
-                    {step === 3 && <M3_PerfilPermanente usuariaId={usuariaId} />}
-                    {step === 4 && <M4_FactoresBPS formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 5 && <M5_FuncionActividad formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 6 && <M6_ComparableSign formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 7 && <M7_ExamenFisico formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 8 && <M8_EstructuralFuncional formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 9 && <M9_ClasificacionInteligente formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 10 && <M10_EvaluadorMinimo formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 11 && <M11_DiagnosticoKinesico formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 12 && <M12_ObjetivosSemaforo formData={formData} updateFormData={updateFormData} isClosed={isClosed} />}
-                    {step === 13 && <M13_Cierre formData={formData} updateFormData={updateFormData} isClosed={isClosed} validationContext={getValidationContext} onSaveAndClose={() => handleSave(true)} />}
-
-                    {/* Placeholder router for M_STEPS pending implementation */}
-                    {step > 13 && (
-                        <div className="bg-white border text-center border-slate-200 p-8 rounded-2xl shadow-sm flex flex-col items-center justify-center min-h-[300px]">
-                            <span className="text-4xl mb-3">{M_STEPS.find(s => s.id === step)?.icon}</span>
-                            <h3 className="text-lg font-black text-slate-800 mb-2">{M_STEPS.find(s => s.id === step)?.label}</h3>
-                            <p className="text-sm text-slate-500 max-w-sm">
-                                El módulo está actualmente en desarrollo dentro de la FASE 2.2.1 V2.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* V1 Legacy Render Exited */}
+                    {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
+                        handleSave(false);
+                        alert("Borrador de Reevaluación guardado. Por favor, crea una 'Nueva Evaluación Inicial' desde el Panel del Proceso Clínico.");
+                        onClose();
+                    }} />}
+                    {screen === 1 && type === 'INITIAL' && <Screen1_Entrevista formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
+                    {screen === 2 && type === 'INITIAL' && <Screen2_Examen formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
+                    {screen === 3 && type === 'INITIAL' && <Screen3_Sintesis formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
+                    {screen === 4 && type === 'INITIAL' && <Screen4_Diagnostico formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
 
                 </div>
 
-                {/* BOTTOM BAR STICKY (Acciones Móvil-First) */}
+                {/* BOTTOM BAR STICKY */}
                 {!isClosed && (
                     <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] md:pl-64">
                         <div className="max-w-4xl mx-auto flex flex-row gap-3">
@@ -399,7 +546,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, onClos
                                     }`}
                             >
                                 <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                {getValidationContext.allValid ? 'Fijar y Cerrar' : 'Completa los Módulos'}
+                                {getValidationContext.allValid ? 'Fijar y Cerrar' : 'Revisar Cierre'}
                             </button>
                         </div>
                     </div>

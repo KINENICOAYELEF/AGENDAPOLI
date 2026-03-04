@@ -3,6 +3,7 @@ import { Proceso } from "@/types/clinica";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { ProcesosService } from "@/services/procesos";
+import { AgendaService } from "@/services/agenda";
 
 // Helper generador de UUID local
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -25,7 +26,16 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
         estado: 'ACTIVO',
         fechaInicio: new Date().toISOString().slice(0, 16), // YYYY-MM-DDThh:mm
         motivoIngresoLibre: "",
-        fechaAlta: null
+        fechaAlta: null,
+        attendancePlan: {
+            daysOfWeek: [],
+            time: "18:00",
+            durationMin: 50,
+            startDate: new Date().toISOString().slice(0, 10),
+            excludeHolidays: true,
+            status: 'ACTIVO',
+            assignedInternIds: []
+        }
     });
 
     useEffect(() => {
@@ -83,15 +93,69 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
                 createdByUid: isEditMode ? (initialData!.createdByUid) : user.uid,
                 createdByName: isEditMode ? (initialData!.createdByName) : (user.email || 'Desconocido'),
                 createdAt: isEditMode ? initialData!.createdAt : new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+
+                // Agenda
+                attendancePlan: formData.attendancePlan as Proceso['attendancePlan'],
+
+                // FASE 2.3.3: Continuidad
+                primaryInternId: formData.primaryInternId || undefined,
+                continuityInternIds: formData.continuityInternIds || []
             };
 
             await ProcesosService.save(globalActiveYear, payload);
+
+            // FASE 2.3.0: Lifecycle Hooks de Agenda
+            if (isEditMode && initialData) {
+                if (initialData.estado !== 'PAUSADO' && payload.estado === 'PAUSADO') {
+                    await AgendaService.pauseSchedule(globalActiveYear, targetId);
+                } else if ((initialData.estado !== 'ALTA' && initialData.estado !== 'CERRADO_ADMIN') &&
+                    (payload.estado === 'ALTA' || payload.estado === 'CERRADO_ADMIN')) {
+                    await AgendaService.cancelFutureSchedule(globalActiveYear, targetId);
+                } else if (initialData.estado !== 'ACTIVO' && payload.estado === 'ACTIVO') {
+                    await AgendaService.ensureSchedule(globalActiveYear, payload);
+                }
+            }
+
             onSaveSuccess(payload, !isEditMode);
 
         } catch (error) {
             console.error("Error guardando proceso", error);
             alert("Error al conectar con la base de datos.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForceRegenerate = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!globalActiveYear || !initialData || !initialData.id) return;
+
+        const confirm = window.confirm("¿Estás seguro que deseas regenerar la agenda? Esto borrará todas las citas futuras en estado 'Esperando' y las recalculará basado en la Selección Actual de Asistencia y Continuidad.");
+        if (!confirm) return;
+
+        try {
+            setLoading(true);
+
+            const payload: Proceso = {
+                ...initialData,
+                estado: formData.estado as Proceso['estado'],
+                attendancePlan: formData.attendancePlan as Proceso['attendancePlan'],
+                primaryInternId: formData.primaryInternId || undefined,
+                continuityInternIds: formData.continuityInternIds || [],
+                updatedAt: new Date().toISOString()
+            };
+
+            await ProcesosService.save(globalActiveYear, payload);
+            await AgendaService.rebuildSchedule(globalActiveYear, payload);
+
+            alert("Agenda re-generada exitosamente.");
+            onSaveSuccess(payload, false);
+        } catch (error) {
+            console.error("Error regenerando agenda", error);
+            alert("Hubo un error al re-generar la agenda.");
         } finally {
             setLoading(false);
         }
@@ -133,6 +197,124 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
                         className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all outline-none text-sm resize-none"
                         required
                     />
+                </div>
+
+                {/* --- FASE 2.3.0: AGENDA DE ASISTENCIA --- */}
+                <div className="w-full p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-4">
+                    <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        Plan de Asistencia (Agenda Automatizada)
+                    </h4>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">Días de la semana</label>
+                        <div className="flex flex-wrap gap-2">
+                            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => {
+                                const labels: Record<string, string> = { MON: 'Lun', TUE: 'Mar', WED: 'Mié', THU: 'Jue', FRI: 'Vie', SAT: 'Sáb' };
+                                const isSelected = formData.attendancePlan?.daysOfWeek.includes(day);
+                                return (
+                                    <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => {
+                                            const current = formData.attendancePlan?.daysOfWeek || [];
+                                            const next = isSelected ? current.filter(d => d !== day) : [...current, day];
+                                            setFormData(prev => ({ ...prev, attendancePlan: { ...prev.attendancePlan!, daysOfWeek: next } }));
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-sm font-bold border transition-colors ${isSelected ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                    >
+                                        {labels[day]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Horario</label>
+                            <input
+                                type="time"
+                                value={formData.attendancePlan?.time || "18:00"}
+                                onChange={e => setFormData(prev => ({ ...prev, attendancePlan: { ...prev.attendancePlan!, time: e.target.value } }))}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Duración (min)</label>
+                            <input
+                                type="number"
+                                min="15" step="5" max="120"
+                                value={formData.attendancePlan?.durationMin || 50}
+                                onChange={e => setFormData(prev => ({ ...prev, attendancePlan: { ...prev.attendancePlan!, durationMin: Number(e.target.value) } }))}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-100 outline-none"
+                            />
+                        </div>
+                        <div className="flex items-center pt-6">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.attendancePlan?.excludeHolidays ?? true}
+                                    onChange={e => setFormData(prev => ({ ...prev, attendancePlan: { ...prev.attendancePlan!, excludeHolidays: e.target.checked } }))}
+                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-xs font-bold text-slate-700">Saltar Feriados</span>
+                            </label>
+                        </div>
+
+                        {isEditMode && (
+                            <div className="flex items-center pt-2 md:col-span-3">
+                                <button
+                                    type="button"
+                                    onClick={handleForceRegenerate}
+                                    disabled={loading}
+                                    className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    Forzar Re-generación de Agenda (Prox. 8 semanas)
+                                </button>
+                                <p className="text-[10px] text-slate-400 ml-3 max-w-[200px] leading-tight">
+                                    Pisa las citas programadas a futuro con estos nuevos parámetros.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* FASE 2.3.3: CONTINUIDAD CLÍNICA */}
+                <div className="w-full p-5 bg-teal-50/50 border border-teal-100 rounded-2xl space-y-4">
+                    <h4 className="text-sm font-bold text-teal-900 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Continuidad Clínica (Internos Fijos)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Titular (Primary UID)</label>
+                            <input
+                                type="text"
+                                name="primaryInternId"
+                                placeholder="UID del interno referente..."
+                                value={formData.primaryInternId || ""}
+                                onChange={handleChange}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-100 outline-none"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">Se asignará automáticamente a las nuevas citas creadas.</p>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">Equipo (UIDs separados por coma)</label>
+                            <input
+                                type="text"
+                                placeholder="uid1, uid2..."
+                                value={formData.continuityInternIds?.join(", ") || ""}
+                                onChange={(e) => {
+                                    const ids = e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                                    setFormData(prev => ({ ...prev, continuityInternIds: ids }));
+                                }}
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-100 outline-none"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">Podrán ver el caso en "Casos Continuidad".</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">

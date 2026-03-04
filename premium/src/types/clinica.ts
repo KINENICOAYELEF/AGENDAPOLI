@@ -7,7 +7,7 @@ export interface Proceso {
     personaUsuariaId: string;
 
     // Estado de la relación clínica
-    estado: 'ACTIVO' | 'PAUSADO' | 'ALTA' | 'CERRADO_ADMIN';
+    estado: 'ACTIVO' | 'PAUSADO' | 'ALTA' | 'CERRADO_ADMIN' | 'EN_PAUSA' | 'CERRADO';
 
     // Control Temporal
     fechaInicio: string; // ISO String
@@ -21,6 +21,7 @@ export interface Proceso {
     updatedAt?: string;
     createdByUid: string;
     createdByName: string;
+    closedAt?: string; // FASE 2.2.4
 
     // FASE 2.1.18: Contenedor global de los objetivos de atención
     activeObjectiveSet?: {
@@ -35,14 +36,130 @@ export interface Proceso {
 
     // FASE 2.2.1 V2: Master Pointers y Snapshots
     activeEvaluationId?: string;
+    activeEvaluationIndexId?: string; // FASE 2.2.4: Eval inicial vigente del caso
     activeObjectiveSetVersionId?: string;
     timelineIndex?: number;
+    diagnosisVigente?: string;        // FASE 2.2.4: Diagnóstico narrativo activo
+    diagnosisStructuredVigente?: any; // FASE 2.2.4: Opcional estructural ICF-like
+
     caseSnapshot?: {
         // Un resumen compacto en texto o tags que deja la evaluación M13 para leer rápido
         summary: string;
         lastUpdated: string;
         trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
+        // Agregados por FASE 2.2.3
+        baselineComparable?: any;
+        psfsBaseline?: any;
+        psfsLast?: any;
+        topDeficits?: any;
+        lastProgressSummary?: string;
+        lastRetest?: string;
     };
+
+    // FASE 2.2.4: Integración Total
+    flags?: {
+        redFlagsSummary?: string;
+        consideracionesClinicas?: string[];
+    };
+    loadManagementVigente?: {
+        trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
+        rules?: string[];
+    };
+
+    // FASE 2.3.3: Continuidad Clínica (Agenda Pro)
+    continuityInternIds?: string[]; // 1-3 internos habituales
+    primaryInternId?: string; // referente del caso
+
+    // FASE 2.3.0: Agenda Núcleo (Plan de Asistencia Semanal)
+    attendancePlan?: {
+        daysOfWeek: string[]; // e.g., ['TUE', 'THU']
+        time: string; // e.g., '18:00'
+        durationMin: number; // e.g., 50
+        startDate: string; // ISO String (YYYY-MM-DD)
+        endDate?: string; // ISO String (YYYY-MM-DD) opcional
+        excludeHolidays: boolean;
+        status: 'ACTIVO' | 'EN_PAUSA' | 'ALTA' | 'CERRADO';
+        assignedInternIds: string[];
+        primaryInternId?: string;
+    };
+}
+
+/**
+ * CITA (Instancia Concreta de Agenda) - Fases 2.3.0 - 2.3.3
+ * Documentos generados por el motor rodante basados en el attendancePlan
+ */
+export interface Cita {
+    id: string; // Unique ID
+    procesoId: string;
+    usuariaId: string;
+    date: string; // ISO String (YYYY-MM-DD)
+    startTime: string; // "18:00"
+    endTime: string; // "18:50"
+    status: 'SCHEDULED' | 'COMPLETED' | 'NO_SHOW' | 'CANCELLED' | 'SUSPENDED' | 'HOLIDAY' | 'RESCHEDULED';
+
+    // FASE 2.3.1 - 2.3.2: Reemplazos y Asistencia
+    internoPlanificadoId?: string; // Interno esperado (según primary/turno)
+    internoAtendioId?: string; // Interno que realmente inició la atención
+    linkedEvolutionId?: string; // ID de la evolución que concreta esta cita
+    attendanceMarkedAt?: string; // ISO String
+    attendanceMarkedBy?: string; // RUID
+
+    cancelReason?: string; // Razón si fue CANCELLED
+    noShowReason?: string; // Razón si fue NO_SHOW
+
+    coverage?: { // Si un interno atiende horario distinto o como reemplazo explícito
+        replacedInternId: string | null;
+        reason: string; // 'ausente', 'cambio_bloque', 'apoyo', 'otro'
+        at: string; // ISO
+    };
+
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+}
+
+/**
+ * TURNO (Bloque Docente) - Fase 2.3.4
+ */
+export interface Turno {
+    id?: string;
+    diaSemana: 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT';
+    horaInicio: string; // "18:00"
+    horaFin: string; // "20:00"
+    internosAsignados: string[]; // UID de los alumnos que corresponden a esta franja
+}
+
+/**
+ * FERIADO / BLOQUEO INSTITUCIONAL - Fase 2.3.0
+ * Controla días donde no se agendan citas regulares
+ */
+export interface Feriado {
+    id: string; // e.g., "2026-05-01"
+    date: string; // ISO YYYY-MM-DD
+    description: string;
+    type: 'NACIONAL' | 'INSTITUCIONAL';
+    active: boolean; // Si se decide ignorarlo
+}
+
+/**
+ * OUTCOME MEASURES (Fase 2.2.6)
+ * Documentos independientes por proceso para trazabilidad longitudinal
+ */
+export interface Outcome {
+    id?: string;
+    procesoId: string;
+    usuariaId: string;
+    type: 'PSFS' | 'SANE' | 'GROC' | 'OTRO';
+    capturedAt: string; // ISO String (fecha/hora real de captura)
+    context: 'EVALUACION_INICIAL' | 'REEVALUACION' | 'SEGUIMIENTO' | 'EVOLUCION';
+
+    // Su estructura interna y numéricas varían por tipo
+    values: any;
+
+    // Si aplica, referenciar a qué Foco Clínico está atado
+    linkedFocus?: string | null;
+
+    createdByUid: string;
+    createdAt: string;
 }
 
 export interface TreatmentObjective {
@@ -53,226 +170,189 @@ export interface TreatmentObjective {
     targetDate?: string;
 }
 
-export interface MotivoEvaluacion {
+export interface FocusArea {
     id: string; // ID local único
-    motivoLabel: string; // Ej: 'Principal', 'Secundario' (M0)
+    isPrincipal: boolean;
     region: string;
     lado: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A';
+    onsetType: 'Súbito' | 'Insidioso' | 'Post-quirúrgico' | string;
+    onsetDuration: string; // Ej: "1-2 semanas"
+    context: string; // Ej: "Deporte", "Trabajo"
+    dominantSymptoms: string[]; // Chips: Dolor, Pinchazo, Quemazón, etc.
 
-    priority?: number;
-    active?: boolean;
+    // Dolor y Conducta
+    painCurrent: number | string;
+    painWorst24h: number | string;
+    painBest24h: number | string;
+    pattern24h: string;
+    morningStiffness: string;
+    aggravatingFactors: string[];
+    easingFactors: string[];
+    afterEffect: 'Nunca' | 'A veces' | 'Siempre';
+    settlingTime: string;
+    associatedSymptoms: string[]; // Inflamación, Inestabilidad, Bloqueo, etc.
+    imaging?: string;
 
-    // Entrevista / Subjetivo (M2)
-    subjective: {
-        onsetType?: 'Agudo' | 'Insidioso' | 'Post-quirúrgico' | string;
-        onsetDateOrDuration?: string;
-        mechanism?: 'Puro' | 'Mixto' | string;
-        symptomLocationMap?: string;
-        painPattern?: string;
-        irritability?: 'Baja' | 'Media' | 'Alta' | '';
-        aggravatingFactors?: string[];
-        easingFactors?: string[];
-        functionalLimitationPrimary?: string;
-        otherLimitations?: string[];
-        sportOrWorkDemand?: string;
-        beliefsFearAvoidanceQuick?: string;
-        goalOfPerson?: string;
-
-        // Legacy (mantener para compatibilidad transicional si es necesario)
-        mecanismo?: string;
-        tiempoEvolucion?: string;
-        agravantes?: string;
-        alivios?: string;
-        limitacionFuncional?: string;
-        metasPersonaUsuaria?: string;
-    };
-
-    // Banderas Rojas (M1)
-    redFlagsChecklist: Record<string, boolean>;
-    redFlagsActionText?: string;
-    safetyStatusSuggested?: 'Verde' | 'Amarillo' | 'Rojo'; // IA / Determinista flag
-
-    // Comparable Sign (M6)
+    // Comparable
     comparableSign?: {
-        asteriscoPrincipal?: {
-            tipo: string;
-            condiciones: string;
-            dolor: string;
-            afterEffect: string;
-        };
-        secundarios?: Array<{ descripcion: string, dolor: string }>;
-    };
-
-    // Examen Físico / Objetivo (M7)
-    objectiveExam?: {
-        // Universal
-        rom?: Array<{ mov: string, lado: string, val: string, dolor: boolean, notes: string }>;
-        strength?: Array<{ group: string, lado: string, method: string, val: string, dolor: boolean, notes: string }>;
-        specialTests?: Array<{ test: string, result: string, dolor: boolean, notes: string }>;
-        functionalTests?: Array<{ test: string, metric: string, result: string, dolor: boolean, notes: string }>;
-        neuroScreen?: { tags: string[], notes: string };
-        painProvokers?: Array<{ action: string, context: string }>;
-        movementQuality?: { tags: string[], notes: string };
-        palpationOther?: string;
-        // Condicionales M7
-        loadRelatedTests?: Array<{ test: string, result: string, notes: string }>;
-        instabilityTests?: Array<{ test: string, result: string, notes: string }>;
-        motorControlTests?: string;
-    };
-
-    // Hallazgos Estructurales vs Funcionales (M8)
-    structuralVsFunctional?: {
-        estructurales: string[];
-        funcionales: string[];
-        driverPrincipal?: 'Estructural' | 'Funcional' | 'Mixto';
-    };
-
-    // Clasificación Inteligente (M9)
-    classification?: {
-        irritabilityFinal?: 'Alta' | 'Media' | 'Baja';
-        mecanismoDolorDefinitivo?: 'Nociceptivo' | 'Neuropático' | 'Nociplástico' | 'Mixto';
-        tags?: string[];
-    };
-
-    // Resumen Analítico (Previo / Legacy)
-    impairmentSummary?: {
-        mobilityDeficit?: boolean;
-        strengthDeficit?: boolean;
-        loadIntolerance?: boolean;
-        movementCoordinationDeficit?: boolean;
-        sensitizationFeatures?: boolean;
-        otherDrivers?: string[];
-    };
-
-    // Legacy Examen (2.2)
-    objectiveMeasures?: {
-        rom: string;
-        fuerza: string;
-        pruebasEspeciales: string;
-        dolorConPruebas: string;
-        controlMotor: string;
-        textoLibre: string;
+        type: string;
+        name: string;
+        conditions: string;
+        painLevel: number | string;
+        reproducesSymptom: boolean;
+        afterEffect: string;
+        severity: string;
     };
 }
 
-export interface Evaluacion {
+export interface BaseEvaluacion {
     id?: string;
-    usuariaId: string; // Equivalent a personId
+    usuariaId: string;
     procesoId: string;
     year?: string;
 
-    type: 'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL';
     status: 'DRAFT' | 'CLOSED';
-    sessionAt: string; // Fecha de la sesión de evaluación (real evaluationAt)
-
-    // M0: Inicio Rápido Global
-    urgencyFilter?: boolean;
-    evaActualGlobal?: string | number;
-
-    // Control Reloj (FASE 2.2.1)
-    timer?: {
-        startedAt?: string;
-        totalSeconds?: number;
-        pausedSeconds?: number;
-        pauses?: Array<{ start: string, end: string }>;
-    };
-    timeSpentSeconds?: number; // Legacy cronometraje
-
+    sessionAt: string; // Fecha de la sesión
     clinicianResponsible: string;
 
-    // AI Tracker (FASE 2.2.1)
+    // Control Reloj (Pill Tracker)
+    timer?: {
+        screen1Seconds: number;
+        screen2Seconds: number;
+        screen3Seconds: number;
+        screen4Seconds: number;
+        screen5Seconds: number;
+        totalSeconds: number;
+        startedAt?: string;
+    };
+
+    // AI Tracker
     ai?: {
-        enabled?: boolean;
         lastRunAt?: string;
         inputHash?: string;
-        outputs?: Record<string, any>;
-        appliedFlags?: Record<string, boolean>;
         errors?: string[];
+        lastEndpointCalled?: string;
     };
+    aiCache?: Record<string, { hash: string, createdAt: string, model: string, latencyMs: number }>;
+    aiOutputs?: Record<string, any>;
 
-    // M4: Factores BPS Global
-    bpsFactors?: {
-        flagsChecklist?: { [key: string]: boolean };
-        positiveFactors?: string[];
-        negativeFactors?: string[];
-        bpsImpactSuggested?: 'Bajo' | 'Moderado' | 'Alto';
-    };
+    audit: AuditTrail;
 
-    // M5: Función y Actividad Global (PSFS)
-    psfs?: {
-        activities: Array<{ activity: string, score: number }>;
-        quickActivitiesTags?: string[];
-    };
-
-    // FASE 2.2: Estructura modular Múltiples Motivos (M2, M6, M7, M8, M9)
-    motivos?: MotivoEvaluacion[];
-
-    // M11: Dx kinésico y BPS (IA)
-    dxKinesico?: {
-        narrative?: string; // Síntesis clínica final editable
-        icfStructure?: string; // Estructuración ICF-like
-        differentialFunctional?: string; // Diagnóstico Diferencial Funcional
-
-        // Legacy
-        primary?: string;
-        differentialList?: string[];
-        classificationTags?: string[];
-        confidenceLowMedHigh?: string;
-        notes?: string;
-    };
-    integration?: {
-        synthesis?: string;
-    };
-
-    // IA y Síntesis Centralizada (Legacy 2.2)
+    // ----- FASE 2.1 y Antiguas Legacy properties (para compatibilidad de compilación transicional) -----
+    activeObjectiveSetVersionId?: string;
+    motivos?: any[];
+    objectivesVersion?: any;
+    dxKinesico?: any;
+    psfs?: any;
+    bpsFactors?: any;
+    timeSpentSeconds?: number;
+    objectives?: TreatmentObjective[];
+    planPronostico?: any;
     clinicalSynthesis?: string;
     dxKinesiologico?: string;
     planAsistenciaRecomendado?: string;
-
-    // M12: Objetivos + Semáforo + Pronóstico (IA)
-    objectivesVersion?: {
-        objectiveSetVersionId: string;
-        isActiveForProcess?: boolean;
-        objectives: Array<{
-            id: string;
-            texto: string; // Reemplaza "label" y "description"
-            tipo: 'General' | 'Específico';
-            medidaAsociada?: string;
-            criterioExito?: string;
-        }>;
-    };
-
-    // FASE 2.2.1: Planes Separados
-    operationalPlan?: {
-        interventionsPlanned?: string[];
-        dosagePrinciples?: string;
-        educationPlan?: string;
-        homePlan?: string;
-        constraints?: string;
-    };
-    attendancePlan?: {
-        recommendedFrequencyWeekly?: string;
-        estimatedDurationWeeks?: string;
-        prognosisFunctional?: string;
-        dischargeCriteria?: string;
-    };
-    loadTrafficLight?: 'Verde' | 'Amarillo' | 'Rojo'; // M12
-
-    // Identificador legacy (2.1) temporalmente deprecado a favor de objectivesVersion
-    versionId?: string;
-    objectives?: TreatmentObjective[];
-
-    // FASE 2.2: Plan de Asignación y Pronóstico (Legacy)
-    planPronostico?: {
-        frecuenciaSemanal: string;
-        duracionEstimadaSemanas: string;
-        criteriosProgresion: string;
-        criteriosAlta: string;
-        pronosticoTexto: string;
-    };
-
-    audit: AuditTrail;
+    operationalPlan?: any;
+    attendancePlan?: any;
+    loadTrafficLight?: any;
 }
+
+export interface EvaluacionInicial extends BaseEvaluacion {
+    type: 'INITIAL';
+    // PANTALLA 1: ENTREVISTA INTEGRAL
+    interview?: {
+        hasUrgency?: boolean;
+        redFlagsCheck?: Record<string, boolean>;
+        redFlagsAction?: string;
+        safetyStatusSuggested?: 'Verde' | 'Amarillo' | 'Rojo';
+
+        focos: FocusArea[];
+
+        irritabilityCalculated?: 'Alta' | 'Media' | 'Baja';
+        irritabilityExplanation?: string;
+
+        mechanismSuggested?: 'Nociceptivo' | 'Neuropático' | 'Nociplástico' | 'Mixto';
+        mechanismReasons?: string;
+
+        functionalLimitationPrimary?: string;
+        personGoal?: string;
+        psfs: Array<{ activity: string, score: number, linkedFocusId: string }>;
+        sane?: number;
+        groc?: number;
+
+        bpsFactors?: string[];
+        bpsImpactSuggested?: 'Bajo' | 'Moderado' | 'Alto';
+    };
+
+    // PANTALLA 2: EXAMEN FISICO GUIADO
+    guidedExam?: {
+        checklistSuggested?: {
+            essential: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
+            recommended: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
+            optional: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
+        };
+        observation?: string;
+        inspection?: string;
+        palpation?: string;
+        functionalMobility?: Array<{ movement: string, achieves: string, pain: string, quality: string, comparison: string, reproducesFocusIds: string[], notes: string }>;
+        comparableRetest?: Array<{ focusId: string, result: string, reproduces: boolean, notes: string }>;
+        analyticMobility?: Array<{ test: string, degrees: string, notes: string }>;
+        strengthCapacity?: Array<{ test: string, pattern: string, mrc: string, dynamometry: string, notes: string }>;
+        neuro?: string;
+        flexibility?: string;
+        orthopedicTests?: Array<{ test: string, result: string, reproducesFocusIds: string[], notes: string }>;
+        motorControl?: string;
+    };
+
+    // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor)
+    autoSynthesis?: {
+        structuralSuspicions?: Array<{ label: string; confidence: string; reproduceSymptom: boolean; source: string }>;
+        functionalDeficits?: Array<{ label: string; baseline: string; side: string; linkedPsfs: boolean }>;
+        contextBps?: string[];
+        trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
+        trafficLightRationale?: string;
+        presentationTags?: string[];
+    };
+
+    // PANTALLA 4: DIAGNOSTICO Y METAS (Gemini + Editor)
+    geminiDiagnostic?: {
+        kinesiologicalDxNarrative?: string;
+        differentialFunctional?: string;
+
+        safetyAlerts?: string[];
+        clinicalConsiderations?: string[];
+        missingData?: string[];
+
+        objectivesGeneral?: string[];
+        objectivesSmart?: Array<{ text: string, linkedDeficit: string }>;
+
+        operationalPlan?: {
+            interventions: string[];
+            dosage: string;
+        };
+        prognosis?: string;
+        prognosisFactors?: string;
+    };
+}
+
+export interface EvaluacionReevaluacion extends BaseEvaluacion {
+    type: 'REEVALUATION';
+    // PANTALLA 5: REEVALUACION 
+    reevaluation?: {
+        indexEvaluationId?: string; // Baseline pointer
+        isSameProblem?: boolean;
+        newRedFlags?: boolean;
+        changedMechanism?: boolean;
+        changedComparable?: boolean; // FASE 2.2.5
+        changedPsfs?: boolean;       // FASE 2.2.5
+        progressSummary?: string;
+        planModifications?: string;
+        // Agregado por req: Retest
+        retest?: any;
+        updatedObjectives?: any;     // FASE 2.2.5
+    };
+}
+
+export type Evaluacion = EvaluacionInicial | EvaluacionReevaluacion;
 
 export interface ExercisePrescription {
     id: string; // ID local para key mapping en UI
@@ -334,8 +414,12 @@ export interface AuditTrail {
 export interface Evolucion {
     id?: string;
     usuariaId: string;
-    casoId?: string | null;
+    casoId?: string | null;     // Legacy, equivalente a procesoId
+    procesoId?: string;         // FASE 2.2.4: Conexión explícita al Proceso
     sesionId?: string | null;
+    evaluationIndexId?: string; // FASE 2.2.4: Eval inicial vigente del proceso
+    loadTrafficLightAtSession?: 'Verde' | 'Amarillo' | 'Rojo'; // FASE 2.2.4
+    considerationsAtSession?: string[];                        // FASE 2.2.4
 
     status: 'DRAFT' | 'CLOSED';
     sessionAt: string; // ISO string (Antes fechaHoraAtencion)

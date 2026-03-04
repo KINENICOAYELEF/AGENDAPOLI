@@ -19,7 +19,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
 
     const [view, setView] = useState<'lista' | 'formulario'>('lista');
     const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
-    const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION' | 'NEW_MOTIVE_EVAL'>('INITIAL');
+    const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION'>('INITIAL');
 
     const [evaluaciones, setEvaluaciones] = useState<Evaluacion[]>([]);
     const [loadingData, setLoadingData] = useState(false);
@@ -137,11 +137,11 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
                                 </span>
                             </div>
                             <div className="text-slate-700 mb-2">
-                                <span className="text-xs uppercase text-slate-400 font-bold block mb-1">Motivos Evaluados</span>
-                                <p className="font-semibold">{ev.motivos ? ev.motivos.map(m => m.motivoLabel).join(', ') : 'Sin motivos registrados'}</p>
+                                <span className="text-xs uppercase text-slate-400 font-bold block mb-1">Focos de Atención</span>
+                                <p className="font-semibold">{ev.type === 'INITIAL' && (ev as any).interview?.focos && (ev as any).interview.focos.length > 0 ? (ev as any).interview.focos.map((f: any) => `${f.region} ${f.lado}`).join(', ') : (ev.type === 'REEVALUATION' ? 'Reevaluación de Seguimiento' : 'Sin focos registrados')}</p>
                             </div>
                             <div className="text-slate-600 line-clamp-2 italic text-xs">
-                                "{ev.clinicalSynthesis || 'Evaluación sin síntesis clínica completada.'}"
+                                "{ev.type === 'INITIAL' ? ((ev as any).geminiDiagnostic?.kinesiologicalDxNarrative || ev.clinicalSynthesis || 'Evaluación sin diagnóstico narrativo completado.') : ((ev as any).reevaluation?.progressSummary || 'Reevaluación sin resumen de progreso completado.')}"
                             </div>
                         </div>
                     ))}

@@ -3,6 +3,8 @@ import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from 
 import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
+import { OutcomesService } from "@/services/outcomes";
+import { AgendaService } from "@/services/agenda";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Disclosure, Transition } from '@headlessui/react';
@@ -118,6 +120,8 @@ const toDateTimeLocal = (isoString?: string) => {
 interface EvolucionFormProps {
     usuariaId: string;
     procesoId?: string;
+    citaId?: string;
+    internoAtendioId?: string;
     initialData: Evolucion | null;
     evolucionesAnteriores?: Evolucion[];
     onClose: () => void;
@@ -184,7 +188,7 @@ const AccordionSection = ({
     );
 };
 
-export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAnteriores, onClose, onSaveSuccess }: EvolucionFormProps) {
+export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, initialData, evolucionesAnteriores, onClose, onSaveSuccess }: EvolucionFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -226,6 +230,19 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
     // FASE 2.1.21: Continuidad
     const [lastClosedEvol, setLastClosedEvol] = useState<Evolucion | null>(null);
     const [isLoadingContinuity, setIsLoadingContinuity] = useState(false);
+
+    // FASE 2.2.6: Últimos Outcomes
+    const [recentOutcomes, setRecentOutcomes] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (procesoId && globalActiveYear) {
+            OutcomesService.getByProceso(globalActiveYear, procesoId)
+                .then(outcomes => {
+                    setRecentOutcomes(outcomes.reverse().slice(0, 3));
+                })
+                .catch(console.error);
+        }
+    }, [procesoId, globalActiveYear]);
 
     // Dropdown + Texto para justificación
     const [lateCategory, setLateCategory] = useState("");
@@ -403,7 +420,7 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
     // --- MANEJO DE OBJETIVOS VIGENTES Y CONTEXTO PROCESO (FASE 2.1.18 y 2.1.30) ---
     const [availableObjectives, setAvailableObjectives] = useState<{ id: string, label: string, status?: string }[]>([]);
     const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
-    const [procesoContext, setProcesoContext] = useState<{ motivoIngresoLibre?: string, evaluacionesStr?: string }>({});
+    const [procesoContext, setProcesoContext] = useState<{ motivoIngresoLibre?: string, evaluacionesStr?: string, caseSnapshot?: any, flags?: any }>({});
     const [loadingObjectives, setLoadingObjectives] = useState(false);
 
     // --- MANEJO DE COPIA SELECTIVA (FASE 2.1.25) ---
@@ -456,11 +473,22 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
                 if (docSnap.exists()) {
                     const procesoData = docSnap.data();
                     const activeSet = procesoData.activeObjectiveSet;
-                    if (procesoData.motivoIngresoLibre || evalsStr) {
-                        setProcesoContext({
-                            motivoIngresoLibre: procesoData.motivoIngresoLibre,
-                            evaluacionesStr: evalsStr
-                        });
+
+                    setProcesoContext({
+                        motivoIngresoLibre: procesoData.motivoIngresoLibre,
+                        evaluacionesStr: evalsStr,
+                        caseSnapshot: procesoData.caseSnapshot,
+                        flags: procesoData.flags
+                    });
+
+                    // FASE 2.2.4: Inyección automática de pre-requisitos si es Evolución Nueva
+                    if (!isClosed && !isEditMode) {
+                        setFormData((prev: any) => ({
+                            ...prev,
+                            evaluationIndexId: prev.evaluationIndexId || procesoData.activeEvaluationIndexId,
+                            loadTrafficLightAtSession: prev.loadTrafficLightAtSession || procesoData.loadManagementVigente?.trafficLight,
+                            considerationsAtSession: prev.considerationsAtSession?.length ? prev.considerationsAtSession : (procesoData.flags?.consideracionesClinicas || [])
+                        }));
                     }
 
                     if (activeSet && activeSet.objectives) {
@@ -1006,7 +1034,45 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
                     localStorage.removeItem(draftKey);
                     localStorage.removeItem(`evoDraft_new_${usuariaId}`); // Por si cambió de draftKey temporal a targetId
                 } catch (e) { }
+
+                // FASE 2.2.6: Despachar Outcomes "on-the-fly" a subcolección dedicada
+                if (procesoId && formData.outcomesSnapshot) {
+                    if (formData.outcomesSnapshot.sane !== undefined && formData.outcomesSnapshot.sane > 0) {
+                        await OutcomesService.save(globalActiveYear, procesoId, {
+                            id: `sane_evo_${Date.now()}`,
+                            procesoId, usuariaId,
+                            type: 'SANE',
+                            capturedAt: formData.sessionAt || new Date().toISOString(),
+                            context: 'EVOLUCION',
+                            values: { score: formData.outcomesSnapshot.sane },
+                            createdByUid: user.uid,
+                            createdAt: new Date().toISOString()
+                        }).catch(err => console.error("Error saving SANE outcome evo:", err));
+                    }
+                    if (formData.outcomesSnapshot.groc !== undefined && formData.outcomesSnapshot.groc !== 0) {
+                        await OutcomesService.save(globalActiveYear, procesoId, {
+                            id: `groc_evo_${Date.now()}`,
+                            procesoId, usuariaId,
+                            type: 'GROC',
+                            capturedAt: formData.sessionAt || new Date().toISOString(),
+                            context: 'EVOLUCION',
+                            values: { score: formData.outcomesSnapshot.groc },
+                            createdByUid: user.uid,
+                            createdAt: new Date().toISOString()
+                        }).catch(err => console.error("Error saving GROC outcome evo:", err));
+                    }
+                }
+
+                // FASE 2.3.2: Auto Asistencia (Completar cita ligada automáticamente cuando la evolución se FIRMA)
+                if (citaId) {
+                    try {
+                        await AgendaService.markCitaAsCompleted(globalActiveYear, citaId, targetId, user.uid);
+                    } catch (e) {
+                        console.error("Error auto-completando cita ligada transaccional", e);
+                    }
+                }
             }
+
 
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 3000);
@@ -1503,6 +1569,55 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center flex items-center justify-center gap-2">
                                 <LightBulbIcon className="w-5 h-5 text-amber-400" />
                                 <span className="text-sm text-slate-500 font-medium">Primera sesión clínica. No hay evoluciones cerradas previas en este proceso.</span>
+                            </div>
+                        )}
+
+                        {/* --- FASE 2.2.4: BANNER PROCESO ACTIVO (Semaforo, Consideraciones, Baselines) --- */}
+                        {procesoContext.caseSnapshot && (
+                            <div className="bg-white p-4 lg:p-5 rounded-2xl border-l-4 border-l-indigo-500 border-y border-r border-slate-200 shadow-sm relative mb-2 animate-in fade-in slide-in-from-bottom-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-lg">📋</span>
+                                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Contexto del Caso Activo</h3>
+                                    {procesoContext.caseSnapshot.trafficLight && (
+                                        <span className={`ml-auto px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-extrabold ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                                            procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                            }`}>
+                                            Semáforo: {procesoContext.caseSnapshot.trafficLight}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                    {procesoContext.caseSnapshot.baselineComparable && (
+                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Signo Comparable (Baseline)</span>
+                                            <span className="text-slate-700 font-medium">
+                                                {typeof procesoContext.caseSnapshot.baselineComparable === 'string'
+                                                    ? procesoContext.caseSnapshot.baselineComparable
+                                                    : (procesoContext.caseSnapshot.baselineComparable.name || procesoContext.caseSnapshot.baselineComparable.result || 'Sin dato registrado')}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {procesoContext.caseSnapshot.lastRetest && (
+                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Último Retest (Reevaluación)</span>
+                                            <span className="text-slate-700 font-medium">{procesoContext.caseSnapshot.lastRetest}</span>
+                                        </div>
+                                    )}
+                                    {procesoContext.flags?.consideracionesClinicas?.length > 0 && (
+                                        <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/50 md:col-span-2">
+                                            <span className="block font-black text-orange-600 text-[10px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                                <ExclamationCircleIcon className="w-4 h-4" />
+                                                Consideraciones Clínicas
+                                            </span>
+                                            <ul className="list-disc pl-5 text-orange-950/80 space-y-1 font-medium">
+                                                {procesoContext.flags.consideracionesClinicas.map((c: string, i: number) => (
+                                                    <li key={i}>{c}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -2141,6 +2256,26 @@ export function EvolucionForm({ usuariaId, procesoId, initialData, evolucionesAn
                                 </div>
                             </div>
                         </div>
+
+                        {/* FASE 2.2.6: MINI-PANEL ÚLTIMOS OUTCOMES */}
+                        {recentOutcomes.length > 0 && (
+                            <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm mt-4 mb-2">
+                                <h4 className="text-[10px] font-black uppercase text-indigo-700 tracking-wider mb-2 flex items-center gap-1">
+                                    <SparklesIcon className="w-3 h-3" /> Últimos Resultados Clínicos
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {recentOutcomes.map(o => (
+                                        <div key={o.id} className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 px-3 text-xs w-fit flex items-center gap-2">
+                                            <span className="font-bold text-indigo-900 bg-white px-1.5 py-0.5 rounded shadow-sm">{o.type}</span>
+                                            <span className="text-indigo-800 font-bold">
+                                                {o.type === 'SANE' ? `${o.values.score}%` : o.type === 'GROC' ? (o.values.score > 0 ? `+${o.values.score}` : o.values.score) : 'Test'}
+                                            </span>
+                                            <span className="text-[10px] text-slate-500 border-l border-indigo-200 pl-2">Hace {Math.floor((new Date().getTime() - new Date(o.capturedAt).getTime()) / (1000 * 3600 * 24))}d</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* MANTENIDO: Herramientas GROC y SANE */}
                         <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 mt-2">

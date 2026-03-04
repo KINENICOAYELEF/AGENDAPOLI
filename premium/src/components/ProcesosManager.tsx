@@ -5,6 +5,7 @@ import { useYear } from "@/context/YearContext";
 import { ProcesoForm } from "@/components/ProcesoForm";
 import { EvolucionesManager } from "@/components/EvolucionesManager";
 import { EvaluacionesManager } from "@/components/EvaluacionesManager";
+import { ProcesoTimeline } from "@/components/ProcesoTimeline";
 
 interface ProcesosManagerProps {
     personaUsuariaId: string;
@@ -16,7 +17,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
     const { globalActiveYear } = useYear();
 
     // router interno de este panel
-    const [view, setView] = useState<'lista' | 'formulario' | 'evoluciones' | 'evaluaciones'>('lista');
+    const [view, setView] = useState<'lista' | 'formulario' | 'evoluciones' | 'evaluaciones' | 'timeline'>('lista');
 
     // items
     const [procesos, setProcesos] = useState<Proceso[]>([]);
@@ -67,6 +68,19 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                     initialData={selectedProceso}
                     onClose={() => setView('lista')}
                     onSaveSuccess={handleFormSaved}
+                />
+            </div>
+        );
+    }
+
+    if (view === 'timeline' && selectedProceso) {
+        return (
+            <div className="animate-in fade-in slide-in-from-right-4">
+                <ProcesoTimeline
+                    personaUsuariaId={personaUsuariaId}
+                    personaUsuariaName={personaUsuariaName}
+                    proceso={selectedProceso}
+                    onBack={() => setView('lista')}
                 />
             </div>
         );
@@ -214,34 +228,51 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                                 <h4 className="text-xl font-bold text-slate-800 leading-snug mb-2 group-hover:text-indigo-900 transition-colors">
                                                     {proc.motivoIngresoLibre}
                                                 </h4>
-                                                <div className="flex items-center text-sm font-medium text-slate-500 gap-4">
+                                                <div className="flex items-center text-sm font-medium text-slate-500 gap-4 mb-3">
                                                     <span className="flex items-center gap-1.5">
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                                         {new Date(proc.fechaInicio).toLocaleDateString()}
                                                     </span>
+                                                    {proc.loadManagementVigente?.trafficLight && (
+                                                        <span className={`flex items-center gap-1 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md ${proc.loadManagementVigente.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700' :
+                                                            proc.loadManagementVigente.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700' :
+                                                                'bg-emerald-100 text-emerald-700'
+                                                            }`}>
+                                                            Semáforo {proc.loadManagementVigente.trafficLight}
+                                                        </span>
+                                                    )}
                                                 </div>
+
+                                                {/* FASE 2.2.4: Diagnóstico Vigente y Metas */}
+                                                {proc.diagnosisVigente && (
+                                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
+                                                        <span className="block text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1">Diagnóstico Clínico Vigente</span>
+                                                        <p className="text-xs text-slate-700 leading-relaxed max-w-2xl line-clamp-3">{proc.diagnosisVigente}</p>
+                                                    </div>
+                                                )}
+                                                {proc.activeObjectiveSet?.objectives && proc.activeObjectiveSet.objectives.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 items-center text-xs mt-2">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Metas Activas:</span>
+                                                        {proc.activeObjectiveSet.objectives.filter(o => o.status === 'activo').map(obj => (
+                                                            <span key={obj.id} className="bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded-md max-w-[200px] truncate shadow-sm" title={obj.label}>
+                                                                {obj.label}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex flex-col gap-2 shrink-0">
-                                                <div className="flex flex-row md:flex-col gap-2">
-                                                    <button
-                                                        onClick={() => { setSelectedProceso(proc); setView('evoluciones'); }}
-                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 flex-1 flex items-center justify-center gap-2 group/btn"
-                                                    >
-                                                        Evoluciones
-                                                        <svg className="hidden md:block w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { setSelectedProceso(proc); setView('evaluaciones'); }}
-                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs md:text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-xl transition-all shadow-sm flex-1 flex items-center justify-center gap-2 group/eval"
-                                                    >
-                                                        Evaluaciones
-                                                        <svg className="hidden md:block w-4 h-4 group-hover/eval:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-3 md:px-5 md:py-3.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 w-full flex items-center justify-center gap-2 group/btn"
+                                                >
+                                                    Timeline Clínico (HCE)
+                                                    <svg className="hidden md:block w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                                </button>
                                                 <button
                                                     onClick={() => { setSelectedProceso(proc); setView('formulario'); }}
-                                                    className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs md:text-sm font-semibold px-4 border-t-0 py-2 md:px-5 md:py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 w-full"
+                                                    className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs md:text-sm font-semibold px-4 border-t-0 py-2 md:px-5 md:py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 w-full mt-1"
                                                 >
                                                     Ajustes del Proceso
                                                 </button>
@@ -278,16 +309,10 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                         </div>
                                         <div className="flex flex-row gap-2 shrink-0 flex-wrap justify-end">
                                             <button
-                                                onClick={() => { setSelectedProceso(proc); setView('evoluciones'); }}
-                                                className="bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2 border border-slate-200 rounded-lg shadow-sm transition-all"
+                                                onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
+                                                className="bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-semibold px-4 py-2 border border-indigo-200 rounded-lg shadow-sm transition-all"
                                             >
-                                                Evoluciones
-                                            </button>
-                                            <button
-                                                onClick={() => { setSelectedProceso(proc); setView('evaluaciones'); }}
-                                                className="bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-semibold px-4 py-2 border border-emerald-200 rounded-lg shadow-sm transition-all"
-                                            >
-                                                Evaluaciones
+                                                Ver Timeline HCE
                                             </button>
                                             <button
                                                 onClick={() => { setSelectedProceso(proc); setView('formulario'); }}

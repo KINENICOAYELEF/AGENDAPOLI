@@ -9,6 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { LegacyImporter } from "@/components/LegacyImporter";
 import { EvolutionsMigrator } from "@/components/EvolutionsMigrator";
+import { HolidayManager } from "@/components/HolidayManager";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -190,6 +191,9 @@ export default function AdminDocentePage() {
                     </table>
                 </div>
             </div>
+
+            {/* Administrador de Feriados 2026 */}
+            <HolidayManager />
 
             {/* Script Migrador Histórico (Fase 1.0) */}
             <EvolutionsMigrator />
