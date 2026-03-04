@@ -430,13 +430,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <input type="text" placeholder="Agravantes Claves (Ej: Bajar escalas)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:bg-white focus:border-indigo-400"
-                                            value={foco.aggravatingFactors.join(', ')}
+                                            value={(foco.aggravatingFactors || []).join(', ')}
                                             onChange={e => handleUpdateFoco(idx, { aggravatingFactors: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} disabled={isClosed}
                                         />
                                     </div>
                                     <div>
                                         <input type="text" placeholder="Aliviantes (Ej: Reposo, Hielo)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:bg-white focus:border-indigo-400"
-                                            value={foco.easingFactors.join(', ')}
+                                            value={(foco.easingFactors || []).join(', ')}
                                             onChange={e => handleUpdateFoco(idx, { easingFactors: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} disabled={isClosed}
                                         />
                                     </div>
