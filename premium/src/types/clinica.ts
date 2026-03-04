@@ -208,7 +208,6 @@ export interface KineFocusArea {
 
     // B) Limitaciones Activas
     mainLimitation: string; // Caminar, Correr, etc.
-    freeNarrative: string; // Relato libre del episodio
     clinicalNotes?: string;
 
     // C) Dolor y 24h
@@ -275,9 +274,10 @@ export interface KineFocusArea {
 export interface KineAutoOutputs {
     // Foco Local Outputs
     perFocus: Record<string, { // focusId -> outputs
-        irritabilityLevel: 'Baja' | 'Media' | 'Alta';
+        irritabilityLevel: 'Baja' | 'Media' | 'Alta' | 'Desconocida';
         irritabilityReasons: string[];
-        painMechanismLabel: string; // ej "Aparente nociceptivo inflamatorio local"
+        painMechanismCategory: 'Nociceptivo' | 'Neuropático' | 'Nociplástico' | 'Mixto' | 'Desconocido';
+        painMechanismLabel: string; // ej "nociceptivo (mecánico/load-related)"
         painMechanismReasons: string[];
     }>;
 
@@ -297,6 +297,8 @@ export interface KineAutoOutputs {
         recommended: Array<{ title: string, rationale: string, lookFor: string[] }>;
         avoidOrPostpone: Array<{ title: string, rationale: string, lookFor: string[] }>;
     };
+
+    comparableCandidates: string[];
 }
 
 
@@ -380,10 +382,17 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             highFrustration: number;
         };
 
-        // Rework Profundo Multi-foco "Kine Real"
+        // S1: Relato Global (Sección 1)
+        freeNarrativeGlobal?: string; // Relato libre del episodio aplicable a todos los focos
+
+        // Rework Profundo Multi-foco "Kine Real" (Sección 4, 5 y 6)
         focos: KineFocusArea[];
 
-        // Outputs Calculados In-Vivo
+        // S6: Experiencia UX
+        triggerBelief?: string;
+        mainConcern?: string;
+
+        // Outputs Calculados In-Vivo (Sección 7)
         autoOutputs?: KineAutoOutputs;
 
         // --- Atributos deprecados de vieja version (Mantenidos para compatibilidad local de viejos form data) ---

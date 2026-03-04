@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
-import { computeIrritability, computeLoadTrafficLight, buildExamChecklist, autoSynthesizeFindings } from "@/lib/auto-engine";
+import { computeIrritability, computeSafety, buildExamChecklist, autoSynthesizeFindings } from "@/lib/auto-engine";
 
 export interface Screen2Props {
     formData: Partial<EvaluacionInicial>;
@@ -17,10 +17,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const orthoTests = exam.orthopedicTests || [];
 
     const engine = useMemo(() => {
-        const irritability = computeIrritability(formData.interview);
-        const trafficLight = computeLoadTrafficLight(irritability, formData.interview);
-        const checklist = buildExamChecklist(formData.interview);
-        return { irritability, trafficLight, checklist };
+        const principalFocus = formData.interview?.focos?.[0] || null;
+        const irritability = principalFocus ? computeIrritability(principalFocus as any) : { level: 'Desconocida', reasons: [] };
+        const safety = computeSafety(formData.interview);
+        const checklist = buildExamChecklist(formData.interview, irritability.level as any);
+        return { irritability, safety, checklist };
     }, [formData.interview]);
 
     const handleUpdateExam = (patch: any) => {
@@ -84,20 +85,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5 pb-5 border-b border-slate-700">
                     <div>
                         <span className="text-xs uppercase text-slate-400 font-bold block mb-1">Irritabilidad Proyectada</span>
-                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${engine.irritability.level === 'Alta' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : engine.irritability.level === 'Moderada' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${engine.irritability.level === 'Alta' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : engine.irritability.level === 'Media' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
                             {engine.irritability.level.toUpperCase()}
                         </div>
                     </div>
                     <div>
-                        <span className="text-xs uppercase text-slate-400 font-bold block mb-1">Semáforo de Carga</span>
+                        <span className="text-xs uppercase text-slate-400 font-bold block mb-1">Semáforo de Carga / Triage</span>
                         <div className="flex items-center gap-2">
                             <div className="flex gap-1 items-center bg-slate-900 px-2 py-1.5 rounded-md border border-slate-700">
-                                <span className={`w-3 h-3 rounded-full ${engine.trafficLight.color === 'Verde' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-600'} transition-all`} />
-                                <span className={`w-3 h-3 rounded-full ${engine.trafficLight.color === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-slate-600'} transition-all`} />
-                                <span className={`w-3 h-3 rounded-full ${engine.trafficLight.color === 'Rojo' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]' : 'bg-slate-600'} transition-all`} />
+                                <span className={`w-3 h-3 rounded-full ${engine.safety.level === 'Verde' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-600'} transition-all`} />
+                                <span className={`w-3 h-3 rounded-full ${engine.safety.level === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-slate-600'} transition-all`} />
+                                <span className={`w-3 h-3 rounded-full ${engine.safety.level === 'Rojo' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]' : 'bg-slate-600'} transition-all`} />
                             </div>
                             <span className="text-[10px] font-medium text-slate-300 leading-tight">
-                                {engine.trafficLight.color === 'Rojo' ? engine.trafficLight.rules?.redFlagRule || engine.trafficLight.rules?.painRule : engine.trafficLight.rules?.progressionRule || engine.trafficLight.rules?.regressionRule}
+                                {engine.safety.reasons[0] || 'Triage seguro.'}
                             </span>
                         </div>
                     </div>
@@ -112,9 +113,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     {/* renderItems function to handle both Engine and AI types */}
                     {(() => {
                         const hasAI = !!exam.checklistSuggested;
-                        const srcEss = hasAI ? exam.checklistSuggested.essential : engine.checklist.essential;
+                        const srcEss = hasAI ? exam.checklistSuggested.essential : engine.checklist.essentials;
                         const srcRec = hasAI ? exam.checklistSuggested.recommended : engine.checklist.recommended;
-                        const srcOpt = hasAI ? exam.checklistSuggested.optional : engine.checklist.optional;
+                        const srcOpt = hasAI ? exam.checklistSuggested.optional : engine.checklist.avoidOrPostpone;
 
                         const renderList = (title: string, colorClass: string, items: any[], type: 'essential' | 'recommended' | 'optional') => {
                             if (!items || items.length === 0) return null;
@@ -157,7 +158,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <>
                                 {renderList('Requeridos (Esenciales)', 'text-indigo-400|bg-indigo-500/20|bg-slate-700/30|border-indigo-500/20', srcEss, 'essential')}
                                 {renderList('Sugeridos (Recomendados)', 'text-emerald-400|bg-emerald-500/20|bg-slate-700/30|border-emerald-500/20', srcRec, 'recommended')}
-                                {renderList('Dx Diferencial (Opcionales)', 'text-slate-500|bg-slate-700|bg-slate-800|border-slate-700/50', srcOpt, 'optional')}
+                                {renderList('Evitar o Precaución', 'text-slate-500|bg-slate-700|bg-slate-800|border-slate-700/50', srcOpt, 'optional')}
                             </>
                         );
                     })()}

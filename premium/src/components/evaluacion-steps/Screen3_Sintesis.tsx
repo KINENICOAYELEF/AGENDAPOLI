@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
-import { computeIrritability, autoSynthesizeFindings, computeLoadTrafficLight } from "@/lib/auto-engine";
+import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
 
 export interface Screen3Props {
     formData: Partial<EvaluacionInicial>;
@@ -18,20 +18,20 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
 
     const autoSynth = formData.autoSynthesis || {};
     const engine = useMemo(() => {
-        const irritability = computeIrritability(formData.interview);
-        const traffic = computeLoadTrafficLight(irritability, formData.interview);
+        const irritability = computeIrritability({} as any); // Screen3 doesn't display it directly
+        const safety = computeSafety(formData.interview);
         const synth = autoSynthesizeFindings(formData.guidedExam, formData.interview);
-        return { traffic, synth };
+        return { safety, synth };
     }, [formData.interview, formData.guidedExam]);
 
     // Pre-poblar el Semáforo si no existe basado en el Engine
     useEffect(() => {
-        if (!isClosed && !autoSynth.trafficLight && engine.traffic.color !== 'Verde') { // Siempre pre-pobla a menos que sea force Verde (lo dejaremos que pise si rojo/amarillo)
-            handleUpdateSynth({ trafficLight: engine.traffic.color });
-        } else if (!isClosed && !autoSynth.trafficLight && engine.traffic.color === 'Verde') {
+        if (!isClosed && !autoSynth.trafficLight && engine.safety.level !== 'Verde') {
+            handleUpdateSynth({ trafficLight: engine.safety.level });
+        } else if (!isClosed && !autoSynth.trafficLight && engine.safety.level === 'Verde') {
             handleUpdateSynth({ trafficLight: 'Verde' });
         }
-    }, [isClosed, autoSynth.trafficLight, engine.traffic.color]);
+    }, [isClosed, autoSynth.trafficLight, engine.safety.level]);
 
     // Pre-poblar Estructurales
     useEffect(() => {
@@ -109,7 +109,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     payload: {
                         interview: formData.interview,
                         guidedExam: formData.guidedExam,
-                        autoEngineOutputs: { trafficLight: engine.traffic, irritability: engine.synth }
+                        autoEngineOutputs: { trafficLight: engine.safety, synthesis: engine.synth }
                     }
                 })
             });
@@ -204,7 +204,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     <h3 className={`font-bold text-lg mb-1 ${autoSynth.trafficLight === 'Rojo' ? 'text-rose-800' : autoSynth.trafficLight === 'Amarillo' ? 'text-amber-800' : 'text-emerald-800'}`}>
                         {autoSynth.trafficLight === 'Rojo' ? 'Alta Precaución (Carga Limitada)' : autoSynth.trafficLight === 'Amarillo' ? 'Progresión Cautelosa' : 'Carga Activa Agresiva'}
                     </h3>
-                    <p className="text-xs text-slate-600 mb-3">Recomendación original del motor: <strong>{engine.traffic.color}</strong>. {engine.traffic.rules?.progressionRule || engine.traffic.rules?.redFlagRule || engine.traffic.rules?.painRule}</p>
+                    <p className="text-xs text-slate-600 mb-3">Recomendación original del motor: <strong>{engine.safety.level}</strong>. {engine.safety.reasons[0]}</p>
                     <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
                 </div>
             </div>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { EvaluacionInicial, KineFocusArea, KineComparableSign } from "@/types/clinica";
-import { computeIrritability, computeLoadTrafficLight, suggestPainMechanism } from "@/lib/auto-engine";
+import { computeIrritability, computeSafety, computePainMechanism, buildExamChecklist, computeBpsImpact } from "@/lib/auto-engine";
 import { InterviewAssistType } from "@/lib/ai/schemas";
 
 export interface Screen1Props {
@@ -11,63 +11,62 @@ export interface Screen1Props {
 
 const REGIONES = ['Hombro', 'Codo', 'Muñeca/Mano', 'Col. Cervical', 'Col. Dorsal', 'Col. Lumbar', 'Pelvis/Sacro', 'Cadera', 'Rodilla', 'Tobillo/Pie', 'Otro'];
 const LADOS = ['Izquierdo', 'Derecho', 'Bilateral', 'N/A'];
-const TIPO_INICIO = ['Súbito', 'Insidioso', 'Post-quirúrgico'];
-const SINTOMAS_DOMINANTES = ['Dolor punzante', 'Quemazón', 'Hormigueo', 'Adormecimiento', 'Debilidad', 'Inestabilidad', 'Bloqueo', 'Inflamación', 'Chasquido', 'Pesadez', 'Fallo'];
+const NATURALEZA = ['Punzante', 'Opresivo', 'Quemazón', 'Corriente', 'Hormigueo', 'Adormecimiento', 'Pesadez', 'Rigidez', 'Tirantez', 'Pulsátil', 'Profundo', 'Inestabilidad', 'Bloqueo', 'Otro'];
+const IRRADIACION = ['Local', 'Se extiende', 'Sube-baja', 'Migratorio'];
 
 export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Screen1Props) {
     const interview = (formData.interview || { focos: [] }) as any;
-    const focos = interview.focos || [];
+    const focos: KineFocusArea[] = interview.focos || [];
 
-    // State for AI Assistant
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [aiSuggestions, setAiSuggestions] = useState<InterviewAssistType | null>(null);
     const [aiError, setAiError] = useState<string | null>(null);
-    const [freeNarrativeText, setFreeNarrativeText] = useState("");
 
-    // --- Deterministic Engine ---
-    const engine = React.useMemo(() => {
-        const irritability = computeIrritability(interview);
-        const traffic = computeLoadTrafficLight(irritability, interview);
-        const mechanism = suggestPainMechanism(interview);
-        return { irritability, traffic, mechanism };
-    }, [interview]);
+    // Engine Hooks
+    const engine = useMemo(() => {
+        const safety = computeSafety(interview);
+        const bps = computeBpsImpact(interview.yellowFlags);
 
-    const showNeuroRedFlags = focos.some((f: any) => (f.symptomNature || []).some((s: string) => ['Hormigueo', 'Adormecimiento', 'Debilidad'].includes(s)));
+        // Asumimos foco 0 para sticky, si hay
+        const principalFocus = focos.length > 0 ? focos[0] : null;
+        const irritability = principalFocus ? computeIrritability(principalFocus) : { level: 'Desconocida', reasons: [] };
+        const mechanism = principalFocus ? computePainMechanism(principalFocus, interview) : { category: 'Desconocido', label: '-', reasons: [] };
 
-    // --- Helpers ---
+        return { safety, bps, irritability, mechanism };
+    }, [interview, focos]);
+
     const handleUpdateInterview = (patch: any) => {
         updateFormData(prev => ({
             interview: { ...(prev.interview || {}), ...patch }
         }));
     };
 
-    const handleUpdateFoco = (index: number, patch: any) => {
+    const handleUpdateFoco = (index: number, patch: Partial<KineFocusArea>) => {
         const newFocos = [...focos];
-        newFocos[index] = { ...newFocos[index], ...patch };
+        newFocos[index] = { ...newFocos[index], ...patch } as KineFocusArea;
         handleUpdateInterview({ focos: newFocos });
     };
 
     const handleAddFoco = () => {
-        if (focos.length >= 3) return;
+        if (focos.length >= 5) return;
         const newFoco = {
             id: Date.now().toString(),
             isPrincipal: focos.length === 0,
             region: '',
             side: 'N/A',
-            onsetType: '',
-            onsetDuration: '',
-            course2w: '',
+            onsetType: 'Gradual',
+            onsetDuration: 'Hoy',
+            course2w: 'Igual',
             mainLimitation: '',
-            freeNarrative: '',
             painScaleId: 'EVA',
             painCurrent: '',
             painWorst24h: '',
             painBest24h: '',
-            pattern24h: '',
-            morningStiffness: '',
+            pattern24h: 'Variable',
+            morningStiffness: '0',
             wakesAtNight: false,
             afterEffectFreq: 'Nunca',
-            settlingTime: '',
+            settlingTime: '<15 min',
             provocationEase: 'Media',
             symptomNature: [],
             symptomRadiates: 'Local',
@@ -75,34 +74,32 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             psfs: [],
             fastIcfActivities: [],
             sportContextActive: false,
-            prevTreatmentsTags: []
+            prevTreatmentsTags: [],
+            suddenKinematics: [],
+            aggravatingFactors: [],
+            easingFactors: []
         } as unknown as KineFocusArea;
         handleUpdateInterview({ focos: [...focos, newFoco] });
     };
 
     const handleRemoveFoco = (index: number) => {
-        if (focos.length <= 1) return; // Prevent removing last focus if you want, or handle empty state natively.
         const newFocos = [...focos];
         newFocos.splice(index, 1);
         handleUpdateInterview({ focos: newFocos });
     };
 
-    // --- AI Assistant Handler ---
+    // AI Assist
     const handleAskAI = async () => {
-        if (!freeNarrativeText.trim()) return;
-        setIsAiLoading(true);
-        setAiError(null);
-        setAiSuggestions(null);
-
+        if (!(interview.freeNarrativeGlobal || '').trim()) return;
+        setIsAiLoading(true); setAiError(null); setAiSuggestions(null);
         try {
             const res = await fetch('/api/ai/interview-assist', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ freeNarrative: freeNarrativeText })
+                body: JSON.stringify({ freeNarrative: interview.freeNarrativeGlobal })
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error de IA');
-
+            if (!res.ok) throw new Error(data.error || 'Error IA');
             setAiSuggestions(data.data as InterviewAssistType);
         } catch (err: any) {
             setAiError(err.message);
@@ -111,358 +108,288 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }
     };
 
+    const handleCloseAnamnesis = () => {
+        // Enviar a EvaluacionForm la señal o generar summary.
+        // Aquí actualizamos el status o autoOutputs y dejamos a EvaluacionForm cerrar el panel
+        const checklist = buildExamChecklist(interview, engine.irritability.level as any);
+        const finalOutputs = {
+            globalSafetyTriage: engine.safety.level,
+            globalSafetyReasons: engine.safety.reasons,
+            globalSafetyChecklist: engine.safety.checklist,
+            globalBpsImpact: engine.bps.level,
+            globalBpsTips: engine.bps.tips,
+            perFocus: focos.reduce((acc, f) => {
+                const irr = computeIrritability(f);
+                const mech = computePainMechanism(f, interview);
+                acc[f.id] = {
+                    irritabilityLevel: irr.level,
+                    irritabilityReasons: irr.reasons,
+                    painMechanismCategory: mech.category,
+                    painMechanismLabel: mech.label,
+                    painMechanismReasons: mech.reasons
+                };
+                return acc;
+            }, {} as any),
+            examChecklistSelected: checklist
+        };
+        handleUpdateInterview({ autoOutputs: finalOutputs });
+        alert("¡Anamnesis Próxima Cerrada! Outputs generados y enviados al Examen Físico.");
+    };
+
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="flex flex-col gap-6 pb-12">
 
-            {/* STICKY SUMMARY WIDGET (Engine Outputs) */}
-            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Anamnesis Próxima</h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-1">Razonamiento Clínico Kine Real</p>
+            {/* STICKY HEADER */}
+            <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-2 -mx-4 px-4 sm:mx-0 sm:px-0 flex flex-col md:flex-row justify-between md:items-center gap-3">
+                <div>
+                    <h2 className="text-xl font-black text-slate-800 tracking-tight">Anamnesis Próxima y Riesgo</h2>
+                    <p className="text-xs text-slate-500">Razonamiento Kine Real Estructurado</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs font-bold">
+                    <div className={`px-2 py-1 rounded-full border shadow-sm flex items-center gap-1
+                        ${engine.safety.level === 'Rojo' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                            engine.safety.level === 'Amarillo' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                'bg-emerald-100 text-emerald-800 border-emerald-300'}`}>
+                        Seguridad {engine.safety.level}
                     </div>
-
-                    <div className="flex flex-wrap gap-2 text-xs font-bold">
-                        <div className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 shadow-sm 
-                             ${engine.traffic.color === 'Rojo' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                                engine.traffic.color === 'Amarillo' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                    'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>
-                            <span className={`w-2 h-2 rounded-full ${engine.traffic.color === 'Rojo' ? 'bg-rose-500' : engine.traffic.color === 'Amarillo' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                            Triage {engine.traffic.color}
-                        </div>
-                        <div className="px-3 py-1.5 rounded-full border bg-indigo-50 text-indigo-800 border-indigo-200 flex items-center shadow-sm">
-                            Irritabilidad {engine.irritability.level}
-                        </div>
-                        <div className="px-3 py-1.5 rounded-full border bg-indigo-50 text-indigo-800 border-indigo-200 flex items-center shadow-sm">
-                            Mecanismo: {engine.mechanism.dominant}
-                        </div>
+                    <div className="px-2 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full shadow-sm">
+                        Irrit. {engine.irritability.level}
+                    </div>
+                    <div className="px-2 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full shadow-sm">
+                        Mecanismo: {engine.mechanism.category}
                     </div>
                 </div>
             </div>
 
-            {/* A. RELATO LIBRE & AI ASSISTANT */}
-            <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                <div className="bg-slate-50 border-b border-slate-200 p-4 flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        <span className="text-xl">🎙️</span> A. Relato Libre del Episodio
-                    </h3>
+            {/* SECCION 1: Relato Global */}
+            <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 p-3">
+                    <h3 className="font-bold text-slate-800">1. Relato del Episodio</h3>
                 </div>
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-3">
                     <textarea
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-4 py-3 outline-none focus:border-indigo-400 focus:bg-white min-h-[100px] transition-colors"
-                        placeholder="Escribe aquí lo que cuenta el paciente. Ej: 'Ayer jugando a la pelota sentí un pinchazo fuerte en el muslo derecho al picar, tuve que salir y hoy me duele mucho al caminar y no puedo subir escalas...'"
-                        value={freeNarrativeText}
-                        onChange={(e) => setFreeNarrativeText(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none"
+                        rows={3}
+                        placeholder="Relato de la persona usuaria..."
+                        value={interview.freeNarrativeGlobal || ''}
+                        onChange={e => handleUpdateInterview({ freeNarrativeGlobal: e.target.value })}
                         disabled={isClosed}
                     />
-
-                    <div className="flex justify-end relative">
-                        <button
-                            onClick={handleAskAI}
-                            disabled={isAiLoading || isClosed || !freeNarrativeText.trim()}
-                            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-2"
-                        >
-                            {isAiLoading ? (
-                                <><svg className="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" /></svg> Analizando...</>
-                            ) : (
-                                <>✨ Extraer Tags Estructurados</>
-                            )}
+                    <div className="flex justify-end">
+                        <button onClick={handleAskAI} disabled={isClosed || isAiLoading} className="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">
+                            {isAiLoading ? "Pensando..." : "✨ Sugerir selecciones desde relato"}
                         </button>
                     </div>
-
-                    {aiError && (
-                        <div className="text-xs text-rose-600 font-medium bg-rose-50 p-3 rounded-lg border border-rose-200">
-                            Error Extrayendo IA: {aiError}
-                        </div>
-                    )}
-
                     {aiSuggestions && (
-                        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <h4 className="text-xs font-bold text-indigo-900 mb-3 uppercase tracking-wider flex items-center gap-2">
-                                Insights Extraídos (Confianza: {aiSuggestions.confidence})
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">Sugerencias Estructuradas:</span>
-                                    <ul className="space-y-2">
-                                        {aiSuggestions.proposedSelections.map((sel, idx) => (
-                                            <li key={idx} className="bg-white px-3 py-2 rounded-lg text-xs border border-indigo-100/50 shadow-sm">
-                                                <strong className="text-indigo-700">{sel.field}:</strong> {sel.value}
-                                                <span className="block text-[10px] text-slate-500 mt-0.5">{sel.rationale}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                {aiSuggestions.missingQuestions && aiSuggestions.missingQuestions.length > 0 && (
-                                    <div>
-                                        <span className="text-[10px] font-bold text-amber-600 uppercase block mb-1.5 flex items-center gap-1">
-                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            Preguntas Sugeridas al Paciente:
-                                        </span>
-                                        <ul className="space-y-1.5">
-                                            {aiSuggestions.missingQuestions.map((q, idx) => (
-                                                <li key={idx} className="bg-amber-50/50 text-amber-900 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-200/50">
-                                                    "{q}"
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
+                        <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-xs">
+                            <strong className="block mb-2 text-indigo-800">Sugerencias (Aceptar lo útil):</strong>
+                            <ul className="space-y-1">
+                                {aiSuggestions.proposedSelections.map((s, i) => (
+                                    <li key={i}><span className="font-bold">{s.field}:</span> {s.value}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
-            </div>
+            </section>
 
-            {/* B Y C. TRIAGE Y SAFETY (Engine Driven + Manual Toggles) */}
-            <div className={`p-5 rounded-2xl border transition-colors shadow-sm ${engine.traffic.color === 'Rojo' ? 'bg-rose-50 border-rose-200' : engine.traffic.color === 'Amarillo' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2">
-                            <span className="text-xl">🚦</span> B. Triage de Carga Automático
-                        </h3>
-                        <p className="text-xs text-slate-600 mb-3 block">Calculado en T.R. (Banderas, BPS, Irritabilidad)</p>
-
-                        <div className="space-y-1">
-                            <p className="text-sm font-bold text-slate-800 mb-2">Resolución: {engine.traffic.rules.progressionRule || engine.traffic.rules.redFlagRule || engine.traffic.rules.painRule}</p>
-                            {engine.traffic.reasons.map((r, i) => (
-                                <div key={i} className="flex gap-2 items-start text-xs text-slate-700">
-                                    <span className="text-slate-400 mt-0.5">•</span>
-                                    <span>{r}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="w-full md:w-[350px] shrink-0 border-l border-black/5 pl-0 md:pl-6 space-y-4">
-                        {/* Manual Override URGENCE */}
-                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 transition-all">
-                            <label className="flex items-center justify-between cursor-pointer mb-2">
-                                <span className="text-xs font-bold text-slate-700">Override: Urgencia Médica Pura</span>
-                                <input type="checkbox" className="sr-only peer" checked={!!interview.hasUrgency} disabled={isClosed} onChange={(e) => handleUpdateInterview({ hasUrgency: e.target.checked })} />
-                                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
-                            </label>
-
-                            {interview.hasUrgency && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-300 mt-3">
-                                    <label className="block text-[10px] font-bold text-rose-600 mb-1 uppercase">Justificación Alarma</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-3 py-2 outline-none focus:border-rose-400 min-h-[40px]"
-                                        placeholder="Trauma alta E, Pérdida de peso..."
-                                        value={interview.redFlagsAction || ''}
-                                        onChange={(e) => handleUpdateInterview({ redFlagsAction: e.target.value })}
-                                        disabled={isClosed}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Neuro Red Flags */}
-                        {showNeuroRedFlags && (
-                            <div className="bg-rose-50 p-4 rounded-xl border border-rose-200 animate-in fade-in duration-500">
-                                <span className="text-xs font-bold text-rose-800 flex items-center gap-1 mb-2">Banderas Rojas Neurológicas Confirmar:</span>
-                                <div className="space-y-2">
-                                    {['Alteración esfínteres', 'Anestesia en silla de montar', 'Déficit motor progresivo'].map(flag => {
-                                        const isChecked = !!(interview.redFlagsCheck || {})[flag];
-                                        return (
-                                            <label key={flag} className="flex items-start gap-2 cursor-pointer bg-white/50 p-1.5 rounded-lg">
-                                                <input type="checkbox" className="mt-0.5 rounded border-rose-300 text-rose-500 focus:ring-rose-200 h-3.5 w-3.5" checked={isChecked} onChange={e => {
-                                                    const nextCheck = { ...(interview.redFlagsCheck || {}) };
-                                                    if (e.target.checked) nextCheck[flag] = true; else delete nextCheck[flag];
-                                                    handleUpdateInterview({ redFlagsCheck: nextCheck });
-                                                }} disabled={isClosed} />
-                                                <span className="text-[11px] font-medium text-rose-900 leading-tight">{flag}</span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+            {/* SECCION 2: Seguridad (Red Flags) */}
+            <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">2. Seguridad (Red Flags)</h3>
+                    <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{engine.safety.level}</span>
                 </div>
-            </div>
-
-            {/* D. FOCOS CLINICOS (Acordeón iterativo) */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-xl">
-                        <span className="text-indigo-500">📍</span> C. Mapa de Síntomas (Focos: {focos.length}/3)
-                    </h3>
-                    {!isClosed && focos.length < 3 && (
-                        <button onClick={handleAddFoco} className="text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors border border-indigo-100 shadow-sm flex items-center gap-1">
-                            + Foco Nuevo
-                        </button>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                        { key: 'redFlagsSystemic', label: 'Fiebre/Compromiso Sistémico o Cáncer previo' },
+                        { key: 'redFlagsWeightLoss', label: 'Baja de peso no intencionada' },
+                        { key: 'redFlagsNightPain', label: 'Dolor nocturno implacable no mecánico' },
+                        { key: 'redFlagsTraumaHigh', label: 'Trauma alta energía / Caída importante' },
+                        { key: 'redFlagsNeuroSevere', label: 'Síntomas neurológicos graves/progresivos (esfínteres/silla montar)' },
+                        { key: 'redFlagsFractureParams', label: 'Sospecha fractura / Incapacidad de carga' },
+                    ].map(flag => (
+                        <label key={flag.key} className="flex items-start gap-2 text-xs">
+                            <input type="checkbox" className="mt-0.5" checked={interview[flag.key] || false} onChange={e => handleUpdateInterview({ [flag.key]: e.target.checked })} disabled={isClosed} />
+                            <span>{flag.label}</span>
+                        </label>
+                    ))}
+                    {(interview.redFlagsSystemic || interview.redFlagsWeightLoss || interview.redFlagsTraumaHigh || interview.redFlagsNeuroSevere || interview.redFlagsFractureParams) && (
+                        <div className="col-span-full mt-2">
+                            <input type="text" placeholder="Conducta/Justificación del interno requerida (Si es rojo/amarillo)..."
+                                className="w-full bg-rose-50 border border-rose-200 rounded px-3 py-2 text-xs outline-none"
+                                value={interview.redFlagsDetailsText || ''} onChange={e => handleUpdateInterview({ redFlagsDetailsText: e.target.value })} disabled={isClosed} />
+                        </div>
                     )}
                 </div>
+            </section>
 
-                {focos.length === 0 && (
-                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-8 text-center animate-pulse">
-                        <p className="text-slate-500 text-sm font-medium">Pulsa "+ Foco Nuevo" para mapear el primer dolor.</p>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    {focos.map((foco: any, idx: number) => (
-                        <div key={foco.id} className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-visible">
-                            <div className="bg-slate-50 border-b border-slate-200 py-3 px-4 flex items-center justify-between gap-4 rounded-t-2xl">
-                                <div className="flex items-center gap-3 w-full">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${foco.isPrincipal ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200 ring-offset-1' : 'bg-slate-200 text-slate-600'}`}>
-                                        F{idx + 1}
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-2xl">
-                                        <select
-                                            className="bg-white border border-slate-200 text-slate-700 font-semibold text-xs sm:text-sm rounded-lg px-2.5 py-1.5 outline-none focus:border-indigo-400"
-                                            value={foco.region}
-                                            onChange={(e) => handleUpdateFoco(idx, { region: e.target.value })}
-                                            disabled={isClosed}
-                                        >
-                                            <option value="">Región...</option>
-                                            {REGIONES.map(r => <option key={r} value={r}>{r}</option>)}
-                                        </select>
-                                        <select
-                                            className="bg-white border border-slate-200 text-slate-700 font-semibold text-xs sm:text-sm rounded-lg px-2.5 py-1.5 outline-none focus:border-indigo-400"
-                                            value={foco.lado}
-                                            onChange={(e) => handleUpdateFoco(idx, { lado: e.target.value as any })}
-                                            disabled={isClosed}
-                                        >
-                                            {LADOS.map(l => <option key={l} value={l}>{l}</option>)}
-                                        </select>
-                                    </div>
+            {/* SECCION 3: Banderas Amarillas (BPS) */}
+            <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 p-3 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">3. Banderas Amarillas (Impacto: {engine.bps.level})</h3>
+                </div>
+                <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                        { key: 'sleepImpact', label: 'Sueño deteriorado' },
+                        { key: 'highStress', label: 'Estrés alto' },
+                        { key: 'kinesiophobia', label: 'Miedo a cargar/mover' },
+                        { key: 'damageWorry', label: 'Preocupación daño' },
+                        { key: 'lowSelfEfficacy', label: 'Baja autoeficacia' },
+                        { key: 'catastrophizing', label: 'Catastrofización' },
+                        { key: 'returnPressure', label: 'Presión retorno' },
+                        { key: 'highFrustration', label: 'Frustración alta' },
+                    ].map(flag => {
+                        const val = (interview.yellowFlags && interview.yellowFlags[flag.key]) ? interview.yellowFlags[flag.key] : 0;
+                        return (
+                            <div key={flag.key} className="border border-slate-100 rounded p-2 text-center text-xs">
+                                <span className="block mb-1.5 h-8 font-medium">{flag.label}</span>
+                                <div className="flex justify-center gap-1">
+                                    {[0, 1, 2].map(n => (
+                                        <button key={n} disabled={isClosed} onClick={() => handleUpdateInterview({ yellowFlags: { ...(interview.yellowFlags || {}), [flag.key]: n } })}
+                                            className={`w-6 h-6 rounded-full text-[10px] ${val === n ? (n === 0 ? 'bg-emerald-100 border-emerald-300' : n === 1 ? 'bg-amber-100 border-amber-400' : 'bg-rose-100 border-rose-400') : 'bg-slate-100 border-slate-200'}`}>
+                                            {n}
+                                        </button>
+                                    ))}
                                 </div>
-                                {!isClosed && (
-                                    <button onClick={() => handleRemoveFoco(idx)} className="text-slate-400 hover:text-rose-500 transition-colors shrink-0 bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm">
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* SECCION 4: MAPA DE FOCOS */}
+            <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-200 p-3 flex items-center justify-between">
+                    <h3 className="font-bold text-slate-800">4. Mapa de Focos ({focos.length}/5)</h3>
+                    <button onClick={handleAddFoco} disabled={isClosed || focos.length >= 5} className="text-xs bg-white border outline-none border-slate-200 px-3 py-1 rounded hover:bg-slate-50 font-medium">
+                        + Añadir Foco
+                    </button>
+                </div>
+
+                <div className="p-4 space-y-6">
+                    {focos.length === 0 && <p className="text-xs text-slate-400 italic">No hay focos agregados. Añade uno para comenzar.</p>}
+
+                    {focos.map((foco, idx) => (
+                        <div key={foco.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                            <div className="bg-slate-100 p-2 px-3 border-b border-slate-200 flex justify-between items-center">
+                                <strong className="text-indigo-800 text-xs">{foco.isPrincipal ? 'FOCO PRINCIPAL' : `FOCO SECUNDARIO ${idx}`}</strong>
+                                <button onClick={() => handleRemoveFoco(idx)} disabled={isClosed} className="text-rose-500 hover:text-rose-700 font-medium text-xs">Eliminar</button>
                             </div>
 
-                            {/* Foco Body */}
-                            <div className="p-4 sm:p-5 space-y-6">
+                            <div className="p-3">
+                                {/* Base */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                    <select value={foco.region || ''} onChange={e => handleUpdateFoco(idx, { region: e.target.value })} disabled={isClosed} className="bg-white border border-slate-200 text-xs p-2 rounded">
+                                        <option value="">Región...</option>
+                                        {REGIONES.map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                    <select value={foco.side || ''} onChange={e => handleUpdateFoco(idx, { side: e.target.value as any })} disabled={isClosed} className="bg-white border border-slate-200 text-xs p-2 rounded">
+                                        {LADOS.map(l => <option key={l} value={l}>{l}</option>)}
+                                    </select>
+                                </div>
 
-                                {/* Row 1: Instalación y Naturaleza */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Cronología</h4>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <select className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
-                                                    value={foco.onsetType} onChange={(e) => handleUpdateFoco(idx, { onsetType: e.target.value })} disabled={isClosed}>
-                                                    <option value="">Tipo Inicio...</option>
-                                                    {TIPO_INICIO.map(ti => <option key={ti} value={ti}>{ti}</option>)}
+                                {/* Tabs simples de foco (usamos sections visuales por ahora) */}
+                                <div className="space-y-4">
+
+                                    {/* A. HISTORIA */}
+                                    <div className="border border-slate-100 rounded bg-slate-50/50 p-3">
+                                        <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-500 mb-2">A. Historia y Mecanismo</h4>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                                            <select value={foco.onsetType} onChange={e => handleUpdateFoco(idx, { onsetType: e.target.value as any })} disabled={isClosed} className="bg-white border border-slate-200 text-xs p-1.5 rounded">
+                                                <option value="Súbito">Inicio Súbito (Trauma)</option>
+                                                <option value="Gradual">Inicio Gradual (Sobrecarga)</option>
+                                            </select>
+                                            <select value={foco.onsetDuration} onChange={e => handleUpdateFoco(idx, { onsetDuration: e.target.value as any })} disabled={isClosed} className="bg-white border border-slate-200 text-xs p-1.5 rounded">
+                                                <option value="Hoy">Hoy</option>
+                                                <option value="1–7 días">1-7 días</option>
+                                                <option value="2–6 sem">2-6 sem</option>
+                                                <option value="6–12 sem">6-12 sem</option>
+                                                <option value="3–6 meses">3-6 meses</option>
+                                                <option value=">6 meses">&gt; 6 meses</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Ramificación Trauma vs Sobrecarga */}
+                                        {foco.onsetType === 'Súbito' && (
+                                            <div className="bg-amber-50/50 border border-amber-100 rounded p-2 grid grid-cols-2 gap-2 text-xs">
+                                                <span className="col-span-full font-semibold text-amber-800">Ramificación Trauma Agudo</span>
+                                                <select value={foco.suddenSound || ''} onChange={e => handleUpdateFoco(idx, { suddenSound: e.target.value as any })} disabled={isClosed} className="border border-slate-200 rounded p-1">
+                                                    <option value="">Sonido...</option>
+                                                    {['Chasquido', 'Tirón', 'Desgarro', 'Nada'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <select value={foco.suddenImmediateCapacity || ''} onChange={e => handleUpdateFoco(idx, { suddenImmediateCapacity: e.target.value as any })} disabled={isClosed} className="border border-slate-200 rounded p-1">
+                                                    <option value="">Capacidad al momento...</option>
+                                                    {['Igual', 'Con molestia', 'Detenerse', 'Incapaz'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <select value={foco.suddenSwellingVisible || ''} onChange={e => handleUpdateFoco(idx, { suddenSwellingVisible: e.target.value as any })} disabled={isClosed} className="border border-slate-200 rounded p-1">
+                                                    <option value="">Hinchazón menor 2h...</option>
+                                                    {['Sí', 'No', 'No sabe'].map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
                                             </div>
-                                            <div>
-                                                <input type="text" placeholder="Tiempo (Ej: 2 sem)" className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
-                                                    value={foco.onsetDuration} onChange={(e) => handleUpdateFoco(idx, { onsetDuration: e.target.value })} disabled={isClosed} />
+                                        )}
+                                        {foco.onsetType === 'Gradual' && (
+                                            <div className="bg-blue-50/50 border border-blue-100 rounded p-2 grid grid-cols-2 gap-2 text-xs">
+                                                <span className="col-span-full font-semibold text-blue-800">Ramificación Cambios de Carga (1-4 sem)</span>
+                                                <select value={foco.gradualVolumeChange || ''} onChange={e => handleUpdateFoco(idx, { gradualVolumeChange: e.target.value as any })} disabled={isClosed} className="border border-slate-200 rounded p-1">
+                                                    <option value="">Cambio de Volumen (+ / -)...</option>
+                                                    {['0–10', '10–30', '30–50', '>50', 'No sabe'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <select value={foco.gradualPainAppears || ''} onChange={e => handleUpdateFoco(idx, { gradualPainAppears: e.target.value as any })} disabled={isClosed} className="border border-slate-200 rounded p-1">
+                                                    <option value="">El dolor aparece...</option>
+                                                    {['Al inicio', 'Durante', 'Después', 'Al día siguiente'].map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <input type="text" placeholder="Contexto/Mecanismo (Ej: Cayó corriendo)" className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
-                                                value={foco.context} onChange={(e) => handleUpdateFoco(idx, { context: e.target.value })} disabled={isClosed} />
-                                        </div>
+                                        )}
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Perfil Síntomas (Tags)</h4>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {SINTOMAS_DOMINANTES.map(sym => {
-                                                const currentTags = foco.symptomNature || foco.dominantSymptoms || [];
-                                                const isActive = currentTags.includes(sym);
-                                                return (
-                                                    <button
-                                                        key={sym}
-                                                        onClick={() => {
-                                                            if (isClosed) return;
-                                                            const next = isActive ? currentTags.filter((s: string) => s !== sym) : [...currentTags, sym];
-                                                            handleUpdateFoco(idx, { symptomNature: next });
-                                                        }}
-                                                        className={`px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-700 ring-1 ring-indigo-300' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                                                    >
-                                                        {sym}
-                                                    </button>
-                                                );
+                                    {/* B. PERFIL SINTOMA */}
+                                    <div className="border border-slate-100 rounded bg-slate-50/50 p-3">
+                                        <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-500 mb-2">B. Perfil Sintomático</h4>
+                                        <div className="flex flex-wrap gap-1 mb-3">
+                                            {NATURALEZA.map(n => {
+                                                const isActive = (foco.symptomNature || []).includes(n);
+                                                return <button key={n} disabled={isClosed} onClick={() => {
+                                                    const tags = foco.symptomNature || [];
+                                                    handleUpdateFoco(idx, { symptomNature: isActive ? tags.filter(x => x !== n) : [...tags, n] });
+                                                }} className={`px-2 py-0.5 rounded-full text-[10px] border ${isActive ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}>{n}</button>
                                             })}
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Row 2: Irritabilidad ENA/EVA */}
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pt-2">
-                                    <div className="space-y-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Niveles de Dolor (EVA/ENA)</h4>
-                                        <div className="flex gap-3">
-                                            <div className="flex-1">
-                                                <span className="text-[10px] text-slate-500 font-bold block mb-1">Actual</span>
-                                                <input type="number" min="0" max="10" placeholder="0-10" className="w-full bg-white border border-slate-200 text-center rounded-lg py-1.5 focus:border-indigo-400 outline-none shadow-sm" value={foco.painCurrent} onChange={e => handleUpdateFoco(idx, { painCurrent: e.target.value })} disabled={isClosed} />
-                                            </div>
-                                            <div className="flex-1">
-                                                <span className="text-[10px] text-slate-500 font-bold block mb-1">Peor 24h</span>
-                                                <input type="number" min="0" max="10" placeholder="0-10" className="w-full bg-white border border-slate-200 text-center rounded-lg py-1.5 focus:border-indigo-400 outline-none shadow-sm" value={foco.painWorst24h} onChange={e => handleUpdateFoco(idx, { painWorst24h: e.target.value })} disabled={isClosed} />
-                                            </div>
-                                            <div className="flex-1">
-                                                <span className="text-[10px] text-slate-500 font-bold block mb-1">Mejor 24h</span>
-                                                <input type="number" min="0" max="10" placeholder="0-10" className="w-full bg-white border border-slate-200 text-center rounded-lg py-1.5 focus:border-indigo-400 outline-none shadow-sm" value={foco.painBest24h} onChange={e => handleUpdateFoco(idx, { painBest24h: e.target.value })} disabled={isClosed} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Rigidez y Recuperación Tissue</h4>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-3 gap-3">
                                             <div>
-                                                <span className="text-[10px] text-slate-500 font-bold block mb-1">Dolor Post-Carga</span>
-                                                <select className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none text-sm shadow-sm font-medium" value={foco.afterEffect} onChange={e => handleUpdateFoco(idx, { afterEffect: e.target.value as any })} disabled={isClosed}>
-                                                    <option>Nunca</option>
-                                                    <option>A veces</option>
-                                                    <option>Siempre</option>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase">Dolor Actual ({foco.painScaleId})</label>
+                                                <input type="number" min={0} max={10} value={foco.painCurrent} onChange={(e) => handleUpdateFoco(idx, { painCurrent: e.target.value })} disabled={isClosed} className="w-full text-xs p-1 mt-1 border rounded bg-white" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase">Peor 24h</label>
+                                                <input type="number" min={0} max={10} value={foco.painWorst24h} onChange={(e) => handleUpdateFoco(idx, { painWorst24h: e.target.value })} disabled={isClosed} className="w-full text-xs p-1 mt-1 border rounded bg-white" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase">Irradiación</label>
+                                                <select value={foco.symptomRadiates} onChange={e => handleUpdateFoco(idx, { symptomRadiates: e.target.value as any })} disabled={isClosed} className="w-full text-xs p-1 mt-1 border rounded bg-white">
+                                                    {IRRADIACION.map(s => <option key={s} value={s}>{s}</option>)}
                                                 </select>
                                             </div>
-                                            <div>
-                                                <span className="text-[10px] text-slate-500 font-bold block mb-1">Tiempo de calma</span>
-                                                <input type="text" placeholder="Ej: < 30min, 1 hora..." className="w-full bg-white border border-slate-200 text-slate-700 rounded-lg px-3 py-1.5 outline-none text-sm shadow-sm" value={foco.settlingTime} onChange={e => handleUpdateFoco(idx, { settlingTime: e.target.value })} disabled={isClosed} />
-                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Row 3: Agravantes y Aliviantes */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <input type="text" placeholder="Agravantes Claves (Ej: Bajar escalas)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:bg-white focus:border-indigo-400"
-                                            value={(foco.aggravatingFactors || []).join(', ')}
-                                            onChange={e => handleUpdateFoco(idx, { aggravatingFactors: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} disabled={isClosed}
-                                        />
+                                    {/* C. FUNCION E IMPACTO */}
+                                    <div className="border border-slate-100 rounded bg-slate-50/50 p-3">
+                                        <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-500 mb-2">C. Función y Meta</h4>
+                                        <input type="text" placeholder="Limitación principal (ej: Caminar 2 cuadras)" value={foco.mainLimitation} onChange={e => handleUpdateFoco(idx, { mainLimitation: e.target.value })} disabled={isClosed} className="w-full text-xs p-2 border rounded bg-white mb-2" />
                                     </div>
-                                    <div>
-                                        <input type="text" placeholder="Aliviantes (Ej: Reposo, Hielo)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:bg-white focus:border-indigo-400"
-                                            value={(foco.easingFactors || []).join(', ')}
-                                            onChange={e => handleUpdateFoco(idx, { easingFactors: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} disabled={isClosed}
-                                        />
-                                    </div>
-                                </div>
 
-                                {/* Row 4: Comparable (Critical) */}
-                                <div className="p-4 bg-indigo-50/40 rounded-xl border border-indigo-100">
-                                    <div className="flex gap-2 items-center mb-3">
-                                        <h4 className="text-[11px] font-black text-indigo-700 uppercase tracking-widest flex items-center gap-1.5">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-                                            Signo Comparable Estrella
+                                    {/* D. COMPARABLE */}
+                                    <div className="border border-slate-100 rounded bg-slate-50/50 p-3">
+                                        <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-500 mb-2 flex justify-between">
+                                            D. Signo Comparable Estrella
+                                            <span className="text-[9px] font-normal text-slate-400">(Surgiere base P2)</span>
                                         </h4>
-                                        <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold uppercase">Obligatorio*</span>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <input type="text" placeholder="Ej: Sentadilla a 90°, Rot Externa Activa..." className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400 font-medium text-slate-800 shadow-sm"
-                                            value={foco.comparableSign?.name || ''}
-                                            onChange={e => handleUpdateFoco(idx, { comparableSign: { ...(foco.comparableSign as any) || {}, name: e.target.value } })} disabled={isClosed} />
-
-                                        <div className="flex gap-2">
-                                            <input type="number" min="0" max="10" placeholder="EVA (0-10)" className="w-24 bg-white border border-slate-200 text-center rounded-lg px-2 py-2 text-sm outline-none focus:border-indigo-400 font-bold shadow-sm"
-                                                value={foco.comparableSign?.painLevel || ''}
-                                                onChange={e => handleUpdateFoco(idx, { comparableSign: { ...(foco.comparableSign as any) || {}, painLevel: e.target.value } })} disabled={isClosed} />
-                                            <input type="text" placeholder="Dosis/Condición (ej: 3 reps, carga 5kg)" className="w-full sm:w-48 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400 shadow-sm"
-                                                value={foco.comparableSign?.conditions || ''}
-                                                onChange={e => handleUpdateFoco(idx, { comparableSign: { ...(foco.comparableSign as any) || {}, conditions: e.target.value } })} disabled={isClosed} />
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            <input type="text" placeholder="Nombre (Ej: Sentadilla)" value={foco.primaryComparable?.name || ''}
+                                                onChange={e => handleUpdateFoco(idx, { primaryComparable: { ...(foco.primaryComparable || {} as any), name: e.target.value, type: 'Movimiento' } })} disabled={isClosed} className="border rounded bg-white p-1.5" />
+                                            <input type="text" placeholder="Dolor EVA" value={foco.primaryComparable?.painLevel || ''}
+                                                onChange={e => handleUpdateFoco(idx, { primaryComparable: { ...(foco.primaryComparable || {} as any), painLevel: e.target.value } })} disabled={isClosed} className="border rounded bg-white p-1.5" />
                                         </div>
                                     </div>
                                 </div>
@@ -470,111 +397,51 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     ))}
                 </div>
-            </div>
+            </section>
 
-            {/* E. PSFS Y FUNCION GLOBAL */}
-            <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm space-y-6">
-                <div>
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-xl mb-4">
-                        <span className="text-emerald-500">🏃</span> D. Función Global y Metas (PSFS)
-                    </h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Limitación Principal General</label>
-                            <textarea
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-emerald-400 min-h-[60px]"
-                                placeholder="Ej: 'No puedo agacharme a recoger a mi hijo'..."
-                                value={interview.functionalLimitationPrimary || ''}
-                                onChange={(e) => handleUpdateInterview({ functionalLimitationPrimary: e.target.value })}
-                                disabled={isClosed}
-                            />
+            {/* SECCION 5 & 6 COMPRIMIDAS UX */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4">
+                    <h3 className="font-bold text-slate-800 mb-3 border-b pb-2">5. Contexto Deportivo</h3>
+                    <label className="flex items-center gap-2 text-xs mb-3">
+                        <input type="checkbox" checked={focos[0]?.sportContextActive || false} onChange={e => {
+                            if (focos.length > 0) handleUpdateFoco(0, { sportContextActive: e.target.checked });
+                        }} disabled={isClosed} />
+                        Persona practica deporte/gimnasio de manera regular
+                    </label>
+                    {focos[0]?.sportContextActive && (
+                        <div className="space-y-2">
+                            <input type="text" placeholder="Deporte o Disciplina principal" className="w-full text-xs p-2 border rounded bg-white" disabled={isClosed}
+                                value={focos[0]?.sportMain || ''} onChange={e => handleUpdateFoco(0, { sportMain: e.target.value })} />
+                            <select className="w-full text-xs p-2 border rounded bg-white" value={focos[0]?.sportCurrentState || ''} onChange={e => handleUpdateFoco(0, { sportCurrentState: e.target.value as any })} disabled={isClosed}>
+                                <option value="">Estado Actual deportivo...</option>
+                                {['Reposo', 'Modificado', 'Cruzado', 'Normal con dolor'].map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
                         </div>
-
-                        <div>
-                            <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Expectativas / Meta Paciente</label>
-                            <textarea
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-emerald-400 min-h-[60px]"
-                                placeholder="Ej: Me gustaría volver a correr mi Maratón en 3 meses..."
-                                value={interview.personGoal || ''}
-                                onChange={(e) => handleUpdateInterview({ personGoal: e.target.value })}
-                                disabled={isClosed}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <div className="flex justify-between items-center mb-3">
-                        <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-                            <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black uppercase">Req*</span>
-                            Escala Específica Funcional (PSFS)
-                        </label>
-                        {!isClosed && (
-                            <button onClick={() => handleUpdateInterview({ psfs: [...(interview.psfs || []), { activity: '', score: 0, linkedFocusId: focos[0]?.id || '' }] })} className="text-xs text-indigo-600 font-bold hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm transition">+ Añadir (Máx 3)</button>
-                        )}
-                    </div>
-
+                    )}
+                </section>
+                <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4">
+                    <h3 className="font-bold text-slate-800 mb-3 border-b pb-2">6. Experiencia de la Persona</h3>
                     <div className="space-y-3">
-                        {(interview.psfs || []).map((pItem: any, i: number) => (
-                            <div key={i} className="flex gap-2">
-                                <input type="text" placeholder="Actividad Restringida (Ej. Subir escaleras)" className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-400 shadow-sm" value={pItem.activity} onChange={e => {
-                                    const newPsfs = [...interview.psfs];
-                                    newPsfs[i].activity = e.target.value;
-                                    handleUpdateInterview({ psfs: newPsfs });
-                                }} disabled={isClosed} />
-                                <input type="number" min="0" max="10" placeholder="0-10" className="w-20 font-bold bg-white border border-slate-200 text-center rounded-lg px-2 py-2 text-sm outline-none focus:border-indigo-400 shadow-sm text-indigo-700" value={pItem.score} onChange={e => {
-                                    const newPsfs = [...interview.psfs];
-                                    newPsfs[i].score = Number(e.target.value);
-                                    handleUpdateInterview({ psfs: newPsfs });
-                                }} disabled={isClosed} />
-                                {!isClosed && (
-                                    <button onClick={() => {
-                                        const newPsfs = [...interview.psfs];
-                                        newPsfs.splice(i, 1);
-                                        handleUpdateInterview({ psfs: newPsfs });
-                                    }} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100">
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        {(!interview.psfs || interview.psfs.length === 0) && (
-                            <div className="text-[11px] text-slate-500 italic p-3 bg-white rounded-lg text-center border border-slate-200 border-dashed">
-                                Obligatorio para cerrar la Evaluación. Agrega al menos 1 ítem funcional basal (0 = Inhabil, 10 = Normal).
-                            </div>
-                        )}
+                        <input type="text" placeholder="¿Qué cree la persona que lo gatilló?" value={interview.triggerBelief || ''} onChange={e => handleUpdateInterview({ triggerBelief: e.target.value })} disabled={isClosed} className="w-full text-xs p-2 border rounded bg-white" />
+                        <select value={interview.mainConcern || ''} onChange={e => handleUpdateInterview({ mainConcern: e.target.value })} disabled={isClosed} className="w-full text-xs p-2 border rounded bg-white">
+                            <option value="">¿Qué le preocupa más?</option>
+                            {['Dolor per se', 'Posible Daño estructural', 'Pérdida de rendimiento deportivo', 'Incapacidad de trabajar', 'Miedo a recaída/crónico', 'Otro'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
                     </div>
-                </div>
+                </section>
             </div>
 
-            {/* F. BPS FACTORS (Banderas Amarillas Múltiples) */}
-            <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-xl">
-                    <span className="text-amber-500">🧠</span> E. Dominio Biopsicosocial (Factores BPS)
-                </h3>
-                <p className="text-xs text-slate-500">Factores modificables o barreras (Banderas Amarillas/Azules) que comprometen la recuperación optima.</p>
-
-                <div className="flex flex-wrap gap-2 pt-2">
-                    {['Estrés severo', 'Ansiedad T.', 'Depresión clínica', 'Miedo al Movimiento (Kinesiop.)', 'Catastrofización', 'Expectativas muy bajas', 'Falta de apoyo', 'Litigio legal/laboral', 'Mala calidad sueño'].map(flag => {
-                        const isActive = interview.bpsFactors?.includes(flag);
-                        return (
-                            <button
-                                key={flag}
-                                onClick={() => {
-                                    if (isClosed) return;
-                                    const curr = interview.bpsFactors || [];
-                                    const next = isActive ? curr.filter((s: string) => s !== flag) : [...curr, flag];
-                                    handleUpdateInterview({ bpsFactors: next });
-                                }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-sm ${isActive ? 'bg-amber-100 text-amber-900 border-amber-300 ring-1 ring-amber-400' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                            >
-                                {flag}
-                            </button>
-                        )
-                    })}
-                </div>
-            </div>
+            {/* SECCION 7: Cierre Anamnesis */}
+            <section className="bg-emerald-50 border text-sm border-emerald-200 rounded-xl shadow-sm p-4 text-center">
+                <h3 className="font-bold text-emerald-800 mb-2">7. Cierre Estructurado</h3>
+                <p className="text-xs text-emerald-700 mb-4 max-w-lg mx-auto">
+                    Al cerrar la anamnesis próxima, los motores de clínica y riesgo generan pautas y guías priorizadas para el Examen Físico automáticamente.
+                </p>
+                <button onClick={handleCloseAnamnesis} disabled={isClosed} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-xl transition shadow-sm uppercase tracking-wider text-xs">
+                    🔒 Aprobar Anamnesis
+                </button>
+            </section>
 
         </div>
     );
