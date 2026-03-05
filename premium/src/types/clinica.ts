@@ -484,6 +484,39 @@ export interface AnamnesisProximaV3 {
     };
 }
 
+export interface FocoV4 {
+    id: string;
+    esPrincipal: boolean;
+    region: string;
+    lado: "Izquierdo" | "Derecho" | "Bilateral" | "N/A";
+
+    inicio: "Subito_Trauma" | "Subito_SinTrauma" | "Gradual" | "Reagudizacion" | "NoDefinido";
+    tiempoDesdeInicio: string;
+    contextoDetallado: string;
+
+    dolorActual: number | null;
+    mejor24h: number | null;
+    peor24h: number | null;
+
+    irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido" | "N/A" | "Referido" | "Radicular";
+    tags: string[];
+
+    agravantes: string;
+    aliviantes: string;
+
+    dolorPostActividad: "Nunca" | "A veces" | "Frecuente" | "Siempre" | "NoDefinida";
+    tiempoCalma: string;
+
+    signoComparable: string;
+    dolorEnSigno: number | null;
+
+    mecanismoCategoria: "Nociceptivo" | "Neuropático" | "Nociplástico" | "Mixto" | "NoDefinido";
+    mecanismoApellido: string; // "Inflamatorio", "Mecánico", etc.
+    mecanismoTextoFinal: string;
+
+    notaRapida: string; // Log
+}
+
 export interface AnamnesisProximaV4 {
     version: "v4";
     status: "draft" | "approved";
@@ -491,38 +524,7 @@ export interface AnamnesisProximaV4 {
 
     escalaDolorGlobal: "EVA" | "ENA"; // default "EVA"
 
-    focos: Array<{
-        id: string;
-        esPrincipal: boolean;
-        region: string;
-        lado: "Izquierdo" | "Derecho" | "Bilateral" | "N/A";
-
-        inicio: "Subito_Trauma" | "Subito_SinTrauma" | "Gradual" | "Reagudizacion" | "NoDefinido";
-        tiempoDesdeInicio: string;
-        contextoDetallado: string;
-
-        dolorActual: number | null;
-        mejor24h: number | null;
-        peor24h: number | null;
-
-        irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido";
-        tags: string[];
-
-        agravantes: string;
-        aliviantes: string;
-
-        dolorPostActividad: "Nunca" | "A veces" | "Frecuente" | "Siempre" | "NoDefinida";
-        tiempoCalma: string;
-
-        signoComparable: string;
-        dolorEnSigno: number | null;
-
-        mecanismoCategoria: "Aparentemente Nociceptivo" | "Aparentemente Neuropático" | "Aparentemente Nociplástico" | "Mixto" | "NoDefinido";
-        mecanismoApellido: string[];
-        mecanismoTextoFinal: string;
-
-        notaRapida: string; // Log
-    }>;
+    focos: FocoV4[];
 
     psfsGlobal: Array<{
         id: string;
