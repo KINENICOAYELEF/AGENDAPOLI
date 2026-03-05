@@ -598,18 +598,25 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4">
                     <h3 className="font-bold text-slate-800 border-b pb-2 mb-3">BPS Rápido (0 - 2)</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {/* 8 Ítems Exactos */}
                         {[
-                            { key: 'sueno', label: 'Sueño' }, { key: 'estres', label: 'Estrés' }, { key: 'miedoMoverCargar', label: 'Kinesiofobia' }, { key: 'preocupacionDano', label: 'Catastr/Daño' },
-                            { key: 'bajaAutoeficacia', label: 'Autoeficacia' }, { key: 'presionRetorno', label: 'Presión RTp' }, { key: 'frustracion', label: 'Frustración' }
+                            { key: 'sueno', label: 'Alteración sueño' },
+                            { key: 'estres', label: 'Alto estrés' },
+                            { key: 'miedoMoverCargar', label: 'Miedo al mover/cargar' },
+                            { key: 'preocupacionDano', label: 'Preocupación de daño' },
+                            { key: 'bajaAutoeficacia', label: 'Baja autoeficacia' },
+                            { key: 'catastrofizacion', label: 'Catastrofización' },
+                            { key: 'presionRetorno', label: 'Presión por retorno' },
+                            { key: 'frustracion', label: 'Alta frustración' }
                         ].map(flag => (
-                            <div key={flag.key} className="flex flex-col gap-1">
-                                <label className="text-[9px] font-bold text-slate-500 uppercase truncate" title={flag.label}>{flag.label}</label>
-                                <div className="flex gap-0.5">
+                            <div key={flag.key} className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-600 truncate" title={flag.label}>{flag.label}</label>
+                                <div className="flex gap-1">
                                     {[0, 1, 2].map(val => (
                                         <button key={val} disabled={isClosed}
                                             onClick={() => updateV4({ bps: { ...interviewV4.bps, [flag.key]: val } })}
-                                            className={`flex-1 py-1 text-[10px] rounded-sm font-bold border transition-colors ${(interviewV4.bps as any)[flag.key] === val ? (val === 0 ? 'bg-slate-800 text-white' : val === 1 ? 'bg-amber-500 text-white' : 'bg-rose-600 text-white') : 'bg-slate-50 text-slate-400 border-slate-200'}`}
+                                            className={`flex-1 py-1.5 text-[11px] rounded font-black border transition-colors ${(interviewV4.bps as any)[flag.key] === val ? (val === 0 ? 'bg-slate-700 text-white border-slate-700' : val === 1 ? 'bg-amber-500 text-white border-amber-500' : 'bg-rose-600 text-white border-rose-600 shadow-sm') : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
                                         >
                                             {val}
                                         </button>
@@ -617,6 +624,17 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-200">
+                        <textarea
+                            rows={2}
+                            className="w-full text-xs p-2 border border-slate-300 rounded outline-none text-slate-700 placeholder-slate-400"
+                            placeholder="Otros factores BPS..."
+                            value={interviewV4.bps.otros || ""}
+                            onChange={e => updateV4({ bps: { ...interviewV4.bps, otros: e.target.value } })}
+                            disabled={isClosed}
+                        />
                     </div>
                 </section>
             </div>
@@ -632,8 +650,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     onClick={handleCloseAnamnesis}
                     disabled={isClosed || interviewV4.seguridad.overrideUrgenciaMedica}
                     className={`font-black px-8 py-3 rounded-xl transition shadow text-sm uppercase tracking-wider border ${interviewV4.seguridad.overrideUrgenciaMedica
-                            ? 'bg-slate-300 text-slate-500 border-slate-400 cursor-not-allowed'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed'
+                        ? 'bg-slate-300 text-slate-500 border-slate-400 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed'
                         }`}
                 >
                     {interviewV4.seguridad.overrideUrgenciaMedica ? '🔒 Bloqueado por Urgencia' : '🔒 Aprobar y Avanzar a Examen Físico (P2)'}
