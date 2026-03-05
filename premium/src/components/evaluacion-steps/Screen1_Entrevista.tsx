@@ -162,6 +162,62 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const activeFoco = interviewV4.focos.find(f => f.id === activeFocoId) || interviewV4.focos[0];
     const focoPrincipal = interviewV4.focos.find(f => f.esPrincipal) || interviewV4.focos[0];
 
+    // Estados Locales para Captura Conversacional Rápida
+    const [painInput, setPainInput] = useState<string>("");
+    const [tagInput, setTagInput] = useState<string>("");
+    const [tagsList, setTagsList] = useState<string[]>([]);
+    const [contextInput, setContextInput] = useState<string>("");
+
+    const handleQuickAdd = () => {
+        if (!activeFoco) return;
+
+        const updates: any = {};
+        let modified = false;
+
+        // 1. Dolor
+        if (painInput.trim() !== "") {
+            updates.dolorActual = Number(painInput);
+            modified = true;
+        }
+
+        // 2. Tags
+        if (tagsList.length > 0 || tagInput.trim() !== "") {
+            const finalTagsToAdd = [...tagsList];
+            if (tagInput.trim() !== "") finalTagsToAdd.push(tagInput.trim());
+
+            const existingTags = new Set(activeFoco.tags);
+            finalTagsToAdd.forEach(t => existingTags.add(t));
+            updates.tags = Array.from(existingTags);
+            modified = true;
+        }
+
+        // 3. Nota / Contexto
+        if (contextInput.trim() !== "") {
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const newLine = `[${timeStr}] ${contextInput.trim()}`;
+            updates.notaRapida = activeFoco.notaRapida ? `${activeFoco.notaRapida}\n${newLine}` : newLine;
+            modified = true;
+        }
+
+        if (modified) {
+            const newFocos = interviewV4.focos.map(f => f.id === activeFoco.id ? { ...f, ...updates } : f);
+            updateV4({ focos: newFocos });
+        }
+
+        // Limpieza de inputs (salvo el dolor que se puede quedar pegado para referencia, pero el prompt dice "Limpia A3 y A4, A2 puede quedarse")
+        setTagsList([]);
+        setTagInput("");
+        setContextInput("");
+    };
+
+    const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && tagInput.trim() !== "") {
+            e.preventDefault();
+            setTagsList([...tagsList, tagInput.trim()]);
+            setTagInput("");
+        }
+    };
+
     const handleUpdateActiveFoco = (patch: any) => {
         if (!activeFoco) return;
         const newFocos = interviewV4.focos.map(f => f.id === activeFoco.id ? { ...f, ...patch } : f);
@@ -203,8 +259,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     // UI RENDER
     return (
         <div className="flex flex-col gap-6 pb-12">
-            {/* STICKY HEADER */}
-            <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex flex-col gap-3">
+            {/* STICKY HEADER & CAPTURA CONVERSACIONAL */}
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex flex-col gap-3 shadow-sm">
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
@@ -217,20 +273,21 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </h2>
                         <p className="text-xs text-slate-500">Razonamiento Estructurado V4</p>
                     </div>
-                    <div>
+                    {/* Select Global Escala Dolor */}
+                    <div className="flex items-center gap-2">
                         <select
-                            className="bg-slate-100 border border-slate-300 text-xs rounded p-1.5 outline-none font-bold text-slate-700"
+                            className="bg-indigo-50 border border-indigo-200 text-xs rounded p-1.5 outline-none font-bold text-indigo-800"
                             value={interviewV4.escalaDolorGlobal}
                             onChange={e => updateV4({ escalaDolorGlobal: e.target.value as any })}
                             disabled={isClosed}
                         >
-                            <option value="EVA">Escala Global: EVA</option>
-                            <option value="ENA">Escala Global: ENA</option>
+                            <option value="EVA">Global: EVA</option>
+                            <option value="ENA">Global: ENA</option>
                         </select>
                     </div>
                 </div>
 
-                {/* CHIPS GLOBALES (Seguridad, Irritabilidad, Mecanismo) */}
+                {/* CHIPS GLOBALES */}
                 <div className="flex flex-wrap gap-2">
                     <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
                         <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -245,121 +302,198 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         Mecanismo: {focoPrincipal?.mecanismoTextoFinal || 'No definido'}
                     </div>
                 </div>
-            </div>
 
-            {/* MAPA DE FOCOS */}
-            <section className="bg-indigo-50/30 border text-sm border-indigo-200 rounded-xl shadow-sm p-4">
-                <div className="flex justify-between items-center mb-4 border-b border-indigo-100 pb-2">
-                    <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                        📍 Mapa de Focos ({interviewV4.focos.length}/5)
-                    </h3>
-                    <div className="flex items-center gap-2">
-                        <select
-                            className="bg-white border border-indigo-300 text-xs rounded p-1 outline-none font-bold text-indigo-800"
-                            value={activeFoco?.id || ""}
-                            onChange={e => setActiveFocoId(e.target.value)}
+                {/* BARRA DE CAPTURA RÁPIDA */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 flex flex-col gap-2 relative">
+                    <div className="absolute -top-2.5 left-3 bg-white border border-slate-200 text-[9px] font-bold text-slate-500 px-1.5 rounded uppercase tracking-wider">
+                        Captura Conversacional Rápida
+                    </div>
+
+                    <div className="flex flex-wrap md:flex-nowrap items-center gap-2 mt-1">
+                        {/* Selector Foco Activo y Botón */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            <select
+                                className="bg-white border border-slate-300 text-xs rounded p-1.5 outline-none font-bold text-slate-700 w-28 truncate"
+                                value={activeFoco?.id || ""}
+                                onChange={e => setActiveFocoId(e.target.value)}
+                                disabled={isClosed}
+                            >
+                                {interviewV4.focos.map((f, i) => (
+                                    <option key={f.id} value={f.id}>{f.esPrincipal ? '⭐ Foco 1' : `Foco ${i + 1}`} {f.region && `- ${f.region}`}</option>
+                                ))}
+                            </select>
+                            <button onClick={handleAddFoco} disabled={isClosed || interviewV4.focos.length >= 5} className="bg-slate-200 text-slate-600 px-2 py-1.5 rounded text-xs font-bold hover:bg-slate-300 disabled:opacity-50" title="Añadir foco (+)">
+                                +
+                            </button>
+                        </div>
+
+                        {/* Input Dolor */}
+                        <input
+                            type="number"
+                            min="0" max="10"
+                            placeholder={`Dolor (${interviewV4.escalaDolorGlobal})`}
+                            className="w-24 text-xs p-1.5 border border-slate-300 rounded outline-none shrink-0 text-center font-bold"
+                            value={painInput}
+                            onChange={e => setPainInput(e.target.value)}
                             disabled={isClosed}
-                        >
-                            {interviewV4.focos.map((f, i) => (
-                                <option key={f.id} value={f.id}>{f.esPrincipal ? '⭐ Foco 1 (Princ.)' : `Foco ${i + 1}`} {f.region && `- ${f.region}`}</option>
+                        />
+
+                        {/* Input Chips (Síntomas) */}
+                        <div className="flex-1 flex flex-wrap items-center gap-1 bg-white border border-slate-300 rounded p-1 min-w-[150px]">
+                            {tagsList.map((t, i) => (
+                                <span key={i} className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                                    {t}
+                                    <button onClick={() => setTagsList(tagsList.filter((_, index) => index !== i))} className="hover:text-rose-500 leading-none">×</button>
+                                </span>
                             ))}
-                        </select>
-                        <button onClick={handleAddFoco} disabled={isClosed || interviewV4.focos.length >= 5} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-indigo-700 disabled:opacity-50">
-                            + Foco
+                            <input
+                                type="text"
+                                placeholder={tagsList.length === 0 ? "Síntoma/Hecho (Enter)" : "..."}
+                                className="flex-1 min-w-[80px] text-xs outline-none bg-transparent p-0.5"
+                                value={tagInput}
+                                onChange={e => setTagInput(e.target.value)}
+                                onKeyDown={handleTagKeyDown}
+                                disabled={isClosed}
+                            />
+                        </div>
+
+                        {/* Input Contexto */}
+                        <input
+                            type="text"
+                            placeholder="Contexto / Nota al foco..."
+                            className="flex-1 md:flex-[1.5] text-xs p-1.5 border border-slate-300 rounded outline-none min-w-[150px]"
+                            value={contextInput}
+                            onChange={e => setContextInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') handleQuickAdd(); }}
+                            disabled={isClosed}
+                        />
+
+                        {/* Botón Añadir */}
+                        <button
+                            onClick={handleQuickAdd}
+                            disabled={isClosed || (!painInput && !tagInput && tagsList.length === 0 && !contextInput)}
+                            className="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 shrink-0 shadow-sm"
+                        >
+                            Añadir
                         </button>
                     </div>
                 </div>
+            </div>
 
-                {/* DETALLE FOCO ACTIVO */}
-                {activeFoco && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {/* Básicos */}
-                        <div className="space-y-3 border-r border-indigo-100 pr-4">
-                            {!activeFoco.esPrincipal && (
-                                <button
-                                    onClick={() => {
-                                        const newFocos = interviewV4.focos.map(f => ({ ...f, esPrincipal: f.id === activeFoco.id }));
-                                        updateV4({ focos: newFocos });
-                                    }}
-                                    disabled={isClosed}
-                                    className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded font-bold hover:bg-amber-100 w-full mb-1 transition-colors"
-                                >
-                                    ⭐ Marcar este Foco como Principal
-                                </button>
-                            )}
-                            <div className="flex gap-2">
-                                <input type="text" placeholder="Región (Ej. Hombro)" className="flex-1 w-full text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.region} onChange={e => handleUpdateActiveFoco({ region: e.target.value })} disabled={isClosed} />
-                                <select className="text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={activeFoco.lado} onChange={e => handleUpdateActiveFoco({ lado: e.target.value })} disabled={isClosed}>
-                                    <option value="N/A">N/A</option><option value="Izquierdo">Izq</option><option value="Derecho">Der</option><option value="Bilateral">Bi</option>
-                                </select>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <select className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={activeFoco.inicio} onChange={e => handleUpdateActiveFoco({ inicio: e.target.value })} disabled={isClosed}>
-                                    <option value="NoDefinido">Inicio...</option><option value="Subito_Trauma">Súbito (Trauma)</option><option value="Subito_SinTrauma">Súbito (Sin Trauma)</option><option value="Gradual">Gradual/Progresivo</option><option value="Reagudizacion">Reagudización</option>
-                                </select>
-                                <input type="text" placeholder="Tiempo (Ej. 3 sem)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.tiempoDesdeInicio} onChange={e => handleUpdateActiveFoco({ tiempoDesdeInicio: e.target.value })} disabled={isClosed} />
-                            </div>
-
-                            <textarea className="w-full text-xs p-2 border border-slate-300 rounded outline-none" rows={2} placeholder="Contexto Detallado del mecanismo o foco..." value={activeFoco.contextoDetallado} onChange={e => handleUpdateActiveFoco({ contextoDetallado: e.target.value })} disabled={isClosed} />
-
-                            <div className="bg-white border text-xs p-2 rounded">
-                                <div className="font-bold text-slate-500 mb-1">Dolor ({interviewV4.escalaDolorGlobal})</div>
-                                <div className="flex gap-2">
-                                    <input type="number" placeholder="Actual" className="w-1/3 p-1.5 border rounded outline-none text-center" value={activeFoco.dolorActual ?? ''} onChange={e => handleUpdateActiveFoco({ dolorActual: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                    <input type="number" placeholder="Peor 24h" className="w-1/3 p-1.5 border rounded outline-none text-center text-rose-600 font-bold" value={activeFoco.peor24h ?? ''} onChange={e => handleUpdateActiveFoco({ peor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                    <input type="number" placeholder="Mejor 24h" className="w-1/3 p-1.5 border rounded outline-none text-center text-emerald-600 font-bold" value={activeFoco.mejor24h ?? ''} onChange={e => handleUpdateActiveFoco({ mejor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                            </div>
+            {/* DETALLE FOCO ACTIVO */}
+            {activeFoco && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Básicos */}
+                    <div className="space-y-3 border-r border-indigo-100 pr-4">
+                        {!activeFoco.esPrincipal && (
+                            <button
+                                onClick={() => {
+                                    const newFocos = interviewV4.focos.map(f => ({ ...f, esPrincipal: f.id === activeFoco.id }));
+                                    updateV4({ focos: newFocos });
+                                }}
+                                disabled={isClosed}
+                                className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded font-bold hover:bg-amber-100 w-full mb-1 transition-colors"
+                            >
+                                ⭐ Marcar este Foco como Principal
+                            </button>
+                        )}
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="Región (Ej. Hombro)" className="flex-1 w-full text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.region} onChange={e => handleUpdateActiveFoco({ region: e.target.value })} disabled={isClosed} />
+                            <select className="text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={activeFoco.lado} onChange={e => handleUpdateActiveFoco({ lado: e.target.value })} disabled={isClosed}>
+                                <option value="N/A">N/A</option><option value="Izquierdo">Izq</option><option value="Derecho">Der</option><option value="Bilateral">Bi</option>
+                            </select>
                         </div>
 
-                        {/* Modificadores y Avanzado */}
-                        <div className="space-y-3">
+                        <div className="flex gap-2">
+                            <select className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={activeFoco.inicio} onChange={e => handleUpdateActiveFoco({ inicio: e.target.value })} disabled={isClosed}>
+                                <option value="NoDefinido">Inicio...</option><option value="Subito_Trauma">Súbito (Trauma)</option><option value="Subito_SinTrauma">Súbito (Sin Trauma)</option><option value="Gradual">Gradual/Progresivo</option><option value="Reagudizacion">Reagudización</option>
+                            </select>
+                            <input type="text" placeholder="Tiempo (Ej. 3 sem)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.tiempoDesdeInicio} onChange={e => handleUpdateActiveFoco({ tiempoDesdeInicio: e.target.value })} disabled={isClosed} />
+                        </div>
+
+                        <textarea className="w-full text-xs p-2 border border-slate-300 rounded outline-none" rows={2} placeholder="Contexto Detallado del mecanismo o foco..." value={activeFoco.contextoDetallado} onChange={e => handleUpdateActiveFoco({ contextoDetallado: e.target.value })} disabled={isClosed} />
+
+                        <div className="bg-white border text-xs p-2 rounded">
+                            <div className="font-bold text-slate-500 mb-1">Dolor ({interviewV4.escalaDolorGlobal})</div>
                             <div className="flex gap-2">
-                                <input type="text" placeholder="Agravantes (+)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.agravantes} onChange={e => handleUpdateActiveFoco({ agravantes: e.target.value })} disabled={isClosed} />
-                                <input type="text" placeholder="Aliviantes (-)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.aliviantes} onChange={e => handleUpdateActiveFoco({ aliviantes: e.target.value })} disabled={isClosed} />
-                            </div>
-
-                            <div className="bg-white border text-xs p-2 rounded">
-                                <div className="font-bold text-slate-500 mb-1">Irritabilidad</div>
-                                <div className="flex gap-2">
-                                    <select className="w-1/2 p-1.5 border rounded outline-none" value={activeFoco.dolorPostActividad} onChange={e => handleUpdateActiveFoco({ dolorPostActividad: e.target.value })} disabled={isClosed}>
-                                        <option value="NoDefinida">Dolor post-actividad?</option><option value="Nunca">Nunca</option><option value="A veces">A veces</option><option value="Frecuente">Frecuente</option><option value="Siempre">Siempre</option>
-                                    </select>
-                                    <input type="text" placeholder="Tiempo Calma (ej 2hr)" className="w-1/2 p-1.5 border rounded outline-none" value={activeFoco.tiempoCalma} onChange={e => handleUpdateActiveFoco({ tiempoCalma: e.target.value })} disabled={isClosed} />
-                                </div>
-                            </div>
-
-                            <div className="bg-white border text-xs p-2 rounded">
-                                <div className="font-bold text-slate-500 mb-1">Signo Comparable Base</div>
-                                <div className="flex gap-2">
-                                    <input type="text" placeholder="Gesto/Test Clínico" className="w-2/3 p-1.5 border rounded outline-none" value={activeFoco.signoComparable} onChange={e => handleUpdateActiveFoco({ signoComparable: e.target.value })} disabled={isClosed} />
-                                    <input type="number" placeholder="Dolor" className="w-1/3 p-1.5 border rounded outline-none text-center" value={activeFoco.dolorEnSigno ?? ''} onChange={e => handleUpdateActiveFoco({ dolorEnSigno: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                            </div>
-
-                            <div className="bg-white border text-xs p-2 rounded">
-                                <div className="font-bold text-slate-500 mb-1">Apellidos (Mecanismo)</div>
-                                <select className="w-full p-1.5 border rounded outline-none mb-1 font-bold text-indigo-700" value={activeFoco.mecanismoCategoria} onChange={e => handleUpdateActiveFoco({ mecanismoCategoria: e.target.value, mecanismoApellido: [] })} disabled={isClosed}>
-                                    {MECANISMOS_CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <div className="flex flex-wrap gap-1">
-                                    {(MECANISMOS_SUBTIPOS[activeFoco.mecanismoCategoria] || []).map(sub => (
-                                        <button key={sub} disabled={isClosed}
-                                            onClick={() => {
-                                                const curr = activeFoco.mecanismoApellido;
-                                                handleUpdateActiveFoco({ mecanismoApellido: curr.includes(sub) ? curr.filter(x => x !== sub) : [...curr, sub] });
-                                            }}
-                                            className={`text-[9px] px-1 py-0.5 border rounded ${activeFoco.mecanismoApellido.includes(sub) ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600'}`}>
-                                            {sub}
-                                        </button>
-                                    ))}
-                                </div>
+                                <input type="number" placeholder="Actual" className="w-1/3 p-1.5 border rounded outline-none text-center" value={activeFoco.dolorActual ?? ''} onChange={e => handleUpdateActiveFoco({ dolorActual: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
+                                <input type="number" placeholder="Peor 24h" className="w-1/3 p-1.5 border rounded outline-none text-center text-rose-600 font-bold" value={activeFoco.peor24h ?? ''} onChange={e => handleUpdateActiveFoco({ peor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
+                                <input type="number" placeholder="Mejor 24h" className="w-1/3 p-1.5 border rounded outline-none text-center text-emerald-600 font-bold" value={activeFoco.mejor24h ?? ''} onChange={e => handleUpdateActiveFoco({ mejor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
                             </div>
                         </div>
                     </div>
-                )}
-            </section>
+
+                    {/* Modificadores y Avanzado */}
+                    <div className="space-y-3">
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="Agravantes (+)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.agravantes} onChange={e => handleUpdateActiveFoco({ agravantes: e.target.value })} disabled={isClosed} />
+                            <input type="text" placeholder="Aliviantes (-)" className="w-1/2 text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.aliviantes} onChange={e => handleUpdateActiveFoco({ aliviantes: e.target.value })} disabled={isClosed} />
+                        </div>
+
+                        <div className="bg-white border text-xs p-2 rounded">
+                            <div className="font-bold text-slate-500 mb-1">Irritabilidad</div>
+                            <div className="flex gap-2">
+                                <select className="w-1/2 p-1.5 border rounded outline-none" value={activeFoco.dolorPostActividad} onChange={e => handleUpdateActiveFoco({ dolorPostActividad: e.target.value })} disabled={isClosed}>
+                                    <option value="NoDefinida">Dolor post-actividad?</option><option value="Nunca">Nunca</option><option value="A veces">A veces</option><option value="Frecuente">Frecuente</option><option value="Siempre">Siempre</option>
+                                </select>
+                                <input type="text" placeholder="Tiempo Calma (ej 2hr)" className="w-1/2 p-1.5 border rounded outline-none" value={activeFoco.tiempoCalma} onChange={e => handleUpdateActiveFoco({ tiempoCalma: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
+
+                        <div className="bg-white border text-xs p-2 rounded">
+                            <div className="font-bold text-slate-500 mb-1">Signo Comparable Base</div>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Gesto/Test Clínico" className="w-2/3 p-1.5 border rounded outline-none" value={activeFoco.signoComparable} onChange={e => handleUpdateActiveFoco({ signoComparable: e.target.value })} disabled={isClosed} />
+                                <input type="number" placeholder="Dolor" className="w-1/3 p-1.5 border rounded outline-none text-center" value={activeFoco.dolorEnSigno ?? ''} onChange={e => handleUpdateActiveFoco({ dolorEnSigno: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
+                            </div>
+                        </div>
+
+                        <div className="bg-white border text-xs p-2 rounded">
+                            <div className="font-bold text-slate-500 mb-1">Apellidos (Mecanismo)</div>
+                            <select className="w-full p-1.5 border rounded outline-none mb-1 font-bold text-indigo-700" value={activeFoco.mecanismoCategoria} onChange={e => handleUpdateActiveFoco({ mecanismoCategoria: e.target.value, mecanismoApellido: [] })} disabled={isClosed}>
+                                {MECANISMOS_CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <div className="flex flex-wrap gap-1">
+                                {(MECANISMOS_SUBTIPOS[activeFoco.mecanismoCategoria] || []).map(sub => (
+                                    <button key={sub} disabled={isClosed}
+                                        onClick={() => {
+                                            const curr = activeFoco.mecanismoApellido;
+                                            handleUpdateActiveFoco({ mecanismoApellido: curr.includes(sub) ? curr.filter(x => x !== sub) : [...curr, sub] });
+                                        }}
+                                        className={`text-[9px] px-1 py-0.5 border rounded ${activeFoco.mecanismoApellido.includes(sub) ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-600'}`}>
+                                        {sub}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white border text-xs p-2 rounded">
+                            <div className="font-bold text-slate-500 mb-1">Síntomas / Hechos Clínicos (Tags)</div>
+                            <div className="flex flex-wrap gap-1">
+                                {activeFoco.tags.length === 0 ? <span className="text-slate-400 italic">No hay síntomas...</span> : null}
+                                {activeFoco.tags.map(t => (
+                                    <span key={t} className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                                        {t}
+                                        <button onClick={() => handleUpdateActiveFoco({ tags: activeFoco.tags.filter(x => x !== t) })} className="hover:text-rose-500">×</button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white border text-xs p-2 rounded mt-2">
+                            <div className="font-bold text-slate-500 mb-1">Notas Rápidas (Log)</div>
+                            <textarea
+                                className="w-full text-xs p-2 border border-slate-300 rounded outline-none"
+                                rows={3}
+                                placeholder="Notas de captura conversacional..."
+                                value={activeFoco.notaRapida || ""}
+                                onChange={e => handleUpdateActiveFoco({ notaRapida: e.target.value })}
+                                disabled={isClosed}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* SECCIÓN Experiencia y Contexto (Combinado en grid) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -457,6 +591,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     🔒 Aprobar y Avanzar a Examen Físico (P2)
                 </button>
             </section>
-        </div>
+        </div >
     );
 }
