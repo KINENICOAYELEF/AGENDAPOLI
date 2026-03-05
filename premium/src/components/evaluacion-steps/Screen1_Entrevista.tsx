@@ -251,10 +251,32 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         alert("¡Anamnesis V4 Aprobada! P2 habilitado.");
     };
 
-    const isRiesgoAlto = interviewV4.seguridad.overrideUrgenciaMedica ||
-        interviewV4.seguridad.fiebre_sistemico_cancerPrevio ||
+    // LOGICA DE SEGURIDAD (CHIP)
+    const hasRedFlagExtrema = interviewV4.seguridad.overrideUrgenciaMedica ||
         interviewV4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar ||
-        interviewV4.seguridad.sospechaFractura_incapacidadCarga;
+        interviewV4.seguridad.sospechaFractura_incapacidadCarga ||
+        interviewV4.seguridad.fiebre_sistemico_cancerPrevio;
+
+    const hasAnyRedFlag = interviewV4.seguridad.bajaPeso_noIntencionada ||
+        interviewV4.seguridad.dolorNocturno_inexplicable_noMecanico ||
+        interviewV4.seguridad.trauma_altaEnergia_caidaImportante ||
+        hasRedFlagExtrema;
+
+    let seguridadColor = "Verde";
+    let seguridadStyles = "bg-emerald-50 border-emerald-200 text-emerald-800";
+    let seguridadDot = "bg-emerald-500";
+
+    if (hasRedFlagExtrema) {
+        seguridadColor = "Roja";
+        seguridadStyles = "bg-rose-50 border-rose-200 text-rose-800";
+        seguridadDot = "bg-rose-500";
+    } else if (hasAnyRedFlag) {
+        seguridadColor = "Amarilla";
+        seguridadStyles = "bg-amber-50 border-amber-200 text-amber-800";
+        seguridadDot = "bg-amber-500";
+    }
+
+    const isRiesgoAlto = hasRedFlagExtrema;
 
     // UI RENDER
     return (
@@ -289,9 +311,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 {/* CHIPS GLOBALES */}
                 <div className="flex flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        Seguridad: Verde
+                    <div className={`flex items-center gap-1.5 border px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide ${seguridadStyles}`}>
+                        <span className={`w-2 h-2 rounded-full ${seguridadDot}`}></span>
+                        Seguridad: {seguridadColor}
                     </div>
                     <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
                         <span className="w-2 h-2 rounded-full bg-slate-400"></span>
@@ -537,21 +559,40 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             {/* SECCIÓN Red Flags y BPS Rápido */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <section className="bg-rose-50/30 border text-sm border-rose-200 rounded-xl shadow-sm overflow-hidden p-4">
-                    <h3 className="font-bold text-rose-800 border-b border-rose-100 pb-2 mb-3">Red Flags (Seguridad)</h3>
+                    <h3 className="font-bold text-rose-800 border-b border-rose-100 pb-2 mb-3">Seguridad (Red Flags)</h3>
                     <div className="space-y-2 text-xs">
+                        {/* 6 Ítems Exactos */}
                         {[
-                            { key: 'fiebre_sistemico_cancerPrevio', label: 'Fiebre / Sistémico / Cáncer previo' },
-                            { key: 'bajaPeso_noIntencionada', label: 'Baja peso inexplicable' },
-                            { key: 'dolorNocturno_inexplicable_noMecanico', label: 'Dolor nocturno no mecánico' },
-                            { key: 'trauma_altaEnergia_caidaImportante', label: 'Trauma / Caída importante' },
-                            { key: 'neuroGraveProgresivo_esfinteres_sillaMontar', label: 'Neuro progresivo / Silla montar' },
-                            { key: 'sospechaFractura_incapacidadCarga', label: 'Incapacidad de carga (Fx)' },
+                            { key: 'fiebre_sistemico_cancerPrevio', label: 'Fiebre / compromiso sistémico / cáncer previo' },
+                            { key: 'dolorNocturno_inexplicable_noMecanico', label: 'Dolor nocturno inexplicable (no mecánico)' },
+                            { key: 'neuroGraveProgresivo_esfinteres_sillaMontar', label: 'Déficit neuro grave / progresivo (esfínteres / silla de montar)' },
+                            { key: 'bajaPeso_noIntencionada', label: 'Baja de peso no intencionada' },
+                            { key: 'trauma_altaEnergia_caidaImportante', label: 'Trauma alta energía / caída importante' },
+                            { key: 'sospechaFractura_incapacidadCarga', label: 'Sospecha fractura / incapacidad de carga' },
                         ].map(flag => (
-                            <label key={flag.key} className="flex items-start gap-2">
-                                <input type="checkbox" className="mt-0.5" checked={(interviewV4.seguridad as any)[flag.key]} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, [flag.key]: e.target.checked } })} disabled={isClosed} />
-                                <span>{flag.label}</span>
+                            <label key={flag.key} className="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" className="mt-0.5 accent-rose-600" checked={(interviewV4.seguridad as any)[flag.key]} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, [flag.key]: e.target.checked } })} disabled={isClosed} />
+                                <span className="text-slate-700">{flag.label}</span>
                             </label>
                         ))}
+                    </div>
+
+                    {/* OVERRIDE URGENCIA MÉDICA */}
+                    <div className="mt-4 pt-3 border-t border-rose-200">
+                        <label className="flex items-start gap-2 cursor-pointer mb-2">
+                            <input type="checkbox" className="mt-0.5 accent-rose-700 w-4 h-4" checked={interviewV4.seguridad.overrideUrgenciaMedica} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, overrideUrgenciaMedica: e.target.checked } })} disabled={isClosed} />
+                            <span className="text-rose-900 font-bold uppercase tracking-tight text-[11px]">Marcar urgencia médica pura manualmente (bloquea flujo kinésico)</span>
+                        </label>
+                        {interviewV4.seguridad.overrideUrgenciaMedica && (
+                            <textarea
+                                rows={2}
+                                className="w-full text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50 text-rose-900 placeholder-rose-400 mt-1"
+                                placeholder="Justificación de la urgencia..."
+                                value={interviewV4.seguridad.justificacionUrgencia || ""}
+                                onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, justificacionUrgencia: e.target.value } })}
+                                disabled={isClosed}
+                            />
+                        )}
                     </div>
                 </section>
 
@@ -585,10 +626,17 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 <h3 className="font-bold text-emerald-900 mb-2 text-lg">Cierre de Anamnesis V4</h3>
                 <p className="text-xs text-emerald-700 mb-5 max-w-lg">
                     Revisa que los focos importantes estén capturados.
-                    {isRiesgoAlto && <span className="block mt-2 font-bold text-rose-600 bg-rose-100 p-2 rounded">ATENCIÓN: Riesgo Alto de seguridad detectado. Evalúe derivación antes de avance físico.</span>}
+                    {isRiesgoAlto && <span className="block mt-2 font-bold text-rose-600 bg-rose-100 p-2 rounded border border-rose-200">ATENCIÓN: Riesgo Alto / Urgencia Médica detectada. {interviewV4.seguridad.overrideUrgenciaMedica ? 'Flujo kinésico bloqueado.' : 'Evalúe detenidamente.'}</span>}
                 </p>
-                <button onClick={handleCloseAnamnesis} disabled={isClosed} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-3 rounded-xl transition shadow text-sm disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider border border-emerald-800">
-                    🔒 Aprobar y Avanzar a Examen Físico (P2)
+                <button
+                    onClick={handleCloseAnamnesis}
+                    disabled={isClosed || interviewV4.seguridad.overrideUrgenciaMedica}
+                    className={`font-black px-8 py-3 rounded-xl transition shadow text-sm uppercase tracking-wider border ${interviewV4.seguridad.overrideUrgenciaMedica
+                            ? 'bg-slate-300 text-slate-500 border-slate-400 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed'
+                        }`}
+                >
+                    {interviewV4.seguridad.overrideUrgenciaMedica ? '🔒 Bloqueado por Urgencia' : '🔒 Aprobar y Avanzar a Examen Físico (P2)'}
                 </button>
             </section>
         </div >
