@@ -160,6 +160,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const [activeFocoId, setActiveFocoId] = useState<string>(interviewV4.focos[0]?.id || "");
 
     const activeFoco = interviewV4.focos.find(f => f.id === activeFocoId) || interviewV4.focos[0];
+    const focoPrincipal = interviewV4.focos.find(f => f.esPrincipal) || interviewV4.focos[0];
 
     const handleUpdateActiveFoco = (patch: any) => {
         if (!activeFoco) return;
@@ -203,28 +204,46 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     return (
         <div className="flex flex-col gap-6 pb-12">
             {/* STICKY HEADER */}
-            <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-2 -mx-4 px-4 sm:mx-0 sm:px-0 flex justify-between items-center">
-                <div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-                        Anamnesis Próxima y Riesgo
-                        {isSavingDraft ? (
-                            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal border shadow-sm animate-pulse">Guardando...</span>
-                        ) : lastSaved ? (
-                            <span className="text-[10px] text-emerald-600 font-medium">Auto-guardado {lastSaved}</span>
-                        ) : null}
-                    </h2>
-                    <p className="text-xs text-slate-500">Razonamiento Estructurado V4</p>
+            <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 pb-3 pt-4 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex flex-col gap-3">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                            Anamnesis Próxima y Riesgo
+                            {isSavingDraft ? (
+                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-normal border shadow-sm animate-pulse">Guardando...</span>
+                            ) : lastSaved ? (
+                                <span className="text-[10px] text-emerald-600 font-medium">Auto-guardado {lastSaved}</span>
+                            ) : null}
+                        </h2>
+                        <p className="text-xs text-slate-500">Razonamiento Estructurado V4</p>
+                    </div>
+                    <div>
+                        <select
+                            className="bg-slate-100 border border-slate-300 text-xs rounded p-1.5 outline-none font-bold text-slate-700"
+                            value={interviewV4.escalaDolorGlobal}
+                            onChange={e => updateV4({ escalaDolorGlobal: e.target.value as any })}
+                            disabled={isClosed}
+                        >
+                            <option value="EVA">Escala Global: EVA</option>
+                            <option value="ENA">Escala Global: ENA</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <select
-                        className="bg-slate-100 border border-slate-300 text-xs rounded p-1.5 outline-none font-bold text-slate-700"
-                        value={interviewV4.escalaDolorGlobal}
-                        onChange={e => updateV4({ escalaDolorGlobal: e.target.value as any })}
-                        disabled={isClosed}
-                    >
-                        <option value="EVA">Escala Global: EVA</option>
-                        <option value="ENA">Escala Global: ENA</option>
-                    </select>
+
+                {/* CHIPS GLOBALES (Seguridad, Irritabilidad, Mecanismo) */}
+                <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Seguridad: Verde
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                        Irritabilidad: No calculada
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-800 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        Mecanismo: {focoPrincipal?.mecanismoTextoFinal || 'No definido'}
+                    </div>
                 </div>
             </div>
 
@@ -256,6 +275,18 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {/* Básicos */}
                         <div className="space-y-3 border-r border-indigo-100 pr-4">
+                            {!activeFoco.esPrincipal && (
+                                <button
+                                    onClick={() => {
+                                        const newFocos = interviewV4.focos.map(f => ({ ...f, esPrincipal: f.id === activeFoco.id }));
+                                        updateV4({ focos: newFocos });
+                                    }}
+                                    disabled={isClosed}
+                                    className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded font-bold hover:bg-amber-100 w-full mb-1 transition-colors"
+                                >
+                                    ⭐ Marcar este Foco como Principal
+                                </button>
+                            )}
                             <div className="flex gap-2">
                                 <input type="text" placeholder="Región (Ej. Hombro)" className="flex-1 w-full text-xs p-2 border border-slate-300 rounded outline-none" value={activeFoco.region} onChange={e => handleUpdateActiveFoco({ region: e.target.value })} disabled={isClosed} />
                                 <select className="text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={activeFoco.lado} onChange={e => handleUpdateActiveFoco({ lado: e.target.value })} disabled={isClosed}>
