@@ -256,15 +256,73 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         setActiveFocoId(newId);
     };
 
-    const handleCloseAnamnesis = () => {
-        if (interviewV4.focos.length === 0) return alert("Debe existir al menos 1 foco para aprobar.");
-        const f1 = interviewV4.focos[0];
-        if (!f1.region || f1.region.trim() === '') return alert("El foco principal debe tener una región definida.");
-        if (f1.dolorActual === null) return alert("El foco principal debe tener el Dolor Actual informado.");
-        if (interviewV4.seguridad.overrideUrgenciaMedica && !interviewV4.seguridad.justificacionUrgencia) {
-            return alert("Debe justificar la urgencia médica si está activada.");
+    // IsRiesgoAlto is parsed inside the components logic section
+    // --- VALIDACIÓN DE CIERRE ESTRICTA ---
+    const { isValidForP2, validationErrors } = React.useMemo(() => {
+        const errors: string[] = [];
+
+        if (interviewV4.seguridad.overrideUrgenciaMedica) {
+            errors.push("Flujo kinésico bloqueado: derivar/urgencia.");
         }
-        updateV4({ status: "approved" });
+        if (interviewV4.focos.length === 0) {
+            errors.push("Debe existir al menos 1 foco.");
+        } else {
+            const fp = interviewV4.focos.find(f => f.esPrincipal) || interviewV4.focos[0];
+            if (!interviewV4.focos.find(f => f.esPrincipal)) errors.push("Debe seleccionar un Foco Principal.");
+            if (!fp.region || fp.region === "Otro" && !fp.region) errors.push("Foco Principal: Falta región.");
+            if (!fp.lado || fp.lado === "N/A") errors.push("Foco Principal: Falta lado.");
+            if (!fp.inicio || fp.inicio === "NoDefinido") errors.push("Foco Principal: Falta tipo de inicio.");
+            if (!fp.tiempoDesdeInicio) errors.push("Foco Principal: Falta tiempo desde inicio.");
+            if (fp.dolorActual === null) errors.push("Foco Principal: Falta dolor actual.");
+            if (fp.mejor24h === null) errors.push("Foco Principal: Falta dolor mejor 24h.");
+            if (fp.peor24h === null) errors.push("Foco Principal: Falta dolor peor 24h.");
+            if (!fp.mecanismoTextoFinal || fp.mecanismoCategoria === "NoDefinido") errors.push("Foco Principal: Falta mecanismo de dolor.");
+            if (!fp.signoComparable) errors.push("Foco Principal: Falta signo comparable (texto).");
+            if (fp.dolorEnSigno === null) errors.push("Foco Principal: Falta dolor en signo comparable.");
+        }
+
+        if (interviewV4.psfsGlobal.length === 0) {
+            errors.push("Debe existir al menos 1 actividad PSFS Global.");
+        } else if (interviewV4.psfsGlobal.some(p => !p.actividad || p.score === null)) {
+            errors.push("Todas las actividades PSFS deben tener nombre y puntaje.");
+        }
+
+        return { isValidForP2: errors.length === 0, validationErrors: errors };
+    }, [interviewV4]);
+
+    // --- AUTOMATIZACIÓN DETERMINÍSTICA P2 ---
+    const sugerenciasP2 = React.useMemo(() => {
+        const sugerencias: Array<FocoV4["id"] extends string ? any : any> = []; // workaround interface typings
+        const fp = interviewV4.focos.find(f => f.esPrincipal);
+
+        if (fp && fp.region) {
+            sugerencias.push({ id: `rom_${fp.id}`, focoId: fp.id, tipo: "ROM", label: `ROM activo/pasivo de ${fp.region}`, razon: "Evaluación basal de región principal", prioridad: "Alta", agregarAP2: true });
+            sugerencias.push({ id: `fuerza_${fp.id}`, focoId: fp.id, tipo: "Fuerza", label: `Fuerza basal relacionada a ${fp.region}`, razon: "Evaluación basal de región principal", prioridad: "Alta", agregarAP2: true });
+
+            if (fp.dolorPostActividad === 'A veces' || fp.dolorPostActividad === 'Siempre' || fp.dolorPostActividad === 'Frecuente') {
+                sugerencias.push({ id: `carga_${fp.id}`, focoId: fp.id, tipo: "Carga", label: "Test de carga progresiva", razon: "Dolor reportado post-actividad", prioridad: "Media", agregarAP2: true });
+            }
+
+            const isInflammatory = fp.tags.some(t => ['Inflamación', 'Edema', 'Hematoma', 'Eritema', 'Calor'].includes(t));
+            if (isInflammatory || fp.mecanismoApellido === "inflamatorio") {
+                sugerencias.push({ id: `inflam_${fp.id}`, focoId: fp.id, tipo: "Palpacion", label: "Inspección/palpación signos inflamatorios", razon: "Tags o mecanismo inflamatorio detectado", prioridad: "Media", agregarAP2: true });
+            }
+        }
+
+        if (interviewV4.contextoDeportivo.aplica) {
+            sugerencias.push({ id: "historia_carga", focoId: fp ? fp.id : "General", tipo: "Screening", label: "Historia de carga: spikes, volumen, intensidad", razon: "Paciente con contexto deportivo activo", prioridad: "Media", agregarAP2: true });
+        }
+
+        return sugerencias;
+    }, [interviewV4]);
+
+
+    const handleCloseAnamnesis = () => {
+        if (!isValidForP2) {
+            alert("No se puede avanzar. Revise los errores al final de la pantalla.\n\n" + validationErrors.join("\n"));
+            return;
+        }
+        updateV4({ status: "approved", automatizacionP2: sugerenciasP2 }); // Guardar las sugerencias como automatizaciones iniciales
         alert("¡Anamnesis V4 Aprobada! P2 habilitado.");
     };
 
@@ -726,44 +784,113 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 </div>
             </div>
 
-            {/* SECCIÓN Experiencia y Contexto (Combinado en grid) */}
+            {/* SECCIÓN Experiencia y Contexto Deportivo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4">
-                    <h3 className="font-bold text-slate-800 border-b pb-2 mb-3">Experiencia (Creencias/Expectativas)</h3>
+                    <h3 className="font-bold text-slate-800 border-b pb-2 mb-3">Experiencia de la persona</h3>
                     <div className="space-y-3">
-                        <textarea rows={1} placeholder="Causa percibida (creencia)" className="w-full text-xs p-2 border rounded outline-none" value={interviewV4.experienciaPersona.creencia} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, creencia: e.target.value } })} disabled={isClosed} />
-                        <select className="w-full text-xs p-2 border rounded outline-none font-medium" value={interviewV4.experienciaPersona.preocupacion} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, preocupacion: e.target.value as any } })} disabled={isClosed}>
+                        <textarea rows={1} placeholder="Causa percibida (creencia)" className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.experienciaPersona.creencia} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, creencia: e.target.value } })} disabled={isClosed} />
+                        <select className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none font-medium bg-slate-50" value={interviewV4.experienciaPersona.preocupacion} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, preocupacion: e.target.value as any } })} disabled={isClosed}>
                             <option value="NoDefinido">Preocupación Principal...</option>
                             <option value="Daño grave">Daño grave</option>
-                            <option value="Perder rendimiento">Perder rendimiento</option>
-                            <option value="No poder trabajar">No poder trabajar</option>
-                            <option value="Dolor no se irá">Dolor no se irá</option>
+                            <option value="No poder entrenar">No poder entrenar</option>
+                            <option value="Empeorar al mover">Empeorar al mover</option>
+                            <option value="Cirugía">Cirugía</option>
+                            <option value="Impacto laboral/académico">Impacto laboral/académico</option>
+                            <option value="Tiempo de recuperación">Tiempo de recuperación</option>
                             <option value="Otra">Otra</option>
                         </select>
-                        <textarea rows={1} placeholder="Expectativas..." className="w-full text-xs p-2 border rounded outline-none" value={interviewV4.experienciaPersona.expectativa} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, expectativa: e.target.value } })} disabled={isClosed} />
+                        <textarea rows={1} placeholder="Expectativas..." className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.experienciaPersona.expectativa} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, expectativa: e.target.value } })} disabled={isClosed} />
                     </div>
                 </section>
 
-                <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4">
-                    <h3 className="font-bold text-slate-800 border-b pb-2 mb-3">PSFS Global (1 - 5 Ítems)</h3>
-                    {interviewV4.psfsGlobal.map((psfs, idx) => (
-                        <div key={psfs.id} className="flex gap-1 mb-2">
-                            <input type="text" placeholder="Actividad" className="flex-1 text-xs p-1.5 border rounded outline-none" value={psfs.actividad} onChange={e => {
-                                const nf = [...interviewV4.psfsGlobal]; nf[idx].actividad = e.target.value; updateV4({ psfsGlobal: nf });
-                            }} disabled={isClosed} />
-                            <input type="number" min="0" max="10" placeholder="0-10" className="w-16 text-center text-xs p-1.5 border rounded outline-none bg-indigo-50 font-bold" value={psfs.score ?? ''} onChange={e => {
-                                const nf = [...interviewV4.psfsGlobal]; nf[idx].score = e.target.value ? Number(e.target.value) : null; updateV4({ psfsGlobal: nf });
-                            }} disabled={isClosed} />
-                            <button onClick={() => updateV4({ psfsGlobal: interviewV4.psfsGlobal.filter(x => x.id !== psfs.id) })} disabled={isClosed} className="px-2 border rounded text-rose-500 font-bold hover:bg-rose-50 bg-slate-50">×</button>
+                <section className="bg-white border text-sm border-slate-200 rounded-xl shadow-sm overflow-hidden p-4 relative">
+                    <h3 className="font-bold text-slate-800 border-b pb-2 mb-3 flex items-center justify-between">
+                        Contexto Deportivo
+                        <label className="flex items-center gap-1.5 cursor-pointer text-xs font-normal">
+                            <input type="checkbox" className="accent-indigo-600" checked={interviewV4.contextoDeportivo.aplica} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, aplica: e.target.checked } })} disabled={isClosed} />
+                            Practica deporte/act. física regular
+                        </label>
+                    </h3>
+
+                    {!interviewV4.contextoDeportivo.aplica && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center mt-10">
+                            <span className="text-xs font-bold text-slate-400 bg-white px-3 py-1 rounded shadow-sm border border-slate-100">No aplica</span>
                         </div>
-                    ))}
-                    {interviewV4.psfsGlobal.length < 5 && (
-                        <button onClick={() => updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: "General" }] })} disabled={isClosed} className="text-xs bg-indigo-50 text-indigo-700 font-bold py-1.5 w-full rounded border border-indigo-200 mt-1">
-                            + Añadir PSFS
-                        </button>
                     )}
+
+                    <div className="space-y-3">
+                        <div className="flex gap-2">
+                            <input type="text" placeholder="Deporte principal" className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none" value={interviewV4.contextoDeportivo.deportePrincipal} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, deportePrincipal: e.target.value } })} disabled={isClosed} />
+                            <select className="w-[120px] text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50" value={interviewV4.contextoDeportivo.objetivoRetorno} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, objetivoRetorno: e.target.value as any } })} disabled={isClosed}>
+                                <option value="NoDefinido">Objetivo...</option>
+                                <option value="Mantener">Mantener</option>
+                                <option value="Retornar">Retornar</option>
+                                <option value="Competir">Competir</option>
+                                <option value="Recreativo">Recreativo</option>
+                            </select>
+                        </div>
+                        <div className="flex gap-2">
+                            <input type="number" placeholder="Hrs/sem" title="Horas a la semana" className="w-[80px] text-xs p-2 border border-slate-300 rounded outline-none text-center" value={interviewV4.contextoDeportivo.horasSemanales ?? ''} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, horasSemanales: e.target.value ? Number(e.target.value) : null } })} disabled={isClosed} />
+                            <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50" value={interviewV4.contextoDeportivo.nivel} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, nivel: e.target.value as any } })} disabled={isClosed}>
+                                <option value="NoDefinido">Nivel...</option>
+                                <option value="Recreativo">Recreativo</option>
+                                <option value="Amateur">Amateur</option>
+                                <option value="Semipro">Semiprofesional</option>
+                                <option value="Pro">Profesional</option>
+                            </select>
+                            <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50" value={interviewV4.contextoDeportivo.cambioBruscoCarga} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, cambioBruscoCarga: e.target.value as any } })} disabled={isClosed}>
+                                <option value="NoDefinido">Cambio brusco (mes)</option>
+                                <option value="Sí">Sí</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <textarea rows={1} placeholder="Notas sobre la carga deportiva..." className="w-full text-xs p-2 border border-slate-300 rounded outline-none" value={interviewV4.contextoDeportivo.notaCarga || ''} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, notaCarga: e.target.value } })} disabled={isClosed} />
+                    </div>
                 </section>
             </div>
+
+            {/* SECCIÓN PSFS GLOBAL */}
+            <section className="bg-amber-50/40 border text-sm border-amber-200 rounded-xl shadow-sm overflow-hidden p-4 mb-4 mt-4">
+                <div className="flex justify-between items-center border-b border-amber-200 pb-2 mb-3">
+                    <h3 className="font-bold text-amber-900 flex items-center gap-2"><span className="bg-amber-100 text-amber-700 w-5 h-5 flex items-center justify-center rounded-full text-[10px]">F</span> Función Global (PSFS)</h3>
+                    <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Mín. 1 Actividad</span>
+                </div>
+
+                {interviewV4.psfsGlobal.map((psfs, idx) => (
+                    <div key={psfs.id} className="flex flex-col sm:flex-row gap-2 mb-2 p-2 bg-white rounded border border-amber-100 items-start sm:items-center">
+                        <input type="text" placeholder="Actividad afectada" className="flex-1 text-xs p-2 border border-slate-200 rounded outline-none" value={psfs.actividad} onChange={e => {
+                            const nf = [...interviewV4.psfsGlobal]; nf[idx].actividad = e.target.value; updateV4({ psfsGlobal: nf });
+                        }} disabled={isClosed} />
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <select className="flex-1 sm:w-[150px] text-[11px] p-2 border border-slate-200 rounded outline-none bg-slate-50 font-bold text-slate-600" value={psfs.focoAsociado} onChange={e => {
+                                const nf = [...interviewV4.psfsGlobal]; nf[idx].focoAsociado = e.target.value; updateV4({ psfsGlobal: nf });
+                            }} disabled={isClosed}>
+                                <option value="General">General / Múltiple</option>
+                                {interviewV4.focos.map((f, i) => (
+                                    <option key={f.id} value={f.id}>Foco {i + 1} {f.region && `(${f.region})`}</option>
+                                ))}
+                            </select>
+
+                            <div className="relative">
+                                <span className="absolute -top-3 right-0 text-[8px] font-black text-amber-600">Puntaje</span>
+                                <input type="number" min="0" max="10" placeholder="0-10" className="w-16 text-center text-xs p-2 border border-amber-300 rounded outline-none bg-amber-50 font-black text-amber-800" value={psfs.score ?? ''} onChange={e => {
+                                    const nf = [...interviewV4.psfsGlobal]; nf[idx].score = e.target.value ? Number(e.target.value) : null; updateV4({ psfsGlobal: nf });
+                                }} disabled={isClosed} />
+                            </div>
+
+                            <button onClick={() => updateV4({ psfsGlobal: interviewV4.psfsGlobal.filter(x => x.id !== psfs.id) })} disabled={isClosed} className="p-2 border border-rose-200 rounded text-rose-500 font-bold hover:bg-rose-50 bg-white ml-1.5 transition-colors">×</button>
+                        </div>
+                    </div>
+                ))}
+
+                {interviewV4.psfsGlobal.length < 5 && (
+                    <button onClick={() => updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: "General" }] })} disabled={isClosed} className="text-xs bg-white hover:bg-amber-50 text-amber-700 font-bold py-2 w-full rounded border border-amber-200 mt-2 transition-colors flex items-center justify-center gap-1 shadow-sm">
+                        <span>+</span> Añadir actividad funcional
+                    </button>
+                )}
+            </section>
 
             {/* SECCIÓN Red Flags y BPS Rápido */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -848,22 +975,54 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 </section>
             </div>
 
+            {/* SECCIÓN Automatización Hacia Examen Físico (P2) */}
+            <section className="bg-indigo-50/50 border text-sm border-indigo-200 rounded-xl shadow-sm overflow-hidden p-5 mb-6">
+                <div className="flex items-center gap-2 mb-4 border-b border-indigo-100 pb-2">
+                    <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    <h3 className="font-bold text-indigo-900 text-base">Automatización hacia Examen Físico (P2)</h3>
+                </div>
+
+                {sugerenciasP2.length === 0 ? (
+                    <p className="text-xs text-indigo-400 italic">No hay sugerencias automáticas aún. Complete el foco principal.</p>
+                ) : (
+                    <div className="space-y-2">
+                        {sugerenciasP2.map(s => (
+                            <div key={s.id} className="flex items-start gap-3 bg-white p-3 rounded border border-indigo-100 shadow-sm">
+                                <input type="checkbox" className="mt-1 accent-indigo-600" checked={true} readOnly />
+                                <div>
+                                    <div className="font-bold text-slate-700 text-[13px]">{s.label}</div>
+                                    <div className="text-[11px] text-indigo-500 mt-0.5">Razón: {s.razon}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
+
             {/* SECCIÓN Cierre Estructurado */}
-            <section className="bg-emerald-50 border text-sm border-emerald-200 rounded-xl shadow-sm p-5 text-center flex flex-col items-center">
-                <h3 className="font-bold text-emerald-900 mb-2 text-lg">Cierre de Anamnesis V4</h3>
-                <p className="text-xs text-emerald-700 mb-5 max-w-lg">
-                    Revisa que los focos importantes estén capturados.
-                    {isRiesgoAlto && <span className="block mt-2 font-bold text-rose-600 bg-rose-100 p-2 rounded border border-rose-200">ATENCIÓN: Riesgo Alto / Urgencia Médica detectada. {interviewV4.seguridad.overrideUrgenciaMedica ? 'Flujo kinésico bloqueado.' : 'Evalúe detenidamente.'}</span>}
-                </p>
+            <section className={`border text-sm rounded-xl shadow-sm p-6 text-center flex flex-col items-center transition-colors ${isValidForP2 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                <h3 className={`font-bold mb-2 text-lg ${isValidForP2 ? 'text-emerald-900' : 'text-slate-700'}`}>Cierre de Anamnesis V4</h3>
+
+                {!isValidForP2 && (
+                    <div className="text-left w-full max-w-lg mb-5 bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-lg text-xs space-y-1">
+                        <strong className="block mb-2 text-rose-900 border-b border-rose-200 pb-1">Faltan requisitos para avanzar:</strong>
+                        {validationErrors.map((err, i) => (
+                            <div key={i} className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span> {err}</div>
+                        ))}
+                    </div>
+                )}
+
+                {isRiesgoAlto && <span className="block mt-2 font-bold mb-4 text-rose-600 bg-rose-100 p-2 rounded border border-rose-200">ATENCIÓN: Riesgo Alto detectado. {interviewV4.seguridad.overrideUrgenciaMedica ? 'Flujo kinésico bloqueado.' : 'Evalúe detenidamente.'}</span>}
+
                 <button
                     onClick={handleCloseAnamnesis}
-                    disabled={isClosed || interviewV4.seguridad.overrideUrgenciaMedica}
-                    className={`font-black px-8 py-3 rounded-xl transition shadow text-sm uppercase tracking-wider border ${interviewV4.seguridad.overrideUrgenciaMedica
-                        ? 'bg-slate-300 text-slate-500 border-slate-400 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed'
+                    disabled={isClosed || !isValidForP2}
+                    className={`font-black px-8 py-3.5 rounded-xl transition shadow text-sm uppercase tracking-wider border w-full max-w-sm ${!isValidForP2
+                        ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800'
                         }`}
                 >
-                    {interviewV4.seguridad.overrideUrgenciaMedica ? '🔒 Bloqueado por Urgencia' : '🔒 Aprobar y Avanzar a Examen Físico (P2)'}
+                    {interviewV4.seguridad.overrideUrgenciaMedica ? '🔒 Bloqueado por Urgencia' : (isValidForP2 ? '✓ Aprobar y Avanzar (P2)' : 'Bloqueado (Faltan Datos)')}
                 </button>
             </section>
         </div >

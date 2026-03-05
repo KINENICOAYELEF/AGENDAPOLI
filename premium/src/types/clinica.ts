@@ -558,19 +558,17 @@ export interface AnamnesisProximaV4 {
 
     contextoDeportivo: {
         aplica: boolean;
-        deportePrincipal: string;
-        nivel: "Recreativo" | "Competitivo" | "Elite" | "NoDefinido";
-        frecuenciaSemanal: number | null;
-        volumenRecienteCambio: "Aumento" | "Disminucion" | "SinCambios" | "NoDefinido";
-        eventoProximo: string;
-        gestoProvocador: string;
-        objetivoRetorno: string;
-        estadoActual?: "Normal_SinDolor" | "Normal_ConDolor" | "Modificado" | "ReposoDeportivo" | "NoAplica";
+        deportePrincipal: string; // "Deporte o actividad"
+        objetivoRetorno: "Mantener" | "Retornar" | "Competir" | "Recreativo" | "NoDefinido";
+        horasSemanales: number | null;
+        nivel: "Recreativo" | "Amateur" | "Semipro" | "Pro" | "NoDefinido";
+        cambioBruscoCarga: "Sí" | "No" | "NoDefinido";
+        notaCarga: string;
     };
 
     experienciaPersona: {
         creencia: string;
-        preocupacion: "Daño grave" | "Perder rendimiento" | "No poder trabajar" | "Dolor no se irá" | "Otra" | "NoDefinido";
+        preocupacion: "Daño grave" | "No poder entrenar" | "Empeorar al mover" | "Cirugía" | "Impacto laboral/académico" | "Tiempo de recuperación" | "Otra" | "NoDefinido";
         expectativa: string;
     };
 
