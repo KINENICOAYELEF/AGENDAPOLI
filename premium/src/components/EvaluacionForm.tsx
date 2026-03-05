@@ -142,18 +142,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
         if (type === 'INITIAL') {
             const fd = formData as EvaluacionInicial;
-            const hasFocos = (fd.interview?.focos?.length || 0) > 0;
+            const hasFocos = (fd.interview?.v3?.focos?.length || 0) > 0;
             if (!hasFocos) missing.push("Foco Principal de Consulta");
 
             // PSFS may be inside the new `focos` array or in the legacy `interview.psfs` array
             const hasPsfsParams = ((fd as any).interview?.psfs?.length || 0) > 0;
-            const hasFocosPsfs = fd.interview?.focos?.some(f => f.psfs && f.psfs.length > 0) || false;
+            const hasFocosPsfs = fd.interview?.v3?.focos?.some(f => f.funcionMeta?.psfsItems?.length > 0) || false;
             const hasPsfs = hasPsfsParams || hasFocosPsfs;
             if (!hasPsfs) missing.push("Al menos 1 PSFS (Escala Funcional)");
 
             // Comparable sign may be inside new `primaryComparable` or legacy fields
             const hasComparableV2 = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
-            const hasComparableFoco = fd.interview?.focos?.some(f => f.primaryComparable && f.primaryComparable.name) || false;
+            const hasComparableFoco = fd.interview?.v3?.focos?.some((f: any) => f.primaryComparable?.name || f.signoComparableEstrella?.nombre) || false;
             const hasComparable = hasComparableV2 || hasComparableFoco;
 
             if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
@@ -287,7 +287,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     }).catch(err => console.error("Error saving PSFS outcome:", err));
                 }
 
-                if (fd.interview?.sane !== undefined && fd.interview.sane > 0) {
+                if ((fd as any).interview?.sane !== undefined && (fd as any).interview.sane > 0) {
                     const outcomeId = `sane_${Date.now()}`;
                     await OutcomesService.save(globalActiveYear, procesoId, {
                         id: outcomeId,
@@ -296,7 +296,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         type: 'SANE',
                         capturedAt: new Date().toISOString(),
                         context: 'EVALUACION_INICIAL',
-                        values: { score: fd.interview.sane },
+                        values: { score: (fd as any).interview.sane },
                         createdByUid: user.uid,
                         createdAt: new Date().toISOString()
                     }).catch(err => console.error("Error saving SANE outcome:", err));

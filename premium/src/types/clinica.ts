@@ -353,57 +353,143 @@ export interface BaseEvaluacion {
     loadTrafficLight?: any;
 }
 
+export interface AnamnesisProximaV3 {
+    version: "v3";
+    status: "draft" | "approved";
+    updatedAt: string; // ISOString
+    painScaleMode: "EVA" | "ENA"; // default "EVA"
+
+    summaryBadges: {
+        seguridad: "Verde" | "Amarillo" | "Rojo";
+        irritabilidad: "Baja" | "Media" | "Alta" | "NoDefinida";
+        mecanismoTop: "Aparentemente Nociceptivo" | "Aparentemente Neuropático" | "Aparentemente Nociplástico" | "Mixto" | "NoDefinido";
+    };
+
+    uiConfig: {
+        isFocosExpanded: boolean;
+    };
+
+    relato: {
+        enabled: boolean; // default true
+        text: string;
+        aiSuggestionStatus: "idle" | "running" | "done" | "error";
+        lastSuggestedAt?: string; // ISOString
+    };
+
+    riesgo: {
+        redFlags: {
+            fiebre_sistemico_cancerPrevio: boolean;
+            bajaPeso_noIntencionada: boolean;
+            dolorNocturno_inexplicable_noMecanico: boolean;
+            trauma_altaEnergia_caidaImportante: boolean;
+            neuroGraveProgresivo_esfinteres_sillaMontar: boolean;
+            sospechaFractura_incapacidadCarga: boolean;
+        };
+        overrideUrgenciaMedicaPura: boolean; // default false
+        notesRiesgo: string;
+    };
+
+    bpsQuick: {
+        sueno: 0 | 1 | 2;
+        estres: 0 | 1 | 2;
+        miedoMoverCargar: 0 | 1 | 2;
+        preocupacionDano: 0 | 1 | 2;
+        bajaAutoeficacia: 0 | 1 | 2;
+        catastrofizacion: 0 | 1 | 2;
+        presionRetorno: 0 | 1 | 2;
+        frustracion: 0 | 1 | 2;
+        otros?: string;
+    };
+
+    focos: Array<{
+        id: string;
+        isPrimary: boolean;
+        region: string;
+        lado: "Izquierdo" | "Derecho" | "Bilateral" | "N/A";
+
+        historia: {
+            inicioTipo: "Subito_Trauma" | "Subito_SinTrauma" | "Gradual" | "Reagudizacion" | "NoDefinido";
+            tiempoDesdeInicio: string; // "2 días", "3 semanas"
+            mecanismoContexto: string; // "cayó corriendo"
+        };
+
+        sintomasTags: string[];
+
+        dolor: {
+            actual: number | null; // 0-10
+            peor24h: number | null;
+            mejor24h: number | null;
+        };
+
+        irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido";
+        agravantes: string;
+        aliviantes: string;
+
+        irritabilidadInputs: {
+            dolorPostCarga: "Nunca" | "A veces" | "Frecuente" | "Siempre" | "NoDefinida";
+            tiempoCalma: string; // "<30 min"
+        };
+
+        funcionMeta: {
+            limitacionPrincipal: string;
+            psfsItems: Array<{ actividad: string; score0a10: number | null }>;
+            expectativaPaciente: string;
+        };
+
+        signoComparableEstrella: {
+            nombre: string;
+            dosificacion: string;
+            dolor: number | null;
+        };
+
+        mecanismoClasificacion: {
+            categoria: "Aparentemente Nociceptivo" | "Aparentemente Neuropático" | "Aparentemente Nociplástico" | "Mixto" | "NoDefinido";
+            subtipos: string[];
+            confidence0a3: 0 | 1 | 2 | 3;
+        };
+    }>;
+
+    contextoDeportivo: {
+        aplica: boolean;
+        deportePrincipal: string;
+        nivel: "Recreativo" | "Competitivo" | "Elite" | "NoDefinido";
+        frecuenciaSemanal: number | null;
+        volumenRecienteCambio: "Aumento" | "Disminucion" | "SinCambios" | "NoDefinido";
+        eventoProximo: string;
+        gestoProvocador: string;
+        objetivoRetorno: string;
+        estadoActual?: "Normal_SinDolor" | "Normal_ConDolor" | "Modificado" | "ReposoDeportivo" | "NoAplica";
+        horasSemanaNivel?: string;
+    };
+
+    experienciaPersona: {
+        creeQueLoGatillo: string;
+        preocupacionPrincipal: "Daño grave" | "Perder rendimiento" | "No poder trabajar" | "Dolor no se irá" | "Otra" | "NoDefinido";
+        otraPreocupacionTexto?: string;
+        expectativas: string;
+    };
+
+    automatizacionP2: {
+        status: "idle" | "ready";
+        prioridades: Array<{
+            focoId: string;
+            items: Array<{
+                tipo: "Screening" | "ROM" | "Fuerza" | "Neuro" | "Palpacion" | "TestEspecial" | "Carga" | "Educacion";
+                label: string;
+                razon: string;
+                prioridad: "Alta" | "Media" | "Baja";
+            }>;
+        }>;
+        alertas: Array<{ nivel: "Info" | "Warn" | "Block"; mensaje: string }>;
+    };
+}
+
 export interface EvaluacionInicial extends BaseEvaluacion {
     type: 'INITIAL';
     // PANTALLA 1: ENTREVISTA INTEGRAL (FASE 2.2.X ACTUALIZADA)
     interview?: {
-        // B) SEGURIDAD GLOBAL
-        redFlagsSystemic?: boolean;
-        redFlagsWeightLoss?: boolean;
-        redFlagsNightPain?: boolean;
-        redFlagsTraumaHigh?: boolean;
-        redFlagsFractureParams?: boolean;
-        redFlagsNeuroSevere?: boolean;
-        redFlagsThoracic?: boolean;
-        redFlagsDvtTep?: boolean; // Condicional a foco de extremidad inferior
-        redFlagsDetailsText?: string; // Para explayar cualquiera que sea Si
-
-        orangeFlagPersonalRisk?: boolean;
-        orangeFlagDetailsText?: string;
-
-        yellowFlags: { // 0-2 intensidad
-            sleepImpact: number;
-            highStress: number;
-            kinesiophobia: number;
-            damageWorry: number;
-            lowSelfEfficacy: number;
-            catastrophizing: number;
-            returnPressure: number;
-            highFrustration: number;
-        };
-
-        // S1: Relato Global (Sección 1)
-        freeNarrativeGlobal?: string; // Relato libre del episodio aplicable a todos los focos
-
-        // Rework Profundo Multi-foco "Kine Real" (Sección 4, 5 y 6)
-        focos: KineFocusArea[];
-
-        // S6: Experiencia UX
-        triggerBelief?: string;
-        mainConcern?: string;
-
-        // Outputs Calculados In-Vivo (Sección 7)
-        autoOutputs?: KineAutoOutputs;
-
-        // --- Atributos deprecados de vieja version (Mantenidos para compatibilidad local de viejos form data) ---
-        hasUrgency?: boolean;
-        functionalLimitationPrimary?: string;
-        personGoal?: string;
-        sane?: number;
-        groc?: number;
-        bpsFactors?: string[];
-        irritabilityCalculated?: string;
-        mechanismSuggested?: string;
+        // V3 (Fase 8)
+        v3?: AnamnesisProximaV3;
     };
 
     // PANTALLA 2: EXAMEN FISICO GUIADO

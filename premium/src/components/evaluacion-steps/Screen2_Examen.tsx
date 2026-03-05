@@ -17,10 +17,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const orthoTests = exam.orthopedicTests || [];
 
     const engine = useMemo(() => {
-        const principalFocus = formData.interview?.focos?.[0] || null;
+        const principalFocus = formData.interview?.v3?.focos?.[0] || null;
         const irritability = principalFocus ? computeIrritability(principalFocus as any) : { level: 'Desconocida', reasons: [] };
-        const safety = computeSafety(formData.interview);
-        const checklist = buildExamChecklist(formData.interview, irritability.level as any);
+        const safety = computeSafety(formData.interview as any);
+        const checklist = buildExamChecklist(formData.interview as any, irritability.level as any);
         return { irritability, safety, checklist };
     }, [formData.interview]);
 
