@@ -1,7 +1,8 @@
 import { EvaluacionInicial, KineFocusArea, KineAutoOutputs, AnamnesisProximaV3 } from "@/types/clinica";
 
-// Helper para sacar los focos en V3 o V2
+// Helper para sacar los focos en V4, V3 o V2
 const getFocos = (interview: any): any[] => {
+    if (interview?.v4?.focos) return interview.v4.focos;
     if (interview?.v3?.focos) return interview.v3.focos;
     return interview?.focos || [];
 };
@@ -13,9 +14,9 @@ export function computeIrritability(foco: any): { level: 'Baja' | 'Media' | 'Alt
     let score = 0;
     const reasons: string[] = [];
 
-    // V3 vs V2
-    const current = foco.dolor?.actual ?? Number(foco.painCurrent) ?? 0;
-    const worst = foco.dolor?.peor24h ?? Number(foco.painWorst24h) ?? 0;
+    // V4 vs V3 vs V2
+    const current = foco.dolorActual ?? foco.dolor?.actual ?? Number(foco.painCurrent) ?? 0;
+    const worst = foco.peor24h ?? foco.dolor?.peor24h ?? Number(foco.painWorst24h) ?? 0;
     const maxPain = Math.max(current, worst);
 
     if (maxPain >= 7) { score += 3; reasons.push(`Dolor severo reportado (>=7).`); }
@@ -26,16 +27,16 @@ export function computeIrritability(foco: any): { level: 'Baja' | 'Media' | 'Alt
         score += 2; reasons.push('Dolor nocturno interrumpe el sueño.');
     }
 
-    const afterEffectFreq = foco.irritabilidadInputs?.dolorPostCarga || foco.afterEffectFreq;
-    const settlingTime = foco.irritabilidadInputs?.tiempoCalma || foco.settlingTime;
+    const afterEffectFreq = foco.dolorPostActividad || foco.irritabilidadInputs?.dolorPostCarga || foco.afterEffectFreq;
+    const settlingTime = foco.tiempoCalma || foco.irritabilidadInputs?.tiempoCalma || foco.settlingTime;
 
-    if (afterEffectFreq === 'Frecuente' || afterEffectFreq === 'Siempre' || settlingTime === '>24 h' || settlingTime === '1–24 h') {
-        score += 3; reasons.push('El síntoma tiene un after-effect prolongado (>1h) o muy frecuente.');
+    if (afterEffectFreq === 'Frecuente' || afterEffectFreq === 'Siempre' || settlingTime === '>24 h' || settlingTime === '1–24 h' || settlingTime.includes('hora') || settlingTime.includes('dia')) {
+        score += 3; reasons.push('El síntoma tiene un after-effect prolongado o muy frecuente.');
     } else if (afterEffectFreq === 'A veces') {
         score += 1;
     }
 
-    const ease = foco.provocationEase || (foco.historia?.inicioTipo === 'Subito_Trauma' ? 'Media' : 'Baja');
+    const ease = foco.provocationEase || (foco.inicio === 'Subito_Trauma' || foco.historia?.inicioTipo === 'Subito_Trauma' ? 'Media' : 'Baja');
     if (ease === 'Alta') {
         score += 2; reasons.push('Poca carga o movimiento genera síntomas rápidamente (Alta facilidad de provocación).');
     }
@@ -54,20 +55,21 @@ export function computeSafety(interview: any): { level: 'Verde' | 'Amarillo' | '
 
     if (!interview) return { level: 'Verde', reasons: [], checklist: [] };
 
+    const v4Risk = interview.v4?.seguridad;
     const v3Risk = interview.v3?.riesgo?.redFlags;
 
-    const sys = v3Risk?.fiebre_sistemico_cancerPrevio || interview.redFlagsSystemic;
-    const weight = v3Risk?.bajaPeso_noIntencionada || interview.redFlagsWeightLoss;
-    const night = v3Risk?.dolorNocturno_inexplicable_noMecanico || interview.redFlagsNightPain;
+    const sys = v4Risk?.fiebre_sistemico_cancerPrevio || v3Risk?.fiebre_sistemico_cancerPrevio || interview.redFlagsSystemic;
+    const weight = v4Risk?.bajaPeso_noIntencionada || v3Risk?.bajaPeso_noIntencionada || interview.redFlagsWeightLoss;
+    const night = v4Risk?.dolorNocturno_inexplicable_noMecanico || v3Risk?.dolorNocturno_inexplicable_noMecanico || interview.redFlagsNightPain;
 
     if (sys || weight || night) {
         isRed = true;
-        reasons.push('ALERTA MÁSICA: Síntomas sistémicos, historia de cáncer o dolor nocturno implacable no mecánico.');
+        reasons.push('ALERTA MÁSICA: Síntomas sistémicos, historia de cáncer, baja peso o dolor nocturno implacable no mecánico.');
         checklist.push('Derivar a urgencias o evaluación médica a la brevedad. No iniciar terapia activa sin clearance.');
     }
 
-    const traumaHigh = v3Risk?.trauma_altaEnergia_caidaImportante || interview.redFlagsTraumaHigh;
-    const fracture = v3Risk?.sospechaFractura_incapacidadCarga || interview.redFlagsFractureParams;
+    const traumaHigh = v4Risk?.trauma_altaEnergia_caidaImportante || v3Risk?.trauma_altaEnergia_caidaImportante || interview.redFlagsTraumaHigh;
+    const fracture = v4Risk?.sospechaFractura_incapacidadCarga || v3Risk?.sospechaFractura_incapacidadCarga || interview.redFlagsFractureParams;
 
     if (traumaHigh || fracture) {
         isRed = true;
@@ -75,7 +77,7 @@ export function computeSafety(interview: any): { level: 'Verde' | 'Amarillo' | '
         checklist.push('Aplicar reglas de decisión clínica para fracturas (ej. Ottawa) o derivar a imagenología.');
     }
 
-    const neuroSevere = v3Risk?.neuroGraveProgresivo_esfinteres_sillaMontar || interview.redFlagsNeuroSevere;
+    const neuroSevere = v4Risk?.neuroGraveProgresivo_esfinteres_sillaMontar || v3Risk?.neuroGraveProgresivo_esfinteres_sillaMontar || interview.redFlagsNeuroSevere;
     if (neuroSevere) {
         isRed = true;
         reasons.push('Síntomas neurológicos graves, progresivos o signos de alarma espinal (ej. síndrome cauda equina, mielopatía).');
@@ -89,6 +91,13 @@ export function computeSafety(interview: any): { level: 'Verde' | 'Amarillo' | '
         checklist.push('Aplicar criterios de Wells. Derivar a urgencia si es positivo.');
     }
 
+    // Manual Override V4
+    if (v4Risk?.overrideUrgenciaMedica) {
+        isRed = true;
+        reasons.push(`Override Urgencia V4 Activado: ${v4Risk.justificacionUrgencia || 'Sin justificación'}`);
+        checklist.push('Derivar a urgencias por bandera roja manual del clínico.');
+    }
+
     const personalRisk = interview.orangeFlagPersonalRisk; // solo V2, V3 podria tener estres altisimo
     if (personalRisk) {
         isYellow = true;
@@ -100,6 +109,7 @@ export function computeSafety(interview: any): { level: 'Verde' | 'Amarillo' | '
     const focos = getFocos(interview);
     const tieneTraumaAgudo = focos.some(f =>
         (f.onsetType === 'Súbito' && f.suddenSound === 'Chasquido' && f.suddenImmediateCapacity === 'Incapaz' && f.suddenSwellingVisible === 'Sí') ||
+        (f.inicio === 'Subito_Trauma' && f.contextoDetallado?.toLowerCase().includes('chasquido')) ||
         (f.historia?.inicioTipo === 'Subito_Trauma' && f.historia?.mecanismoContexto?.toLowerCase().includes('chasquido'))
     );
     if (tieneTraumaAgudo && !isRed) {
@@ -136,14 +146,16 @@ export function computePainMechanism(foco: any, interview: any): { category: 'No
         nociPlastic += 2;
         reasons.push('Patrón difuso o migratorio sugerente de sensibilización periférica/central.');
     }
-    const duration = foco.onsetDuration || foco.historia?.tiempoDesdeInicio || "";
+    const duration = foco.tiempoDesdeInicio || foco.onsetDuration || foco.historia?.tiempoDesdeInicio || "";
     if (duration.includes('meses') || duration === '>6 meses' || duration === '3–6 meses') {
         nociPlastic += 2;
         reasons.push('Evolución crónica (>3 meses) amplifica el riesgo nociplástico.');
     }
 
     let sumYellow = 0;
-    if (interview?.v3?.bpsQuick) {
+    if (interview?.v4?.bps) {
+        sumYellow = Object.values(interview.v4.bps).reduce((a: any, b: any) => typeof b === 'number' ? a + b : a, 0) as number;
+    } else if (interview?.v3?.bpsQuick) {
         sumYellow = Object.values(interview.v3.bpsQuick).reduce((a: any, b: any) => typeof b === 'number' ? a + b : a, 0) as number;
     } else if (interview?.yellowFlags) {
         sumYellow = Object.values(interview.yellowFlags).reduce((a: any, b: any) => Number(a) + Number(b), 0) as number;
@@ -264,8 +276,8 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
 
     const focos = getFocos(interview);
     focos.forEach((f: any) => {
-        const primaryComparableName = f.signoComparableEstrella?.nombre || f.primaryComparable?.name;
-        const comparablePain = f.signoComparableEstrella?.dolor ?? f.primaryComparable?.painLevel ?? '';
+        const primaryComparableName = f.signoComparable || f.signoComparableEstrella?.nombre || f.primaryComparable?.name;
+        const comparablePain = f.dolorEnSigno ?? f.signoComparableEstrella?.dolor ?? f.primaryComparable?.painLevel ?? '';
 
         if (primaryComparableName) {
             functionalDeficits.push({

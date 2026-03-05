@@ -484,12 +484,112 @@ export interface AnamnesisProximaV3 {
     };
 }
 
+export interface AnamnesisProximaV4 {
+    version: "v4";
+    status: "draft" | "approved";
+    updatedAt: string; // ISOString
+
+    escalaDolorGlobal: "EVA" | "ENA"; // default "EVA"
+
+    focos: Array<{
+        id: string;
+        esPrincipal: boolean;
+        region: string;
+        lado: "Izquierdo" | "Derecho" | "Bilateral" | "N/A";
+
+        inicio: "Subito_Trauma" | "Subito_SinTrauma" | "Gradual" | "Reagudizacion" | "NoDefinido";
+        tiempoDesdeInicio: string;
+        contextoDetallado: string;
+
+        dolorActual: number | null;
+        mejor24h: number | null;
+        peor24h: number | null;
+
+        irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido";
+        tags: string[];
+
+        agravantes: string;
+        aliviantes: string;
+
+        dolorPostActividad: "Nunca" | "A veces" | "Frecuente" | "Siempre" | "NoDefinida";
+        tiempoCalma: string;
+
+        signoComparable: string;
+        dolorEnSigno: number | null;
+
+        mecanismoCategoria: "Aparentemente Nociceptivo" | "Aparentemente Neuropático" | "Aparentemente Nociplástico" | "Mixto" | "NoDefinido";
+        mecanismoApellido: string[];
+        mecanismoTextoFinal: string;
+
+        notaRapida: string; // Log
+    }>;
+
+    psfsGlobal: Array<{
+        id: string;
+        actividad: string;
+        score: number | null; // 0..10
+        focoAsociado: string; // "General" o focusId
+    }>;
+
+    seguridad: {
+        fiebre_sistemico_cancerPrevio: boolean;
+        bajaPeso_noIntencionada: boolean;
+        dolorNocturno_inexplicable_noMecanico: boolean;
+        trauma_altaEnergia_caidaImportante: boolean;
+        neuroGraveProgresivo_esfinteres_sillaMontar: boolean;
+        sospechaFractura_incapacidadCarga: boolean;
+        overrideUrgenciaMedica: boolean;
+        justificacionUrgencia: string;
+    };
+
+    bps: {
+        sueno: 0 | 1 | 2;
+        estres: 0 | 1 | 2;
+        miedoMoverCargar: 0 | 1 | 2;
+        preocupacionDano: 0 | 1 | 2;
+        bajaAutoeficacia: 0 | 1 | 2;
+        catastrofizacion: 0 | 1 | 2;
+        presionRetorno: 0 | 1 | 2;
+        frustracion: 0 | 1 | 2;
+        otros: string;
+    };
+
+    contextoDeportivo: {
+        aplica: boolean;
+        deportePrincipal: string;
+        nivel: "Recreativo" | "Competitivo" | "Elite" | "NoDefinido";
+        frecuenciaSemanal: number | null;
+        volumenRecienteCambio: "Aumento" | "Disminucion" | "SinCambios" | "NoDefinido";
+        eventoProximo: string;
+        gestoProvocador: string;
+        objetivoRetorno: string;
+        estadoActual?: "Normal_SinDolor" | "Normal_ConDolor" | "Modificado" | "ReposoDeportivo" | "NoAplica";
+    };
+
+    experienciaPersona: {
+        creencia: string;
+        preocupacion: "Daño grave" | "Perder rendimiento" | "No poder trabajar" | "Dolor no se irá" | "Otra" | "NoDefinido";
+        expectativa: string;
+    };
+
+    automatizacionP2: Array<{
+        focoId: string;
+        tipo: "Screening" | "ROM" | "Fuerza" | "Neuro" | "Palpacion" | "TestEspecial" | "Carga" | "Educacion";
+        label: string;
+        razon: string;
+        prioridad: "Alta" | "Media" | "Baja";
+        agregarAP2: boolean;
+    }>;
+}
+
 export interface EvaluacionInicial extends BaseEvaluacion {
     type: 'INITIAL';
     // PANTALLA 1: ENTREVISTA INTEGRAL (FASE 2.2.X ACTUALIZADA)
     interview?: {
         // V3 (Fase 8)
         v3?: AnamnesisProximaV3;
+        // V4 (Fase 9)
+        v4?: AnamnesisProximaV4;
     };
 
     // PANTALLA 2: EXAMEN FISICO GUIADO

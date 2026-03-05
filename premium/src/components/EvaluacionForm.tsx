@@ -142,19 +142,23 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
         if (type === 'INITIAL') {
             const fd = formData as EvaluacionInicial;
-            const hasFocos = (fd.interview?.v3?.focos?.length || 0) > 0;
+            const hasFocosV4 = (fd.interview?.v4?.focos?.length || 0) > 0;
+            const hasFocosV3 = (fd.interview?.v3?.focos?.length || 0) > 0;
+            const hasFocos = hasFocosV4 || hasFocosV3;
             if (!hasFocos) missing.push("Foco Principal de Consulta");
 
-            // PSFS may be inside the new `focos` array or in the legacy `interview.psfs` array
+            // PSFS may be inside the new `v4.psfsGlobal`, `focos` array or in the legacy `interview.psfs` array
+            const hasPsfsV4 = (fd.interview?.v4?.psfsGlobal?.length || 0) > 0;
             const hasPsfsParams = ((fd as any).interview?.psfs?.length || 0) > 0;
             const hasFocosPsfs = fd.interview?.v3?.focos?.some(f => f.funcionMeta?.psfsItems?.length > 0) || false;
-            const hasPsfs = hasPsfsParams || hasFocosPsfs;
+            const hasPsfs = hasPsfsV4 || hasPsfsParams || hasFocosPsfs;
             if (!hasPsfs) missing.push("Al menos 1 PSFS (Escala Funcional)");
 
             // Comparable sign may be inside new `primaryComparable` or legacy fields
             const hasComparableV2 = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
             const hasComparableFoco = fd.interview?.v3?.focos?.some((f: any) => f.primaryComparable?.name || f.signoComparableEstrella?.nombre) || false;
-            const hasComparable = hasComparableV2 || hasComparableFoco;
+            const hasComparableV4 = fd.interview?.v4?.focos?.some((f: any) => f.signoComparable) || false;
+            const hasComparable = hasComparableV2 || hasComparableFoco || hasComparableV4;
 
             if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
 
