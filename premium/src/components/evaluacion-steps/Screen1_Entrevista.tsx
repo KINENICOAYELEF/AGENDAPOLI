@@ -180,12 +180,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const debouncedV4 = useDebounce(interviewV4, 2000); // 2 segundos de inactividad
     const [initialRenderComplete, setInitialRenderComplete] = useState(false);
 
-    // 4. TIMER STICKY HEADER (30 Minutos = 1800 segundos)
-    const [timeLeft, setTimeLeft] = useState(1800);
-    const [timerActive, setTimerActive] = useState(true);
+    // ELIMINADO: TIMER STICKY HEADER (MP1) - Usando Timer Global Superior
 
     // 5. ESTADO DE ACORDEONES (Mini Fase 03)
-    // Secciones 1 a 5 abiertas por defecto, 6 a 14 cerradas.
     // Secciones 1 a 5 abiertas por defecto, 6 a 15 cerradas.
     const [activeAccordions, setActiveAccordions] = useState<Record<number, boolean>>({
         1: true, 2: true, 3: true, 4: true, 5: true,
@@ -199,28 +196,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     useEffect(() => {
         setInitialRenderComplete(true);
     }, []);
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (timerActive && timeLeft > 0 && !isClosed) {
-            interval = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [timerActive, timeLeft, isClosed]);
-
-    const formatTimer = (seconds: number) => {
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        return `${m}:${s}`;
-    };
-
-    const getTimerColor = () => {
-        if (timeLeft > 900) return 'text-emerald-600 bg-emerald-50 border-emerald-200'; // > 15 min
-        if (timeLeft > 300) return 'text-amber-600 bg-amber-50 border-amber-200'; // > 5 min
-        return 'text-rose-600 bg-rose-50 border-rose-200 animate-pulse'; // < 5 min
-    };
 
     const autoSaveDraftToFirebase = useCallback(async (v4Data: AnamnesisProximaV4) => {
         if (!formData.id || !globalActiveYear || isClosed) return;
@@ -750,12 +725,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             {/* STICKY TOP BAR (MINI FASE 02) */}
             <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 py-3 mb-6 -mx-4 sm:mx-0 sm:px-0 flex flex-col gap-3">
 
-                {/* FILA 1: Título, Timer, IA y Guardado */}
+                {/* FILA 1: Título, IA y Guardado */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div className="flex items-center gap-3">
-                        <div className={`font-mono text-sm font-bold px-2 py-1 rounded border flex items-center gap-1 ${getTimerColor()}`}>
-                            <span>⏱</span> {formatTimer(timeLeft)}
-                        </div>
                         <h2 className="text-sm font-bold text-slate-600 tracking-tight hidden md:block">Sección actual: Anamnesis próxima</h2>
                     </div>
 
