@@ -389,6 +389,11 @@ export interface AnamnesisProximaV3 {
         notesRiesgo: string;
     };
 
+    // FASE 12 / CIERRE
+    decisionEvalFisica?: "Sí" | "No";
+    razonNoEvalFisica?: string;
+    planEvaluacionFisica?: string;
+
     bpsQuick: {
         sueno: 0 | 1 | 2;
         estres: 0 | 1 | 2;
@@ -490,15 +495,50 @@ export interface FocoV4 {
     region: string;
     lado: "Izquierdo" | "Derecho" | "Bilateral" | "N/A";
 
-    inicio: "Subito_Trauma" | "Subito_SinTrauma" | "Gradual" | "Reagudizacion" | "NoDefinido";
-    tiempoDesdeInicio: string;
+    // Campos de Cronología Base (Mini Fase 07)
+    inicio: "Súbito" | "Gradual" | "NoDefinido";
+    antiguedad: string; // "2 días", "3 semanas"
+    evolucion: "Mejorando" | "Estable" | "Empeorando" | "Fluctuante" | "NoDefinido";
+    episodiosPrevios: "Primer episodio" | "Recurrencia (mismo dolor)" | "Dolor similar lado contrario" | "NoDefinido";
     contextoDetallado: string;
 
+    // Rama: Súbito
+    subito?: {
+        contacto: boolean | null;
+        cinematica: string[]; // "Torsión", "Caída", "Aceleración", etc.
+        sonidoSensacion: string[]; // "Pop", "Crujido", "Desgarro"
+        capacidadInmediata: "Continuó actividad" | "Tuvo que parar" | "Incapacidad total" | "No aplicable" | "";
+        hinchazonRapida: "Sí" | "No" | "No Sabe" | null;
+    };
+
+    // Rama: Gradual
+    gradual?: {
+        volumen: number; // 1: Mucho menos, 2: Menos, 3: Igual, 4: Más, 5: Mucho más
+        intensidad: number;
+        frecuencia: number;
+        recuperacion: "Mejor" | "Igual" | "Peor" | null;
+        cambiosEspecificos: string[]; // "Calzado", "Superficie", "Estrés", etc.
+        aparicionSintoma: "Al inicio" | "Durante" | "Después" | "Día siguiente" | "Constante" | "";
+        picoCargaSugerido?: string; // Texto auto-generado
+    };
+
+    // Perfil del Síntoma (Mini Fase 08)
+    extension: "Local" | "Se expande" | "Línea que baja/sube" | "Cambia de lugar" | "NoDefinido";
+    profundidad: "Superficial" | "Profundo" | "Articular" | "NoSabe" | "NoDefinido";
+    naturaleza: string[]; // "Punzante", "Quemazón", "Calambre", etc.
     dolorActual: number | null;
     mejor24h: number | null;
     peor24h: number | null;
+    dolorActividadIndice: number | null;
+    actividadIndice: string;
 
-    irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido" | "N/A" | "Referido" | "Radicular";
+    patronTemporal: {
+        frecuencia: "Constante (24/7)" | "Intermitente" | "Solo al mover" | "NoDefinido" | "";
+        rigidezMatinalMinutos: number | null | string; // Ej: 30
+        despiertaNoche: boolean | null;
+    };
+
+    irradiacion: "Local" | "Regional" | "Distal" | "NoDefinido" | "N/A" | "Referido" | "Radicular"; // *Legacy/Opcional (si se quiere mantener por compat)*
     tags: string[];
 
     agravantes: string;
@@ -510,6 +550,28 @@ export interface FocoV4 {
     signoComparable: string;
     dolorEnSigno: number | null;
 
+    // Irritabilidad AUTO (Mini Fase 11)
+    irritabilidadFacilidad: "Alta" | "Media" | "Baja" | "NoDefinido";
+    irritabilidadMagnitud: number | null;
+    irritabilidadTiempo: "<15m" | "15-60m" | "1-24h" | ">24h" | "NoDefinido";
+    irritabilidadAfterEfecto: "Nunca" | "A veces" | "Frecuente" | "NoDefinido";
+    irritabilidadAuto: {
+        nivel: "Alta" | "Media" | "Baja" | "NoDefinido";
+        explicacion: string;
+    };
+
+    // Síntomas Asociados (Mini Fase 10)
+    sintomasMecanicos: string[]; // chasquido, bloqueo, etc.
+    sintomasSistemicos: string[]; // fiebre, mareo, etc.
+    sintomasNeurologicos: {
+        activados: string[]; // hormigueo, debilidad, etc.
+        zona: string; // dermatoma o región
+        asociacion: string[]; // sentado, caminar, esfuerzo
+    };
+    disparadoresParaDescartes: string[]; // Auto-generado a partir de neurológicos activados
+
+    // Mecanismo de Dolor Sugerido (Mini Fase 09)
+    mecanismoConfirmacion?: "De acuerdo" | "Cambiar" | "Dejar pendiente" | "NoDefinido";
     mecanismoCategoria: "Nociceptivo" | "Neuropático" | "Nociplástico" | "Mixto" | "NoDefinido";
     mecanismoApellido: string; // "Inflamatorio", "Mecánico", etc.
     mecanismoTextoFinal: string;
@@ -526,12 +588,23 @@ export interface AnamnesisProximaV4 {
 
     focos: FocoV4[];
 
+    // MINI FASE 12: Función y PSFS
+    hayLimitacionFuncional: boolean;
     psfsGlobal: Array<{
         id: string;
         actividad: string;
         score: number | null; // 0..10
         focoAsociado: string; // "General" o focusId
     }>;
+    participacionAfectada: string[]; // trabajo, deporte, hogar, estudio
+    impactoGlobal: "Bajo" | "Medio" | "Alto" | "NoDefinido";
+    resumenLimitaciones?: string; // TEXTO AUTO
+    resumenRestricciones?: string; // TEXTO AUTO
+
+    // FASE 12 / CIERRE
+    decisionEvalFisica?: "Sí" | "No";
+    razonNoEvalFisica?: string;
+    planEvaluacionFisica?: string;
 
     seguridad: {
         fiebre_sistemico_cancerPrevio: boolean;
@@ -540,6 +613,8 @@ export interface AnamnesisProximaV4 {
         trauma_altaEnergia_caidaImportante: boolean;
         neuroGraveProgresivo_esfinteres_sillaMontar: boolean;
         sospechaFractura_incapacidadCarga: boolean;
+        riesgoEmocionalAgudo: boolean; // Bandera naranja
+        detalleBanderas: string;
         overrideUrgenciaMedica: boolean;
         justificacionUrgencia: string;
     };
@@ -549,11 +624,14 @@ export interface AnamnesisProximaV4 {
         estres: 0 | 1 | 2;
         miedoMoverCargar: 0 | 1 | 2;
         preocupacionDano: 0 | 1 | 2;
-        bajaAutoeficacia: 0 | 1 | 2;
-        catastrofizacion: 0 | 1 | 2;
-        presionRetorno: 0 | 1 | 2;
+        confianzaBaja: 0 | 1 | 2;
         frustracion: 0 | 1 | 2;
         otros: string;
+        impactoAuto?: {
+            score: number;
+            nivel: "Bajo" | "Medio" | "Alto";
+            razon: string;
+        };
     };
 
     contextoDeportivo: {
@@ -566,11 +644,44 @@ export interface AnamnesisProximaV4 {
         notaCarga: string;
     };
 
+    contextoLaboral: {
+        trabajoDificultaRecuperacion: boolean | null;
+        temorEmpeorarTrabajo: boolean | null;
+        barrerasReales: boolean | null;
+        barrerasDetalles: ("tiempo" | "dinero" | "transporte" | "permisos" | string)[];
+        riesgoAdherenciaAuto?: boolean;
+    };
+
     experienciaPersona: {
-        creencia: string;
+        relatoLibre?: string;
+        quejas: string[];
+        quejaOtro?: string;
+        prioridadPrincipal?: string;
+        objetivos: Array<{
+            id: string;
+            contexto: string[]; // "Vida diaria", "Trabajo-Estudio", "Deporte", "Gimnasio"
+            verbo: "volver a" | "mejorar" | "tolerar" | "reducir" | "otro" | "";
+            actividad: string;
+            plazoSemanas: "1-2" | "3-6" | "7-12" | ">12" | "";
+            enSusPalabras?: string;
+            esPrincipal: boolean;
+        }>;
+        causaPercibida?: "Carga" | "Lesión" | "Estrés" | "Técnica" | "Edad" | "No sé" | "Otro";
+        causaPercibidaOtro?: string;
+        autoeficaciaRecuperacion?: number; // 0 a 10
         preocupacion: "Daño grave" | "No poder entrenar" | "Empeorar al mover" | "Cirugía" | "Impacto laboral/académico" | "Tiempo de recuperación" | "Otra" | "NoDefinido";
         expectativa: string;
+        motivoConsultaAhora?: "empeoró" | "apareció síntoma nuevo" | "no mejora" | "miedo" | "se acerca evento deportivo" | "afecta trabajo" | "recomendación de tercero" | "otro" | "";
+        motivoConsultaAhoraOtro?: string;
+        estrategiasPrevias: Array<{
+            id: string; // Para iteración key en React
+            estrategia: "reposo" | "calor-frío" | "automasaje" | "estiramientos" | "fortalecimiento" | "modificar entrenamiento" | "fármacos" | "consulta previa" | "imágenes" | "otro" | "";
+            estrategiaOtro?: string;
+            resultado: "mejoró" | "igual" | "empeoró" | "no sabe" | "";
+        }>;
     };
+
+    p2_recommendations?: string[];
 
     automatizacionP2: Array<{
         focoId: string;
@@ -580,6 +691,24 @@ export interface AnamnesisProximaV4 {
         prioridad: "Alta" | "Media" | "Baja";
         agregarAP2: boolean;
     }>;
+
+    // FASE 17 / MINIPROMPT 17 / SECCIÓN CIERRE
+    cierre?: {
+        resumenClinico: string;
+        loMasImportante?: {
+            quejaPrioritaria: string;
+            objetivoPrioritario: string;
+            irritabilidad: string;
+            tipoDolorSugerido: string;
+            resumenBanderas: string;
+        };
+        hipotesisSugeridas?: {
+            tagsTransversales: string[];
+            tagsRegionales: string[];
+        };
+        menosProbable?: string[];
+        faltaDescartar?: string[];
+    };
 }
 
 export interface EvaluacionInicial extends BaseEvaluacion {
