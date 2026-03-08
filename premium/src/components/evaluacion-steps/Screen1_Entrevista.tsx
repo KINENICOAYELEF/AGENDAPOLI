@@ -47,6 +47,23 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const { globalActiveYear } = useYear();
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [lastSaved, setLastSaved] = useState<string | null>(null);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
+    const [isProcessingPreguntasIA, setIsProcessingPreguntasIA] = useState(false);
+    const [isProcessingExamenIA, setIsProcessingExamenIA] = useState(false);
+    const [showFocoGuide, setShowFocoGuide] = useState(false);
+    const [focoGuideTab, setFocoGuideTab] = useState(0);
+    const [showRelatoGuide, setShowRelatoGuide] = useState(false);
+
+    // FASE 8 & 9: Highlight State (Multiple Highlight support)
+    const [highlightTexts, setHighlightTexts] = useState<string[]>([]);
+
+    const hasRedFlags = Boolean(
+        formData.interview?.v4?.seguridad?.fiebre_sistemico_cancerPrevio ||
+        formData.interview?.v4?.seguridad?.bajaPeso_noIntencionada ||
+        formData.interview?.v4?.seguridad?.dolorNocturno_inexplicable_noMecanico ||
+        formData.interview?.v4?.seguridad?.trauma_altaEnergia_caidaImportante ||
+        formData.interview?.v4?.seguridad?.neuroGraveProgresivo_esfinteres_sillaMontar || false
+    );
 
     const FACTORES_BPS_LIST = [
         "sueno", "estres", "miedoMoverCargar", "preocupacionDano",
@@ -102,6 +119,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         psfsGlobal: [
             { id: uuidv4(), actividad: "", score: null, focoAsociado: "General" }
         ],
+        capacidadPercibidaActividad: null,
+        contextosAnclas: [],
+        objetivoPersona: "",
+        plazoEsperado: "",
         participacionAfectada: [],
         impactoGlobal: "NoDefinido",
         resumenLimitaciones: "",
@@ -456,7 +477,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     }, [interviewV4, focoPrincipal]);
 
     // --- VALIDACIÓN DE CIERRE ESTRICTA (MP10) ---
-    const { isValidForP2, validationErrors } = React.useMemo(() => {
+    const { isValidForP2, validationErrors, hasRedFlags: localHasRedFlags, hayContradiccionSeguridad } = React.useMemo(() => {
         const errors: string[] = [];
 
         // 1. Prioridad principal
@@ -464,24 +485,97 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             errors.push("Prioridad #1: Es obligatorio definir la queja o prioridad del paciente hoy.");
         }
 
-        // 2 & 3. Datos Críticos del Foco Principal (Antigüedad y Dolor Actual)
+        // 2 & 3. Datos Críticos del Foco Principal (Antigüedad)
         const fp = focoPrincipal;
         if (fp) {
             if (!fp.antiguedad || fp.antiguedad === "NoDefinido") errors.push("Foco Principal: Falta tiempo de evolución (antigüedad).");
-            if (fp.dolorActual === null || fp.dolorActual === undefined) errors.push("Foco Principal: Falta intensidad de dolor actual (EVA 0-10).");
         } else {
             errors.push("Anamnesis: Se requiere al menos 1 foco clínico estructurado.");
         }
 
-        // 4. Limitación Funcional Condicionada (1 PSFS completo)
+        // 4. Anclas Mínimas
+        if (!focoPrincipal?.inicio || focoPrincipal.inicio === "NoDefinido") errors.push("Anclas: Seleccione Inicio (Súbito/Gradual).");
+        if (!focoPrincipal?.evolucion || focoPrincipal.evolucion === "NoDefinido") errors.push("Anclas: Seleccione Evolución global.");
+        if (!focoPrincipal?.actividadIndice?.trim()) errors.push("Anclas: Ingrese la Actividad índice principal.");
+
         if (interviewV4.hayLimitacionFuncional) {
             const hasValidPsfs = interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== "" && p.score !== null);
-            if (!hasValidPsfs) {
-                errors.push("PSFS: Ha indicado limitación funcional. Debe ingresar al menos 1 actividad con texto y puntaje válido.");
+            if (!hasValidPsfs) errors.push("Anclas: Ha indicado limitación funcional. Ingrese 1 actividad con texto y puntaje válido.");
+        } else {
+            if (interviewV4.capacidadPercibidaActividad === null || interviewV4.capacidadPercibidaActividad === undefined) {
+                errors.push("Anclas: Si no hay limitación, ingrese la Capacidad percibida (0-10).");
             }
         }
 
-        return { isValidForP2: errors.length === 0, validationErrors: errors };
+        if (!interviewV4.contextosAnclas || interviewV4.contextosAnclas.length === 0) errors.push("Anclas: Seleccione al menos un Contexto.");
+        if (!interviewV4.objetivoPersona?.trim()) errors.push("Anclas: Ingrese el Objetivo de la persona usuaria.");
+        if (!interviewV4.plazoEsperado?.trim()) errors.push("Anclas: Ingrese el Plazo esperado.");
+
+        // Condicionales de Quejas (Fase 5)
+        const quejas = interviewV4.experienciaPersona.quejas || [];
+        const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
+
+        const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
+        if (hasPainOrTingle) {
+            if (focoPrincipal?.dolorActual === null || focoPrincipal?.dolorActual === undefined) errors.push("Anclas (Intensidad): Falta Dolor Actual.");
+            if (focoPrincipal?.dolorActividadIndice === null || focoPrincipal?.dolorActividadIndice === undefined) errors.push("Anclas (Intensidad): Falta Dolor en la Actividad Índice.");
+        }
+
+        const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
+        const isChronic = focoPrincipal?.antiguedad === '1-3 meses' || focoPrincipal?.antiguedad === '3-6 meses' || focoPrincipal?.antiguedad === '>6 meses';
+        if (hasPainOrStiff && isChronic) {
+            if (focoPrincipal?.patronTemporal.despiertaNoche === null || focoPrincipal?.patronTemporal.despiertaNoche === undefined) {
+                errors.push("Anclas: Indique confirmar si presenta Despertar Nocturno por el síntoma.");
+            }
+        }
+
+        // 5. Seguridad Clínica Obligatoria
+        if (!interviewV4.seguridad?.confirmado) {
+            errors.push("Seguridad Clínica: Confirme que ha realizado la evaluación de banderas rojas/naranjas.");
+        }
+
+        const hasRedFlags = interviewV4.seguridad?.fiebre_sistemico_cancerPrevio ||
+            interviewV4.seguridad?.bajaPeso_noIntencionada ||
+            interviewV4.seguridad?.dolorNocturno_inexplicable_noMecanico ||
+            interviewV4.seguridad?.trauma_altaEnergia_caidaImportante ||
+            interviewV4.seguridad?.neuroGraveProgresivo_esfinteres_sillaMontar ||
+            interviewV4.seguridad?.sospechaFractura_incapacidadCarga;
+
+        if (hasRedFlags && !interviewV4.seguridad?.accionBanderaRoja) {
+            errors.push("Seguridad Clínica: Debe seleccionar una acción debido a la marcación de Banderas Rojas.");
+        }
+
+        // FASE 10: Contradicciones de Seguridad IA vs Checklist
+        const analisisSeguridad = interviewV4.analisisIA?.extraccion_general?.seguridad_mencionada_en_relato?.valor;
+        const IA_detecta_bandera = !!analisisSeguridad && analisisSeguridad !== "No_mencionado" && String(analisisSeguridad).trim() !== "";
+        const checklist_negative = !hasRedFlags && !interviewV4.seguridad?.riesgoEmocionalAgudo;
+        const hayContradiccionSeguridad = IA_detecta_bandera && checklist_negative;
+        const contradiccionNoResuelta = hayContradiccionSeguridad && !interviewV4.seguridad?.resolucionContradiccionIA?.resuelto;
+
+        if (contradiccionNoResuelta) {
+            errors.push("Seguridad Clínica: Existe una posible señal de alerta detectada por la IA que no ha sido resuelta en las Confirmaciones Críticas.");
+        }
+
+        // FASE 11: Confirmaciones Críticas Obligatorias
+        if (interviewV4.analisisIA) {
+            const confs = interviewV4.confirmacionesCriticas;
+
+            const reqIrr = !!interviewV4.analisisIA.SINS?.irritabilidad;
+            const reqNat = !!interviewV4.analisisIA.SINS?.naturaleza_sugerida;
+            const reqHip = (interviewV4.analisisIA.hipotesis_orientativas_por_sistema?.length || 0) > 0;
+
+            if (reqIrr && (!confs || !confs.irritabilidad_global || confs.irritabilidad_global.estado === 'Pendiente' || (confs.irritabilidad_global.estado === 'Editado' && !confs.irritabilidad_global.justificacion?.trim()))) {
+                errors.push("Confirmaciones Críticas: Falta revisar o justificar la 'Irritabilidad Global'.");
+            }
+            if (reqNat && (!confs || !confs.naturaleza_sugerida || confs.naturaleza_sugerida.estado === 'Pendiente' || (confs.naturaleza_sugerida.estado === 'Editado' && !confs.naturaleza_sugerida.justificacion?.trim()))) {
+                errors.push("Confirmaciones Críticas: Falta revisar o justificar la 'Naturaleza Sugerida'.");
+            }
+            if (reqHip && (!confs || !confs.hipotesis_orientativas || confs.hipotesis_orientativas.estado === 'Pendiente' || (confs.hipotesis_orientativas.estado === 'Editado' && !confs.hipotesis_orientativas.justificacion?.trim()))) {
+                errors.push("Confirmaciones Críticas: Falta revisar o justificar las 'Hipótesis Orientativas'.");
+            }
+        }
+
+        return { isValidForP2: errors.length === 0, validationErrors: errors, hasRedFlags, hayContradiccionSeguridad };
     }, [interviewV4, focoPrincipal]);
 
     // --- AUTOMATIZACIÓN DETERMINÍSTICA P2 ---
@@ -788,63 +882,111 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 </div>
 
-                {/* FILA 2: Inputs Contextuales (Motivos y Quejas) */}
-                <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2">
-                    <div className="sm:col-span-4 flex flex-col justify-end">
-                        <div className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-500 mb-0.5 sm:mb-1">Motivo Principal (Foco 1)</div>
-                        <div className="flex gap-1 h-8">
-                            <input
-                                type="text"
-                                placeholder="Región (ej. Rodilla)"
-                                className="w-2/3 text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50"
-                                value={focoPrincipal.region || ""}
-                                onChange={e => {
-                                    const newFocos = [...interviewV4.focos];
-                                    newFocos[0].region = e.target.value;
-                                    updateV4({ focos: newFocos });
-                                }}
-                                disabled={isClosed}
-                            />
-                            <select
-                                className="w-1/3 text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50"
-                                value={focoPrincipal.lado || "N/A"}
-                                onChange={e => {
-                                    const newFocos = [...interviewV4.focos];
-                                    newFocos[0].lado = e.target.value as any;
-                                    updateV4({ focos: newFocos });
-                                }}
-                                disabled={isClosed}
-                            >
-                                <option value="N/A">- Lado -</option><option value="Derecho">Der</option><option value="Izquierdo">Izq</option><option value="Bilateral">Bilat</option><option value="Axial/Central">Axial</option>
-                            </select>
+                {/* 1. Foco y etiquetas rápidas */}
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 relative">
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">1</span>
+                        <h3 className="font-bold text-slate-800 text-sm">Foco y etiquetas rápidas</h3>
+                        <button
+                            onClick={() => setShowFocoGuide(true)}
+                            className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center text-xs font-bold transition-colors ml-1"
+                            title="Guía de entrevista clínica"
+                        >
+                            ?
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        {/* Foco Principal */}
+                        <div className="md:col-span-4 flex flex-col justify-end">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 border-b border-rose-200 pb-0.5 text-rose-800">Foco Principal <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
+                            <div className="flex gap-1 h-8">
+                                <input
+                                    type="text"
+                                    placeholder="Región (ej. Rodilla)"
+                                    className="w-2/3 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    value={focoPrincipal.region || ""}
+                                    onChange={e => {
+                                        const newFocos = [...interviewV4.focos];
+                                        newFocos[0].region = e.target.value;
+                                        updateV4({ focos: newFocos });
+                                    }}
+                                    disabled={isClosed}
+                                />
+                                <select
+                                    className="w-1/3 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    value={focoPrincipal.lado || "N/A"}
+                                    onChange={e => {
+                                        const newFocos = [...interviewV4.focos];
+                                        newFocos[0].lado = e.target.value as any;
+                                        updateV4({ focos: newFocos });
+                                    }}
+                                    disabled={isClosed}
+                                >
+                                    <option value="N/A">- Lado -</option><option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div className="md:col-span-4 flex flex-col justify-end">
-                        <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Motivos secundarios</div>
-                        <input
-                            type="text"
-                            placeholder="Ej: Pinchazo al saltar"
-                            className="w-full h-8 text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50"
-                            onChange={() => { }} // Placeholder temporal antes del array múltiple completo
-                            disabled={isClosed}
-                        />
-                    </div>
-                    <div className="md:col-span-4 flex flex-col justify-end">
-                        <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Queja(s) principal(es)</div>
-                        <div className="flex flex-col gap-1">
+
+                        {/* Motivos Secundarios */}
+                        <div className="md:col-span-3 flex flex-col justify-end">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Motivos secundarios (2 máx)</div>
+                            <div className="flex flex-col gap-1">
+                                <select
+                                    className="w-full h-8 text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50"
+                                    value={interviewV4.experienciaPersona.objetivos[1]?.actividad || ""}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        const newObjs = [...interviewV4.experienciaPersona.objetivos];
+                                        if (val === "") {
+                                            newObjs.splice(1, 1);
+                                        } else {
+                                            if (!newObjs[1]) newObjs[1] = { id: generateId(), contexto: [], verbo: "", actividad: "", plazoSemanas: "", enSusPalabras: "", esPrincipal: false } as any;
+                                            newObjs[1].actividad = val;
+                                        }
+                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
+                                    }}
+                                    disabled={isClosed}
+                                >
+                                    <option value="">- Seleccionar motivo secundario -</option>
+                                    {["Recidiva Constante", "Poca confianza/Miedo", "Baja Performance", "Otro"].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                                {interviewV4.experienciaPersona.objetivos[1]?.actividad === "Otro" && (
+                                    <input
+                                        type="text"
+                                        placeholder="Especifique otro motivo..."
+                                        className="w-full text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50 mt-1"
+                                        value={interviewV4.experienciaPersona.objetivos[1]?.enSusPalabras || ""}
+                                        onChange={e => {
+                                            const newObjs = [...interviewV4.experienciaPersona.objetivos];
+                                            newObjs[1].enSusPalabras = e.target.value;
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
+                                        }}
+                                        disabled={isClosed}
+                                    />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Quejas Principales */}
+                        <div className="md:col-span-5 flex flex-col justify-end">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Queja(s) principal(es)</div>
                             <div className="flex flex-wrap gap-1 items-center">
-                                {["Dolor", "Rigidez", "Hinchazón", "Inestabilidad", "Debilidad", "Hormigueos/Adormecimiento", "Rendimiento", "Miedo al movimiento", "Otro"].map(q => {
+                                {["Dolor", "Rigidez", "Hinchazón", "Inestabilidad", "Debilidad", "Hormigueo/Adormecimiento", "Miedo al movimiento", "Rendimiento/Preventivo", "Otro"].map(q => {
                                     const isSelected = interviewV4.experienciaPersona.quejas.includes(q);
                                     return (
                                         <button
                                             key={q}
                                             disabled={isClosed}
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.preventDefault();
                                                 const current = interviewV4.experienciaPersona.quejas;
                                                 const next = isSelected ? current.filter(x => x !== q) : [...current, q];
                                                 updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, quejas: next } });
                                             }}
-                                            className={`text-[9px] px-2 py-1 rounded-full border transition-colors ${isSelected ? 'bg-indigo-500 text-white border-indigo-600 font-bold' : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600'}`}
+                                            className={`text-[9.5px] px-2 py-1 rounded-full border transition-colors ${isSelected ? 'bg-indigo-500 text-white border-indigo-600 font-bold shadow-sm' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
                                         >
                                             {q}
                                         </button>
@@ -855,30 +997,184 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <input
                                     type="text"
                                     placeholder="Especifique otra queja..."
-                                    className="w-full h-7 text-xs p-1.5 border border-slate-300 rounded outline-none bg-indigo-50/50"
+                                    className="w-full h-7 text-xs p-1.5 border border-slate-300 rounded outline-none bg-indigo-50/50 mt-1"
                                     value={interviewV4.experienciaPersona.quejaOtro || ""}
                                     onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, quejaOtro: e.target.value } })}
                                     disabled={isClosed}
                                 />
                             )}
                         </div>
+
+                        {/* Prioridad #1 - RE-ADDED */}
+                        <div className="md:col-span-12 flex flex-col justify-end mt-2">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 border-b border-rose-200 pb-0.5 text-rose-800">Prioridad #1 <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
+                            <select
+                                className="w-full sm:w-1/2 h-8 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                value={interviewV4.experienciaPersona.prioridadPrincipal || ""}
+                                onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, prioridadPrincipal: e.target.value } })}
+                                disabled={isClosed}
+                            >
+                                <option value="">- Seleccione Prioridad -</option>
+                                {interviewV4.experienciaPersona.quejas.map(q => (
+                                    <option key={q} value={q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}>
+                                        {q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                    <div className="md:col-span-4 flex flex-col justify-end">
-                        <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 border-b border-rose-200 pb-0.5 text-rose-800">Prioridad #1 <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
-                        <select
-                            className="w-full h-8 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
-                            value={interviewV4.experienciaPersona.prioridadPrincipal || ""}
-                            onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, prioridadPrincipal: e.target.value } })}
-                            disabled={isClosed}
-                        >
-                            <option value="">- Seleccione Prioridad -</option>
-                            {interviewV4.experienciaPersona.quejas.map(q => (
-                                <option key={q} value={q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}>
-                                    {q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+
+                    {/* Modal Guía Rápida */}
+                    {showFocoGuide && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={() => setShowFocoGuide(false)}>
+                            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+                                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">?</span>
+                                        Guía Rápida de Entrevista
+                                    </h3>
+                                    <button onClick={() => setShowFocoGuide(false)} className="text-slate-400 hover:text-rose-500 font-bold p-1">✕</button>
+                                </div>
+                                <div className="p-4 flex-1">
+                                    <div className="flex gap-2 mb-4 overflow-x-auto pb-1 hide-scrollbar">
+                                        {["Dolor agudo/traumático", "Sobrecarga gradual", "Rendimiento/preventivo", "Dolor persistente"].map((tab, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setFocoGuideTab(idx)}
+                                                className={`text-[11px] font-bold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors border ${focoGuideTab === idx ? "bg-indigo-600 text-white border-indigo-700 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                                            >
+                                                {tab}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {focoGuideTab === 0 && (
+                                        <div className="space-y-4 animate-fadeIn">
+                                            <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                                <h4 className="text-[11px] font-bold text-blue-900 mb-2 uppercase tracking-wide">5 Preguntas Clave</h4>
+                                                <ul className="text-xs text-blue-800 list-disc ml-4 space-y-1">
+                                                    <li>¿Puedes describir exactamente el momento en que ocurrió y cómo estaba posicionado tu cuerpo?</li>
+                                                    <li>¿Sentiste, escuchaste o notaste algún chasquido, crujido o "pop" en ese instante?</li>
+                                                    <li>¿El dolor inicial te impidió continuar con la actividad inmediatamente?</li>
+                                                    <li>¿La articulación se hinchó enseguida (primeras 2 horas) o fue apareciendo al día siguiente?</li>
+                                                    <li>¿Se te "traba", "bloquea" o sientes que "cede/falla" al apoyar peso?</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                                                <h4 className="text-[11px] font-bold text-rose-900 mb-2 uppercase tracking-wide">3 Errores Frecuentes</h4>
+                                                <ul className="text-xs text-rose-800 list-disc ml-4 space-y-1">
+                                                    <li>Asumir directamente que hay daño estructural severo sin descartar (ej: ligamentos vs tendinopatía aguda).</li>
+                                                    <li>No indagar en la urgencia y banderas rojas ocultas (fracturas por avulsión).</li>
+                                                    <li>Saturar al paciente de miedos sobre tiempos largos de recuperación en la primera sesión.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                                                <h4 className="text-[11px] font-bold text-emerald-900 mb-2 uppercase tracking-wide">Validación y Escucha (Frases)</h4>
+                                                <ul className="text-xs text-emerald-800 list-disc ml-4 space-y-1">
+                                                    <li>"Es totalmente comprensible que esto asuste al ser tan repentino, vamos a revisarlo con calma."</li>
+                                                    <li>"Entiendo que el dolor agudo cansa rápido, me avisarás si te molesta cualquier movimiento de evaluación."</li>
+                                                    <li>"Sé que querías jugar el fin de semana, evaluemos bien para ver plazos realistas."</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {focoGuideTab === 1 && (
+                                        <div className="space-y-4 animate-fadeIn">
+                                            <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                                <h4 className="text-[11px] font-bold text-blue-900 mb-2 uppercase tracking-wide">5 Preguntas Clave</h4>
+                                                <ul className="text-xs text-blue-800 list-disc ml-4 space-y-1">
+                                                    <li>¿Puedes recordar si hubo algún cambio en tus entrenamientos/rutina hace 2 a 4 semanas? (Carga, volumen, calzado, superficie).</li>
+                                                    <li>¿El dolor suele ser peor al INICIO del movimiento (frío o por la mañana) y luego "calienta" y mejora?</li>
+                                                    <li>¿Sientes que empeora 24 horas después de haber entrenado fuerte o cargado peso?</li>
+                                                    <li>Si tuvieras que apuntar con 1 dedo el lugar de máximo dolor, ¿puedes hacerlo exacto o es muy difuso?</li>
+                                                    <li>¿A qué hora del día sientes tus peores molestias (patrón horario)?</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                                                <h4 className="text-[11px] font-bold text-rose-900 mb-2 uppercase tracking-wide">3 Errores Frecuentes</h4>
+                                                <ul className="text-xs text-rose-800 list-disc ml-4 space-y-1">
+                                                    <li>Creer que es agudo repentino porque "dolió de la nada ayer" (ignorar los picos de carga previos semanas atrás).</li>
+                                                    <li>Recomendar reposo total en vez de adaptación de la carga.</li>
+                                                    <li>Atribuir erróneamente el dolor a malas posturas o alteraciones biomecánicas ignorando la capacidad de carga (overload).</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                                                <h4 className="text-[11px] font-bold text-emerald-900 mb-2 uppercase tracking-wide">Validación y Escucha (Frases)</h4>
+                                                <ul className="text-xs text-emerald-800 list-disc ml-4 space-y-1">
+                                                    <li>"Escucho que viene picando hace unas semanas, es un clásico patrón de sobrecarga. Tiene solución manejando bien las dosis."</li>
+                                                    <li>"Es muy frustrante cuando el dolor vuelve después de haber 'calentado', sé que rompe el ritmo."</li>
+                                                    <li>"No hiciste nada 'mal', tu tejido solo necesita una estrategia gradual para tolerar todo eso de nuevo."</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {focoGuideTab === 2 && (
+                                        <div className="space-y-4 animate-fadeIn">
+                                            <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                                <h4 className="text-[11px] font-bold text-blue-900 mb-2 uppercase tracking-wide">5 Preguntas Clave</h4>
+                                                <ul className="text-xs text-blue-800 list-disc ml-4 space-y-1">
+                                                    <li>¿Cuál es tu métrica de éxito actual y en cuánto tiempo buscas tu objetivo principal competitivo/deportivo?</li>
+                                                    <li>¿Sientes alguna rigidez, "aviso" previo, asimetría clara o "sensación de pesadez" al llegar al límite en tus ejercicios?</li>
+                                                    <li>¿Cómo es tu rutina típica de calentamiento y recuperación inter-entrenamientos?</li>
+                                                    <li>¿Has notado alguna debilidad específica en algún rango de movimiento (fondo de sentadilla, bloqueo, extensión final)?</li>
+                                                    <li>¿Cómo se sienten tus niveles de estrés, sueño y nutrición en las últimas 4 semanas de entrenamiento fuerte?</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                                                <h4 className="text-[11px] font-bold text-rose-900 mb-2 uppercase tracking-wide">3 Errores Frecuentes</h4>
+                                                <ul className="text-xs text-rose-800 list-disc ml-4 space-y-1">
+                                                    <li>Tratar a un deportista sano como si tuviera diagnóstico médico por un hallazgo accidental de imagen (sobre-medicalización).</li>
+                                                    <li>Olvidar indagar en los factores BPS (Biopsicosociales) y de recuperación, creyendo que el rendimiento solo es fuerza pura.</li>
+                                                    <li>Querer cambiar drásticamente la biomecánica habitual de un atleta cerca de su momento competitivo (incluso siendo "no ideal" en libros).</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                                                <h4 className="text-[11px] font-bold text-emerald-900 mb-2 uppercase tracking-wide">Validación y Escucha (Frases)</h4>
+                                                <ul className="text-xs text-emerald-800 list-disc ml-4 space-y-1">
+                                                    <li>"Me gusta mucho ese enfoque preventivo; la idea aquí es ser proactivos, no esperar a que haya lesión."</li>
+                                                    <li>"Ese nivel de exigencia requiere optimizar cada detalle de tu recuperación; revisaremos tus eslabones más débiles."</li>
+                                                    <li>"Buscaremos ese 5% extra enfocándonos en robustez y tolerancia a tus peores escenarios de carga."</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {focoGuideTab === 3 && (
+                                        <div className="space-y-4 animate-fadeIn">
+                                            <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                                <h4 className="text-[11px] font-bold text-blue-900 mb-2 uppercase tracking-wide">5 Preguntas Clave</h4>
+                                                <ul className="text-xs text-blue-800 list-disc ml-4 space-y-1">
+                                                    <li>A lo largo de todos estos meses/años, ¿a qué cosas crees realmente que se debe este dolor constante? (Tus propias creencias).</li>
+                                                    <li>¿Hay días de la semana donde sientas dolor 0 o muy bajo? Si es así, ¿qué haces distinto en esos días?</li>
+                                                    <li>¿Sientes que el dolor es intermitente, que "se mueve", que sube y baja de intensidad sin mucha lógica con lo que haces?</li>
+                                                    <li>En qué cosas de tu vida diaria o trabajo esto tiene mayor impacto hoy (ánimo, frustración, aislamiento, dormir).</li>
+                                                    <li>¿Cómo logras calmar la molestia o brotes fuertes cuando aparece su peor versión (qué has intentado, medicación, terapias anteriores fallidas)?</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                                                <h4 className="text-[11px] font-bold text-rose-900 mb-2 uppercase tracking-wide">3 Errores Frecuentes</h4>
+                                                <ul className="text-xs text-rose-800 list-disc ml-4 space-y-1">
+                                                    <li>Tratar la sesión intentando "curar el tejido" creyendo que sigue irritado como en un dolor agudo, ignorando el sistema nervioso sensibilizado.</li>
+                                                    <li>Frenar a los pacientes por su miedo al movimiento (kinesiofobia), en lugar de fomentar exposición gradual segura.</li>
+                                                    <li>Desestimar la carga de estrés vital, malos hábitos de sueño y frustración como verdaderos agravantes de la percepción del dolor.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                                                <h4 className="text-[11px] font-bold text-emerald-900 mb-2 uppercase tracking-wide">Validación y Escucha (Frases)</h4>
+                                                <ul className="text-xs text-emerald-800 list-disc ml-4 space-y-1">
+                                                    <li>"Llevar cargando con esto tanto tiempo agota a cualquiera. Te escucho y tu dolor es completamente real, incluso si las imágenes salen 'limpias'."</li>
+                                                    <li>"Vamos a ir a tu ritmo. No te forzaré de a golpe a los movimientos que temes, esto es paso a paso construyendo confianza."</li>
+                                                    <li>"Mi objetivo es darte herramientas para que tú sientas control sobre esas reagudizaciones, en vez de depender siempre de que te traten."</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* FILA 3: 3 Badges AUTO */}
@@ -903,1979 +1199,1175 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 </div>
             </div>
 
-            {/* CONTENEDOR ACORDEONES (1 al 14) */}
-            <div className="px-4 flex flex-col gap-3">
+            {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
+            <div className="px-4 flex flex-col gap-5 mt-4">
 
-                {/* --- 1. HISTORIA DEL USUARIO Y OBJETIVOS --- */}
-                <details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[1]}>
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(1); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">1</span>
-                                <h3 className="font-bold text-slate-800 text-sm">Historia del Usuario y Objetivos</h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {reqSec1.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">{1 - reqSec1.length}/1 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[1] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {reqSec1.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec1.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 flex flex-col gap-5">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-0 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Entender las expectativas y lo que el paciente más necesita resolver hoy.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Quiero volver a trotar 5km sin dolor en la rodilla".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        {/* A. RELATO LIBRE */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <label className="text-xs font-bold text-slate-700">Relato del usuario (opcional)</label>
-                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-200 flex items-center gap-1">
-                                    <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                                    Usa comillas para frases textuales ("...")
-                                </span>
-                            </div>
-                            <textarea
-                                rows={3}
-                                placeholder="Escribe aquí lo que cuenta el paciente en sus propias palabras..."
-                                className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none resize-y"
-                                value={interviewV4.experienciaPersona.relatoLibre || ""}
-                                onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } })}
-                                disabled={isClosed}
-                            />
-                        </div>
-
-                        {/* B. OBJETIVO PRINCIPAL */}
-                        <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-lg">
-                            <h4 className="text-xs font-bold text-indigo-900 mb-3 border-b border-indigo-100 pb-2">Objetivo del Usuario</h4>
-                            {interviewV4.experienciaPersona.objetivos.map((obj, i) => (
-                                <div key={obj.id} className="flex flex-col gap-3 mb-4 pb-4 border-b border-indigo-100 last:border-0 last:mb-0 last:pb-0 relative">
-                                    <div className="flex items-center justify-between">
-                                        <b className="text-[10px] uppercase text-indigo-700">{obj.esPrincipal ? 'Prioridad #1' : `Secundario #${i}`}</b>
-                                        {!obj.esPrincipal && (
-                                            <button
-                                                className="text-rose-500 text-xs hover:text-rose-700"
-                                                disabled={isClosed}
-                                                onClick={() => {
-                                                    const newObjs = interviewV4.experienciaPersona.objetivos.filter(o => o.id !== obj.id);
-                                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                }}
-                                            >Eliminar</button>
-                                        )}
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {/* Contexto Multi */}
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-slate-600">Contexto</label>
-                                            <div className="flex flex-wrap gap-1">
-                                                {["Vida diaria", "Trabajo-Estudio", "Deporte", "Gimnasio"].map(ctx => {
-                                                    const isSel = obj.contexto.includes(ctx);
-                                                    return (
-                                                        <button
-                                                            key={ctx} disabled={isClosed}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                const newCtx = isSel ? obj.contexto.filter(c => c !== ctx) : [...obj.contexto, ctx];
-                                                                const newObjs = interviewV4.experienciaPersona.objetivos.map(o => o.id === obj.id ? { ...o, contexto: newCtx } : o);
-                                                                updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                            }}
-                                                            className={`text-[10px] px-2 py-1 rounded border transition-colors ${isSel ? 'bg-indigo-100 border-indigo-300 text-indigo-800' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-                                                        >
-                                                            {ctx}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* Plazo */}
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[10px] font-bold text-slate-600">Plazo esperado</label>
-                                            <select
-                                                className="w-full text-xs p-2 border border-slate-300 rounded outline-none h-8"
-                                                value={obj.plazoSemanas}
-                                                disabled={isClosed}
-                                                onChange={(e) => {
-                                                    const newObjs = interviewV4.experienciaPersona.objetivos.map(o => o.id === obj.id ? { ...o, plazoSemanas: e.target.value as any } : o);
-                                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                }}
-                                            >
-                                                <option value="">- Seleccione -</option>
-                                                <option value="1-2">Corto (1 - 2 semanas)</option>
-                                                <option value="3-6">Medio (3 - 6 semanas)</option>
-                                                <option value="7-12">Largo (7 - 12 semanas)</option>
-                                                <option value=">12">Crónico (+12 semanas)</option>
-                                            </select>
-                                        </div>
-
-                                        {/* Estructura Verbo + Actividad */}
-                                        <div className="col-span-1 md:col-span-2 flex gap-2 items-end">
-                                            <div className="w-1/3 flex flex-col gap-1">
-                                                <label className="text-[10px] font-bold text-slate-600">Quiero...</label>
-                                                <select
-                                                    className="w-full text-xs p-2 border border-slate-300 rounded outline-none h-8 font-bold text-slate-700"
-                                                    value={obj.verbo}
-                                                    disabled={isClosed}
-                                                    onChange={(e) => {
-                                                        const newObjs = interviewV4.experienciaPersona.objetivos.map(o => o.id === obj.id ? { ...o, verbo: e.target.value as any } : o);
-                                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                    }}
-                                                >
-                                                    <option value="">- Verbo -</option><option value="volver a">Volver a</option><option value="mejorar">Mejorar</option><option value="tolerar">Tolerar</option><option value="reducir">Reducir</option><option value="otro">Otro</option>
-                                                </select>
-                                            </div>
-                                            <div className="flex-1 flex flex-col gap-1">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Ej: Correr 5km / Jugar con mis hijos / El dolor al despertar"
-                                                    className="w-full text-xs p-2 border border-slate-300 rounded outline-none h-8 font-medium"
-                                                    value={obj.actividad}
-                                                    onChange={(e) => {
-                                                        const newObjs = interviewV4.experienciaPersona.objetivos.map(o => o.id === obj.id ? { ...o, actividad: e.target.value } : o);
-                                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                    }}
-                                                    disabled={isClosed}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* En sus palabras */}
-                                        <div className="col-span-1 md:col-span-2">
-                                            <input
-                                                type="text"
-                                                placeholder='Propio objetivo (Textual, opcional): Ej: "Quiero sentirme yo mismo otra vez"'
-                                                className="w-full text-xs p-2 border border-slate-200 border-dashed rounded outline-none h-8 text-slate-600 italic bg-white"
-                                                value={obj.enSusPalabras || ""}
-                                                onChange={(e) => {
-                                                    const newObjs = interviewV4.experienciaPersona.objetivos.map(o => o.id === obj.id ? { ...o, enSusPalabras: e.target.value } : o);
-                                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                                }}
-                                                disabled={isClosed}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {interviewV4.experienciaPersona.objetivos.length < 3 && (
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        const newObjs = [...interviewV4.experienciaPersona.objetivos, { id: generateId(), contexto: [], verbo: "", actividad: "", plazoSemanas: "", enSusPalabras: "", esPrincipal: false } as any];
-                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                    }}
-                                    disabled={isClosed}
-                                    className="mt-2 text-[10px] font-bold text-indigo-600 bg-white border border-indigo-200 px-3 py-1.5 rounded shadow-sm hover:bg-slate-50 transition-colors"
-                                >
-                                    + Agregar Objetivo Secundario
-                                </button>
-                            )}
-                        </div>
-
-                        {/* C. EXPECTATIVAS GENERALES ADICIONALES (Mantenemos como compatibilidad V3/V4 Base) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-600">Preocupación Principal</label>
-                                <select className="w-full h-[42px] text-xs p-2.5 border border-slate-300 rounded outline-none font-medium bg-slate-50" value={interviewV4.experienciaPersona.preocupacion} onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, preocupacion: e.target.value as any } })} disabled={isClosed}>
-                                    <option value="NoDefinido">Seleccione Preocupación Principal...</option>
-                                    <option value="Daño grave">Daño grave a los tejidos</option>
-                                    <option value="No poder entrenar">No poder entrenar / jugar</option>
-                                    <option value="Empeorar al mover">Creencia de empeorar al moverse</option>
-                                    <option value="Cirugía">Miedo a necesitar cirugía</option>
-                                    <option value="Impacto laboral/académico">Impacto en trabajo/estudio</option>
-                                    <option value="Tiempo de recuperación">Incertidumbre en tiempos</option>
-                                    <option value="Otra">Otra</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div >
-                </details >
-
-                {/* --- 2. ¿POR QUÉ CONSULTA AHORA? --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[2]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(2); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">2</span>
-                            <h3 className="font-bold text-slate-800 text-sm">¿Por qué consulta ahora?</h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[2] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Identificar el detonante principal que lo hizo buscar ayuda profesional en este momento.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "El dolor empeoró" o "Tengo competencia la próxima semana".</p>
-                            </div>
-                        )}
-                        <select
-                            className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none font-medium bg-slate-50 mb-3"
-                            value={interviewV4.experienciaPersona.motivoConsultaAhora || ""}
-                            onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, motivoConsultaAhora: e.target.value as any } })}
-                            disabled={isClosed}
-                        >
-                            <option value="">- Seleccione el detonante actual -</option>
-                            <option value="empeoró">Empeoró recientemente</option>
-                            <option value="apareció síntoma nuevo">Apareció un síntoma nuevo</option>
-                            <option value="no mejora">No mejora con el tiempo</option>
-                            <option value="miedo">Miedo/Preocupación por algo específico</option>
-                            <option value="se acerca evento deportivo">Se acerca un evento deportivo</option>
-                            <option value="afecta trabajo">Está afectando su trabajo/estudios</option>
-                            <option value="recomendación de tercero">Recomendación de un tercero (médico, familiar)</option>
-                            <option value="otro">Otro (especificar)</option>
-                        </select>
-
-                        {interviewV4.experienciaPersona.motivoConsultaAhora === "otro" && (
-                            <input
-                                type="text"
-                                placeholder="Especifique el motivo..."
-                                className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none"
-                                value={interviewV4.experienciaPersona.motivoConsultaAhoraOtro || ""}
-                                onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, motivoConsultaAhoraOtro: e.target.value } })}
-                                disabled={isClosed}
-                            />
-                        )}
+                {/* 1. Foco y etiquetas rápidas */}
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">1</span>
+                        <h3 className="font-bold text-slate-800 text-sm">Foco y etiquetas rápidas</h3>
                     </div>
-                </details >
-
-                {/* --- 3. SEGURIDAD (ROJAS + NARANJAS) --- */}
-                < details className="group bg-rose-50/50 border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[3]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(3); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">3</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Seguridad Clínica (Rojas y Naranjas)</h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[3] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Descartar patologías graves (ej. tumor, fractura) que requieran derivación médica urgente.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Dolor nocturno inexplicable", "Baja de peso", "Trauma grave".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 mb-4 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-4">
-                            {/* ROJAS */}
-                            {[
-                                { key: 'fiebre_sistemico_cancerPrevio', label: 'Fiebre / compromiso sistémico / cáncer previo', type: 'roja' },
-                                { key: 'bajaPeso_noIntencionada', label: 'Baja de peso no intencionada', type: 'roja' },
-                                { key: 'dolorNocturno_inexplicable_noMecanico', label: 'Dolor nocturno inexplicable (no mecánico)', type: 'roja' },
-                                { key: 'trauma_altaEnergia_caidaImportante', label: 'Trauma alta energía / caída importante', type: 'roja' },
-                                { key: 'neuroGraveProgresivo_esfinteres_sillaMontar', label: 'Déficit neuro grave o progresivo (ej. esfínteres)', type: 'roja' },
-                                { key: 'sospechaFractura_incapacidadCarga', label: 'Sospecha fractura / incapacidad de carga pura', type: 'roja' }
-                            ].map(flag => (
-                                <label key={flag.key} className="flex items-start gap-2 cursor-pointer p-1.5 hover:bg-rose-100/30 rounded transition-colors">
-                                    <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4 cursor-pointer" checked={(interviewV4.seguridad as any)[flag.key] || false} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, [flag.key]: e.target.checked } })} disabled={isClosed} />
-                                    <span className="text-slate-700 font-medium">
-                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5 shadow-sm"></span>
-                                        {flag.label}
-                                    </span>
-                                </label>
-                            ))}
-
-                            {/* NARANJAS */}
-                            <label className="flex items-start gap-2 cursor-pointer p-1.5 hover:bg-amber-100/30 rounded transition-colors col-span-1 md:col-span-2 border-t border-slate-200/60 pt-3 mt-1">
-                                <input type="checkbox" className="mt-0.5 accent-amber-500 w-4 h-4 cursor-pointer" checked={interviewV4.seguridad.riesgoEmocionalAgudo || false} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, riesgoEmocionalAgudo: e.target.checked } })} disabled={isClosed} />
-                                <span className="text-slate-700 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                                    <span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-400 mr-1.5 shadow-sm"></span>
-                                    Bandera Naranja: Riesgo emocional agudo u otro trastorno psiquiátrico descompensado
-                                </span>
-                            </label>
-                        </div>
-
-                        {/* CONDICIONAL: DETALLE (Si > 0 banderas) */}
-                        {(interviewV4.seguridad.fiebre_sistemico_cancerPrevio || interviewV4.seguridad.bajaPeso_noIntencionada || interviewV4.seguridad.dolorNocturno_inexplicable_noMecanico || interviewV4.seguridad.trauma_altaEnergia_caidaImportante || interviewV4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar || interviewV4.seguridad.sospechaFractura_incapacidadCarga || interviewV4.seguridad.riesgoEmocionalAgudo) && (
-                            <div className="mb-4 bg-white p-3 border border-slate-200 rounded text-xs shadow-sm">
-                                <label className="block font-bold text-slate-700 mb-1">
-                                    Detalle Clínico / Justificación <span className="text-rose-500">*</span>
-                                </label>
-                                <textarea
-                                    className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none min-h-[60px]"
-                                    placeholder="Detalle los hallazgos relativos a las banderas seleccionadas..."
-                                    value={interviewV4.seguridad.detalleBanderas || ""}
-                                    onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, detalleBanderas: e.target.value } })}
-                                    disabled={isClosed}
-                                />
-                            </div>
-                        )}
-
-                        {/* ANULACIÓN URGENCIA A MANO */}
-                        <div className="pt-3 border-t border-rose-200/60">
-                            <label className="flex items-center gap-2 cursor-pointer mb-2">
-                                <input type="checkbox" className="mt-0.5 accent-rose-700 w-4 h-4 cursor-pointer" checked={interviewV4.seguridad?.overrideUrgenciaMedica || false} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, overrideUrgenciaMedica: e.target.checked } })} disabled={isClosed} />
-                                <span className="text-rose-900 font-black uppercase tracking-tight text-[11px]">Marcar urgencia médica pura de forma manual (Bloquea flujo)</span>
-                            </label>
-                            {interviewV4.seguridad?.overrideUrgenciaMedica && (
-                                <textarea rows={2} className="w-full text-xs p-2.5 border border-rose-300 rounded outline-none bg-rose-50 text-rose-900 placeholder-rose-400 shadow-inner" placeholder="Escriba la justificación estricta de la urgencia..." value={interviewV4.seguridad.justificacionUrgencia || ""} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, justificacionUrgencia: e.target.value } })} disabled={isClosed} />
-                            )}
-                        </div>
-                    </div>
-                </details >
-
-                {/* --- 4. HISTORIA Y MECANISMO (FOCO ACTIVO) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[5]} >
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(5); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">4</span>
-                                <h3 className="font-bold text-slate-800 text-sm">Historia y Mecanismo <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {reqSec4.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">{3 - reqSec4.length}/3 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[5] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {reqSec4.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec4.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Entender cómo, cuándo y por qué empezó el problema en el foco principal.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Aparición insidiosa, hace 3 meses, empeorando gradualmente".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        {/* --- FOCO PRINCIPAL --- */}
-                        <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 mb-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="text-indigo-600 font-bold text-xs uppercase tracking-wider">⭐ Foco Principal</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <input type="text" placeholder="Región (Ej. Hombro)" className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none w-full bg-white" value={focoPrincipal?.region || ""} onChange={e => handleUpdateFocoPrincipal({ region: e.target.value })} disabled={isClosed} />
-                                <select className="w-28 text-xs p-2 border border-slate-300 rounded outline-none bg-white shrink-0" value={focoPrincipal?.lado || "N/A"} onChange={e => handleUpdateFocoPrincipal({ lado: e.target.value as any })} disabled={isClosed}>
-                                    <option value="N/A">Lado: N/A</option><option value="Izquierdo">Izquierdo</option><option value="Derecho">Derecho</option><option value="Bilateral">Bilateral</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* --- FOCOS SECUNDARIOS --- */}
-                        <div className="mb-4">
-                            <div className="flex items-center justify-between mb-2 pb-1 border-b border-slate-100">
-                                <span className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Focos Secundarios (Opcional)</span>
-                                <button onClick={handleAddFocoSecundario} disabled={isClosed || interviewV4.focos.length >= 5} className="text-[10px] bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold py-1 px-2 rounded border border-slate-200 transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50">
-                                    <span>+</span> Añadir Foco Secundario
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {interviewV4.focos.filter(f => !f.esPrincipal).map((fs, idx) => (
-                                    <div key={fs.id} className="flex gap-2 items-center bg-slate-50 p-2 rounded border border-slate-200 shadow-sm animate-fadeIn">
-                                        <span className="text-[10px] text-slate-400 font-black w-4 text-center">{idx + 2}.</span>
-                                        <input type="text" placeholder="Región secundaria..." className="flex-1 text-xs p-1.5 border border-slate-300 rounded outline-none w-full bg-white" value={fs.region || ""} onChange={e => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === fs.id ? { ...f, region: e.target.value } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} disabled={isClosed} />
-                                        <select className="w-24 text-xs p-1.5 border border-slate-300 rounded outline-none bg-white shrink-0" value={fs.lado || "N/A"} onChange={e => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === fs.id ? { ...f, lado: e.target.value as any } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} disabled={isClosed}>
-                                            <option value="N/A">N/A</option><option value="Izquierdo">Izq</option><option value="Derecho">Der</option><option value="Bilateral">Bilat</option>
-                                        </select>
-                                        <button onClick={() => handleDeleteFoco(fs.id)} disabled={isClosed} className="text-rose-400 hover:text-rose-600 p-1 flex items-center justify-center transition-colors">
-                                            🗑
-                                        </button>
-                                    </div>
-                                ))}
-                                {interviewV4.focos.filter(f => !f.esPrincipal).length === 0 && (
-                                    <div className="text-[10px] text-slate-400 italic py-1 text-center bg-slate-50/50 rounded border border-slate-100 border-dashed">No hay focos secundarios registrados.</div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-[10px] font-bold text-slate-600">Inicio <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                    <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white font-bold text-slate-700" value={focoPrincipal?.inicio || "NoDefinido"} onChange={e => handleUpdateFocoPrincipal({ inicio: e.target.value as any })} disabled={isClosed}>
-                                        <option value="NoDefinido">Inicio (Tipo)</option>
-                                        <option value="Súbito">Súbito (Con/Sin Trauma)</option>
-                                        <option value="Gradual">Gradual / Insidioso</option>
-                                    </select>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-[10px] font-bold text-slate-600">Antigüedad <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                    <input type="text" placeholder="Antigüedad (ej: 3 meses)" className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none" value={focoPrincipal?.antiguedad || ""} onChange={e => handleUpdateFocoPrincipal({ antiguedad: e.target.value })} disabled={isClosed} />
-                                </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal?.evolucion || "NoDefinido"} onChange={e => handleUpdateFocoPrincipal({ evolucion: e.target.value as any })} disabled={isClosed}>
-                                    <option value="NoDefinido">Evolución Global</option>
-                                    <option value="Mejorando">Mejorando</option>
-                                    <option value="Estable">Estable / Igual</option>
-                                    <option value="Empeorando">Empeorando</option>
-                                    <option value="Fluctuante">Fluctuante</option>
-                                </select>
-                                <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal?.episodiosPrevios || "NoDefinido"} onChange={e => handleUpdateFocoPrincipal({ episodiosPrevios: e.target.value as any })} disabled={isClosed}>
-                                    <option value="NoDefinido">Episodios Previos</option>
-                                    <option value="Primer episodio">Primer episodio</option>
-                                    <option value="Recurrencia (mismo dolor)">Recurrencia (mismo dolor)</option>
-                                    <option value="Dolor similar lado contrario">Dolor similar lado contrario</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* --- RAMA SÚBITO --- */}
-                        {focoPrincipal?.inicio === "Súbito" && (
-                            <div className="bg-orange-50/50 border border-orange-100 p-3 rounded-lg space-y-3 mt-2">
-                                <div className="font-bold text-orange-800 text-xs mb-1 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Detalles del Inicio Súbito
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500">¿Hubo Contacto Externo?</label>
-                                        <div className="flex flex-wrap gap-2 text-xs">
-                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`contacto_${focoPrincipal.id}`} checked={focoPrincipal.subito?.contacto === true} onChange={() => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, contacto: true } })} disabled={isClosed} /> Sí</label>
-                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`contacto_${focoPrincipal.id}`} checked={focoPrincipal.subito?.contacto === false} onChange={() => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, contacto: false } })} disabled={isClosed} /> No</label>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500">¿Hinchazón Rápida (0-2h)?</label>
-                                        <div className="flex flex-wrap gap-2 text-xs">
-                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`hinchazon_${focoPrincipal.id}`} checked={focoPrincipal.subito?.hinchazonRapida === "Sí"} onChange={() => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, hinchazonRapida: "Sí" } })} disabled={isClosed} /> Sí</label>
-                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`hinchazon_${focoPrincipal.id}`} checked={focoPrincipal.subito?.hinchazonRapida === "No"} onChange={() => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, hinchazonRapida: "No" } })} disabled={isClosed} /> No</label>
-                                            <label className="flex items-center gap-1 cursor-pointer"><input type="radio" name={`hinchazon_${focoPrincipal.id}`} checked={focoPrincipal.subito?.hinchazonRapida === "No Sabe"} onChange={() => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, hinchazonRapida: "No Sabe" } })} disabled={isClosed} /> N/S</label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <select className="w-full text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal.subito?.capacidadInmediata || ""} onChange={e => handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, capacidadInmediata: e.target.value as any } })} disabled={isClosed}>
-                                    <option value="" disabled>Capacidad inmediata post-lesión...</option>
-                                    <option value="Continuó actividad">Continuó la actividad normalmente</option>
-                                    <option value="Tuvo que parar">Tuvo que parar, pero podía caminar/cargar</option>
-                                    <option value="Incapacidad total">Incapacidad total de carga/movimiento</option>
-                                    <option value="No aplicable">No aplicable</option>
-                                </select>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Cinemática (Opcional, Multiselección)</label>
-                                    <div className="flex flex-wrap gap-1">
-                                        {["Torsión", "Caída", "Golpe Directo", "Acel./Freno", "Aterrizaje", "Sobrestiramiento"].map(op => {
-                                            const active = focoPrincipal.subito?.cinematica?.includes(op);
-                                            return (
-                                                <button key={op} onClick={() => {
-                                                    const curr = focoPrincipal.subito?.cinematica || [];
-                                                    const next = active ? curr.filter(x => x !== op) : [...curr, op];
-                                                    handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, cinematica: next } });
-                                                }} disabled={isClosed} className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${active ? 'bg-orange-100 border-orange-300 text-orange-800 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                                                    {op}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Sonido/Sensación (Opcional)</label>
-                                    <div className="flex flex-wrap gap-1">
-                                        {["Pop", "Crujido", "Chasquido", "Desgarro", "Bloqueo", "Inestabilidad"].map(op => {
-                                            const active = focoPrincipal.subito?.sonidoSensacion?.includes(op);
-                                            return (
-                                                <button key={op} onClick={() => {
-                                                    const curr = focoPrincipal.subito?.sonidoSensacion || [];
-                                                    const next = active ? curr.filter(x => x !== op) : [...curr, op];
-                                                    handleUpdateFocoPrincipal({ subito: { ...focoPrincipal.subito!, sonidoSensacion: next } });
-                                                }} disabled={isClosed} className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${active ? 'bg-orange-100 border-orange-300 text-orange-800 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                                                    {op}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* --- RAMA GRADUAL --- */}
-                        {focoPrincipal?.inicio === "Gradual" && (
-                            <div className="bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg space-y-4 mt-2">
-                                <div className="font-bold text-indigo-800 text-xs mb-1 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Desglose de Cargas (Insidioso)
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {/* Componente Lógico/Visual de Slider Custom */}
-                                    {[
-                                        { label: "Volumen", prop: "volumen" },
-                                        { label: "Intensidad", prop: "intensidad" },
-                                        { label: "Frecuencia", prop: "frecuencia" }
-                                    ].map(item => {
-                                        const val = focoPrincipal.gradual![item.prop as keyof typeof focoPrincipal.gradual] as number;
-                                        return (
-                                            <div key={item.prop} className="flex flex-col bg-white border border-slate-200 rounded p-2 shadow-sm">
-                                                <div className="text-[10px] font-bold text-slate-600 uppercase text-center mb-1">{item.label}</div>
-                                                <select className="text-[10px] p-1 border border-slate-100 rounded bg-slate-50 outline-none text-center"
-                                                    value={val}
-                                                    onChange={e => handleUpdateFocoPrincipal({ gradual: { ...focoPrincipal.gradual!, [item.prop]: Number(e.target.value) } })} disabled={isClosed}>
-                                                    <option value={1}>Mucho Menos</option>
-                                                    <option value={2}>Menos</option>
-                                                    <option value={3}>Igual / Estable</option>
-                                                    <option value={4}>Más</option>
-                                                    <option value={5}>Mucho Más ↑</option>
-                                                </select>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal.gradual?.recuperacion || ""} onChange={e => handleUpdateFocoPrincipal({ gradual: { ...focoPrincipal.gradual!, recuperacion: e.target.value as "Mejor" | "Igual" | "Peor" | "" } })} disabled={isClosed}>
-                                        <option value="" disabled>Recuperación entre estímulos...</option>
-                                        <option value="Mejor">Mejor / Más rápida</option>
-                                        <option value="Igual">Igual</option>
-                                        <option value="Peor">Peor / Lenta / Sin reparar</option>
-                                    </select>
-                                    <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal.gradual?.aparicionSintoma || ""} onChange={e => handleUpdateFocoPrincipal({ gradual: { ...focoPrincipal.gradual!, aparicionSintoma: e.target.value as "Al inicio" | "Durante" | "Después" | "Día siguiente" | "Constante" | "" } })} disabled={isClosed}>
-                                        <option value="" disabled>¿Cuándo duele primario?</option>
-                                        <option value="Al inicio">Al inicio (calienta y pasa)</option>
-                                        <option value="Durante">Durante la acción/esfuerzo</option>
-                                        <option value="Después">Después (enfriamiento)</option>
-                                        <option value="Día siguiente">Día siguiente (DOMS+)</option>
-                                        <option value="Constante">Constante</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] uppercase font-bold text-slate-500">Cambios Específicos (Multiselección)</label>
-                                    <div className="flex flex-wrap gap-1">
-                                        {["Calzado", "Superficie", "Implemento", "Técnica biomecánica", "Estrés Vital Alto", "Mala nutrición / sueño"].map(op => {
-                                            const active = focoPrincipal.gradual?.cambiosEspecificos?.includes(op);
-                                            return (
-                                                <button key={op} onClick={() => {
-                                                    const curr = focoPrincipal.gradual?.cambiosEspecificos || [];
-                                                    const next = active ? curr.filter(x => x !== op) : [...curr, op];
-                                                    handleUpdateFocoPrincipal({ gradual: { ...focoPrincipal.gradual!, cambiosEspecificos: next } });
-                                                }} disabled={isClosed} className={`px-2 py-1 text-[10px] rounded-full border transition-colors ${active ? 'bg-indigo-100 border-indigo-300 text-indigo-800 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                                                    {op}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* PICO DE CARGA [AUTO] */}
-                                {(() => {
-                                    const g = focoPrincipal.gradual;
-                                    if (g && (g.volumen >= 4 || g.intensidad >= 4 || g.frecuencia >= 4)) {
-                                        const motivos = [];
-                                        if (g.volumen >= 4) motivos.push("aumento de volumen");
-                                        if (g.intensidad >= 4) motivos.push("aumento de intensidad");
-                                        if (g.frecuencia >= 4) motivos.push("aumento de frecuencia");
-                                        const motivoStr = motivos.join(" y ");
-                                        // Actualizamos el estado interno en background con useEffect en otro lado si fuera estricto, 
-                                        // o lo derivamos para la UI y el envío. Lo mantenemos como derivada UI.
-                                        return (
-                                            <div className="mt-4 bg-purple-50/50 border border-purple-200 p-3 rounded-lg text-xs text-purple-900 flex flex-col gap-2">
-                                                <div className="flex items-center gap-2 pb-2 border-b border-purple-200/60">
-                                                    <span className="text-purple-500 font-bold">⚡</span>
-                                                    <span className="text-[10px] font-black text-purple-900 uppercase tracking-widest">AUTO (no editable)</span>
-                                                </div>
-                                                <div>
-                                                    <strong>Pico de Carga Probable</strong><br />
-                                                    Identificado por reporte de {motivoStr}. Sugiere revisar la tolerancia de los tejidos previo a intervenciones estructurales puras.
-                                                </div>
-                                            </div>
-                                        )
-                                    }
-                                    return null;
-                                })()}
-                            </div>
-                        )}
-
-                        <textarea className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" rows={2} placeholder="Contexto detallado (Ej: Cayó esquiando, o empezó a doler tras maratón)..." value={focoPrincipal?.contextoDetallado || ""} onChange={e => handleUpdateFocoPrincipal({ contextoDetallado: e.target.value })} disabled={isClosed} />
-
-                        {/* --- MECANISMO DE DOLOR SUGERIDO (FASE 09) --- */}
-                        <div className="bg-white border text-xs p-3.5 rounded-lg shadow-sm border-slate-200 mt-4">
-                            <div className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                                <span className="text-base">🧠</span> Tipo de Dolor Sugerido [AUTO]
-                            </div>
-
-                            {(() => {
-                                const sugerencia = calcularMecanismoSugerido(focoPrincipal, interviewV4.bps);
-                                if (!sugerencia) return null;
-
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-bold text-slate-700">Etiquetas Clínicas Rápidas (Transversales)</label>
+                        <div className="flex flex-wrap gap-1">
+                            {["Nociceptivo", "Neuropático", "Nociplástico", "Inflamación", "Mecánico", "Agudo", "Crónico", "Inestable"].map(t => {
+                                const selected = focoPrincipal?.tags.includes(t);
                                 return (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-indigo-50 border border-indigo-200 p-2.5 rounded flex flex-col justify-center">
-                                                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wide mb-0.5">Clasificación Principal</span>
-                                                <span className="font-black text-indigo-900 text-sm leading-tight">{sugerencia.principal.categoria}</span>
-                                                <span className="text-[10px] text-indigo-700 mt-0.5">"{sugerencia.principal.apellido}"</span>
-                                            </div>
-                                            <div className="bg-slate-50 border border-slate-200 p-2.5 rounded flex flex-col justify-center opacity-80">
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-0.5">Alternativa a revisar</span>
-                                                <span className="font-bold text-slate-700 text-xs leading-tight">{sugerencia.alternativa.categoria}</span>
-                                                <span className="text-[10px] text-slate-500 mt-0.5">"{sugerencia.alternativa.apellido}"</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1">Criterios Detectados</div>
-                                            <ul className="text-[10px] text-slate-600 list-disc pl-4 space-y-1">
-                                                {sugerencia.razones.map((r, i) => <li key={i}>{r}</li>)}
-                                            </ul>
-                                        </div>
-
-                                        <div className="border-t border-slate-100 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <div className="font-bold text-slate-600 text-[10px] uppercase">Decisión del Alumno:</div>
-                                            <div className="flex bg-slate-100 rounded p-1 border border-slate-200">
-                                                {(["De acuerdo", "Cambiar", "Dejar pendiente"] as const).map(opt => (
-                                                    <button key={opt}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            let updateObj: any = { mecanismoConfirmacion: opt };
-                                                            if (opt === "De acuerdo") {
-                                                                updateObj.mecanismoCategoria = sugerencia.principal.categoria;
-                                                                updateObj.mecanismoApellido = sugerencia.principal.apellido;
-                                                                updateObj.mecanismoTextoFinal = `${sugerencia.principal.categoria}: de aparente origen ${sugerencia.principal.apellido}`;
-                                                            }
-                                                            handleUpdateFocoPrincipal(updateObj);
-                                                        }}
-                                                        disabled={isClosed}
-                                                        className={`px-3 py-1 text-[10px] rounded font-bold transition-all whitespace-nowrap ${focoPrincipal?.mecanismoConfirmacion === opt ? 'bg-white shadow text-indigo-700 border border-slate-200/60' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                        {opt}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {focoPrincipal?.mecanismoConfirmacion === "Cambiar" && (
-                                            <div className="bg-orange-50/50 p-3 rounded-lg border border-orange-200 mt-3 space-y-2 animate-fadeIn">
-                                                <div className="text-[10px] font-bold text-orange-800 uppercase flex gap-1 items-center mb-1">
-                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                                    Sobreescritura Manual Activa
-                                                </div>
-                                                <select className="w-full p-2 text-xs border border-orange-200 bg-white rounded outline-none font-bold text-slate-700" value={focoPrincipal?.mecanismoCategoria || "NoDefinido"} onChange={e => {
-                                                    const cat = e.target.value as FocoV4["mecanismoCategoria"];
-                                                    const firstTypeOrEmpty = MECANISMOS_SUBTIPOS[cat]?.[0] || "";
-                                                    let newTextoFinal = "";
-                                                    if (cat === "NoDefinido") newTextoFinal = "No definido";
-                                                    else if (cat === "Nociplástico") newTextoFinal = "Aparente nociplástico (sensibilización central probable)";
-                                                    else if (cat === "Mixto") newTextoFinal = `Mixto: ${firstTypeOrEmpty}`;
-                                                    else newTextoFinal = `Aparente ${cat.toLowerCase()} de origen ${firstTypeOrEmpty}`;
-                                                    handleUpdateFocoPrincipal({ mecanismoCategoria: cat, mecanismoApellido: firstTypeOrEmpty, mecanismoTextoFinal: newTextoFinal });
-                                                }} disabled={isClosed}>
-                                                    {MECANISMOS_CATEGORIAS.map(c => <option key={c} value={c}>{c === 'NoDefinido' ? 'Categoría: No Definido' : `Categoría: ${c}`}</option>)}
-                                                </select>
-
-                                                {focoPrincipal?.mecanismoCategoria !== "NoDefinido" && (
-                                                    <select className="w-full p-2 text-xs border border-orange-200 bg-white rounded outline-none font-bold text-slate-600" value={focoPrincipal?.mecanismoApellido || ""} onChange={e => {
-                                                        const cat = focoPrincipal?.mecanismoCategoria || "NoDefinido";
-                                                        const apellido = e.target.value;
-                                                        let newTextoFinal = "";
-                                                        if (cat === "Nociplástico") newTextoFinal = "Aparente nociplástico (sensibilización central probable)";
-                                                        else if (cat === "Mixto") newTextoFinal = `Mixto: ${apellido}`;
-                                                        else newTextoFinal = `Aparente ${cat.toLowerCase()} de origen ${apellido}`;
-                                                        handleUpdateFocoPrincipal({ mecanismoApellido: apellido, mecanismoTextoFinal: newTextoFinal });
-                                                    }} disabled={isClosed}>
-                                                        {MECANISMOS_SUBTIPOS[focoPrincipal?.mecanismoCategoria || "NoDefinido"].map(sub => (
-                                                            <option key={sub} value={sub}>{sub}</option>
-                                                        ))}
-                                                    </select>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <button
+                                        key={t}
+                                        disabled={isClosed}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            let current = focoPrincipal.tags || [];
+                                            const newTags = selected ? current.filter(x => x !== t) : [...current, t];
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, tags: newTags } : f);
+                                            updateV4({ focos: newFocos });
+                                        }}
+                                        className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors ${selected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                    >
+                                        {t}
+                                    </button>
                                 );
-                            })()}
-                        </div>
-                    </div>
-                </details >
-
-                {/* --- 5. TAGS CLAVE (FOCO ACTIVO) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[6]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(6); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">5</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Tags y Modificadores <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[6] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Identificar características del dolor y actividades que lo alteran.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Dolor punzante, empeora al agacharse, alivia en reposo".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        <div className="bg-white border text-xs border-slate-300 p-2.5 rounded shadow-sm">
-                            <div className="font-bold text-slate-600 mb-2">Tags Clave (Síntomas / Sensaciones)</div>
-                            <div className="flex flex-wrap gap-1.5">
-                                {TAGS_SINTOMAS.map(tag => {
-                                    const isIncluded = focoPrincipal?.tags.includes(tag);
-                                    return (
-                                        <button key={tag} disabled={isClosed}
-                                            onClick={() => {
-                                                const curr = focoPrincipal?.tags || [];
-                                                handleUpdateFocoPrincipal({ tags: isIncluded ? curr.filter(x => x !== tag) : [...curr, tag] });
-                                            }}
-                                            className={`px-2.5 py-1 rounded-full border transition-colors ${isIncluded ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                                        >
-                                            {tag}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                        <textarea rows={2} placeholder="Factores Agravantes (movimientos, posturas)..." className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={focoPrincipal?.agravantes || ""} onChange={e => handleUpdateFocoPrincipal({ agravantes: e.target.value })} disabled={isClosed} />
-                        <textarea rows={2} placeholder="Factores Aliviantes (reposo, hielo, fármacos)..." className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={focoPrincipal?.aliviantes || ""} onChange={e => handleUpdateFocoPrincipal({ aliviantes: e.target.value })} disabled={isClosed} />
-                    </div>
-                </details >
-
-                {/* --- 6. PERFIL DEL SÍNTOMA (FOCO ACTIVO) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[7]} >
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(7); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">6</span>
-                                <h3 className="font-bold text-slate-800 text-sm">Perfil del Síntoma <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {reqSec5.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">{1 - reqSec5.length}/1 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[7] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {reqSec5.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec5.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-4">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Cuantificar la intensidad del síntoma actual y sus extremos recientes.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Dolor actual 4/10, peor momento en la mañana 7/10".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-
-                        {/* 1. Ubicación Detallada */}
-                        <div className="space-y-2">
-                            <div className="font-bold text-slate-600 text-xs">Ubicación y Dispersión</div>
-                            <div className="flex gap-2">
-                                <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal?.extension || "NoDefinido"} onChange={e => handleUpdateFocoPrincipal({ extension: e.target.value as any })} disabled={isClosed}>
-                                    <option value="NoDefinido">Extensión de la zona...</option>
-                                    <option value="Local">Local (puntual, dedo)</option>
-                                    <option value="Se expande">Se expande (área amplia)</option>
-                                    <option value="Línea que baja/sube">Línea que baja/sube</option>
-                                    <option value="Cambia de lugar">Cambia de lugar erráticamente</option>
-                                </select>
-                                <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal?.profundidad || "NoDefinido"} onChange={e => handleUpdateFocoPrincipal({ profundidad: e.target.value as any })} disabled={isClosed}>
-                                    <option value="NoDefinido">Profundidad...</option>
-                                    <option value="Superficial">Superficial (Piel / Cerca)</option>
-                                    <option value="Profundo">Profundo</option>
-                                    <option value="Articular">Adentro de la articulación</option>
-                                    <option value="NoSabe">Difícil de precisar</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* 2. Naturaleza (Chips) */}
-                        <div className="space-y-1.5">
-                            <div className="font-bold text-slate-600 text-xs">Naturaleza (A qué se parece)</div>
-                            <div className="flex flex-wrap gap-1.5">
-                                {["Punzante/Aguja", "Quemazón/Ardor", "Sordo/Pesado", "Eléctrico/Corriente", "Latido/Palpitante", "Tensión/Tirón", "Calambre"].map(op => {
-                                    const active = focoPrincipal?.naturaleza?.includes(op);
-                                    return (
-                                        <button key={op} disabled={isClosed}
-                                            onClick={() => {
-                                                const curr = focoPrincipal?.naturaleza || [];
-                                                const next = active ? curr.filter(x => x !== op) : [...curr, op];
-                                                handleUpdateFocoPrincipal({ naturaleza: next });
-                                            }}
-                                            className={`px-2.5 py-1 text-[10px] rounded-full border transition-colors ${active ? 'bg-indigo-100 border-indigo-300 text-indigo-800 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                                            {op}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* 3. Escala y Severidad */}
-                        <div className="space-y-3 bg-slate-50 border border-slate-200 p-3 rounded-lg">
-                            <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
-                                <div className="font-bold text-slate-800 text-xs">Severidad e Intensidad</div>
-                                <div className="flex gap-3 text-xs">
-                                    <label className="flex items-center gap-1 cursor-pointer font-bold text-slate-600">
-                                        <input type="radio" checked={interviewV4.escalaDolorGlobal === "EVA"} onChange={() => updateV4({ escalaDolorGlobal: "EVA" })} disabled={isClosed} />
-                                        Escala Visual Análoga (EVA)
-                                    </label>
-                                    <label className="flex items-center gap-1 cursor-pointer font-bold text-slate-600">
-                                        <input type="radio" checked={interviewV4.escalaDolorGlobal === "ENA"} onChange={() => updateV4({ escalaDolorGlobal: "ENA" })} disabled={isClosed} />
-                                        Escala Numérica Análoga (ENA)
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <div className="flex flex-col">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 flex-wrap" title={interviewV4.escalaDolorGlobal === "EVA" ? "Escala Visual Análoga" : "Escala Numérica Análoga"}>Actual <span className="text-[9px] text-slate-400 font-normal border border-slate-200 rounded px-1">{interviewV4.escalaDolorGlobal}</span><span className="text-[9px] text-rose-500 italic normal-case w-full mt-0.5">*obligatorio</span></label>
-                                    <input type="number" min="0" max="10" placeholder="0-10" className="w-full text-center text-xs p-2 border border-slate-300 rounded outline-none mt-1" value={focoPrincipal?.dolorActual ?? ''} onChange={e => handleUpdateFocoPrincipal({ dolorActual: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">Peor 24h <span className="text-[9px] text-slate-400 font-normal border border-slate-200 rounded px-1">{interviewV4.escalaDolorGlobal}</span></label>
-                                    <input type="number" min="0" max="10" placeholder="0-10" className="w-full text-center text-xs p-2 border border-slate-300 rounded outline-none mt-1" value={focoPrincipal?.peor24h ?? ''} onChange={e => handleUpdateFocoPrincipal({ peor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">Mejor 24h <span className="text-[9px] text-slate-400 font-normal border border-slate-200 rounded px-1">{interviewV4.escalaDolorGlobal}</span></label>
-                                    <input type="number" min="0" max="10" placeholder="0-10" className="w-full text-center text-xs p-2 border border-slate-300 rounded outline-none mt-1" value={focoPrincipal?.mejor24h ?? ''} onChange={e => handleUpdateFocoPrincipal({ mejor24h: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2 bg-white p-2 border border-slate-200 rounded">
-                                <div className="flex-1 w-full flex flex-col">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1">En Actividad Índice (Agravante req.)</label>
-                                    <div className="flex flex-col sm:flex-row gap-2 relative">
-                                        <input type="text" placeholder="Ej: Correr 5km, subir escaleras..." className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none w-full"
-                                            value={focoPrincipal?.actividadIndice || ""}
-                                            onChange={e => handleUpdateFocoPrincipal({ actividadIndice: e.target.value })}
-                                            disabled={isClosed} />
-                                        {/* Botón de auto-fill si existe un PSFS principal */}
-                                        {interviewV4.psfsGlobal?.length > 0 && interviewV4.psfsGlobal[0].actividad.trim() !== "" && (
-                                            <button
-                                                onClick={() => handleUpdateFocoPrincipal({ actividadIndice: interviewV4.psfsGlobal[0].actividad })}
-                                                disabled={isClosed}
-                                                className="absolute -top-5 right-1 text-[9px] text-indigo-600 font-bold hover:underline bg-white px-1"
-                                            >
-                                                Usar Escala Funcional Específica (PSFS) 1
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="w-full sm:w-20 flex flex-col shrink-0">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 hidden sm:block">{interviewV4.escalaDolorGlobal}</label>
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 sm:hidden">Dolor en la actividad</label>
-                                    <input type="number" min="0" max="10" placeholder="0-10" className="w-full text-center text-xs p-2 border border-slate-300 rounded outline-none" value={focoPrincipal?.dolorActividadIndice ?? ''} onChange={e => handleUpdateFocoPrincipal({ dolorActividadIndice: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 4. Patrón Temporal */}
-                        <div className="space-y-2">
-                            <div className="font-bold text-slate-600 text-xs">Patrón Temporal</div>
-                            <div className="flex gap-2">
-                                <select className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none bg-white" value={focoPrincipal?.patronTemporal?.frecuencia || "NoDefinido"} onChange={e => {
-                                    const curr = focoPrincipal?.patronTemporal || { frecuencia: "NoDefinido", rigidezMatinalMinutos: null, despiertaNoche: null };
-                                    handleUpdateFocoPrincipal({ patronTemporal: { ...curr, frecuencia: e.target.value as any } });
-                                }} disabled={isClosed}>
-                                    <option value="NoDefinido">Frecuencia...</option>
-                                    <option value="Constante (24/7)">Constante (24/7)</option>
-                                    <option value="Intermitente">Intermitente (Va y viene)</option>
-                                    <option value="Solo al mover">Solo al realizar el movimiento</option>
-                                </select>
-                                <div className="flex-1 border border-slate-300 rounded overflow-hidden flex items-center bg-white px-2">
-                                    <span className="text-xs text-slate-500 mr-2 whitespace-nowrap">Rigidez am:</span>
-                                    <input type="number" min="0" placeholder="Mins" className="w-full text-xs p-1 outline-none text-right placeholder-slate-300 bg-transparent" value={focoPrincipal?.patronTemporal?.rigidezMatinalMinutos ?? ''} onChange={e => {
-                                        const curr = focoPrincipal?.patronTemporal || { frecuencia: "NoDefinido", rigidezMatinalMinutos: null, despiertaNoche: null };
-                                        handleUpdateFocoPrincipal({ patronTemporal: { ...curr, rigidezMatinalMinutos: e.target.value ? Number(e.target.value) : null } });
-                                    }} disabled={isClosed} />
-                                </div>
-                            </div>
-                            <div className="flex gap-2 text-xs bg-slate-50 p-2.5 border border-slate-200 rounded items-center justify-between">
-                                <span className="font-bold text-slate-600">¿El síntoma lo(a) despierta por la noche?</span>
-                                <div className="flex gap-3">
-                                    <label className="flex items-center gap-1 cursor-pointer">
-                                        <input type="radio" checked={focoPrincipal?.patronTemporal?.despiertaNoche === true} onChange={() => {
-                                            const curr = focoPrincipal?.patronTemporal || { frecuencia: "NoDefinido", rigidezMatinalMinutos: null, despiertaNoche: null };
-                                            handleUpdateFocoPrincipal({ patronTemporal: { ...curr, despiertaNoche: true } });
-                                        }} disabled={isClosed} /> Sí
-                                    </label>
-                                    <label className="flex items-center gap-1 cursor-pointer">
-                                        <input type="radio" checked={focoPrincipal?.patronTemporal?.despiertaNoche === false} onChange={() => {
-                                            const curr = focoPrincipal?.patronTemporal || { frecuencia: "NoDefinido", rigidezMatinalMinutos: null, despiertaNoche: null };
-                                            handleUpdateFocoPrincipal({ patronTemporal: { ...curr, despiertaNoche: false } });
-                                        }} disabled={isClosed} /> No
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </details >
-
-                {/* --- 7. IRRITABILIDAD AUTO (FOCO ACTIVO) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[8] || true} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(8); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">7</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Irritabilidad <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[75] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-4">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Medir la facilidad con la que el dolor se activa y su tiempo de recuperación.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Se irrita fácilmente al trotar 1 min y tarda horas en calmarse".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-
-                        {/* Fila 1: Facilidad y Tiempo */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-slate-600 mb-1.5 block">Facilidad de provocación</label>
-                                <div className="flex bg-slate-100 rounded border border-slate-200 p-1">
-                                    {(["Baja", "Media", "Alta"] as const).map(f => (
-                                        <button key={f} disabled={isClosed}
-                                            onClick={(e) => { e.preventDefault(); handleUpdateFocoPrincipal({ irritabilidadFacilidad: f }); }}
-                                            className={`flex-1 text-[10px] py-1.5 rounded font-bold transition-all ${focoPrincipal?.irritabilidadFacilidad === f ? 'bg-white shadow text-indigo-700 border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                            {f}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-600 mb-1.5 block">Tiempo a línea base</label>
-                                <select className="w-full p-2 border border-slate-300 bg-white rounded outline-none text-xs text-slate-700"
-                                    value={focoPrincipal?.irritabilidadTiempo || "NoDefinido"}
-                                    onChange={e => handleUpdateFocoPrincipal({ irritabilidadTiempo: e.target.value as any })}
-                                    disabled={isClosed}>
-                                    <option value="NoDefinido">Seleccionar...</option>
-                                    <option value="<15m">&lt; 15 minutos</option>
-                                    <option value="15-60m">15 a 60 minutos</option>
-                                    <option value="1-24h">1 a 24 horas</option>
-                                    <option value=">24h">&gt; 24 horas</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Fila 2: Magnitud y After-Efecto */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-slate-600 mb-1.5 block">After-efecto al día siguiente</label>
-                                <div className="flex bg-slate-100 rounded border border-slate-200 p-1">
-                                    {(["Nunca", "A veces", "Frecuente"] as const).map(a => (
-                                        <button key={a} disabled={isClosed}
-                                            onClick={(e) => { e.preventDefault(); handleUpdateFocoPrincipal({ irritabilidadAfterEfecto: a }); }}
-                                            className={`flex-1 text-[10px] py-1.5 rounded font-bold transition-all ${focoPrincipal?.irritabilidadAfterEfecto === a ? 'bg-white shadow text-indigo-700 border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                            {a}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-600 mb-1.5 block">Magnitud típica al gatillarse (0-10)</label>
-                                <input type="number" min="0" max="10" placeholder="0-10"
-                                    className="w-full text-center text-xs p-2.5 border border-slate-300 rounded outline-none"
-                                    value={focoPrincipal?.irritabilidadMagnitud ?? ''}
-                                    onChange={e => handleUpdateFocoPrincipal({ irritabilidadMagnitud: e.target.value ? Number(e.target.value) : null })}
-                                    disabled={isClosed} />
-                            </div>
-                        </div>
-
-                    </div>
-                </details >
-
-                {/* --- 8. SÍNTOMAS ASOCIADOS (FOCO ACTIVO) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[9]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(9); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">8</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Síntomas Asociados <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[8] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-4">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Rastrear otros signos mecánicos o neurológicos relacionados al foco.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Rodilla cruje y se traba (mecánico), hormigueo hasta el pie (neuro)".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        {/* Síntomas Mecánicos */}
-                        <div>
-                            <div className="font-bold text-slate-600 text-[10px] uppercase mb-1.5 tracking-wide">Síntomas Mecánicos Asociados</div>
-                            <div className="flex flex-wrap gap-1.5">
-                                {["Chasquido/Ruido", "Bloqueo/Trabe", "Fallo/Inestabilidad", "Rigidez Severa", "Pérdida Rango"].map(mec => (
-                                    <button key={mec} disabled={isClosed}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            const arr = focoPrincipal?.sintomasMecanicos || [];
-                                            const newArr = arr.includes(mec) ? arr.filter(x => x !== mec) : [...arr, mec];
-                                            handleUpdateFocoPrincipal({ sintomasMecanicos: newArr });
-                                        }}
-                                        className={`px-2.5 py-1 text-[9px] rounded-full font-bold transition-all border ${focoPrincipal?.sintomasMecanicos?.includes(mec) ? 'bg-orange-100 text-orange-700 border-orange-200 shadow-sm' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}>
-                                        {mec}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Síntomas Sistémicos */}
-                        <div>
-                            <div className="font-bold text-rose-600 text-[10px] uppercase mb-1.5 tracking-wide">Síntomas Sistémicos</div>
-                            <div className="flex flex-wrap gap-1.5">
-                                {["Fiebre constante", "Sudoración nocturna", "Baja de peso inexplicada", "Mareos/Vértigo", "Malestar general"].map(sis => (
-                                    <button key={sis} disabled={isClosed}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            const arr = focoPrincipal?.sintomasSistemicos || [];
-                                            const newArr = arr.includes(sis) ? arr.filter(x => x !== sis) : [...arr, sis];
-                                            handleUpdateFocoPrincipal({ sintomasSistemicos: newArr });
-                                        }}
-                                        className={`px-2.5 py-1 text-[9px] rounded-full font-bold transition-all border ${focoPrincipal?.sintomasSistemicos?.includes(sis) ? 'bg-rose-100 text-rose-700 border-rose-200 shadow-sm' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'}`}>
-                                        {sis}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Síntomas Neurológicos */}
-                        <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
-                            <div className="font-bold text-indigo-800 text-xs mb-2 flex items-center gap-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                Síntomas Neurológicos
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                                {["Hormigueo/Adormecimiento", "Pérdida de Sensibilidad", "Debilidad/Pérdida de fuerza", "Corriente eléctrica"].map(neu => (
-                                    <button key={neu} disabled={isClosed}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            const neuro = focoPrincipal?.sintomasNeurologicos || { activados: [], zona: "", asociacion: [] };
-                                            const activados = [...neuro.activados];
-                                            const idx = activados.indexOf(neu);
-                                            if (idx > -1) activados.splice(idx, 1); else activados.push(neu);
-                                            handleUpdateFocoPrincipal({ sintomasNeurologicos: { ...neuro, activados } });
-                                        }}
-                                        className={`px-2.5 py-1 text-[9px] rounded-full font-bold transition-all border ${focoPrincipal?.sintomasNeurologicos?.activados?.includes(neu) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300'}`}>
-                                        {neu}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Sub-bloque Neurológico */}
-                            {focoPrincipal?.sintomasNeurologicos?.activados?.length > 0 && (
-                                <div className="mt-3 p-3 bg-white rounded border border-indigo-200 space-y-3 animate-fadeIn">
-                                    <div>
-                                        <div className="font-bold text-[10px] text-indigo-700 uppercase mb-1">Zona Anatómica Específica:</div>
-                                        <select className="w-full p-2 border border-slate-200 bg-slate-50 rounded outline-none text-xs text-slate-700 font-bold"
-                                            value={focoPrincipal.sintomasNeurologicos.zona}
-                                            onChange={e => handleUpdateFocoPrincipal({ sintomasNeurologicos: { ...focoPrincipal.sintomasNeurologicos, zona: e.target.value } })}
-                                            disabled={isClosed}>
-                                            <option value="">Selecciona Zona Dermatómica / Territorio</option>
-                                            <option value="Cervical Alto (C1-C4)">Cervical Alto (C1-C4)</option>
-                                            <option value="Braquial (C5-T1)">Braquial (C5-T1) - Hombro/Brazo/Mano</option>
-                                            <option value="Truncular / Tórax (T2-T12)">Truncular / Tórax (T2-T12)</option>
-                                            <option value="Lumbar (L1-L4)">Lumbar (L1-L4) - Muslo anterior/Ingle</option>
-                                            <option value="Lumbosacro (L5-S3)">Lumbosacro (L5-S3) - Posterior/Pierna/Pie</option>
-                                            <option value="Pudendo / Pélvico (S2-S4)">Pudendo / Pélvico (S2-S4)</option>
-                                            <option value="Otro / Periférico distal">Otro / Periférico distal</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-[10px] text-indigo-700 uppercase mb-1">Se gatillan / asocian a: (Disparadores)</div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {["Mover Cuello/Cabeza", "Sentado mucho rato", "Levantar brazos", "Caminar prolongado", "Agacharse/Flexión", "Cambios postura ráp.", "Esfuerzo/Tos/Estornudo"].map(aso => (
-                                                <button key={aso} disabled={isClosed}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const neuro = focoPrincipal?.sintomasNeurologicos || { activados: [], zona: "", asociacion: [] };
-                                                        const asociacion = [...neuro.asociacion];
-                                                        const idx = asociacion.indexOf(aso);
-                                                        if (idx > -1) asociacion.splice(idx, 1); else asociacion.push(aso);
-
-                                                        // Lógica AUTO para Descartes
-                                                        const disp = `${neuro.zona || "Neuro"}: ${aso}`;
-                                                        let descartesCpy = [...(focoPrincipal?.disparadoresParaDescartes || [])];
-                                                        if (idx > -1) {
-                                                            descartesCpy = descartesCpy.filter(d => d !== disp);
-                                                        } else {
-                                                            if (!descartesCpy.includes(disp)) descartesCpy.push(disp);
-                                                        }
-
-                                                        handleUpdateFocoPrincipal({
-                                                            sintomasNeurologicos: { ...neuro, asociacion },
-                                                            disparadoresParaDescartes: descartesCpy
-                                                        });
-                                                    }}
-                                                    className={`px-2 py-1 text-[9px] rounded font-bold transition-all ${focoPrincipal?.sintomasNeurologicos?.asociacion?.includes(aso) ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>
-                                                    {aso}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                    </div>
-                </details >
-
-                {/* --- 9. SIGNO COMPARABLE (C0 BASAL) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[10]} >
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(10); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">9</span>
-                                <h3 className="font-bold text-slate-800 text-sm">Signo Comparable <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {reqSec9.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">{2 - reqSec9.length}/2 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[10] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {reqSec9.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec9.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Establecer un test clínico rápido para medir progreso intradía.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Dolor 6/10 al hacer una sentadilla profunda".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-3 mb-3 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                            <div className="flex-1 w-full flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-600">Gesto o movimiento <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                <input type="text" placeholder="Ej: Ponerse de pie..." className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={focoPrincipal?.signoComparable || ""} onChange={e => handleUpdateFocoPrincipal({ signoComparable: e.target.value })} disabled={isClosed} />
-                            </div>
-                            <div className="w-full sm:w-20 flex flex-col gap-1 sm:items-center">
-                                <label className="text-[10px] font-bold text-slate-600 sm:whitespace-nowrap">Dolor allí <span className="text-[9px] text-rose-500 italic font-normal">*</span></label>
-                                <input type="number" min="0" max="10" className="w-full text-center text-xs p-2.5 border border-slate-300 rounded outline-none" value={focoPrincipal?.dolorEnSigno ?? ''} onChange={e => handleUpdateFocoPrincipal({ dolorEnSigno: e.target.value ? Number(e.target.value) : null })} disabled={isClosed} />
-                            </div>
-                        </div>
-                    </div>
-                </details >
-
-                {/* --- 10. FUNCIÓN Y PSFS (GLOBAL) --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[11] || true} >
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(11); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">10</span>
-                                <h3 className="font-bold text-slate-800 text-sm">Escala Funcional Específica (PSFS) <span className="text-slate-400 font-normal">(Global)</span></h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {!interviewV4.hayLimitacionFuncional ? (
-                                    <span className="text-[10px] bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">No Aplica</span>
-                                ) : reqSec10.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">0/1 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[11] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {interviewV4.hayLimitacionFuncional && reqSec10.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec10.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3 space-y-4 bg-slate-50/50 rounded-b-xl">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Identificar actividades clave limitadas y su impacto en la vida.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "No puedo subir escaleras (3/10) - Afecta mi trabajo".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-2 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-
-                        {/* Pregunta Control */}
-                        <div className="flex items-center justify-between bg-white p-3 rounded shadow-sm border border-slate-200">
-                            <span className="font-bold text-slate-700 text-xs">¿Hay limitación funcional actual?</span>
-                            <div className="flex bg-slate-100 rounded p-1">
-                                <button
-                                    onClick={(e) => { e.preventDefault(); updateV4({ hayLimitacionFuncional: true }); }}
-                                    className={`px-4 py-1.5 text-[10px] rounded font-bold transition-all ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-600 text-white shadow' : 'text-slate-500'}`}
-                                >
-                                    Sí
-                                </button>
-                                <button
-                                    onClick={(e) => { e.preventDefault(); updateV4({ hayLimitacionFuncional: false }); }}
-                                    className={`px-4 py-1.5 text-[10px] rounded font-bold transition-all ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-600 text-white shadow' : 'text-slate-500'}`}
-                                >
-                                    No
-                                </button>
-                            </div>
-                        </div>
-
-                        {!interviewV4.hayLimitacionFuncional ? (
-                            <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-800 text-xs text-center">
-                                <strong>Sin Escala Funcional Específica (PSFS) (preventivo / rendimiento).</strong><br />
-                                Se usa el <span className="underline">Objetivo Estructurado</span> (Sección 1) como ancla de revaluación.
-                            </div>
-                        ) : (
-                            <div className="space-y-4 animate-fadeIn">
-                                {/* Lista PSFS */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="text-xs font-bold text-slate-700">Escala Funcional Específica (PSFS) <span className="text-[9px] text-rose-500 italic font-normal">* 1 obligatorio</span></label>
-                                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">{interviewV4.psfsGlobal.length} / 5</span>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {interviewV4.psfsGlobal.map((item, index) => (
-                                            <div key={item.id} className="flex gap-2 items-center">
-                                                <span className="text-slate-400 font-bold text-xs w-4">{index + 1}.</span>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Actividad limitada (ej: Correr 5km)"
-                                                    className="flex-1 text-xs p-2 border border-slate-300 rounded outline-none"
-                                                    value={item.actividad}
-                                                    onChange={(e) => {
-                                                        const newPsfs = [...interviewV4.psfsGlobal];
-                                                        newPsfs[index].actividad = e.target.value;
-                                                        updateV4({ psfsGlobal: newPsfs });
-                                                    }}
-                                                    disabled={isClosed}
-                                                />
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="10"
-                                                    placeholder="0-10"
-                                                    className="w-16 text-center text-xs p-2 border border-slate-300 rounded outline-none"
-                                                    value={item.score ?? ''}
-                                                    onChange={(e) => {
-                                                        const newPsfs = [...interviewV4.psfsGlobal];
-                                                        newPsfs[index].score = e.target.value ? Number(e.target.value) : null;
-                                                        updateV4({ psfsGlobal: newPsfs });
-                                                    }}
-                                                    disabled={isClosed}
-                                                />
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const newPsfs = interviewV4.psfsGlobal.filter((_, i) => i !== index);
-                                                        updateV4({ psfsGlobal: newPsfs });
-                                                    }}
-                                                    className="text-rose-400 hover:text-rose-600 p-1"
-                                                    disabled={isClosed}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {interviewV4.psfsGlobal.length < 5 && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                updateV4({
-                                                    psfsGlobal: [...interviewV4.psfsGlobal, { id: uuidv4(), actividad: "", score: null, focoAsociado: "General" }]
-                                                });
-                                            }}
-                                            className="mt-2 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                                            disabled={isClosed}
-                                        >
-                                            + Agregar Actividad
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Participación e Impacto */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-700 mb-1.5 block">Participación afectada (Roles)</label>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {["Trabajo", "Deporte", "Hogar", "Estudio", "Social/Recreación"].map(part => (
-                                                <button key={part} disabled={isClosed}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const arr = interviewV4.participacionAfectada || [];
-                                                        const newArr = arr.includes(part) ? arr.filter(x => x !== part) : [...arr, part];
-                                                        updateV4({ participacionAfectada: newArr });
-                                                    }}
-                                                    className={`px-2.5 py-1 text-[9px] rounded-full font-bold transition-all border ${interviewV4.participacionAfectada?.includes(part) ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>
-                                                    {part}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-700 mb-1.5 block">Impacto Global</label>
-                                        <div className="flex bg-slate-100 rounded border border-slate-200 p-1">
-                                            {(["Bajo", "Medio", "Alto"] as const).map(imp => (
-                                                <button key={imp} disabled={isClosed}
-                                                    onClick={(e) => { e.preventDefault(); updateV4({ impactoGlobal: imp }); }}
-                                                    className={`flex-1 text-[10px] py-1.5 rounded font-bold transition-all ${interviewV4.impactoGlobal === imp ? 'bg-white shadow text-indigo-700 border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                    {imp}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-                </details >
-
-
-                {/* --- 11. NOTAS RÁPIDAS (FOCO ACTIVO) --- */}
-                {/* --- MÓDULO: NOTAS RÁPIDAS --- */}
-                <div className="group bg-white border border-slate-200 rounded-xl shadow-sm mb-4">
-                    <div className="flex items-center justify-between p-4">
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl">📝</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Notas Rápidas <span className="text-indigo-400 font-normal">({focoPrincipal?.region || 'Sin región'})</span></h3>
-                        </div>
-                    </div>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        <div className="flex items-center gap-2 pb-2 mb-3 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        <div className="bg-amber-50/30 border border-amber-200 text-xs p-2.5 rounded shadow-sm">
-                            <div className="font-bold text-amber-700 mb-2">Notas Históricas de Captura</div>
-                            <textarea
-                                className="w-full h-full min-h-[100px] text-xs p-2.5 border border-slate-200 rounded outline-none bg-amber-50/30 text-slate-700 leading-relaxed"
-                                placeholder="..."
-                                value={focoPrincipal?.notaRapida || ""}
-                                onChange={e => handleUpdateFocoPrincipal({ notaRapida: e.target.value })}
-                                disabled={isClosed}
-                            />
+                            })}
                         </div>
                     </div>
                 </div>
 
-                {/* --- 11. BPS & FACTORES PSICOSOCIALES --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[12]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(12); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">11</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Factores Biopsicosociales (BPS)</h3>
+                {/* 2. Relato del caso */}
+                <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2 flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white font-bold text-[10px]">2</span>
+                            <h3 className="font-bold text-slate-800 text-sm">Relato del caso</h3>
                         </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[12] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        <div className="flex items-center gap-2 pb-2 mb-3 border-b border-blue-200 mt-4">
-                            {!isExpertMode && (
-                                <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 w-full">
-                                    <p><span className="font-bold text-blue-700">Objetivo:</span> Detectar miedos, estrés o factores sociales que podrían cronificar el dolor.</p>
-                                    <p><span className="font-bold text-blue-700">Ejemplo:</span> "Miedo enorme a tener que operarse".</p>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-2 w-full pt-1">
-                                <span className="text-blue-500 font-bold">✏️</span>
-                                <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
-                            {FACTORES_BPS_LIST.map(factor => (
-                                <div key={factor} className={`text-xs border rounded p-2 flex flex-col justify-between transition-colors ${(interviewV4.bps as any)[factor] === 2 ? 'bg-rose-50 border-rose-200' : (interviewV4.bps as any)[factor] === 1 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200 hover:border-indigo-200'}`}>
-                                    <div className="font-bold text-slate-700 mb-2 truncate" title={factor}>{factor}</div>
-                                    <div className="flex bg-white rounded overflow-hidden border border-slate-200">
-                                        {[0, 1, 2].map(val => (
-                                            <button
-                                                key={val}
-                                                disabled={isClosed}
-                                                onClick={() => { updateV4({ bps: { ...interviewV4.bps, [factor]: val } }); }}
-                                                className={`flex-1 py-1 text-[10px] font-black transition-colors ${(interviewV4.bps as any)[factor] === val ? (val === 0 ? 'bg-emerald-500 text-white' : val === 1 ? 'bg-amber-400 text-white' : 'bg-rose-500 text-white') : 'bg-transparent text-slate-400 hover:bg-slate-100'}`}
-                                            >
-                                                {val === 0 ? '0' : val === 1 ? '1' : '2'}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <textarea rows={1} placeholder="Otros factores BPS relevantes..." className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.bps?.otros || ""} onChange={e => updateV4({ bps: { ...interviewV4.bps, otros: e.target.value } })} disabled={isClosed} />
-                    </div>
-                </details >
-
-                {/* --- 12. CONTEXTO DEPORTIVO Y TRABAJO --- */}
-                < details className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[13]} >
-                    <summary
-                        className="flex items-center justify-between p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(13); }}
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs border border-slate-200">12</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Contexto Deportivo y Laboral</h3>
-                        </div>
-                        <svg className={`w-5 h-5 text-slate-400 transition-transform ${activeAccordions[12] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-slate-100 pt-3">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Conocer demandas físicas habituales y barreras de tiempo o dinero.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Trabaja cargando peso, entrena CrossFit 3x/semana".</p>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2 pb-3 mb-3 border-b border-blue-200">
-                            <span className="text-blue-500 font-bold">✏️</span>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                        </div>
-                        {/* DEPORTIVO */}
-                        <div className="mb-6">
-                            <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
-                                <input type="checkbox" className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" checked={interviewV4.contextoDeportivo?.aplica || false} onChange={e => updateV4({ contextoDeportivo: { ...(interviewV4.contextoDeportivo || {}), aplica: e.target.checked } as any })} disabled={isClosed} />
-                                <span className="text-sm font-bold text-slate-800">Practica deporte o actividad física regular</span>
-                            </label>
-                            {interviewV4.contextoDeportivo?.aplica && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6 border-l-2 border-indigo-100">
-                                    <input type="text" placeholder="Deporte Principal (ej. Fútbol, CrossFit)" className="text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.contextoDeportivo?.deportePrincipal || ""} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, deportePrincipal: e.target.value } as any })} disabled={isClosed} />
-                                    <div className="flex flex-col sm:flex-row gap-2">
-                                        <input type="number" min="0" placeholder="Horas/sem" className="w-full sm:w-24 text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.contextoDeportivo?.horasSemanales || ""} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, horasSemanales: e.target.value ? parseFloat(e.target.value) : 0 } as any })} disabled={isClosed} />
-                                        <select className="w-full sm:flex-1 text-xs p-2.5 border border-slate-300 rounded outline-none bg-white font-medium" value={interviewV4.contextoDeportivo?.nivel || "Recreativo"} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, nivel: e.target.value as any } as any })} disabled={isClosed}>
-                                            <option value="Recreativo">Recreativo</option><option value="Amateur">Amateur / Competitivo</option><option value="Semipro">Semiprofesional</option><option value="Profesional">Profesional / Elite</option>
-                                        </select>
-                                    </div>
-                                    <select className="text-xs p-2.5 border border-slate-300 rounded outline-none bg-white font-medium" value={interviewV4.contextoDeportivo?.objetivoRetorno || "Recreativo"} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, objetivoRetorno: e.target.value as any } as any })} disabled={isClosed}>
-                                        <option value="Recreativo">Objetivo: Salud y recreación</option><option value="Mantener">Objetivo: Mantener rendimiento</option><option value="Retornar">Objetivo: Retornar tras lesión (RTP)</option><option value="Competir">Objetivo: Competencia inminente</option>
-                                    </select>
-                                    <textarea rows={1} placeholder="Cambios recientes de carga, calzado, técnica..." className="text-xs p-2.5 border border-slate-300 rounded outline-none" value={interviewV4.contextoDeportivo?.notaCarga || ""} onChange={e => updateV4({ contextoDeportivo: { ...interviewV4.contextoDeportivo, notaCarga: e.target.value } as any })} disabled={isClosed} />
-                                </div>
-                            )}
-                        </div>
-                        {/* LABORAL Y BARRERAS */}
-                        <div className="pt-4 border-t border-slate-100 mt-4">
-                            <h4 className="text-sm font-bold text-slate-700 mb-3">Trabajo y Barreras</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                                {/* Dificulta R */}
-                                <div className="bg-white p-3 rounded border border-slate-200 shadow-sm flex flex-col justify-between">
-                                    <span className="text-xs font-bold text-slate-700 mb-2 leading-tight">¿Siente que su trabajo actual dificulta su recuperación?</span>
-                                    <div className="flex gap-1 bg-slate-100 p-1 rounded">
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, trabajoDificultaRecuperacion: true } as any }); }}
-                                            className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.trabajoDificultaRecuperacion === true ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}>Sí</button>
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, trabajoDificultaRecuperacion: false } as any }); }}
-                                            className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.trabajoDificultaRecuperacion === false ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}>No</button>
-                                    </div>
-                                </div>
-
-                                {/* Temor Empeorar */}
-                                <div className="bg-white p-3 rounded border border-slate-200 shadow-sm flex flex-col justify-between">
-                                    <span className="text-xs font-bold text-slate-700 mb-2 leading-tight">¿Siente temor a que el dolor empeore al trabajar?</span>
-                                    <div className="flex gap-1 bg-slate-100 p-1 rounded">
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, temorEmpeorarTrabajo: true } as any }); }}
-                                            className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.temorEmpeorarTrabajo === true ? 'bg-white shadow text-amber-600' : 'text-slate-500 hover:text-slate-700'}`}>Sí</button>
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, temorEmpeorarTrabajo: false } as any }); }}
-                                            className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.temorEmpeorarTrabajo === false ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}>No</button>
-                                    </div>
-                                </div>
-
-                                {/* Barreras Reales */}
-                                <div className="bg-white p-3 rounded border border-slate-200 shadow-sm flex flex-col justify-between">
-                                    <span className="text-xs font-bold text-slate-700 mb-2 leading-tight">¿Existen barreras reales para asistir/adherir al tratamiento?</span>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex gap-1 bg-slate-100 p-1 rounded">
-                                            <button
-                                                onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, barrerasReales: true, barrerasDetalles: interviewV4.contextoLaboral?.barrerasDetalles || [] } as any }); }}
-                                                className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.barrerasReales === true ? 'bg-white shadow text-rose-600' : 'text-slate-500 hover:text-slate-700'}`}>Sí</button>
-                                            <button
-                                                onClick={(e) => { e.preventDefault(); updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, barrerasReales: false, barrerasDetalles: [] } as any }); }}
-                                                className={`flex-1 text-xs py-1.5 rounded font-bold transition-all ${interviewV4.contextoLaboral?.barrerasReales === false ? 'bg-white shadow text-emerald-700' : 'text-slate-500 hover:text-slate-700'}`}>No</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            {/* Chips Barreras Detalles */}
-                            {interviewV4.contextoLaboral?.barrerasReales && (
-                                <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-lg">
-                                    <span className="text-xs font-bold text-rose-800 mb-2 block">Identifique las barreras principales:</span>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {['tiempo', 'dinero', 'transporte', 'permisos'].map(b => {
-                                            const selected = interviewV4.contextoLaboral?.barrerasDetalles?.includes(b) || false;
-                                            return (
-                                                <button
-                                                    key={b}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        let arr = [...(interviewV4.contextoLaboral?.barrerasDetalles || [])];
-                                                        if (selected) arr = arr.filter(x => x !== b);
-                                                        else arr.push(b);
-                                                        updateV4({ contextoLaboral: { ...interviewV4.contextoLaboral, barrerasDetalles: arr } as any });
-                                                    }}
-                                                    className={`text-[9px] px-2.5 py-1 rounded-full font-bold transition-colors border ${selected ? 'bg-rose-600 text-white border-rose-700' : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-100'}`}
-                                                >
-                                                    {b.toUpperCase()}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
+                        <div className="flex gap-2">
+                            <button
+                                disabled={isClosed}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const template = `Motivo de consulta (palabras de la persona usuaria):\n\nObjetivo y expectativa (qué quiere lograr y en qué plazo):\n\nALICIA — Antigüedad/Inicio y evolución:\n\nALICIA — Localización (dónde) y extensión (puntual vs difuso):\n\nALICIA — Irradiación/Referencia (se mueve a otra zona / hormigueo / adormecimiento):\n\nALICIA — Carácter/Naturaleza del síntoma (cómo se siente: punzante, opresivo, quemazón, corriente, tirantez, etc.):\n\nALICIA — Intensidad (actual / peor 24h / mejor 24h) y 'en actividad índice':\n\nALICIA — Atenuantes y agravantes (qué lo empeora y qué lo alivia):\n\nS.I.N.S — Comportamiento (24h si aplica) y despertar nocturno (sí/no):\n\nS.I.N.S — Severidad funcional (qué limita y cuánto impacto tiene):\n\nS.I.N.S — Irritabilidad (qué tan fácil se gatilla y cuánto demora en calmarse):\n\nHistoria del episodio y mecanismo de aparición (si aplica):\n\nManejo previo y respuesta (qué intentó y cómo le fue):\n\nSeguridad clínica (señales de alerta que mencionó la persona usuaria):\n\nNotas libres relevantes:\n`;
+                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: (interviewV4.experienciaPersona.relatoLibre || "") + (interviewV4.experienciaPersona.relatoLibre ? "\n\n" : "") + template } });
+                                }}
+                                className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                            >
+                                + Insertar plantilla
+                            </button>
+                            <button
+                                onClick={(e) => { e.preventDefault(); setShowRelatoGuide(!showRelatoGuide); }}
+                                className={`text-[10px] px-2 py-1.5 rounded font-bold shadow-sm transition-colors border flex items-center gap-1 ${showRelatoGuide ? 'bg-slate-700 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                            >
+                                Guía de entrevista (?)
+                            </button>
                         </div>
                     </div>
-                </details >
 
-                {/* --- 13. CIERRE, TRIAGE Y PASE A P2 --- */}
-                <details className="group bg-blue-50 border border-blue-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden" open={activeAccordions[14] || true}>
-                    <summary
-                        className="flex flex-col p-4 cursor-pointer select-none"
-                        onClick={(e) => { e.preventDefault(); toggleAccordion(14); }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs shadow-md">13</span>
-                                <h3 className="font-bold text-blue-900 text-sm">Resumen Clínico, Triage e Inteligencia</h3>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {reqSec13.length === 0 ? (
-                                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1 font-bold shadow-sm">✅ Completo</span>
-                                ) : (
-                                    <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-bold shadow-sm">0/1 completo</span>
-                                )}
-                                <svg className={`w-5 h-5 text-blue-400 transition-transform ${activeAccordions[14] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </div>
-                        </div>
-                        {reqSec13.length > 0 && <div className="text-[10px] text-rose-500 font-medium ml-9 mt-1 italic">Falta: {reqSec13.join(" / ")}</div>}
-                    </summary>
-                    <div className="px-4 pb-4 px-10 border-t border-blue-100 pt-5 space-y-4 bg-white rounded-b-xl">
-                        {!isExpertMode && (
-                            <div className="bg-blue-50/50 border-l-2 border-blue-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 mt-1">
-                                <p><span className="font-bold text-blue-700">Objetivo:</span> Sintetizar los hallazgos automáticos y confirmar la viabilidad de continuar con la evaluación.</p>
-                                <p><span className="font-bold text-blue-700">Ejemplo:</span> "Apto para P2, enfocar en fuerza de cuádriceps derecho".</p>
-                            </div>
-                        )}
-
-                        {/* --- PANEL AUTO GIGANTE CREADO EN MP9 --- */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm mt-4 overflow-hidden">
-                            <div className="p-4 border-b border-slate-200 bg-slate-100 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 pb-2">
-                                    <span className="text-slate-500 font-bold">🧠</span>
-                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Triage e Inteligencia Automática (Paneles Consolidados)</span>
-                                </div>
-                            </div>
-                            <div className="p-4 space-y-4">
-
-                                {/* 1. Seguridad Clínica (Rojas/Naranjas) AUTO */}
-                                <div className={`p-3 rounded-lg border ${isRiesgoAlto ? 'bg-rose-50 border-rose-200 text-rose-900' : (interviewV4.seguridad.riesgoEmocionalAgudo ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900')}`}>
-                                    <div className="flex items-center gap-2 font-bold mb-1 text-xs">
-                                        {isRiesgoAlto ? '🚨 Riesgo Alto (Banderas Rojas)' : (interviewV4.seguridad.riesgoEmocionalAgudo ? '⚠️ Atención (Bandera Naranja)' : '✅ Sin Alertas Graves de Seguridad')}
-                                    </div>
-                                    {(isRiesgoAlto || interviewV4.seguridad.riesgoEmocionalAgudo) && (
-                                        <div className="text-[10px] opacity-80 mt-1">
-                                            {interviewV4.seguridad.detalleBanderas ? `Detalle: ${interviewV4.seguridad.detalleBanderas}` : 'Revise sección de Seguridad Clínica para detalles.'}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* 2. Irritabilidad AUTO */}
-                                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-start gap-3">
-                                    <div className={`mt-0.5 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold text-white shadow-sm shrink-0 ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'bg-rose-500' :
-                                        focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'bg-amber-500' :
-                                            focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'bg-emerald-500' : 'bg-slate-400'
-                                        }`}>
-                                        Irritabilidad: {focoPrincipal?.irritabilidadAuto?.nivel || 'N/A'}
-                                    </div>
-                                    <div className="text-[10px] text-slate-600">
-                                        <strong>Por qué:</strong> {focoPrincipal?.irritabilidadAuto?.explicacion || 'Faltan datos en Historial.'}
-                                        {focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' && <span className="block mt-1 text-rose-600">Evite pruebas máximas provocativas en P2.</span>}
-                                    </div>
-                                </div>
-
-                                {/* 3. Impacto BPS AUTO */}
-                                {interviewV4.bps?.impactoAuto && (
-                                    <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-start gap-3">
-                                        <div className={`mt-0.5 px-2 py-0.5 rounded-full text-[10px] uppercase font-bold text-white shadow-sm shrink-0 ${interviewV4.bps.impactoAuto.nivel === 'Alto' ? 'bg-rose-500' :
-                                            interviewV4.bps.impactoAuto.nivel === 'Medio' ? 'bg-amber-500' : 'bg-emerald-500'
-                                            }`}>
-                                            BPS: {interviewV4.bps.impactoAuto.nivel}
-                                        </div>
-                                        <div className="text-[10px] text-slate-600">
-                                            <strong>Por qué ({interviewV4.bps.impactoAuto.score}/12):</strong> {interviewV4.bps.impactoAuto.razon}
-                                        </div>
-                                    </div>
-                                )}
-
-                            </div>
-                        </div>
-
-                        {/* --- PANEL AUTO: AUTOMATIZACIÓN HACIA P2 --- */}
-                        <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm mt-4">
-                            <div className="p-4 border-b border-purple-200/60 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 pb-2 border-b border-purple-200/60">
-                                    <span className="text-purple-500 font-bold">⚡</span>
-                                    <span className="text-[10px] font-black text-purple-900 uppercase tracking-widest">AUTO (no editable)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xl">🤖</span>
-                                    <h3 className="font-bold text-purple-900 text-sm">Automatización hacia Examen Físico (P2)</h3>
-                                </div>
-                            </div>
-                            <div className="px-4 pb-4 px-10 pt-3">
-                                {sugerenciasP2.length === 0 ? (
-                                    <p className="text-xs text-purple-500 italic bg-white p-3 rounded border border-purple-100">No hay sugerencias automáticas aún. Complete el foco principal.</p>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {sugerenciasP2.map(s => (
-                                            <div key={s.id} className="flex items-start gap-3 bg-white p-3 rounded border border-purple-100 shadow-sm">
-                                                <input type="checkbox" className="mt-1 accent-purple-600" checked={true} readOnly />
-                                                <div>
-                                                    <div className="font-bold text-slate-700 text-xs">{s.label}</div>
-                                                    <div className="text-[10px] text-purple-500 mt-0.5 leading-tight">{s.razon}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* --- PANEL AUTO: TRIAGE --- */}
-                        <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm mt-4">
-                            <div className="p-4 border-b border-purple-200/60 flex flex-col gap-2">
-                                <div className="flex items-center gap-2 pb-2 border-b border-purple-200/60">
-                                    <span className="text-purple-500 font-bold">⚡</span>
-                                    <span className="text-[10px] font-black text-purple-900 uppercase tracking-widest">AUTO (no editable)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xl">🩺</span>
-                                    <h3 className="font-bold text-purple-900 text-sm">Resumen de Decisión Inmediata (Triage)</h3>
-                                </div>
-                            </div>
-                            <div className="p-4 space-y-5 bg-white rounded-b-xl">
-
-                                {/* Summary Badges Panel */}
-                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-2 md:grid-cols-5 gap-3">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Irritabilidad Global</span>
-                                        <span className={`text-xs font-bold ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'text-rose-600' : focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'text-amber-600' : 'text-emerald-600'}`}>{focoPrincipal?.irritabilidadAuto?.nivel || 'No definido'}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">L. Funcional</span>
-                                        <span className="text-xs font-bold text-indigo-700">{interviewV4.hayLimitacionFuncional ? "Confirmada" : "No observada"}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Impacto BPS AUTO</span>
-                                        {interviewV4.bps?.impactoAuto ? (
-                                            <span className={`text-xs font-bold ${interviewV4.bps.impactoAuto.nivel === 'Alto' ? 'text-rose-600' :
-                                                interviewV4.bps.impactoAuto.nivel === 'Medio' ? 'text-amber-600' : 'text-emerald-600'
-                                                }`} title={interviewV4.bps.impactoAuto.razon}>
-                                                {interviewV4.bps.impactoAuto.nivel} ({interviewV4.bps.impactoAuto.score}/12)
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs font-bold text-slate-400">Pendiente</span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Adherencia AUTO</span>
-                                        {interviewV4.contextoLaboral?.riesgoAdherenciaAuto === true ? (
-                                            <span className="text-xs font-bold text-rose-600" title="Riesgo de baja adherencia por barreras reales detectadas o confianza muy baja.">Alto Riesgo</span>
-                                        ) : (
-                                            <span className="text-xs font-bold text-emerald-600">Riesgo Bajo</span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">D. Neurológicos</span>
-                                        <span className="text-[10px] font-bold text-orange-600">{focoPrincipal && focoPrincipal.disparadoresParaDescartes && focoPrincipal.disparadoresParaDescartes.length > 0 ? (focoPrincipal.disparadoresParaDescartes.length + " Pendientes") : "Ninguno en esta revisión"}</span>
-                                    </div>
-                                </div>
-
-                                {/* Descartes Pendientes (De MiniFase 10) */}
-                                {focoPrincipal?.disparadoresParaDescartes && focoPrincipal.disparadoresParaDescartes.length > 0 && (
-                                    <div className="p-3 bg-orange-50/50 border border-orange-200 rounded-lg">
-                                        <span className="text-[10px] uppercase font-bold text-orange-800 tracking-wide block mb-1">🚨 Validar en fase 2 por alerta de síntomas neurológicos o irradiados:</span>
-                                        <ul className="list-disc pl-5 text-[10px] text-orange-700 space-y-0.5 mt-2">
-                                            {focoPrincipal.disparadoresParaDescartes.map((d, i) => (
-                                                <li key={i}>{d}</li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center gap-2 pb-2 mb-3 border-b border-blue-200">
-                                    <span className="text-blue-500 font-bold">✏️</span>
-                                    <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-700 mb-1.5 block">¿Es adecuado proceder a exploración física (P2)? <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                        <div className="flex bg-slate-100 rounded border border-slate-200 p-1">
-                                            <button disabled={isClosed} onClick={(e) => { e.preventDefault(); updateV4({ decisionEvalFisica: "Sí" }); }} className={`flex-1 text-xs py-2 rounded font-bold transition-all ${interviewV4.decisionEvalFisica === "Sí" ? 'bg-white shadow text-emerald-700 border border-emerald-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                Sí, avanzar a P2
-                                            </button>
-                                            <button disabled={isClosed} onClick={(e) => { e.preventDefault(); updateV4({ decisionEvalFisica: "No" }); }} className={`flex-1 text-xs py-2 rounded font-bold transition-all ${interviewV4.decisionEvalFisica === "No" ? 'bg-white shadow text-rose-700 border border-rose-200' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                No, derivar/cerrar
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {interviewV4.decisionEvalFisica === "No" && (
-                                        <div>
-                                            <label className="text-xs font-bold text-rose-800 mb-1 block">Razón o tipo de Derivación (Ej. bandera roja grave) <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                            <input type="text" placeholder="No apto para P2 porque..." className="w-full text-xs p-2 border border-rose-300 bg-rose-50 rounded outline-none" value={interviewV4.razonNoEvalFisica || ""} onChange={e => updateV4({ razonNoEvalFisica: e.target.value })} disabled={isClosed} />
-                                        </div>
-                                    )}
-
-                                    {interviewV4.decisionEvalFisica === "Sí" && (
-                                        <div>
-                                            <label className="text-xs font-bold text-emerald-800 mb-1 block">Estrategia/Plan sugerido para examen hoy (Refleja Irritabilidad) <span className="text-[9px] text-rose-500 italic font-normal">*obligatorio</span></label>
-                                            <input type="text" placeholder="Tacto suave, evitar pruebas máximas provocativas..." className="w-full text-xs p-2.5 border border-emerald-300 rounded outline-none bg-emerald-50/50" value={interviewV4.planEvaluacionFisica || ""} onChange={e => updateV4({ planEvaluacionFisica: e.target.value })} disabled={isClosed} />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* --- PANEL: RESUMEN FINAL --- */}
-                        <div className="mt-6 border-t border-blue-100 pt-5 space-y-4">
-
-                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleGenerateResumen();
-                                        // Auto-append draft text if generated by AI
-                                        if (!interviewV4.cierre?.resumenClinico.includes("[Borrador IA]")) {
-                                            updateV4({ cierre: { ...interviewV4.cierre!, resumenClinico: "[Borrador IA]\n" + (interviewV4.cierre?.resumenClinico || "Resumen generado automáticamente en base a los hallazgos clínicos...") } });
-                                        }
-                                    }}
-                                    disabled={isClosed}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded shadow transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                    Redactar Resumen (IA)
-                                </button>
-                                <button
-                                    disabled={true}
-                                    className="bg-purple-100 text-purple-700 text-xs font-bold py-2 px-4 rounded border border-purple-200 opacity-60 cursor-not-allowed flex items-center justify-center gap-2"
-                                    title="Próximamente"
-                                >
-                                    ✨ IA: Sugerir preguntas faltantes
-                                </button>
-                                <button
-                                    disabled={true}
-                                    className="bg-purple-100 text-purple-700 text-xs font-bold py-2 px-4 rounded border border-purple-200 opacity-60 cursor-not-allowed flex items-center justify-center gap-2"
-                                    title="Próximamente"
-                                >
-                                    ✨ IA: Sugerir plan físico
-                                </button>
-                            </div>
-
-                            {/* --- CAJA DE RECOMENDACIONES P2 (MOTOR DE REGLAS FASE 18) --- */}
-                            {interviewV4.p2_recommendations && interviewV4.p2_recommendations.length > 0 && (
-                                <div className="bg-purple-50/50 border border-purple-200 p-4 rounded-lg mt-4 shadow-sm animate-fadeIn">
-                                    <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wide mb-2 flex items-center gap-2">
-                                        <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                        Recomendaciones Inteligentes para Examen Físico (P2)
-                                    </h4>
-                                    <ul className="space-y-2">
-                                        {interviewV4.p2_recommendations.map((rec, i) => (
-                                            <li key={i} className="text-[11px] text-purple-800 font-medium flex items-start gap-2 bg-white p-2 rounded border border-purple-100 shadow-sm">
-                                                <span className="flex-shrink-0 mt-0.5">•</span>
-                                                <span>{rec}</span>
-                                            </li>
-                                        ))}
+                    {showRelatoGuide && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 text-xs text-slate-700 overflow-y-auto max-h-80 shadow-inner">
+                            <h4 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-1">Guía Clínica Extendida (Sin IA)</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <strong className="text-indigo-800">Motivo de consulta:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Qué te trae por aquí hoy?" / "Cuéntame con tus propias palabras qué está pasando."</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Asumir el diagnóstico del derivador sin escuchar a la persona primero.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Revela la prioridad número 1 del paciente, más enfocada en su narrativa que en la patología médica.</li>
                                     </ul>
                                 </div>
-                            )}
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">Objetivo y expectativa:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Qué esperas lograr con las sesiones?" / "Si esto saliera perfecto, ¿qué estarías haciendo en 1 mes?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Imponer metas biomecánicas (ej: "lograr 90° de flexión") en vez de metas participativas ("poder alzar a mi hijo").</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Define la brújula del tratamiento y establece el contrato terapéutico inicial.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Antigüedad/Inicio y evolución:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Cuándo empezó esto exactamente?" / "¿Y desde ese día ha ido mejorando, empeorando o sigue igual?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Quedarse con "duele hace rato" sin indagar si el patrón es constante o episódico.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Diferencia fase inflamatoria aguda vs estado persistente/nociplástico.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Localización y extensión:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Puedes apuntar con un dedo dónde duele más?" / "¿Se siente profundo o superficial?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Creer siempre que "donde duele, está la lesión" sin testear distalmente.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Apunta a tejidos generadores de síntomas (ej: puntual = fascia/ligamento; difuso = muscular/nervioso).</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Irradiación/Referencia:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿El dolor viaja o se mueve a otra zona?" / "¿Sientes adormecimiento o corriente en otra parte de la pierna/brazo?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Confundir dolor irradiado radicular con dolor somático referido (el segundo rara vez cruza la rodilla/codo de forma eléctrica).</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Permite detectar posible involucramiento del tejido neural periférico o central.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Carácter/Naturaleza:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Cómo describirías la sensación: como una punzada, quemazón, peso, corrientazo?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Inducir la respuesta dando solo una opción ("¿Te quema, cierto?").</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Sugiere neurodinamia patológica (quemazón, eléctrico), nociceptivo inflamatorio (latido, presión) o mecánico (punzada, pellizco al mover).</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Intensidad:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "De 0 a 10, ¿cuánto te duele ahora? ¿cuánto ha sido lo peor y cuánto lo mejor en las últimas 24h?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Obsesionarse solo con el número sin darle contexto (un 8 post-maratón no es igual a un 8 sentado en reposo).</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Permite medir tolerancias y la necesidad de priorizar control analgésico por sobre cargas.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">ALICIA — Atenuantes y agravantes:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Hay algo exacto que hagas para que el dolor empeore/mejore?" / "¿Caminar te duele pero andar en bici no?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Asumir que "todo" movimiento duele igual; no explorar posiciones de alivio.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Fundamental para prescribir ejercicio y determinar el mecanismo (tensión, compresión, fricción).</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">S.I.N.S — Comportamiento 24h:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Cómo se comporta el síntoma desde que despiertas hasta que vas a dormir?" / "¿Te despierta por la noche?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Ignorar dolor nocturno incesante real que no cambia de posición (Red Flag).</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Patrón AM de rigidez {'>'}30m sugiere inflamación sistémica. Fatiga PM sugiere ineficiencia muscular.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">S.I.N.S — Severidad funcional:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿A qué porcentaje de tu máximo sientes que rindes hoy?" / "¿Qué dejaste de hacer en tu día a día?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Basar el alta o progresión en el dolor (0/10) mientras ignoras la pobre funcionalidad restaurada.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Refleja el impacto en la vida real. Alto dolor no siempre equivale a alta severidad si el paciente no restringe actividades.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">S.I.N.S — Irritabilidad:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Con qué facilidad empieza a doler, qué tan fuerte es y cuánto demora en desaparecer cuando te detienes?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Provocar máximo dolor en la sesión de evaluación a un tejido irritable solo "para ver si da positivo el test".</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Exige dosificar rigor evaluativo (Alta = menos test mecánicos agresivos, énfasis en descarga).</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">Historia del episodio / Mecanismo:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Habías tenido esto igual en el pasado?" / "¿Recuerdas la posición de tu rodilla cuando caíste?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> No indagar los picos inusuales de carga en la semana previa al inicio de síntomas de "aparición progresiva".</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Determina pronóstico (episodios recurrentes sanan más lento) e infiere la carga lesiva exacta.</li>
+                                    </ul>
+                                </div>
+                                <div className="border-t border-slate-200 pt-2">
+                                    <strong className="text-indigo-800">Manejo previo y respuesta:</strong>
+                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
+                                        <li><strong>Cómo preguntarlo:</strong> "¿Has ido a otro profesional o tomado medicación por esto? ¿Resultó?"</li>
+                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Repetir la misma terapia pasiva que la persona ya te dijo que no le hizo efecto hace un mes.</li>
+                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Modula las creencias y expectativas, e ilumina vías de tratamiento que es mejor abandonar.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                            {interviewV4.cierre && (
-                                <div className="space-y-4 mt-4 animate-fadeIn">
-                                    <div className="flex items-center gap-2 pb-2 mb-3 border-b border-blue-200">
-                                        <span className="text-blue-500 font-bold">✏️</span>
-                                        <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Para completar</span>
+                    {!isExpertMode && !showRelatoGuide && (
+                        <div className="bg-indigo-50/50 border-l-2 border-indigo-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 text-justify leading-relaxed">
+                            <p>Escriba aquí todo el relato libre directamente o use el botón <strong>"+ Insertar plantilla"</strong> para insertar una estructura base guiada. La IA requiere este campo para extraer el JSON final.</p>
+                        </div>
+                    )}
+
+                    {/* FASE 8: Overlay para Resaltado Exacto */}
+                    <div className="relative w-full">
+                        <textarea
+                            id="relato-libre-textarea"
+                            rows={12}
+                            placeholder="Relato clínico de la persona en consulta..."
+                            className="w-full text-xs p-3 border border-slate-300 rounded outline-none resize-y leading-relaxed bg-slate-50 focus:bg-white focus:border-indigo-400 transition-colors relative z-10"
+                            style={highlightTexts.length > 0 ? { color: 'transparent', caretColor: 'black' } : {}}
+                            value={interviewV4.experienciaPersona.relatoLibre || ""}
+                            onChange={e => {
+                                updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } });
+                                if (highlightTexts.length > 0) setHighlightTexts([]); // Clear highlights on user edit
+                            }}
+                            disabled={isClosed}
+                        />
+                        {highlightTexts.length > 0 && (() => {
+                            const text = interviewV4.experienciaPersona.relatoLibre || "";
+                            // Regex escape and exact match for ALL highlights
+                            const escapedHighlights = highlightTexts.map(h => h.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+                            const regexPattern = `(${escapedHighlights.join('|')})`;
+                            const parts = text.split(new RegExp(regexPattern, 'g'));
+
+                            return (
+                                <div
+                                    className="absolute top-0 left-0 w-full h-full text-xs p-3 border border-transparent rounded whitespace-pre-wrap leading-relaxed overflow-hidden z-0 pointer-events-none"
+                                    aria-hidden="true"
+                                >
+                                    {parts.map((p, i) => (
+                                        highlightTexts.includes(p)
+                                            ? <mark key={i} className="bg-emerald-300 text-emerald-900 font-bold rounded px-0.5 shadow-sm transition-all duration-300 ring-2 ring-emerald-400">{p}</mark>
+                                            : <span key={i} className="text-slate-400">{p}</span>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+
+                {/* 3. Seguridad clínica (rojas y naranjas) */}
+                <div id="section-seguridad" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-rose-600 text-white font-bold text-[10px]">3</span>
+                        <h3 className="font-bold text-slate-800 text-sm">Seguridad clínica (pasada rápida)</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.fiebre_sistemico_cancerPrevio} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, fiebre_sistemico_cancerPrevio: e.target.checked } })} />
+                            <span className="leading-tight">Fiebre / Compromiso Sistémico / Cáncer Previo</span>
+                        </label>
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.bajaPeso_noIntencionada} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, bajaPeso_noIntencionada: e.target.checked } })} />
+                            <span className="leading-tight">Baja de peso progresiva inexplicada</span>
+                        </label>
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.dolorNocturno_inexplicable_noMecanico} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, dolorNocturno_inexplicable_noMecanico: e.target.checked } })} />
+                            <span className="leading-tight">Dolor nocturno constante e inexplicable</span>
+                        </label>
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.trauma_altaEnergia_caidaImportante} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, trauma_altaEnergia_caidaImportante: e.target.checked } })} />
+                            <span className="leading-tight">Trauma alta energía / Caída importante</span>
+                        </label>
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, neuroGraveProgresivo_esfinteres_sillaMontar: e.target.checked } })} />
+                            <span className="leading-tight">Alt. esfínteres / Anestesia en silla montar</span>
+                        </label>
+                        <label className="flex items-start gap-2 text-[11px] p-2 bg-amber-50 border border-amber-100 rounded-lg hover:border-amber-300 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-amber-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.riesgoEmocionalAgudo} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, riesgoEmocionalAgudo: e.target.checked } })} />
+                            <span className="text-amber-900 font-medium leading-tight">Riesgo emocional agudo (Naranja)</span>
+                        </label>
+                    </div>
+
+                    {/* Action Panel: Sólo aparece si hay Banderas Rojas marcadas explícitamente */}
+                    {hasRedFlags && (
+                        <div className="mt-4 p-4 bg-rose-50 border-2 border-rose-200 rounded-xl">
+                            <h4 className="font-bold text-rose-800 text-sm mb-2 flex items-center gap-2">
+                                <span>🚨</span> Detención Requerida: Bandera Roja Detectada
+                            </h4>
+                            <p className="text-xs text-rose-700 mb-3 font-medium">
+                                Ha marcado un síntoma de alerta que requiere decisión clínica explícita para continuar.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Derivar / cerrar caso' ? 'bg-rose-100 border-rose-600 text-rose-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="accionBanderaRoja"
+                                        className="hidden"
+                                        disabled={isClosed}
+                                        checked={interviewV4.seguridad?.accionBanderaRoja === 'Derivar / cerrar caso'}
+                                        onChange={() => updateV4({ seguridad: { ...interviewV4.seguridad, accionBanderaRoja: 'Derivar / cerrar caso' } })}
+                                    />
+                                    <span>Derivar / cerrar caso</span>
+                                </label>
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Continuar bajo supervisión' ? 'bg-orange-100 border-orange-600 text-orange-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="accionBanderaRoja"
+                                        className="hidden"
+                                        disabled={isClosed}
+                                        checked={interviewV4.seguridad?.accionBanderaRoja === 'Continuar bajo supervisión'}
+                                        onChange={() => updateV4({ seguridad: { ...interviewV4.seguridad, accionBanderaRoja: 'Continuar bajo supervisión' } })}
+                                    />
+                                    <span>Continuar bajo supervisión</span>
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                disabled={isClosed}
+                                checked={interviewV4.seguridad?.confirmado || false}
+                                onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, confirmado: e.target.checked } })}
+                                className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-slate-700">Confirmo evaluación de seguridad (Obligatorio)</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* 4. Anclas mínimas */}
+                <div id="section-anclas" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-600 text-white font-bold text-[10px]">4</span>
+                        <h3 className="font-bold text-slate-800 text-sm">Anclas mínimas</h3>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                        {/* Row 1: Inicio, Antigüedad, Evolución */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Inicio</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="NoDefinido">Seleccione...</option>
+                                    <option value="Súbito">Súbito</option>
+                                    <option value="Gradual">Gradual</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="">Seleccione...</option>
+                                    <option value="<24hrs">{'< 24 horas'}</option>
+                                    <option value="1-7 dias">1 a 7 días</option>
+                                    <option value="1-4 semanas">1 a 4 semanas</option>
+                                    <option value="1-3 meses">1 a 3 meses</option>
+                                    <option value="3-6 meses">3 a 6 meses</option>
+                                    <option value=">6 meses">{'> 6 meses'}</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Evolución global</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="NoDefinido">Seleccione...</option>
+                                    <option value="Mejorando">Mejorando</option>
+                                    <option value="Estable">Igual / Estable</option>
+                                    <option value="Empeorando">Empeorando</option>
+                                    <option value="Fluctuante">Fluctuante</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Row 2: Actividad Índice */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-slate-600">Actividad índice principal</label>
+                            <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
+                                const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, actividadIndice: e.target.value } : f);
+                                updateV4({ focos: newFocos });
+                            }} />
+                        </div>
+
+                        {/* Lógica Condicional: Intensidad Actual y en Actividad si Duele/Hormiguea */}
+                        {(() => {
+                            const quejas = interviewV4.experienciaPersona.quejas || [];
+                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
+                            const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
+                            if (!hasPainOrTingle) return null;
+                            return (
+                                <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
+                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} placeholder="EVA/ENA" />
                                     </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
+                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} placeholder="EVA/ENA" />
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
-                                        {/* Columna Izquierda: Redacción */}
-                                        <div className="space-y-4">
+                        {/* Lógica Condicional: Despertar Nocturno */}
+                        {(() => {
+                            const quejas = interviewV4.experienciaPersona.quejas || [];
+                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
+                            const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
+                            const isChronic = focoPrincipal.antiguedad === '1-3 meses' || focoPrincipal.antiguedad === '3-6 meses' || focoPrincipal.antiguedad === '>6 meses';
+                            if (!(hasPainOrStiff && isChronic)) return null;
+                            return (
+                                <div className="flex items-center flex-wrap gap-4 border border-orange-200 bg-orange-50/50 p-3 rounded-lg">
+                                    <label className="text-xs font-bold text-orange-900 flex-1 min-w-[200px]">¿Presenta despertar nocturno por el síntoma?</label>
+                                    <div className="flex flex-wrap gap-4">
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: true } } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} /> Sí</label>
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: false } } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} /> No</label>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Row 3: Limitación Funcional */}
+                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <label className="text-xs font-bold text-slate-800">¿Hay limitación funcional actual?</label>
+                                <div className="flex flex-wrap gap-3">
+                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
+                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
+                                </div>
+                            </div>
+
+                            {interviewV4.hayLimitacionFuncional ? (
+                                <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[11px] font-bold text-indigo-800">Actividades PSFS (0=Incapaz, 10=Normal)</label>
+                                        {interviewV4.psfsGlobal.length < 3 && (
+                                            <button disabled={isClosed} onClick={(e) => {
+                                                e.preventDefault();
+                                                updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: focoPrincipal.id }] });
+                                            }} className="text-[10px] bg-white border border-indigo-200 text-indigo-600 px-2 py-1 rounded shadow-sm font-bold hover:bg-indigo-50">+ Agregar</button>
+                                        )}
+                                    </div>
+                                    {interviewV4.psfsGlobal.map((psfs, index) => (
+                                        <div key={psfs.id} className="flex gap-2">
+                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
+                                                const newPsfs = [...interviewV4.psfsGlobal];
+                                                newPsfs[index].actividad = e.target.value;
+                                                updateV4({ psfsGlobal: newPsfs });
+                                            }} />
+                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
+                                                const newPsfs = [...interviewV4.psfsGlobal];
+                                                newPsfs[index].score = e.target.value !== "" ? Number(e.target.value) : null;
+                                                updateV4({ psfsGlobal: newPsfs });
+                                            }} />
+                                            {index > 0 && (
+                                                <button disabled={isClosed} onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const newPsfs = [...interviewV4.psfsGlobal];
+                                                    newPsfs.splice(index, 1);
+                                                    updateV4({ psfsGlobal: newPsfs });
+                                                }} className="text-xs text-rose-500 hover:text-rose-700 px-1 font-bold">✕</button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-teal-50/40 border border-teal-100 rounded-lg flex flex-col gap-2">
+                                    <label className="text-[11px] font-bold text-teal-800">Capacidad percibida en actividad clave (0=Nula, 10=Óptima)</label>
+                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-2.5 border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
+                                        updateV4({ capacidadPercibidaActividad: e.target.value !== "" ? Number(e.target.value) : null });
+                                    }} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Row 4: Contexto de las anclas */}
+                        <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
+                            <label className="text-xs font-bold text-slate-800">Contexto principal afectado</label>
+                            <div className="flex flex-wrap gap-2">
+                                {['Vida diaria', 'Trabajo-Estudio', 'Deporte', 'Gimnasio'].map(ctx => {
+                                    const isSelected = interviewV4.contextosAnclas?.includes(ctx);
+                                    return (
+                                        <button key={ctx} disabled={isClosed} onClick={(e) => {
+                                            e.preventDefault();
+                                            let current = interviewV4.contextosAnclas || [];
+                                            const newCtx = isSelected ? current.filter(x => x !== ctx) : [...current, ctx];
+                                            updateV4({ contextosAnclas: newCtx });
+                                        }} className={`text-[11px] px-3 py-1.5 border rounded-lg transition-colors shadow-sm ${isSelected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                                            {ctx}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Row 5: Objetivos */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3">
+                            <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                <label className="text-xs font-bold text-slate-800">Objetivo de la persona usuaria</label>
+                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. Poder volver a correr 10k" value={interviewV4.objetivoPersona || ""} onChange={e => updateV4({ objetivoPersona: e.target.value })} />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-800">Plazo esperado</label>
+                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. 1 mes, para el verano..." value={interviewV4.plazoEsperado || ""} onChange={e => updateV4({ plazoEsperado: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* 5. Faltantes Estructurales (Sin IA) */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-white font-bold text-[10px]">5</span>
+                            <h3 className="font-bold text-slate-800 text-sm">Faltantes estructurales (Sin IA)</h3>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+
+                                const list: Array<{ texto: string, link: string }> = [];
+
+                                // 1. Chequeos de Anclas
+                                if (!focoPrincipal?.inicio || focoPrincipal.inicio === "NoDefinido") list.push({ texto: "Falta Inicio (Anclas)", link: "section-anclas" });
+                                if (!focoPrincipal?.antiguedad || focoPrincipal.antiguedad === "NoDefinido") list.push({ texto: "Falta Antigüedad Foco (Anclas)", link: "section-anclas" });
+                                if (!focoPrincipal?.evolucion || focoPrincipal.evolucion === "NoDefinido") list.push({ texto: "Falta Evolución (Anclas)", link: "section-anclas" });
+                                if (!focoPrincipal?.actividadIndice?.trim()) list.push({ texto: "Falta Actividad índice (Anclas)", link: "section-anclas" });
+
+                                if (interviewV4.hayLimitacionFuncional) {
+                                    const hasValidPsfs = interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== "" && p.score !== null);
+                                    if (!hasValidPsfs) list.push({ texto: "Falta Actividad PSFS válida (Anclas)", link: "section-anclas" });
+                                } else {
+                                    if (interviewV4.capacidadPercibidaActividad === null || interviewV4.capacidadPercibidaActividad === undefined) list.push({ texto: "Falta Capacidad percibida (Anclas)", link: "section-anclas" });
+                                }
+
+                                if (!interviewV4.contextosAnclas || interviewV4.contextosAnclas.length === 0) list.push({ texto: "Falta Contexto afectado (Anclas)", link: "section-anclas" });
+                                if (!interviewV4.objetivoPersona?.trim()) list.push({ texto: "Falta Objetivo de la persona (Anclas)", link: "section-anclas" });
+                                if (!interviewV4.plazoEsperado?.trim()) list.push({ texto: "Falta Plazo esperado (Anclas)", link: "section-anclas" });
+
+                                // 2. Chequeo de Seguridad
+                                if (!interviewV4.seguridad?.confirmado) {
+                                    list.push({ texto: "Falta confirmar Seguridad Clínica", link: "section-seguridad" });
+                                }
+
+                                // 3. Chequeo de Plantilla en Relato
+                                const relato = interviewV4.experienciaPersona.relatoLibre || "";
+                                const subtitulosPlantilla = [
+                                    "Motivo de consulta",
+                                    "Objetivo y expectativa",
+                                    "ALICIA — Antigüedad/Inicio y evolución",
+                                    "ALICIA — Localización (dónde) y extensión",
+                                    "ALICIA — Irradiación/Referencia",
+                                    "ALICIA — Carácter/Naturaleza del síntoma",
+                                    "ALICIA — Intensidad",
+                                    "ALICIA — Atenuantes y agravantes",
+                                    "S.I.N.S — Comportamiento",
+                                    "S.I.N.S — Severidad funcional",
+                                    "S.I.N.S — Irritabilidad",
+                                    "Historia del episodio",
+                                    "Manejo previo y respuesta",
+                                    "Seguridad clínica"
+                                ];
+
+                                const lineas = relato.split('\\n');
+
+                                subtitulosPlantilla.forEach(sub => {
+                                    const index = lineas.findIndex(l => l.includes(sub));
+                                    if (index !== -1) {
+                                        // Revisar las siguientes 1 a 2 lineas a ver si hay texto
+                                        let tieneTexto = false;
+                                        for (let i = 1; i <= 3; i++) {
+                                            const sig = lineas[index + i];
+                                            if (sig !== undefined && sig.trim().length > 2 && !subtitulosPlantilla.some(s => sig.includes(s))) {
+                                                tieneTexto = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!tieneTexto) {
+                                            const corto = sub.split('—')[0].replace(' (dónde) y extensión', '').replace(' (qué quiere lograr y en qué plazo)', '').replace(' (palabras de la persona usuaria)', '').trim();
+                                            list.push({ texto: `Falta llenar en relato: ${corto}`, link: "section-relato" });
+                                        }
+                                    }
+                                });
+
+                                // Truncar a 12 items
+                                const final = list.slice(0, 12);
+
+                                // Store output into state for render
+                                updateV4({ faltantesEstructuralesPanel: final } as any);
+                            }}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 transition-colors font-bold text-xs py-2 px-4 rounded-lg shadow-sm flex items-center gap-2"
+                        >
+                            <span>🔍 Ver faltantes</span>
+                        </button>
+                    </div>
+
+                    {(interviewV4 as any).faltantesEstructuralesPanel && (
+                        <div className="mt-4 pt-3 border-t border-slate-200">
+                            {((interviewV4 as any).faltantesEstructuralesPanel as any[]).length === 0 ? (
+                                <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-xs font-medium flex items-center gap-2">
+                                    <span>✅</span> No se detectaron campos estructurales vacíos.
+                                </div>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {((interviewV4 as any).faltantesEstructuralesPanel as any[]).map((f, i) => (
+                                        <li key={i} className="flex items-center justify-between text-xs bg-white border border-slate-100 p-2 rounded-lg shadow-sm">
+                                            <span className="text-rose-600 font-medium">⚠️ {f.texto}</span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    document.getElementById(f.link)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    // highlight animation could be added here
+                                                }}
+                                                className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded transition-colors"
+                                            >
+                                                Ir a sección
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* 6. Procesar con IA */}
+                <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-700 text-white font-bold text-[10px]">6</span>
+                        <h3 className="font-bold text-purple-900 text-sm">Procesar con Inteligencia Artificial</h3>
+                    </div>
+
+                    <button
+                        onClick={async (e) => {
+                            e.preventDefault();
+                            setIsProcessingAI(true);
+                            try {
+                                const payload = {
+                                    interviewV4: interviewV4
+                                };
+                                const response = await fetch('/api/ai/fase7-extract', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                const data = await response.json();
+
+                                if (response.ok && data) {
+                                    updateV4({
+                                        analisisIA: data,
+                                        confirmacionesCriticas: {
+                                            irritabilidad_global: { estado: 'Pendiente' },
+                                            naturaleza_sugerida: { estado: 'Pendiente' },
+                                            hipotesis_orientativas: { estado: 'Pendiente' }
+                                        }
+                                    } as any);
+                                } else {
+                                    console.error("Error from AI:", data);
+                                    alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                }
+                            } catch (err: any) {
+                                console.error("Fetch error:", err);
+                                alert("Error servidor: " + err.message);
+                            } finally {
+                                setIsProcessingAI(false);
+                            }
+                        }}
+                        disabled={isClosed || isProcessingAI}
+                        className="w-full bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border border-purple-800"
+                    >
+                        {isProcessingAI ? (
+                            <><span className="animate-spin text-sm">⏳</span> Analizando datos con IA (Puede tomar unos segundos)...</>
+                        ) : (
+                            <><span>🧠</span> IA: Ordenar y extraer (Strict Mode)</>
+                        )}
+                    </button>
+
+                    {/* FASE 13: Botones Opcionales Rápidos */}
+                    <div className="flex flex-col sm:flex-row gap-3 mt-3">
+                        <button
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
+                                    alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
+                                    return;
+                                }
+                                setIsProcessingPreguntasIA(true);
+                                try {
+                                    const payload = { interviewV4 };
+                                    const response = await fetch('/api/ai/f13-preguntas', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload)
+                                    });
+                                    const data = await response.json();
+                                    if (response.ok && data) {
+                                        updateV4({
+                                            analisisIA: {
+                                                ...(interviewV4.analisisIA || {}),
+                                                preguntas_faltantes: data.preguntas_faltantes
+                                            }
+                                        } as any);
+                                    } else {
+                                        alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                    }
+                                } catch (err: any) {
+                                    alert("Error servidor: " + err.message);
+                                } finally {
+                                    setIsProcessingPreguntasIA(false);
+                                }
+                            }}
+                            disabled={isClosed || isProcessingPreguntasIA || isProcessingAI}
+                            className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
+                        >
+                            {isProcessingPreguntasIA ? (
+                                <><span className="animate-spin text-sm">⏳</span> Preguntando...</>
+                            ) : (
+                                <><span>❓</span> IA: Preguntas faltantes (máx 5)</>
+                            )}
+                        </button>
+
+                        <button
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
+                                    alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
+                                    return;
+                                }
+                                setIsProcessingExamenIA(true);
+                                try {
+                                    const payload = { interviewV4 };
+                                    const response = await fetch('/api/ai/f13-examen', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload)
+                                    });
+                                    const data = await response.json();
+                                    if (response.ok && data) {
+                                        updateV4({
+                                            analisisIA: {
+                                                ...(interviewV4.analisisIA || {}),
+                                                sugerencias_examen_fisico_P2: data.sugerencias_examen_fisico_P2
+                                            }
+                                        } as any);
+                                    } else {
+                                        alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                    }
+                                } catch (err: any) {
+                                    alert("Error servidor: " + err.message);
+                                } finally {
+                                    setIsProcessingExamenIA(false);
+                                }
+                            }}
+                            disabled={isClosed || isProcessingExamenIA || isProcessingAI}
+                            className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
+                        >
+                            {isProcessingExamenIA ? (
+                                <><span className="animate-spin text-sm">⏳</span> Sugiriendo...</>
+                            ) : (
+                                <><span>🩺</span> IA: Sugerir examen físico (P2)</>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Salida IA de FASE 7 y Renderizado FASE 8 */}
+                    {interviewV4.analisisIA && (
+                        <div className="mt-4 flex flex-col gap-4">
+
+                            {/* FASE 12: Banner de No Definitivo */}
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl shadow-sm text-xs flex items-center justify-center gap-2 font-medium">
+                                <span>ℹ️</span>
+                                <span><strong>Modo Sugerencia:</strong> Toda esta extracción es una hipótesis generada para ser validada en P2/P3. Nada está fijado como diagnóstico definitivo en esta etapa.</span>
+                            </div>
+
+                            {/* FASE 11: La alerta de seguridad se ha movido al bloque final de confirmaciones críticas */}
+
+                            {/* 1. Resúmenes Editables */}
+                            <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden">
+                                <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">📝 Resumen Clínico (Editable)</span>
+                                </div>
+                                <div className="p-3">
+                                    <textarea
+                                        disabled={isClosed}
+                                        rows={4}
+                                        className="w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-none bg-slate-50 focus:bg-white focus:border-emerald-400 transition-colors leading-relaxed text-slate-700"
+                                        value={interviewV4.analisisIA.resumen_clinico || ""}
+                                        onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_clinico: e.target.value } })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden">
+                                <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">🗣️ Resumen para la Persona Usuaria (Editable)</span>
+                                </div>
+                                <div className="p-3 flex flex-col gap-3">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[11px] font-bold text-slate-600">Lo que entendí:</label>
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_entiendi || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_entiendi: e.target.value } } })} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[11px] font-bold text-slate-600">Lo que te preocupa:</label>
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_te_preocupa || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_te_preocupa: e.target.value } } })} />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[11px] font-bold text-slate-600">Lo que haremos ahora:</label>
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_haremos_ahora || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_haremos_ahora: e.target.value } } })} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Función Helper para las Tarjetas */}
+                            {(() => {
+                                const handleHighlight = (evidencia: string) => {
+                                    if (!evidencia || evidencia === "No_mencionado") return;
+
+                                    const relatoRaw = interviewV4.experienciaPersona.relatoLibre || "";
+                                    if (relatoRaw.indexOf(evidencia) === -1) {
+                                        alert("No se pudo resaltar: cita no encontrada");
+                                        return;
+                                    }
+
+                                    setHighlightTexts(prev => prev.includes(evidencia) ? prev.filter(e => e !== evidencia) : [...prev, evidencia]);
+
+                                    // Scroll to the relato textarea
+                                    const textarea = document.getElementById("relato-libre-textarea");
+                                    if (textarea) {
+                                        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                };
+
+                                const renderTarjeta = (titulo: string, data: any, key: string) => {
+                                    if (!data) return null;
+                                    const hasEvidencia = data.evidencia_textual && data.evidencia_textual !== "No_mencionado";
+                                    return (
+                                        <div key={key} className="bg-white border border-slate-200 rounded-lg p-3 flex flex-col justify-between hover:shadow-md transition-shadow">
                                             <div>
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <label className="text-xs font-bold text-slate-700 block">Resumen Clínico (Editable)</label>
-                                                    {interviewV4.cierre.resumenClinico.includes("[Borrador IA]") && (
-                                                        <span className="text-[9px] bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-bold uppercase tracking-widest flex items-center gap-1">
-                                                            <span>✨</span> Generado por IA
-                                                        </span>
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{titulo.replace(/_/g, ' ')}</h4>
+                                                    {data.origen && (
+                                                        <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{data.origen}</span>
                                                     )}
                                                 </div>
-                                                <div className="relative">
-                                                    <textarea
-                                                        className={`w-full text-xs p-3 border rounded outline-none leading-relaxed transition-colors ${interviewV4.cierre.resumenClinico.includes("[Borrador IA]") ? 'bg-purple-50/30 border-purple-300 focus:bg-white focus:border-purple-400' : 'bg-slate-50 border-slate-300 focus:bg-white'}`}
-                                                        rows={9}
-                                                        value={interviewV4.cierre.resumenClinico}
-                                                        onChange={(e) => updateV4({ cierre: { ...interviewV4.cierre!, resumenClinico: e.target.value } })}
-                                                        disabled={isClosed}
-                                                    />
-                                                    {interviewV4.cierre.resumenClinico.includes("[Borrador IA]") && (
-                                                        <div className="absolute -bottom-6 left-0 flex items-center gap-1.5 text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded border border-amber-200 shadow-sm z-10">
-                                                            <span>⚠️</span> Revisar antes de guardar
+                                                <p className={`text-xs font-semibold ${data.valor === 'No_mencionado' ? 'text-slate-400 italic' : 'text-slate-800'}`}>
+                                                    {data.valor}
+                                                </p>
+                                            </div>
+                                            <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                                                <span className={`text-[9px] truncate max-w-[60%] ${hasEvidencia ? 'text-slate-500 italic' : 'text-slate-300'}`}>
+                                                    {hasEvidencia ? `"${data.evidencia_textual}"` : 'Sin evidencia directa'}
+                                                </span>
+                                                <button
+                                                    disabled={!hasEvidencia}
+                                                    onClick={(e) => { e.preventDefault(); handleHighlight(data.evidencia_textual); }}
+                                                    className={`text-[9px] font-bold px-2 py-1 rounded transition-colors ${!hasEvidencia ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : highlightTexts.includes(data.evidencia_textual) ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-700' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}
+                                                    title={hasEvidencia ? "Ver en texto original" : "No hay cita exacta para resaltar"}
+                                                >
+                                                    {highlightTexts.includes(data.evidencia_textual) ? '👁️ Quitar' : '👁️ Resaltar'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                };
+
+                                return (
+                                    <>
+                                        {/* 2. ALICIA */}
+                                        {interviewV4.analisisIA.ALICIA && (
+                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
+                                                    <span className="text-xs font-bold text-slate-700">🔎 A.L.I.C.I.A (Extraído)</span>
+                                                </div>
+                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
+                                                    {Object.entries(interviewV4.analisisIA.ALICIA).map(([key, val]) => {
+                                                        if (key === 'intensidad' && val) {
+                                                            // Handle nested intensidad object specially if needed, or map its subkeys
+                                                            return Object.entries(val).map(([subKey, subVal]) => renderTarjeta(`Intensidad: ${subKey}`, subVal, `alicia-int-${subKey}`));
+                                                        }
+                                                        return renderTarjeta(key, val, `alicia-${key}`);
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 3. SINS */}
+                                        {interviewV4.analisisIA.SINS && (
+                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
+                                                    <span className="text-xs font-bold text-slate-700">⚖️ S.I.N.S (Sugerido/Calculado)</span>
+                                                </div>
+                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
+                                                    {renderTarjeta("Severidad", interviewV4.analisisIA.SINS.severidad, "sins-sev")}
+                                                    {renderTarjeta("Naturaleza Sugerida", interviewV4.analisisIA.SINS.naturaleza_sugerida, "sins-nat")}
+                                                    {renderTarjeta("Etapa", interviewV4.analisisIA.SINS.etapa, "sins-etapa")}
+
+                                                    {/* Irritabilidad (Nested) */}
+                                                    {interviewV4.analisisIA.SINS.irritabilidad && (
+                                                        <div className="col-span-1 sm:col-span-2 bg-white border border-rose-100 rounded-lg p-3">
+                                                            <div className="flex justify-between items-center mb-2 border-b border-rose-50 pb-2">
+                                                                <h4 className="text-[11px] font-bold text-rose-800">Irritabilidad Global: {interviewV4.analisisIA.SINS.irritabilidad.irritabilidad_global?.valor || "Desconocida"}</h4>
+                                                                <p className="text-[9px] text-rose-600 max-w-[60%] text-right italic">{interviewV4.analisisIA.SINS.irritabilidad.explicacion}</p>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                {renderTarjeta("Facilidad Provocación", interviewV4.analisisIA.SINS.irritabilidad.facilidad_provocacion, "irr-fac")}
+                                                                {renderTarjeta("Momento Aparición", interviewV4.analisisIA.SINS.irritabilidad.momento_aparicion, "irr-mom")}
+                                                                {renderTarjeta("Tiempo a Calmarse", interviewV4.analisisIA.SINS.irritabilidad.tiempo_a_calmarse, "irr-tie")}
+                                                                {renderTarjeta("Efecto Posterior (After-efecto)", interviewV4.analisisIA.SINS.irritabilidad.after_efecto, "irr-aft")}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        {/* Columna Derecha: Listas AUTO */}
-                                        <div className="space-y-4">
-                                            <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">Lo más importante detectado</h4>
-                                                <ul className="text-[11px] text-slate-700 space-y-1.5">
-                                                    <li><span className="font-semibold text-slate-500">Queja Primordial:</span> {interviewV4.cierre.loMasImportante?.quejaPrioritaria}</li>
-                                                    <li><span className="font-semibold text-slate-500">Objetivo Crítico:</span> {interviewV4.cierre.loMasImportante?.objetivoPrioritario}</li>
-                                                    <li><span className="font-semibold text-slate-500">Irritabilidad:</span> {interviewV4.cierre.loMasImportante?.irritabilidad}</li>
-                                                    <li><span className="font-semibold text-slate-500">Dolor/Mecanismo:</span> {interviewV4.cierre.loMasImportante?.tipoDolorSugerido}</li>
-                                                    <li><span className="font-semibold text-slate-500">Banderas:</span> {interviewV4.cierre.loMasImportante?.resumenBanderas}</li>
-                                                </ul>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="bg-blue-50/50 p-3 rounded border border-blue-100 flex flex-col justify-start">
-                                                    <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wide mb-2">Hipótesis Sugeridas</h4>
-                                                    <div className="text-[10px] text-blue-900 font-semibold mb-1">Tags Transversales:</div>
-                                                    <div className="flex flex-wrap gap-1 mb-2">
-                                                        {interviewV4.cierre.hipotesisSugeridas?.tagsTransversales.map(t => <span key={t} className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-[9px] font-medium">{t}</span>)}
-                                                        {interviewV4.cierre.hipotesisSugeridas?.tagsTransversales.length === 0 && <span className="text-slate-400 italic text-[10px]">Ninguno detectado</span>}
-                                                    </div>
-                                                    <div className="text-[10px] text-blue-900 font-semibold mb-1">Tags Regionales:</div>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {interviewV4.cierre.hipotesisSugeridas?.tagsRegionales.map(t => <span key={t} className="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-[9px] font-medium">{t}</span>)}
-                                                        {interviewV4.cierre.hipotesisSugeridas?.tagsRegionales.length === 0 && <span className="text-slate-400 italic text-[10px]">Ninguno detectado</span>}
-                                                    </div>
+                                        {/* 4. Extracción General */}
+                                        {interviewV4.analisisIA.extraccion_general && (
+                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
+                                                    <span className="text-xs font-bold text-slate-700">📋 Datos Generales (Extraído)</span>
+                                                </div>
+                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
+                                                    {Object.entries(interviewV4.analisisIA.extraccion_general).map(([key, val]) => {
+                                                        if (key === 'banderas_amarillas_orientativas') return null; // Handle separately or skip
+                                                        return renderTarjeta(key, val, `gen-${key}`);
+                                                    })}
                                                 </div>
 
-                                                <div className="bg-orange-50/50 p-3 rounded border border-orange-100">
-                                                    <h4 className="text-[10px] font-bold text-orange-800 uppercase tracking-wide mb-2">Falta Descartar</h4>
-                                                    {interviewV4.cierre.faltaDescartar && interviewV4.cierre.faltaDescartar.length > 0 ? (
-                                                        <ul className="text-[10px] text-orange-900 list-disc pl-4 space-y-1">
-                                                            {interviewV4.cierre.faltaDescartar.map((d, i) => <li key={i}>{d}</li>)}
-                                                        </ul>
-                                                    ) : (
-                                                        <span className="text-[10px] text-slate-500 italic">No hay alertas críticas neurológicas.</span>
+                                                {/* Banderas amarillas orientativas */}
+                                                {interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas && interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas.length > 0 && (
+                                                    <div className="px-3 pb-3">
+                                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                                                            <strong className="text-[10px] text-yellow-800 uppercase block mb-1">Posibles Banderas Amarillas Mencionadas:</strong>
+                                                            <ul className="list-disc pl-4 text-[10px] text-yellow-700">
+                                                                {interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas.map((b, i) => <li key={i}>{b}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* 5. Listas Estáticas (Hipótesis, Preguntas, Examen) */}
+                                        {interviewV4.analisisIA.hipotesis_orientativas_por_sistema && interviewV4.analisisIA.hipotesis_orientativas_por_sistema.length > 0 && (
+                                            <div className="bg-indigo-50/30 rounded-xl shadow-sm border border-indigo-100 p-3">
+                                                <h4 className="text-xs font-bold text-indigo-800 mb-2">💡 Hipótesis Orientativas</h4>
+                                                <div className="space-y-2">
+                                                    {interviewV4.analisisIA.hipotesis_orientativas_por_sistema.map((h, i) => (
+                                                        <div key={i} className="bg-white p-2 rounded border border-indigo-50 flex flex-col gap-1">
+                                                            <div className="flex justify-between items-start">
+                                                                <strong className="text-[11px] text-indigo-900">{h.nombre}</strong>
+                                                                <button onClick={(e) => { e.preventDefault(); handleHighlight(h.evidencia_textual); }} className={`text-[8px] px-1 py-0.5 rounded transition-colors flex items-center gap-1 ${highlightTexts.includes(h.evidencia_textual) ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>👁️ {highlightTexts.includes(h.evidencia_textual) ? 'Quitar' : 'Resaltar'}</button>
+                                                            </div>
+                                                            <p className="text-[10px] text-indigo-700 leading-relaxed">{h.explicacion}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {interviewV4.analisisIA.preguntas_faltantes && interviewV4.analisisIA.preguntas_faltantes.length > 0 && (
+                                            <div className="bg-amber-50/30 rounded-xl shadow-sm border border-amber-100 p-3">
+                                                <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes (Sugeridas)</h4>
+                                                <div className="space-y-2">
+                                                    {interviewV4.analisisIA.preguntas_faltantes.map((p, i) => (
+                                                        <div key={i} className="bg-white p-2 rounded border border-amber-50 flex flex-col gap-1">
+                                                            <strong className="text-[11px] text-amber-900">Falta: {p.tema_faltante}</strong>
+                                                            <p className="text-[10px] text-slate-600"><em>Ejemplo: "{p.como_preguntarlo}"</em></p>
+                                                            <p className="text-[9px] text-amber-700 mt-1 border-t border-amber-50 pt-1"><strong>Por qué:</strong> {p.por_que_importa}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {interviewV4.analisisIA.sugerencias_examen_fisico_P2 && interviewV4.analisisIA.sugerencias_examen_fisico_P2.length > 0 && (
+                                            <div className="bg-teal-50/30 rounded-xl shadow-sm border border-teal-100 p-3 mb-2">
+                                                <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Sugerencias Examen Físico (Paso 2)</h4>
+                                                <div className="space-y-2">
+                                                    {interviewV4.analisisIA.sugerencias_examen_fisico_P2.map((s, i) => (
+                                                        <div key={i} className="bg-white p-2 rounded border border-teal-50 flex items-start gap-2">
+                                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded text-white mt-0.5 ${s.objetivo === 'confirmar' ? 'bg-emerald-500' : s.objetivo === 'descartar' ? 'bg-rose-500' : 'bg-blue-500'}`}>
+                                                                {s.objetivo.substring(0, 4).toUpperCase()}
+                                                            </span>
+                                                            <div className="flex-1">
+                                                                <strong className="text-[11px] text-teal-900 block">{s.paso}</strong>
+                                                                <p className="text-[10px] text-teal-700 leading-tight">{s.por_que}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            {/* Raw JSON Debug View */}
+                            <details className="mt-2 bg-slate-900 rounded-xl shadow-inner border border-slate-700">
+                                <summary className="bg-slate-800 px-3 py-2 border-b border-slate-700 flex justify-between items-center cursor-pointer outline-none select-none text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider hover:bg-slate-700 transition-colors">
+                                    <span>Ver JSON Crudo (Developer)</span>
+                                </summary>
+                                <pre className="p-3 whitespace-pre-wrap font-mono text-[11px] text-blue-300 overflow-x-auto leading-relaxed max-h-96 overflow-y-auto">
+                                    {JSON.stringify(interviewV4.analisisIA, null, 2)}
+                                </pre>
+                            </details>
+                        </div>
+                    )}
+                </div>
+
+                {/* 7. Confirmaciones críticas */}
+                {interviewV4.analisisIA && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-2 mb-2 w-full">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-600 text-white font-bold text-xs">7</span>
+                            <h3 className="font-black text-slate-800 text-base">Confirmaciones críticas de IA</h3>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            {/* Factory for Confirmation Rows */}
+                            {(() => {
+                                const renderConfRow = (
+                                    keyID: 'irritabilidad_global' | 'naturaleza_sugerida' | 'hipotesis_orientativas',
+                                    title: string,
+                                    iaValue: string,
+                                    showIf: boolean = true
+                                ) => {
+                                    if (!showIf) return null;
+                                    const confState = interviewV4.confirmacionesCriticas?.[keyID] || { estado: 'Pendiente' };
+
+                                    return (
+                                        <div key={keyID} className={`p-3 rounded-lg border flex flex-col gap-2 transition-colors ${confState.estado === 'De acuerdo' ? 'bg-emerald-50 border-emerald-200' : confState.estado === 'Editado' ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+                                                    <span className="text-sm font-bold text-slate-800">{iaValue}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+                                                    <button
+                                                        disabled={isClosed}
+                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'De acuerdo' } } }); }}
+                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'De acuerdo' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                                                    >
+                                                        De acuerdo
+                                                    </button>
+                                                    <button
+                                                        disabled={isClosed}
+                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'Editado' } } }); }}
+                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'Editado' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        disabled={isClosed}
+                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'Pendiente' } } }); }}
+                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'Pendiente' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
+                                                    >
+                                                        Pendiente
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {confState.estado === 'Editado' && (
+                                                <div className="mt-2 pt-2 border-t border-blue-100/50 flex flex-col sm:flex-row gap-2">
+                                                    <input
+                                                        type="text"
+                                                        disabled={isClosed}
+                                                        placeholder="Nuevo valor..."
+                                                        value={confState.valorEditado || ""}
+                                                        onChange={(e) => updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, valorEditado: e.target.value } } })}
+                                                        className="flex-1 text-xs p-2 border border-blue-200 rounded outline-none focus:border-blue-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        disabled={isClosed}
+                                                        placeholder="Breve justificación (1 línea)..."
+                                                        value={confState.justificacion || ""}
+                                                        onChange={(e) => updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, justificacion: e.target.value } } })}
+                                                        className="flex-2 text-xs p-2 border border-blue-200 rounded outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                };
+
+                                return (
+                                    <>
+                                        {/* 1. Irritabilidad Global */}
+                                        {renderConfRow(
+                                            'irritabilidad_global',
+                                            'SINS: Irritabilidad Global',
+                                            String(interviewV4.analisisIA?.SINS?.irritabilidad?.irritabilidad_global?.valor || "Desconocida"),
+                                            !!interviewV4.analisisIA?.SINS?.irritabilidad
+                                        )}
+
+                                        {/* 2. Naturaleza Sugerida */}
+                                        {renderConfRow(
+                                            'naturaleza_sugerida',
+                                            'SINS: Naturaleza Sugerida',
+                                            String(interviewV4.analisisIA?.SINS?.naturaleza_sugerida?.valor || "Desconocida"),
+                                            !!interviewV4.analisisIA?.SINS?.naturaleza_sugerida
+                                        )}
+
+                                        {/* 3. Hipotesis Orientativas */}
+                                        {renderConfRow(
+                                            'hipotesis_orientativas',
+                                            'Hipótesis Orientativas por Sistema',
+                                            `${interviewV4.analisisIA?.hipotesis_orientativas_por_sistema?.length || 0} hipótesis generadas`,
+                                            (interviewV4.analisisIA?.hipotesis_orientativas_por_sistema?.length || 0) > 0
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            {/* FASE 11: Mover aquí la alerta de contradicción (obligatoria) si existe */}
+                            {hayContradiccionSeguridad && (
+                                <div className="p-3 bg-orange-50 border-2 border-orange-400 rounded-lg shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div className="text-xl mt-0.5">⚠️</div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-orange-900 text-xs mb-1">Alerta de Seguridad por Contradicción (Obligatoria)</h4>
+                                            <p className="text-[10px] text-orange-800 mb-2">
+                                                IA Extrajo: "{interviewV4.analisisIA.extraccion_general?.seguridad_mencionada_en_relato?.valor}"
+                                            </p>
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <button
+                                                    onClick={(e) => { e.preventDefault(); document.getElementById("section-seguridad")?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
+                                                    className="flex-1 bg-white border border-slate-300 text-slate-700 font-bold text-[10px] p-1.5 rounded shadow-sm hover:bg-slate-50 transition-colors"
+                                                >
+                                                    ⬆️ Marcar en checklist
+                                                </button>
+                                                <div className="flex-2 flex flex-col relative w-full sm:w-2/3">
+                                                    <input
+                                                        type="text"
+                                                        disabled={isClosed}
+                                                        placeholder="Descartar (explicar breve)..."
+                                                        className="w-full text-[10px] p-2 border border-orange-300 rounded outline-none focus:border-orange-500 bg-white"
+                                                        value={interviewV4.seguridad?.resolucionContradiccionIA?.explicacionDescarte || ""}
+                                                        onChange={e => {
+                                                            const text = e.target.value;
+                                                            updateV4({
+                                                                seguridad: {
+                                                                    ...interviewV4.seguridad,
+                                                                    resolucionContradiccionIA: { resuelto: text.trim().length > 3, explicacionDescarte: text }
+                                                                }
+                                                            });
+                                                        }}
+                                                    />
+                                                    {interviewV4.seguridad?.resolucionContradiccionIA?.resuelto && (
+                                                        <span className="absolute -top-1 -right-1 text-[8px] bg-emerald-100 text-emerald-800 border border-emerald-300 rounded px-1 font-bold shadow-sm">✅</span>
                                                     )}
                                                 </div>
                                             </div>
-
-                                            <div className="bg-emerald-50/50 p-3 rounded border border-emerald-100">
-                                                <h4 className="text-[10px] font-bold text-emerald-800 uppercase tracking-wide mb-1.5">Menos probable según evaluación</h4>
-                                                <ul className="text-[10px] text-emerald-900 list-disc pl-4 space-y-0.5">
-                                                    {interviewV4.cierre.menosProbable?.map((m, i) => <li key={i} className="line-through opacity-70 decoration-emerald-800">{m}</li>)}
-                                                    {(!interviewV4.cierre.menosProbable || interviewV4.cierre.menosProbable.length === 0) && <li className="list-none ml-[-1rem] text-slate-500 italic">No hay suficientes datos confirmados para descartar graves.</li>}
-                                                </ul>
-                                            </div>
-
                                         </div>
                                     </div>
                                 </div>
                             )}
+                        </div>
 
+                        <div className="mt-4 flex justify-center w-full">
+                            <button
+                                onClick={handleCloseAnamnesis}
+                                disabled={isClosed || !isValidForP2}
+                                className={`w-full max-w-md font-black px-6 py-4 rounded-xl transition-all shadow-md text-sm uppercase tracking-wider border ${!isValidForP2
+                                    ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-70'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 hover:shadow-lg hover:-translate-y-0.5'
+                                    }`}
+                            >
+                                {isClosed ? '✓ FINALIZADA' : 'Confirmar e Ir a Exámenes P2'}
+                            </button>
                         </div>
                     </div>
-                </details>
-
-                {/* --- 18. GUARDADO O PASE DE V4 --- */}
-                <div className={`mt-6 border rounded-xl shadow-sm p-6 text-center flex flex-col items-center transition-colors ${isValidForP2 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
-                    <h3 className={`font-black mb-3 text-lg ${isValidForP2 ? 'text-emerald-900' : 'text-slate-700'}`}>Cierre de Anamnesis V4</h3>
-
-                    {!isValidForP2 ? (
-                        <div className="text-left w-full max-w-lg mb-5 bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-lg text-xs space-y-2 shadow-sm">
-                            <strong className="block mb-1 text-rose-900 uppercase tracking-widest text-[10px] pb-2 border-b border-rose-200/60 flex items-center gap-2">
-                                <svg className="w-4 h-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                Datos Obligatorios Faltantes
-                            </strong>
-                            {validationErrors.map((err, i) => (
-                                <div key={i} className="flex items-start gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0"></span>
-                                    <span className="font-bold">{err}</span>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-left w-full max-w-lg mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg text-xs flex items-center gap-3 shadow-sm">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                                <span className="text-emerald-600 text-lg">✅</span>
-                            </div>
-                            <div>
-                                <strong className="block text-emerald-900">Todos los datos críticos completados</strong>
-                                <span className="opacity-80">La anamnesis está lista para ser guardada y avanzar a Exámenes Físicos (P2).</span>
-                            </div>
-                        </div>
-                    )}
-
-                    {isRiesgoAlto && (
-                        <span className="block mb-5 font-black text-rose-700 bg-rose-100 px-4 py-2 rounded border border-rose-300 shadow-sm">
-                            ATENCIÓN: Riesgo Alto detectado en la P1. {interviewV4.seguridad?.overrideUrgenciaMedica ? '' : 'Flujo hacia el Tratamiento y Exámenes bloqueado.'}
-                        </span>
-                    )}
-
-                    <div className="flex gap-4 w-full flex-col sm:flex-row mt-4">
-                        <button
-                            onClick={handleCloseAnamnesis}
-                            disabled={isClosed || !isValidForP2}
-                            className={`flex-1 font-black px-8 py-3.5 rounded-xl transition-all shadow-md text-sm uppercase tracking-wider border w-full ${!isValidForP2
-                                ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-70'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-800 hover:shadow-lg'
-                                }`}
-                        >
-                            {interviewV4.seguridad?.overrideUrgenciaMedica ? '🔒 Override Aplicado' : (isValidForP2 ? (isClosed ? '✓ Finalizada' : 'Confirmar e Ir a Exámenes P2') : 'Revise validaciones para avanzar')}
-                        </button>
-                    </div>
-                </div>
+                )}
             </div>
         </div>
     );

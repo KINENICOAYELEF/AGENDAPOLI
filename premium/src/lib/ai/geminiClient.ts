@@ -12,6 +12,8 @@ interface GeminiCallParams {
     userPrompt: string;
     schema?: any; // El esquema Zod convertido a JSON Schema (Opcional por ahora si parseamos raw JSON)
     temperature?: number;
+    topP?: number;
+    topK?: number;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
@@ -28,6 +30,8 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             config: {
                 systemInstruction: systemInstruction,
                 temperature: temperature,
+                topP: params.topP,
+                topK: params.topK,
                 responseMimeType: "application/json",
                 // Si usamos responseSchema, importamos de zodToJsonSchema
                 // responseSchema: params.schema 
@@ -46,11 +50,13 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 }
 
 export const geminiClient = {
-    generateStructuredObject: async (params: { schema: any, systemMessage: string, userMessage: string, temperature?: number }) => {
+    generateStructuredObject: async (params: { schema: any, systemMessage: string, userMessage: string, temperature?: number, topP?: number, topK?: number }) => {
         const text = await callGemini({
             systemInstruction: params.systemMessage,
             userPrompt: params.userMessage,
-            temperature: params.temperature
+            temperature: params.temperature,
+            topP: params.topP,
+            topK: params.topK
         });
 
         let cleaned = text.trim();

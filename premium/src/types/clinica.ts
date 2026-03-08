@@ -579,6 +579,82 @@ export interface FocoV4 {
     notaRapida: string; // Log
 }
 
+export interface ValorIA {
+    valor: string | number | null;
+    evidencia_textual: string | "No_mencionado";
+    origen: string | "calculado";
+}
+
+export interface AnalisisIAV4 {
+    resumen_clinico: string;
+    resumen_persona_usuaria: {
+        lo_que_entiendi: string;
+        lo_que_te_preocupa: string;
+        lo_que_haremos_ahora: string;
+    };
+    ALICIA: {
+        antiguedad_inicio: ValorIA;
+        localizacion_extension: ValorIA;
+        irradiacion_referencia: ValorIA;
+        caracter_naturaleza_descriptores: ValorIA;
+        intensidad: {
+            actual: ValorIA;
+            peor_24h: ValorIA;
+            mejor_24h: ValorIA;
+            en_actividad_indice: ValorIA;
+        };
+        atenuantes: ValorIA;
+        agravantes: ValorIA;
+    };
+    SINS: {
+        severidad: ValorIA;
+        irritabilidad: {
+            facilidad_provocacion: ValorIA;
+            momento_aparicion: ValorIA;
+            tiempo_a_calmarse: ValorIA;
+            after_efecto: ValorIA;
+            irritabilidad_global: ValorIA;
+            explicacion: string;
+        };
+        naturaleza_sugerida: ValorIA;
+        etapa: ValorIA;
+    };
+    extraccion_general: {
+        motivo_en_palabras: ValorIA;
+        objetivo_expectativa_plazo: ValorIA;
+        historia_mecanismo: ValorIA;
+        comportamiento_24h: ValorIA;
+        limitaciones_funcionales: ValorIA;
+        actividad_indice: ValorIA;
+        psfs: ValorIA;
+        capacidad_percibida: ValorIA;
+        manejo_previo_y_respuesta: ValorIA;
+        seguridad_mencionada_en_relato: ValorIA;
+        banderas_amarillas_orientativas: string[];
+    };
+    hipotesis_orientativas_por_sistema: Array<{
+        nombre: string;
+        explicacion: string;
+        evidencia_textual: string;
+    }>;
+    preguntas_faltantes: Array<{
+        tema_faltante: string;
+        como_preguntarlo: string;
+        por_que_importa: string;
+    }>;
+    sugerencias_examen_fisico_P2: Array<{
+        paso: string;
+        por_que: string;
+        objetivo: "descartar" | "confirmar" | "cuantificar";
+    }>;
+}
+
+export interface ConfirmacionCriticaV4 {
+    estado: 'Pendiente' | 'De acuerdo' | 'Editado';
+    valorEditado?: string;
+    justificacion?: string;
+}
+
 export interface AnamnesisProximaV4 {
     version: "v4";
     status: "draft" | "approved";
@@ -596,6 +672,13 @@ export interface AnamnesisProximaV4 {
         score: number | null; // 0..10
         focoAsociado: string; // "General" o focusId
     }>;
+    capacidadPercibidaActividad: number | null;
+    contextosAnclas: string[]; // "Vida diaria", "Trabajo-Estudio", "Deporte", "Gimnasio", etc
+    objetivoPersona: string;
+    plazoEsperado: string;
+
+    // FASE 7: IA Analisis
+    analisisIA?: AnalisisIAV4 | null;
     participacionAfectada: string[]; // trabajo, deporte, hogar, estudio
     impactoGlobal: "Bajo" | "Medio" | "Alto" | "NoDefinido";
     resumenLimitaciones?: string; // TEXTO AUTO
@@ -605,6 +688,12 @@ export interface AnamnesisProximaV4 {
     decisionEvalFisica?: "Sí" | "No";
     razonNoEvalFisica?: string;
     planEvaluacionFisica?: string;
+
+    confirmacionesCriticas?: {
+        irritabilidad_global: ConfirmacionCriticaV4;
+        naturaleza_sugerida: ConfirmacionCriticaV4;
+        hipotesis_orientativas: ConfirmacionCriticaV4;
+    };
 
     seguridad: {
         fiebre_sistemico_cancerPrevio: boolean;
@@ -617,6 +706,12 @@ export interface AnamnesisProximaV4 {
         detalleBanderas: string;
         overrideUrgenciaMedica: boolean;
         justificacionUrgencia: string;
+        confirmado?: boolean;
+        accionBanderaRoja?: "Derivar / cerrar caso" | "Continuar bajo supervisión" | null;
+        resolucionContradiccionIA?: {
+            resuelto: boolean;
+            explicacionDescarte?: string;
+        };
     };
 
     bps: {
