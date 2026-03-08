@@ -803,30 +803,29 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         // Evaluar Naranjas
         if (interviewV4.seguridad.riesgoEmocionalAgudo) { naranjas++; motivos.push("Riesgo emocional agudo"); }
 
-        let color = "Verde";
-        let styles = "bg-emerald-50 border-emerald-200 text-emerald-800";
-        let dot = "bg-emerald-500";
-        let motivoStr = "Sin banderas de riesgo detectadas.";
+        let color = "Pendiente";
+        let styles = "bg-slate-50 border-slate-200 text-slate-500";
+        let dot = "bg-slate-300";
+        let motivoStr = "Pendiente de evaluación.";
 
-        if (rojas >= 2 || naranjas >= 1 || interviewV4.seguridad.overrideUrgenciaMedica) {
-            color = "Roja";
+        const isRiesgoAltoCalc = rojas >= 2 || naranjas >= 1 || interviewV4.seguridad.overrideUrgenciaMedica;
+        const hasFlags = rojas > 0 || naranjas > 0 || interviewV4.seguridad.overrideUrgenciaMedica;
+
+        if (hasFlags) {
+            color = "Revisar";
             styles = "bg-rose-50 border-rose-200 text-rose-800";
             dot = "bg-rose-500";
-            motivoStr = `Riesgo Alto. Motivos: ${motivos.join(", ")}.`;
-        } else if (rojas === 1) {
-            color = "Amarilla";
-            styles = "bg-amber-50 border-amber-200 text-amber-800";
-            dot = "bg-amber-500";
-            motivoStr = `Precaución. Motivo: ${motivos.join(", ")}.`;
-        } // Verde de lo contrario
-
-        // Requerimiento de detalle breve si hay cualquier bandera
-        if (rojas > 0 || naranjas > 0) {
-            if (interviewV4.seguridad.detalleBanderas && interviewV4.seguridad.detalleBanderas.trim() !== "") {
+            motivoStr = `Revisar. Motivos: ${motivos.join(", ")}.`;
+            if (interviewV4.seguridad.detalleBanderas?.trim()) {
                 motivoStr += ` Detalle clínico: ${interviewV4.seguridad.detalleBanderas}`;
             } else {
                 motivoStr += " (Falta detalle clínico justificador)";
             }
+        } else if (interviewV4.seguridad.confirmado) {
+            color = "OK";
+            styles = "bg-emerald-50 border-emerald-200 text-emerald-800";
+            dot = "bg-emerald-500";
+            motivoStr = "Sin banderas de riesgo detectadas.";
         }
 
         return {
@@ -834,7 +833,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             seguridadStyles: styles,
             seguridadDot: dot,
             seguridadMotivo: motivoStr,
-            isRiesgoAlto: color === "Roja"
+            isRiesgoAlto: isRiesgoAltoCalc
         };
     }, [interviewV4.seguridad]);
 
@@ -1178,25 +1177,29 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 </div>
 
                 {/* FILA 3: 3 Badges AUTO */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${seguridadStyles}`} title={seguridadMotivo}>
-                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${seguridadDot}`} />
-                        Seguridad [AUTO]: {seguridadColor}
+                {(interviewV4.seguridad.confirmado || !!interviewV4.analisisIA) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${seguridadStyles}`} title={seguridadMotivo}>
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${seguridadDot}`} />
+                            Seguridad: {seguridadColor}
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm 
+                            ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'border-rose-200 bg-rose-50 text-rose-800' :
+                                focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'border-amber-200 bg-amber-50 text-amber-800' :
+                                    focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
+                                        'border-slate-200 bg-slate-50 text-slate-500'
+                            }`}>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Irritabilidad: {focoPrincipal?.irritabilidadAuto?.nivel && focoPrincipal.irritabilidadAuto.nivel !== 'NoDefinido' ? focoPrincipal.irritabilidadAuto.nivel : 'Pendiente'}
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[250px]
+                            ${focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+                            title={focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}>
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+                            Naturaleza sugerida: {focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}
+                        </div>
                     </div>
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm 
-                        ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'border-rose-200 bg-rose-50 text-rose-800' :
-                            focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'border-amber-200 bg-amber-50 text-amber-800' :
-                                focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
-                                    'border-slate-200 bg-slate-50 text-slate-800'
-                        }`}>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                        Irritabilidad [AUTO]: {focoPrincipal?.irritabilidadAuto?.nivel || 'No definido'}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded border border-sky-200 bg-sky-50 text-sky-800 text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[250px]" title={focoPrincipal.mecanismoTextoFinal || 'No definido'}>
-                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-                        Tipo de dolor sugerido [AUTO]: {focoPrincipal.mecanismoTextoFinal || 'No definido'}
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
@@ -1211,7 +1214,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <div className="flex flex-col gap-2">
                         <label className="text-xs font-bold text-slate-700">Etiquetas Clínicas Rápidas (Transversales)</label>
                         <div className="flex flex-wrap gap-1">
-                            {["Nociceptivo", "Neuropático", "Nociplástico", "Inflamación", "Mecánico", "Agudo", "Crónico", "Inestable"].map(t => {
+                            {["Inflamación", "Mecánico", "Agudo", "Crónico", "Inestable"].map(t => {
                                 const selected = focoPrincipal?.tags.includes(t);
                                 return (
                                     <button
