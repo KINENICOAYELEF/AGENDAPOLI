@@ -1249,12 +1249,27 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 disabled={isClosed}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    const template = `Motivo de consulta (palabras de la persona usuaria):\n\nObjetivo y expectativa (qué quiere lograr y en qué plazo):\n\nALICIA — Antigüedad/Inicio y evolución:\n\nALICIA — Localización (dónde) y extensión (puntual vs difuso):\n\nALICIA — Irradiación/Referencia (se mueve a otra zona / hormigueo / adormecimiento):\n\nALICIA — Carácter/Naturaleza del síntoma (cómo se siente: punzante, opresivo, quemazón, corriente, tirantez, etc.):\n\nALICIA — Intensidad (actual / peor 24h / mejor 24h) y 'en actividad índice':\n\nALICIA — Atenuantes y agravantes (qué lo empeora y qué lo alivia):\n\nS.I.N.S — Comportamiento (24h si aplica) y despertar nocturno (sí/no):\n\nS.I.N.S — Severidad funcional (qué limita y cuánto impacto tiene):\n\nS.I.N.S — Irritabilidad (qué tan fácil se gatilla y cuánto demora en calmarse):\n\nHistoria del episodio y mecanismo de aparición (si aplica):\n\nManejo previo y respuesta (qué intentó y cómo le fue):\n\nSeguridad clínica (señales de alerta que mencionó la persona usuaria):\n\nNotas libres relevantes:\n`;
+                                    const template = `Motivo de consulta\n[Qué registrar: palabras exactas de la persona usuaria]\n\nObjetivo y expectativa\n[Qué registrar: qué quiere lograr y en qué plazo]\n\nAntigüedad/Inicio y evolución\n[Cómo preguntarlo: ¿Desde cuándo lo siente y cómo ha cambiado?]\n\nLocalización y extensión\n[Qué registrar: dónde es puntualmente y si es difuso]\n\nIrradiación/Referencia\n[Cómo preguntarlo: ¿El síntoma se mueve a otra zona, hay hormigueo o adormecimiento?]\n\nCarácter/Naturaleza del síntoma\n[Cómo preguntarlo: ¿Cómo se siente: punzante, opresivo, quemazón, corriente, tirantez?]\n\nIntensidad\n[Qué registrar: actual, peor 24h, mejor 24h y en qué actividad o movimiento]\n\nAtenuantes y agravantes\n[Cómo preguntarlo: ¿Qué cosas mejoran o empeoran el síntoma?]\n\nComportamiento 24h y despertar nocturno\n[Cómo preguntarlo: ¿Cómo varía en el día y si lo despierta de noche?]\n\nSeveridad funcional\n[Qué registrar: qué limita exactamente y cuánto impacta en la vida diaria]\n\nIrritabilidad\n[Cómo preguntarlo: ¿Qué tan fácil se gatilla, cuánto demora en calmarse y qué queda después?]\n\nHistoria del episodio y mecanismo\n[Qué registrar: historia de episodios previos y cómo ocurrió el actual si aplica]\n\nManejo previo y respuesta\n[Qué registrar: qué intentó hacer/tomar y cómo le fue con eso]\n\nSeguridad clínica\n[Qué registrar: mencionar descartes o alertas que la persona haya dicho]\n\nNotas libres relevantes\n[Qué registrar: observaciones extra]\n`;
                                     updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: (interviewV4.experienciaPersona.relatoLibre || "") + (interviewV4.experienciaPersona.relatoLibre ? "\n\n" : "") + template } });
                                 }}
                                 className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center gap-1"
                             >
                                 + Insertar plantilla
+                            </button>
+                            <button
+                                disabled={isClosed || !interviewV4.experienciaPersona.relatoLibre?.includes('[')}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const cleanedText = (interviewV4.experienciaPersona.relatoLibre || "")
+                                        .replace(/^\[.*?\]/gm, '')
+                                        .replace(/\n{3,}/g, '\n\n')
+                                        .trim();
+                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: cleanedText } });
+                                }}
+                                className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1.5 rounded font-bold shadow-sm hover:bg-amber-100 transition-colors flex items-center gap-1"
+                                title="Elimina las líneas de guía entre corchetes"
+                            >
+                                Limpiar guías
                             </button>
                             <button
                                 onClick={(e) => { e.preventDefault(); setShowRelatoGuide(!showRelatoGuide); }}
