@@ -1,21 +1,84 @@
-// FASE 2.2.1 V2 & FASE 8: Perfil Permanente Estricto
+// FASE 38: Perfil Permanente Profundizado (PROMPT A)
 export interface RemoteHistory {
-    comorbidities: Array<{ name: string; status: 'controlled' | 'uncontrolled' | 'unknown'; severity: 'low' | 'med' | 'high'; clinicalConsiderations: string }>;
-    surgeries: Array<{ name: string; dateApprox: string; sequelae: string }>;
-    medications: Array<{ name: string }>;
-    allergies: Array<{ name: string }>;
-    relevantInjuryHistory: Array<{ region: string; yearApprox: string; recurrence: boolean; notes: string }>;
-    physicalActivity: { type: string; frequency: string; level: string; goals: string };
-    occupationDemands: { type: string; standing: boolean; sitting: boolean; lifting: boolean; repetitive: boolean; shifts: boolean; notes: string };
-    sleep: { hoursAvg: number; quality: 'poor' | 'ok' | 'good'; awakenings: number; notes: string };
-    stressMood: { stressLevel: 'low' | 'med' | 'high'; mood: 'low' | 'ok' | 'high'; notes: string };
-    logistics: { timeBarrier: boolean; transportBarrier: boolean; gymAccess: boolean; equipmentAccess: boolean; other: string };
-    preferences: { likes: string; dislikes: string; schedulePreference: string; adherenceHistory: string };
+    // 1) Historial Médico y Consideraciones
+    medicalHistory: {
+        diagnoses: Array<{ name: string }>;
+        chronicDiseases: Array<{ name: string }>;
+        surgeries: Array<{ name: string }>;
+        medications: Array<{ name: string }>;
+        allergies: Array<{ name: string }>;
+        clinicalConsiderations: string; // "diabetes, patologías cardiovasculares..."
+    };
+
+    // 2) MSK y Deportivos Previos
+    mskHistory: {
+        relevantInjuries: Array<{ region: string; notes: string }>;
+        recurrences: string;
+        mskSurgeries: Array<{ name: string }>;
+        usefulTreatments: string;
+        previousImaging: string;
+        persistentSequelae: string;
+        historicalProblemRegion: string;
+    };
+
+    // 3) Actividad Física, Deporte y Carga
+    baseActivity: {
+        primarySport: string;
+        level: string; // "amateur, competitivo, sedentario..."
+        weeklyFrequency: string;
+        typicalDuration: string;
+        yearsExperience: string;
+        basalGoal: string;
+        competitiveCalendar: string;
+        surfaceOrEquipment: string;
+        doubleLoad: string; // Ej: deporte + trabajo físico
+    };
+
+    // 4) Ocupación, Estudio y Contexto
+    occupationalContext: {
+        mainRole: string; // Ocupación / Estudio
+        physicalDemands: string;
+        shifts: string; // Jornada / Turnos
+        timeSitting: string; // "Alta > 6h", "Baja"
+        timeStanding: string;
+        weightLifting: string; // "Frecuente", "Ocasional", "No"
+        repetitiveMovements: string;
+        driving: string; // Conducción prolongada
+        adherenceBarriers: string; // tiempo, transpo, dinero, etc
+    };
+
+    // 5) BPS (Factores Basales de Recuperación)
+    bpsContext: {
+        sleepQuality: 'poor' | 'ok' | 'good' | '';
+        sleepHours: string;
+        stressLevel: 'low' | 'med' | 'high' | '';
+        moodAndSupport: 'low' | 'ok' | 'high' | '';
+        smoking: string;
+        alcohol: string;
+        otherHabits: string;
+        poorAdherenceHistory: string;
+        protectiveFactors: string; // red de apoyo, etc.
+    };
+
+    // 6) Notas Basales del Expediente
     permanentNotes: string;
 
-    // Legacy support
+    // Control
     lastUpdated?: string;
     updatedByClinician?: string;
+
+    // (Legacy Support para evitar quiebres inmediatos de pacientes previos en P1.5)
+    comorbidities?: any;
+    surgeries?: any;
+    medications?: any;
+    allergies?: any;
+    relevantInjuryHistory?: any;
+    physicalActivity?: any;
+    occupationDemands?: any;
+    sleep?: any;
+    stressMood?: any;
+    logistics?: any;
+    preferences?: any;
 }
 
 export interface PersonaUsuaria {

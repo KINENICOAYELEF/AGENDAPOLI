@@ -258,6 +258,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, payload, { merge: true });
 
+            // FASE 39: Automatización de Guardado Remoto Basal
+            if (payload.remoteHistorySnapshot && usuariaId) {
+                const personaRef = doc(db, "programs", globalActiveYear, "personas", usuariaId);
+                await setDoc(personaRef, {
+                    remoteHistory: {
+                        ...(payload.remoteHistorySnapshot as any),
+                        lastUpdated: new Date().toISOString(),
+                        updatedByClinician: user.email || 'Desconocido'
+                    }
+                }, { merge: true }).catch(err => console.error("Error auto-guardando anamnesis remota en persona:", err));
+            }
+
             if (isClosing && type === 'INITIAL') {
                 const fd = payload as EvaluacionInicial;
                 const versionId = `v_${Date.now()}`;
