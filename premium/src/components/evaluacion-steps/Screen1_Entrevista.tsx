@@ -2029,6 +2029,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </button>
                         </div>
                     )}
+                    <p className="text-center text-[10px] text-purple-600 font-medium mt-3 mb-1">
+                        La IA ordena y estructura lo escrito. No reemplaza tu criterio clínico.
+                    </p>
 
                     {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
                     {interviewV4.jsonExtractError && (
@@ -2206,14 +2209,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 </div>
                                                 <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
                                                     {renderTarjeta("Severidad", interviewV4.analisisIA.SINS.severidad, "sins-sev")}
-                                                    {renderTarjeta("Naturaleza Sugerida", interviewV4.analisisIA.SINS.naturaleza_sugerida, "sins-nat")}
+                                                    {renderTarjeta("Posible naturaleza del dolor", interviewV4.analisisIA.SINS.naturaleza_sugerida, "sins-nat")}
                                                     {renderTarjeta("Etapa", interviewV4.analisisIA.SINS.etapa, "sins-etapa")}
 
                                                     {/* Irritabilidad (Nested) */}
                                                     {interviewV4.analisisIA.SINS.irritabilidad && (
                                                         <div className="col-span-1 sm:col-span-2 bg-white border border-rose-100 rounded-lg p-3">
                                                             <div className="flex justify-between items-center mb-2 border-b border-rose-50 pb-2">
-                                                                <h4 className="text-[11px] font-bold text-rose-800">Irritabilidad Global: {interviewV4.analisisIA.SINS.irritabilidad.irritabilidad_global?.valor || "Desconocida"}</h4>
+                                                                <h4 className="text-[11px] font-bold text-rose-800">Irritabilidad sugerida: {interviewV4.analisisIA.SINS.irritabilidad.irritabilidad_global?.valor || "Desconocida"}</h4>
                                                                 <p className="text-[9px] text-rose-600 max-w-[60%] text-right italic">{interviewV4.analisisIA.SINS.irritabilidad.explicacion}</p>
                                                             </div>
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2328,7 +2331,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">6</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Datos de seguimiento (opcional)</h3>
+                            <h3 className="font-bold text-slate-800 text-sm">Correcciones o ajustes (opcional)</h3>
                         </div>
                         <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
