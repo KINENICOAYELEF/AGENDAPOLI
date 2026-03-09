@@ -44,6 +44,27 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
     // TEMPORIZADOR CLINICO DOCENTE (Pill)
     const [secondsElapsed, setSecondsElapsed] = useState(initialData?.timer?.totalSeconds || 0);
 
+    // KEYBOARD AWARE STATE (PROMPT 3)
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+    useEffect(() => {
+        const handleFocusIn = (e: FocusEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+                setIsKeyboardOpen(true);
+            }
+        };
+        const handleFocusOut = () => {
+            setIsKeyboardOpen(false);
+        };
+        document.addEventListener('focusin', handleFocusIn);
+        document.addEventListener('focusout', handleFocusOut);
+        return () => {
+            document.removeEventListener('focusin', handleFocusIn);
+            document.removeEventListener('focusout', handleFocusOut);
+        };
+    }, []);
+
     useEffect(() => {
         if (isClosed) return;
         const interval = setInterval(() => {
@@ -438,7 +459,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             {isPerfilDrawerOpen && <div className="fixed inset-0 bg-slate-900/20 z-[55] md:hidden" onClick={() => setIsPerfilDrawerOpen(false)} />}
 
             {/* CONTENEDOR PRINCIPAL */}
-            <div className="flex flex-col flex-1 h-full relative w-full overflow-hidden">
+            <div className="flex flex-col flex-1 h-[100dvh] relative w-full overflow-hidden">
 
                 {/* TOP BAR MOBILE-FIRST STICKY */}
                 <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-2 md:py-3 gap-2 w-full max-w-5xl mx-auto">
@@ -530,7 +551,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 )}
 
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
-                <div className="flex-1 overflow-y-auto pb-32 pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full">
+                <div className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
 
                     {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
                         handleSave(false);
@@ -546,7 +567,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 {/* BOTTOM BAR STICKY (GUARDADO) */}
                 {!isClosed && (
-                    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] md:pl-64">
+                    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] md:pl-64 transition-transform duration-300 ease-in-out pb-[env(safe-area-inset-bottom)] p-3 ${isKeyboardOpen ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
                         <div className="max-w-5xl mx-auto flex flex-row gap-3">
                             <button
                                 onClick={() => handleSave(false)}

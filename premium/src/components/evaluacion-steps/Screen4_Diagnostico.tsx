@@ -112,7 +112,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">IA Gemini: Diagnóstico y Metas</h2>
                 <p className="text-sm text-slate-500 mt-1">Integra el motor inteligente para formatear narrativas y objetivos precisos (SMART).</p>

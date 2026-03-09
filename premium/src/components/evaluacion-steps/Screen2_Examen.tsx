@@ -69,7 +69,8 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* ENCABEZADO */}
             <div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Examen Físico Guiado</h2>
                 <p className="text-sm text-slate-500 mt-1">Sigue las recomendaciones del motor clínico basado en la entrevista.</p>

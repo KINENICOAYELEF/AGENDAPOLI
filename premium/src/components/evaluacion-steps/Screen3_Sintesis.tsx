@@ -154,7 +154,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">Síntesis y Clasificación</h2>

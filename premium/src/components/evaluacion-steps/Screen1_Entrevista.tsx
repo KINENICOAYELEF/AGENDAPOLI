@@ -1289,7 +1289,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 </div>
 
                 {/* 2. Relato del caso */}
-                <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-5 pb-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 border-b border-slate-100 pb-3 gap-3">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white font-bold text-[10px]">2</span>
@@ -1509,6 +1509,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto'; // Reset height
                                 target.style.height = `${target.scrollHeight}px`; // Set to scrollHeight
+                                // Auto-scroll into view for iOS Safari Smoothness
+                                if (window.innerWidth < 768) {
+                                    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                }
                             }}
                             onChange={e => {
                                 updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } });

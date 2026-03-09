@@ -146,8 +146,8 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
     };
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-            <div>
+        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* HERRAMIENTA DE RECUPERACIÓN (DRAWER) */}            <div>
                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Reevaluación Continua</h2>
                 <p className="text-sm text-slate-500 mt-1">
                     Compara el baseline de ingreso y ajusta el plan de intervención.
