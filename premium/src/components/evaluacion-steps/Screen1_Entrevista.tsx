@@ -1277,6 +1277,42 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             >
                                 Guía de entrevista (?)
                             </button>
+
+                            {/* FASE 20: QA Mínima (Pruebas Manuales E2E - Solo Dev) */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <details className="relative ml-2 [&_summary::-webkit-details-marker]:hidden">
+                                    <summary className="text-[10px] bg-teal-600 hover:bg-teal-700 text-white border border-teal-800 px-2 py-1.5 rounded font-bold shadow-sm transition-colors flex items-center gap-1 cursor-pointer select-none">
+                                        <span>💉</span> Inyectar QA
+                                    </summary>
+                                    <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-2 flex flex-col gap-1">
+                                        <div className="text-[9px] font-bold text-slate-400 uppercase mb-1 px-1">Casos de Prueba (Fase 20)</div>
+                                        <button onClick={(e) => {
+                                            e.preventDefault();
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Hola. Vengo porque me duele el hombro derecho cuando levanto el brazo." } });
+                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">1. Caso Corto (Faltantes)</button>
+
+                                        <button onClick={(e) => {
+                                            e.preventDefault();
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Llevo 3 semanas con un dolor punzante en la rodilla izquierda. Me duele un 6 de 10 cuando bajo escaleras. En reposo no me duele (0). Me alivia ponerme hielo. En la noche duermo súper bien, no me despierta. Mi principal meta es poder volver a trotar mis 5km para fin de año sin sentir que me pincha." } });
+                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">2. Caso Medio (Ideal Auto-Fill)</button>
+
+                                        <button onClick={(e) => {
+                                            e.preventDefault();
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Mira, hace como 10 años me operaron de meniscos en la pierna derecha... desde entonces siempre ha estado medio rara, pero hace como 4 días, iba caminando por la calle, pisé mal la cuneta, se me torció el tobillo feo y sentí un chasquido. Fui a la urgencia, me dieron ibuprofeno y me dijeron que era esguince. Ha estado súper hinchado todo el pie derecho. El dolor ahorita es constante, como un latido, yo diría que un 8/10. Ayer apenas podía pisar al levantarme en la mañana. Lo que más me urge es poder caminar normal al trabajo la próxima semana. De noche late pero logro dormir. Si camino dos cuadras, se inflama y tengo que parar media hora para que se pase." } });
+                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">3. Caso Largo (Ruido e Historia)</button>
+
+                                        <button onClick={(e) => {
+                                            e.preventDefault();
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Me está doliendo horrible la espalda baja hace 3 meses, pero esta semana me empezó a bajar una corriente eléctrica fuerte por las dos piernas al mismo tiempo. Además, no he querido decirle a nadie, pero creo que no estoy controlando bien el pipí desde ayer, se me escapa, y ayer en la noche tuve fiebre de 38. Tengo susto." } });
+                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-rose-50 rounded text-rose-700 font-bold">4. Caso Red Flags (Alarmas)</button>
+
+                                        <button onClick={(e) => {
+                                            e.preventDefault();
+                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Tengo el cuello tieso hace 2 meses. No puedo mover la cabeza para atrás. Me duele un chorro. De hecho, apenas la echo para atrás duele 10/10 al instante, y después me quedo con dolor agudo toda la maldita tarde, se demora unas 4 horas en bajar y me deja mareado." } });
+                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-orange-50 rounded text-orange-700 font-medium">5. Caso Irritabilidad Alta</button>
+                                    </div>
+                                </details>
+                            )}
                         </div>
                     </div>
 
@@ -1867,6 +1903,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <button
                         onClick={async (e) => {
                             e.preventDefault();
+
+                            // Control de Relato Vacío (Fase 20 / QA)
+                            const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
+                            if (relatoLength < 10) {
+                                alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica antes de solicitar análisis a la IA.");
+                                return;
+                            }
+
                             setIsProcessingAI(true);
                             try {
                                 const payload = {
