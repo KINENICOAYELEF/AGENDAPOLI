@@ -1730,73 +1730,92 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                                 const list: Array<{ texto: string, link: string }> = [];
 
-                                // 1. Chequeos de Anclas
-                                if (!focoPrincipal?.inicio || focoPrincipal.inicio === "NoDefinido") list.push({ texto: "Falta Inicio (Anclas)", link: "section-anclas" });
-                                if (!focoPrincipal?.antiguedad || focoPrincipal.antiguedad === "NoDefinido") list.push({ texto: "Falta Antigüedad Foco (Anclas)", link: "section-anclas" });
-                                if (!focoPrincipal?.evolucion || focoPrincipal.evolucion === "NoDefinido") list.push({ texto: "Falta Evolución (Anclas)", link: "section-anclas" });
-                                if (!focoPrincipal?.actividadIndice?.trim()) list.push({ texto: "Falta Actividad índice (Anclas)", link: "section-anclas" });
+                                // Helper: Verifica si existe texto bajo un título específico en el relato libre
+                                const relatoLines = (interviewV4.experienciaPersona.relatoLibre || "").split('\n');
+                                const hasTextInRelato = (titles: string[]) => {
+                                    const normalize = (t: string) => t.trim().toLowerCase();
+                                    const searchTerms = titles.map(normalize);
 
-                                if (interviewV4.hayLimitacionFuncional) {
-                                    const hasValidPsfs = interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== "" && p.score !== null);
-                                    if (!hasValidPsfs) list.push({ texto: "Falta Actividad PSFS válida (Anclas)", link: "section-anclas" });
-                                } else {
-                                    if (interviewV4.capacidadPercibidaActividad === null || interviewV4.capacidadPercibidaActividad === undefined) list.push({ texto: "Falta Capacidad percibida (Anclas)", link: "section-anclas" });
-                                }
+                                    const index = relatoLines.findIndex(l => searchTerms.some(term => normalize(l).includes(term)));
+                                    if (index === -1) return false;
 
-                                if (!interviewV4.contextosAnclas || interviewV4.contextosAnclas.length === 0) list.push({ texto: "Falta Contexto afectado (Anclas)", link: "section-anclas" });
-                                if (!interviewV4.objetivoPersona?.trim()) list.push({ texto: "Falta Objetivo de la persona (Anclas)", link: "section-anclas" });
-                                if (!interviewV4.plazoEsperado?.trim()) list.push({ texto: "Falta Plazo esperado (Anclas)", link: "section-anclas" });
+                                    for (let i = index + 1; i < relatoLines.length; i++) {
+                                        const line = relatoLines[i].trim();
+                                        // Ignorar líneas vacías o guías (que empiezan con corchete)
+                                        if (line === "" || line.startsWith('[')) continue;
 
-                                // 2. Chequeo de Seguridad
-                                if (!interviewV4.seguridad?.confirmado) {
-                                    list.push({ texto: "Falta confirmar Seguridad Clínica", link: "section-seguridad" });
-                                }
+                                        // Si detectamos otro título principal (no es guía y está en la lista de títulos conocidos), paramos de buscar
+                                        const knownTitles = [
+                                            "motivo de consulta", "objetivo y expectativa", "inicio y evolución", "antigüedad/inicio",
+                                            "localización y extensión", "irradiación y referencia", "carácter y naturaleza", "intensidad", "atenuantes y agravantes",
+                                            "comportamiento 24h", "severidad funcional", "irritabilidad", "historia del episodio",
+                                            "mecanismo e historia", "manejo previo", "seguridad clínica", "notas libres"
+                                        ];
+                                        const isAnotherTitle = knownTitles.some(t => normalize(line).includes(t) && !searchTerms.some(term => normalize(line).includes(term)));
 
-                                // 3. Chequeo de Plantilla en Relato
-                                const relato = interviewV4.experienciaPersona.relatoLibre || "";
-                                const subtitulosPlantilla = [
-                                    "Motivo de consulta",
-                                    "Objetivo y expectativa",
-                                    "ALICIA — Antigüedad/Inicio y evolución",
-                                    "ALICIA — Localización (dónde) y extensión",
-                                    "ALICIA — Irradiación/Referencia",
-                                    "ALICIA — Carácter/Naturaleza del síntoma",
-                                    "ALICIA — Intensidad",
-                                    "ALICIA — Atenuantes y agravantes",
-                                    "S.I.N.S — Comportamiento",
-                                    "S.I.N.S — Severidad funcional",
-                                    "S.I.N.S — Irritabilidad",
-                                    "Historia del episodio",
-                                    "Manejo previo y respuesta",
-                                    "Seguridad clínica"
-                                ];
-
-                                const lineas = relato.split('\\n');
-
-                                subtitulosPlantilla.forEach(sub => {
-                                    const index = lineas.findIndex(l => l.includes(sub));
-                                    if (index !== -1) {
-                                        // Revisar las siguientes 1 a 2 lineas a ver si hay texto
-                                        let tieneTexto = false;
-                                        for (let i = 1; i <= 3; i++) {
-                                            const sig = lineas[index + i];
-                                            if (sig !== undefined && sig.trim().length > 2 && !subtitulosPlantilla.some(s => sig.includes(s))) {
-                                                tieneTexto = true;
-                                                break;
-                                            }
-                                        }
-                                        if (!tieneTexto) {
-                                            const corto = sub.split('—')[0].replace(' (dónde) y extensión', '').replace(' (qué quiere lograr y en qué plazo)', '').replace(' (palabras de la persona usuaria)', '').trim();
-                                            list.push({ texto: `Falta llenar en relato: ${corto}`, link: "section-relato" });
-                                        }
+                                        if (isAnotherTitle) return false; // Empezó otra sección y no hubo texto antes
+                                        if (line.length > 2) return true; // Encontramos texto real
                                     }
-                                });
+                                    return false;
+                                };
 
-                                // Truncar a 12 items
-                                const final = list.slice(0, 12);
+                                // Helper: Verifica si IA extrajo un dato
+                                const hasIA = (val: any) => val && val.evidencia_textual && val.evidencia_textual !== "No_mencionado";
+                                const aIA = interviewV4.analisisIA;
+
+                                // 1. Foco mínimo (Región + Lado + Queja Principal)
+                                const focoMin = !!(focoPrincipal?.region && focoPrincipal?.lado && interviewV4.experienciaPersona.quejas && interviewV4.experienciaPersona.quejas.length > 0);
+                                if (!focoMin) list.push({ texto: "1. Foco mínimo (Región, Lado y Queja principal)", link: "section-relato" }); // Se ubica arriba
+
+                                // 2. Motivo de consulta
+                                if (!hasTextInRelato(["Motivo de consulta"]) && !hasIA(aIA?.extraccion_general?.motivo_en_palabras)) {
+                                    list.push({ texto: "2. Motivo en palabras de la persona usuaria", link: "section-relato" });
+                                }
+
+                                // 3. Objetivo/Expectativa + Plazo
+                                if (!hasTextInRelato(["Objetivo y expectativa"]) && !(interviewV4.objetivoPersona || interviewV4.plazoEsperado) && !hasIA(aIA?.extraccion_general?.objetivo_expectativa_plazo)) {
+                                    list.push({ texto: "3. Objetivo, expectativa y plazo", link: "section-anclas" });
+                                }
+
+                                // 4. Inicio/Antigüedad + Evolución
+                                if (!hasTextInRelato(["Inicio y evolución", "Antigüedad/Inicio"]) && !(focoPrincipal?.inicio && focoPrincipal.inicio !== "NoDefinido") && !hasIA(aIA?.ALICIA?.antiguedad_inicio)) {
+                                    list.push({ texto: "4. Inicio, antigüedad o evolución", link: "section-anclas" });
+                                }
+
+                                // 5. Localización/Extensión (+ Irradiación)
+                                if (!hasTextInRelato(["Localización", "Extensión", "Irradiación"]) && !hasIA(aIA?.ALICIA?.localizacion_extension) && !hasIA(aIA?.ALICIA?.irradiacion_referencia)) {
+                                    list.push({ texto: "5. Localización y extensión", link: "section-relato" });
+                                }
+
+                                // 6. Intensidad y Variación 24h
+                                if (!hasTextInRelato(["Intensidad", "Comportamiento 24h"]) && !hasIA(aIA?.ALICIA?.intensidad?.actual) && !hasIA(aIA?.extraccion_general?.comportamiento_24h)) {
+                                    list.push({ texto: "6. Intensidad y comportamiento 24h", link: "section-relato" });
+                                }
+
+                                // 7. Atenuantes/Agravantes
+                                if (!hasTextInRelato(["Atenuantes", "Agravantes"]) && !hasIA(aIA?.ALICIA?.atenuantes) && !hasIA(aIA?.ALICIA?.agravantes)) {
+                                    list.push({ texto: "7. Atenuantes y Agravantes", link: "section-relato" });
+                                }
+
+                                // 8. Severidad Funcional
+                                const hasPSFS = interviewV4.hayLimitacionFuncional ? interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== '') : (interviewV4.capacidadPercibidaActividad !== undefined && interviewV4.capacidadPercibidaActividad !== null);
+                                if (!hasTextInRelato(["Severidad funcional"]) && !hasPSFS && !hasIA(aIA?.SINS?.severidad) && !hasIA(aIA?.extraccion_general?.limitaciones_funcionales)) {
+                                    list.push({ texto: "8. Severidad funcional (qué limita)", link: "section-anclas" });
+                                }
+
+                                // 9. Irritabilidad
+                                const allowIrritabilityNulo = interviewV4.experienciaPersona.relatoLibre?.toLowerCase().includes("no aplica") && hasTextInRelato(["Irritabilidad"]);
+                                if (!allowIrritabilityNulo && !hasTextInRelato(["Irritabilidad"]) && !(focoPrincipal?.irritabilidadFacilidad && focoPrincipal.irritabilidadFacilidad !== "NoDefinido") && !hasIA(aIA?.SINS?.irritabilidad?.facilidad_provocacion)) {
+                                    list.push({ texto: "9. Irritabilidad (o marcar 'No aplica' en relato)", link: "section-relato" });
+                                }
+
+                                // 10. Seguridad Clínica
+                                if (!hasTextInRelato(["Seguridad clínica"]) && !interviewV4.seguridad?.confirmado && !hasIA(aIA?.extraccion_general?.seguridad_mencionada_en_relato)) {
+                                    list.push({ texto: "10. Seguridad clínica", link: "section-seguridad" });
+                                }
 
                                 // Store output into state for render
-                                updateV4({ faltantesEstructuralesPanel: final } as any);
+                                updateV4({ faltantesEstructuralesPanel: list } as any);
                             }}
                             className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 transition-colors font-bold text-xs py-2 px-4 rounded-lg shadow-sm flex items-center gap-2"
                         >
