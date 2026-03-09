@@ -1592,217 +1592,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 </div>
 
-                {/* 4. Datos de Seguimiento (Opcional - Reemplaza Anclas Mínimas) */}
-                <details id="section-anclas" className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden">
-                    <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-500 font-bold text-[10px]">📌</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Datos de seguimiento (opcional)</h3>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </summary>
 
-                    <div className="p-4 pt-0 border-t border-slate-100 flex flex-col gap-4 mt-2">
-                        {/* Row 1: Inicio, Antigüedad, Evolución */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Inicio</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="NoDefinido">Seleccione...</option>
-                                    <option value="Súbito">Súbito</option>
-                                    <option value="Gradual">Gradual</option>
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="">Seleccione...</option>
-                                    <option value="<24hrs">{'< 24 horas'}</option>
-                                    <option value="1-7 dias">1 a 7 días</option>
-                                    <option value="1-4 semanas">1 a 4 semanas</option>
-                                    <option value="1-3 meses">1 a 3 meses</option>
-                                    <option value="3-6 meses">3 a 6 meses</option>
-                                    <option value=">6 meses">{'> 6 meses'}</option>
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Evolución global</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="NoDefinido">Seleccione...</option>
-                                    <option value="Mejorando">Mejorando</option>
-                                    <option value="Estable">Igual / Estable</option>
-                                    <option value="Empeorando">Empeorando</option>
-                                    <option value="Fluctuante">Fluctuante</option>
-                                </select>
-                            </div>
-                        </div>
 
-                        {/* Row 2: Actividad Índice */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-slate-600">Actividad índice principal</label>
-                            <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
-                                const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, actividadIndice: e.target.value } : f);
-                                updateV4({ focos: newFocos });
-                            }} />
-                        </div>
-
-                        {/* Lógica Condicional: Intensidad Actual y en Actividad si Duele/Hormiguea */}
-                        {(() => {
-                            const quejas = interviewV4.experienciaPersona.quejas || [];
-                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
-                            const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
-                            if (!hasPainOrTingle) return null;
-                            return (
-                                <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
-                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} placeholder="EVA/ENA" />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
-                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} placeholder="EVA/ENA" />
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Lógica Condicional: Despertar Nocturno */}
-                        {(() => {
-                            const quejas = interviewV4.experienciaPersona.quejas || [];
-                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
-                            const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
-                            const isChronic = focoPrincipal.antiguedad === '1-3 meses' || focoPrincipal.antiguedad === '3-6 meses' || focoPrincipal.antiguedad === '>6 meses';
-                            if (!(hasPainOrStiff && isChronic)) return null;
-                            return (
-                                <div className="flex items-center flex-wrap gap-4 border border-orange-200 bg-orange-50/50 p-3 rounded-lg">
-                                    <label className="text-xs font-bold text-orange-900 flex-1 min-w-[200px]">¿Presenta despertar nocturno por el síntoma?</label>
-                                    <div className="flex flex-wrap gap-4">
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: true } } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} /> Sí</label>
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: false } } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} /> No</label>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Row 3: Limitación Funcional */}
-                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                <label className="text-xs font-bold text-slate-800">¿Hay limitación funcional actual?</label>
-                                <div className="flex flex-wrap gap-3">
-                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
-                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
-                                </div>
-                            </div>
-
-                            {interviewV4.hayLimitacionFuncional ? (
-                                <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg flex flex-col gap-2">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-[11px] font-bold text-indigo-800">Actividades PSFS (0=Incapaz, 10=Normal)</label>
-                                        {interviewV4.psfsGlobal.length < 3 && (
-                                            <button disabled={isClosed} onClick={(e) => {
-                                                e.preventDefault();
-                                                updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: focoPrincipal.id }] });
-                                            }} className="text-[10px] bg-white border border-indigo-200 text-indigo-600 px-2 py-1 rounded shadow-sm font-bold hover:bg-indigo-50">+ Agregar</button>
-                                        )}
-                                    </div>
-                                    {interviewV4.psfsGlobal.map((psfs, index) => (
-                                        <div key={psfs.id} className="flex gap-2">
-                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
-                                                const newPsfs = [...interviewV4.psfsGlobal];
-                                                newPsfs[index].actividad = e.target.value;
-                                                updateV4({ psfsGlobal: newPsfs });
-                                            }} />
-                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
-                                                const newPsfs = [...interviewV4.psfsGlobal];
-                                                newPsfs[index].score = e.target.value !== "" ? Number(e.target.value) : null;
-                                                updateV4({ psfsGlobal: newPsfs });
-                                            }} />
-                                            {index > 0 && (
-                                                <button disabled={isClosed} onClick={(e) => {
-                                                    e.preventDefault();
-                                                    const newPsfs = [...interviewV4.psfsGlobal];
-                                                    newPsfs.splice(index, 1);
-                                                    updateV4({ psfsGlobal: newPsfs });
-                                                }} className="text-xs text-rose-500 hover:text-rose-700 px-1 font-bold">✕</button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-3 bg-teal-50/40 border border-teal-100 rounded-lg flex flex-col gap-2">
-                                    <label className="text-[11px] font-bold text-teal-800">Capacidad percibida en actividad clave (0=Nula, 10=Óptima)</label>
-                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-2.5 border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
-                                        updateV4({ capacidadPercibidaActividad: e.target.value !== "" ? Number(e.target.value) : null });
-                                    }} />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Row 4: Contexto de las anclas */}
-                        <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
-                            <label className="text-xs font-bold text-slate-800">Contexto principal afectado</label>
-                            <div className="flex flex-wrap gap-2">
-                                {['Vida diaria', 'Trabajo-Estudio', 'Deporte', 'Gimnasio'].map(ctx => {
-                                    const isSelected = interviewV4.contextosAnclas?.includes(ctx);
-                                    return (
-                                        <button key={ctx} disabled={isClosed} onClick={(e) => {
-                                            e.preventDefault();
-                                            let current = interviewV4.contextosAnclas || [];
-                                            const newCtx = isSelected ? current.filter(x => x !== ctx) : [...current, ctx];
-                                            updateV4({ contextosAnclas: newCtx });
-                                        }} className={`text-[11px] px-3 py-1.5 border rounded-lg transition-colors shadow-sm ${isSelected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                            {ctx}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Row 5: Objetivos */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                <label className="text-xs font-bold text-slate-800">Objetivo de la persona usuaria</label>
-                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. Poder volver a correr 10k" value={interviewV4.objetivoPersona || ""} onChange={e => updateV4({ objetivoPersona: e.target.value })} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-800">Plazo esperado</label>
-                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. 1 mes, para el verano..." value={interviewV4.plazoEsperado || ""} onChange={e => updateV4({ plazoEsperado: e.target.value })} />
-                            </div>
-                        </div>
-                    </div>
-
-                </details>
-
-                {/* 5. Faltantes Estructurales (Sin IA) */}
+                {/* 4. Faltantes Estructurales (Sin IA) */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-white font-bold text-[10px]">5</span>
+                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-white font-bold text-[10px]">4</span>
                             <h3 className="font-bold text-slate-800 text-sm">Faltantes estructurales (Sin IA)</h3>
                         </div>
                         <button
@@ -1933,10 +1729,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     )}
                 </div>
 
-                {/* 6. Procesar con IA */}
+                {/* 5. Procesar con IA */}
                 <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm p-4">
                     <div className="flex items-center gap-2 mb-4">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-700 text-white font-bold text-[10px]">6</span>
+                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-700 text-white font-bold text-[10px]">5</span>
                         <h3 className="font-bold text-purple-900 text-sm">Procesar con Inteligencia Artificial</h3>
                     </div>
 
@@ -1972,10 +1768,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             analisisIA: null as any // Reset to show error state in UI
                                         } as any);
                                     } else {
-                                        // FASE 19 (Auto-Llenado Anclas Mínimas)
-                                        // Trataremos de poblar los datos de seguimiento ("Anclas") automáticamente con lo extraído de JSON.
+                                        // FASE 19 y FASE 24 (Auto-Llenado Extendido de Anclas y Datos Modificados)
                                         let updatedFocos = [...interviewV4.focos];
                                         let newObjetivo = interviewV4.objetivoPersona;
+                                        let newHayLimitacion = interviewV4.hayLimitacionFuncional;
 
                                         // Extracción general (Objetivo)
                                         if (data.extraccion_general?.objetivo_expectativa_plazo && data.extraccion_general.objetivo_expectativa_plazo !== "No_mencionado") {
@@ -1988,19 +1784,40 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                                             // 1. Antigüedad/Inicio
                                             if (data.ALICIA?.antiguedad_inicio && data.ALICIA.antiguedad_inicio !== "No_mencionado") {
-                                                // Mapeo simple: Si no está lleno manualmente, lo sobreescribimos o intentamos darle match.
-                                                // Para fines de simplicidad UX, lo concatenamos temporalmente a notas o forzamos el tipo
                                                 const txt = data.ALICIA.antiguedad_inicio.toLowerCase();
+
+                                                // Mapeo Inicio
                                                 if (txt.includes("agud") || txt.includes("subit") || txt.includes("súbit") || txt.includes("recien") || txt.includes("dia") || txt.includes("día") || txt.includes("hora")) f0.inicio = "Súbito";
                                                 else if (txt.includes("mes") || txt.includes("ano") || txt.includes("año") || txt.includes("semana") || txt.includes("gradual") || txt.includes("lento")) f0.inicio = "Gradual";
-                                                // Dejamos el txt para info visual? no es un input libre, es select.
+
+                                                // Mapeo Antigüedad
+                                                if (txt.includes("hora") || (txt.includes("dia") && txt.includes(" 1 ")) || txt.includes("ayer")) f0.antiguedad = "<24hrs";
+                                                else if (txt.includes("seman") || txt.includes("dia") || txt.includes("día")) f0.antiguedad = "1-4 semanas";
+                                                else if (txt.includes("mese") && (txt.includes("4") || txt.includes("5") || txt.includes("6"))) f0.antiguedad = "3-6 meses";
+                                                else if (txt.includes("año") || txt.includes("ano") || txt.includes("cronico") || txt.includes("crónico") || txt.match(/\b([6-9]|1[0-9])\s*meses\b/)) f0.antiguedad = ">6 meses";
+                                                else if (txt.includes("mes")) f0.antiguedad = "1-3 meses";
                                             }
 
                                             // 2. Dolor Actual (Intensidad Actual)
                                             if (data.ALICIA?.intensidad?.actual && data.ALICIA.intensidad.actual !== "No_mencionado") {
                                                 const matchNum = data.ALICIA.intensidad.actual.match(/\d+/);
-                                                if (matchNum) {
-                                                    f0.dolorActual = Number(matchNum[0]);
+                                                if (matchNum) f0.dolorActual = Number(matchNum[0]);
+                                            }
+
+                                            // 3. Actividad Índice
+                                            if (data.extraccion_general?.comportamiento_24h && data.extraccion_general.comportamiento_24h !== "No_mencionado") {
+                                                const txt = data.extraccion_general.comportamiento_24h.toLowerCase();
+                                                if (txt.includes("empeor") || txt.includes("agrav") || txt.includes("peor")) f0.evolucion = "Empeorando";
+                                                else if (txt.includes("mejor") || txt.includes("alivi") || txt.includes("disminu")) f0.evolucion = "Mejorando";
+                                                else if (txt.includes("fluct") || txt.includes("vari") || txt.includes("intermit")) f0.evolucion = "Fluctuante";
+                                                else if (txt.includes("mantiene") || txt.includes("igual") || txt.includes("estab")) f0.evolucion = "Estable";
+                                            }
+
+                                            // 4. Evolución Global
+                                            if (data.extraccion_general?.limitaciones_funcionales && data.extraccion_general.limitaciones_funcionales !== "No_mencionado") {
+                                                newHayLimitacion = true; // Forzamos si halló texto de limitaciones
+                                                if (!f0.actividadIndice) {
+                                                    f0.actividadIndice = data.extraccion_general.limitaciones_funcionales.split(",")[0].trim(); // Extract primary activity as index roughly
                                                 }
                                             }
 
@@ -2012,6 +1829,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             jsonExtractRawBackup: null,
                                             analisisIA: data,
                                             objetivoPersona: newObjetivo,
+                                            hayLimitacionFuncional: newHayLimitacion,
                                             focos: updatedFocos,
                                             confirmacionesCriticas: {
                                                 irritabilidad_global: { estado: 'Pendiente' },
@@ -2424,6 +2242,212 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     )}
                 </div>
+
+                {/* 6. Datos de Seguimiento (Opcional - Reemplaza Anclas Mínimas) */}
+                <details id="section-anclas" className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">6</span>
+                            <h3 className="font-bold text-slate-800 text-sm">Datos de seguimiento (opcional)</h3>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
+
+                    <div className="p-4 pt-0 border-t border-slate-100 flex flex-col gap-4 mt-2">
+                        {/* Row 1: Inicio, Antigüedad, Evolución */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Inicio</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="NoDefinido">Seleccione...</option>
+                                    <option value="Súbito">Súbito</option>
+                                    <option value="Gradual">Gradual</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="">Seleccione...</option>
+                                    <option value="<24hrs">{'< 24 horas'}</option>
+                                    <option value="1-7 dias">1 a 7 días</option>
+                                    <option value="1-4 semanas">1 a 4 semanas</option>
+                                    <option value="1-3 meses">1 a 3 meses</option>
+                                    <option value="3-6 meses">3 a 6 meses</option>
+                                    <option value=">6 meses">{'> 6 meses'}</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-600">Evolución global</label>
+                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
+                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
+                                    updateV4({ focos: newFocos });
+                                }}>
+                                    <option value="NoDefinido">Seleccione...</option>
+                                    <option value="Mejorando">Mejorando</option>
+                                    <option value="Estable">Igual / Estable</option>
+                                    <option value="Empeorando">Empeorando</option>
+                                    <option value="Fluctuante">Fluctuante</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Row 2: Actividad Índice */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-bold text-slate-600">Actividad índice principal</label>
+                            <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
+                                const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, actividadIndice: e.target.value } : f);
+                                updateV4({ focos: newFocos });
+                            }} />
+                        </div>
+
+                        {/* Lógica Condicional: Intensidad Actual y en Actividad si Duele/Hormiguea */}
+                        {(() => {
+                            const quejas = interviewV4.experienciaPersona.quejas || [];
+                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
+                            const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
+                            if (!hasPainOrTingle) return null;
+                            return (
+                                <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
+                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} placeholder="EVA/ENA" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
+                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} placeholder="EVA/ENA" />
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Lógica Condicional: Despertar Nocturno */}
+                        {(() => {
+                            const quejas = interviewV4.experienciaPersona.quejas || [];
+                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
+                            const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
+                            const isChronic = focoPrincipal.antiguedad === '1-3 meses' || focoPrincipal.antiguedad === '3-6 meses' || focoPrincipal.antiguedad === '>6 meses';
+                            if (!(hasPainOrStiff && isChronic)) return null;
+                            return (
+                                <div className="flex items-center flex-wrap gap-4 border border-orange-200 bg-orange-50/50 p-3 rounded-lg">
+                                    <label className="text-xs font-bold text-orange-900 flex-1 min-w-[200px]">¿Presenta despertar nocturno por el síntoma?</label>
+                                    <div className="flex flex-wrap gap-4">
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: true } } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} /> Sí</label>
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
+                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: false } } : f);
+                                            updateV4({ focos: newFocos });
+                                        }} /> No</label>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Row 3: Limitación Funcional */}
+                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <label className="text-xs font-bold text-slate-800">¿Hay limitación funcional actual?</label>
+                                <div className="flex flex-wrap gap-3">
+                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
+                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
+                                </div>
+                            </div>
+
+                            {interviewV4.hayLimitacionFuncional ? (
+                                <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[11px] font-bold text-indigo-800">Actividades PSFS (0=Incapaz, 10=Normal)</label>
+                                        {interviewV4.psfsGlobal.length < 3 && (
+                                            <button disabled={isClosed} onClick={(e) => {
+                                                e.preventDefault();
+                                                updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: focoPrincipal.id }] });
+                                            }} className="text-[10px] bg-white border border-indigo-200 text-indigo-600 px-2 py-1 rounded shadow-sm font-bold hover:bg-indigo-50">+ Agregar</button>
+                                        )}
+                                    </div>
+                                    {interviewV4.psfsGlobal.map((psfs, index) => (
+                                        <div key={psfs.id} className="flex gap-2">
+                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
+                                                const newPsfs = [...interviewV4.psfsGlobal];
+                                                newPsfs[index].actividad = e.target.value;
+                                                updateV4({ psfsGlobal: newPsfs });
+                                            }} />
+                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
+                                                const newPsfs = [...interviewV4.psfsGlobal];
+                                                newPsfs[index].score = e.target.value !== "" ? Number(e.target.value) : null;
+                                                updateV4({ psfsGlobal: newPsfs });
+                                            }} />
+                                            {index > 0 && (
+                                                <button disabled={isClosed} onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const newPsfs = [...interviewV4.psfsGlobal];
+                                                    newPsfs.splice(index, 1);
+                                                    updateV4({ psfsGlobal: newPsfs });
+                                                }} className="text-xs text-rose-500 hover:text-rose-700 px-1 font-bold">✕</button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-teal-50/40 border border-teal-100 rounded-lg flex flex-col gap-2">
+                                    <label className="text-[11px] font-bold text-teal-800">Capacidad percibida en actividad clave (0=Nula, 10=Óptima)</label>
+                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-2.5 border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
+                                        updateV4({ capacidadPercibidaActividad: e.target.value !== "" ? Number(e.target.value) : null });
+                                    }} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Row 4: Contexto de las anclas */}
+                        <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
+                            <label className="text-xs font-bold text-slate-800">Contexto principal afectado</label>
+                            <div className="flex flex-wrap gap-2">
+                                {['Vida diaria', 'Trabajo-Estudio', 'Deporte', 'Gimnasio'].map(ctx => {
+                                    const isSelected = interviewV4.contextosAnclas?.includes(ctx);
+                                    return (
+                                        <button key={ctx} disabled={isClosed} onClick={(e) => {
+                                            e.preventDefault();
+                                            let current = interviewV4.contextosAnclas || [];
+                                            const newCtx = isSelected ? current.filter(x => x !== ctx) : [...current, ctx];
+                                            updateV4({ contextosAnclas: newCtx });
+                                        }} className={`text-[11px] px-3 py-1.5 border rounded-lg transition-colors shadow-sm ${isSelected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                                            {ctx}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Row 5: Objetivos */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3">
+                            <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                <label className="text-xs font-bold text-slate-800">Objetivo de la persona usuaria</label>
+                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. Poder volver a correr 10k" value={interviewV4.objetivoPersona || ""} onChange={e => updateV4({ objetivoPersona: e.target.value })} />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-800">Plazo esperado</label>
+                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. 1 mes, para el verano..." value={interviewV4.plazoEsperado || ""} onChange={e => updateV4({ plazoEsperado: e.target.value })} />
+                            </div>
+                        </div>
+                    </div>
+
+                </details>
 
                 {/* 7. Confirmaciones críticas */}
                 {interviewV4.analisisIA && (
