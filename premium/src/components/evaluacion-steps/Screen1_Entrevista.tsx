@@ -2343,7 +2343,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Inicio</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2354,7 +2354,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2369,7 +2369,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Evolución global</label>
-                                <select disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2401,7 +2401,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
                                             const val = e.target.value !== "" ? Number(e.target.value) : null;
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
                                             updateV4({ focos: newFocos });
@@ -2409,7 +2409,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
                                             const val = e.target.value !== "" ? Number(e.target.value) : null;
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
                                             updateV4({ focos: newFocos });
@@ -2534,7 +2534,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 {/* 7. Confirmaciones críticas */}
                 {interviewV4.analisisIA && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col gap-4">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 flex flex-col gap-4">
                         <div className="flex items-center gap-2 mb-2 w-full">
                             <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-600 text-white font-bold text-xs">7</span>
                             <h3 className="font-black text-slate-800 text-base">Confirmaciones críticas de IA</h3>
@@ -2557,9 +2557,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
-                                                    <span className="text-sm font-bold text-slate-800">{iaValue}</span>
+                                                    <span className="text-sm font-bold text-slate-800 break-words">{iaValue}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+                                                <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
                                                     <button
                                                         disabled={isClosed}
                                                         onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'De acuerdo' } } }); }}
