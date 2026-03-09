@@ -5,7 +5,7 @@ import { AnamnesisProximaV4 } from '@/types/clinica';
 export async function POST(req: Request) {
     try {
         const data = await req.json();
-        const { interviewV4 } = data as { interviewV4: AnamnesisProximaV4 };
+        const { interviewV4, remoteHistorySnapshot } = data as { interviewV4: AnamnesisProximaV4, remoteHistorySnapshot?: any };
 
         const systemPromo = `Eres un asistente clínico experto en extracción de datos.
 Tú tarea es extraer la información solicitada de una entrevista clínica no estructurada o semi estructurada.
@@ -73,12 +73,31 @@ Tu respuesta debe ajustarse EXACTAMENTE a este esquema JSON:
     ],
     "sugerencias_examen_fisico_P2": [
         { "paso": "acción concreta", "por_que": "1 línea", "objetivo": "descartar|confirmar|cuantificar" }
+    ],
+    "consideraciones_basales": [
+        "Observación clínica en base a los antecedentes remotos que altere evaluación o pronóstico del cuadro actual. Máx 1 línea por string."
     ]
 }
 Recuerda: Si falta información o un ítem no se describe, en TODOS los valores donde sea posible, devolver "No_mencionado".
+Si no hay contextos basales que cambien la inferencia de manera importante, devuelve "consideraciones_basales" vacío.
 No devuelvas NADA MÁS QUE EL STRING JSON VÁLIDO. Tu respuesta debe comenzar con "{" y terminar con "}".`;
 
-        const userPrompt = `A continuación te presento los datos estructurados y el Relato Libre de la persona.
+        const ctxBasalResumido = remoteHistorySnapshot ?
+            `- Comorbilidades / Consideraciones: ${remoteHistorySnapshot.medicalHistory?.clinicalConsiderations || 'Ninguna explícita'}
+- Diagnósticos Previos: ${remoteHistorySnapshot.medicalHistory?.diagnoses?.map((d: any) => d.name).join(', ') || 'Normal'}
+- Cirugías Previas: ${remoteHistorySnapshot.medicalHistory?.surgeries?.map((s: any) => s.name).join(', ') || 'Ninguna'}
+- Trastornos u Otras Enfermedades: ${remoteHistorySnapshot.medicalHistory?.chronicDiseases?.map((d: any) => d.name).join(', ') || 'Ninguna'}
+- Fármacos/Medicamentos relevantes: ${remoteHistorySnapshot.medicalHistory?.medications?.map((m: any) => m.name).join(', ') || 'Sin información o no relevantes'}
+- Antecedentes Musculoesqueléticos Previos (MSK): ${remoteHistorySnapshot.mskHistory?.previousInjuries?.map((i: any) => i.region).join(', ') || 'Sin historial'} / Recurrencias: ${remoteHistorySnapshot.mskHistory?.recurrenceHistory ? 'Sí' : 'No reportadas'}
+- Ocupación y Demandas: ${remoteHistorySnapshot.occupationalContext?.role || 'No especificada'} (Demandas físicas: ${remoteHistorySnapshot.occupationalContext?.physicalDemands?.join(', ') || 'Ninguna'})
+- Deporte y Carga Basal: ${remoteHistorySnapshot.baseActivity?.mainSport || 'Sedentario'} (Nivel: ${remoteHistorySnapshot.baseActivity?.level || 'N/A'})
+- Factores de Riesgo / BPS e Historial de Adherencia: Calidad sueño (${remoteHistorySnapshot.bpsContext?.sleepQuality || 'N/A'}), Estrés basal (${remoteHistorySnapshot.bpsContext?.stressLevel || 'N/A'}), Adherencia previa (Barreras: ${remoteHistorySnapshot.occupationalContext?.adherenceBarriers || 'Ninguna descrita'})
+` : 'Sin antecedentes remotos basales registrados en plataforma.';
+
+        const userPrompt = `A continuación te presento los datos estructurados, el Contexto Basal Remoto Histórico de la persona, y el Relato Libre de la persona.
+-- CONTEXTO BASAL REMOTO --
+${ctxBasalResumido}
+
 -- RELATO LIBRE --
 ${interviewV4.experienciaPersona.relatoLibre || 'No hay relato libre provisto.'}
 ----------------
@@ -90,7 +109,7 @@ Queja otro: ${interviewV4.experienciaPersona.quejaOtro}
 -- ESTADOS DE SEGURIDAD CLÍNICA --
 Seguridad Confirmada en UI: ${interviewV4.seguridad?.confirmado}
 Detalle Banderas: ${interviewV4.seguridad?.detalleBanderas || 'Ninguno'}
-Banderas Activas: ${Object.entries(interviewV4.seguridad || {}).filter(([k, v]) => typeof v === 'boolean' && v && k !== 'confirmado').map(([k, v]) => k).join(', ')}
+Banderas Activas: ${Object.entries(interviewV4.seguridad || {}).filter(([k, v]) => typeof v === 'boolean' && v && k !== 'confirmado').map(([k]) => k).join(', ')}
 
 -- ANCLAS MÍNIMAS (FOCOS) --
 Focos: ${JSON.stringify(interviewV4.focos, null, 2)}
@@ -101,7 +120,8 @@ Contextos: ${interviewV4.contextosAnclas?.join(', ')}
 Objetivo Persona: ${interviewV4.objetivoPersona}
 Plazo Esperado: ${interviewV4.plazoEsperado}
 
-Por favor, procede a hacer la extracción a JSON.`;
+Por favor, procede a hacer la extracción a JSON. 
+INSTRUCCIÓN VITAL (PROMPT E): Usa estrictamente los antecedentes remotos / contexto basal entregado arriba para formular la propiedad 'consideraciones_basales' (ej: "considerar diabetes en cicatrización", "cirugía previa relevante: contemplar secuelas", "anticoagulación / uso de corticoides: considerar en evaluación", "historia de recurrencias: considerar en hipótesis y pronóstico", "estrés y sueño basal bajos: considerar en adherencia/pronóstico"). NO incluyas diagnósticos definitivos aquí.`;
 
         const result = await geminiClient.generateStructuredObject({
             schema: null, // we ask for raw JSON text structured this way inside the prompt

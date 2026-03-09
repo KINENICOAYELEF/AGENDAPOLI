@@ -1543,11 +1543,11 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 </div>
 
-                {/* 3. Seguridad clínica (rojas y naranjas) */}
+                {/* 3. Seguridad clínica (rojas y naranjas) del episodio actual */}
                 <div id="section-seguridad" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-rose-600 text-white font-bold text-[10px]">3</span>
-                        <h3 className="font-bold text-slate-800 text-sm">Seguridad clínica (pasada rápida)</h3>
+                        <h3 className="font-bold text-slate-800 text-sm">Seguridad clínica del episodio actual (Banderas Rojas)</h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1573,7 +1573,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </label>
                         <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-amber-50 border border-amber-100 rounded-lg hover:border-amber-300 transition-colors cursor-pointer">
                             <input type="checkbox" className="mt-0.5 accent-amber-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.riesgoEmocionalAgudo} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, riesgoEmocionalAgudo: e.target.checked } })} />
-                            <span className="text-amber-900 font-medium leading-tight mt-0.5">Riesgo emocional agudo (Naranja)</span>
+                            <span className="text-amber-900 font-medium leading-tight mt-0.5">Riesgo emocional agudo del episodio actual (Naranja)</span>
                         </label>
                     </div>
 
@@ -1622,7 +1622,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, confirmado: e.target.checked } })}
                                 className="w-5 h-5 accent-emerald-600 rounded cursor-pointer"
                             />
-                            <span className="text-sm font-bold text-slate-700">Confirmo evaluación de seguridad (Obligatorio)</span>
+                            <span className="text-sm font-bold text-slate-700">Confirmo evaluación de banderas del episodio actual (Obligatorio)</span>
                         </label>
                     </div>
                 </div>
@@ -1790,7 +1790,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             setIsProcessingAI(true);
                             try {
                                 const payload = {
-                                    interviewV4: interviewV4
+                                    interviewV4: interviewV4,
+                                    remoteHistorySnapshot: formData.remoteHistorySnapshot
                                 };
                                 const response = await fetch('/api/ai/fase7-extract', {
                                     method: 'POST',
@@ -1957,7 +1958,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     }
                                     setIsProcessingPreguntasIA(true);
                                     try {
-                                        const payload = { interviewV4 };
+                                        const payload = { interviewV4, remoteHistorySnapshot: formData.remoteHistorySnapshot };
                                         const response = await fetch('/api/ai/f13-preguntas', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -1999,7 +2000,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     }
                                     setIsProcessingExamenIA(true);
                                     try {
-                                        const payload = { interviewV4 };
+                                        const payload = { interviewV4, remoteHistorySnapshot: formData.remoteHistorySnapshot };
                                         const response = await fetch('/api/ai/f13-examen', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -2280,6 +2281,21 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             </div>
                                         )}
 
+                                        {/* Consideraciones de Contexto Basal (Prompt E) */}
+                                        <div className="bg-amber-50 p-3 rounded-xl shadow-sm border border-amber-200 mt-3">
+                                            <h4 className="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1">
+                                                <span>🔍</span> Consideraciones por antecedentes basales / anamnesis remota
+                                            </h4>
+                                            {interviewV4.analisisIA.consideraciones_basales && interviewV4.analisisIA.consideraciones_basales.length > 0 ? (
+                                                <ul className="list-disc list-inside text-[11px] text-amber-800 space-y-1">
+                                                    {interviewV4.analisisIA.consideraciones_basales.map((c: string, i: number) => (
+                                                        <li key={i}>{c}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-[11px] text-amber-700 italic">Sin antecedentes basales que modifiquen de forma evidente esta evaluación.</p>
+                                            )}
+                                        </div>
                                         {interviewV4.analisisIA.preguntas_faltantes && interviewV4.analisisIA.preguntas_faltantes.length > 0 && (
                                             <div className="bg-amber-50/30 rounded-xl shadow-sm border border-amber-100 p-3">
                                                 <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes (Sugeridas)</h4>
@@ -2700,7 +2716,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
         </div >
     );
 }

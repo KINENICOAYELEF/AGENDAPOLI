@@ -656,6 +656,7 @@ export interface AnalisisIAV4 {
         por_que: string;
         objetivo: "descartar" | "confirmar" | "cuantificar";
     }>;
+    consideraciones_basales?: string[];
 }
 
 export interface ConfirmacionCriticaV4 {
