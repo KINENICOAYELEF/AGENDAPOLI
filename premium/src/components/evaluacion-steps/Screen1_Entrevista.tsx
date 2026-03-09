@@ -1516,14 +1516,19 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 </div>
 
-                {/* 4. Anclas mínimas */}
-                <div id="section-anclas" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-600 text-white font-bold text-[10px]">4</span>
-                        <h3 className="font-bold text-slate-800 text-sm">Anclas mínimas</h3>
-                    </div>
+                {/* 4. Datos de Seguimiento (Opcional - Reemplaza Anclas Mínimas) */}
+                <details id="section-anclas" className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-100 text-slate-500 font-bold text-[10px]">📌</span>
+                            <h3 className="font-bold text-slate-800 text-sm">Datos de seguimiento (opcional)</h3>
+                        </div>
+                        <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="p-4 pt-0 border-t border-slate-100 flex flex-col gap-4 mt-2">
                         {/* Row 1: Inicio, Antigüedad, Evolución */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="flex flex-col gap-1.5">
@@ -1715,7 +1720,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     </div>
 
-                </div>
+                </details>
 
                 {/* 5. Faltantes Estructurales (Sin IA) */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4">
@@ -1883,10 +1888,47 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             analisisIA: null as any // Reset to show error state in UI
                                         } as any);
                                     } else {
+                                        // FASE 19 (Auto-Llenado Anclas Mínimas)
+                                        // Trataremos de poblar los datos de seguimiento ("Anclas") automáticamente con lo extraído de JSON.
+                                        let updatedFocos = [...interviewV4.focos];
+                                        let newObjetivo = interviewV4.objetivoPersona;
+
+                                        // Extracción general (Objetivo)
+                                        if (data.extraccion_general?.objetivo_expectativa_plazo && data.extraccion_general.objetivo_expectativa_plazo !== "No_mencionado") {
+                                            newObjetivo = data.extraccion_general.objetivo_expectativa_plazo;
+                                        }
+
+                                        // Foco Principal (Índice 0)
+                                        if (updatedFocos.length > 0) {
+                                            const f0 = { ...updatedFocos[0] };
+
+                                            // 1. Antigüedad/Inicio
+                                            if (data.ALICIA?.antiguedad_inicio && data.ALICIA.antiguedad_inicio !== "No_mencionado") {
+                                                // Mapeo simple: Si no está lleno manualmente, lo sobreescribimos o intentamos darle match.
+                                                // Para fines de simplicidad UX, lo concatenamos temporalmente a notas o forzamos el tipo
+                                                const txt = data.ALICIA.antiguedad_inicio.toLowerCase();
+                                                if (txt.includes("agud") || txt.includes("subit") || txt.includes("súbit") || txt.includes("recien") || txt.includes("dia") || txt.includes("día") || txt.includes("hora")) f0.inicio = "Súbito";
+                                                else if (txt.includes("mes") || txt.includes("ano") || txt.includes("año") || txt.includes("semana") || txt.includes("gradual") || txt.includes("lento")) f0.inicio = "Gradual";
+                                                // Dejamos el txt para info visual? no es un input libre, es select.
+                                            }
+
+                                            // 2. Dolor Actual (Intensidad Actual)
+                                            if (data.ALICIA?.intensidad?.actual && data.ALICIA.intensidad.actual !== "No_mencionado") {
+                                                const matchNum = data.ALICIA.intensidad.actual.match(/\d+/);
+                                                if (matchNum) {
+                                                    f0.dolorActual = Number(matchNum[0]);
+                                                }
+                                            }
+
+                                            updatedFocos[0] = f0;
+                                        }
+
                                         updateV4({
                                             jsonExtractError: false,
                                             jsonExtractRawBackup: null,
                                             analisisIA: data,
+                                            objetivoPersona: newObjetivo,
+                                            focos: updatedFocos,
                                             confirmacionesCriticas: {
                                                 irritabilidad_global: { estado: 'Pendiente' },
                                                 naturaleza_sugerida: { estado: 'Pendiente' },
@@ -2464,6 +2506,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
