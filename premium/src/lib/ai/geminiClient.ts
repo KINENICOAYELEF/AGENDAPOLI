@@ -51,18 +51,38 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
 export const geminiClient = {
     generateStructuredObject: async (params: { schema: any, systemMessage: string, userMessage: string, temperature?: number, topP?: number, topK?: number }) => {
-        const text = await callGemini({
-            systemInstruction: params.systemMessage,
-            userPrompt: params.userMessage,
-            temperature: params.temperature,
-            topP: params.topP,
-            topK: params.topK
-        });
+        let text = "";
+        try {
+            text = await callGemini({
+                systemInstruction: params.systemMessage,
+                userPrompt: params.userMessage,
+                temperature: params.temperature,
+                topP: params.topP,
+                topK: params.topK
+            });
 
-        let cleaned = text.trim();
-        if (cleaned.startsWith('```json')) cleaned = cleaned.substring(7);
-        if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3);
+            // Parseo Nivel 1: Limpieza básica
+            let cleaned = text.trim();
+            if (cleaned.startsWith('```json')) cleaned = cleaned.substring(7);
+            if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3);
+            cleaned = cleaned.trim();
 
-        return JSON.parse(cleaned.trim());
+            try {
+                return JSON.parse(cleaned);
+            } catch (pErr) {
+                // Parseo Nivel 2: Regex Substring extractor
+                console.warn("[geminiClient] Parseo Nivel 1 falló, intentando Nivel 2 (Regex)...");
+                const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned;
+                return JSON.parse(jsonStr);
+            }
+        } catch (error: any) {
+            console.error("[geminiClient] Error crítico. Generando error legible para frontend.", error);
+            // Front-End interception trigger. Never throw a hard crash that white-screens the app.
+            return {
+                _IS_JSON_ERROR: true,
+                raw_text: text,
+                error_msg: error.message
+            };
+        }
     }
 };

@@ -1875,26 +1875,38 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 const data = await response.json();
 
                                 if (response.ok && data) {
-                                    updateV4({
-                                        analisisIA: data,
-                                        confirmacionesCriticas: {
-                                            irritabilidad_global: { estado: 'Pendiente' },
-                                            naturaleza_sugerida: { estado: 'Pendiente' },
-                                            hipotesis_orientativas: { estado: 'Pendiente' }
-                                        }
-                                    } as any);
+                                    if (data._IS_JSON_ERROR) {
+                                        console.error("Soft Error from AI Parser:", data);
+                                        updateV4({
+                                            jsonExtractError: true,
+                                            jsonExtractRawBackup: data.raw_text,
+                                            analisisIA: null as any // Reset to show error state in UI
+                                        } as any);
+                                    } else {
+                                        updateV4({
+                                            jsonExtractError: false,
+                                            jsonExtractRawBackup: null,
+                                            analisisIA: data,
+                                            confirmacionesCriticas: {
+                                                irritabilidad_global: { estado: 'Pendiente' },
+                                                naturaleza_sugerida: { estado: 'Pendiente' },
+                                                hipotesis_orientativas: { estado: 'Pendiente' }
+                                            }
+                                        } as any);
+                                    }
                                 } else {
                                     console.error("Error from AI:", data);
-                                    alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                    alert("Error en la llamada a la IA: " + (data.error || "Desconocido"));
                                 }
                             } catch (err: any) {
                                 console.error("Fetch error:", err);
-                                alert("Error servidor: " + err.message);
+                                alert("Error de servidor o conexión: " + err.message);
                             } finally {
                                 setIsProcessingAI(false);
                             }
                         }}
                         disabled={isClosed || isProcessingAI}
+                        id="btn-ia-main-extract"
                         className="w-full bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border border-purple-800"
                     >
                         {isProcessingAI ? (
@@ -1991,8 +2003,58 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </button>
                     </div>
 
+                    {/* FASE 18: Fallo Resiliente de IA JSON */}
+                    {interviewV4.jsonExtractError && (
+                        <div className="mt-4 bg-red-50 border border-red-300 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                            <div className="flex items-start gap-3">
+                                <div className="text-xl">⚠️</div>
+                                <div className="flex-1">
+                                    <h4 className="text-red-800 font-bold text-sm">Error en el formato de respuesta de Gemini</h4>
+                                    <p className="text-red-700 text-xs mt-1">
+                                        La Inteligencia Artificial no devolvió un formato válido estructurado (JSON). Sin embargo, <strong>tus datos no se han perdido</strong>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Raw Data Accordion */}
+                            <details className="group border border-red-200 rounded-lg bg-white overflow-hidden">
+                                <summary className="cursor-pointer bg-red-100/50 hover:bg-red-100 px-3 py-2 text-xs font-semibold text-red-800 flex items-center justify-between">
+                                    <span>Ver respuesta cruda de la IA</span>
+                                    <span className="group-open:rotate-180 transition-transform">▼</span>
+                                </summary>
+                                <div className="p-3 bg-slate-50 border-t border-red-100">
+                                    <pre className="text-[10px] text-slate-700 whitespace-pre-wrap font-mono overflow-auto max-h-48 break-words select-all">
+                                        {interviewV4.jsonExtractRawBackup || "No se registró respuesta raw."}
+                                    </pre>
+                                </div>
+                            </details>
+
+                            {/* Botón Reintentar Interno */}
+                            <button
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    // Limpiamos los flags de error y forzamos re-intento de IA
+                                    updateV4({
+                                        jsonExtractError: false,
+                                        jsonExtractRawBackup: null
+                                    } as any);
+
+                                    // Disparar click en el botón existente (IA: Ordenar y extraer)
+                                    // Alternativamente repetimos la misma lógica:
+                                    const evt = new MouseEvent('click', { bubbles: true, cancelable: true });
+                                    const btn = document.getElementById('btn-ia-main-extract');
+                                    if (btn) btn.dispatchEvent(evt);
+                                    else alert("No se pudo iniciar el reintento. Por favor presiona el botón morado principal de arriba.");
+                                }}
+                                className="mt-1 self-start bg-red-100 hover:bg-red-200 text-red-800 text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors border border-red-300 flex items-center gap-2"
+                            >
+                                <span>🔄</span> Reintentar extracción IA
+                            </button>
+                        </div>
+                    )}
+
                     {/* Salida IA de FASE 7 y Renderizado FASE 8 */}
-                    {interviewV4.analisisIA && (
+                    {(!interviewV4.jsonExtractError && interviewV4.analisisIA) && (
                         <div className="mt-4 flex flex-col gap-4">
 
                             {/* FASE 12: Banner de No Definitivo */}

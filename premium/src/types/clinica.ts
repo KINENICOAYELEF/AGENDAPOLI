@@ -299,6 +299,13 @@ export interface KineAutoOutputs {
     };
 
     comparableCandidates: string[];
+
+    automatizacionP2: {
+        p2_recommendations?: { paso: string; por_que: string; sugerido_desde: string; objetivo?: string }[];
+    }
+    // Estados FASE 18 (Fallos IA JSON)
+    jsonExtractError?: boolean;
+    jsonExtractRawBackup?: string;
 }
 
 
@@ -656,11 +663,17 @@ export interface ConfirmacionCriticaV4 {
 }
 
 export interface AnamnesisProximaV4 {
+    // 1. Identificadores Básicos (F1)
+    tipoEntrevista: 'estructurada' | 'semi-estructurada' | 'libre';
+    escalaDolorGlobal: 'EVA' | 'ENA';
+
+    // FASE 18 (Fallos IA JSON)
+    jsonExtractError?: boolean;
+    jsonExtractRawBackup?: string;
+
     version: "v4";
     status: "draft" | "approved";
     updatedAt: string; // ISOString
-
-    escalaDolorGlobal: "EVA" | "ENA"; // default "EVA"
 
     focos: FocoV4[];
 
