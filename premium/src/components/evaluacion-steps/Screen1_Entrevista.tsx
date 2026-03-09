@@ -1594,12 +1594,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
 
 
-                {/* 4. Faltantes Estructurales (Sin IA) */}
+                {/* 4. Chequeo de completitud de la entrevista */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-white font-bold text-[10px]">4</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Faltantes estructurales (Sin IA)</h3>
+                            <h3 className="font-bold text-slate-800 text-sm">Chequeo de completitud de la entrevista</h3>
                         </div>
                         <button
                             onClick={(e) => {
@@ -1641,8 +1641,11 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 const aIA = interviewV4.analisisIA;
 
                                 // 1. Foco mínimo (Región + Lado + Queja Principal)
-                                const focoMin = !!(focoPrincipal?.region && focoPrincipal?.lado && interviewV4.experienciaPersona.quejas && interviewV4.experienciaPersona.quejas.length > 0);
-                                if (!focoMin) list.push({ texto: "1. Foco mínimo (Región, Lado y Queja principal)", link: "section-relato" }); // Se ubica arriba
+                                const focoMinUI = !!(focoPrincipal?.region && focoPrincipal?.lado && interviewV4.experienciaPersona.quejas && interviewV4.experienciaPersona.quejas.length > 0);
+                                const focoMinRelato = hasTextInRelato(["Localización", "Motivo de consulta", "Extensión"]);
+                                if (!focoMinUI && !focoMinRelato && !hasIA(aIA?.ALICIA?.localizacion_extension)) {
+                                    list.push({ texto: "1. Foco mínimo (Región, Lado y Queja principal)", link: "section-relato" }); // Se ubica arriba
+                                }
 
                                 // 2. Motivo de consulta
                                 if (!hasTextInRelato(["Motivo de consulta"]) && !hasIA(aIA?.extraccion_general?.motivo_en_palabras)) {
@@ -1650,17 +1653,17 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 }
 
                                 // 3. Objetivo/Expectativa + Plazo
-                                if (!hasTextInRelato(["Objetivo y expectativa"]) && !(interviewV4.objetivoPersona || interviewV4.plazoEsperado) && !hasIA(aIA?.extraccion_general?.objetivo_expectativa_plazo)) {
-                                    list.push({ texto: "3. Objetivo, expectativa y plazo", link: "section-anclas" });
+                                if (!hasTextInRelato(["Objetivo y expectativa"]) && !hasIA(aIA?.extraccion_general?.objetivo_expectativa_plazo)) {
+                                    list.push({ texto: "3. Objetivo, expectativa y plazo", link: "section-relato" });
                                 }
 
                                 // 4. Inicio/Antigüedad + Evolución
-                                if (!hasTextInRelato(["Inicio y evolución", "Antigüedad/Inicio"]) && !(focoPrincipal?.inicio && focoPrincipal.inicio !== "NoDefinido") && !hasIA(aIA?.ALICIA?.antiguedad_inicio)) {
-                                    list.push({ texto: "4. Inicio, antigüedad o evolución", link: "section-anclas" });
+                                if (!hasTextInRelato(["Inicio y evolución", "Antigüedad/Inicio"]) && !hasIA(aIA?.ALICIA?.antiguedad_inicio)) {
+                                    list.push({ texto: "4. Inicio, antigüedad o evolución", link: "section-relato" });
                                 }
 
                                 // 5. Localización/Extensión (+ Irradiación)
-                                if (!hasTextInRelato(["Localización", "Extensión", "Irradiación"]) && !hasIA(aIA?.ALICIA?.localizacion_extension) && !hasIA(aIA?.ALICIA?.irradiacion_referencia)) {
+                                if (!hasTextInRelato(["Localización", "Extensión", "Irradiación"]) && !hasIA(aIA?.ALICIA?.localizacion_extension) && !hasIA(aIA?.ALICIA?.irradiacion_referencia) && !focoMinUI) {
                                     list.push({ texto: "5. Localización y extensión", link: "section-relato" });
                                 }
 
@@ -1675,14 +1678,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 }
 
                                 // 8. Severidad Funcional
-                                const hasPSFS = interviewV4.hayLimitacionFuncional ? interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== '') : (interviewV4.capacidadPercibidaActividad !== undefined && interviewV4.capacidadPercibidaActividad !== null);
-                                if (!hasTextInRelato(["Severidad funcional"]) && !hasPSFS && !hasIA(aIA?.SINS?.severidad) && !hasIA(aIA?.extraccion_general?.limitaciones_funcionales)) {
-                                    list.push({ texto: "8. Severidad funcional (qué limita)", link: "section-anclas" });
+                                if (!hasTextInRelato(["Severidad funcional"]) && !hasIA(aIA?.SINS?.severidad) && !hasIA(aIA?.extraccion_general?.limitaciones_funcionales)) {
+                                    list.push({ texto: "8. Severidad funcional (qué limita)", link: "section-relato" });
                                 }
 
                                 // 9. Irritabilidad
                                 const allowIrritabilityNulo = interviewV4.experienciaPersona.relatoLibre?.toLowerCase().includes("no aplica") && hasTextInRelato(["Irritabilidad"]);
-                                if (!allowIrritabilityNulo && !hasTextInRelato(["Irritabilidad"]) && !(focoPrincipal?.irritabilidadFacilidad && focoPrincipal.irritabilidadFacilidad !== "NoDefinido") && !hasIA(aIA?.SINS?.irritabilidad?.facilidad_provocacion)) {
+                                if (!allowIrritabilityNulo && !hasTextInRelato(["Irritabilidad"]) && !hasIA(aIA?.SINS?.irritabilidad?.facilidad_provocacion)) {
                                     list.push({ texto: "9. Irritabilidad (o marcar 'No aplica' en relato)", link: "section-relato" });
                                 }
 
@@ -1694,9 +1696,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 // Store output into state for render
                                 updateV4({ faltantesEstructuralesPanel: list } as any);
                             }}
-                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 transition-colors font-bold text-xs py-2 px-4 rounded-lg shadow-sm flex items-center gap-2"
+                            className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition-colors font-bold text-xs py-2 px-4 rounded-lg shadow-sm flex items-center gap-2"
                         >
-                            <span>🔍 Ver faltantes</span>
+                            <span>🔍 Validar Completitud</span>
                         </button>
                     </div>
 
@@ -1704,7 +1706,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         <div className="mt-4 pt-3 border-t border-slate-200">
                             {((interviewV4 as any).faltantesEstructuralesPanel as any[]).length === 0 ? (
                                 <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-xs font-medium flex items-center gap-2">
-                                    <span>✅</span> No se detectaron campos estructurales vacíos.
+                                    <span>✅</span> La entrevista parece estar completa o tiene datos en todas las áreas clave.
                                 </div>
                             ) : (
                                 <ul className="space-y-2">
