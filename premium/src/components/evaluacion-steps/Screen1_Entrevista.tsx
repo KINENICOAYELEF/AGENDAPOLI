@@ -1290,77 +1290,93 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 {/* 2. Relato del caso */}
                 <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2 flex-wrap gap-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 border-b border-slate-100 pb-3 gap-3">
                         <div className="flex items-center gap-2">
                             <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-600 text-white font-bold text-[10px]">2</span>
                             <h3 className="font-bold text-slate-800 text-sm">Relato del caso</h3>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                             <button
                                 disabled={isClosed}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    const template = `Motivo de consulta\n[Qué registrar: palabras exactas de la persona usuaria]\n\nObjetivo y expectativa\n[Qué registrar: qué quiere lograr y en qué plazo]\n\nAntigüedad/Inicio y evolución\n[Cómo preguntarlo: ¿Desde cuándo lo siente y cómo ha cambiado?]\n\nLocalización y extensión\n[Qué registrar: dónde es puntualmente y si es difuso]\n\nIrradiación/Referencia\n[Cómo preguntarlo: ¿El síntoma se mueve a otra zona, hay hormigueo o adormecimiento?]\n\nCarácter/Naturaleza del síntoma\n[Cómo preguntarlo: ¿Cómo se siente: punzante, opresivo, quemazón, corriente, tirantez?]\n\nIntensidad\n[Qué registrar: actual, peor 24h, mejor 24h y en qué actividad o movimiento]\n\nAtenuantes y agravantes\n[Cómo preguntarlo: ¿Qué cosas mejoran o empeoran el síntoma?]\n\nComportamiento 24h y despertar nocturno\n[Cómo preguntarlo: ¿Cómo varía en el día y si lo despierta de noche?]\n\nSeveridad funcional\n[Qué registrar: qué limita exactamente y cuánto impacta en la vida diaria]\n\nIrritabilidad\n[Cómo preguntarlo: ¿Qué tan fácil se gatilla, cuánto demora en calmarse y qué queda después?]\n\nHistoria del episodio y mecanismo\n[Qué registrar: historia de episodios previos y cómo ocurrió el actual si aplica]\n\nManejo previo y respuesta\n[Qué registrar: qué intentó hacer/tomar y cómo le fue con eso]\n\nSeguridad clínica\n[Qué registrar: mencionar descartes o alertas que la persona haya dicho]\n\nNotas libres relevantes\n[Qué registrar: observaciones extra]\n`;
-                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: (interviewV4.experienciaPersona.relatoLibre || "") + (interviewV4.experienciaPersona.relatoLibre ? "\n\n" : "") + template } });
+                                    const template = `■ MOTIVO DE CONSULTA\n[Qué registrar: palabras exactas de la persona usuaria]\n\n■ OBJETIVO Y EXPECTATIVA\n[Qué registrar: qué quiere lograr y en qué plazo]\n\n■ ANTIGÜEDAD/INICIO Y EVOLUCIÓN\n[Cómo preguntarlo: ¿Desde cuándo lo siente y cómo ha cambiado?]\n\n■ LOCALIZACIÓN Y EXTENSIÓN\n[Qué registrar: dónde es puntualmente y si es difuso]\n\n■ IRRADIACIÓN/REFERENCIA\n[Cómo preguntarlo: ¿El síntoma se mueve a otra zona, hay hormigueo o adormecimiento?]\n\n■ CARÁCTER/NATURALEZA DEL SÍNTOMA\n[Cómo preguntarlo: ¿Cómo se siente: punzante, opresivo, quemazón, corriente, tirantez?]\n\n■ INTENSIDAD\n[Qué registrar: actual, peor 24h, mejor 24h y en qué actividad o movimiento]\n\n■ ATENUANTES Y AGRAVANTES\n[Cómo preguntarlo: ¿Qué cosas mejoran o empeoran el síntoma?]\n\n■ COMPORTAMIENTO 24H Y DESPERTAR NOCTURNO\n[Cómo preguntarlo: ¿Cómo varía en el día y si lo despierta de noche?]\n\n■ SEVERIDAD FUNCIONAL\n[Qué registrar: qué limita exactamente y cuánto impacta en la vida diaria]\n\n■ IRRITABILIDAD\n[Cómo preguntarlo: ¿Qué tan fácil se gatilla, cuánto demora en calmarse y qué queda después?]\n\n■ HISTORIA DEL EPISODIO Y MECANISMO\n[Qué registrar: historia de episodios previos y cómo ocurrió el actual si aplica]\n\n■ MANEJO PREVIO Y RESPUESTA\n[Qué registrar: qué intentó hacer/tomar y cómo le fue con eso]\n\n■ SEGURIDAD CLÍNICA\n[Qué registrar: mencionar descartes o alertas que la persona haya dicho]\n\n■ NOTAS LIBRES RELEVANTES\n[Qué registrar: observaciones extra]\n`;
+                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: (interviewV4.experienciaPersona.relatoLibre ? interviewV4.experienciaPersona.relatoLibre + "\n\n" : "") + template } });
+                                    // Trigger auto-resize after insertion
+                                    setTimeout(() => {
+                                        const tx = document.getElementById("relato-libre-textarea");
+                                        if (tx) {
+                                            tx.style.height = "auto";
+                                            tx.style.height = (tx.scrollHeight) + "px";
+                                        }
+                                    }, 10);
                                 }}
-                                className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1.5 rounded font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                                className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
                             >
-                                + Insertar plantilla
+                                ✨ + Plantilla
                             </button>
                             <button
                                 disabled={isClosed || !interviewV4.experienciaPersona.relatoLibre?.includes('[')}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     const cleanedText = (interviewV4.experienciaPersona.relatoLibre || "")
-                                        .replace(/^\[.*?\]/gm, '')
-                                        .replace(/\n{3,}/g, '\n\n')
+                                        .replace(/^\[.*?\]/gm, '') // Remove instruction lines
+                                        .replace(/\n{3,}/g, '\n\n') // Normalize multiple line breaks to just two
                                         .trim();
                                     updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: cleanedText } });
+                                    // Trigger auto-resize after deletion
+                                    setTimeout(() => {
+                                        const tx = document.getElementById("relato-libre-textarea");
+                                        if (tx) {
+                                            tx.style.height = "auto";
+                                            tx.style.height = (tx.scrollHeight) + "px";
+                                        }
+                                    }, 10);
                                 }}
-                                className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1.5 rounded font-bold shadow-sm hover:bg-amber-100 transition-colors flex items-center gap-1"
+                                className="text-[11px] disabled:opacity-50 disabled:cursor-not-allowed bg-white text-slate-600 border border-slate-300 px-3 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
                                 title="Elimina las líneas de guía entre corchetes"
                             >
-                                Limpiar guías
+                                🧹 Limpiar guías
                             </button>
                             <button
                                 onClick={(e) => { e.preventDefault(); setShowRelatoGuide(!showRelatoGuide); }}
-                                className={`text-[10px] px-2 py-1.5 rounded font-bold shadow-sm transition-colors border flex items-center gap-1 ${showRelatoGuide ? 'bg-slate-700 text-white border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                                className={`text-[11px] px-3 py-2 rounded-lg font-bold shadow-sm transition-colors border flex items-center justify-center gap-1 flex-1 sm:flex-none w-full sm:w-auto ${showRelatoGuide ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'}`}
                             >
-                                Guía de entrevista (?)
+                                📖 Guía de entrevista
                             </button>
 
-                            {/* FASE 20: QA Mínima (Pruebas Manuales E2E - Solo Dev) */}
+                            {/* FASE 20: QA Mínima (Oculto en ProD por regla 8) */}
                             {process.env.NODE_ENV === 'development' && (
-                                <details className="relative ml-2 [&_summary::-webkit-details-marker]:hidden">
-                                    <summary className="text-[10px] bg-teal-600 hover:bg-teal-700 text-white border border-teal-800 px-2 py-1.5 rounded font-bold shadow-sm transition-colors flex items-center gap-1 cursor-pointer select-none">
-                                        <span>💉</span> Inyectar QA
+                                <details className="relative ml-auto [&_summary::-webkit-details-marker]:hidden">
+                                    <summary className="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-3 py-2 rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer select-none">
+                                        <span>💉</span> Data QA
                                     </summary>
-                                    <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-2 flex flex-col gap-1">
-                                        <div className="text-[9px] font-bold text-slate-400 uppercase mb-1 px-1">Casos de Prueba (Fase 20)</div>
+                                    <div className="absolute right-0 top-full mt-1 w-[280px] sm:w-[320px] bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 px-1 tracking-wider border-b border-slate-100 pb-2">Casos de Prueba (QA Auto-Fill)</div>
                                         <button onClick={(e) => {
                                             e.preventDefault();
                                             updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Hola. Vengo porque me duele el hombro derecho cuando levanto el brazo." } });
-                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">1. Caso Corto (Faltantes)</button>
+                                        }} className="text-xs text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 font-medium transition-colors">1. Caso Corto (Faltantes)</button>
 
                                         <button onClick={(e) => {
                                             e.preventDefault();
                                             updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Llevo 3 semanas con un dolor punzante en la rodilla izquierda. Me duele un 6 de 10 cuando bajo escaleras. En reposo no me duele (0). Me alivia ponerme hielo. En la noche duermo súper bien, no me despierta. Mi principal meta es poder volver a trotar mis 5km para fin de año sin sentir que me pincha." } });
-                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">2. Caso Medio (Ideal Auto-Fill)</button>
+                                        }} className="text-xs text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 font-medium transition-colors">2. Caso Medio (Ideal Auto-Fill)</button>
 
                                         <button onClick={(e) => {
                                             e.preventDefault();
                                             updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Mira, hace como 10 años me operaron de meniscos en la pierna derecha... desde entonces siempre ha estado medio rara, pero hace como 4 días, iba caminando por la calle, pisé mal la cuneta, se me torció el tobillo feo y sentí un chasquido. Fui a la urgencia, me dieron ibuprofeno y me dijeron que era esguince. Ha estado súper hinchado todo el pie derecho. El dolor ahorita es constante, como un latido, yo diría que un 8/10. Ayer apenas podía pisar al levantarme en la mañana. Lo que más me urge es poder caminar normal al trabajo la próxima semana. De noche late pero logro dormir. Si camino dos cuadras, se inflama y tengo que parar media hora para que se pase." } });
-                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-slate-50 rounded text-slate-700 font-medium">3. Caso Largo (Ruido e Historia)</button>
+                                        }} className="text-xs text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 font-medium transition-colors">3. Caso Largo (Ruido e Historia)</button>
 
                                         <button onClick={(e) => {
                                             e.preventDefault();
                                             updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Me está doliendo horrible la espalda baja hace 3 meses, pero esta semana me empezó a bajar una corriente eléctrica fuerte por las dos piernas al mismo tiempo. Además, no he querido decirle a nadie, pero creo que no estoy controlando bien el pipí desde ayer, se me escapa, y ayer en la noche tuve fiebre de 38. Tengo susto." } });
-                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-rose-50 rounded text-rose-700 font-bold">4. Caso Red Flags (Alarmas)</button>
+                                        }} className="text-xs text-left px-3 py-2 hover:bg-rose-50 rounded-lg text-rose-800 font-bold transition-colors">4. Caso Red Flags (Alarmas)</button>
 
                                         <button onClick={(e) => {
                                             e.preventDefault();
                                             updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: "Tengo el cuello tieso hace 2 meses. No puedo mover la cabeza para atrás. Me duele un chorro. De hecho, apenas la echo para atrás duele 10/10 al instante, y después me quedo con dolor agudo toda la maldita tarde, se demora unas 4 horas en bajar y me deja mareado." } });
-                                        }} className="text-[10px] text-left px-2 py-1 hover:bg-orange-50 rounded text-orange-700 font-medium">5. Caso Irritabilidad Alta</button>
+                                        }} className="text-xs text-left px-3 py-2 hover:bg-orange-50 rounded-lg text-orange-800 font-medium transition-colors">5. Caso Irritabilidad Alta</button>
                                     </div>
                                 </details>
                             )}
@@ -1476,8 +1492,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     )}
 
                     {!isExpertMode && !showRelatoGuide && (
-                        <div className="bg-indigo-50/50 border-l-2 border-indigo-400 p-2 text-[10px] text-slate-600 rounded-r mb-3 text-justify leading-relaxed">
-                            <p>Escriba aquí todo el relato libre directamente o use el botón <strong>"+ Insertar plantilla"</strong> para insertar una estructura base guiada. La IA requiere este campo para extraer el JSON final.</p>
+                        <div className="bg-indigo-50/50 border-l-2 border-indigo-400 p-3 text-xs text-slate-700 rounded-r-lg mb-4 text-justify leading-relaxed shadow-sm">
+                            <p>Escribe aquí todo el relato libre directamente para tener un flujo natural, o bien, usa el botón <strong>"✨ + Plantilla"</strong> de arriba para inyectar una estructura base guiada.</p>
                         </div>
                     )}
 
@@ -1485,11 +1501,15 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <div className="relative w-full">
                         <textarea
                             id="relato-libre-textarea"
-                            rows={12}
-                            placeholder="Relato clínico de la persona en consulta..."
-                            className="w-full text-xs p-3 border border-slate-300 rounded outline-none resize-y leading-relaxed bg-slate-50 focus:bg-white focus:border-indigo-400 transition-colors relative z-10"
-                            style={highlightTexts.length > 0 ? { color: 'transparent', caretColor: 'black' } : {}}
+                            placeholder="Relato clínico de la persona en consulta... (la caja se agrandará sola a medida que escribas)"
+                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none leading-relaxed min-h-[250px] overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10"
+                            style={highlightTexts.length > 0 ? { color: 'transparent', caretColor: '#1e293b' } : {}}
                             value={interviewV4.experienciaPersona.relatoLibre || ""}
+                            onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto'; // Reset height
+                                target.style.height = `${target.scrollHeight}px`; // Set to scrollHeight
+                            }}
                             onChange={e => {
                                 updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } });
                                 if (highlightTexts.length > 0) setHighlightTexts([]); // Clear highlights on user edit
