@@ -33,6 +33,17 @@ export const TAGS_SINTOMAS = [
 // Generador de ID temporal seguro
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
+// Helper universal para extraer strings tanto de textos planos antiguos como de JSON estructurados nuevos
+export const getFieldText = (input: any): string => {
+    if (!input) return "";
+    if (typeof input === 'string') return input === "No_mencionado" || input === "Pendiente" ? "" : input;
+    if (typeof input === 'object') {
+        const txt = input.valor || input.evidencia_textual || "";
+        return txt === "No_mencionado" || txt === "Pendiente" ? "" : String(txt);
+    }
+    return "";
+};
+
 // Custom hook para debounce
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -1637,7 +1648,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 };
 
                                 // Helper: Verifica si IA extrajo un dato
-                                const hasIA = (val: any) => val && val.evidencia_textual && val.evidencia_textual !== "No_mencionado";
+                                const hasIA = (val: any) => {
+                                    const txt = getFieldText(val);
+                                    return txt !== "";
+                                };
                                 const aIA = interviewV4.analisisIA;
 
                                 // 1. Foco mínimo (Región + Lado + Queja Principal)
@@ -1776,8 +1790,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         let newHayLimitacion = interviewV4.hayLimitacionFuncional;
 
                                         // Extracción general (Objetivo)
-                                        if (data.extraccion_general?.objetivo_expectativa_plazo && data.extraccion_general.objetivo_expectativa_plazo !== "No_mencionado") {
-                                            newObjetivo = data.extraccion_general.objetivo_expectativa_plazo;
+                                        const objVal = getFieldText(data.extraccion_general?.objetivo_expectativa_plazo);
+                                        if (objVal) {
+                                            newObjetivo = objVal;
                                         }
 
                                         // Foco Principal (Índice 0)
@@ -1785,8 +1800,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             const f0 = { ...updatedFocos[0] };
 
                                             // 1. Antigüedad/Inicio
-                                            if (data.ALICIA?.antiguedad_inicio && data.ALICIA.antiguedad_inicio !== "No_mencionado") {
-                                                const txt = data.ALICIA.antiguedad_inicio.toLowerCase();
+                                            const antVal = getFieldText(data.ALICIA?.antiguedad_inicio).toLowerCase();
+                                            if (antVal) {
+                                                const txt = antVal;
 
                                                 // Mapeo Inicio
                                                 if (txt.includes("agud") || txt.includes("subit") || txt.includes("súbit") || txt.includes("recien") || txt.includes("dia") || txt.includes("día") || txt.includes("hora")) f0.inicio = "Súbito";
@@ -1801,14 +1817,16 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             }
 
                                             // 2. Dolor Actual (Intensidad Actual)
-                                            if (data.ALICIA?.intensidad?.actual && data.ALICIA.intensidad.actual !== "No_mencionado") {
-                                                const matchNum = data.ALICIA.intensidad.actual.match(/\d+/);
+                                            const intVal = getFieldText(data.ALICIA?.intensidad?.actual);
+                                            if (intVal) {
+                                                const matchNum = intVal.match(/\d+/);
                                                 if (matchNum) f0.dolorActual = Number(matchNum[0]);
                                             }
 
                                             // 3. Actividad Índice
-                                            if (data.extraccion_general?.comportamiento_24h && data.extraccion_general.comportamiento_24h !== "No_mencionado") {
-                                                const txt = data.extraccion_general.comportamiento_24h.toLowerCase();
+                                            const comp1Val = getFieldText(data.extraccion_general?.comportamiento_24h).toLowerCase();
+                                            if (comp1Val) {
+                                                const txt = comp1Val;
                                                 if (txt.includes("empeor") || txt.includes("agrav") || txt.includes("peor")) f0.evolucion = "Empeorando";
                                                 else if (txt.includes("mejor") || txt.includes("alivi") || txt.includes("disminu")) f0.evolucion = "Mejorando";
                                                 else if (txt.includes("fluct") || txt.includes("vari") || txt.includes("intermit")) f0.evolucion = "Fluctuante";
@@ -1816,10 +1834,11 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             }
 
                                             // 4. Evolución Global
-                                            if (data.extraccion_general?.limitaciones_funcionales && data.extraccion_general.limitaciones_funcionales !== "No_mencionado") {
+                                            const limVal = getFieldText(data.extraccion_general?.limitaciones_funcionales);
+                                            if (limVal) {
                                                 newHayLimitacion = true; // Forzamos si halló texto de limitaciones
                                                 if (!f0.actividadIndice) {
-                                                    f0.actividadIndice = data.extraccion_general.limitaciones_funcionales.split(",")[0].trim(); // Extract primary activity as index roughly
+                                                    f0.actividadIndice = limVal.split(",")[0].trim(); // Extract primary activity as index roughly
                                                 }
                                             }
 
@@ -2533,7 +2552,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         {renderConfRow(
                                             'irritabilidad_global',
                                             'SINS: Irritabilidad Global',
-                                            String(interviewV4.analisisIA?.SINS?.irritabilidad?.irritabilidad_global?.valor || "Desconocida"),
+                                            getFieldText(interviewV4.analisisIA?.SINS?.irritabilidad?.irritabilidad_global) || getFieldText(interviewV4.analisisIA?.SINS?.irritabilidad) || "Desconocida",
                                             !!interviewV4.analisisIA?.SINS?.irritabilidad
                                         )}
 
@@ -2541,7 +2560,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         {renderConfRow(
                                             'naturaleza_sugerida',
                                             'SINS: Naturaleza Sugerida',
-                                            String(interviewV4.analisisIA?.SINS?.naturaleza_sugerida?.valor || "Desconocida"),
+                                            getFieldText(interviewV4.analisisIA?.SINS?.naturaleza_sugerida) || "Desconocida",
                                             !!interviewV4.analisisIA?.SINS?.naturaleza_sugerida
                                         )}
 
