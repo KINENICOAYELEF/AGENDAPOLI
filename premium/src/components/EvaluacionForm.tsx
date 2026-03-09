@@ -12,7 +12,9 @@ import { Screen2_Examen } from "./evaluacion-steps/Screen2_Examen";
 import { Screen3_Sintesis } from "./evaluacion-steps/Screen3_Sintesis";
 import { Screen4_Diagnostico } from "./evaluacion-steps/Screen4_Diagnostico";
 import { Screen5_Reevaluacion } from "./evaluacion-steps/Screen5_Reevaluacion";
-// Perfil permanente (ahora es un drawer asíncrono, no una pantalla bloqueante)
+// P1.5 Anamnesis Remota Integrada
+import { Screen15_AnamnesisRemota } from "./evaluacion-steps/Screen15_AnamnesisRemota";
+// Perfil permanente (Fase 37 - Ya deprecado su uso lateral, mantenido archivo por ref local si acaso)
 import { M3_PerfilPermanente } from "./evaluacion-steps/M3_PerfilPermanente";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -433,10 +435,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     const SCREENS = type === 'INITIAL' ? [
         { id: 1, label: 'P1: Entrevista', icon: '🗣️' },
+        { id: 15, label: 'P1.5: Anam. Remota', icon: '📇' },
         { id: 2, label: 'P2: Examen Físico', icon: '🩺' },
         { id: 3, label: 'P3: Síntesis / Clasific.', icon: '⚖️' },
         { id: 4, label: 'P4: IA Gemini + Metas', icon: '🤖', warning: !getValidationContext.hasDx || !getValidationContext.hasSmartObs }
     ] : [
+        { id: 15, label: 'Anamnesis Remota', icon: '📇' },
         { id: 5, label: 'Retest y Reevaluación', icon: '🔄' }
     ];
 
@@ -482,10 +486,11 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             </div>
                         </div>
 
-                        {/* Botón flotante M3 móvil */}
+                        {/* Botón flotante M3 móvil DEPRECADO 
                         <button onClick={() => setIsPerfilDrawerOpen(true)} className="md:hidden text-indigo-600 font-bold text-xs flex items-center gap-1 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-100">
                             <span>📇</span> Perfil
                         </button>
+                        */}
                     </div>
 
                     <div className="flex items-center gap-2 justify-between w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0">
@@ -510,9 +515,11 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                                 {formatTime(secondsElapsed)}
                             </div>
                         )}
+                        {/* Botón Perfil Permanente DEPRECADO Desktop
                         <button onClick={() => setIsPerfilDrawerOpen(true)} className="hidden md:flex shrink-0 text-white bg-slate-800 hover:bg-slate-900 font-bold text-xs items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-sm transition-colors">
                             <span>📇</span> Perfil Permanente (Remoto)
                         </button>
+                        */}
                     </div>
                 </div>
 
@@ -558,6 +565,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         alert("Borrador de Reevaluación guardado. Por favor, crea una 'Nueva Evaluación Inicial' desde el Panel del Proceso Clínico.");
                         onClose();
                     }} />}
+
+                    {/* VISTA 1.5 ANAMNESIS REMOTA - PARA AMBOS MODOS */}
+                    {screen === 15 && <Screen15_AnamnesisRemota usuariaId={usuariaId} formData={formData as any} updateFormData={updateFormData as any} isClosed={isClosed} />}
+
                     {screen === 1 && type === 'INITIAL' && <Screen1_Entrevista formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
                     {screen === 2 && type === 'INITIAL' && <Screen2_Examen formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}
                     {screen === 3 && type === 'INITIAL' && <Screen3_Sintesis formData={formData as Partial<EvaluacionInicial>} updateFormData={updateFormData as any} isClosed={isClosed} />}

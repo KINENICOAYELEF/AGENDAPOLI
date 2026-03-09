@@ -358,6 +358,8 @@ export interface BaseEvaluacion {
     operationalPlan?: any;
     attendancePlan?: any;
     loadTrafficLight?: any;
+    // FASE 37: Anamnesis Remota (P1.5)
+    remoteHistorySnapshot?: any; // Snapshot inmutable del perfil permanente remoto al momento de la cita
 }
 
 export interface AnamnesisProximaV3 {
