@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+@layer base {
+
+  /* FASE 34.1: SAFARI ZOOM PREVENTION & TOUCH TARGETS GLOBALES */
+  @media (max-width: 768px) {
+
+    input[type="text"],
+    input[type="number"],
+    input[type="search"],
+    input[type="email"],
+    input[type="url"],
+    input[type="password"],
+    input[type="tel"],
+    textarea,
+    select {
+      font-size: 16px !important;
+      /* Evita el auto-zoom nativo destructivo de Safari iOS */
+      min-height: 44px;
+      /* Regla Touch Target de HIG Apple */
+    }
+
+    button,
+    [role="button"] {
+      min-height: 44px;
+      /* Asegurar área cómoda de pulsación para dedos (Omnipresente) */
+    }
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

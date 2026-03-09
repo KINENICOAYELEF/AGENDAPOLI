@@ -171,11 +171,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">👀</span> Observación y Postura</h3>
-                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Alineación, asimetrías, trofismo, marcha..." value={exam.posture || ''} onChange={(e) => handleUpdateExam({ posture: e.target.value })} disabled={isClosed} />
+                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:bg-white focus:border-indigo-400 min-h-[120px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Alineación, asimetrías, trofismo, marcha..." value={exam.posture || ''} onChange={(e) => handleUpdateExam({ posture: e.target.value })} disabled={isClosed} />
                 </div>
                 <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🖐️</span> Palpación</h3>
-                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Temperatura, puntos gatillo, derrame, dolor a palpación..." value={exam.palpation || ''} onChange={(e) => handleUpdateExam({ palpation: e.target.value })} disabled={isClosed} />
+                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:bg-white focus:border-indigo-400 min-h-[120px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Temperatura, puntos gatillo, derrame, dolor a palpación..." value={exam.palpation || ''} onChange={(e) => handleUpdateExam({ palpation: e.target.value })} disabled={isClosed} />
                 </div>
             </div>
 
@@ -299,11 +299,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="flex flex-col gap-4 sm:gap-6 h-full">
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-inner flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><span className="text-lg">⚡</span> Neurológico / Vascular</h3>
-                        <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 min-h-[80px]" placeholder="Dermatomas, reflejos, neurodinamia, pulsos..." value={exam.neuro || ''} onChange={(e) => handleUpdateExam({ neuro: e.target.value })} disabled={isClosed} />
+                        <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-400 min-h-[120px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Dermatomas, reflejos, neurodinamia, pulsos..." value={exam.neuro || ''} onChange={(e) => handleUpdateExam({ neuro: e.target.value })} disabled={isClosed} />
                     </div>
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-inner flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><span className="text-lg">🧘</span> Control Motor / Local</h3>
-                        <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 min-h-[80px]" placeholder="Disociación lumbopélvica, estabilizadores, balance, propiocepción local..." value={exam.motorControl || ''} onChange={(e) => handleUpdateExam({ motorControl: e.target.value })} disabled={isClosed} />
+                        <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-400 min-h-[120px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Disociación lumbopélvica, estabilizadores, balance, propiocepción local..." value={exam.motorControl || ''} onChange={(e) => handleUpdateExam({ motorControl: e.target.value })} disabled={isClosed} />
                     </div>
                 </div>
             </div>

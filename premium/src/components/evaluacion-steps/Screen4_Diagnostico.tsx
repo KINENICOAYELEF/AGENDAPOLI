@@ -132,7 +132,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <p className="text-xs text-indigo-700 mt-0.5">Narrativa BPS, Diagnóstico Kinesiológico y Funcional Diferencial.</p>
                     </div>
                     {!isClosed && (
-                        <button onClick={handleGenerateDx} disabled={isGeneratingDx} className="shrink-0 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
+                        <button onClick={handleGenerateDx} disabled={isGeneratingDx} className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-3 min-h-[44px] rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
                             {isGeneratingDx ? <span className="animate-spin">🔄</span> : <span>✨</span>}
                             {isGeneratingDx ? 'Procesando...' : 'Generar Dx. Kinesiológico'}
                         </button>
@@ -143,7 +143,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diagnóstico Kinesiológico Narrativo</label>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white min-h-[120px] leading-relaxed disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[120px] text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white leading-relaxed disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
                             placeholder="Ej: Impingement subacromial secundario a disquinesia escapular y déficit de control motor en rotadores externos, en contexto de sobrecarga deportiva y kinesiofobia moderada..."
                             value={geminiDiagnostic.kinesiologicalDxNarrative || ''}
                             onChange={e => handleUpdateGemini({ kinesiologicalDxNarrative: e.target.value })}
@@ -153,7 +153,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diferencial Funcional</label>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white min-h-[80px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[80px] text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
                             placeholder="Descarte o principal hipótesis funcional contrastante..."
                             value={geminiDiagnostic.differentialFunctional || ''}
                             onChange={e => handleUpdateGemini({ differentialFunctional: e.target.value })}
@@ -200,7 +200,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             <p className="text-xs text-emerald-700 mt-0.5">Requiere tener contexto de evaluación completo y diagnóstico trazado.</p>
                         </div>
                         {!isClosed && (
-                            <button onClick={handleGeneratePlan} disabled={isGeneratingPlan || !geminiDiagnostic.kinesiologicalDxNarrative} className="shrink-0 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
+                            <button onClick={handleGeneratePlan} disabled={isGeneratingPlan || !geminiDiagnostic.kinesiologicalDxNarrative} className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 min-h-[44px] rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
                                 {isGeneratingPlan ? <span className="animate-spin">🔄</span> : <span>✨</span>}
                                 {isGeneratingPlan ? 'Calculando Plan...' : 'Generar Metas + Plan'}
                             </button>
@@ -224,7 +224,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             <div className="flex justify-between items-center mb-3">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Objetivos Funcionales Específicos (SMART)</label>
                                 {!isClosed && (
-                                    <button onClick={addSmartObj} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-2 py-1 rounded border border-slate-200 uppercase tracking-wide">
+                                    <button onClick={addSmartObj} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold p-2 min-h-[44px] rounded border border-slate-200 uppercase tracking-wide flex items-center">
                                         + Agregar Meta
                                     </button>
                                 )}
@@ -246,7 +246,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                             </div>
                                             <div className="flex-1 pr-8">
                                                 <textarea
-                                                    className="w-full bg-transparent border-b border-dashed border-slate-300 pb-1 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 min-h-[40px] resize-y disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 disabled:px-2 disabled:border-b-0"
+                                                    className="w-full bg-transparent border-b border-dashed border-slate-300 pb-1 pt-2 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 min-h-[44px] resize-y disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 disabled:px-2 disabled:border-b-0"
                                                     placeholder="Meta medible (Ej: Lograr 90° flexión activa hombro sin dolor pasadas 2 semanas)..."
                                                     value={obj.text}
                                                     onChange={e => updateSmartObj(idx, { text: e.target.value })}
@@ -260,7 +260,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Déficit Dirigido:</span>
                                                 <input
                                                     type="text"
-                                                    className="w-full bg-transparent text-xs text-slate-700 outline-none disabled:bg-transparent disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
+                                                    className="w-full bg-transparent text-xs text-slate-700 outline-none p-1 min-h-[44px] disabled:bg-transparent disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
                                                     placeholder="Ej: Déficit ROM Flexión GH"
                                                     value={obj.linkedDeficit}
                                                     onChange={e => updateSmartObj(idx, { linkedDeficit: e.target.value })}
@@ -278,7 +278,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             <div>
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><span className="text-sm">🏥</span> Pilar de Intervención</label>
                                 <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 outline-none focus:border-emerald-400 min-h-[100px]"
+                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 min-h-[120px] text-xs text-slate-700 outline-none focus:border-emerald-400"
                                     placeholder="Terapia Manual, Educación al paciente, Ejercicio Terapéutico (Dosificación sugerida)..."
                                     value={geminiDiagnostic.operationalPlan?.dosage || ''}
                                     onChange={e => handleUpdateGemini({ operationalPlan: { ...geminiDiagnostic.operationalPlan, dosage: e.target.value } })}
@@ -288,7 +288,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             <div>
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><span className="text-sm">🔮</span> Pronóstico Funcional</label>
                                 <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-700 outline-none focus:border-emerald-400 min-h-[100px]"
+                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 min-h-[120px] text-xs text-slate-700 outline-none focus:border-emerald-400"
                                     placeholder="Favorable / Reservado... dependiente de..."
                                     value={geminiDiagnostic.prognosis || ''}
                                     onChange={e => handleUpdateGemini({ prognosis: e.target.value })}

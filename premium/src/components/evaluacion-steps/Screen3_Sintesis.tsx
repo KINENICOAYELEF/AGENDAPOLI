@@ -205,7 +205,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         {autoSynth.trafficLight === 'Rojo' ? 'Alta Precaución (Carga Limitada)' : autoSynth.trafficLight === 'Amarillo' ? 'Progresión Cautelosa' : 'Carga Activa Agresiva'}
                     </h3>
                     <p className="text-xs text-slate-600 mb-3">Recomendación original del motor: <strong>{engine.safety.level}</strong>. {engine.safety.reasons[0]}</p>
-                    <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
+                    <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-xl p-3 min-h-[44px] text-sm outline-none focus:ring-2 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
                 </div>
             </div>
 
@@ -221,7 +221,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         {COMMON_STRUCTURAL.map(tag => {
                             const isActive = (autoSynth.structuralSuspicions || []).some((i: any) => i.label === tag);
                             return (
-                                <button key={tag} onClick={() => toggleArrayItemObj('structuralSuspicions', tag)} disabled={isClosed} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border ${isActive ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                                <button key={tag} onClick={() => toggleArrayItemObj('structuralSuspicions', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                                     {tag}
                                 </button>
                             );
@@ -238,7 +238,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <span className="font-normal text-[10px] opacity-70 border-t border-indigo-200 pt-0.5 mt-0.5">{tagObj.source} | {tagObj.confidence}</span>
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('structuralSuspicions', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('structuralSuspicions', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-indigo-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
                     </div>
                 </div>
 
@@ -251,7 +251,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         {COMMON_FUNCTIONAL.map(tag => {
                             const isActive = (autoSynth.functionalDeficits || []).some((i: any) => i.label === tag);
                             return (
-                                <button key={tag} onClick={() => toggleArrayItemObj('functionalDeficits', tag)} disabled={isClosed} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border ${isActive ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                                <button key={tag} onClick={() => toggleArrayItemObj('functionalDeficits', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                                     {tag}
                                 </button>
                             );
@@ -270,7 +270,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 )}
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('functionalDeficits', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('functionalDeficits', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-emerald-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
                     </div>
                 </div>
 
@@ -283,7 +283,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         {COMMON_BPS.map(tag => {
                             const isActive = (autoSynth.contextBps || []).includes(tag);
                             return (
-                                <button key={tag} onClick={() => toggleArrayItem('contextBps', tag)} disabled={isClosed} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border ${isActive ? 'bg-amber-600 text-white border-amber-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
+                                <button key={tag} onClick={() => toggleArrayItem('contextBps', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-amber-600 text-white border-amber-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                                     {tag}
                                 </button>
                             );
@@ -297,7 +297,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 {!isClosed && <button onClick={() => toggleArrayItem('contextBps', tag)} className="hover:text-rose-500 ml-1"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>}
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAdd('contextBps', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-amber-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAdd('contextBps', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-amber-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
                     </div>
                 </div>
 

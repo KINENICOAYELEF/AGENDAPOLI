@@ -1311,7 +1311,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         }
                                     }, 10);
                                 }}
-                                className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
+                                className="text-[11px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
                             >
                                 ✨ + Plantilla
                             </button>
@@ -1333,14 +1333,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                         }
                                     }, 10);
                                 }}
-                                className="text-[11px] disabled:opacity-50 disabled:cursor-not-allowed bg-white text-slate-600 border border-slate-300 px-3 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
+                                className="text-[11px] disabled:opacity-50 disabled:cursor-not-allowed bg-white text-slate-600 border border-slate-300 px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-1 flex-1 sm:flex-none"
                                 title="Elimina las líneas de guía entre corchetes"
                             >
                                 🧹 Limpiar guías
                             </button>
                             <button
                                 onClick={(e) => { e.preventDefault(); setShowRelatoGuide(!showRelatoGuide); }}
-                                className={`text-[11px] px-3 py-2 rounded-lg font-bold shadow-sm transition-colors border flex items-center justify-center gap-1 flex-1 sm:flex-none w-full sm:w-auto ${showRelatoGuide ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'}`}
+                                className={`text-[11px] px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-colors border flex items-center justify-center gap-1 flex-1 sm:flex-none w-full sm:w-auto ${showRelatoGuide ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'}`}
                             >
                                 📖 Guía de entrevista
                             </button>
@@ -1348,7 +1348,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             {/* FASE 20: QA Mínima (Oculto en ProD por regla 8) */}
                             {process.env.NODE_ENV === 'development' && (
                                 <details className="relative ml-auto [&_summary::-webkit-details-marker]:hidden">
-                                    <summary className="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-3 py-2 rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer select-none">
+                                    <summary className="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer select-none">
                                         <span>💉</span> Data QA
                                     </summary>
                                     <div className="absolute right-0 top-full mt-1 w-[280px] sm:w-[320px] bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2">
@@ -1551,29 +1551,29 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.fiebre_sistemico_cancerPrevio} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, fiebre_sistemico_cancerPrevio: e.target.checked } })} />
-                            <span className="leading-tight">Fiebre / Compromiso Sistémico / Cáncer Previo</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.fiebre_sistemico_cancerPrevio} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, fiebre_sistemico_cancerPrevio: e.target.checked } })} />
+                            <span className="leading-tight mt-0.5">Fiebre / Compromiso Sistémico / Cáncer Previo</span>
                         </label>
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.bajaPeso_noIntencionada} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, bajaPeso_noIntencionada: e.target.checked } })} />
-                            <span className="leading-tight">Baja de peso progresiva inexplicada</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.bajaPeso_noIntencionada} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, bajaPeso_noIntencionada: e.target.checked } })} />
+                            <span className="leading-tight mt-0.5">Baja de peso progresiva inexplicada</span>
                         </label>
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.dolorNocturno_inexplicable_noMecanico} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, dolorNocturno_inexplicable_noMecanico: e.target.checked } })} />
-                            <span className="leading-tight">Dolor nocturno constante e inexplicable</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.dolorNocturno_inexplicable_noMecanico} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, dolorNocturno_inexplicable_noMecanico: e.target.checked } })} />
+                            <span className="leading-tight mt-0.5">Dolor nocturno constante e inexplicable</span>
                         </label>
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.trauma_altaEnergia_caidaImportante} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, trauma_altaEnergia_caidaImportante: e.target.checked } })} />
-                            <span className="leading-tight">Trauma alta energía / Caída importante</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.trauma_altaEnergia_caidaImportante} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, trauma_altaEnergia_caidaImportante: e.target.checked } })} />
+                            <span className="leading-tight mt-0.5">Trauma alta energía / Caída importante</span>
                         </label>
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, neuroGraveProgresivo_esfinteres_sillaMontar: e.target.checked } })} />
-                            <span className="leading-tight">Alt. esfínteres / Anestesia en silla montar</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-slate-50 border border-slate-100 rounded-lg hover:border-rose-200 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-rose-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, neuroGraveProgresivo_esfinteres_sillaMontar: e.target.checked } })} />
+                            <span className="leading-tight mt-0.5">Alt. esfínteres / Anestesia en silla montar</span>
                         </label>
-                        <label className="flex items-start gap-2 text-[11px] p-2 bg-amber-50 border border-amber-100 rounded-lg hover:border-amber-300 transition-colors cursor-pointer">
-                            <input type="checkbox" className="mt-0.5 accent-amber-600 w-3.5 h-3.5" disabled={isClosed} checked={interviewV4.seguridad.riesgoEmocionalAgudo} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, riesgoEmocionalAgudo: e.target.checked } })} />
-                            <span className="text-amber-900 font-medium leading-tight">Riesgo emocional agudo (Naranja)</span>
+                        <label className="flex items-start gap-2 text-[12px] p-3 min-h-[44px] bg-amber-50 border border-amber-100 rounded-lg hover:border-amber-300 transition-colors cursor-pointer">
+                            <input type="checkbox" className="mt-0.5 accent-amber-600 w-4 h-4" disabled={isClosed} checked={interviewV4.seguridad.riesgoEmocionalAgudo} onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, riesgoEmocionalAgudo: e.target.checked } })} />
+                            <span className="text-amber-900 font-medium leading-tight mt-0.5">Riesgo emocional agudo (Naranja)</span>
                         </label>
                     </div>
 
@@ -1587,7 +1587,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 Ha marcado un síntoma de alerta que requiere decisión clínica explícita para continuar.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3">
-                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Derivar / cerrar caso' ? 'bg-rose-100 border-rose-600 text-rose-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 min-h-[44px] rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Derivar / cerrar caso' ? 'bg-rose-100 border-rose-600 text-rose-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                                     <input
                                         type="radio"
                                         name="accionBanderaRoja"
@@ -1598,7 +1598,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     />
                                     <span>Derivar / cerrar caso</span>
                                 </label>
-                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Continuar bajo supervisión' ? 'bg-orange-100 border-orange-600 text-orange-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                                <label className={`flex-1 flex items-center justify-center gap-2 p-3 min-h-[44px] rounded-lg border-2 cursor-pointer transition-all ${interviewV4.seguridad?.accionBanderaRoja === 'Continuar bajo supervisión' ? 'bg-orange-100 border-orange-600 text-orange-900 font-bold shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                                     <input
                                         type="radio"
                                         name="accionBanderaRoja"
@@ -1614,15 +1614,15 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     )}
 
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-3 p-2 min-h-[44px] cursor-pointer bg-white rounded-lg hover:bg-slate-50 transition-colors w-full sm:w-auto">
                             <input
                                 type="checkbox"
                                 disabled={isClosed}
                                 checked={interviewV4.seguridad?.confirmado || false}
                                 onChange={e => updateV4({ seguridad: { ...interviewV4.seguridad, confirmado: e.target.checked } })}
-                                className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                                className="w-5 h-5 accent-emerald-600 rounded cursor-pointer"
                             />
-                            <span className="text-xs font-bold text-slate-700">Confirmo evaluación de seguridad (Obligatorio)</span>
+                            <span className="text-sm font-bold text-slate-700">Confirmo evaluación de seguridad (Obligatorio)</span>
                         </label>
                     </div>
                 </div>
@@ -2347,7 +2347,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Inicio</label>
-                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2358,7 +2358,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
-                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2373,7 +2373,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-600">Evolución global</label>
-                                <select disabled={isClosed} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
+                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
                                     const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
                                     updateV4({ focos: newFocos });
                                 }}>
@@ -2389,7 +2389,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         {/* Row 2: Actividad Índice */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-bold text-slate-600">Actividad índice principal</label>
-                            <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
+                            <input type="text" disabled={isClosed} className="text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
                                 const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, actividadIndice: e.target.value } : f);
                                 updateV4({ focos: newFocos });
                             }} />
@@ -2405,7 +2405,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-3 min-h-[44px] border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
                                             const val = e.target.value !== "" ? Number(e.target.value) : null;
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
                                             updateV4({ focos: newFocos });
@@ -2413,7 +2413,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-2.5 border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
+                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-3 min-h-[44px] border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
                                             const val = e.target.value !== "" ? Number(e.target.value) : null;
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
                                             updateV4({ focos: newFocos });
@@ -2434,11 +2434,11 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <div className="flex items-center flex-wrap gap-4 border border-orange-200 bg-orange-50/50 p-3 rounded-lg">
                                     <label className="text-xs font-bold text-orange-900 flex-1 min-w-[200px]">¿Presenta despertar nocturno por el síntoma?</label>
                                     <div className="flex flex-wrap gap-4">
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-4 py-3 min-h-[44px] rounded-lg border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600 w-4 h-4" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: true } } : f);
                                             updateV4({ focos: newFocos });
                                         }} /> Sí</label>
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-3 py-1.5 rounded-md border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
+                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-4 py-3 min-h-[44px] rounded-lg border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600 w-4 h-4" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
                                             const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: false } } : f);
                                             updateV4({ focos: newFocos });
                                         }} /> No</label>
@@ -2452,8 +2452,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                 <label className="text-xs font-bold text-slate-800">¿Hay limitación funcional actual?</label>
                                 <div className="flex flex-wrap gap-3">
-                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
-                                    <label className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
+                                    <label className={`flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-3 min-h-[44px] flex-1 sm:flex-none rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
+                                    <label className={`flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-3 min-h-[44px] flex-1 sm:flex-none rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
                                 </div>
                             </div>
 
@@ -2470,12 +2470,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     </div>
                                     {interviewV4.psfsGlobal.map((psfs, index) => (
                                         <div key={psfs.id} className="flex gap-2">
-                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
+                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-3 min-h-[44px] border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
                                                 const newPsfs = [...interviewV4.psfsGlobal];
                                                 newPsfs[index].actividad = e.target.value;
                                                 updateV4({ psfsGlobal: newPsfs });
                                             }} />
-                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-2.5 border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
+                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-3 min-h-[44px] border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
                                                 const newPsfs = [...interviewV4.psfsGlobal];
                                                 newPsfs[index].score = e.target.value !== "" ? Number(e.target.value) : null;
                                                 updateV4({ psfsGlobal: newPsfs });
@@ -2494,7 +2494,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             ) : (
                                 <div className="p-3 bg-teal-50/40 border border-teal-100 rounded-lg flex flex-col gap-2">
                                     <label className="text-[11px] font-bold text-teal-800">Capacidad percibida en actividad clave (0=Nula, 10=Óptima)</label>
-                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-2.5 border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
+                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-3 min-h-[44px] border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
                                         updateV4({ capacidadPercibidaActividad: e.target.value !== "" ? Number(e.target.value) : null });
                                     }} />
                                 </div>
