@@ -1281,113 +1281,109 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
 
                     {showRelatoGuide && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 text-xs text-slate-700 overflow-y-auto max-h-80 shadow-inner">
-                            <h4 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-1">Guía Clínica Extendida (Sin IA)</h4>
-                            <div className="space-y-4">
-                                <div>
-                                    <strong className="text-indigo-800">Motivo de consulta:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Qué te trae por aquí hoy?" / "Cuéntame con tus propias palabras qué está pasando."</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Asumir el diagnóstico del derivador sin escuchar a la persona primero.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Revela la prioridad número 1 del paciente, más enfocada en su narrativa que en la patología médica.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">Objetivo y expectativa:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Qué esperas lograr con las sesiones?" / "Si esto saliera perfecto, ¿qué estarías haciendo en 1 mes?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Imponer metas biomecánicas (ej: "lograr 90° de flexión") en vez de metas participativas ("poder alzar a mi hijo").</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Define la brújula del tratamiento y establece el contrato terapéutico inicial.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Antigüedad/Inicio y evolución:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Cuándo empezó esto exactamente?" / "¿Y desde ese día ha ido mejorando, empeorando o sigue igual?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Quedarse con "duele hace rato" sin indagar si el patrón es constante o episódico.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Diferencia fase inflamatoria aguda vs estado persistente/nociplástico.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Localización y extensión:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Puedes apuntar con un dedo dónde duele más?" / "¿Se siente profundo o superficial?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Creer siempre que "donde duele, está la lesión" sin testear distalmente.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Apunta a tejidos generadores de síntomas (ej: puntual = fascia/ligamento; difuso = muscular/nervioso).</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Irradiación/Referencia:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿El dolor viaja o se mueve a otra zona?" / "¿Sientes adormecimiento o corriente en otra parte de la pierna/brazo?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Confundir dolor irradiado radicular con dolor somático referido (el segundo rara vez cruza la rodilla/codo de forma eléctrica).</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Permite detectar posible involucramiento del tejido neural periférico o central.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Carácter/Naturaleza:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Cómo describirías la sensación: como una punzada, quemazón, peso, corrientazo?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Inducir la respuesta dando solo una opción ("¿Te quema, cierto?").</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Sugiere neurodinamia patológica (quemazón, eléctrico), nociceptivo inflamatorio (latido, presión) o mecánico (punzada, pellizco al mover).</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Intensidad:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "De 0 a 10, ¿cuánto te duele ahora? ¿cuánto ha sido lo peor y cuánto lo mejor en las últimas 24h?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Obsesionarse solo con el número sin darle contexto (un 8 post-maratón no es igual a un 8 sentado en reposo).</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Permite medir tolerancias y la necesidad de priorizar control analgésico por sobre cargas.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">ALICIA — Atenuantes y agravantes:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Hay algo exacto que hagas para que el dolor empeore/mejore?" / "¿Caminar te duele pero andar en bici no?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Asumir que "todo" movimiento duele igual; no explorar posiciones de alivio.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Fundamental para prescribir ejercicio y determinar el mecanismo (tensión, compresión, fricción).</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">S.I.N.S — Comportamiento 24h:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Cómo se comporta el síntoma desde que despiertas hasta que vas a dormir?" / "¿Te despierta por la noche?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Ignorar dolor nocturno incesante real que no cambia de posición (Red Flag).</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Patrón AM de rigidez {'>'}30m sugiere inflamación sistémica. Fatiga PM sugiere ineficiencia muscular.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">S.I.N.S — Severidad funcional:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿A qué porcentaje de tu máximo sientes que rindes hoy?" / "¿Qué dejaste de hacer en tu día a día?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Basar el alta o progresión en el dolor (0/10) mientras ignoras la pobre funcionalidad restaurada.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Refleja el impacto en la vida real. Alto dolor no siempre equivale a alta severidad si el paciente no restringe actividades.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">S.I.N.S — Irritabilidad:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Con qué facilidad empieza a doler, qué tan fuerte es y cuánto demora en desaparecer cuando te detienes?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Provocar máximo dolor en la sesión de evaluación a un tejido irritable solo "para ver si da positivo el test".</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Exige dosificar rigor evaluativo (Alta = menos test mecánicos agresivos, énfasis en descarga).</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">Historia del episodio / Mecanismo:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Habías tenido esto igual en el pasado?" / "¿Recuerdas la posición de tu rodilla cuando caíste?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> No indagar los picos inusuales de carga en la semana previa al inicio de síntomas de "aparición progresiva".</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Determina pronóstico (episodios recurrentes sanan más lento) e infiere la carga lesiva exacta.</li>
-                                    </ul>
-                                </div>
-                                <div className="border-t border-slate-200 pt-2">
-                                    <strong className="text-indigo-800">Manejo previo y respuesta:</strong>
-                                    <ul className="list-disc ml-4 space-y-1 mt-1 text-[11px]">
-                                        <li><strong>Cómo preguntarlo:</strong> "¿Has ido a otro profesional o tomado medicación por esto? ¿Resultó?"</li>
-                                        <li><strong className="text-rose-600">Qué NO hacer:</strong> Repetir la misma terapia pasiva que la persona ya te dijo que no le hizo efecto hace un mes.</li>
-                                        <li><strong className="text-emerald-700">Qué significa clínicamente:</strong> Modula las creencias y expectativas, e ilumina vías de tratamiento que es mejor abandonar.</li>
-                                    </ul>
-                                </div>
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 text-xs text-slate-700 overflow-y-auto max-h-96 shadow-inner">
+                            <h4 className="font-bold text-slate-800 mb-2 border-b border-slate-200 pb-1">Guía de entrevista (para estudiantes)</h4>
+                            <div className="space-y-2 mt-2">
+                                {[
+                                    {
+                                        titulo: "Motivo de consulta",
+                                        preguntar: "¿Qué te trae por aquí hoy? / Cuéntame qué te está pasando.",
+                                        noHacer: "Asumir el diagnóstico médico sin escuchar la historia de la persona primero.",
+                                        importa: "Revela la prioridad principal del paciente, enfocada en su narrativa y no sólo en la lesión."
+                                    },
+                                    {
+                                        titulo: "Objetivo y expectativa",
+                                        preguntar: "¿Qué esperas lograr con las sesiones? / Si esto saliera perfecto, ¿qué estarías haciendo en 1 mes?",
+                                        noHacer: "Imponer metas tuyas (ej: lograr 90° de flexión) en vez de metas del paciente (ej: poder alzar a mi hijo).",
+                                        importa: "Define el norte del tratamiento y establece el compromiso inicial de ambas partes."
+                                    },
+                                    {
+                                        titulo: "Inicio y evolución",
+                                        preguntar: "¿Cuándo empezó esto exactamente y cómo ha cambiado desde ese día?",
+                                        noHacer: "Anotar 'le duele hace rato' sin preguntar si el dolor es siempre igual o va y viene por episodios.",
+                                        importa: "Ayuda a diferenciar si es un problema muy reciente (agudo) o algo que lleva tiempo y se ha adaptado (persistente)."
+                                    },
+                                    {
+                                        titulo: "Localización y extensión",
+                                        preguntar: "¿Puedes apuntar con un dedo dónde duele más? ¿Se siente profundo o superficial?",
+                                        noHacer: "Creer que donde duele está necesariamente la lesión real. A veces el origen está más arriba o abajo.",
+                                        importa: "Ayuda a entender qué tejidos podrían estar generando el síntoma."
+                                    },
+                                    {
+                                        titulo: "Irradiación y referencia",
+                                        preguntar: "¿El dolor viaja o se mueve a otra zona? ¿Sientes hormigueo o corriente lejos de ahí?",
+                                        noHacer: "Asumir que todo dolor que baja por la pierna o brazo es 'ciática' automáticamente.",
+                                        importa: "Permite ver si un nervio está involucrado o si es otro tejido el que envía dolor a lo lejos."
+                                    },
+                                    {
+                                        titulo: "Carácter y naturaleza",
+                                        preguntar: "¿Cómo describirías la sensación? (Ej: punzada, quemazón, peso, corrientazo, tirantez).",
+                                        noHacer: "Empujar a la persona a decir sí a tus opciones (ej: '¿te quema, cierto?').",
+                                        importa: "Da pistas clave: quemazón/corriente (nervio), latido/presión (inflamación), punzada/pellizco al mover (mecánico)."
+                                    },
+                                    {
+                                        titulo: "Intensidad",
+                                        preguntar: "De 0 a 10, ¿cuánto duele ahora? ¿Cuánto ha sido lo peor y cuánto lo mejor en las últimas 24 hrs?",
+                                        noHacer: "Obsesionarse sólo con el número. Un dolor '8' sentado en reposo es más grave que un '8' tras trotar 10km.",
+                                        importa: "Sirve para medir qué tanto tolera la persona y si necesitamos calmar dolor antes de dar mucho ejercicio."
+                                    },
+                                    {
+                                        titulo: "Atenuantes y agravantes",
+                                        preguntar: "¿Hay algo exacto que hagas para que el dolor empeore o mejore? (Ej: posiciones, calor, frío).",
+                                        noHacer: "Creer que 'todo movimiento le duele' por igual sin explorar en qué posturas encuentra verdadero alivio.",
+                                        importa: "Es fundamental parar saber qué ejercicios recetar y enseñar a calmar el dolor en casa."
+                                    },
+                                    {
+                                        titulo: "Comportamiento 24h",
+                                        preguntar: "¿Cómo cambia el síntoma en la mañana vs la noche? ¿Te despierta mientras duermes?",
+                                        noHacer: "Ignorar si el dolor de noche no la deja dormir y no cambia de posición. Podría requerir atención extra.",
+                                        importa: "Mucha rigidez al despertar indica inflamación. Fatiga o dolor al final del día indica debilidad muscular."
+                                    },
+                                    {
+                                        titulo: "Severidad funcional",
+                                        preguntar: "¿A qué porcentaje de tu capacidad sientes que estás rindiendo hoy? ¿Qué dejaste de hacer?",
+                                        noHacer: "Dar el alta sólo porque el dolor bajó a cero, ignorando que el paciente aún tiene miedo a moverse.",
+                                        importa: "Mide el impacto real en la vida. Un paciente puede tener mucho dolor pero poca limitación, o viceversa."
+                                    },
+                                    {
+                                        titulo: "Irritabilidad",
+                                        preguntar: "¿Qué tan fácil empieza a doler, qué tan intenso se pone, y cuánto demora en calmarse cuando te detienes?",
+                                        noHacer: "Provocarle dolor máximo evaluando para 'estar seguro', dejando al paciente muy adolorido por días.",
+                                        importa: "Te dice cuánto puedes exigirle hoy: si se irrita muy fácil, hoy toca evaluar suave."
+                                    },
+                                    {
+                                        titulo: "Mecanismo e historia",
+                                        preguntar: "¿Habías tenido esto igual en el pasado? Si fue un accidente, ¿cómo estabas cuando pasó?",
+                                        noHacer: "Olvidar preguntar si hubo estrés extra, falta de sueño o picos de trabajo físico justo antes de que apareciera.",
+                                        importa: "Ver repeticiones pasadas aclara el pronóstico, y conocer la caída ayuda a saber qué se pudo dañar."
+                                    },
+                                    {
+                                        titulo: "Manejo previo",
+                                        preguntar: "¿Has ido a otro profesional o tomado medicaciones por esto? ¿Te funcionó?",
+                                        noHacer: "Repetirle exactamente la misma terapia pasiva que la persona ya te dijo que no le hizo efecto hace un mes.",
+                                        importa: "Modula expectativas y nos enseña qué tratamientos previos fallaron para intentar un camino nuevo."
+                                    },
+                                    {
+                                        titulo: "Seguridad clínica",
+                                        preguntar: "¿Has notado pérdida de peso, fiebre, o adormecimiento serio en piernas últimamente?",
+                                        noHacer: "Descartar estas 'banderas rojas' asumiendo que el médico ya lo vio o que es un dolor muscular común.",
+                                        importa: "Descarta problemas graves que requieren urgencia médica por sobre nuestro proceso kinésico."
+                                    }
+                                ].map((seccion, index) => (
+                                    <details key={index} className="group border border-slate-200 rounded bg-white overflow-hidden open:bg-slate-50 transition-colors">
+                                        <summary className="flex items-center justify-between p-3 cursor-pointer text-slate-800 font-bold hover:bg-slate-50 transition-colors marker:content-none list-none select-none">
+                                            {seccion.titulo}
+                                            <svg className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </summary>
+                                        <div className="p-3 pt-0 text-[11px] space-y-2 border-t border-slate-100 mt-1">
+                                            <p><strong className="text-indigo-800">Cómo preguntarlo:</strong> {seccion.preguntar}</p>
+                                            <p><strong className="text-rose-600">Qué NO hacer:</strong> {seccion.noHacer}</p>
+                                            <p><strong className="text-emerald-700">Por qué importa:</strong> {seccion.importa}</p>
+                                        </div>
+                                    </details>
+                                ))}
                             </div>
                         </div>
                     )}
