@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistemakine Premium",
+  title: "Polideportivo",
   description: "Plataforma clínica integral para Kinesiología.",
 };
 

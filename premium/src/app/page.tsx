@@ -18,7 +18,7 @@ export default function Home() {
   if (loading) return null;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-gray-50 text-gray-900">
-      <h1 className="text-4xl font-bold mb-4 text-center">Sistemakine Premium</h1>
+      <h1 className="text-4xl font-bold mb-4 text-center tracking-tight text-slate-800">Polideportivo</h1>
       <p className="text-lg text-gray-600 mb-8 max-w-lg text-center">
         Plataforma unificada y moderna para la gestión clínica general y evoluciones docentes.
       </p>

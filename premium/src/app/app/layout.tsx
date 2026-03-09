@@ -45,7 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
                 <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-blue-400">SISTEMAKINE</h2>
+                    <h2 className="text-xl font-bold text-indigo-400 tracking-wide">POLIDEPORTIVO</h2>
                     <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white p-1">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>

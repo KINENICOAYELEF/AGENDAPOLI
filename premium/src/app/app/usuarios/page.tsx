@@ -97,89 +97,133 @@ export default function UsuariosPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-2">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-900">Directorio Clínico</h1>
-                    <p className="text-slate-500 mt-1">
-                        Universo <span className="font-semibold text-slate-700 bg-slate-100 px-2 rounded">{globalActiveYear}</span> — Archivo y control de pacientes (Personas Usuarias).
+                    <p className="text-slate-500 mt-2 text-sm sm:text-base leading-relaxed">
+                        Universo <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">{globalActiveYear}</span> — Archivo y control de pacientes (Personas Usuarias).
                     </p>
                 </div>
                 <button
                     onClick={() => { setSelectedUser(null); setIsFormOpen(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition"
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm transition hover:shadow-md min-h-[44px] flex items-center justify-center gap-2"
                 >
-                    + Crear Nuevo Ingreso
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                    Añadir Nuevo Ingreso
                 </button>
             </div>
 
-            {/* TABLA MASTER / DASHBOARD */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
+            {/* MASTER CONTAINER / DASHBOARD */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
 
                 {/* TOOLBAR */}
-                <div className="border-b border-slate-200 p-4 bg-slate-50 flex items-center gap-4">
+                <div className="border-b border-slate-100 p-4 sm:p-5 bg-white flex items-center gap-4">
                     <div className="relative flex-1 max-w-md">
-                        <svg className="absolute left-3 top-3 h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg className="absolute left-3.5 top-3 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                         <input
                             type="text"
-                            placeholder="Buscar localmente por Nombre, RUT o Teléfono..."
+                            placeholder="Buscar por Nombre, RUT o Teléfono..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 hover:bg-slate-100 focus:bg-white rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm transition-all"
                         />
                     </div>
-                    {searchTerm.length > 0 && (
-                        <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded border border-amber-200">
-                            Filtro offline activado (Sólo resultados del lote actúal)
-                        </span>
-                    )}
                 </div>
 
-                {/* TABLA CONTENIDO */}
-                <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-50 text-slate-500 uppercase text-xs font-semibold">
-                            <tr>
-                                <th className="px-6 py-4 border-b border-slate-200">Paciente</th>
-                                <th className="px-6 py-4 border-b border-slate-200">Identificador (RUT)</th>
-                                <th className="px-6 py-4 border-b border-slate-200">Contacto</th>
-                                <th className="px-6 py-4 border-b border-slate-200 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {filteredUsers.length === 0 && !loadingData && (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
-                                        No se encontraron personas usuarias registradas en este espacio temporal.
-                                    </td>
-                                </tr>
-                            )}
+                {/* AREA DE CONTENIDO */}
+                <div className="flex-1 bg-slate-50/50">
 
-                            {filteredUsers.map((u) => (
-                                <tr key={u.id} className="hover:bg-slate-50 transition">
-                                    <td className="px-6 py-4">
-                                        <div className="font-medium text-slate-900">{u.nombreCompleto}</div>
-                                        <div className="text-xs text-slate-500 truncate max-w-[200px]">{u.notasAdministrativas || 'Sin observaciones'}</div>
-                                    </td>
-                                    <td className="px-6 py-4 font-mono text-slate-600">{u.rut}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-slate-700">{u.telefono || 'No registrado'}</div>
-                                        <div className="text-xs text-slate-400">{u.email}</div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
-                                            className="text-indigo-600 hover:text-indigo-900 font-medium text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded transition"
-                                        >
-                                            Ver Ficha Clínica
-                                        </button>
-                                    </td>
+                    {/* ESTADO VACÍO (Ambos Viewports) */}
+                    {filteredUsers.length === 0 && !loadingData && (
+                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+                            <div className="bg-slate-100 p-4 rounded-full mb-4">
+                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-900 mb-1">Directorio vacío</h3>
+                            <p className="text-slate-500 max-w-sm">No se encontraron personas usuarias registradas en este espacio temporal.</p>
+                        </div>
+                    )}
+
+                    {/* VISTA MÓVIL (Tarjetas) */}
+                    <div className="block md:hidden p-4 space-y-4">
+                        {filteredUsers.map((u) => (
+                            <div key={u.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 text-lg leading-tight">{u.nombreCompleto}</h3>
+                                        <span className="inline-block mt-1 bg-slate-100 text-slate-600 font-mono text-xs px-2.5 py-1 rounded-md border border-slate-200">
+                                            RUT: {u.rut}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 mb-4">
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                        <span className="truncate">{u.telefono || 'No registrado'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                        <span className="truncate">{u.email || 'Sin correo'}</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                    className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-xl transition"
+                                >
+                                    Abrir Expediente
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* VISTA DESKTOP (Tabla Optimizada) */}
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-white text-slate-500 uppercase text-xs font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-5">Identidad Paciente</th>
+                                    <th className="px-6 py-5">Identificador (RUT)</th>
+                                    <th className="px-6 py-5">Contacto</th>
+                                    <th className="px-6 py-5 text-right w-32">Acciones</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {filteredUsers.map((u) => (
+                                    <tr key={u.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-slate-900">{u.nombreCompleto}</div>
+                                            <div className="text-xs text-slate-500 truncate max-w-[200px] mt-0.5">{u.notasAdministrativas || 'Sin observaciones base'}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded border border-slate-200">{u.rut}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-slate-700 flex items-center gap-2">
+                                                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                                {u.telefono || 'N/A'}
+                                            </div>
+                                            <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                                {u.email}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                                className="text-indigo-600 hover:text-indigo-800 font-medium text-sm bg-indigo-50/50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100 shadow-sm"
+                                            >
+                                                Abrir Expediente
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {/* PAGINATION FOOTER */}
@@ -205,30 +249,35 @@ export default function UsuariosPage() {
             {/* OVERLAY: FORMULARIO Y FICHA DE PERSONA USUARIA */}
             {/* Construiremos un modal flotante o una vista lateral para aislar el CRUD del dashboard maestro */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-6">
                     {/* Backdrop */}
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)}></div>
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsFormOpen(false)}></div>
 
-                    {/* Panel principal Modal */}
-                    <div className="relative bg-white shadow-2xl rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                    {/* Panel principal Modal (Bottom Sheet en móvil, Modal centrado en Desktop) */}
+                    <div className="relative bg-white shadow-2xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-2xl max-w-4xl flex flex-col overflow-hidden animate-slide-up sm:animate-zoom-in">
+
+                        {/* Drag Handle (Sólo móvil) */}
+                        <div className="w-full flex justify-center py-3 pb-1 sm:hidden">
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+                        </div>
 
                         {/* Header Modal */}
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div className="px-5 sm:px-6 py-4 flex justify-between items-center bg-white border-b border-slate-100">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-800">
+                                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">
                                     {selectedUser ? "Expediente Clínico" : "Nuevo Ingreso"}
                                 </h2>
                                 {selectedUser && (
-                                    <p className="text-xs text-slate-500 font-mono mt-1">ID: {selectedUser.id}</p>
+                                    <p className="text-xs text-slate-400 font-mono mt-0.5">ID: {selectedUser.id}</p>
                                 )}
                             </div>
-                            <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 p-2">
+                            <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
 
                         {/* Contenido Modal Scrollable */}
-                        <div className="overflow-y-auto p-6 flex-1 bg-white">
+                        <div className="overflow-y-auto p-5 sm:p-6 flex-1 bg-slate-50/30">
                             <PersonaUsuariaForm
                                 initialData={selectedUser}
                                 onClose={() => setIsFormOpen(false)}
