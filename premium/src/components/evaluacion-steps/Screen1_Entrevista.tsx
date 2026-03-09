@@ -922,13 +922,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-5">
                         {/* Foco Principal - Refactorizado Mobile First (Flex Col vertical stack) */}
-                        <div className="md:col-span-4 flex flex-col justify-end w-full">
+                        <div className="md:col-span-12 flex flex-col justify-end w-full">
                             <div className="text-[10px] font-bold uppercase text-slate-500 mb-2 border-b border-rose-200 pb-0.5 text-rose-800">Foco Principal <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
                             <div className="flex flex-col sm:flex-row gap-2 w-full">
                                 <input
                                     type="text"
                                     placeholder="Región (ej. Rodilla)"
-                                    className="w-full sm:w-2/3 h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    className="w-full h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
                                     value={focoPrincipal.region || ""}
                                     onChange={e => {
                                         const newFocos = [...interviewV4.focos];
@@ -938,7 +938,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     disabled={isClosed}
                                 />
                                 <select
-                                    className="w-full sm:w-1/3 h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    className="w-full h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
                                     value={focoPrincipal.lado || "N/A"}
                                     onChange={e => {
                                         const newFocos = [...interviewV4.focos];
@@ -947,51 +947,114 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     }}
                                     disabled={isClosed}
                                 >
-                                    <option value="N/A">- Lado -</option><option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
+                                    <option value="N/A">- Lado principal -</option><option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
                                 </select>
                             </div>
                         </div>
 
-                        {/* Motivos Secundarios - Refactorizado */}
-                        <div className="md:col-span-3 flex flex-col justify-end w-full">
-                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-2">Motivos secundarios (2 máx)</div>
-                            <div className="flex flex-col gap-2 w-full">
-                                <select
-                                    className="w-full h-9 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50"
-                                    value={interviewV4.experienciaPersona.objetivos[1]?.actividad || ""}
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        const newObjs = [...interviewV4.experienciaPersona.objetivos];
-                                        if (val === "") {
-                                            newObjs.splice(1, 1);
-                                        } else {
-                                            if (!newObjs[1]) newObjs[1] = { id: generateId(), contexto: [], verbo: "", actividad: "", plazoSemanas: "", enSusPalabras: "", esPrincipal: false } as any;
-                                            newObjs[1].actividad = val;
-                                        }
-                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
-                                    }}
-                                    disabled={isClosed}
-                                >
-                                    <option value="">- Seleccionar motivo secundario -</option>
-                                    {["Recidiva Constante", "Poca confianza/Miedo", "Baja Performance", "Otro"].map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                                {interviewV4.experienciaPersona.objetivos[1]?.actividad === "Otro" && (
-                                    <input
-                                        type="text"
-                                        placeholder="Especifique otro motivo..."
-                                        className="w-full h-9 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50"
-                                        value={interviewV4.experienciaPersona.objetivos[1]?.enSusPalabras || ""}
-                                        onChange={e => {
-                                            const newObjs = [...interviewV4.experienciaPersona.objetivos];
-                                            newObjs[1].enSusPalabras = e.target.value;
-                                            updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, objetivos: newObjs } });
+                        {/* Focos Secundarios Reales (Prompt 3 - Fase 23) */}
+                        <div className="md:col-span-12 flex flex-col gap-3 mt-4 w-full border-t border-slate-100 pt-4">
+                            <div className="flex items-center justify-between">
+                                <div className="text-[10px] font-bold uppercase text-slate-500">Focos secundarios <span className="text-[9px] text-slate-400 normal-case">(opcional, máx 2)</span></div>
+
+                                {interviewV4.focos.length < 3 && !isClosed && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            const newFocos = [...interviewV4.focos];
+                                            newFocos.push({
+                                                id: generateId(),
+                                                region: "",
+                                                lado: "N/A",
+                                                tags: [], // Mapeo temporal del Motivo Secundario (Fase 23)
+                                                esFocoPrincipal: false,
+                                                dolorActual: null
+                                            } as any);
+                                            updateV4({ focos: newFocos });
                                         }}
-                                        disabled={isClosed}
-                                    />
+                                        className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full border border-indigo-200 transition-colors flex items-center gap-1 shadow-sm"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                                        Agregar foco secundario
+                                    </button>
                                 )}
                             </div>
+
+                            {interviewV4.focos.length > 1 && (
+                                <div className="flex flex-col gap-3 w-full">
+                                    {interviewV4.focos.slice(1).map((foco, mappedIndex) => {
+                                        const globalIndex = mappedIndex + 1; // Índice real en array original (1 ó 2)
+                                        return (
+                                            <div key={foco.id} className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg relative w-full shadow-sm animate-fadeIn">
+                                                {/* Botón Eliminar Foco Secundario */}
+                                                {!isClosed && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const newFocos = [...interviewV4.focos];
+                                                            newFocos.splice(globalIndex, 1);
+                                                            updateV4({ focos: newFocos });
+                                                        }}
+                                                        className="absolute -top-2 -right-2 bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white rounded-full w-5 h-5 flex items-center justify-center border border-rose-200 shadow-sm transition-colors z-10"
+                                                        title="Eliminar foco secundario"
+                                                    >
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                    </button>
+                                                )}
+
+                                                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Región secundaria (ej. Tobillo)"
+                                                        className="w-full sm:w-1/2 h-8 text-[11px] p-2 border border-slate-300 rounded outline-none bg-white font-bold text-slate-700"
+                                                        value={foco.region || ""}
+                                                        onChange={e => {
+                                                            const newFocos = [...interviewV4.focos];
+                                                            newFocos[globalIndex].region = e.target.value;
+                                                            updateV4({ focos: newFocos });
+                                                        }}
+                                                        disabled={isClosed}
+                                                    />
+                                                    <select
+                                                        className="w-full sm:w-1/2 h-8 text-[11px] p-2 border border-slate-300 rounded outline-none bg-white font-bold text-slate-700"
+                                                        value={foco.lado || "N/A"}
+                                                        onChange={e => {
+                                                            const newFocos = [...interviewV4.focos];
+                                                            newFocos[globalIndex].lado = e.target.value as any;
+                                                            updateV4({ focos: newFocos });
+                                                        }}
+                                                        disabled={isClosed}
+                                                    >
+                                                        <option value="N/A">- Lado secundario -</option>
+                                                        <option value="Derecho">Derecho</option>
+                                                        <option value="Izquierdo">Izquierdo</option>
+                                                        <option value="Bilateral">Bilateral</option>
+                                                    </select>
+                                                </div>
+
+                                                <select
+                                                    className="w-full h-8 text-[11px] p-2 border border-slate-300 rounded outline-none bg-white italic text-slate-600"
+                                                    value={foco.tags?.[0] || ""}
+                                                    onChange={e => {
+                                                        const newFocos = [...interviewV4.focos];
+                                                        newFocos[globalIndex].tags = [e.target.value];
+                                                        updateV4({ focos: newFocos });
+                                                    }}
+                                                    disabled={isClosed}
+                                                >
+                                                    <option value="">- Motivo / Contexto asociado -</option>
+                                                    <option value="Recidiva">Recidiva</option>
+                                                    <option value="Prevención">Prevención</option>
+                                                    <option value="Retorno al deporte">Retorno al deporte</option>
+                                                    <option value="Miedo/evitación">Miedo/evitación</option>
+                                                    <option value="Rendimiento">Rendimiento</option>
+                                                    <option value="Otro">Otro</option>
+                                                </select>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {/* Quejas Principales - Refactorizado con Gap y py más tactil */}
