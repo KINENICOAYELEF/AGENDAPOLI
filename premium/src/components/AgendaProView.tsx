@@ -341,22 +341,22 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                             </Link>
 
                                             {isScheduled && !requireTakeover && (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center justify-end gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
                                                     <button
                                                         onClick={() => { setActionCitaId(cita.id); setActionType('NO_SHOW'); setActionReason(''); }}
-                                                        className="px-3 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold rounded transition"
+                                                        className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold rounded-lg transition"
                                                     >
                                                         No Show
                                                     </button>
                                                     <button
                                                         onClick={() => { setActionCitaId(cita.id); setActionType('CANCEL'); setActionReason(''); }}
-                                                        className="px-3 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded transition"
+                                                        className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded-lg transition"
                                                     >
                                                         Cancelar
                                                     </button>
                                                     <Link
                                                         href={`/app/evaluacion/${cita.usuariaId}?citaId=${cita.id}`}
-                                                        className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded shadow-sm hover:bg-indigo-700 transition"
+                                                        className="w-full sm:w-auto text-center px-4 py-2 sm:py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition"
                                                     >
                                                         + Tratamiento
                                                     </Link>
@@ -366,9 +366,9 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                             {isScheduled && requireTakeover && (
                                                 <button
                                                     onClick={() => setTakeoverCitaId(cita.id)}
-                                                    className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded shadow-sm hover:bg-emerald-700 transition flex items-center gap-1"
+                                                    className="w-full sm:w-auto justify-center px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition flex items-center gap-1 mt-2 sm:mt-0"
                                                 >
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                                     Tomar Relevo (Atender)
                                                 </button>
                                             )}
@@ -407,18 +407,18 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                 Emitiremos un registro de trazabilidad ("Coverage") en la cita. Luego de esto el botón "Iniciar Tratamiento" quedará destrabado para ti.
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2">
                             <button
                                 onClick={() => setTakeoverCitaId(null)}
                                 disabled={isTakingOver}
-                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition"
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition text-center"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={confirmTakeover}
                                 disabled={isTakingOver}
-                                className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition shadow flex items-center gap-2"
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition shadow flex items-center justify-center gap-2"
                             >
                                 {isTakingOver ? "Cargando..." : "Confirmar Tópico"}
                             </button>
@@ -445,18 +445,18 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                 />
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2">
                             <button
                                 onClick={() => { setActionCitaId(null); setActionReason(''); }}
                                 disabled={isProcessingAction}
-                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition"
+                                className="w-full sm:w-auto px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition text-center"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={confirmAction}
                                 disabled={isProcessingAction}
-                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition shadow flex items-center gap-2 ${actionType === 'NO_SHOW' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-700 hover:bg-slate-800'}`}
+                                className={`w-full sm:w-auto px-4 py-2 text-sm font-bold text-white rounded-lg transition shadow flex items-center justify-center gap-2 ${actionType === 'NO_SHOW' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-700 hover:bg-slate-800'}`}
                             >
                                 {isProcessingAction ? "Guardando..." : "Confirmar Acción"}
                             </button>

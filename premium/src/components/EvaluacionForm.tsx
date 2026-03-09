@@ -567,7 +567,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 {/* BOTTOM BAR STICKY (GUARDADO) */}
                 {!isClosed && (
-                    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] md:pl-64 transition-transform duration-300 ease-in-out pb-[env(safe-area-inset-bottom)] p-3 ${isKeyboardOpen ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+                    <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out pb-safe p-3 ${isKeyboardOpen ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
                         <div className="max-w-5xl mx-auto flex flex-row gap-3">
                             <button
                                 onClick={() => handleSave(false)}

@@ -244,9 +244,9 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-100 text-emerald-700 font-black flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5 sm:mt-1 text-xs sm:text-base">
                                                 {idx + 1}
                                             </div>
-                                            <div className="flex-1 pr-8">
+                                            <div className="flex-1 min-w-0 pr-6 sm:pr-8">
                                                 <textarea
-                                                    className="w-full bg-transparent border-b border-dashed border-slate-300 pb-1 pt-2 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 min-h-[44px] resize-y disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 disabled:px-2 disabled:border-b-0"
+                                                    className="w-full bg-transparent border-b border-dashed border-slate-300 pb-1 pt-2 text-[13px] sm:text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 min-h-[44px] resize-y disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 disabled:px-2 disabled:border-b-0"
                                                     placeholder="Meta medible (Ej: Lograr 90° flexión activa hombro sin dolor pasadas 2 semanas)..."
                                                     value={obj.text}
                                                     onChange={e => updateSmartObj(idx, { text: e.target.value })}

@@ -1351,7 +1351,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     <summary className="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-1 cursor-pointer select-none">
                                         <span>💉</span> Data QA
                                     </summary>
-                                    <div className="absolute right-0 top-full mt-1 w-[280px] sm:w-[320px] bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2">
+                                    <div className="absolute right-0 top-full mt-1 w-64 sm:w-80 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-3 flex flex-col gap-2">
                                         <div className="text-[10px] font-bold text-slate-400 uppercase mb-1 px-1 tracking-wider border-b border-slate-100 pb-2">Casos de Prueba (QA Auto-Fill)</div>
                                         <button onClick={(e) => {
                                             e.preventDefault();

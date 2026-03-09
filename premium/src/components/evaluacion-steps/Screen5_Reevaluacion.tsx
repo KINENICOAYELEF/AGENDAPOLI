@@ -412,7 +412,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                                                         newArr[idx].score = Number(e.target.value);
                                                         updateFormData({ reevaluation: { ...reevaluation, retest: { ...reevaluation.retest, psfsScores: newArr } } });
                                                     }}
-                                                    className="w-16 text-center text-xs font-bold bg-amber-50 border border-amber-200 text-amber-900 rounded p-1.5 focus:border-amber-400 outline-none"
+                                                    className="w-14 sm:w-16 shrink-0 text-center text-xs font-bold bg-amber-50 border border-amber-200 text-amber-900 rounded p-1.5 focus:border-amber-400 outline-none"
                                                     disabled={isClosed}
                                                 />
                                             </div>

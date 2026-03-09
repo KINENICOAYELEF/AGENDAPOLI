@@ -181,10 +181,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
             {/* ARTROKINEMATICA Y MMT */}
             <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex justify-between items-center shrink-0">
+                <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex flex-wrap justify-between items-center shrink-0 gap-2">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🦾</span> Análisis de Movimiento, ROM y Fuerza</h3>
                     {!isClosed && (
-                        <button onClick={addRomRow} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1 uppercase tracking-wide">
+                        <button onClick={addRomRow} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-lg border border-slate-200 flex items-center gap-1 uppercase tracking-wide flex-shrink-0">
                             + Fila
                         </button>
                     )}
@@ -268,10 +268,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             {/* NEURO Y ORTOPEDIA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                    <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex justify-between items-center rounded-t-2xl">
+                    <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex flex-wrap justify-between items-center rounded-t-2xl gap-2">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🔨</span> Pruebas Especiales</h3>
                         {!isClosed && (
-                            <button onClick={addOrthoTest} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-2 py-1 rounded-md border border-slate-200 uppercase tracking-wide">
+                            <button onClick={addOrthoTest} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-2 py-1 min-h-[44px] sm:min-h-0 rounded-md border border-slate-200 uppercase tracking-wide flex-shrink-0">
                                 Añadir Test
                             </button>
                         )}

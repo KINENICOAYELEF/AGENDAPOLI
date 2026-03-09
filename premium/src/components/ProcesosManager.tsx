@@ -262,7 +262,7 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                                 )}
                                             </div>
 
-                                            <div className="flex flex-col gap-2 shrink-0">
+                                            <div className="flex flex-col gap-2 shrink-0 mt-4 md:mt-0 w-full md:w-auto">
                                                 <button
                                                     onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
                                                     className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-3 md:px-5 md:py-3.5 rounded-xl transition-all shadow-sm hover:shadow-indigo-200 w-full flex items-center justify-center gap-2 group/btn"
@@ -307,16 +307,16 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                                             </div>
                                             <p className="text-slate-700 font-medium line-clamp-2">{proc.motivoIngresoLibre}</p>
                                         </div>
-                                        <div className="flex flex-row gap-2 shrink-0 flex-wrap justify-end">
+                                        <div className="flex flex-col sm:flex-row gap-2 shrink-0 flex-wrap sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
                                             <button
                                                 onClick={() => { setSelectedProceso(proc); setView('timeline'); }}
-                                                className="bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-semibold px-4 py-2 border border-indigo-200 rounded-lg shadow-sm transition-all"
+                                                className="w-full sm:w-auto text-center bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-semibold px-4 py-2 border border-indigo-200 rounded-lg shadow-sm transition-all"
                                             >
                                                 Ver Timeline HCE
                                             </button>
                                             <button
                                                 onClick={() => { setSelectedProceso(proc); setView('formulario'); }}
-                                                className="bg-white hover:bg-slate-50 text-slate-500 text-xs font-semibold px-4 py-2 border border-slate-200 rounded-lg shadow-sm transition-all"
+                                                className="w-full sm:w-auto text-center bg-white hover:bg-slate-50 text-slate-500 text-xs font-semibold px-4 py-2 border border-slate-200 rounded-lg shadow-sm transition-all"
                                             >
                                                 Ajustes
                                             </button>
