@@ -172,7 +172,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
 
             {view === 0 ? (
                 <div className="flex flex-col gap-6">
-                    <div className="bg-slate-50 border border-slate-200 p-4 md:p-6 rounded-2xl">
+                    <div className="bg-slate-50 border border-slate-200 p-4 sm:p-5 md:p-6 rounded-2xl">
                         <div className="flex items-center gap-2 mb-4">
                             <ClipboardDocumentListIcon className="w-6 h-6 text-indigo-500" />
                             <h3 className="font-bold text-slate-800 text-lg">Snapshot Clínico de Atención Vigente</h3>
@@ -282,7 +282,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                                 {reevaluation.isSameProblem === false || reevaluation.newRedFlags ? (
                                     <button
                                         onClick={onCreateNewInitial}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-sm text-sm flex gap-2 justify-center items-center w-full"
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 sm:px-6 rounded-xl shadow-sm text-sm flex gap-2 justify-center items-center w-full"
                                     >
                                         <ChartBarIcon className="w-5 h-5" />
                                         Crear Nueva Evaluación Inicial Absoluta
@@ -290,10 +290,10 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                                 ) : (
                                     <button
                                         onClick={() => setView(1)}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-sm text-sm flex gap-2 justify-center items-center w-full"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 sm:px-6 rounded-xl shadow-sm text-sm flex gap-2 justify-center items-center w-full"
                                     >
-                                        <ArrowTrendingUpIcon className="w-5 h-5" />
-                                        {reevaluation.changedMechanism || reevaluation.changedComparable || reevaluation.changedPsfs ? 'Continuar (Con ajustes condicionales)' : 'Paso Libre -> Ir a Retest Rápido'}
+                                        <ArrowTrendingUpIcon className="w-5 h-5 shrink-0" />
+                                        <span className="text-center">{reevaluation.changedMechanism || reevaluation.changedComparable || reevaluation.changedPsfs ? 'Continuar Ajustes' : 'Paso Libre -> Retest'}</span>
                                     </button>
                                 )}
                             </div>
@@ -309,7 +309,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                         </div>
                     )}
 
-                    <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm space-y-6">
+                    <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-6">
                         <div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-3">
                             <span className="text-xl">🎯</span>
                             <h3 className="font-bold text-slate-800 tracking-tight text-base">Retest Estructurado</h3>
@@ -478,7 +478,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                     </div>
 
                     <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50">
                             <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-xl">📈</span> Progreso y Ajustes al Plan</h3>
                             {!isClosed && (
                                 <button
@@ -492,7 +492,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                             )}
                         </div>
 
-                        <div className="p-5 space-y-6">
+                        <div className="p-4 sm:p-5 space-y-6">
                             {/* Block Calculadora Determinista */}
                             {progressCalc && (
                                 <div className={`border p-4 rounded-xl flex flex-col gap-2 ${progressCalc.color}`}>

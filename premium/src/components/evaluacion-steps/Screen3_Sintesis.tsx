@@ -162,7 +162,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                 </div>
 
                 {/* AI Assist Block */}
-                <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100 rounded-xl p-4 shadow-sm relative overflow-hidden shrink-0 min-w-[280px]">
+                <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100 rounded-xl p-4 sm:p-5 shadow-sm relative overflow-hidden shrink-0 w-full md:w-auto md:min-w-[280px]">
                     <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-500" />
                     <h3 className="font-bold text-indigo-900 flex items-center gap-2 text-sm mb-2">
                         <span className="text-base">✨</span> Pulir Síntesis con IA
@@ -191,9 +191,9 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             </div>
 
             {/* SEMÁFORO GLOBAL DE CARGA */}
-            <div className={`p-6 rounded-2xl border flex flex-col md:flex-row gap-6 items-center shadow-lg transition-colors ${autoSynth.trafficLight === 'Rojo' ? 'bg-rose-50 border-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                <div className="shrink-0 flex flex-col items-center gap-3 bg-white p-4 rounded-xl border shadow-sm">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Semáforo Clínico</span>
+            <div className={`p-4 sm:p-6 rounded-2xl border flex flex-col md:flex-row gap-4 sm:gap-6 items-center md:items-start shadow-lg transition-colors ${autoSynth.trafficLight === 'Rojo' ? 'bg-rose-50 border-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                <div className="shrink-0 flex flex-col items-center gap-3 bg-white p-4 rounded-xl border shadow-sm w-full md:w-auto">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider text-center">Semáforo Clínico</span>
                     <div className="flex gap-2">
                         <button onClick={() => handleUpdateSynth({ trafficLight: 'Verde' })} disabled={isClosed} className={`w-10 h-10 rounded-full border-2 transition-all ${autoSynth.trafficLight === 'Verde' ? 'bg-emerald-500 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-110' : 'bg-slate-200 border-slate-300 hover:bg-emerald-200'}`} />
                         <button onClick={() => handleUpdateSynth({ trafficLight: 'Amarillo' })} disabled={isClosed} className={`w-10 h-10 rounded-full border-2 transition-all ${autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-500 border-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-110' : 'bg-slate-200 border-slate-300 hover:bg-amber-200'}`} />
@@ -213,7 +213,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             <div className="grid grid-cols-1 gap-6">
 
                 {/* Sospecha Estructural */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🦴</span> 1. Sospecha Estructural Principal</h3>
                     <p className="text-xs text-slate-500 mb-4">Estructuras anatómicas que se presumen como la fuente generadora del dolor (nocicepción primaria).</p>
 
@@ -238,12 +238,12 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <span className="font-normal text-[10px] opacity-70 border-t border-indigo-200 pt-0.5 mt-0.5">{tagObj.source} | {tagObj.confidence}</span>
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('structuralSuspicions', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400 focus:bg-white w-48" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('structuralSuspicions', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
                     </div>
                 </div>
 
                 {/* Déficits Funcionales (Base para Objetivos) */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">⚙️</span> 2. Déficits Funcionales Clave</h3>
                     <p className="text-xs text-slate-500 mb-4">Alteraciones medibles de la función que están contribuyendo a la condición. (Serán la base para los Metas SMART en el siguiente paso).</p>
 
@@ -270,12 +270,12 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 )}
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('functionalDeficits', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-400 focus:bg-white w-48" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('functionalDeficits', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
                     </div>
                 </div>
 
                 {/* Contexto BPS */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🧠</span> 3. Moduladores Biopsicosociales</h3>
                     <p className="text-xs text-slate-500 mb-4">Factores extrínsecos e intrínsecos que perpetúan o modulan la percepción de la amenaza.</p>
 
@@ -297,7 +297,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 {!isClosed && <button onClick={() => toggleArrayItem('contextBps', tag)} className="hover:text-rose-500 ml-1"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>}
                             </div>
                         ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAdd('contextBps', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-amber-400 focus:bg-white w-48" />}
+                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAdd('contextBps', e)} className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-amber-400 focus:bg-white w-full sm:w-48 mt-2 sm:mt-0" />}
                     </div>
                 </div>
 

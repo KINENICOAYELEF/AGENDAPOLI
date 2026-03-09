@@ -139,7 +139,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     )}
                 </div>
 
-                <div className="p-5 flex flex-col gap-5">
+                <div className="p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diagnóstico Kinesiológico Narrativo</label>
                         <textarea
@@ -207,7 +207,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         )}
                     </div>
 
-                    <div className="p-5 flex flex-col gap-8">
+                    <div className="p-4 sm:p-5 flex flex-col gap-6 sm:gap-8">
 
                         {/* OBJETIVOS GENERALES */}
                         {geminiDiagnostic.objectivesGeneral && geminiDiagnostic.objectivesGeneral.length > 0 && (
@@ -232,16 +232,16 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
 
                             <div className="space-y-3">
                                 {(geminiDiagnostic.objectivesSmart || []).length === 0 && (
-                                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-6 text-center text-sm text-slate-500 italic">
+                                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-4 sm:p-6 text-center text-sm text-slate-500 italic">
                                         Aún no hay metas SMART generadas. Presiona "Generar Metas + Plan".
                                     </div>
                                 )}
                                 {(geminiDiagnostic.objectivesSmart || []).map((obj: any, idx: number) => (
                                     <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm relative group flex flex-col gap-3">
-                                        {!isClosed && <button onClick={() => removeSmartObj(idx)} className="absolute top-3 right-3 text-slate-300 hover:text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>}
+                                        {!isClosed && <button onClick={() => removeSmartObj(idx)} className="absolute top-2 sm:top-3 right-2 sm:right-3 text-slate-300 hover:text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>}
 
-                                        <div className="flex gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-black flex items-center justify-center shrink-0 border border-emerald-200 mt-1">
+                                        <div className="flex gap-2 sm:gap-3">
+                                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-100 text-emerald-700 font-black flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5 sm:mt-1 text-xs sm:text-base">
                                                 {idx + 1}
                                             </div>
                                             <div className="flex-1 pr-8">
@@ -255,8 +255,8 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                             </div>
                                         </div>
 
-                                        <div className="pl-11">
-                                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 focus-within:border-emerald-300 focus-within:bg-emerald-50/30 transition-colors">
+                                        <div className="pl-8 sm:pl-11">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 focus-within:border-emerald-300 focus-within:bg-emerald-50/30 transition-colors">
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Déficit Dirigido:</span>
                                                 <input
                                                     type="text"
