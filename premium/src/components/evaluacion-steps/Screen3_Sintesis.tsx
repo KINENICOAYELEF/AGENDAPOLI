@@ -205,7 +205,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         {autoSynth.trafficLight === 'Rojo' ? 'Alta Precaución (Carga Limitada)' : autoSynth.trafficLight === 'Amarillo' ? 'Progresión Cautelosa' : 'Carga Activa Agresiva'}
                     </h3>
                     <p className="text-xs text-slate-600 mb-3">Recomendación original del motor: <strong>{engine.safety.level}</strong>. {engine.safety.reasons[0]}</p>
-                    <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
+                    <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
                 </div>
             </div>
 

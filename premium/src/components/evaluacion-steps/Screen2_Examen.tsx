@@ -76,7 +76,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* PANEL DEL MOTOR CLÍNICO */}
-            <div className="bg-slate-800 rounded-2xl p-5 shadow-lg border border-slate-700 text-slate-100">
+            <div className="bg-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-700 text-slate-100">
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xl">🤖</span>
                     <h3 className="font-bold text-white tracking-wide">Motor de Triage y Examen</h3>
@@ -167,20 +167,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* OBSERVACION Y PALPACION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">👀</span> Observación y Postura</h3>
-                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px]" placeholder="Alineación, asimetrías, trofismo, marcha..." value={exam.posture || ''} onChange={(e) => handleUpdateExam({ posture: e.target.value })} disabled={isClosed} />
+                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Alineación, asimetrías, trofismo, marcha..." value={exam.posture || ''} onChange={(e) => handleUpdateExam({ posture: e.target.value })} disabled={isClosed} />
                 </div>
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm">
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🖐️</span> Palpación</h3>
-                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px]" placeholder="Temperatura, puntos gatillo, derrame, dolor a palpación..." value={exam.palpation || ''} onChange={(e) => handleUpdateExam({ palpation: e.target.value })} disabled={isClosed} />
+                    <textarea className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:bg-white focus:border-indigo-400 min-h-[100px] disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" placeholder="Temperatura, puntos gatillo, derrame, dolor a palpación..." value={exam.palpation || ''} onChange={(e) => handleUpdateExam({ palpation: e.target.value })} disabled={isClosed} />
                 </div>
             </div>
 
             {/* ARTROKINEMATICA Y MMT */}
             <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center shrink-0">
+                <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex justify-between items-center shrink-0">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🦾</span> Análisis de Movimiento, ROM y Fuerza</h3>
                     {!isClosed && (
                         <button onClick={addRomRow} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1 uppercase tracking-wide">
@@ -188,7 +188,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </button>
                     )}
                 </div>
-                <div className="p-0 overflow-x-auto">
+                <div className="p-0 overflow-x-auto w-full hide-scrollbar">
                     {romAndMmt.length === 0 ? (
                         <div className="p-6 text-center text-slate-500 text-xs italic bg-white">Sin registros numéricos. Opcional.</div>
                     ) : (
@@ -209,9 +209,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 {romAndMmt.map((row: any, idx: number) => (
                                     <tr key={row.id} className="border-b border-slate-50 last:border-none hover:bg-slate-50/50 transition-colors">
                                         <td className="p-2">
-                                            <div className="flex gap-2">
-                                                <input type="text" placeholder="Joint" className="w-1/3 min-w-[80px] bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-indigo-400" value={row.joint} onChange={e => updateRomRow(idx, { joint: e.target.value })} disabled={isClosed} />
-                                                <input type="text" placeholder="Movimiento..." className="w-2/3 min-w-[120px] bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-indigo-400" value={row.movement} onChange={e => updateRomRow(idx, { movement: e.target.value })} disabled={isClosed} />
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                                <input type="text" placeholder="Joint" className="w-full sm:w-1/3 min-w-[80px] bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-indigo-400 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" value={row.joint} onChange={e => updateRomRow(idx, { joint: e.target.value })} disabled={isClosed} />
+                                                <input type="text" placeholder="Movimiento..." className="w-full sm:w-2/3 min-w-[120px] bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-indigo-400 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" value={row.movement} onChange={e => updateRomRow(idx, { movement: e.target.value })} disabled={isClosed} />
                                             </div>
                                         </td>
                                         <td className="p-2 text-center">
@@ -265,9 +265,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* NEURO Y ORTOPEDIA */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6">
                 <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                    <div className="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center rounded-t-2xl">
+                    <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex justify-between items-center rounded-t-2xl">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🔨</span> Pruebas Especiales</h3>
                         {!isClosed && (
                             <button onClick={addOrthoTest} className="text-[10px] font-bold bg-white text-indigo-600 hover:bg-slate-50 px-2 py-1 rounded-md border border-slate-200 uppercase tracking-wide">
@@ -275,14 +275,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             </button>
                         )}
                     </div>
-                    <div className="p-4 space-y-3 flex-1 h-full">
+                    <div className="p-4 sm:p-5 space-y-3 flex-1 h-full">
                         {orthoTests.length === 0 && <p className="text-xs text-slate-400 italic text-center py-2">Sin pruebas ortopédicas registradas.</p>}
                         {orthoTests.map((test: any, idx: number) => (
                             <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-xl relative group">
                                 {!isClosed && <button onClick={() => removeOrthoTest(idx)} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>}
-                                <div className="grid grid-cols-[1fr_auto] gap-2 mb-2 pr-6">
-                                    <input type="text" placeholder="Nombre de la prueba..." className="bg-white border border-slate-200 rounded-md px-2 py-1.5 text-xs outline-none focus:border-indigo-400 font-bold" value={test.test} onChange={e => updateOrthoTest(idx, { test: e.target.value })} disabled={isClosed} />
-                                    <select className={`border rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wide font-black outline-none ${test.result === 'Positivo' ? 'bg-rose-50 border-rose-200 text-rose-700' : test.result === 'Negativo' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`} value={test.result} onChange={e => updateOrthoTest(idx, { result: e.target.value })} disabled={isClosed}>
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mb-2 sm:pr-6">
+                                    <input type="text" placeholder="Nombre de la prueba..." className="w-full bg-white border border-slate-200 rounded-md px-2 py-1.5 text-xs outline-none focus:border-indigo-400 font-bold disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100" value={test.test} onChange={e => updateOrthoTest(idx, { test: e.target.value })} disabled={isClosed} />
+                                    <select className={`w-full sm:w-auto border rounded-md px-2 py-1.5 text-[10px] uppercase tracking-wide font-black outline-none disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 ${test.result === 'Positivo' ? 'bg-rose-50 border-rose-200 text-rose-700' : test.result === 'Negativo' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`} value={test.result} onChange={e => updateOrthoTest(idx, { result: e.target.value })} disabled={isClosed}>
                                         <option value="">Status...</option>
                                         <option value="Positivo">Positivo</option>
                                         <option value="Negativo">Negativo</option>
@@ -295,12 +295,12 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-6 h-full">
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-inner flex-1 flex flex-col">
+                <div className="flex flex-col gap-4 sm:gap-6 h-full">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-inner flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><span className="text-lg">⚡</span> Neurológico / Vascular</h3>
                         <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 min-h-[80px]" placeholder="Dermatomas, reflejos, neurodinamia, pulsos..." value={exam.neuro || ''} onChange={(e) => handleUpdateExam({ neuro: e.target.value })} disabled={isClosed} />
                     </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-inner flex-1 flex flex-col">
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-inner flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-3"><span className="text-lg">🧘</span> Control Motor / Local</h3>
                         <textarea className="w-full flex-1 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 min-h-[80px]" placeholder="Disociación lumbopélvica, estabilizadores, balance, propiocepción local..." value={exam.motorControl || ''} onChange={(e) => handleUpdateExam({ motorControl: e.target.value })} disabled={isClosed} />
                     </div>

@@ -350,7 +350,7 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                             <div>
                                 <label className="text-xs font-bold text-slate-700 mb-1 block">Irritabilidad (After-effect)</label>
                                 <select
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white disabled:opacity-50"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit]"
                                     value={reevaluation.retest?.afterEffect || ''}
                                     onChange={e => updateFormData({ reevaluation: { ...reevaluation, retest: { ...reevaluation.retest, afterEffect: e.target.value } } })}
                                     disabled={isClosed}

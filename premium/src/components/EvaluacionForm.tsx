@@ -438,10 +438,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             {isPerfilDrawerOpen && <div className="fixed inset-0 bg-slate-900/20 z-[55] md:hidden" onClick={() => setIsPerfilDrawerOpen(false)} />}
 
             {/* CONTENEDOR PRINCIPAL */}
-            <div className="flex flex-col flex-1 h-full relative">
+            <div className="flex flex-col flex-1 h-full relative w-full overflow-hidden">
 
                 {/* TOP BAR MOBILE-FIRST STICKY */}
-                <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-2 md:py-3 gap-2">
+                <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between px-3 md:px-6 py-2 md:py-3 gap-2 w-full max-w-5xl mx-auto">
                     <div className="flex items-center justify-between md:justify-start w-full md:w-auto gap-3">
                         <div className="flex items-center gap-3">
                             <button onClick={onClose} className="p-2 -ml-2 hover:bg-slate-100 text-slate-500 rounded-full transition-colors shrink-0">
@@ -451,7 +451,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                                 <h2 className="text-sm md:text-base font-black text-slate-800 leading-tight">
                                     {type === 'INITIAL' ? 'Eval. Inicial V2' : 'Reevaluación V2'}
                                 </h2>
-                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-medium">
+                                <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-medium whitespace-nowrap">
                                     <span>P: {procesoId.slice(0, 4)}</span>
                                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                     <span className={`${getValidationContext.allValid ? 'text-emerald-600 font-bold' : 'text-amber-500'}`}>
@@ -495,9 +495,9 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     </div>
                 </div>
 
-                {/* NAVEGACION HORIZONTAL ENTRE PANTALLAS */}
-                <div className="bg-white border-b border-slate-200 shadow-sm z-40 relative">
-                    <div className="flex overflow-x-auto gap-2 px-3 md:px-6 py-2.5 items-center custom-scrollbar">
+                {/* NAVEGACION HORIZONTAL ENTRE PANTALLAS (TABS) */}
+                <div className="bg-white border-b border-slate-200 shadow-sm z-40 relative w-full">
+                    <div className="flex overflow-x-auto gap-2 px-3 md:px-6 py-2.5 items-center w-full max-w-5xl mx-auto custom-scrollbar hide-scrollbar scroll-smooth">
                         {SCREENS.map(s => (
                             <button
                                 key={s.id}
@@ -530,7 +530,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 )}
 
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
-                <div className="flex-1 overflow-y-auto pb-32 pt-6 px-3 md:px-6 max-w-4xl mx-auto w-full">
+                <div className="flex-1 overflow-y-auto pb-32 pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full">
 
                     {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
                         handleSave(false);
@@ -544,10 +544,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 </div>
 
-                {/* BOTTOM BAR STICKY */}
+                {/* BOTTOM BAR STICKY (GUARDADO) */}
                 {!isClosed && (
                     <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] md:pl-64">
-                        <div className="max-w-4xl mx-auto flex flex-row gap-3">
+                        <div className="max-w-5xl mx-auto flex flex-row gap-3">
                             <button
                                 onClick={() => handleSave(false)}
                                 disabled={loading}

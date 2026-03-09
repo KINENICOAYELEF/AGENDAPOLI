@@ -1497,13 +1497,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     )}
 
-                    {/* FASE 8: Overlay para Resaltado Exacto */}
+                    {/* FASE 8 y 32: Overlay para Resaltado Exacto sin perder Visibilidad */}
                     <div className="relative w-full">
                         <textarea
                             id="relato-libre-textarea"
                             placeholder="Relato clínico de la persona en consulta... (la caja se agrandará sola a medida que escribas)"
-                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none leading-relaxed min-h-[250px] overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10"
-                            style={highlightTexts.length > 0 ? { color: 'transparent', caretColor: '#1e293b' } : {}}
+                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none leading-relaxed min-h-[250px] overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
+                            style={highlightTexts.length > 0 && !isClosed ? { color: 'transparent', caretColor: '#1e293b' } : { WebkitTextFillColor: 'inherit', opacity: 1 }}
                             value={interviewV4.experienciaPersona.relatoLibre || ""}
                             onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
