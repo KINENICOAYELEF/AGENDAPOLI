@@ -875,29 +875,60 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
                 </div>
 
-                {/* 1. Foco y etiquetas rápidas */}
+                {/* El bloque 'Foco y etiquetas rápidas' ha sido extraído de este sticky header (Fase 22) */}
+
+                {/* FILA 3: 3 Badges AUTO */}
+                {(interviewV4.seguridad.confirmado || !!interviewV4.analisisIA) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${seguridadStyles}`} title={seguridadMotivo}>
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${seguridadDot}`} />
+                            Seguridad: {seguridadColor}
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm 
+                            ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'border-rose-200 bg-rose-50 text-rose-800' :
+                                focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'border-amber-200 bg-amber-50 text-amber-800' :
+                                    focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
+                                        'border-slate-200 bg-slate-50 text-slate-500'
+                            }`}>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Irritabilidad: {focoPrincipal?.irritabilidadAuto?.nivel && focoPrincipal.irritabilidadAuto.nivel !== 'NoDefinido' ? focoPrincipal.irritabilidadAuto.nivel : 'Pendiente'}
+                        </div>
+                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[250px]
+                            ${focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+                            title={focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}>
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+                            Naturaleza sugerida: {focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
+            <div className="px-4 flex flex-col gap-5 mt-4">
+
+                {/* 1. Foco y etiquetas rápidas (MOVIDO Y REFACTORIZADO A MOBILE-FIRST FASE 22) */}
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 relative">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">1</span>
                         <h3 className="font-bold text-slate-800 text-sm">Foco clínico inicial</h3>
                         <button
                             onClick={() => setShowFocoGuide(true)}
-                            className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center text-xs font-bold transition-colors ml-1"
+                            className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center text-xs font-bold transition-colors ml-1 shrink-0"
                             title="Guía de entrevista clínica"
                         >
                             ?
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                        {/* Foco Principal */}
-                        <div className="md:col-span-4 flex flex-col justify-end">
-                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 border-b border-rose-200 pb-0.5 text-rose-800">Foco Principal <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
-                            <div className="flex gap-1 h-8">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-5">
+                        {/* Foco Principal - Refactorizado Mobile First (Flex Col vertical stack) */}
+                        <div className="md:col-span-4 flex flex-col justify-end w-full">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-2 border-b border-rose-200 pb-0.5 text-rose-800">Foco Principal <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
                                 <input
                                     type="text"
                                     placeholder="Región (ej. Rodilla)"
-                                    className="w-2/3 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    className="w-full sm:w-2/3 h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
                                     value={focoPrincipal.region || ""}
                                     onChange={e => {
                                         const newFocos = [...interviewV4.focos];
@@ -907,7 +938,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     disabled={isClosed}
                                 />
                                 <select
-                                    className="w-1/3 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
+                                    className="w-full sm:w-1/3 h-9 text-xs p-2 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
                                     value={focoPrincipal.lado || "N/A"}
                                     onChange={e => {
                                         const newFocos = [...interviewV4.focos];
@@ -921,12 +952,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                         </div>
 
-                        {/* Motivos Secundarios */}
-                        <div className="md:col-span-3 flex flex-col justify-end">
-                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Motivos secundarios (2 máx)</div>
-                            <div className="flex flex-col gap-1">
+                        {/* Motivos Secundarios - Refactorizado */}
+                        <div className="md:col-span-3 flex flex-col justify-end w-full">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-2">Motivos secundarios (2 máx)</div>
+                            <div className="flex flex-col gap-2 w-full">
                                 <select
-                                    className="w-full h-8 text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50"
+                                    className="w-full h-9 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50"
                                     value={interviewV4.experienciaPersona.objetivos[1]?.actividad || ""}
                                     onChange={e => {
                                         const val = e.target.value;
@@ -950,7 +981,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     <input
                                         type="text"
                                         placeholder="Especifique otro motivo..."
-                                        className="w-full text-xs p-1.5 border border-slate-300 rounded outline-none bg-slate-50 mt-1"
+                                        className="w-full h-9 text-xs p-2 border border-slate-300 rounded outline-none bg-slate-50"
                                         value={interviewV4.experienciaPersona.objetivos[1]?.enSusPalabras || ""}
                                         onChange={e => {
                                             const newObjs = [...interviewV4.experienciaPersona.objetivos];
@@ -963,10 +994,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                         </div>
 
-                        {/* Quejas Principales */}
-                        <div className="md:col-span-5 flex flex-col justify-end">
-                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1">Queja(s) principal(es)</div>
-                            <div className="flex flex-wrap gap-1 items-center">
+                        {/* Quejas Principales - Refactorizado con Gap y py más tactil */}
+                        <div className="md:col-span-5 flex flex-col justify-end w-full">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-2">Queja(s) principal(es)</div>
+                            <div className="flex flex-wrap gap-2 items-center w-full">
                                 {["Dolor", "Rigidez", "Hinchazón", "Inestabilidad", "Debilidad", "Hormigueo/Adormecimiento", "Miedo al movimiento", "Rendimiento/Preventivo", "Otro"].map(q => {
                                     const isSelected = interviewV4.experienciaPersona.quejas.includes(q);
                                     return (
@@ -979,7 +1010,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 const next = isSelected ? current.filter(x => x !== q) : [...current, q];
                                                 updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, quejas: next } });
                                             }}
-                                            className={`text-[9.5px] px-2 py-1 rounded-full border transition-colors ${isSelected ? 'bg-indigo-500 text-white border-indigo-600 font-bold shadow-sm' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
+                                            className={`text-[10px] px-3 py-1.5 rounded-full border transition-colors ${isSelected ? 'bg-indigo-500 text-white border-indigo-600 font-bold shadow-sm' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'}`}
                                         >
                                             {q}
                                         </button>
@@ -990,7 +1021,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <input
                                     type="text"
                                     placeholder="Especifique otra queja..."
-                                    className="w-full h-7 text-xs p-1.5 border border-slate-300 rounded outline-none bg-indigo-50/50 mt-1"
+                                    className="w-full h-9 text-xs p-2 border border-slate-300 rounded outline-none bg-indigo-50/50 mt-2"
                                     value={interviewV4.experienciaPersona.quejaOtro || ""}
                                     onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, quejaOtro: e.target.value } })}
                                     disabled={isClosed}
@@ -998,22 +1029,35 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             )}
                         </div>
 
-                        {/* Prioridad #1 - RE-ADDED */}
-                        <div className="md:col-span-12 flex flex-col justify-end mt-2">
-                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-1 border-b border-rose-200 pb-0.5 text-rose-800">Prioridad #1 <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
-                            <select
-                                className="w-full sm:w-1/2 h-8 text-xs p-1.5 border border-rose-300 rounded outline-none bg-rose-50/30 text-rose-900 font-bold"
-                                value={interviewV4.experienciaPersona.prioridadPrincipal || ""}
-                                onChange={e => updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, prioridadPrincipal: e.target.value } })}
-                                disabled={isClosed}
-                            >
-                                <option value="">- Seleccione Prioridad -</option>
-                                {interviewV4.experienciaPersona.quejas.map(q => (
-                                    <option key={q} value={q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}>
-                                        {q === "Otro" ? interviewV4.experienciaPersona.quejaOtro || "Otro" : q}
-                                    </option>
-                                ))}
-                            </select>
+                        {/* Prioridad 1 (Queja prioritaria) - Refactorizado de Dropdown a Botones */}
+                        <div className="md:col-span-12 flex flex-col justify-end mt-2 w-full">
+                            <div className="text-[10px] font-bold uppercase text-slate-500 mb-2 border-b border-rose-200 pb-0.5 text-rose-800">Queja prioritaria <span className="text-[9px] text-rose-500 italic normal-case">*obligatorio</span></div>
+
+                            {interviewV4.experienciaPersona.quejas.length === 0 ? (
+                                <div className="text-xs text-rose-400 italic bg-rose-50 border border-rose-100 rounded p-2 text-center w-full">
+                                    Seleccione al menos una Queja principal arriba para decidir la prioridad.
+                                </div>
+                            ) : (
+                                <div className="flex flex-wrap gap-2 w-full">
+                                    {interviewV4.experienciaPersona.quejas.map(q => {
+                                        const actualName = q === "Otro" ? (interviewV4.experienciaPersona.quejaOtro || "Otro") : q;
+                                        const isSelected = interviewV4.experienciaPersona.prioridadPrincipal === actualName;
+                                        return (
+                                            <button
+                                                key={q}
+                                                disabled={isClosed}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, prioridadPrincipal: actualName } });
+                                                }}
+                                                className={`text-[11px] px-4 py-2 rounded border font-bold transition-all shadow-sm ${isSelected ? 'bg-rose-500 text-white border-rose-600 ring-2 ring-rose-200 scale-[1.02]' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50 active:scale-95'}`}
+                                            >
+                                                {actualName}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -1169,35 +1213,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     )}
                 </div>
-
-                {/* FILA 3: 3 Badges AUTO */}
-                {(interviewV4.seguridad.confirmado || !!interviewV4.analisisIA) && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${seguridadStyles}`} title={seguridadMotivo}>
-                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${seguridadDot}`} />
-                            Seguridad: {seguridadColor}
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm 
-                            ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'border-rose-200 bg-rose-50 text-rose-800' :
-                                focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'border-amber-200 bg-amber-50 text-amber-800' :
-                                    focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
-                                        'border-slate-200 bg-slate-50 text-slate-500'
-                            }`}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            Irritabilidad: {focoPrincipal?.irritabilidadAuto?.nivel && focoPrincipal.irritabilidadAuto.nivel !== 'NoDefinido' ? focoPrincipal.irritabilidadAuto.nivel : 'Pendiente'}
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[250px]
-                            ${focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
-                            title={focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}>
-                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-                            Naturaleza sugerida: {focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
-            <div className="px-4 flex flex-col gap-5 mt-4">
 
                 {/* 2. Relato del caso */}
                 <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
