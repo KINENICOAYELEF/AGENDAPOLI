@@ -197,6 +197,16 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const hasSmartObs = (fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
             if (!hasSmartObs) missing.push("Objetivos SMART");
 
+            // Validación FASE 45: P1.5 Anamnesis Remota Mínima
+            const rh = fd.remoteHistorySnapshot;
+            const hasCondRelevante = (rh?.medicalHistory?.condicionesClinicasRelevantes?.length || 0) > 0;
+            const hasMsk = (rh?.mskHistory?.relevantInjuries?.length || 0) > 0 || !!rh?.mskHistory?.mskSurgeries?.length || !!rh?.mskHistory?.persistentSequelae?.trim();
+            const hasBaseActivity = !!rh?.baseActivity?.primarySport?.trim() || !!rh?.baseActivity?.categoria?.trim();
+            const hasOcupacion = !!rh?.occupationalContext?.mainRole?.trim();
+
+            const hasRemoteMinimo = hasCondRelevante || hasMsk || hasBaseActivity || hasOcupacion;
+            if (!hasRemoteMinimo) missing.push("P1.5 Remota: Completar al menos Ocupación, Actividad Física, Cond. Clínica o MSK Previo");
+
             return {
                 allValid: missing.length === 0,
                 missing,
