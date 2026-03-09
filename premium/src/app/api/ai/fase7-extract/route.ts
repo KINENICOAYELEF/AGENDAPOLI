@@ -74,28 +74,24 @@ Tu respuesta debe ajustarse EXACTAMENTE a este esquema JSON:
     "sugerencias_examen_fisico_P2": [
         { "paso": "acción concreta", "por_que": "1 línea", "objetivo": "descartar|confirmar|cuantificar" }
     ],
-    "consideraciones_basales": [
-        "Observación clínica en base a los antecedentes remotos que altere evaluación o pronóstico del cuadro actual. Máx 1 línea por string."
-    ]
+    "consideraciones_basales": {
+        "modifican_evaluacion": "String o lista de factores basales que alteran la manera de examinar o razonar hoy. Si no hay, null.",
+        "modifican_pronostico": "String o lista de factores basales que cambian los tiempos/expectativas. Si no hay, null.",
+        "modifican_tolerancia_carga": "String o lista de factores basales que obligan a modificar la dosis o cargas. Si no hay, null.",
+        "modifican_adherencia": "String o lista de factores ocupacionales/BPS que alertan sobre mal cumplimiento. Si no hay, null.",
+        "mensaje_carencia_hallazgos": "Devuelve aquí 'No se identifican antecedentes basales que modifiquen de forma evidente esta evaluación' SOLO si en las anteriores no anotaste nada relevante."
+    }
 }
 Recuerda: Si falta información o un ítem no se describe, en TODOS los valores donde sea posible, devolver "No_mencionado".
-Si no hay contextos basales que cambien la inferencia de manera importante, devuelve "consideraciones_basales" vacío.
+Si no hay contextos basales que cambien la inferencia de manera importante, llena todo con null y usa el "mensaje_carencia_hallazgos".
 No devuelvas NADA MÁS QUE EL STRING JSON VÁLIDO. Tu respuesta debe comenzar con "{" y terminar con "}".`;
 
-        const ctxBasalResumido = remoteHistorySnapshot ?
-            `- Comorbilidades / Consideraciones: ${remoteHistorySnapshot.medicalHistory?.clinicalConsiderations || 'Ninguna explícita'}
-- Diagnósticos Previos: ${remoteHistorySnapshot.medicalHistory?.diagnoses?.map((d: any) => d.name).join(', ') || 'Normal'}
-- Cirugías Previas: ${remoteHistorySnapshot.medicalHistory?.surgeries?.map((s: any) => s.name).join(', ') || 'Ninguna'}
-- Trastornos u Otras Enfermedades: ${remoteHistorySnapshot.medicalHistory?.chronicDiseases?.map((d: any) => d.name).join(', ') || 'Ninguna'}
-- Fármacos/Medicamentos relevantes: ${remoteHistorySnapshot.medicalHistory?.medications?.map((m: any) => m.name).join(', ') || 'Sin información o no relevantes'}
-- Antecedentes Musculoesqueléticos Previos (MSK): ${remoteHistorySnapshot.mskHistory?.previousInjuries?.map((i: any) => i.region).join(', ') || 'Sin historial'} / Recurrencias: ${remoteHistorySnapshot.mskHistory?.recurrenceHistory ? 'Sí' : 'No reportadas'}
-- Ocupación y Demandas: ${remoteHistorySnapshot.occupationalContext?.role || 'No especificada'} (Demandas físicas: ${remoteHistorySnapshot.occupationalContext?.physicalDemands?.join(', ') || 'Ninguna'})
-- Deporte y Carga Basal: ${remoteHistorySnapshot.baseActivity?.mainSport || 'Sedentario'} (Nivel: ${remoteHistorySnapshot.baseActivity?.level || 'N/A'})
-- Factores de Riesgo / BPS e Historial de Adherencia: Calidad sueño (${remoteHistorySnapshot.bpsContext?.sleepQuality || 'N/A'}), Estrés basal (${remoteHistorySnapshot.bpsContext?.stressLevel || 'N/A'}), Adherencia previa (Barreras: ${remoteHistorySnapshot.occupationalContext?.adherenceBarriers || 'Ninguna descrita'})
-` : 'Sin antecedentes remotos basales registrados en plataforma.';
+        const ctxBasalResumido = remoteHistorySnapshot?.basalSynthesis
+            ? remoteHistorySnapshot.basalSynthesis
+            : 'Sin antecedentes remotos basales estructurados registrados en la plataforma.';
 
-        const userPrompt = `A continuación te presento los datos estructurados, el Contexto Basal Remoto Histórico de la persona, y el Relato Libre de la persona.
--- CONTEXTO BASAL REMOTO --
+        const userPrompt = `A continuación te presento los datos estructurados, la Síntesis Basal de la persona, y su Relato Libre actual.
+-- SÍNTESIS BASAL REMOTA --
 ${ctxBasalResumido}
 
 -- RELATO LIBRE --

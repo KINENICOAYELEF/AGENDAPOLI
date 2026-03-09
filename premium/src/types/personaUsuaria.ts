@@ -8,6 +8,7 @@ export interface RemoteHistory {
         medications: Array<{ name: string }>;
         allergies: Array<{ name: string }>;
         clinicalConsiderations: string; // "diabetes, patologías cardiovasculares..."
+        criticalModifiers: string[]; // ['Diabetes', 'Oncológico', 'Osteoporosis']
     };
 
     // 2) MSK y Deportivos Previos
@@ -16,6 +17,7 @@ export interface RemoteHistory {
         recurrences: string;
         mskSurgeries: Array<{ name: string }>;
         usefulTreatments: string;
+        uselessTreatments: string;
         previousImaging: string;
         persistentSequelae: string;
         historicalProblemRegion: string;
@@ -44,7 +46,7 @@ export interface RemoteHistory {
         weightLifting: string; // "Frecuente", "Ocasional", "No"
         repetitiveMovements: string;
         driving: string; // Conducción prolongada
-        adherenceBarriers: string; // tiempo, transpo, dinero, etc
+        adherenceBarriers: string[]; // ['Tiempo', 'Transporte', 'Dinero']
     };
 
     // 5) BPS (Factores Basales de Recuperación)
@@ -52,7 +54,8 @@ export interface RemoteHistory {
         sleepQuality: 'poor' | 'ok' | 'good' | '';
         sleepHours: string;
         stressLevel: 'low' | 'med' | 'high' | '';
-        moodAndSupport: 'low' | 'ok' | 'high' | '';
+        basalMood: string;
+        socialSupport: string;
         smoking: string;
         alcohol: string;
         otherHabits: string;
@@ -62,6 +65,9 @@ export interface RemoteHistory {
 
     // 6) Notas Basales del Expediente
     permanentNotes: string;
+
+    // FASE 44: Consolidado string para IA P1
+    basalSynthesis?: string;
 
     // Control
     lastUpdated?: string;

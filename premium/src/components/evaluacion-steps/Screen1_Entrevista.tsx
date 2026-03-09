@@ -2281,20 +2281,60 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             </div>
                                         )}
 
-                                        {/* Consideraciones de Contexto Basal (Prompt E) */}
+                                        {/* Consideraciones de Contexto Basal (Prompt E) / FASE 44 */}
                                         <div className="bg-amber-50 p-3 rounded-xl shadow-sm border border-amber-200 mt-3">
-                                            <h4 className="text-xs font-bold text-amber-900 mb-2 flex items-center gap-1">
-                                                <span>🔍</span> Consideraciones por antecedentes basales / anamnesis remota
+                                            <h4 className="text-xs font-bold text-amber-900 mb-3 flex items-center gap-1 border-b border-amber-200/50 pb-2">
+                                                <span>🔍</span> Consideraciones por Contexto Basal
                                             </h4>
-                                            {interviewV4.analisisIA.consideraciones_basales && interviewV4.analisisIA.consideraciones_basales.length > 0 ? (
-                                                <ul className="list-disc list-inside text-[11px] text-amber-800 space-y-1">
-                                                    {interviewV4.analisisIA.consideraciones_basales.map((c: string, i: number) => (
-                                                        <li key={i}>{c}</li>
-                                                    ))}
-                                                </ul>
-                                            ) : (
-                                                <p className="text-[11px] text-amber-700 italic">Sin antecedentes basales que modifiquen de forma evidente esta evaluación.</p>
-                                            )}
+                                            {(() => {
+                                                const cb = interviewV4.analisisIA.consideraciones_basales as any;
+                                                const hasData = cb && typeof cb === 'object' && !Array.isArray(cb) && (
+                                                    (cb.modifican_evaluacion && cb.modifican_evaluacion !== 'No_mencionado' && cb.modifican_evaluacion !== 'null') ||
+                                                    (cb.modifican_pronostico && cb.modifican_pronostico !== 'No_mencionado' && cb.modifican_pronostico !== 'null') ||
+                                                    (cb.modifican_tolerancia_carga && cb.modifican_tolerancia_carga !== 'No_mencionado' && cb.modifican_tolerancia_carga !== 'null') ||
+                                                    (cb.modifican_adherencia && cb.modifican_adherencia !== 'No_mencionado' && cb.modifican_adherencia !== 'null')
+                                                );
+
+                                                if (hasData) {
+                                                    const renderCbList = (label: string, val: any) => {
+                                                        if (!val || val === 'No_mencionado' || val === 'null') return null;
+                                                        const arr = Array.isArray(val) ? val : [val];
+                                                        const validItems = arr.filter(i => i && i !== 'No_mencionado' && i !== 'null');
+                                                        if (validItems.length === 0) return null;
+                                                        return (
+                                                            <div className="mb-2">
+                                                                <strong className="text-[10px] text-amber-900 uppercase tracking-widest">{label}</strong>
+                                                                <ul className="list-disc pl-4 text-[11px] text-amber-800 mt-0.5 space-y-0.5">
+                                                                    {validItems.map((item, idx) => <li key={idx}>{item}</li>)}
+                                                                </ul>
+                                                            </div>
+                                                        );
+                                                    };
+                                                    return (
+                                                        <div className="flex flex-col">
+                                                            {renderCbList('Evaluación Física / Razonamiento', cb.modifican_evaluacion)}
+                                                            {renderCbList('Pronóstico / Tiempos', cb.modifican_pronostico)}
+                                                            {renderCbList('Tolerancia a Carga Fisiológica', cb.modifican_tolerancia_carga)}
+                                                            {renderCbList('Adherencia y Barreras Ocupacionales / BPS', cb.modifican_adherencia)}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Fallback legacy array u objeto vacío
+                                                if (Array.isArray(cb) && cb.length > 0) {
+                                                    return (
+                                                        <ul className="list-disc list-inside text-[11px] text-amber-800 space-y-1">
+                                                            {cb.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                                                        </ul>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <p className="text-[11px] text-amber-700 italic">
+                                                        {cb?.mensaje_carencia_hallazgos || "Sin antecedentes basales que modifiquen de forma evidente esta evaluación."}
+                                                    </p>
+                                                );
+                                            })()}
                                         </div>
                                         {interviewV4.analisisIA.preguntas_faltantes && interviewV4.analisisIA.preguntas_faltantes.length > 0 && (
                                             <div className="bg-amber-50/30 rounded-xl shadow-sm border border-amber-100 p-3">

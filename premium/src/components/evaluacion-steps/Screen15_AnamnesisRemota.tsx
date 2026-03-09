@@ -5,23 +5,22 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { RemoteHistory, PersonaUsuaria } from "@/types/personaUsuaria";
 import { BaseEvaluacion } from "@/types/clinica";
-
-// Config inicial que alinea la UI al nuevo tipo
+import { buildBasalSynthesis } from "@/utils/remoteHistoryFormatter";
 const INITIAL_REMOTE_HISTORY: RemoteHistory = {
     medicalHistory: {
-        diagnoses: [], chronicDiseases: [], surgeries: [], medications: [], allergies: [], clinicalConsiderations: ''
+        diagnoses: [], chronicDiseases: [], surgeries: [], medications: [], allergies: [], clinicalConsiderations: '', criticalModifiers: []
     },
     mskHistory: {
-        relevantInjuries: [], recurrences: '', mskSurgeries: [], usefulTreatments: '', previousImaging: '', persistentSequelae: '', historicalProblemRegion: ''
+        relevantInjuries: [], recurrences: '', mskSurgeries: [], usefulTreatments: '', uselessTreatments: '', previousImaging: '', persistentSequelae: '', historicalProblemRegion: ''
     },
     baseActivity: {
         primarySport: '', level: '', weeklyFrequency: '', typicalDuration: '', yearsExperience: '', basalGoal: '', competitiveCalendar: '', surfaceOrEquipment: '', doubleLoad: ''
     },
     occupationalContext: {
-        mainRole: '', physicalDemands: '', shifts: '', timeSitting: '', timeStanding: '', weightLifting: '', repetitiveMovements: '', driving: '', adherenceBarriers: ''
+        mainRole: '', physicalDemands: '', shifts: '', timeSitting: '', timeStanding: '', weightLifting: '', repetitiveMovements: '', driving: '', adherenceBarriers: []
     },
     bpsContext: {
-        sleepQuality: '', sleepHours: '', stressLevel: '', moodAndSupport: '', smoking: '', alcohol: '', otherHabits: '', poorAdherenceHistory: '', protectiveFactors: ''
+        sleepQuality: '', sleepHours: '', stressLevel: '', basalMood: '', socialSupport: '', smoking: '', alcohol: '', otherHabits: '', poorAdherenceHistory: '', protectiveFactors: ''
     },
     permanentNotes: '',
     lastUpdated: new Date().toISOString()
@@ -90,10 +89,12 @@ export function Screen15_AnamnesisRemota({
                         // Aquí si trae "comorbidities" (legacy) deberiamos tirarlo a chronicDiseases en el futuro. 
                         // Por ahora sólo rehidratamos el base dict.
                         const mergedHistory = deepMergeWithInitial(data.remoteHistory as any);
-                        setHistory(mergedHistory);
-                        updateFormData({ remoteHistorySnapshot: mergedHistory });
+                        const historyConSintesis = { ...mergedHistory, basalSynthesis: buildBasalSynthesis(mergedHistory) };
+                        setHistory(historyConSintesis);
+                        updateFormData({ remoteHistorySnapshot: historyConSintesis });
                     } else {
-                        updateFormData({ remoteHistorySnapshot: history });
+                        const baseConSintesis = { ...history, basalSynthesis: buildBasalSynthesis(history) };
+                        updateFormData({ remoteHistorySnapshot: baseConSintesis });
                     }
                 }
             } catch (error) {
@@ -106,8 +107,9 @@ export function Screen15_AnamnesisRemota({
     }, [globalActiveYear, usuariaId, formData.remoteHistorySnapshot]);
 
     const handleChange = (newHistory: RemoteHistory) => {
-        setHistory(newHistory);
-        updateFormData({ remoteHistorySnapshot: newHistory });
+        const historyConSintesis = { ...newHistory, basalSynthesis: buildBasalSynthesis(newHistory) };
+        setHistory(historyConSintesis);
+        updateFormData({ remoteHistorySnapshot: historyConSintesis });
     };
 
     const updateNested = (category: keyof RemoteHistory, field: string, value: any) => {
@@ -144,7 +146,7 @@ export function Screen15_AnamnesisRemota({
                         type="button"
                         disabled={disabled}
                         onClick={() => onChange(opt.value)}
-                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 
+                        className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200 
                             ${value === opt.value
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200 font-semibold'
                                 : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50'} 
@@ -156,6 +158,48 @@ export function Screen15_AnamnesisRemota({
             </div>
         </div>
     );
+
+    // Helper para renderizar Multi-Select "Chips"
+    const MultiSelectChips = ({ label, values, options, onChange, disabled }: any) => {
+        // Safe check for legacy string data vs array
+        const safeValues = Array.isArray(values) ? values : (typeof values === 'string' && values.length > 0 ? [values] : []);
+
+        const toggleValue = (val: string) => {
+            if (safeValues.includes(val)) {
+                onChange(safeValues.filter((v: string) => v !== val));
+            } else {
+                onChange([...safeValues, val]);
+            }
+        };
+
+        return (
+            <div className="space-y-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider">
+                    {label}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                    {options.map((opt: any) => {
+                        const isSelected = safeValues.includes(opt.value);
+                        return (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => toggleValue(opt.value)}
+                                className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200 
+                                    ${isSelected
+                                        ? 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-200 font-semibold'
+                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50'} 
+                                    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {opt.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-6 max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-400">
@@ -212,17 +256,37 @@ export function Screen15_AnamnesisRemota({
                     <ArrayField label="Alergias / RAM" items={history.medicalHistory?.allergies} onChange={(v: any) => updateNested('medicalHistory', 'allergies', v)} placeholder="Penicilina, AINES..." disabled={isClosed} />
                     <ArrayField label="Cirugías previas" items={history.medicalHistory?.surgeries} onChange={(v: any) => updateNested('medicalHistory', 'surgeries', v)} placeholder="Apendicectomía, Cesárea..." disabled={isClosed} />
                     <ArrayField label="Farmacoterapia actual relevante" items={history.medicalHistory?.medications} onChange={(v: any) => updateNested('medicalHistory', 'medications', v)} placeholder="Losartán, Omeprazol, Anticonceptivos..." disabled={isClosed} />
-                    <div className="md:col-span-2">
-                        <label className="block text-[10px] font-bold text-rose-800 mb-1.5 uppercase tracking-wider">
-                            Consideraciones Clínicas <span className="text-[10px] font-normal text-rose-500 bg-rose-100 px-2 py-0.5 rounded-full">Requiere consideración clínica especial</span>
-                        </label>
-                        <textarea
-                            value={history.medicalHistory?.clinicalConsiderations || ''}
-                            onChange={e => updateNested('medicalHistory', 'clinicalConsiderations', e.target.value)}
+                    <div className="md:col-span-2 space-y-4">
+                        <MultiSelectChips
+                            label="Modificadores Clínicos Basales"
+                            values={history.medicalHistory?.criticalModifiers || []}
+                            onChange={(v: any) => updateNested('medicalHistory', 'criticalModifiers', v)}
+                            options={[
+                                { label: 'Diabetes', value: 'diabetes' },
+                                { label: 'Inf. / Reumatológica', value: 'reumatologica' },
+                                { label: 'Osteoporosis/penia', value: 'osteoporosis' },
+                                { label: 'Oncológico', value: 'oncologico' },
+                                { label: 'Anticoagulación', value: 'anticoagulacion' },
+                                { label: 'Corticoides Crónicos', value: 'corticoides' },
+                                { label: 'Neurológica', value: 'neurologica' },
+                                { label: 'Cardiorrespiratoria', value: 'cardiorrespiratoria' },
+                                { label: 'Otro', value: 'otro' }
+                            ]}
                             disabled={isClosed}
-                            placeholder="Ej. Paciente oncológico en remisión, diabetes mal controlada con riesgo tisular neuropático, uso crónico de corticoides (riesgo óseo/tendinoso), etc."
-                            className="w-full border border-rose-200 rounded-xl px-4 py-3 text-sm focus:border-rose-400 focus:ring-2 focus:ring-rose-200/50 focus:outline-none min-h-[100px] bg-rose-50 border-l-4 border-l-rose-400 disabled:opacity-60 resize-y transition-shadow placeholder:text-rose-300"
                         />
+
+                        <div>
+                            <label className="block text-[10px] font-bold text-rose-800 mb-1.5 uppercase tracking-wider">
+                                Detalle Clínico <span className="text-[10px] font-normal text-rose-500 bg-rose-100 px-2 py-0.5 rounded-full">Requiere consideración clínica especial</span>
+                            </label>
+                            <textarea
+                                value={history.medicalHistory?.clinicalConsiderations || ''}
+                                onChange={e => updateNested('medicalHistory', 'clinicalConsiderations', e.target.value)}
+                                disabled={isClosed}
+                                placeholder="Ej. Paciente oncológico en remisión, diabetes mal controlada con riesgo tisular neuropático, uso crónico de corticoides (riesgo óseo/tendinoso), etc."
+                                className="w-full border border-rose-200 rounded-xl px-4 py-3 text-sm focus:border-rose-400 focus:ring-2 focus:ring-rose-200/50 focus:outline-none min-h-[100px] bg-rose-50 border-l-4 border-l-rose-400 disabled:opacity-60 resize-y transition-shadow placeholder:text-rose-300"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -250,8 +314,12 @@ export function Screen15_AnamnesisRemota({
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 pt-4 border-t border-slate-100">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Tratamientos Previos (Útiles / Inútiles)</label>
-                            <textarea value={history.mskHistory?.usefulTreatments || ''} onChange={e => updateNested('mskHistory', 'usefulTreatments', e.target.value)} disabled={isClosed} placeholder="Punción seca funcionó bien, ondas de choque no..." className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-slate-400 bg-slate-50 disabled:opacity-60 h-24 resize-y" />
+                            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Tratamientos Previos Exitosos</label>
+                            <textarea value={history.mskHistory?.usefulTreatments || ''} onChange={e => updateNested('mskHistory', 'usefulTreatments', e.target.value)} disabled={isClosed} placeholder="Punción seca, ejercicio progresivo..." className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-slate-400 bg-slate-50 disabled:opacity-60 h-24 resize-y" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Tratamientos Inútiles o Mal Tolerados</label>
+                            <textarea value={history.mskHistory?.uselessTreatments || ''} onChange={e => updateNested('mskHistory', 'uselessTreatments', e.target.value)} disabled={isClosed} placeholder="Ondas de choque (agudizó dolor), masajes pasivos..." className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-slate-400 bg-slate-50 disabled:opacity-60 h-24 resize-y" />
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Secuelas / Limitaciones Persistentes</label>
@@ -312,7 +380,7 @@ export function Screen15_AnamnesisRemota({
                         <div className="lg:col-span-3 pt-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-emerald-50/30 rounded-xl border border-emerald-50">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-emerald-800 mb-1.5 uppercase tracking-wider">Doble Carga Fisiológica</label>
+                                    <label className="block text-[10px] font-bold text-emerald-800 mb-1.5 uppercase tracking-wider">Doble Carga Basal (Deporte + Trabajo/Estudio)</label>
                                     <input type="text" value={history.baseActivity?.doubleLoad || ''} onChange={e => updateNested('baseActivity', 'doubleLoad', e.target.value)} disabled={isClosed} placeholder="Ej: Trabajo físico intenso DE DÍA + Crossfit de noche" className="w-full border border-emerald-200/60 bg-white rounded-lg text-sm px-3 py-2 shadow-sm focus:border-emerald-400 outline-none" />
                                 </div>
                                 <div>
@@ -376,10 +444,24 @@ export function Screen15_AnamnesisRemota({
                         </div>
                     </div>
 
-                    <div className="md:col-span-3 mt-2 lg:flex lg:gap-6 space-y-4 lg:space-y-0">
+                    <div className="md:col-span-3 mt-2 lg:flex lg:gap-6 space-y-4 lg:space-y-0 items-start">
                         <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Barreras Logísticas (Historial Adherencia)</label>
-                            <input type="text" value={history.occupationalContext?.adherenceBarriers || ''} onChange={e => updateNested('occupationalContext', 'adherenceBarriers', e.target.value)} disabled={isClosed} placeholder="Viajes constantes, turnos nocturnos, transporte difícil..." className="w-full border border-sky-200/60 focus:border-sky-400 focus:ring-1 focus:ring-sky-200 rounded-lg text-sm px-3 py-2 outline-none shadow-sm" />
+                            {/* Chips de Adherencia en lugar de input libre */}
+                            <MultiSelectChips
+                                label="Barreras Basales Logísticas"
+                                values={history.occupationalContext?.adherenceBarriers || []}
+                                onChange={(v: any) => updateNested('occupationalContext', 'adherenceBarriers', v)}
+                                disabled={isClosed}
+                                options={[
+                                    { label: 'Tiempo', value: 'tiempo' },
+                                    { label: 'Transporte', value: 'transporte' },
+                                    { label: 'Dinero', value: 'dinero' },
+                                    { label: 'Turnos', value: 'turnos' },
+                                    { label: 'Distancia', value: 'distancia' },
+                                    { label: 'Apoyo', value: 'apoyo' },
+                                    { label: 'Otra', value: 'otra' }
+                                ]}
+                            />
                         </div>
                         <div className="flex-1">
                             <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Exposición en trayectos / Conducción</label>
@@ -426,9 +508,21 @@ export function Screen15_AnamnesisRemota({
                         />
 
                         <RadioGroup
-                            label="Soporte Social / Ánimo"
-                            value={history.bpsContext?.moodAndSupport || ''}
-                            onChange={(v: string) => updateNested('bpsContext', 'moodAndSupport', v)}
+                            label="Estado de Ánimo Basal"
+                            value={history.bpsContext?.basalMood || ''}
+                            onChange={(v: string) => updateNested('bpsContext', 'basalMood', v)}
+                            disabled={isClosed}
+                            options={[
+                                { label: 'Positivo/Resiliente', value: 'good' },
+                                { label: 'Fluctuante', value: 'fluctuating' },
+                                { label: 'Bajo/Ansioso', value: 'low' }
+                            ]}
+                        />
+
+                        <RadioGroup
+                            label="Red de Apoyo Social"
+                            value={history.bpsContext?.socialSupport || ''}
+                            onChange={(v: string) => updateNested('bpsContext', 'socialSupport', v)}
                             disabled={isClosed}
                             options={[
                                 { label: 'Fuerte apoyo', value: 'high' },
