@@ -1,4 +1,4 @@
-// FASE 38: Perfil Permanente Profundizado (PROMPT A)
+// FASE 45: Cierre Final de Arquitectura Clínica y Datos
 export interface RemoteHistory {
     // 1) Historial Médico y Consideraciones
     medicalHistory: {
@@ -7,8 +7,27 @@ export interface RemoteHistory {
         surgeries: Array<{ name: string }>;
         medications: Array<{ name: string }>;
         allergies: Array<{ name: string }>;
-        clinicalConsiderations: string; // "diabetes, patologías cardiovasculares..."
-        criticalModifiers: string[]; // ['Diabetes', 'Oncológico', 'Osteoporosis']
+        clinicalConsiderations: string;
+        criticalModifiers: string[];
+
+        // FASE 45: Arrays estructurados analíticos
+        condicionesClinicasRelevantes?: Array<{
+            name: string; // Ej: Hipertensión arterial, Diabetes...
+            estado: 'Controlada' | 'No controlada' | 'No sabe' | string;
+            tratamiento: boolean;
+            observacion: string;
+        }>;
+    };
+
+    // FASE 45: Sub-bloque biológico
+    biologicalFactors?: {
+        embarazoActual?: boolean;
+        postpartoReciente?: boolean;
+        lactancia?: boolean;
+        perimenopausiaMenopausia?: boolean;
+        alteracionesMenstruales?: boolean;
+        antecedentePelvico?: boolean;
+        observacion?: string;
     };
 
     // 2) MSK y Deportivos Previos
@@ -21,32 +40,35 @@ export interface RemoteHistory {
         previousImaging: string;
         persistentSequelae: string;
         historicalProblemRegion: string;
+        dominancia?: string; // FASE 45
+        usoOrtesis?: string; // FASE 45
     };
 
     // 3) Actividad Física, Deporte y Carga
     baseActivity: {
         primarySport: string;
-        level: string; // "amateur, competitivo, sedentario..."
+        categoria?: string; // FASE 45: Running, Fútbol, etc.
+        level: string;
         weeklyFrequency: string;
         typicalDuration: string;
         yearsExperience: string;
         basalGoal: string;
         competitiveCalendar: string;
         surfaceOrEquipment: string;
-        doubleLoad: string; // Ej: deporte + trabajo físico
+        doubleLoad: string;
     };
 
     // 4) Ocupación, Estudio y Contexto
     occupationalContext: {
-        mainRole: string; // Ocupación / Estudio
-        physicalDemands: string;
-        shifts: string; // Jornada / Turnos
-        timeSitting: string; // "Alta > 6h", "Baja"
+        mainRole: string;
+        physicalDemands: string;  // Demanda física ocupacional general
+        shifts: string;
+        timeSitting: string;
         timeStanding: string;
-        weightLifting: string; // "Frecuente", "Ocasional", "No"
+        weightLifting: string;
         repetitiveMovements: string;
-        driving: string; // Conducción prolongada
-        adherenceBarriers: string[]; // ['Tiempo', 'Transporte', 'Dinero']
+        driving: string;
+        adherenceBarriers: string[];
     };
 
     // 5) BPS (Factores Basales de Recuperación)
@@ -60,7 +82,7 @@ export interface RemoteHistory {
         alcohol: string;
         otherHabits: string;
         poorAdherenceHistory: string;
-        protectiveFactors: string; // red de apoyo, etc.
+        protectiveFactors: string;
     };
 
     // 6) Notas Basales del Expediente
@@ -73,29 +95,35 @@ export interface RemoteHistory {
     lastUpdated?: string;
     updatedByClinician?: string;
 
-    // (Legacy Support para evitar quiebres inmediatos de pacientes previos en P1.5)
+    // Legacy Support
     comorbidities?: any;
-    surgeries?: any;
-    medications?: any;
-    allergies?: any;
-    relevantInjuryHistory?: any;
-    physicalActivity?: any;
-    occupationDemands?: any;
-    sleep?: any;
-    stressMood?: any;
-    logistics?: any;
-    preferences?: any;
 }
 
 export interface PersonaUsuaria {
     id?: string;
 
+    // FASE 45: Datos base
     identity: {
         fullName: string;
-        ageRange: string; // ej: "20-29"
-        sexGender?: string;
-        dominantSide?: string;
-        contactMinimal?: string;
+        rut?: string;
+        fechaNacimiento?: string; // YYYY-MM-DD
+        edad?: number; // Para analítica, derivado de fechaNacimiento
+        ageRange?: string; // Legacy
+        sexoRegistrado?: 'Mujer' | 'Hombre' | 'Intersexual' | 'No especifica' | string;
+        comuna?: string;
+        ciudad?: string;
+        telefono?: string;
+        correo?: string;
+        contactoEmergenciaNombre?: string;
+        contactoEmergenciaRelacion?: string;
+        observacionesAdministrativas?: string;
+        dominantSide?: string; // Legacy
+        contactMinimal?: string; // Legacy
+    };
+
+    // FASE 45: Contexto social y educacional
+    socialContext?: {
+        nivelEducacional?: 'Básica' | 'Media' | 'Técnico' | 'Universitario' | 'Postgrado' | 'No especifica' | string;
     };
 
     consent: {
@@ -115,7 +143,6 @@ export interface PersonaUsuaria {
 
     // Legacy migration fields (deprecated)
     nombreCompleto?: string;
-    rut?: string;
     telefono?: string;
     email?: string;
     notasAdministrativas?: string;

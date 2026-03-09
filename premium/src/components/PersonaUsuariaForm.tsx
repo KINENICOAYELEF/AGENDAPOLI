@@ -28,25 +28,67 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
 
     // Estado interno del formulario
     const [formData, setFormData] = useState<PersonaUsuaria>({
-        identity: { fullName: "", ageRange: "" },
+        identity: {
+            fullName: "",
+            rut: "",
+            fechaNacimiento: "",
+            sexoRegistrado: "",
+            comuna: "",
+            ciudad: "",
+            telefono: "",
+            correo: "",
+            contactoEmergenciaNombre: "",
+            contactoEmergenciaRelacion: "",
+            observacionesAdministrativas: "",
+        },
+        socialContext: {
+            nivelEducacional: "",
+        },
         consent: { accepted: false },
         meta: {},
-        nombreCompleto: "",
-        rut: "",
-        telefono: "",
-        email: "",
-        notasAdministrativas: "",
     });
 
     useEffect(() => {
         if (initialData) {
-            setFormData(initialData);
+            // Migración hidratada al vuelo si faltan datos en identity
+            const mergedIdentity = {
+                ...formData.identity,
+                ...(initialData.identity || {}),
+                fullName: initialData.identity?.fullName || initialData.nombreCompleto || "",
+                rut: initialData.identity?.rut || initialData.rut || "",
+                telefono: initialData.identity?.telefono || initialData.telefono || "",
+                correo: initialData.identity?.correo || initialData.email || "",
+                observacionesAdministrativas: initialData.identity?.observacionesAdministrativas || initialData.notasAdministrativas || "",
+            };
+            setFormData({
+                ...initialData,
+                identity: mergedIdentity,
+                socialContext: initialData.socialContext || { nivelEducacional: "" }
+            });
         }
     }, [initialData]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleIdentityChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, identity: { ...prev.identity, [name]: value } as any }));
+    };
+
+    const handleSocialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, socialContext: { ...prev.socialContext, [name]: value } as any }));
+    };
+
+    // Función derivada para calcular edad (visual)
+    const calcularEdad = (fechaNac: string) => {
+        if (!fechaNac) return "-";
+        const [yyyy, mm, dd] = fechaNac.split("-").map(Number);
+        const nac = new Date(yyyy, mm - 1, dd);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nac.getFullYear();
+        if (hoy.getMonth() < nac.getMonth() || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) {
+            edad--;
+        }
+        return isNaN(edad) ? "-" : edad;
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -57,8 +99,14 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             return;
         }
 
-        if ((formData.nombreCompleto || "").trim() === "" || (formData.rut || "").trim() === "") {
-            alert("El Nombre Completo y el Identificador/RUT son obligatorios.");
+        // Validación FASE 45: Obligatorios Mínimos Troncales
+        const { fullName, rut, fechaNacimiento, sexoRegistrado, comuna, telefono, correo } = formData.identity;
+        if (!fullName?.trim() || !rut?.trim() || !fechaNacimiento?.trim() || !sexoRegistrado?.trim() || !comuna?.trim()) {
+            alert("Nombre Completo, RUT, Fecha de Nacimiento, Sexo Registrado y Comuna son obligatorios.");
+            return;
+        }
+        if (!telefono?.trim() && !correo?.trim()) {
+            alert("Debe ingresar al menos un número de teléfono o un correo electrónico.");
             return;
         }
 
@@ -66,11 +114,25 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             setLoading(true);
             const targetId = isEditMode && formData.id ? formData.id : generateId();
 
+            // Auto-calcular edad antes de guardar para fines de queries rápidas si se desea
+            const calcEdad = calcularEdad(fechaNacimiento!);
+            const finalEdad = typeof calcEdad === 'number' ? calcEdad : undefined;
+
             const payload: PersonaUsuaria = {
                 ...formData,
                 id: targetId,
+                identity: {
+                    ...formData.identity,
+                    edad: finalEdad
+                },
+                // Mantenemos legacy sync para vistas antiguas que puedan depender de la raíz (opcional)
+                nombreCompleto: formData.identity.fullName,
+                rut: formData.identity.rut,
+                telefono: formData.identity.telefono,
+                email: formData.identity.correo,
+
                 // Inyectamos timestamp de creación solo si es un documento nuevo
-                ...(!isEditMode && { createdAt: new Date().toISOString() })
+                ...(!isEditMode && { meta: { createdAt: new Date().toISOString() } })
             };
 
             const docRef = doc(db, "programs", globalActiveYear, "usuarias", targetId);
@@ -92,7 +154,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
         return (
             <ProcesosManager
                 personaUsuariaId={initialData.id}
-                personaUsuariaName={initialData.nombreCompleto || ""}
+                personaUsuariaName={formData.identity.fullName || ""}
                 onBack={() => setSubView('main')}
             />
         );
@@ -102,18 +164,18 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
         <form onSubmit={handleSave} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* Campos Macro-Administrativos */}
+                {/* --- A) IDENTIFICACIÓN Y DATOS BASE --- */}
                 <div className="col-span-1 md:col-span-2 space-y-4">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b pb-2">Identificación Base</h3>
+                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b pb-2">A) Identificación Base</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
-                                name="nombreCompleto"
-                                value={formData.nombreCompleto}
-                                onChange={handleChange}
+                                name="fullName"
+                                value={formData.identity.fullName || ""}
+                                onChange={handleIdentityChange}
                                 placeholder="Ej. Ana Pérez Gómez"
                                 className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                                 required
@@ -121,57 +183,186 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Identificador Público (RUT / DNI) <span className="text-red-500">*</span></label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Identificador Público (RUT/DNI) <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 name="rut"
-                                value={formData.rut}
-                                onChange={handleChange}
+                                value={formData.identity.rut || ""}
+                                onChange={handleIdentityChange}
                                 placeholder="Ej. 19.123.456-7"
                                 className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono"
                                 required
                             />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">F. Nacimiento <span className="text-red-500">*</span></label>
+                                <input
+                                    type="date"
+                                    name="fechaNacimiento"
+                                    value={formData.identity.fechaNacimiento || ""}
+                                    onChange={handleIdentityChange}
+                                    className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Edad Actual</label>
+                                <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded px-3 py-2 font-bold text-center cursor-not-allowed">
+                                    {calcularEdad(formData.identity.fechaNacimiento || "")} años
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Sexo Registrado <span className="text-red-500">*</span></label>
+                            <select
+                                name="sexoRegistrado"
+                                value={formData.identity.sexoRegistrado || ""}
+                                onChange={handleIdentityChange}
+                                className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                required
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="Mujer">Mujer</option>
+                                <option value="Hombre">Hombre</option>
+                                <option value="Intersexual">Intersexual</option>
+                                <option value="No especifica">No especifica</option>
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Comuna <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    name="comuna"
+                                    value={formData.identity.comuna || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="Ej. Santiago"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Ciudad</label>
+                                <input
+                                    type="text"
+                                    name="ciudad"
+                                    value={formData.identity.ciudad || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="Opcional"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono Móvil</label>
+                                <input
+                                    type="tel"
+                                    name="telefono"
+                                    value={formData.identity.telefono || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="+569..."
+                                    className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                                <input
+                                    type="email"
+                                    name="correo"
+                                    value={formData.identity.correo || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="@correo.cl"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 grid grid-cols-2 gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
+                            <div>
+                                <label className="block text-xs font-bold text-red-800 mb-1">Contacto Emergencia</label>
+                                <input
+                                    type="text"
+                                    name="contactoEmergenciaNombre"
+                                    value={formData.identity.contactoEmergenciaNombre || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="Nombre completo"
+                                    className="w-full border border-red-200 rounded px-3 py-1.5 outline-none text-sm focus:border-red-400"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-red-800 mb-1">Relación / Vínculo</label>
+                                <input
+                                    type="text"
+                                    name="contactoEmergenciaRelacion"
+                                    value={formData.identity.contactoEmergenciaRelacion || ""}
+                                    onChange={handleIdentityChange}
+                                    placeholder="Padre, Pareja..."
+                                    className="w-full border border-red-200 rounded px-3 py-1.5 outline-none text-sm focus:border-red-400"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Observaciones Administrativas</label>
+                            <input
+                                type="text"
+                                name="observacionesAdministrativas"
+                                value={formData.identity.observacionesAdministrativas || ""}
+                                onChange={handleIdentityChange}
+                                placeholder="Horarios preferidos, previsión..."
+                                className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                            />
+                        </div>
                     </div>
+                </div>
+
+                {/* --- B) CONTEXTO SOCIAL Y OCUPACIONAL BASE --- */}
+                <div className="col-span-1 md:col-span-2 space-y-4 mt-2">
+                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 border-b pb-2">B) Contexto Social y Ocupacional Base</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono Móvil de Contacto</label>
-                            <input
-                                type="tel"
-                                name="telefono"
-                                value={formData.telefono}
-                                onChange={handleChange}
-                                placeholder="+56 9 XXXXXXXX"
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Nivel Educacional</label>
+                            <select
+                                name="nivelEducacional"
+                                value={formData.socialContext?.nivelEducacional || ""}
+                                onChange={handleSocialChange}
                                 className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                            />
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="Básica">Básica</option>
+                                <option value="Media">Media</option>
+                                <option value="Técnico">Técnico</option>
+                                <option value="Universitario">Universitario</option>
+                                <option value="Postgrado">Postgrado</option>
+                                <option value="No especifica">No especifica</option>
+                            </select>
                         </div>
+                    </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="paciente@correo.cl"
-                                className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                            />
-                        </div>
+                    {/* Mostrar los datos extraídos de la Remota en vista sólo lectura, ya que el origen de la verdad clínica es la Anamnesis Remota */}
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600 italic">
+                        Nota: La información detallada sobre actividad deportiva principal, demanda física ocupacional y barreras se aloja dentro del proceso clínico de <strong className="font-semibold text-slate-700">Anamnesis Remota (P1.5)</strong>. A continuación, se muestra el resumen estructurado sincronizado.
                     </div>
                 </div>
 
-                <div className="col-span-1 md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Anotaciones Administrativas</label>
-                    <textarea
-                        name="notasAdministrativas"
-                        value={formData.notasAdministrativas}
-                        onChange={handleChange}
-                        placeholder="Info de horarios preferidos, acompañantes, o notas de recepción... (NO incluir datos clínicos aquí)"
-                        rows={3}
-                        className="w-full border border-slate-300 rounded px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
-                    ></textarea>
-                </div>
+                {/* --- C) RESUMEN BASAL CLÍNICO --- */}
+                {isEditMode && formData.remoteHistory?.basalSynthesis && (
+                    <div className="col-span-1 md:col-span-2 space-y-4 mt-2 bg-amber-50/50 p-4 rounded-xl border border-amber-200">
+                        <h3 className="text-sm font-bold text-amber-900 uppercase tracking-widest flex items-center gap-2">
+                            <span>📄</span> C) Resumen Basal Clínico (Auto-Sincronizado)
+                        </h3>
+                        <div className="text-xs text-amber-800 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap p-3 bg-white border border-amber-100 rounded-lg shadow-inner">
+                            {formData.remoteHistory.basalSynthesis}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* SECCIÓN GESTIÓN DE PROCESOS CLÍNICOS (SOLO VISIBLE EN EDICIÓN/FICHA CLINICA YA CREADA) */}
@@ -181,7 +372,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                         <div>
                             <h3 className="text-sm font-bold text-slate-800 tracking-wide flex items-center gap-2">
                                 <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                                Historial y Atenciones Clínicas
+                                Historial y Procesos Clínicos (D)
                             </h3>
                             <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                                 Gestione los tratamientos, evoluciones y evaluaciones agrupándolos por procesos clínicos.
