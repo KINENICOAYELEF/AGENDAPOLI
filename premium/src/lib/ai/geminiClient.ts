@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { jsonrepair } from 'jsonrepair';
 import { generateSHA256, normalizePayload } from './hash';
 
 // Wrapper unificado para comunicarse con la API de Gemini Flash 2.0
@@ -70,13 +71,23 @@ export const geminiClient = {
             try {
                 return JSON.parse(cleaned);
             } catch (pErr) {
-                // Parseo Nivel 2: Regex Substring extractor
+                // Parseo Nivel 2: Extracción estricta del substring JSON
                 console.warn("[geminiClient] Parseo Nivel 1 falló, intentando Nivel 2 (Regex)...");
-                const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned;
-                return JSON.parse(jsonStr);
+                const jsonStrMatch = cleaned.match(/\{[\s\S]*\}/);
+                if (!jsonStrMatch) throw new Error("Regex no pudo localizar un bloque JSON {}");
+                const jsonStr = jsonStrMatch[0];
+
+                try {
+                    return JSON.parse(jsonStr);
+                } catch (pErr2) {
+                    // Parseo Nivel 3: Sanación inteligente con jsonrepair
+                    console.warn("[geminiClient] Parseo Nivel 2 falló, intentando Nivel 3 (jsonrepair)...");
+                    const repairedJson = jsonrepair(jsonStr);
+                    return JSON.parse(repairedJson);
+                }
             }
         } catch (error: any) {
-            console.error("[geminiClient] Error crítico. Generando error legible para frontend.", error);
+            console.error("[geminiClient] Error crítico inescrutable. Generando fallback amigable para el frontend.", error);
             // Front-End interception trigger. Never throw a hard crash that white-screens the app.
             return {
                 _IS_JSON_ERROR: true,

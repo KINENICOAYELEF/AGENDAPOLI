@@ -1881,140 +1881,179 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         )}
                     </button>
 
-                    {/* FASE 13: Botones Opcionales Rápidos */}
-                    <div className="flex flex-col sm:flex-row gap-3 mt-3">
-                        <button
-                            onClick={async (e) => {
-                                e.preventDefault();
-                                if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
-                                    alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
-                                    return;
-                                }
-                                setIsProcessingPreguntasIA(true);
-                                try {
-                                    const payload = { interviewV4 };
-                                    const response = await fetch('/api/ai/f13-preguntas', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify(payload)
-                                    });
-                                    const data = await response.json();
-                                    if (response.ok && data) {
-                                        updateV4({
-                                            analisisIA: {
-                                                ...(interviewV4.analisisIA || {}),
-                                                preguntas_faltantes: data.preguntas_faltantes
-                                            }
-                                        } as any);
-                                    } else {
-                                        alert("Error en la extracción IA: " + (data.error || "Desconocido"));
-                                    }
-                                } catch (err: any) {
-                                    alert("Error servidor: " + err.message);
-                                } finally {
-                                    setIsProcessingPreguntasIA(false);
-                                }
-                            }}
-                            disabled={isClosed || isProcessingPreguntasIA || isProcessingAI}
-                            className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
-                        >
-                            {isProcessingPreguntasIA ? (
-                                <><span className="animate-spin text-sm">⏳</span> Preguntando...</>
-                            ) : (
-                                <><span>❓</span> IA: Preguntas faltantes (máx 5)</>
-                            )}
-                        </button>
-
-                        <button
-                            onClick={async (e) => {
-                                e.preventDefault();
-                                if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
-                                    alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
-                                    return;
-                                }
-                                setIsProcessingExamenIA(true);
-                                try {
-                                    const payload = { interviewV4 };
-                                    const response = await fetch('/api/ai/f13-examen', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify(payload)
-                                    });
-                                    const data = await response.json();
-                                    if (response.ok && data) {
-                                        updateV4({
-                                            analisisIA: {
-                                                ...(interviewV4.analisisIA || {}),
-                                                sugerencias_examen_fisico_P2: data.sugerencias_examen_fisico_P2
-                                            }
-                                        } as any);
-                                    } else {
-                                        alert("Error en la extracción IA: " + (data.error || "Desconocido"));
-                                    }
-                                } catch (err: any) {
-                                    alert("Error servidor: " + err.message);
-                                } finally {
-                                    setIsProcessingExamenIA(false);
-                                }
-                            }}
-                            disabled={isClosed || isProcessingExamenIA || isProcessingAI}
-                            className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
-                        >
-                            {isProcessingExamenIA ? (
-                                <><span className="animate-spin text-sm">⏳</span> Sugiriendo...</>
-                            ) : (
-                                <><span>🩺</span> IA: Sugerir examen físico (P2)</>
-                            )}
-                        </button>
-                    </div>
-
-                    {/* FASE 18: Fallo Resiliente de IA JSON */}
+                    {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
                     {interviewV4.jsonExtractError && (
-                        <div className="mt-4 bg-red-50 border border-red-300 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                            <div className="flex items-start gap-3">
-                                <div className="text-xl">⚠️</div>
-                                <div className="flex-1">
-                                    <h4 className="text-red-800 font-bold text-sm">Error en el formato de respuesta de Gemini</h4>
-                                    <p className="text-red-700 text-xs mt-1">
-                                        La Inteligencia Artificial no devolvió un formato válido estructurado (JSON). Sin embargo, <strong>tus datos no se han perdido</strong>.
-                                    </p>
+                        <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl relative overflow-hidden">
+                            <div className="flex items-start gap-3 relative z-10">
+                                <span className="text-xl">⚠️</span>
+                                <div className="flex flex-col flex-1 gap-1">
+                                    <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la respuesta estructurada IA</h4>
+                                    <p className="text-xs text-rose-600 mb-2">Gemini respondió en un formato ilegible o que rompe la matriz clínica. Tu relato libre está a salvo y no se ha borrado nada.</p>
+
+                                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                const el = document.getElementById('debug-raw-ia');
+                                                if (el) el.classList.toggle('hidden');
+                                            }}
+                                            className="bg-white border text-xs border-rose-300 text-rose-700 hover:bg-rose-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
+                                        >
+                                            👁️ Ver respuesta cruda
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                // Retrigger process automatically via hidden click or calling the button
+                                                document.getElementById('btn-ia-main-extract')?.click();
+                                            }}
+                                            className="bg-rose-600 hover:bg-rose-700 text-xs text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                                        >
+                                            <span>🔄</span> Reintentar extracción
+                                        </button>
+                                    </div>
+
+                                    <div id="debug-raw-ia" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto">
+                                        {interviewV4.jsonExtractRawBackup || "No se pudo respaldar el texto crudo."}
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    )}
 
-                            {/* Raw Data Accordion */}
-                            <details className="group border border-red-200 rounded-lg bg-white overflow-hidden">
-                                <summary className="cursor-pointer bg-red-100/50 hover:bg-red-100 px-3 py-2 text-xs font-semibold text-red-800 flex items-center justify-between">
-                                    <span>Ver respuesta cruda de la IA</span>
-                                    <span className="group-open:rotate-180 transition-transform">▼</span>
-                                </summary>
-                                <div className="p-3 bg-slate-50 border-t border-red-100">
-                                    <pre className="text-[10px] text-slate-700 whitespace-pre-wrap font-mono overflow-auto max-h-48 break-words select-all">
-                                        {interviewV4.jsonExtractRawBackup || "No se registró respuesta raw."}
-                                    </pre>
-                                </div>
-                            </details>
-
-                            {/* Botón Reintentar Interno */}
+                    {/* FASE 13: Botones Opcionales Rápidos */}
+                    {!interviewV4.jsonExtractError && (
+                        <div className="flex flex-col sm:flex-row gap-3 mt-3">
                             <button
                                 onClick={async (e) => {
                                     e.preventDefault();
-                                    // Limpiamos los flags de error y forzamos re-intento de IA
-                                    updateV4({
-                                        jsonExtractError: false,
-                                        jsonExtractRawBackup: null
-                                    } as any);
-
-                                    // Disparar click en el botón existente (IA: Ordenar y extraer)
-                                    // Alternativamente repetimos la misma lógica:
-                                    const evt = new MouseEvent('click', { bubbles: true, cancelable: true });
-                                    const btn = document.getElementById('btn-ia-main-extract');
-                                    if (btn) btn.dispatchEvent(evt);
-                                    else alert("No se pudo iniciar el reintento. Por favor presiona el botón morado principal de arriba.");
+                                    if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
+                                        alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
+                                        return;
+                                    }
+                                    setIsProcessingPreguntasIA(true);
+                                    try {
+                                        const payload = { interviewV4 };
+                                        const response = await fetch('/api/ai/f13-preguntas', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(payload)
+                                        });
+                                        const data = await response.json();
+                                        if (response.ok && data) {
+                                            updateV4({
+                                                analisisIA: {
+                                                    ...(interviewV4.analisisIA || {}),
+                                                    preguntas_faltantes: data.preguntas_faltantes
+                                                }
+                                            } as any);
+                                        } else {
+                                            alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                        }
+                                    } catch (err: any) {
+                                        alert("Error servidor: " + err.message);
+                                    } finally {
+                                        setIsProcessingPreguntasIA(false);
+                                    }
                                 }}
-                                className="mt-1 self-start bg-red-100 hover:bg-red-200 text-red-800 text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors border border-red-300 flex items-center gap-2"
+                                disabled={isClosed || isProcessingPreguntasIA || isProcessingAI}
+                                className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
                             >
-                                <span>🔄</span> Reintentar extracción IA
+                                {isProcessingPreguntasIA ? (
+                                    <><span className="animate-spin text-sm">⏳</span> Preguntando...</>
+                                ) : (
+                                    <><span>❓</span> IA: Preguntas faltantes (máx 5)</>
+                                )}
                             </button>
+
+                            <button
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
+                                        alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
+                                        return;
+                                    }
+                                    setIsProcessingExamenIA(true);
+                                    try {
+                                        const payload = { interviewV4 };
+                                        const response = await fetch('/api/ai/f13-examen', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(payload)
+                                        });
+                                        const data = await response.json();
+                                        if (response.ok && data) {
+                                            updateV4({
+                                                analisisIA: {
+                                                    ...(interviewV4.analisisIA || {}),
+                                                    sugerencias_examen_fisico_P2: data.sugerencias_examen_fisico_P2
+                                                }
+                                            } as any);
+                                        } else {
+                                            alert("Error en la extracción IA: " + (data.error || "Desconocido"));
+                                        }
+                                    } catch (err: any) {
+                                        alert("Error servidor: " + err.message);
+                                    } finally {
+                                        setIsProcessingExamenIA(false);
+                                    }
+                                }}
+                                disabled={isClosed || isProcessingExamenIA || isProcessingAI}
+                                className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
+                            >
+                                {isProcessingExamenIA ? (
+                                    <><span className="animate-spin text-sm">⏳</span> Sugiriendo...</>
+                                ) : (
+                                    <><span>🩺</span> IA: Sugerir examen físico (P2)</>
+                                )}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
+                    {interviewV4.jsonExtractError && (
+                        <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl relative overflow-hidden">
+                            <div className="flex items-start gap-3 relative z-10">
+                                <span className="text-xl">⚠️</span>
+                                <div className="flex flex-col flex-1 gap-1">
+                                    <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la respuesta IA. Reintenta.</h4>
+                                    <p className="text-[11px] text-rose-600 mb-2">Gemini respondió en un formato ilegible o que rompe la matriz clínica. Tu relato libre está a salvo y no se ha borrado nada.</p>
+
+                                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                const el = document.getElementById('debug-raw-ia');
+                                                if (el) el.classList.toggle('hidden');
+                                            }}
+                                            className="bg-white border text-xs border-rose-300 text-rose-700 hover:bg-rose-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
+                                        >
+                                            👁️ Ver respuesta cruda
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                updateV4({
+                                                    jsonExtractError: false,
+                                                    jsonExtractRawBackup: null
+                                                } as any);
+
+                                                const evt = new MouseEvent('click', { bubbles: true, cancelable: true });
+                                                const btn = document.getElementById('btn-ia-main-extract');
+                                                if (btn) btn.dispatchEvent(evt);
+                                                else alert("Por favor presione manualmente el botón de Procesar con Inteligencia Artificial.");
+                                            }}
+                                            className="bg-rose-600 hover:bg-rose-700 text-xs text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                                        >
+                                            <span>🔄</span> Reintentar extracción
+                                        </button>
+                                    </div>
+
+                                    <div id="debug-raw-ia" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto select-all">
+                                        {interviewV4.jsonExtractRawBackup || "No se pudo respaldar el texto crudo."}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
