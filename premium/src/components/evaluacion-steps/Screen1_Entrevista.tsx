@@ -866,12 +866,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </button>
                             <span className={isExpertMode ? 'text-blue-600' : ''}>Experto</span>
                         </span>
-                        <button disabled className="text-[10px] font-bold px-2 py-1 sm:px-2.5 sm:py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed flex items-center gap-1 shrink-0" title="Sugerir checklist de preguntas faltantes (No autocompleta)">
-                            <span>✨</span> <span className="hidden sm:inline">IA: qué falta preguntar</span><span className="sm:hidden">Sugerir</span>
-                        </button>
-                        <button disabled className="text-[10px] font-bold px-2 py-1 sm:px-2.5 sm:py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed flex items-center gap-1 shrink-0" title="Redactar borrador de resumen (Revisión manual requerida)">
-                            <span>📝</span> <span className="hidden sm:inline">IA: redactar resumen</span><span className="sm:hidden">Resumen</span>
-                        </button>
 
                         {isSavingDraft ? (
                             <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-2 py-1 sm:py-1.5 rounded animate-pulse whitespace-nowrap shrink-0">Guardando...</span>
@@ -885,7 +879,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 relative">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">1</span>
-                        <h3 className="font-bold text-slate-800 text-sm">Foco y etiquetas rápidas</h3>
+                        <h3 className="font-bold text-slate-800 text-sm">Foco clínico inicial</h3>
                         <button
                             onClick={() => setShowFocoGuide(true)}
                             className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center text-xs font-bold transition-colors ml-1"
@@ -1204,38 +1198,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
             {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
             <div className="px-4 flex flex-col gap-5 mt-4">
-
-                {/* 1. Foco y etiquetas rápidas */}
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">1</span>
-                        <h3 className="font-bold text-slate-800 text-sm">Foco y etiquetas rápidas</h3>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700">Etiquetas Clínicas Rápidas (Transversales)</label>
-                        <div className="flex flex-wrap gap-1">
-                            {["Inflamación", "Mecánico", "Agudo", "Crónico", "Inestable"].map(t => {
-                                const selected = focoPrincipal?.tags.includes(t);
-                                return (
-                                    <button
-                                        key={t}
-                                        disabled={isClosed}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            let current = focoPrincipal.tags || [];
-                                            const newTags = selected ? current.filter(x => x !== t) : [...current, t];
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, tags: newTags } : f);
-                                            updateV4({ focos: newFocos });
-                                        }}
-                                        className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors ${selected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                                    >
-                                        {t}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
 
                 {/* 2. Relato del caso */}
                 <div id="section-relato" className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
