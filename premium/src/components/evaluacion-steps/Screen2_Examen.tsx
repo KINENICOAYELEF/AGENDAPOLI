@@ -186,7 +186,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <span className="text-lg">👀</span> B. Evaluación Observacional
                         </h3>
                         <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-slate-600">
-                            Postura, Marcha, Movimiento libre y Reacción al síntoma
+                            Observa primero el gesto o movimiento más representativo referido en la entrevista.
                         </p>
                     </div>
                     <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-600 opacity-60 hover:opacity-100 transition-opacity" title="Cuándo usarlo: Al inicio o mientras el paciente relata.&#10;Cómo aplicarlo: Observa libremente y selecciona los chips rápidos.&#10;Qué registrar: Solo anomalías, asimetrías o hallazgos relevantes de conducta del dolor.&#10;Cuándo no profundizar: Evita estar rato anotando si todo es normal.">
@@ -200,6 +200,23 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <span className="text-lg">⚠️</span> Prefiere observación inicial para no sobre-provocar dolor.
                         </div>
                     )}
+
+                    {exam.retestGesture && (
+                        <div className="bg-indigo-50 border border-indigo-100 text-indigo-800 text-xs p-3 rounded-lg flex items-center gap-2 font-medium">
+                            <span className="text-lg">📌</span> Tarea / Gesto índice referido: <span className="font-bold">{exam.retestGesture}</span>
+                        </div>
+                    )}
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                        <label className="block text-xs font-bold text-slate-600 mb-1">Movimiento o gesto observado hoy</label>
+                        <input
+                            type="text"
+                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-lg p-2 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400/20"
+                            placeholder="Ej. sentadilla, levantar brazo, caminar libremente..."
+                            value={exam.movimientoObservadoHoy || ''}
+                            onChange={(e) => handleUpdateExam('movimientoObservadoHoy', e.target.value)}
+                            disabled={isClosed}
+                        />
+                    </div>
 
                     {(() => {
                         const obs = exam.observacionInicialConfig || {};
@@ -236,11 +253,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <p className="text-[11px] text-slate-500 italic">Qué registrar: Asimetrías o atrofias relevantes.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Edema / Aumento vol.'])}
+                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Aumento de volumen aparente'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detalles sobre postura o asimetrías evidentes..."
+                                            placeholder="Detalles sobre postura, aumento de volumen aparente, asimetrías..."
                                             value={exam.postureAlignment || ''}
                                             onChange={(e) => handleUpdateExam('postureAlignment', e.target.value)}
                                             disabled={isClosed}
@@ -258,11 +275,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <p className="text-[11px] text-slate-500 italic">Qué registrar: "Normal" o patrón compensatorio.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('marchaChips', ['Normal', 'Antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
+                                        {renderChipGroup('marchaChips', ['Normal', 'Marcha antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar alteraciones en la marcha..."
+                                            placeholder="Especificar marcha antálgica o alteraciones corporales..."
                                             value={exam.gaitBasicGesture || ''}
                                             onChange={(e) => handleUpdateExam('gaitBasicGesture', e.target.value)}
                                             disabled={isClosed}
@@ -280,11 +297,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <p className="text-[11px] text-slate-500 italic">Qué registrar: Aprehensión o bloqueo funcional visible.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango limitado', 'Evita usar zona'])}
+                                        {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango limitado', 'Movimiento temeroso', 'Compensa al elevar'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar calidad del movimiento libre..."
+                                            placeholder="Especificar aprehensión o bloqueos..."
                                             value={exam.initialActiveMovement || ''}
                                             onChange={(e) => handleUpdateExam('initialActiveMovement', e.target.value)}
                                             disabled={isClosed}
@@ -302,11 +319,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <p className="text-[11px] text-slate-500 italic">Qué registrar: Si lo tolera, si hay arco doloroso, o temor (kinesiofobia).</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Aprensivo', 'Arco doloroso', 'Temor al movimiento'])}
+                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Dolor al final del gesto', 'Arco doloroso', 'Estrategia de protección'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detallar dónde o cómo reacciona al dolor..."
+                                            placeholder="Detallar dónde duele o estrategias de protección..."
                                             value={exam.symptomBehaviorMovement || ''}
                                             onChange={(e) => handleUpdateExam('symptomBehaviorMovement', e.target.value)}
                                             disabled={isClosed}
@@ -319,13 +336,13 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 {/* Impresión General Opcional */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Impresión Global</label>
-                                        <p className="text-[11px] text-slate-500">Comentario breve que sintetice lo observado antes de evaluar rangos específicos.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Impresión observacional inicial</label>
+                                        <p className="text-[11px] text-slate-500">Síntesis observacional corta antes de las pruebas analíticas.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
                                         <textarea
                                             className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 min-h-[60px] resize-y"
-                                            placeholder="Impresión observacional cualitativa final..."
+                                            placeholder="Síntesis breve de lo observado..."
                                             value={exam.observationGeneral || ''}
                                             onChange={(e) => handleUpdateExam('observationGeneral', e.target.value)}
                                             disabled={isClosed}
@@ -354,433 +371,222 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </button>
                 </div>
 
-                <div className="p-0 overflow-x-auto bg-slate-50/30">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-indigo-50/40 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 w-40 max-w-[12rem]">Articulación / Lado</th>
-                                <th className="p-3 w-40 max-w-[12rem]">Movimiento</th>
-                                <th className="p-3 text-center w-28">¿Activo?</th>
-                                <th className="p-3 w-48">Resultado ACT</th>
-                                <th className="p-3 text-center w-28">¿Pasivo?</th>
-                                <th className="p-3 w-48">Resultado PAS / Tope</th>
-                                <th className="p-3 w-40">EVA / Ángulo</th>
-                                <th className="p-3">Calidad / Hallazgo</th>
-                                <th className="p-3 w-16 text-center"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {(!exam.romAnaliticoConfig?.filas || exam.romAnaliticoConfig.filas.length === 0) && (
-                                <tr>
-                                    <td colSpan={9} className="p-8 text-center text-slate-400 italic font-medium text-sm">
-                                        No hay movimientos ingresados. Presiona "+ Añadir Movimiento" para comenzar.
-                                    </td>
-                                </tr>
-                            )}
-                            {(exam.romAnaliticoConfig?.filas || []).map((fila: any, i: number) => {
-                                // Lógica de Orientación Clínica Inteligente
-                                let orientacionClinica = "";
-                                if (fila.evalAct && fila.evalPas) {
-                                    const rAct = fila.lado === 'Bilateral' ? (fila.resActDer || fila.resActIzq || '') : (fila.resAct || '');
-                                    const rPas = fila.lado === 'Bilateral' ? (fila.resPasDer || fila.resPasIzq || '') : (fila.resPas || '');
+                <div className="p-4 bg-slate-50 flex flex-col gap-4">
+                    {(!exam.romAnaliticoConfig?.filas || exam.romAnaliticoConfig.filas.length === 0) && (
+                        <div className="p-8 text-center bg-white border-2 border-dashed border-indigo-100 rounded-xl text-indigo-400 italic font-medium text-sm">
+                            No hay movimientos ingresados. Presiona "+ Añadir Movimiento" para comenzar.
+                        </div>
+                    )}
+                    {(exam.romAnaliticoConfig?.filas || []).map((fila: any, i: number) => {
+                        let orientacionClinica = "";
+                        if (fila.evalAct && fila.evalPas) {
+                            const rAct = fila.lado === 'Bilateral' ? (fila.resActDer || fila.resActIzq || '') : (fila.resAct || '');
+                            const rPas = fila.lado === 'Bilateral' ? (fila.resPasDer || fila.resPasIzq || '') : (fila.resPas || '');
 
-                                    const actNum = rAct.includes('Incompleto') ? 0 : 1;
-                                    const pasNum = rPas.includes('Incompleto') ? 0 : 1;
+                            const actNum = (rAct.includes('Incompleto') || rAct.includes('limitado') || rAct.includes('Rígido')) ? 0 : 1;
+                            const pasNum = (rPas.includes('Incompleto') || rPas.includes('limitado') || rPas.includes('Rígido')) ? 0 : 1;
 
-                                    if (actNum === 0 && pasNum === 1 && rAct !== '') { // Activo incompleto, Pasivo completo
-                                        orientacionClinica = "Orientación: podría haber influencia de dolor, inhibición o componente contráctil. Interpretar con fuerza y control motor.";
-                                    } else if (actNum === 0 && pasNum === 0 && rAct !== '' && rPas !== '') { // Ambos incompletos
-                                        orientacionClinica = "Orientación: la limitación compartida sugiere revisar movilidad articular/tejidos no contráctiles dentro del cuadro completo.";
-                                    } else if (actNum === 1 && rPas === 'Completo doloroso') { // Activo y pasivo completos, pero pasivo duele
-                                        orientacionClinica = "Orientación: revisar irritabilidad, sobrepresión o sensibilidad mecánica.";
-                                    } else if (rAct === 'Completo doloroso' || rAct === 'Incompleto doloroso') {
-                                        orientacionClinica = "Orientación: registrar dolor de movimiento, no asumir déficit biológico de movilidad por sí solo.";
-                                    }
-                                }
+                            if (actNum === 0 && pasNum === 1 && rAct !== '') {
+                                orientacionClinica = "Activo más limitado que pasivo: puede ser más relevante el dolor, control o tejido contráctil.";
+                            } else if (actNum === 0 && pasNum === 0 && rAct !== '' && rPas !== '') {
+                                orientacionClinica = "Activo y pasivo ambos limitados: puede haber restricción articular o rigidez relevante.";
+                            } else if (actNum === 1 && (rPas.includes('doloroso') || rPas.includes('Dolor'))) {
+                                orientacionClinica = "Dolor al final del arco pasivo: considera irritación mecánica al cierre del movimiento.";
+                            } else if ((rAct.includes('doloroso') || rAct.includes('Dolor')) && fila.lado === 'Bilateral') {
+                                orientacionClinica = "Diferencia marcada o dolorosa: conviene comparar con fuerza y tarea funcional.";
+                            }
+                        }
 
-                                const handleFilaChange = (campo: string, valor: any) => {
-                                    const nuevasFilas = [...exam.romAnaliticoConfig.filas];
-                                    nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
+                        const handleFilaChange = (campo: string, valor: any) => {
+                            const nuevasFilas = [...exam.romAnaliticoConfig.filas];
+                            nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
+                            if (campo === 'evalAct' && !valor) {
+                                nuevasFilas[i].resAct = ''; nuevasFilas[i].resActDer = ''; nuevasFilas[i].resActIzq = '';
+                            }
+                            if (campo === 'evalPas' && !valor) {
+                                nuevasFilas[i].resPas = ''; nuevasFilas[i].resPasDer = ''; nuevasFilas[i].resPasIzq = '';
+                                nuevasFilas[i].topeFinal = ''; nuevasFilas[i].topeFinalDer = ''; nuevasFilas[i].topeFinalIzq = '';
+                            }
+                            if (campo === 'usaGoniometro' && !valor) {
+                                nuevasFilas[i].grados = ''; nuevasFilas[i].gradosDer = ''; nuevasFilas[i].gradosIzq = '';
+                            }
+                            handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
+                        };
 
-                                    // Limpiezas automáticas si se desactiva
-                                    if (campo === 'evalAct' && !valor) nuevasFilas[i].resAct = '';
-                                    if (campo === 'evalPas' && !valor) {
-                                        nuevasFilas[i].resPas = '';
-                                        nuevasFilas[i].topeFinal = '';
-                                    }
-                                    if (campo === 'usaGoniometro' && !valor) nuevasFilas[i].grados = '';
+                        const toggleChip = (ladoStr: string, valor: string) => {
+                            const campo = ladoStr ? `hallazgosCustom${ladoStr}` : 'hallazgosCustom';
+                            const actuales = fila[campo] || [];
+                            const nuevos = actuales.includes(valor) ? actuales.filter((x: string) => x !== valor) : [...actuales, valor];
+                            handleFilaChange(campo, nuevos);
+                        };
 
-                                    handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
-                                };
+                        const chipsDisponibles = ['Completo sin dolor', 'Completo doloroso', 'Limitado sin dolor', 'Limitado doloroso', 'Rígido', 'Temeroso', 'Arco doloroso', 'Compensa', 'No evaluado'];
+                        const isAxial = ['Cervical', 'Torácica', 'Lumbar', 'Pelvis/SI', 'ATM'].includes(fila.region);
+                        const isBilateral = fila.lado === 'Bilateral' && !isAxial;
 
-                                return (
-                                    <React.Fragment key={fila.id}>
-                                        <tr className="bg-white hover:bg-slate-50/50 transition-colors group">
-                                            <td className="p-3 align-top min-w-[200px]">
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
-                                                    value={fila.region}
-                                                    onChange={(e) => handleFilaChange('region', e.target.value)}
-                                                    disabled={isClosed}
-                                                >
-                                                    <option value="">-- Músculo / Articulación --</option>
-                                                    <optgroup label="Miembro Superior">
-                                                        <option value="Hombro">Hombro</option>
-                                                        <option value="Codo">Codo</option>
-                                                        <option value="Muñeca/Mano">Muñeca/Mano</option>
-                                                        <option value="Dedos">Dedos</option>
-                                                    </optgroup>
-                                                    <optgroup label="Miembro Inferior">
-                                                        <option value="Cadera">Cadera</option>
-                                                        <option value="Rodilla">Rodilla</option>
-                                                        <option value="Tobillo">Tobillo</option>
-                                                        <option value="Pie/Ortejos">Pie/Ortejos</option>
-                                                    </optgroup>
-                                                    <optgroup label="Columna / Axial">
-                                                        <option value="Cervical">Cervical</option>
-                                                        <option value="Torácica">Torácica</option>
-                                                        <option value="Lumbar">Lumbar</option>
-                                                        <option value="Pelvis/SI">Pelvis/SI</option>
-                                                        <option value="ATM">ATM</option>
-                                                    </optgroup>
-                                                    <option value="Otro">Otro/Personalizado...</option>
-                                                </select>
-                                                {fila.region === 'Otro' && (
-                                                    <input
-                                                        type="text"
-                                                        className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
-                                                        placeholder="Especificar región..."
-                                                        value={fila.regionCustom || ''}
-                                                        onChange={(e) => handleFilaChange('regionCustom', e.target.value)}
-                                                        disabled={isClosed}
-                                                    />
-                                                )}
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                    value={fila.lado}
-                                                    onChange={(e) => handleFilaChange('lado', e.target.value)}
-                                                    disabled={isClosed}
-                                                >
-                                                    {['Cervical', 'Torácica', 'Lumbar', 'Pelvis/SI', 'ATM'].includes(fila.region) ? (
-                                                        <>
-                                                            <option value="Axial">Axial</option>
-                                                            <option value="Derecho">Rotación/Inclinación Derecha</option>
-                                                            <option value="Izquierdo">Rotación/Inclinación Izquierda</option>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <option value="Derecho">Derecho</option>
-                                                            <option value="Izquierdo">Izquierdo</option>
-                                                            <option value="Bilateral">Bilateral Comparativo</option>
-                                                        </>
-                                                    )}
-                                                </select>
-                                            </td>
-                                            <td className="p-3 align-top min-w-[150px]">
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                    value={fila.movimiento}
-                                                    onChange={(e) => handleFilaChange('movimiento', e.target.value)}
-                                                    disabled={isClosed}
-                                                >
-                                                    <option value="">-- Movimiento --</option>
-                                                    <option value="Flexión">Flexión</option>
-                                                    <option value="Extensión">Extensión</option>
-                                                    <option value="Abducción">Abducción</option>
-                                                    <option value="Aducción">Aducción</option>
-                                                    <option value="Rotación Interna">Rotación Interna</option>
-                                                    <option value="Rotación Externa">Rotación Externa</option>
-                                                    <option value="Inclinación Lateral">Inclinación Lateral</option>
-                                                    <option value="Rotación Axial">Rotación Axial</option>
-                                                    <option value="Elevación">Elevación</option>
-                                                    <option value="Depresión">Depresión</option>
-                                                    <option value="Pronación">Pronación</option>
-                                                    <option value="Supinación">Supinación</option>
-                                                    <option value="Inversión">Inversión</option>
-                                                    <option value="Eversión">Eversión</option>
-                                                    <option value="Dorsiflexión">Dorsiflexión</option>
-                                                    <option value="Plantiflexión">Plantiflexión</option>
-                                                    <option value="Compuesto/Funcional">Gesto Compuesto/Funcional</option>
-                                                    <option value="Otro">Otro/Personalizado...</option>
-                                                </select>
-                                                {fila.movimiento === 'Otro' && (
-                                                    <input
-                                                        type="text"
-                                                        className="w-full text-xs mt-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                        placeholder="Ej: Flexión cruzada..."
-                                                        value={fila.movimientoCustom || ''}
-                                                        onChange={(e) => handleFilaChange('movimientoCustom', e.target.value)}
-                                                        disabled={isClosed}
-                                                    />
-                                                )}
-                                            </td>
-                                            <td className="p-3 align-top text-center">
-                                                <label className="relative inline-flex items-center cursor-pointer mt-2">
-                                                    <input type="checkbox" className="sr-only peer" checked={fila.evalAct} onChange={(e) => handleFilaChange('evalAct', e.target.checked)} disabled={isClosed} />
-                                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
-                                                </label>
-                                            </td>
-                                            <td className="p-3 align-top">
-                                                {fila.lado === 'Bilateral' ? (
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6">DER</span>
-                                                            <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resActDer || ''} onChange={(e) => handleFilaChange('resActDer', e.target.value)} disabled={isClosed || !fila.evalAct}>
-                                                                <option value="">-- Activo --</option>
-                                                                <option value="Completo no doloroso">Completo no doloroso</option>
-                                                                <option value="Completo doloroso">Completo doloroso</option>
-                                                                <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                                <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6">IZQ</span>
-                                                            <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resActIzq || ''} onChange={(e) => handleFilaChange('resActIzq', e.target.value)} disabled={isClosed || !fila.evalAct}>
-                                                                <option value="">-- Activo --</option>
-                                                                <option value="Completo no doloroso">Completo no doloroso</option>
-                                                                <option value="Completo doloroso">Completo doloroso</option>
-                                                                <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                                <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <select
-                                                        className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
-                                                        value={fila.resAct || ''}
-                                                        onChange={(e) => handleFilaChange('resAct', e.target.value)}
-                                                        disabled={isClosed || !fila.evalAct}
-                                                    >
-                                                        <option value="">-- Resultado Activo --</option>
+                        const renderFields = (sideLabel: string = '') => {
+                            const ext = sideLabel ? (sideLabel === 'DER' ? 'Der' : 'Izq') : '';
+                            return (
+                                <div className={`flex flex-col gap-3 p-3 rounded-lg border ${sideLabel === 'DER' ? 'bg-indigo-50/30 border-indigo-100' : sideLabel === 'IZQ' ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50/50 border-slate-100'}`}>
+                                    {sideLabel && <div className="text-xs font-bold text-slate-500 mb-1">{sideLabel}</div>}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Activo / Pasivo */}
+                                        <div className="flex flex-col gap-2">
+                                            {fila.evalAct && (
+                                                <div>
+                                                    <label className="text-[10px] uppercase font-bold text-indigo-400">Resultado Activo</label>
+                                                    <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-indigo-400" value={fila[`resAct${ext}`] || ''} onChange={(e) => handleFilaChange(`resAct${ext}`, e.target.value)} disabled={isClosed}>
+                                                        <option value="">-- Activo --</option>
                                                         <option value="Completo no doloroso">Completo no doloroso</option>
                                                         <option value="Completo doloroso">Completo doloroso</option>
                                                         <option value="Incompleto no doloroso">Incompleto no doloroso</option>
                                                         <option value="Incompleto doloroso">Incompleto doloroso</option>
                                                     </select>
-                                                )}
-                                            </td>
-                                            <td className="p-3 align-top text-center border-l border-slate-100">
-                                                <label className="relative inline-flex items-center cursor-pointer mt-2">
-                                                    <input type="checkbox" className="sr-only peer" checked={fila.evalPas} onChange={(e) => handleFilaChange('evalPas', e.target.checked)} disabled={isClosed} />
-                                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-400"></div>
-                                                </label>
-                                            </td>
-                                            <td className="p-3 align-top">
-                                                {fila.lado === 'Bilateral' ? (
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex items-start gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
-                                                            <div className="flex flex-col gap-1 w-full">
-                                                                <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resPasDer || ''} onChange={(e) => handleFilaChange('resPasDer', e.target.value)} disabled={isClosed || !fila.evalPas}>
-                                                                    <option value="">-- Pasivo --</option>
-                                                                    <option value="Completo no doloroso">Completo no doloroso</option>
-                                                                    <option value="Completo doloroso">Completo doloroso</option>
-                                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                                </select>
-                                                                <select className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.topeFinalDer || ''} onChange={(e) => handleFilaChange('topeFinalDer', e.target.value)} disabled={isClosed || !fila.evalPas}>
-                                                                    <option value="">-- Tope --</option>
-                                                                    <option value="No evaluado">No evaluado</option>
-                                                                    <option value="Blando">Blando</option>
-                                                                    <option value="Firme">Firme</option>
-                                                                    <option value="Duro">Duro</option>
-                                                                    <option value="Vacío">Vacío</option>
-                                                                    <option value="Espástico">Espástico</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-start gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
-                                                            <div className="flex flex-col gap-1 w-full">
-                                                                <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resPasIzq || ''} onChange={(e) => handleFilaChange('resPasIzq', e.target.value)} disabled={isClosed || !fila.evalPas}>
-                                                                    <option value="">-- Pasivo --</option>
-                                                                    <option value="Completo no doloroso">Completo no doloroso</option>
-                                                                    <option value="Completo doloroso">Completo doloroso</option>
-                                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                                </select>
-                                                                <select className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.topeFinalIzq || ''} onChange={(e) => handleFilaChange('topeFinalIzq', e.target.value)} disabled={isClosed || !fila.evalPas}>
-                                                                    <option value="">-- Tope --</option>
-                                                                    <option value="No evaluado">No evaluado</option>
-                                                                    <option value="Blando">Blando</option>
-                                                                    <option value="Firme">Firme</option>
-                                                                    <option value="Duro">Duro</option>
-                                                                    <option value="Vacío">Vacío</option>
-                                                                    <option value="Espástico">Espástico</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <select
-                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50 mb-2"
-                                                            value={fila.resPas || ''}
-                                                            onChange={(e) => handleFilaChange('resPas', e.target.value)}
-                                                            disabled={isClosed || !fila.evalPas}
-                                                        >
-                                                            <option value="">-- Resultado Pasivo --</option>
+                                                </div>
+                                            )}
+                                            {fila.evalPas && (
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] uppercase font-bold text-orange-400">Resultado Pasivo</label>
+                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-orange-400" value={fila[`resPas${ext}`] || ''} onChange={(e) => handleFilaChange(`resPas${ext}`, e.target.value)} disabled={isClosed}>
+                                                            <option value="">-- Pasivo --</option>
                                                             <option value="Completo no doloroso">Completo no doloroso</option>
                                                             <option value="Completo doloroso">Completo doloroso</option>
                                                             <option value="Incompleto no doloroso">Incompleto no doloroso</option>
                                                             <option value="Incompleto doloroso">Incompleto doloroso</option>
                                                         </select>
-                                                        <select
-                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
-                                                            value={fila.topeFinal || ''}
-                                                            onChange={(e) => handleFilaChange('topeFinal', e.target.value)}
-                                                            disabled={isClosed || !fila.evalPas}
-                                                        >
-                                                            <option value="">-- Tope Final --</option>
-                                                            <option value="No evaluado">No evaluado</option>
-                                                            <option value="Blando">Blando (Aproximación tej.)</option>
-                                                            <option value="Firme">Firme (Cápsula/Lig.)</option>
-                                                            <option value="Duro">Duro (Hueso-Hueso)</option>
-                                                            <option value="Vacío">Vacío (Dolor excesivo)</option>
-                                                            <option value="Espástico">Espástico (Resorte)</option>
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-400">Tope</label>
+                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none" value={fila[`topeFinal${ext}`] || ''} onChange={(e) => handleFilaChange(`topeFinal${ext}`, e.target.value)} disabled={isClosed}>
+                                                            <option value="">--</option>
+                                                            <option value="Blando">Blando</option><option value="Firme">Firme</option><option value="Duro">Duro</option><option value="Vacío">Vacío</option><option value="Espástico">Espástico</option>
                                                         </select>
-                                                    </>
-                                                )}
-                                            </td>
-                                            <td className="p-3 align-top">
-                                                {fila.lado === 'Bilateral' ? (
-                                                    <div className="flex flex-col gap-3">
-                                                        <div className="flex items-start gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
-                                                            <div className="flex flex-col gap-1.5 w-full">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[9px] uppercase font-bold text-slate-400 w-6">EVA</span>
-                                                                    <input type="number" min="0" max="10" className="w-12 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="0-10" value={fila.evaDer || ''} onChange={(e) => handleFilaChange('evaDer', e.target.value)} disabled={isClosed} />
-                                                                </div>
-                                                                {fila.usaGoniometro && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[9px] uppercase font-bold text-slate-400 w-6">Gon.</span>
-                                                                        <input type="text" className="w-14 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="°" value={fila.gradosDer || ''} onChange={(e) => handleFilaChange('gradosDer', e.target.value)} disabled={isClosed} />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-start gap-1.5 border-t border-slate-100 pt-2 text-center">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
-                                                            <div className="flex flex-col gap-1.5 w-full items-start">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[9px] uppercase font-bold text-slate-400 w-6">EVA</span>
-                                                                    <input type="number" min="0" max="10" className="w-12 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="0-10" value={fila.evaIzq || ''} onChange={(e) => handleFilaChange('evaIzq', e.target.value)} disabled={isClosed} />
-                                                                </div>
-                                                                {fila.usaGoniometro && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[9px] uppercase font-bold text-slate-400 w-6">Gon.</span>
-                                                                        <input type="text" className="w-14 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="°" value={fila.gradosIzq || ''} onChange={(e) => handleFilaChange('gradosIzq', e.target.value)} disabled={isClosed} />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-1 flex justify-center items-center gap-1 border-t border-slate-100 pt-2">
-                                                            <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
-                                                            <span className="text-[9px] uppercase font-bold text-slate-400">Usar Gon.</span>
-                                                        </div>
                                                     </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400">EVA</span>
-                                                            <input
-                                                                type="number"
-                                                                min="0" max="10"
-                                                                className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                                placeholder="0-10"
-                                                                value={fila.eva || ''}
-                                                                onChange={(e) => handleFilaChange('eva', e.target.value)}
-                                                                disabled={isClosed}
-                                                            />
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <label className="flex items-center gap-1 cursor-pointer">
-                                                                <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
-                                                                <span className="text-[10px] uppercase font-bold text-slate-400">Gon.</span>
-                                                            </label>
-                                                            {fila.usaGoniometro && (
-                                                                <input
-                                                                    type="text"
-                                                                    className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                                    placeholder="Grados°"
-                                                                    value={fila.grados || ''}
-                                                                    onChange={(e) => handleFilaChange('grados', e.target.value)}
-                                                                    disabled={isClosed}
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </td>
-                                            <td className="p-3 align-top min-w-[200px]">
-                                                {fila.lado === 'Bilateral' ? (
-                                                    <div className="flex flex-col gap-3">
-                                                        <div className="flex items-start gap-1.5">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
-                                                            <div className="flex flex-col gap-1.5 w-full">
-                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Calidad/Compensación (ej. temblor)" value={fila.calidadDer || ''} onChange={(e) => handleFilaChange('calidadDer', e.target.value)} disabled={isClosed} />
-                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Hallazgo breve" value={fila.hallazgoDer || ''} onChange={(e) => handleFilaChange('hallazgoDer', e.target.value)} disabled={isClosed} />
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-start gap-1.5 border-t border-slate-100 pt-2">
-                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
-                                                            <div className="flex flex-col gap-1.5 w-full">
-                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Calidad/Compensación (ej. temblor)" value={fila.calidadIzq || ''} onChange={(e) => handleFilaChange('calidadIzq', e.target.value)} disabled={isClosed} />
-                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Hallazgo breve" value={fila.hallazgoIzq || ''} onChange={(e) => handleFilaChange('hallazgoIzq', e.target.value)} disabled={isClosed} />
-                                                            </div>
-                                                        </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Valores y Hallazgos */}
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-400">Dolor EVA</label>
+                                                    <input type="number" min="0" max="10" className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none" placeholder="0-10" value={fila[`eva${ext}`] || ''} onChange={(e) => handleFilaChange(`eva${ext}`, e.target.value)} disabled={isClosed} />
+                                                </div>
+                                                {fila.usaGoniometro && (
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-400">Grados°</label>
+                                                        <input type="text" className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none" placeholder="°" value={fila[`grados${ext}`] || ''} onChange={(e) => handleFilaChange(`grados${ext}`, e.target.value)} disabled={isClosed} />
                                                     </div>
-                                                ) : (
-                                                    <>
-                                                        <input
-                                                            type="text"
-                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
-                                                            placeholder="Calidad/Compensación (ej. temblor)"
-                                                            value={fila.calidad || ''}
-                                                            onChange={(e) => handleFilaChange('calidad', e.target.value)}
-                                                            disabled={isClosed}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                            placeholder="Hallazgo breve"
-                                                            value={fila.hallazgo || ''}
-                                                            onChange={(e) => handleFilaChange('hallazgo', e.target.value)}
-                                                            disabled={isClosed}
-                                                        />
-                                                    </>
                                                 )}
-                                            </td>
-                                            <td className="p-3 align-top text-center border-l border-slate-100">
-                                                <button
-                                                    onClick={() => {
-                                                        const nuevasFilas = exam.romAnaliticoConfig.filas.filter((_: any, idx: number) => idx !== i);
-                                                        handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
-                                                    }}
-                                                    disabled={isClosed}
-                                                    className="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 mt-2 mx-auto disabled:opacity-0"
-                                                    title="Eliminar fila"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {orientacionClinica && (
-                                            <tr className="bg-indigo-50/20 border-b border-indigo-100">
-                                                <td colSpan={9} className="p-3">
-                                                    <div className="flex gap-2 items-start text-xs text-indigo-800 font-medium">
-                                                        <span className="text-sm mt-[-2px]">💡</span>
-                                                        <p>{orientacionClinica}</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Chips de Hallazgo y Comentario */}
+                                    <div className="mt-1">
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
+                                            {chipsDisponibles.map(c => {
+                                                const selectVal = fila[ext ? `hallazgosCustom${ext}` : 'hallazgosCustom'] || [];
+                                                const selected = selectVal.includes(c);
+                                                return (
+                                                    <button key={c} onClick={() => toggleChip(ext, c)} disabled={isClosed} className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${selected ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                                                        {c}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                        <input type="text" className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400" placeholder="Comentario o hallazgo adicional (ej. temor al final de excursión)" value={fila[`hallazgo${ext}`] || ''} onChange={(e) => handleFilaChange(`hallazgo${ext}`, e.target.value)} disabled={isClosed} />
+                                    </div>
+                                </div>
+                            );
+                        };
+
+                        return (
+                            <div key={fila.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow relative">
+                                <button
+                                    onClick={() => {
+                                        const nuevasFilas = exam.romAnaliticoConfig.filas.filter((_: any, idx: number) => idx !== i);
+                                        handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
+                                    }}
+                                    disabled={isClosed}
+                                    className="absolute top-4 right-4 text-red-400 hover:bg-red-50 hover:text-red-600 p-1.5 rounded-lg transition-colors"
+                                    title="Eliminar fila"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    {/* Controles Base */}
+                                    <div className="md:col-span-4 flex flex-col gap-3">
+                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.region} onChange={(e) => handleFilaChange('region', e.target.value)} disabled={isClosed}>
+                                            <option value="">-- Región --</option>
+                                            <optgroup label="Miembro Superior"><option value="Hombro">Hombro</option><option value="Codo">Codo</option><option value="Muñeca/Mano">Muñeca/Mano</option><option value="Dedos">Dedos</option></optgroup>
+                                            <optgroup label="Miembro Inferior"><option value="Cadera">Cadera</option><option value="Rodilla">Rodilla</option><option value="Tobillo">Tobillo</option><option value="Pie/Ortejos">Pie/Ortejos</option></optgroup>
+                                            <optgroup label="Columna / Axial"><option value="Cervical">Cervical</option><option value="Torácica">Torácica</option><option value="Lumbar">Lumbar</option><option value="Pelvis/SI">Pelvis/SI</option><option value="ATM">ATM</option></optgroup>
+                                            <option value="Otro">Otro/Personalizado...</option>
+                                        </select>
+
+                                        <select className="w-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.lado} onChange={(e) => handleFilaChange('lado', e.target.value)} disabled={isClosed}>
+                                            {isAxial ? (
+                                                <><option value="Axial">Axial</option><option value="Derecho">Rotación/Inclinación Der.</option><option value="Izquierdo">Rotación/Inclinación Izq.</option></>
+                                            ) : (
+                                                <><option value="Unilateral Derecho">Unilateral Derecho</option><option value="Unilateral Izquierdo">Unilateral Izquierdo</option><option value="Bilateral">Bilateral Comparativo</option><option value="Derecho">Derecho (Antiguo)</option><option value="Izquierdo">Izquierdo (Antiguo)</option></>
+                                            )}
+                                        </select>
+
+                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.movimiento} onChange={(e) => handleFilaChange('movimiento', e.target.value)} disabled={isClosed}>
+                                            <option value="">-- Movimiento --</option>
+                                            <option value="Flexión">Flexión</option><option value="Extensión">Extensión</option><option value="Abducción">Abducción</option><option value="Aducción">Aducción</option><option value="Rotación Interna">Rotación Interna</option><option value="Rotación Externa">Rotación Externa</option><option value="Inclinación Lateral">Inclinación Lateral</option><option value="Rotación Axial">Rotación Axial</option><option value="Elevación">Elevación</option><option value="Depresión">Depresión</option><option value="Pronación">Pronación</option><option value="Supinación">Supinación</option><option value="Inversión">Inversión</option><option value="Eversión">Eversión</option><option value="Dorsiflexión">Dorsiflexión</option><option value="Plantiflexión">Plantiflexión</option><option value="Compuesto/Funcional">Gesto Compuesto/Funcional</option><option value="Otro">Otro/Personalizado...</option>
+                                        </select>
+
+                                        {/* Switches config */}
+                                        <div className="flex flex-wrap gap-4 mt-2 p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" className="w-4 h-4 rounded text-indigo-500 border-slate-300" checked={fila.evalAct ?? true} onChange={(e) => handleFilaChange('evalAct', e.target.checked)} disabled={isClosed} />
+                                                <span className="text-xs font-bold text-indigo-600">Activo</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" className="w-4 h-4 rounded text-orange-500 border-slate-300" checked={fila.evalPas} onChange={(e) => handleFilaChange('evalPas', e.target.checked)} disabled={isClosed} />
+                                                <span className="text-xs font-bold text-orange-500">Pasivo</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" className="w-4 h-4 rounded text-slate-500 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
+                                                <span className="text-xs font-bold text-slate-600">Con Goniómetro</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* Inputs de Resultados */}
+                                    <div className="md:col-span-8 flex flex-col gap-3 justify-center">
+                                        {isBilateral ? (
+                                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                                {renderFields('DER')}
+                                                {renderFields('IZQ')}
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                {renderFields()}
+                                            </div>
                                         )}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+
+                                        {/* Orientación Docente */}
+                                        {orientacionClinica && (
+                                            <div className="mt-2 text-xs bg-indigo-50 text-indigo-700 p-3 rounded-lg flex items-start gap-2 border border-indigo-100">
+                                                <span className="text-sm">💡</span>
+                                                <div className="flex-1 font-medium">
+                                                    <span className="font-bold opacity-80 uppercase text-[9px] tracking-widest block mb-0.5">Orientación para razonamiento (No diagnóstico)</span>
+                                                    {orientacionClinica}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
@@ -960,382 +766,376 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                 )}
 
-                <div className="p-0 overflow-x-auto bg-slate-50/30">
-                    <table className="w-full text-left border-collapse min-w-[1000px] table-mobile-cards">
-                        <thead>
-                            <tr className="bg-emerald-50/40 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 w-40">Región / Patrón</th>
-                                <th className="p-3 w-28">Lado</th>
-                                <th className="p-3 w-40">Tipo Evaluación</th>
-                                <th className="p-3 min-w-[200px]">Resultado Principal</th>
-                                <th className="p-3 w-32 text-center text-[10px] leading-tight leading-4">Dolor<br />(Durante/Post)</th>
-                                <th className="p-3 w-36">Calidad</th>
-                                <th className="p-3 w-40">Obs. Breve</th>
-                                <th className="p-3 w-12 text-center"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {(!exam.fuerzaCargaConfig?.filas || exam.fuerzaCargaConfig.filas.length === 0) && (
-                                <tr>
-                                    <td colSpan={8} className="p-8 text-center border-b border-transparent">
-                                        <button
-                                            onClick={() => {
-                                                const configBase = exam.fuerzaCargaConfig || { filas: [] };
-                                                const nuevaFila = {
-                                                    id: Date.now().toString(), region: '', lado: 'Derecho', tipoEvaluacion: '',
-                                                    dolorDurante: '', dolorPosterior: '', calidadEsfuerzo: '', observacion: ''
-                                                };
-                                                handleUpdateExam('fuerzaCargaConfig', { ...configBase, filas: [nuevaFila] });
-                                            }}
-                                            className="text-emerald-500 font-semibold text-sm hover:underline"
-                                            disabled={isClosed}
-                                        >
-                                            El bloque está vacío. Presiona aquí para comenzar a evaluar la tolerancia a carga.
-                                        </button>
-                                    </td>
-                                </tr>
-                            )}
-                            {(exam.fuerzaCargaConfig?.filas || []).map((fila: any, i: number) => {
-                                const handleFilaChange = (campo: string, valor: any) => {
-                                    const nuevasFilas = [...exam.fuerzaCargaConfig.filas];
+                                <div className="p-4 sm:p-5 flex flex-col gap-4 bg-slate-50/50">
+                    {/* Controles de Lado Global */}
+                    <div className="flex flex-col gap-3">
+                        {(!exam.fuerzaCargaConfig?.filas || exam.fuerzaCargaConfig.filas.length === 0) ? (
+                            <div className="p-8 text-center border-2 border-dashed border-emerald-200 rounded-xl bg-emerald-50/30">
+                                <button
+                                    onClick={() => {
+                                        const configBase = exam.fuerzaCargaConfig || { filas: [] };
+                                        const nuevaFila = {
+                                            id: Date.now().toString(), region: '', lado: 'Derecho', tipoEvaluacion: '',
+                                            dolorDurante: '', dolorPosterior: '', calidadEsfuerzo: '', observacion: ''
+                                        };
+                                        handleUpdateExam('fuerzaCargaConfig', { ...configBase, filas: [nuevaFila] });
+                                    }}
+                                    className="text-emerald-600 font-bold hover:text-emerald-700 transition"
+                                    disabled={isClosed}
+                                >
+                                    + Comenzar Evaluación de Fuerza / Carga
+                                </button>
+                                <p className="text-xs text-slate-500 mt-2">Añade pruebas de fuerza, dinamometría o tests funcionales.</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {(exam.fuerzaCargaConfig?.filas || []).map((fila: any, i: number) => {
+                                    const handleFilaChange = (campo: string, valor: any) => {
+                                        const nuevasFilas = [...exam.fuerzaCargaConfig.filas];
 
-                                    // Limpieza al cambiar el tipo
-                                    if (campo === 'tipoEvaluacion' && fila.tipoEvaluacion !== valor) {
-                                        nuevasFilas[i].resultado = '';
-                                        nuevasFilas[i].dinamometriaIzq = '';
-                                        nuevasFilas[i].dinamometriaDer = '';
-                                        nuevasFilas[i].dinamometriaUnidad = 'Kg';
-                                        nuevasFilas[i].isometriaSegundos = '';
-                                        nuevasFilas[i].isometriaMotivo = '';
-                                        nuevasFilas[i].repeticionesN = '';
-                                        nuevasFilas[i].repeticionesCorte = '';
-                                        nuevasFilas[i].testFuncionalNombre = '';
-                                        nuevasFilas[i].rfdData = [];
-                                        nuevasFilas[i].cargaKg = '';
-                                        nuevasFilas[i].velocidadEncoder = '';
-                                    }
-
-                                    // Lógica automática para dinamometría comparativa
-                                    if (campo === 'dinamometriaDer' || campo === 'dinamometriaIzq') {
-                                        let tempRow = { ...nuevasFilas[i], [campo]: valor };
-                                        let der = parseFloat(tempRow.dinamometriaDer);
-                                        let izq = parseFloat(tempRow.dinamometriaIzq);
-
-                                        if (!isNaN(der) && !isNaN(izq) && der > 0 && izq > 0) {
-                                            let diffPercent = 0;
-                                            // Asumimos Lado (del selector principal) como el lado afectado si 'Derecho' o 'Izquierdo'
-                                            let ladoAfectado = tempRow.lado === 'Izquierdo' ? izq : der;
-                                            let ladoSano = tempRow.lado === 'Izquierdo' ? der : izq;
-
-                                            // Si está marcado Bilateral, usamos max(der,izq) como 100% de referencia
-                                            if (tempRow.lado === 'Bilateral') {
-                                                let ref = Math.max(der, izq);
-                                                let low = Math.min(der, izq);
-                                                diffPercent = ((ref - low) / ref) * 100;
-                                            } else {
-                                                diffPercent = ((ladoSano - ladoAfectado) / ladoSano) * 100;
-                                            }
-
-                                            tempRow.diferenciaCalculada = isNaN(diffPercent) ? 0 : Math.round(diffPercent);
-
-                                            let clase = "Similar";
-                                            if (Math.abs(diffPercent) <= 10) clase = "Similar";
-                                            else if (Math.abs(diffPercent) > 10 && Math.abs(diffPercent) <= 20) clase = "Déficit Leve";
-                                            else if (Math.abs(diffPercent) > 20 && Math.abs(diffPercent) <= 30) clase = "Déficit Moderado";
-                                            else if (Math.abs(diffPercent) > 30) clase = "Déficit Marcado";
-
-                                            tempRow.clasificacionAutomatica = clase;
-                                        } else {
-                                            tempRow.diferenciaCalculada = undefined;
-                                            tempRow.clasificacionAutomatica = undefined;
+                                        // Limpieza al cambiar el tipo
+                                        if (campo === 'tipoEvaluacion' && fila.tipoEvaluacion !== valor) {
+                                            nuevasFilas[i].resultado = '';
+                                            nuevasFilas[i].dinamometriaIzq = '';
+                                            nuevasFilas[i].dinamometriaDer = '';
+                                            nuevasFilas[i].dinamometriaUnidad = 'Kg';
+                                            nuevasFilas[i].isometriaSegundos = '';
+                                            nuevasFilas[i].isometriaMotivo = '';
+                                            nuevasFilas[i].repeticionesN = '';
+                                            nuevasFilas[i].repeticionesCorte = '';
+                                            nuevasFilas[i].testFuncionalNombre = '';
+                                            nuevasFilas[i].rfdData = [];
+                                            nuevasFilas[i].cargaKg = '';
+                                            nuevasFilas[i].velocidadEncoder = '';
                                         }
-                                        nuevasFilas[i] = tempRow;
+
+                                        // Lógica automática para dinamometría comparativa
+                                        if (campo === 'dinamometriaDer' || campo === 'dinamometriaIzq') {
+                                            let tempRow = { ...nuevasFilas[i], [campo]: valor };
+                                            let der = parseFloat(tempRow.dinamometriaDer);
+                                            let izq = parseFloat(tempRow.dinamometriaIzq);
+
+                                            if (!isNaN(der) && !isNaN(izq) && der > 0 && izq > 0) {
+                                                let diffPercent = 0;
+                                                // Asumimos Lado (del selector principal) como el lado afectado si 'Derecho' o 'Izquierdo'
+                                                let ladoAfectado = tempRow.lado === 'Izquierdo' ? izq : der;
+                                                let ladoSano = tempRow.lado === 'Izquierdo' ? der : izq;
+
+                                                // Si está marcado Bilateral, usamos max(der,izq) como 100% de referencia
+                                                if (tempRow.lado === 'Bilateral') {
+                                                    let ref = Math.max(der, izq);
+                                                    let low = Math.min(der, izq);
+                                                    diffPercent = ((ref - low) / ref) * 100;
+                                                } else {
+                                                    diffPercent = ((ladoSano - ladoAfectado) / ladoSano) * 100;
+                                                }
+
+                                                tempRow.diferenciaCalculada = isNaN(diffPercent) ? 0 : Math.round(diffPercent);
+
+                                                let clase = "Similar";
+                                                if (Math.abs(diffPercent) <= 10) clase = "Similar";
+                                                else if (Math.abs(diffPercent) > 10 && Math.abs(diffPercent) <= 20) clase = "Déficit Leve";
+                                                else if (Math.abs(diffPercent) > 20 && Math.abs(diffPercent) <= 30) clase = "Déficit Moderado";
+                                                else if (Math.abs(diffPercent) > 30) clase = "Déficit Marcado";
+
+                                                tempRow.clasificacionAutomatica = clase;
+                                            } else {
+                                                tempRow.diferenciaCalculada = undefined;
+                                                tempRow.clasificacionAutomatica = undefined;
+                                            }
+                                            nuevasFilas[i] = tempRow;
+                                            handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
+                                            return;
+                                        }
+
+                                        nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
                                         handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
-                                        return;
-                                    }
+                                    };
 
-                                    nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
-                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
-                                };
+                                    return (
+                                        <div key={fila.id} className="bg-white border text-sm rounded-xl border-emerald-100 hover:border-emerald-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
+                                            {/* Header Corto (Región y Tipo) */}
+                                            <div className="bg-emerald-50/50 p-3 border-b border-emerald-100 flex flex-wrap items-center gap-2 justify-between">
+                                                <div className="flex flex-wrap items-center gap-2 flex-1 relative">
+                                                    <input
+                                                        type="text"
+                                                        className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 outline-none w-[140px] focus:border-emerald-400"
+                                                        placeholder="Región/Gesto"
+                                                        value={fila.region}
+                                                        onChange={(e) => handleFilaChange('region', e.target.value)}
+                                                        disabled={isClosed}
+                                                    />
+                                                    <select
+                                                        className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400"
+                                                        value={fila.lado}
+                                                        onChange={(e) => handleFilaChange('lado', e.target.value)}
+                                                        disabled={isClosed}
+                                                    >
+                                                        <option value="Derecho">Derecho</option>
+                                                        <option value="Izquierdo">Izquierdo</option>
+                                                        <option value="Bilateral">Bilateral</option>
+                                                        <option value="Axial">Axial</option>
+                                                    </select>
+                                                    <select
+                                                        className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400 max-w-[180px]"
+                                                        value={fila.tipoEvaluacion}
+                                                        onChange={(e) => handleFilaChange('tipoEvaluacion', e.target.value)}
+                                                        disabled={isClosed}
+                                                    >
+                                                        <option value="">-- Seleccionar Tipo --</option>
+                                                        <option value="Manual">Manual (MMT)</option>
+                                                        <option value="Dinamometría Isométrica Máxima">Dinamometría Máx.</option>
+                                                        <option value="Dinamometría Isométrica Submáxima">Dinamometría Submáx.</option>
+                                                        <option value="Isometría mantenida">Isometría Mantenida</option>
+                                                        <option value="Repeticiones submáximas">Reps Submáximas</option>
+                                                        <option value="Test funcional de carga">Test Func. Carga</option>
+                                                        <option value="Ejercicios con Carga (Encoder)">Carga + Encoder</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => {
+                                                            const nuevasFilas = exam.fuerzaCargaConfig.filas.filter((_: any, idx: number) => idx !== i);
+                                                            handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
+                                                        }}
+                                                        disabled={isClosed}
+                                                        className="w-6 h-6 rounded bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
+                                                        title="Eliminar prueba"
+                                                    >
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                                return (
-                                    <tr key={fila.id} className="bg-white hover:bg-emerald-50/30 transition-colors group">
-                                        <td className="p-3 align-top">
-                                            <input
-                                                type="text"
-                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                                                placeholder="Ej. Cuádriceps / Push up"
-                                                value={fila.region}
-                                                onChange={(e) => handleFilaChange('region', e.target.value)}
-                                                disabled={isClosed}
-                                            />
-                                        </td>
-                                        <td className="p-3 align-top">
-                                            <select
-                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                                                value={fila.lado}
-                                                onChange={(e) => handleFilaChange('lado', e.target.value)}
-                                                disabled={isClosed}
-                                            >
-                                                <option value="Derecho">Derecho</option>
-                                                <option value="Izquierdo">Izquierdo</option>
-                                                <option value="Bilateral">Bilateral</option>
-                                                <option value="Axial">Axial</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-3 align-top">
-                                            <select
-                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 font-medium text-emerald-700"
-                                                value={fila.tipoEvaluacion}
-                                                onChange={(e) => handleFilaChange('tipoEvaluacion', e.target.value)}
-                                                disabled={isClosed}
-                                            >
-                                                <option value="">-- Seleccionar --</option>
-                                                <option value="Manual">Manual (MMT)</option>
-                                                <option value="Dinamometría Isométrica Máxima">Dinamometría Isom. Máxima</option>
-                                                <option value="Dinamometría Isométrica Submáxima">Dinamometría Isom. Submáxima</option>
-                                                <option value="Isometría mantenida">Isometría mantenida</option>
-                                                <option value="Repeticiones submáximas">Reps submáximas</option>
-                                                <option value="Test funcional de carga">Test Func. Carga</option>
-                                                <option value="Ejercicios con Carga (Encoder)">Ejercicios con Carga (Encoder)</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-3 align-top bg-slate-50/50 border-x border-slate-100">
-                                            {/* Renders Condicionales para Resultado */}
-                                            {!fila.tipoEvaluacion && (
-                                                <span className="text-xs text-slate-400 italic font-medium p-1">1. Selecciona el tipo...</span>
-                                            )}
-                                            {fila.tipoEvaluacion === 'Manual' && (
-                                                <select
-                                                    className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                                                    value={fila.resultado} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed}
-                                                >
-                                                    <option value="">-- MMT / MRC --</option>
-                                                    <option value="5 Normal">5 - Normal (Vence resistencia máxima)</option>
-                                                    <option value="4 Buena">4 - Buena (Vence resistencia moderada)</option>
-                                                    <option value="3 Regular">3 - Regular (Vence gravedad)</option>
-                                                    <option value="2 Deficiente">2 - Deficiente (Mov. sin gravedad)</option>
-                                                    <option value="1 Vestigio">1 - Vestigio (Contracción palpable)</option>
-                                                    <option value="0 Nula">0 - Nula (Sin contracción)</option>
-                                                </select>
-                                            )}
-                                            {(fila.tipoEvaluacion === 'Dinamometría Isométrica Máxima' || fila.tipoEvaluacion === 'Dinamometría Isométrica Submáxima') && (
-                                                <div className="flex flex-col gap-1.5">
-                                                    <div className="flex gap-1.5 items-center">
-                                                        <div className="flex-1 flex flex-col items-center gap-0.5 relative">
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase w-full text-center">Der</span>
-                                                            <input type="number" step="0.1" className="w-full text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1 mb-0.5 outline-none focus:border-emerald-400 focus:shadow-[0_0_0_1px_#34d399]" value={fila.dinamometriaDer || ''} onChange={(e) => handleFilaChange('dinamometriaDer', e.target.value)} disabled={isClosed} />
-                                                        </div>
-                                                        <div className="flex-1 flex flex-col items-center gap-0.5 relative">
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase w-full text-center">Izq</span>
-                                                            <input type="number" step="0.1" className="w-full text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1 mb-0.5 outline-none focus:border-emerald-400 focus:shadow-[0_0_0_1px_#34d399]" value={fila.dinamometriaIzq || ''} onChange={(e) => handleFilaChange('dinamometriaIzq', e.target.value)} disabled={isClosed} />
-                                                        </div>
-                                                        <select className="w-12 mt-[14px] text-[10px] text-center font-bold bg-slate-100 border border-slate-200 text-slate-700 rounded p-1 outline-none" value={fila.dinamometriaUnidad || 'Kg'} onChange={(e) => handleFilaChange('dinamometriaUnidad', e.target.value)} disabled={isClosed}>
-                                                            <option value="Kg">Kg</option><option value="N">N</option><option value="Lbs">Lbs</option>
+                                            {/* Contenido (Resultados + Dolor) */}
+                                            <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Columna Resultados Específicos */}
+                                                <div className="flex flex-col gap-2">
+                                                    {!fila.tipoEvaluacion && (
+                                                        <div className="text-xs text-slate-400 italic p-3 bg-slate-50 border border-slate-200 border-dashed rounded text-center">Selecciona un tipo de evaluación para ingresar resultados.</div>
+                                                    )}
+                                                    {fila.tipoEvaluacion === 'Manual' && (
+                                                        <select
+                                                            className="w-full text-xs bg-white border border-slate-200 text-slate-700 font-bold rounded p-2 outline-none focus:border-emerald-400"
+                                                            value={fila.resultado} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed}
+                                                        >
+                                                            <option value="">-- Escala MMT / MRC --</option>
+                                                            <option value="5 Normal">5 - Normal (Vence resistencia máxima)</option>
+                                                            <option value="4 Buena">4 - Buena (Vence resistencia moderada)</option>
+                                                            <option value="3 Regular">3 - Regular (Vence gravedad)</option>
+                                                            <option value="2 Deficiente">2 - Deficiente (Sin gravedad)</option>
+                                                            <option value="1 Vestigio">1 - Vestigio (Contracción palpable)</option>
+                                                            <option value="0 Nula">0 - Nula (Sin contracción)</option>
                                                         </select>
-                                                    </div>
-                                                    {fila.diferenciaCalculada !== undefined && (
-                                                        <div className="w-full flex items-center justify-between bg-emerald-50 px-2 py-1 rounded text-[10px] font-bold border border-emerald-100 text-emerald-800">
-                                                            <span>Δ {Math.abs(fila.diferenciaCalculada)}%</span>
-                                                            <span className="opacity-80 uppercase tracking-widest">{fila.clasificacionAutomatica}</span>
+                                                    )}
+                                                    {(fila.tipoEvaluacion === 'Dinamometría Isométrica Máxima' || fila.tipoEvaluacion === 'Dinamometría Isométrica Submáxima') && (
+                                                        <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
+                                                            <div className="flex gap-2 items-center">
+                                                                <div className="flex-1 flex flex-col gap-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase text-center">Der</span>
+                                                                    <input type="number" step="0.1" className="w-full text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.dinamometriaDer || ''} onChange={(e) => handleFilaChange('dinamometriaDer', e.target.value)} disabled={isClosed} />
+                                                                </div>
+                                                                <div className="flex-1 flex flex-col gap-1">
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase text-center">Izq</span>
+                                                                    <input type="number" step="0.1" className="w-full text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.dinamometriaIzq || ''} onChange={(e) => handleFilaChange('dinamometriaIzq', e.target.value)} disabled={isClosed} />
+                                                                </div>
+                                                                <select className="w-14 items-end mt-4 text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-700 rounded p-1.5 outline-none" value={fila.dinamometriaUnidad || 'Kg'} onChange={(e) => handleFilaChange('dinamometriaUnidad', e.target.value)} disabled={isClosed}>
+                                                                    <option value="Kg">Kg</option><option value="N">N</option><option value="Lbs">Lbs</option>
+                                                                </select>
+                                                            </div>
+                                                            {fila.diferenciaCalculada !== undefined && (
+                                                                <div className="w-full flex items-center justify-between bg-emerald-50 px-2 py-1.5 rounded text-[11px] font-bold border border-emerald-200 text-emerald-800 mt-1 tracking-tight">
+                                                                    <span>Déficit: {Math.abs(fila.diferenciaCalculada)}%</span>
+                                                                    <span className="uppercase opacity-90">{fila.clasificacionAutomatica}</span>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {/* BLOQUE RFD */}
+                                                            <div className="w-full mt-2 bg-white rounded border border-emerald-100 p-1.5 flex flex-col gap-1">
+                                                                <div className="flex justify-between items-center px-1">
+                                                                    <span className="text-[10px] font-bold text-emerald-700">Explosividad (RFD)</span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                            const currentRFD = nuevas[i].rfdData || [];
+                                                                            nuevas[i].rfdData = [...currentRFD, { ms: '', valor: '' }];
+                                                                            handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                        }}
+                                                                        disabled={isClosed}
+                                                                        className="text-[9px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded transition"
+                                                                    >
+                                                                        + Tiempo
+                                                                    </button>
+                                                                </div>
+                                                                {(fila.rfdData || []).map((rfd: any, idxRfd: number) => (
+                                                                    <div key={idxRfd} className="flex gap-1 items-center bg-slate-50 p-1 rounded">
+                                                                        <input
+                                                                            type="number"
+                                                                            placeholder="ms"
+                                                                            className="w-12 text-[10px] text-center font-bold bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
+                                                                            value={rfd.ms || ''}
+                                                                            onChange={(e) => {
+                                                                                const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                                if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
+                                                                                nuevas[i].rfdData[idxRfd].ms = e.target.value;
+                                                                                handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                            }}
+                                                                            disabled={isClosed}
+                                                                        />
+                                                                        <span className="text-[9px] text-slate-400 font-bold mx-0.5 mt-0.5">ms</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.1"
+                                                                            placeholder="Fuerza"
+                                                                            className="flex-1 text-[10px] text-center font-bold bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
+                                                                            value={rfd.valor || ''}
+                                                                            onChange={(e) => {
+                                                                                const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                                if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
+                                                                                nuevas[i].rfdData[idxRfd].valor = e.target.value;
+                                                                                handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                            }}
+                                                                            disabled={isClosed}
+                                                                        />
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                                nuevas[i].rfdData = nuevas[i].rfdData.filter((_: any, index: number) => index !== idxRfd);
+                                                                                handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                            }}
+                                                                            className="text-red-400 hover:text-red-600 p-0.5"
+                                                                            disabled={isClosed}
+                                                                        >
+                                                                            ×
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
-
-                                                    {/* BLOQUE RFD */}
-                                                    <div className="w-full mt-2 bg-white rounded border border-emerald-100 p-1.5 flex flex-col gap-1">
-                                                        <div className="flex justify-between items-center px-1">
-                                                            <span className="text-[9px] font-bold text-emerald-700">RFD (Rate of Force Dev.)</span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    const nuevas = [...exam.fuerzaCargaConfig.filas];
-                                                                    const currentRFD = nuevas[i].rfdData || [];
-                                                                    nuevas[i].rfdData = [...currentRFD, { ms: '', valor: '' }];
-                                                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
-                                                                }}
-                                                                disabled={isClosed}
-                                                                className="text-[9px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded"
-                                                            >
-                                                                + Añadir Ms
-                                                            </button>
-                                                        </div>
-                                                        {(fila.rfdData || []).map((rfd: any, idxRfd: number) => (
-                                                            <div key={idxRfd} className="flex gap-1 items-center bg-slate-50 p-1 rounded">
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="ms"
-                                                                    className="w-12 text-[10px] text-center bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
-                                                                    value={rfd.ms || ''}
-                                                                    onChange={(e) => {
-                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
-                                                                        if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
-                                                                        nuevas[i].rfdData[idxRfd].ms = e.target.value;
-                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
-                                                                    }}
-                                                                    disabled={isClosed}
-                                                                />
-                                                                <span className="text-[8px] text-slate-400 font-bold">ms</span>
-                                                                <input
-                                                                    type="number"
-                                                                    step="0.1"
-                                                                    placeholder="Valor"
-                                                                    className="flex-1 text-[10px] bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
-                                                                    value={rfd.valor || ''}
-                                                                    onChange={(e) => {
-                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
-                                                                        if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
-                                                                        nuevas[i].rfdData[idxRfd].valor = e.target.value;
-                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
-                                                                    }}
-                                                                    disabled={isClosed}
-                                                                />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
-                                                                        nuevas[i].rfdData = nuevas[i].rfdData.filter((_: any, index: number) => index !== idxRfd);
-                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
-                                                                    }}
-                                                                    className="text-red-400 hover:text-red-600 px-1"
-                                                                    disabled={isClosed}
-                                                                >
-                                                                    ×
-                                                                </button>
+                                                    {fila.tipoEvaluacion === 'Ejercicios con Carga (Encoder)' && (
+                                                        <div className="flex bg-slate-50/50 p-2 border border-slate-100 rounded gap-2 items-center">
+                                                            <div className="flex-1 flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase text-center">Carga (Kg)</span>
+                                                                <input type="number" step="0.5" className="w-full text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.cargaKg || ''} onChange={(e) => handleFilaChange('cargaKg', e.target.value)} disabled={isClosed} />
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                            <div className="flex-1 flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase text-center">Velocidad (m/s)</span>
+                                                                <input type="number" step="0.01" className="w-full text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.velocidadEncoder || ''} onChange={(e) => handleFilaChange('velocidadEncoder', e.target.value)} disabled={isClosed} />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {fila.tipoEvaluacion === 'Isometría mantenida' && (
+                                                        <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide w-[70px]">Tiempo:</span>
+                                                                <input type="number" placeholder="Seg" className="w-[80px] text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.isometriaSegundos || ''} onChange={(e) => handleFilaChange('isometriaSegundos', e.target.value)} disabled={isClosed} />
+                                                                <span className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">seg</span>
+                                                            </div>
+                                                            <input type="text" placeholder="Motivo de corte (ej. Dolor / Fatiga)" className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.isometriaMotivo || ''} onChange={(e) => handleFilaChange('isometriaMotivo', e.target.value)} disabled={isClosed} />
+                                                        </div>
+                                                    )}
+                                                    {fila.tipoEvaluacion === 'Repeticiones submáximas' && (
+                                                        <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide w-[70px]">Reps:</span>
+                                                                <input type="number" className="w-[80px] text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.repeticionesN || ''} onChange={(e) => handleFilaChange('repeticionesN', e.target.value)} disabled={isClosed} />
+                                                            </div>
+                                                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.repeticionesCorte || ''} onChange={(e) => handleFilaChange('repeticionesCorte', e.target.value)} disabled={isClosed}>
+                                                                <option value="">-- Criterio de detención --</option>
+                                                                <option value="Fatiga muscular">Fatiga muscular</option>
+                                                                <option value="Pérdida de técnica">Pérdida de técnica</option>
+                                                                <option value="Dolor inaceptable">Dolor inaceptable</option>
+                                                                <option value="Miedo/Aprehensión">Miedo/Aprehensión</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                    {fila.tipoEvaluacion === 'Test funcional de carga' && (
+                                                        <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
+                                                            <input type="text" placeholder="Nombre (ej. Hop Test...)" className="w-full text-xs bg-white border border-slate-200 text-slate-800 rounded font-bold p-1.5 outline-none focus:border-emerald-400" value={fila.testFuncionalNombre || ''} onChange={(e) => handleFilaChange('testFuncionalNombre', e.target.value)} disabled={isClosed} />
+                                                            <input type="text" placeholder="Resultado / Criterio visual observado" className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.resultado || ''} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed} />
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                                </div>
-                                            )}
-                                            {fila.tipoEvaluacion === 'Ejercicios con Carga (Encoder)' && (
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <input type="number" step="0.5" placeholder="Kg" className="w-16 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.cargaKg || ''} onChange={(e) => handleFilaChange('cargaKg', e.target.value)} disabled={isClosed} />
-                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Kg Cargados</span>
+                                                {/* Columna Síntomas y Calidad */}
+                                                <div className="flex flex-col gap-2 md:border-l md:border-slate-100 pl-0 md:pl-4 justify-center">
+                                                     <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Durante:</span>
+                                                        <select
+                                                            className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                            value={fila.dolorDurante} onChange={(e) => handleFilaChange('dolorDurante', e.target.value)} disabled={isClosed}
+                                                        >
+                                                            <option value="">No duele</option>
+                                                            <option value="Leve">S/S Leve</option>
+                                                            <option value="Moderado">S/S Moderado</option>
+                                                            <option value="Alto">S/S Alto</option>
+                                                        </select>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <input type="number" step="0.01" placeholder="m/s" className="flex-1 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.velocidadEncoder || ''} onChange={(e) => handleFilaChange('velocidadEncoder', e.target.value)} disabled={isClosed} />
-                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider w-20">Vel. (m/s)</span>
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Después:</span>
+                                                        <select
+                                                            className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                            value={fila.dolorPosterior} onChange={(e) => handleFilaChange('dolorPosterior', e.target.value)} disabled={isClosed}
+                                                        >
+                                                            <option value="">No repercute</option>
+                                                            <option value="Sí breve">Reperc. Breve</option>
+                                                            <option value="Sí persistente">Reperc. Prolongada</option>
+                                                        </select>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {fila.tipoEvaluacion === 'Isometría mantenida' && (
-                                                <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                        <input type="number" placeholder="Segundos" className="w-20 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.isometriaSegundos || ''} onChange={(e) => handleFilaChange('isometriaSegundos', e.target.value)} disabled={isClosed} />
-                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Segundos</span>
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Calidad:</span>
+                                                         <select
+                                                            className="flex-1 text-[11px] bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                            value={fila.calidadEsfuerzo} onChange={(e) => handleFilaChange('calidadEsfuerzo', e.target.value)} disabled={isClosed}
+                                                        >
+                                                            <option value="">-- Calidad Mov. --</option>
+                                                            <option value="Buena">Buena</option>
+                                                            <option value="Compensa">Compensa</option>
+                                                            <option value="Inhibido por dolor">Inhibido p/dolor</option>
+                                                            <option value="Inconsistente">Téc. incosistente</option>
+                                                            <option value="Fatiga temprana">Fatiga temprana</option>
+                                                        </select>
                                                     </div>
-                                                    <input type="text" placeholder="Motivo de corte (ej. Dolor / Fatiga)" className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.isometriaMotivo || ''} onChange={(e) => handleFilaChange('isometriaMotivo', e.target.value)} disabled={isClosed} />
                                                 </div>
-                                            )}
-                                            {fila.tipoEvaluacion === 'Repeticiones submáximas' && (
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <input type="number" placeholder="Cant." className="w-20 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.repeticionesN || ''} onChange={(e) => handleFilaChange('repeticionesN', e.target.value)} disabled={isClosed} />
-                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Repeticiones</span>
-                                                    </div>
-                                                    <select className="w-full text-[11px] bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.repeticionesCorte || ''} onChange={(e) => handleFilaChange('repeticionesCorte', e.target.value)} disabled={isClosed}>
-                                                        <option value="">-- Criterio de detención --</option>
-                                                        <option value="Fatiga muscular">Fatiga muscular</option>
-                                                        <option value="Pérdida de técnica">Pérdida de técnica</option>
-                                                        <option value="Dolor inaceptable">Dolor inaceptable</option>
-                                                        <option value="Miedo/Aprehensión">Miedo/Aprehensión</option>
-                                                    </select>
-                                                </div>
-                                            )}
-                                            {fila.tipoEvaluacion === 'Test funcional de carga' && (
-                                                <div className="flex flex-col gap-2">
-                                                    <input type="text" placeholder="Nombre Test (ej. Hop Test L/R)" className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded font-bold p-1.5 outline-none focus:border-emerald-400" value={fila.testFuncionalNombre || ''} onChange={(e) => handleFilaChange('testFuncionalNombre', e.target.value)} disabled={isClosed} />
-                                                    <input type="text" placeholder="Resultado / Criterio visual observado" className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.resultado || ''} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed} />
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="p-3 align-top">
-                                            <div className="flex flex-col gap-2">
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
-                                                    value={fila.dolorDurante} onChange={(e) => handleFilaChange('dolorDurante', e.target.value)} disabled={isClosed}
-                                                    title="Dolor durante la prueba"
-                                                >
-                                                    <option value="">-- Durante --</option>
-                                                    <option value="No">No duele</option>
-                                                    <option value="Leve">S/S Leve</option>
-                                                    <option value="Moderado">S/S Moderado</option>
-                                                    <option value="Alto">S/S Alto</option>
-                                                </select>
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
-                                                    value={fila.dolorPosterior} onChange={(e) => handleFilaChange('dolorPosterior', e.target.value)} disabled={isClosed}
-                                                    title="Dolor posterior a la prueba"
-                                                >
-                                                    <option value="">-- Posterior --</option>
-                                                    <option value="No">No repercute</option>
-                                                    <option value="Sí breve">Repercusión Breve</option>
-                                                    <option value="Sí persistente">Repercusión Persistente</option>
-                                                </select>
                                             </div>
-                                        </td>
-                                        <td className="p-3 align-top">
-                                            <div className="flex flex-col gap-2">
-                                                <select
-                                                    className="w-full text-[11px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
-                                                    value={fila.calidadEsfuerzo} onChange={(e) => handleFilaChange('calidadEsfuerzo', e.target.value)} disabled={isClosed}
-                                                    title="Calidad del movimiento/contracción"
-                                                >
-                                                    <option value="">-- Calidad Mov. --</option>
-                                                    <option value="Buena">Buena / Sin problemas</option>
-                                                    <option value="Compensa">Compensa</option>
-                                                    <option value="Inhibido por dolor">Inhibido por dolor</option>
-                                                    <option value="Inconsistente">Inconsistente</option>
-                                                    <option value="Fatiga temprana">Fatiga temprana</option>
-                                                    <option value="Técnica deficiente">Técnica deficiente</option>
-                                                </select>
-                                                {/* Eliminamos el control de comparación conceptual manual como nos pidió el usuario */}
-                                            </div>
-                                        </td>
-                                        <td className="p-3 align-top">
-                                            <textarea
-                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 min-h-[65px] resize-y"
-                                                placeholder="Observación breve..."
-                                                value={fila.observacion}
-                                                onChange={(e) => handleFilaChange('observacion', e.target.value)}
-                                                disabled={isClosed}
-                                            />
-                                        </td>
-                                        <td className="p-3 align-top text-center border-l border-slate-100">
-                                            <button
-                                                onClick={() => {
-                                                    const nuevasFilas = exam.fuerzaCargaConfig.filas.filter((_: any, idx: number) => idx !== i);
-                                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
-                                                }}
-                                                disabled={isClosed}
-                                                className="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 mt-5 mx-auto disabled:opacity-0"
-                                                title="Eliminar prueba"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
 
-                <div className="bg-slate-50 p-4 border-t border-slate-200">
-                    <button
-                        onClick={() => {
-                            const configBase = exam.fuerzaCargaConfig || { filas: [] };
-                            const nuevaFila = {
-                                id: Date.now().toString(), region: '', lado: 'Derecho', tipoEvaluacion: '',
-                                dolorDurante: '', dolorPosterior: '', calidadEsfuerzo: '', comparacion: '', observacion: ''
-                            };
-                            handleUpdateExam('fuerzaCargaConfig', { ...configBase, filas: [...configBase.filas, nuevaFila] });
-                        }}
-                        disabled={isClosed}
-                        className="text-sm font-bold text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                        <span>+</span> Añadir Prueba de Fuerza/Carga
-                    </button>
+                                            {/* Fila Observaciones */}
+                                            <div className="px-3 pb-3 border-t border-slate-50 pt-2 bg-slate-50/50">
+                                                <input
+                                                    type="text"
+                                                    className="w-full text-xs text-slate-600 bg-white border border-slate-200 rounded p-2 outline-none focus:border-emerald-400"
+                                                    placeholder="Añadir nota breve (ej. 'Compensa elevando hombro')..."
+                                                    value={fila.observacion}
+                                                    onChange={(e) => handleFilaChange('observacion', e.target.value)}
+                                                    disabled={isClosed}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
+                
+                {/* Footer Acciones */}
+                {exam.fuerzaCargaConfig?.filas?.length > 0 && (
+                    <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-center">
+                        <button
+                            onClick={() => {
+                                const configBase = exam.fuerzaCargaConfig || { filas: [] };
+                                const nuevaFila = {
+                                    id: Date.now().toString(), region: '', lado: 'Derecho', tipoEvaluacion: '',
+                                    dolorDurante: '', dolorPosterior: '', calidadEsfuerzo: '', observacion: ''
+                                };
+                                handleUpdateExam('fuerzaCargaConfig', { ...configBase, filas: [...configBase.filas, nuevaFila] });
+                            }}
+                            disabled={isClosed}
+                            className="text-sm font-bold text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            <span>+</span> Añadir Prueba de Fuerza/Carga
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* E. PALPACIÓN */}
@@ -1621,27 +1421,23 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                     </button>
                 </div>
-                <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1000px] table-mobile-cards">
-                        <thead>
-                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4 w-40">Región / Tarea</th>
-                                <th className="p-3 w-40">Tipo de tarea</th>
-                                <th className="p-3 w-32">Síntoma durante</th>
-                                <th className="p-3 w-32">Calidad Mov.</th>
-                                <th className="p-3 w-40">Compensación Ppal</th>
-                                <th className="p-3 w-48">Observación breve</th>
-                                <th className="p-3 w-10 text-center"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {(!exam.controlMotorConfig?.filas || exam.controlMotorConfig.filas.length === 0) && (
-                                <tr>
-                                    <td colSpan={7} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
-                                        Sin datos de control motor en este momento.
-                                    </td>
-                                </tr>
-                            )}
+                                <div className="p-4 sm:p-5 flex flex-col gap-4 bg-slate-50/50">
+                    {(!exam.controlMotorConfig?.filas || exam.controlMotorConfig.filas.length === 0) ? (
+                        <div className="p-8 text-center border-2 border-dashed border-teal-200 rounded-xl bg-teal-50/30">
+                            <button
+                                onClick={() => {
+                                    const m = exam.controlMotorConfig || { filas: [] };
+                                    handleUpdateExam('controlMotorConfig', { filas: [...m.filas, { id: Date.now().toString(), regionTarea: '', tipoTarea: '', sintoma: '', calidad: '', compensacion: '', observacion: '' }] });
+                                }}
+                                className="text-teal-600 font-bold hover:text-teal-700 transition outline-none"
+                                disabled={isClosed}
+                            >
+                                + Evaluar Control Motor
+                            </button>
+                            <p className="text-xs text-slate-500 mt-2">Añade tareas de balance, control lumbopélvico, aterrizaje, etc.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
                             {(exam.controlMotorConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.controlMotorConfig.filas];
@@ -1649,73 +1445,101 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     handleUpdateExam('controlMotorConfig', { filas: m });
                                 };
                                 return (
-                                    <tr key={fila.id} className="hover:bg-slate-50">
-                                        <td className="p-2 pl-4" data-label="Región / Tarea">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-teal-400" value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Ej. Y-Balance, Step down" />
-                                        </td>
-                                        <td className="p-2" data-label="Tipo de tarea">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option>
-                                                <option value="Control segmentario local">Control segmentario local</option>
-                                                <option value="Control lumbopélvico">Control lumbopélvico</option>
-                                                <option value="Control escapular">Control escapular</option>
-                                                <option value="Balance / postura">Balance / postura</option>
-                                                <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
-                                                <option value="Control unipodal">Control unipodal</option>
-                                                <option value="Control del gesto específico">Control del gesto específico</option>
-                                                <option value="Otro">Otro</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Síntoma durante">
-                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.sintoma || ''} onChange={e => handleChange('sintoma', e.target.value)} disabled={isClosed}>
-                                                <option value="">-- Estado --</option>
-                                                <option value="Sin síntomas">Sin síntomas</option>
-                                                <option value="Dolor leve">Dolor leve</option>
-                                                <option value="Dolor limitante">Dolor limitante</option>
-                                                <option value="Inseguridad / Miedo">Inseguridad / Miedo</option>
-                                                <option value="Fatiga">Fatiga</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Calidad Mov.">
-                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
-                                                <option value="">-- Calidad --</option>
-                                                <option value="Óptima">Óptima</option>
-                                                <option value="Adecuada (compensa leve)">Adecuada (compensa leve)</option>
-                                                <option value="Deficiente">Deficiente</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Compensación Ppal">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.compensacion || ''} onChange={e => handleChange('compensacion', e.target.value)} disabled={isClosed}>
-                                                <option value="">-- Ninguna --</option>
-                                                <option value="Valgo dinámico">Valgo dinámico</option>
-                                                <option value="Hip drop">Hip drop</option>
-                                                <option value="Rigidez">Rigidez</option>
-                                                <option value="Wobble">Wobble</option>
-                                                <option value="Pérdida de disociación">Pérdida de disociación</option>
-                                                <option value="Control deficiente">Control deficiente</option>
-                                                <option value="Miedo al movimiento">Miedo al movimiento</option>
-                                                <option value="Estrategia antálgica">Estrategia antálgica</option>
-                                                <option value="Otro">Otro</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Observación">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-teal-400" value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Corrigió c/ feedback visual..." />
-                                        </td>
-                                        <td className="p-2 text-center td-action-mobile">
-                                            <button onClick={() => {
-                                                const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
-                                                handleUpdateExam('controlMotorConfig', { filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar fila">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <div key={fila.id} className="bg-white border text-sm rounded-xl border-teal-100 hover:border-teal-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
+                                        {/* Header */}
+                                        <div className="bg-teal-50/50 p-3 border-b border-teal-100 flex flex-wrap items-center gap-2 justify-between">
+                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                                <input
+                                                    className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1.5 outline-none w-full sm:w-[180px] focus:border-teal-400"
+                                                    value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Región/Tarea (Ej. Y-Balance)"
+                                                />
+                                                <select
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 flex-1 min-w-[160px]"
+                                                    value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Tipo de tarea...</option>
+                                                    <option value="Control segmentario local">Control segmentario local</option>
+                                                    <option value="Control lumbopélvico">Control lumbopélvico</option>
+                                                    <option value="Control escapular">Control escapular</option>
+                                                    <option value="Balance / postura">Balance / postura</option>
+                                                    <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
+                                                    <option value="Control unipodal">Control unipodal</option>
+                                                    <option value="Control del gesto específico">Control del gesto específico</option>
+                                                    <option value="Otro">Otro/No listado</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => {
+                                                        const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
+                                                        handleUpdateExam('controlMotorConfig', { filas: m });
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
+                                                    disabled={isClosed} title="Eliminar fila"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {/* Grid Detalles */}
+                                        <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Síntoma:</span>
+                                                <select
+                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-bold text-slate-700"
+                                                    value={fila.sintoma || ''} onChange={e => handleChange('sintoma', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">-- Estado --</option>
+                                                    <option value="Sin síntomas">Sin síntomas</option>
+                                                    <option value="Dolor leve">Dolor leve</option>
+                                                    <option value="Dolor limitante">Dolor limitante</option>
+                                                    <option value="Inseguridad / Miedo">Inseguridad / Miedo</option>
+                                                    <option value="Fatiga">Fatiga</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Calidad:</span>
+                                                <select
+                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium"
+                                                    value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">-- Seleccionar --</option>
+                                                    <option value="Óptima">Óptima</option>
+                                                    <option value="Adecuada (compensa leve)">Adecuada (c/leve compens.)</option>
+                                                    <option value="Deficiente">Deficiente</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Compens.:</span>
+                                                <select
+                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium"
+                                                    value={fila.compensacion || ''} onChange={e => handleChange('compensacion', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">-- Ninguna --</option>
+                                                    <option value="Valgo dinámico">Valgo dinámico</option>
+                                                    <option value="Hip drop">Hip drop</option>
+                                                    <option value="Rigidez">Rigidez</option>
+                                                    <option value="Wobble">Wobble</option>
+                                                    <option value="Pérdida de disociación">Pérdida disociación</option>
+                                                    <option value="Control deficiente">Control deficiente</option>
+                                                    <option value="Miedo al movimiento">Miedo / Precaución</option>
+                                                    <option value="Estrategia antálgica">Antalgia</option>
+                                                    <option value="Otro">Otro...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="px-3 pb-3 border-t border-slate-50 pt-2 bg-slate-50/50">
+                                            <input
+                                                className="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-teal-400 bg-white"
+                                                placeholder="Observación breve (ej. Corrigió con feedback)..."
+                                                value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed}
+                                            />
+                                        </div>
+                                    </div>
                                 );
                             })}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                 </div>
-                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
+<div className="bg-slate-50 p-4 border-t border-slate-200 flex">
                     <button onClick={() => {
                         const m = exam.controlMotorConfig || { filas: [] };
                         handleUpdateExam('controlMotorConfig', { filas: [...m.filas, { id: Date.now().toString(), regionTarea: '', tipoTarea: '', sintoma: '', calidad: '', compensacion: '', observacion: '' }] });
@@ -1747,28 +1571,23 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                     </button>
                 </div>
-                <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1000px] table-mobile-cards">
-                        <thead>
-                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4 w-32">Región</th>
-                                <th className="p-3 w-40">Clúster Sugerido</th>
-                                <th className="p-3 w-40">Test Específico</th>
-                                <th className="p-3 w-24">Lado</th>
-                                <th className="p-3 w-32">Resultado</th>
-                                <th className="p-3 w-28 text-center">Reproduce Síntoma</th>
-                                <th className="p-3 w-40">Comentario</th>
-                                <th className="p-3 w-10 text-center"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) && (
-                                <tr>
-                                    <td colSpan={8} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
-                                        Agrega pruebas ortopédicas orientadas por tu hipótesis principal.
-                                    </td>
-                                </tr>
-                            )}
+                <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
+                    {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) ? (
+                        <div className="p-8 text-center border-2 border-dashed border-sky-200 rounded-xl bg-sky-50/30">
+                            <button
+                                onClick={() => {
+                                    const m = exam.ortopedicasConfig?.filas || [];
+                                    handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), region: '', cluster: '', test: '', lado: '', resultado: '', reproduce: false, comentario: '' }] });
+                                }}
+                                className="text-sky-600 font-bold hover:text-sky-700 transition outline-none"
+                                disabled={isClosed}
+                            >
+                                + Agregar Prueba Ortopédica
+                            </button>
+                            <p className="text-xs text-slate-500 mt-2">Agrega pruebas ortopédicas y clústeres orientados por tu hipótesis principal.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
                             {(exam.ortopedicasConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.ortopedicasConfig.filas];
@@ -1780,91 +1599,122 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     'Hombro': ['Clúster de Pinzamiento', 'Clúster Manguito Rotador', 'Inestabilidad Anterior', 'Inestabilidad Posterior', 'SLAP / Biceps'],
                                     'Codo': ['Epicondilalgia Lateral', 'Epicondilalgia Medial', 'Inestabilidad PLRI'],
                                     'Muñeca/Mano': ['Tenosinovitis de De Quervain', 'Síndrome Túnel Carpiano'],
-                                    'Cervical': ['Clúster Radiculopatía (Wainner)', 'Inestabilidad Cervical Alta', 'Disfunción Facetaria'],
-                                    'Lumbar/Pélvica': ['Clúster Dolor Pélvico (Laslett)', 'Radiculopatía Lumbar', 'Estenosis Foraminal', 'Inestabilidad Lumbar'],
-                                    'Cadera': ['Pinzamiento FAI / Labrum', 'Tendinopatía Glútea', 'Artrosis de Cadera'],
-                                    'Rodilla': ['Clúster Meniscal', 'Valuación LCA', 'Valuación LCP', 'Inestabilidad Patelofemoral', 'Esguinces Colaterales'],
-                                    'Tobillo/Pie': ['Reglas de Ottawa', 'Esguince Lateral', 'Tendinopatía Aquílea', 'Fascitis Plantar / Dolor Talón'],
+                                    'Cervical': ['Clúster Radiculopatía', 'Inestabilidad Cerv. Alta', 'Disfunción Facetaria'],
+                                    'Lumbar/Pélvica': ['Clúster Dolor Pélvico', 'Radiculopatía Lumbar', 'Estenosis Foraminal', 'Inestab. Lumbar'],
+                                    'Cadera': ['Pinzamiento FAI/Labrum', 'Tendinopatía Glútea', 'Artrosis de Cadera'],
+                                    'Rodilla': ['Clúster Meniscal', 'LCA / LCP', 'Inestabilidad Patelofemoral', 'Esguinces Colaterales'],
+                                    'Tobillo/Pie': ['Reglas de Ottawa', 'Esguince Lateral', 'Tendinopatía Aquílea', 'Fascitis Plantar'],
                                     'Otra': []
                                 };
 
                                 const currentSuggestions = fila.region && suggestionsByRegion[fila.region] ? suggestionsByRegion[fila.region] : [];
 
                                 return (
-                                    <tr key={fila.id} className="hover:bg-slate-50">
-                                        <td className="p-2 pl-4" data-label="Región">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.region || ''} onChange={e => handleChange('region', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option>
-                                                <option value="Cervical">Cervical</option>
-                                                <option value="Hombro">Hombro</option>
-                                                <option value="Codo">Codo</option>
-                                                <option value="Muñeca/Mano">Muñeca/Mano</option>
-                                                <option value="Lumbar/Pélvica">Lumbar/Pélvica</option>
-                                                <option value="Cadera">Cadera</option>
-                                                <option value="Rodilla">Rodilla</option>
-                                                <option value="Tobillo/Pie">Tobillo/Pie</option>
-                                                <option value="Otra">Otra</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Clúster Sugerido">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.cluster || ''} onChange={e => handleChange('cluster', e.target.value)} disabled={isClosed || !fila.region}>
-                                                <option value="">{fila.region ? '(Opcional)' : 'Elija región antes'}</option>
-                                                {currentSuggestions.map(sug => <option key={sug} value={sug}>{sug}</option>)}
-                                                <option value="Otro">Otro cluster</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Test Específico">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400" value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Ej. Neer, Lachman..." />
-                                        </td>
-                                        <td className="p-2" data-label="Lado">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.lado || ''} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
-                                                <option value="">-- Lado --</option>
-                                                <option value="Derecho">Derecho</option>
-                                                <option value="Izquierdo">Izquierdo</option>
-                                                <option value="Bilateral">Bilateral</option>
-                                                <option value="N/A">N/A</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Resultado">
-                                            <select className={`w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400 bg-white ${fila.resultado === 'Positivo' ? 'text-rose-600 font-bold' : fila.resultado === 'Negativo' ? 'text-emerald-600' : ''}`} value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option>
-                                                <option value="Positivo">Positivo (+)</option>
-                                                <option value="Negativo">Negativo (-)</option>
-                                                <option value="Equívoco">Equívoco</option>
-                                                <option value="No realizado">No realizado</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2 text-center" data-label="Reproduce Síntoma">
-                                            <label className="flex items-center justify-start sm:justify-center gap-2 cursor-pointer pt-1">
-                                                <input type="checkbox" checked={fila.reproduce || false} onChange={e => handleChange('reproduce', e.target.checked)} disabled={isClosed} className="rounded text-sky-500 w-4 h-4 cursor-pointer" />
-                                                <span className="text-[11px] text-slate-500">Es comparable</span>
-                                            </label>
-                                        </td>
-                                        <td className="p-2" data-label="Comentario">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400" value={fila.comentario || ''} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed} placeholder="Ej. Dolor agudo al final del rango..." />
-                                        </td>
-                                        <td className="p-2 text-center td-action-mobile">
-                                            <button onClick={() => {
-                                                const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
-                                                handleUpdateExam('ortopedicasConfig', { filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar prueba">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <div key={fila.id} className="bg-white border text-sm rounded-xl border-sky-100 hover:border-sky-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
+                                        {/* Header */}
+                                        <div className="bg-sky-50/50 p-3 border-b border-sky-100 flex flex-wrap items-center gap-2 justify-between">
+                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                                <select
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded px-2 py-1.5 outline-none focus:border-sky-400 w-full sm:w-auto"
+                                                    value={fila.region || ''} onChange={e => handleChange('region', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Zona...</option>
+                                                    <option value="Cervical">Cervical</option>
+                                                    <option value="Hombro">Hombro</option>
+                                                    <option value="Codo">Codo</option>
+                                                    <option value="Muñeca/Mano">Muñeca/Mano</option>
+                                                    <option value="Lumbar/Pélvica">Lumbar/Pélvica</option>
+                                                    <option value="Cadera">Cadera</option>
+                                                    <option value="Rodilla">Rodilla</option>
+                                                    <option value="Tobillo/Pie">Tobillo/Pie</option>
+                                                    <option value="Otra">Otra</option>
+                                                </select>
+                                                <select
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400 flex-1 min-w-[150px]"
+                                                    value={fila.cluster || ''} onChange={e => handleChange('cluster', e.target.value)} disabled={isClosed || !fila.region}
+                                                >
+                                                    <option value="">{fila.region ? 'Clúster (Opcional)' : 'Elija región'}</option>
+                                                    {currentSuggestions.map(sug => <option key={sug} value={sug}>{sug}</option>)}
+                                                    <option value="Otro">Otro cluster</option>
+                                                </select>
+                                                <select
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400 w-full sm:w-auto"
+                                                    value={fila.lado || ''} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Lado...</option>
+                                                    <option value="Derecho">Derecho</option>
+                                                    <option value="Izquierdo">Izquierdo</option>
+                                                    <option value="Bilateral">Bilateral</option>
+                                                    <option value="N/A">N/A</option>
+                                                </select>
+                                                <button
+                                                    onClick={() => {
+                                                        const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
+                                                        handleUpdateExam('ortopedicasConfig', { filas: m });
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
+                                                    disabled={isClosed} title="Eliminar prueba"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {/* Row Resultados */}
+                                        <div className="p-3 bg-white flex flex-col md:flex-row gap-3 md:items-center">
+                                            <input
+                                                className="flex-1 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 focus:bg-white"
+                                                value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Test específico (Ej. Neer, Lachman...)"
+                                            />
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <select
+                                                    className={`w-[130px] text-xs font-bold rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 ${fila.resultado === 'Positivo' ? 'bg-rose-50 border-rose-200 text-rose-700' : fila.resultado === 'Negativo' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                                                    value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Resultado...</option>
+                                                    <option value="Positivo">Positivo (+)</option>
+                                                    <option value="Negativo">Negativo (-)</option>
+                                                    <option value="Equívoco">Equívoco</option>
+                                                    <option value="No realizado">No realizado</option>
+                                                </select>
+                                                <label className={`flex items-center gap-2 px-2 py-1.5 rounded border cursor-pointer select-none transition-colors ${fila.reproduce ? 'bg-sky-50 border-sky-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={fila.reproduce || false} onChange={e => handleChange('reproduce', e.target.checked)}
+                                                        disabled={isClosed} className="rounded text-sky-500 w-3.5 h-3.5"
+                                                    />
+                                                    <span className={`text-[10px] uppercase font-bold ${fila.reproduce ? 'text-sky-700' : 'text-slate-500'}`}>Reproduce Dolor</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {/* Comentario */}
+                                        <div className="px-3 pb-3 border-t border-slate-50 pt-2 bg-slate-50/50">
+                                            <input
+                                                className="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-400 bg-white"
+                                                placeholder="Comentario breve..."
+                                                value={fila.comentario || ''} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed}
+                                            />
+                                        </div>
+                                    </div>
                                 );
                             })}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                 </div>
-                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
-                    <button onClick={() => {
-                        const m = exam.ortopedicasConfig || { filas: [] };
-                        handleUpdateExam('ortopedicasConfig', { filas: [...m.filas, { id: Date.now().toString(), region: '', cluster: '', test: '', lado: '', resultado: '', reproduce: false, comentario: '' }] });
-                    }} disabled={isClosed} className="text-sm font-bold text-sky-600 bg-white border border-sky-200 px-4 py-2 rounded shadow-sm hover:bg-sky-50 flex items-center gap-2 transition outline-none">
-                        <span>+</span> Añadir Prueba o Clúster
-                    </button>
-                </div>
+                {/* Footer Acciones */}
+                {exam.ortopedicasConfig?.filas?.length > 0 && (
+                    <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-center">
+                        <button
+                            onClick={() => {
+                                const m = exam.ortopedicasConfig?.filas || [];
+                                handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), region: '', cluster: '', test: '', lado: '', resultado: '', reproduce: false, comentario: '' }] });
+                            }}
+                            disabled={isClosed}
+                            className="text-sm font-bold text-sky-600 bg-white border border-sky-200 px-4 py-2 rounded-xl shadow-sm hover:bg-sky-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            <span>+</span> Añadir Otra Prueba Ortopédica
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* I. PRUEBAS FUNCIONALES, CAPACIDAD Y REINTEGRO */}
@@ -1908,29 +1758,23 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </button>
                     </div>
                 </div>
-                <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1200px] table-mobile-cards">
-                        <thead>
-                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4 w-40">Plantilla / Test</th>
-                                <th className="p-3 w-28">Lado</th>
-                                <th className="p-3 w-32">Métrica</th>
-                                <th className="p-3 w-24">Resultado</th>
-                                <th className="p-3 w-20">Dolor</th>
-                                <th className="p-3 w-28">Calidad</th>
-                                <th className="p-3 w-36">Criterio Funcional</th>
-                                <th className="p-3">Obs / Tolerancia</th>
-                                <th className="p-3 w-10 text-center"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {(!exam.funcionalesConfig?.filas || exam.funcionalesConfig.filas.length === 0) && (
-                                <tr>
-                                    <td colSpan={9} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
-                                        No hay pruebas funcionales registradas. Ingresa métricas clave para el reintegro.
-                                    </td>
-                                </tr>
-                            )}
+                <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
+                    {(!exam.funcionalesConfig?.filas || exam.funcionalesConfig.filas.length === 0) ? (
+                        <div className="p-8 text-center border-2 border-dashed border-orange-200 rounded-xl bg-orange-50/30">
+                            <button
+                                onClick={() => {
+                                    const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
+                                    handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
+                                }}
+                                className="text-orange-600 font-bold hover:text-orange-700 transition outline-none"
+                                disabled={isClosed}
+                            >
+                                + Agregar Métrica de Rendimiento
+                            </button>
+                            <p className="text-xs text-slate-500 mt-2">Registra pruebas de capacidad, fuerza, saltos o agilidad.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
                             {(exam.funcionalesConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.funcionalesConfig.filas];
@@ -1940,99 +1784,134 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 const suggestionsByObj: Record<string, string[]> = {
                                     'Vida diaria': ['Sit to stand 30s', 'Timed Up and Go (TUG)', 'Step down test', 'Alcance funcional'],
-                                    'Gimnasio': ['1RM', 'RM Estimado', 'Sentadilla (Reps/kg)', 'Peso Muerto (Reps/kg)', 'Push ups máximos', 'Pull ups'],
-                                    'Carrera': ['Test de marcha 6min', 'Cooper', 'VAM-Eval', 'Hop test continuo'],
-                                    'Salto/Aterrizaje': ['Countermovement Jump (CMJ)', 'Drop Jump', 'Single Hop Test', 'Triple Hop Test', 'Crossover Hop Test', 'Landing Error Scoring System (LESS)'],
-                                    'Cambio de dirección': ['T-Test', 'Pro-Agility (5-10-5)', 'Illinois Agility', 'MAT Test'],
-                                    'Reintegro deportivo': ['Batería Hop Tests (LSI >90%)', 'Agilidad Reactiva', 'Test específico deporte'],
-                                    'Preventivo': ['Y-Balance Test LQ', 'Y-Balance Test UQ', 'FMS', 'Perfil Isométrico (CST)', 'Cuestionario Readiness']
+                                    'Gimnasio': ['1RM', 'RM Estimado', 'Sentadilla (Reps/kg)', 'Peso Muerto (Reps/kg)', 'Push ups', 'Pull ups'],
+                                    'Carrera': ['Test de marcha 6min', 'Test de Cooper', 'VAM-Eval', 'Hop test max'],
+                                    'Salto/Aterrizaje': ['CMJ', 'Drop Jump', 'Single Hop', 'Triple Hop', 'Crossover Hop', 'LESS'],
+                                    'Cambio de dirección': ['T-Test', 'Pro-Agility 5-10-5', 'Illinois', 'MAT Test', 'Carioca'],
+                                    'Reintegro deportivo': ['Batería Hop Tests', 'Agilidad Reactiva', 'Test Específico'],
+                                    'Preventivo': ['Y-Balance LQ', 'Y-Balance UQ', 'FMS', 'Perfil Isométrico (CST)']
                                 };
                                 const currentGoal = exam.funcionalesConfig?.objetivo || '';
                                 const testSuggestions = suggestionsByObj[currentGoal] || suggestionsByObj['Salto/Aterrizaje'];
 
                                 return (
-                                    <tr key={fila.id} className="hover:bg-slate-50">
-                                        <td className="p-2 pl-4" data-label="Plantilla / Test">
-                                            <input type="text" list={`func-list-${fila.id}`} className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400 font-medium" value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="VD, Gym, Salto..." />
-                                            <datalist id={`func-list-${fila.id}`}>
-                                                {testSuggestions.map(s => <option key={s} value={s} />)}
-                                            </datalist>
-                                        </td>
-                                        <td className="p-2" data-label="Lado">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.lado || 'Bilateral'} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
-                                                <option value="Bilateral">Bilateral</option>
-                                                <option value="Derecho">Derecho</option>
-                                                <option value="Izquierdo">Izquierdo</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Métrica">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.tipoMetrica || ''} onChange={e => handleChange('tipoMetrica', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option>
-                                                <option value="Repeticiones">Repeticiones</option>
-                                                <option value="Segundos">Segundos</option>
-                                                <option value="Distancia (cm/m)">Distancia (cm/m)</option>
-                                                <option value="Altura (cm)">Altura (cm)</option>
-                                                <option value="Simetría (LSI %)">Simetría (LSI %)</option>
-                                                <option value="Aprobado / No aprobado">Aprobado / No aprobado</option>
-                                                <option value="Otro">Otro</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Resultado">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400 font-bold text-center" value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="Valor" />
-                                        </td>
-                                        <td className="p-2" data-label="Dolor (0-10)">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.dolor || ''} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed}>
-                                                <option value="">0-10</option>
-                                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n.toString()}>{n}</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Calidad">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
-                                                <option value="">Calidad...</option>
-                                                <option value="Óptima">Óptima</option>
-                                                <option value="Aceptable">Aceptable</option>
-                                                <option value="Deficiente">Deficiente</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Criterio Funcional">
-                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.criterioFuncional || ''} onChange={e => handleChange('criterioFuncional', e.target.value)} disabled={isClosed}>
-                                                <option value="">-- Criterio observado --</option>
-                                                <option value="Adecuado">Adecuado</option>
-                                                <option value="Compensado">Compensado</option>
-                                                <option value="Doloroso">Doloroso</option>
-                                                <option value="Fatiga precoz">Fatiga precoz</option>
-                                                <option value="Inestable">Inestable</option>
-                                                <option value="No completa">No completa</option>
-                                                <option value="Otro">Otro</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2" data-label="Obs / Tolerancia">
-                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400" value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Ej. Pérdida de balance al finalizar..." />
-                                        </td>
-                                        <td className="p-2 text-center td-action-mobile">
-                                            <button onClick={() => {
-                                                const m = exam.funcionalesConfig.filas.filter((_: any, index: number) => index !== i);
-                                                handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar métrica">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <div key={fila.id} className="bg-white border text-sm rounded-xl border-orange-100 hover:border-orange-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
+                                        {/* Header */}
+                                        <div className="bg-orange-50/50 p-3 border-b border-orange-100 flex flex-wrap items-center gap-2 justify-between">
+                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                                <input
+                                                    type="text" list={`func-list-${fila.id}`}
+                                                    className="w-full sm:w-[220px] text-sm font-bold p-1.5 border border-slate-200 rounded outline-none focus:border-orange-400 focus:bg-white bg-slate-50 text-slate-800"
+                                                    value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Test (Ej. CMJ, TUG, 1RM...)"
+                                                />
+                                                <datalist id={`func-list-${fila.id}`}>
+                                                    {testSuggestions.map(s => <option key={s} value={s} />)}
+                                                </datalist>
+                                                
+                                                <select
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-orange-400 min-w-[120px]"
+                                                    value={fila.lado || 'Bilateral'} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="Bilateral">Bilateral</option>
+                                                    <option value="Derecho">Derecho</option>
+                                                    <option value="Izquierdo">Izquierdo</option>
+                                                </select>
+                                                
+                                                <button
+                                                    onClick={() => {
+                                                        const m = exam.funcionalesConfig.filas.filter((_: any, index: number) => index !== i);
+                                                        handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
+                                                    disabled={isClosed} title="Eliminar prueba"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {/* Row Resultados */}
+                                        <div className="p-3 bg-white flex flex-col md:flex-row gap-3 md:items-center justify-between">
+                                            <div className="flex bg-slate-50 border border-slate-200 rounded-lg p-1.5 focus-within:border-orange-400 flex-1 md:max-w-[400px]">
+                                                <input
+                                                    className="w-full text-base font-bold bg-transparent outline-none text-center text-orange-600 placeholder:text-slate-400"
+                                                    value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="Valor"
+                                                />
+                                                <select
+                                                    className="bg-transparent text-xs font-bold text-slate-500 border-l border-slate-200 outline-none pl-2 ml-2"
+                                                    value={fila.tipoMetrica || ''} onChange={e => handleChange('tipoMetrica', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Tipo...</option>
+                                                    <option value="Reps/kg">Reps / Kg</option>
+                                                    <option value="Segundos">Segundos / min</option>
+                                                    <option value="Distancia (cm/m)">Distancia (cm/m)</option>
+                                                    <option value="Altura (cm)">Altura (cm)</option>
+                                                    <option value="Simetría (LSI %)">LSI (%)</option>
+                                                    <option value="Watts">Watts / Potencia</option>
+                                                    <option value="Unidad/Otra">Otra</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <select
+                                                    className="w-[90px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold text-slate-600"
+                                                    value={fila.dolor || ''} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">Dolor (EVA)</option>
+                                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n.toString()}>{n}</option>)}
+                                                </select>
+                                                <select
+                                                    className="w-[110px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold"
+                                                    value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">-- Calidad --</option>
+                                                    <option value="Óptima">Óptima</option>
+                                                    <option value="Aceptable">Aceptable</option>
+                                                    <option value="Deficiente">Deficiente</option>
+                                                </select>
+                                                <select
+                                                    className="flex-1 min-w-[120px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-medium"
+                                                    value={fila.criterioFuncional || ''} onChange={e => handleChange('criterioFuncional', e.target.value)} disabled={isClosed}
+                                                >
+                                                    <option value="">-- Criterio --</option>
+                                                    <option value="Adecuado">Adecuado</option>
+                                                    <option value="Compensado">Compensado</option>
+                                                    <option value="Doloroso">Doloroso</option>
+                                                    <option value="Fatiga precoz">Fatiga precoz</option>
+                                                    <option value="Inestable">Inestable</option>
+                                                    <option value="Miedo/Apehension">Apehensión / Miedo</option>
+                                                    <option value="Otro">Otro/No logra</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        {/* Observacion */}
+                                        <div className="px-3 pb-3 border-t border-slate-50 pt-2 bg-slate-50/50">
+                                            <input
+                                                className="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-orange-400 bg-white"
+                                                placeholder="Observaciones de esfuerzo, estrategia o dolor intercurrente..."
+                                                value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed}
+                                            />
+                                        </div>
+                                    </div>
                                 );
                             })}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                 </div>
-                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
-                    <button onClick={() => {
-                        const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
-                        handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
-                    }} disabled={isClosed} className="text-sm font-bold text-orange-600 bg-white border border-orange-200 px-4 py-2 rounded shadow-sm hover:bg-orange-50 flex items-center gap-2 transition outline-none">
-                        <span>+</span> Añadir Prueba Funcional / Métrica
-                    </button>
-                </div>
+                {/* Footer Acciones */}
+                {exam.funcionalesConfig?.filas?.length > 0 && (
+                    <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-center">
+                        <button
+                            onClick={() => {
+                                const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
+                                handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
+                            }}
+                            disabled={isClosed}
+                            className="text-sm font-bold text-orange-600 bg-white border border-orange-200 px-4 py-2 rounded-xl shadow-sm hover:bg-orange-50 flex items-center gap-2 transition outline-none"
+                        >
+                            <span>+</span> Añadir Otra Prueba / Métrica
+                        </button>
+                    </div>
+                )}
             </div>
-
             {/* J. RE-TEST Y CIERRE */}
             <div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 flex flex-col mt-6">
                 <div className="bg-fuchsia-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fuchsia-100">
