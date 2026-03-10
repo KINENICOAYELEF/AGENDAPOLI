@@ -191,7 +191,7 @@ export function Screen15_AnamnesisRemota({
         );
     };
 
-    // Componente especializado para Condiciones Clínicas (Fase 45)
+    // Componente especializado para Condiciones Clínicas (Fase 45 / 46.5)
     const CondicionesClinicasSelector = ({ history, updateNested, isClosed }: any) => {
         const opciones = [
             'Hipertensión arterial', 'Diabetes', 'Enfermedad tiroidea', 'Enfermedad inflamatoria / reumatológica',
@@ -201,14 +201,29 @@ export function Screen15_AnamnesisRemota({
         const actuales = history.medicalHistory.condicionesClinicasRelevantes || [];
 
         const toggleCondicion = (name: string) => {
-            const exists = actuales.find((c: any) => c.name === name);
-            let nuevas;
-            if (exists) {
-                nuevas = actuales.filter((c: any) => c.name !== name);
-            } else {
-                nuevas = [...actuales, { name, estado: '', tratamiento: false, observacion: '' }];
+            const index = actuales.findIndex((c: any) => c.name === name);
+
+            // Si no existe, la añade
+            if (index === -1) {
+                updateNested('medicalHistory', 'condicionesClinicasRelevantes', [
+                    ...actuales,
+                    { name, estado: '', tratamientoActual: false, tratamientoDetalle: '', observacionBreve: '' }
+                ]);
+                return;
             }
-            updateNested('medicalHistory', 'condicionesClinicasRelevantes', nuevas);
+
+            // Si existe, validar si tiene datos antes de remover (Safety Check)
+            const cond = actuales[index];
+            const hasData = cond.estado || cond.tratamientoActual || cond.tratamientoDetalle || cond.observacionBreve;
+
+            if (hasData) {
+                if (!window.confirm(`Quitar esta condición limpiará los datos ingresados para "${name}". ¿Desea continuar?`)) {
+                    return; // Acción cancelada por el usuario
+                }
+            }
+
+            // Remover
+            updateNested('medicalHistory', 'condicionesClinicasRelevantes', actuales.filter((c: any) => c.name !== name));
         };
 
         const updateDetalle = (name: string, field: string, value: any) => {
@@ -216,44 +231,84 @@ export function Screen15_AnamnesisRemota({
             updateNested('medicalHistory', 'condicionesClinicasRelevantes', nuevas);
         };
 
+        // FASE 46.5: Forzar sort para que las activas queden arriba (en el array en DB no importa, pero para render sí)
+        const opcionesRender = [
+            ...opciones.filter(opt => actuales.some((c: any) => c.name === opt)),
+            ...opciones.filter(opt => !actuales.some((c: any) => c.name === opt))
+        ];
+
         return (
             <div className="space-y-4">
                 <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider">Condiciones Clínicas Relevantes</label>
                 <div className="flex flex-wrap gap-2">
-                    {opciones.map(opt => {
+                    {opcionesRender.map(opt => {
                         const isSelected = actuales.some((c: any) => c.name === opt);
                         return (
                             <button
                                 key={opt} type="button" disabled={isClosed} onClick={() => toggleCondicion(opt)}
-                                className={`text-[11px] px-3 py-1.5 rounded-full border transition-all ${isSelected ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-rose-50'}`}
+                                className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200 ${isSelected ? 'bg-rose-600 text-white border-rose-600 shadow-md font-medium' : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-rose-300 hover:bg-rose-50'}`}
                             >
                                 {opt}
+                                {isSelected && <span className="ml-2 font-bold opacity-75 text-[10px]">✕</span>}
                             </button>
                         );
                     })}
                 </div>
+
                 {actuales.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                         {actuales.map((c: any) => (
-                            <div key={c.name} className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl space-y-3">
-                                <h4 className="text-[11px] font-bold text-rose-900 border-b border-rose-200 pb-1.5 uppercase">{c.name}</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <select disabled={isClosed} value={c.estado} onChange={e => updateDetalle(c.name, 'estado', e.target.value)} className="text-xs p-2 rounded-lg outline-none border border-slate-200 bg-white">
-                                        <option value="">Estado...</option>
-                                        <option value="Controlada">Controlada</option>
-                                        <option value="No controlada">No controlada</option>
-                                        <option value="No sabe">No sabe</option>
-                                    </select>
-                                    <label className="flex items-center gap-2 text-[11px] font-medium text-slate-700 cursor-pointer">
+                            <div key={c.name} className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl space-y-3 animate-in fade-in zoom-in duration-300">
+                                <h4 className="text-[11px] font-bold text-rose-900 border-b border-rose-200 pb-1.5 uppercase flex justify-between items-center">
+                                    <span>{c.name}</span>
+                                    <button type="button" onClick={() => toggleCondicion(c.name)} className="text-rose-400 hover:text-rose-600 p-1" title="Quitar condición">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </h4>
+
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex flex-col">
+                                            <select disabled={isClosed} value={c.estado || ''} onChange={e => updateDetalle(c.name, 'estado', e.target.value)} className="text-xs p-2 rounded-lg outline-none border border-slate-200 bg-white">
+                                                <option value="">Estado...</option>
+                                                <option value="Controlada">Controlada</option>
+                                                <option value="No controlada">No controlada</option>
+                                                <option value="No sabe">No sabe</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-700 cursor-pointer w-full p-2 hover:bg-white rounded-lg transition-colors">
+                                                <input
+                                                    disabled={isClosed} type="checkbox"
+                                                    checked={!!c.tratamientoActual} onChange={e => updateDetalle(c.name, 'tratamientoActual', e.target.checked)}
+                                                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                                                />
+                                                Tratamiento actual
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {c.tratamientoActual && (
+                                        <div className="animate-in slide-in-from-top-2 duration-200">
+                                            <input
+                                                disabled={isClosed} type="text" maxLength={80}
+                                                placeholder="¿Cual tratamiento/fármaco? (ej. Losartán)"
+                                                value={c.tratamientoDetalle || ''} onChange={e => updateDetalle(c.name, 'tratamientoDetalle', e.target.value)}
+                                                className="w-full text-xs p-2 rounded-lg border border-indigo-200 bg-indigo-50/30 outline-none focus:border-indigo-400 placeholder:text-slate-400"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div>
                                         <input
-                                            disabled={isClosed} type="checkbox"
-                                            checked={c.tratamiento} onChange={e => updateDetalle(c.name, 'tratamiento', e.target.checked)}
-                                            className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                                            disabled={isClosed} type="text" maxLength={140}
+                                            placeholder="Observación (Complicación, control, obj...)"
+                                            value={c.observacionBreve || ''} onChange={e => updateDetalle(c.name, 'observacionBreve', e.target.value)}
+                                            className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400"
                                         />
-                                        Tratamiento actual
-                                    </label>
+                                        <p className="text-[8px] text-slate-400 mt-1 uppercase tracking-wide px-1">Control, complicaciones, implicancia Ej/Recup.</p>
+                                    </div>
                                 </div>
-                                <input disabled={isClosed} type="text" placeholder="Observación breve..." value={c.observacion} onChange={e => updateDetalle(c.name, 'observacion', e.target.value)} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400" />
                             </div>
                         ))}
                     </div>
@@ -347,7 +402,7 @@ export function Screen15_AnamnesisRemota({
                         <CondicionesClinicasSelector history={history} updateNested={updateNested} isClosed={isClosed} />
                     </div>
 
-                    <ArrayField label="Diagnósticos médicos (Texto libre u otros)" items={history.medicalHistory?.diagnoses} onChange={(v: any) => updateNested('medicalHistory', 'diagnoses', v)} placeholder="HTA, Hipotiroidismo, Cáncer..." disabled={isClosed} />
+                    <ArrayField label="Otros diagnósticos médicos relevantes" items={history.medicalHistory?.diagnoses} onChange={(v: any) => updateNested('medicalHistory', 'diagnoses', v)} placeholder="HTA, Hipotiroidismo, Cáncer..." disabled={isClosed} />
                     <ArrayField label="Farmacoterapia actual relevante" items={history.medicalHistory?.medications} onChange={(v: any) => updateNested('medicalHistory', 'medications', v)} placeholder="Losartán, Omeprazol, Anticonceptivos..." disabled={isClosed} />
                     <ArrayField label="Alergias / reacciones a medicamentos" items={history.medicalHistory?.allergies} onChange={(v: any) => updateNested('medicalHistory', 'allergies', v)} placeholder="Penicilina, AINES..." disabled={isClosed} />
                     <ArrayField label="Cirugías previas" items={history.medicalHistory?.surgeries} onChange={(v: any) => updateNested('medicalHistory', 'surgeries', v)} placeholder="Apendicectomía, Cesárea..." disabled={isClosed} />
@@ -398,7 +453,7 @@ export function Screen15_AnamnesisRemota({
                             Antecedente pélvico/ginecológico (relevante para ejercicio)
                         </label>
                         <div className="col-span-full mt-2">
-                            <input disabled={isClosed} type="text" placeholder="Observación breve sobre factor biológico..." value={history.biologicalFactors?.observacion || ''} onChange={e => updateNested('biologicalFactors', 'observacion', e.target.value)} className="w-full text-xs p-2.5 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400 shadow-sm" />
+                            <input disabled={isClosed} type="text" placeholder="Observación breve sobre factor biológico relevante..." value={history.biologicalFactors?.observacion || ''} onChange={e => updateNested('biologicalFactors', 'observacion', e.target.value)} className="w-full text-xs p-2.5 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400 shadow-sm" />
                         </div>
                     </div>
                 </details>
@@ -632,7 +687,7 @@ export function Screen15_AnamnesisRemota({
                             </select>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Red de apoyo (Tto/Ej)</label>
+                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Red de apoyo para tratamiento o ejercicio</label>
                             <select value={history.occupationalContext?.contextoDomiciliario?.redApoyo || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), redApoyo: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
                                 <option value="">Seleccione...</option>
                                 <option value="si">Sí</option>
@@ -713,7 +768,7 @@ export function Screen15_AnamnesisRemota({
                                         </select>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">¿Sentimiento reparador?</label>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">¿Sueño reparador?</label>
                                         <select disabled={isClosed} value={history.bpsContext?.sueno?.reparador || ''} onChange={e => updateNested('bpsContext', 'sueno', { ...(history.bpsContext?.sueno || {}), reparador: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white">
                                             <option value="">Seleccione...</option>
                                             <option value="si">Sí</option>

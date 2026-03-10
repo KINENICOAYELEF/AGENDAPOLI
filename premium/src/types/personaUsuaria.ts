@@ -10,12 +10,13 @@ export interface RemoteHistory {
         clinicalConsiderations: string;
         criticalModifiers: string[];
 
-        // FASE 45: Arrays estructurados analíticos
+        // FASE 45/46.5: Arrays estructurados analíticos
         condicionesClinicasRelevantes?: Array<{
             name: string; // Ej: Hipertensión arterial, Diabetes...
             estado: 'Controlada' | 'No controlada' | 'No sabe' | string;
-            tratamiento: boolean;
-            observacion: string;
+            tratamientoActual: boolean;
+            tratamientoDetalle: string;
+            observacionBreve: string;
         }>;
     };
 
