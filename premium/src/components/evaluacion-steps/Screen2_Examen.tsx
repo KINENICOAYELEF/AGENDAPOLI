@@ -227,38 +227,110 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         );
 
                         return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                {/* Postura */}
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">1. Postura y Trofismo</label>
-                                    {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Edema / Aumento vol.'])}
-                                </div>
-                                {/* Marcha */}
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">2. Marcha / Gesto habitual</label>
-                                    {renderChipGroup('marchaChips', ['Normal', 'Antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
-                                </div>
-                                {/* Mov activo general */}
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">3. Movilidad visual libre</label>
-                                    {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango muy limitado', 'Evita usar zona'])}
-                                </div>
-                                {/* Conducta Dolor */}
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">4. Conducta al síntoma</label>
-                                    {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Aprensivo', 'Arco doloroso', 'Temor al movimiento'])}
+                            <div className="grid grid-cols-1 bg-slate-50/50 p-4 rounded-xl border border-slate-100 gap-6">
+                                {/* 1. Observación general (Postura/Trofismo) */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">1. Postura y Trofismo</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Estado general, simetría muscular, alineación del segmento.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Asimetrías o atrofias relevantes.</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Edema / Aumento vol.'])}
+                                        <input
+                                            type="text"
+                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Detalles sobre postura o asimetrías evidentes..."
+                                            value={exam.postureAlignment || ''}
+                                            onChange={(e) => handleUpdateExam('postureAlignment', e.target.value)}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="md:col-span-2 pt-2">
-                                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-2">Impresión observacional final</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20"
-                                        placeholder="Escribe brevemente si hubo asimetrías, atrofias o limitación evidente..."
-                                        value={exam.observationGeneral || ''}
-                                        onChange={(e) => handleUpdateExam('observationGeneral', e.target.value)}
-                                        disabled={isClosed}
-                                    />
+                                <div className="border-t border-slate-200"></div>
+
+                                {/* 2. Marcha */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">2. Marcha / Gesto habitual</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Fases de la marcha, cojera, uso de ayudas ortopédicas.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: "Normal" o patrón compensatorio.</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        {renderChipGroup('marchaChips', ['Normal', 'Antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
+                                        <input
+                                            type="text"
+                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Especificar alteraciones en la marcha..."
+                                            value={exam.gaitBasicGesture || ''}
+                                            onChange={(e) => handleUpdateExam('gaitBasicGesture', e.target.value)}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-200"></div>
+
+                                {/* 3. Mov activo general */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">3. Movilidad visual libre</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Calidad y confianza con la que mueve el segmento libremente.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Aprehensión o bloqueo funcional visible.</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango limitado', 'Evita usar zona'])}
+                                        <input
+                                            type="text"
+                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Especificar calidad del movimiento libre..."
+                                            value={exam.initialActiveMovement || ''}
+                                            onChange={(e) => handleUpdateExam('initialActiveMovement', e.target.value)}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-200"></div>
+
+                                {/* 4. Conducta Dolor */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">4. Conducta al síntoma</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Facies (gestos faciales) y reacción al llegar al rango doloroso.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Si lo tolera, si hay arco doloroso, o temor (kinesiofobia).</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Aprensivo', 'Arco doloroso', 'Temor al movimiento'])}
+                                        <input
+                                            type="text"
+                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Detallar dónde o cómo reacciona al dolor..."
+                                            value={exam.symptomBehaviorMovement || ''}
+                                            onChange={(e) => handleUpdateExam('symptomBehaviorMovement', e.target.value)}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-200"></div>
+
+                                {/* Impresión General Opcional */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Impresión Global</label>
+                                        <p className="text-[11px] text-slate-500">Comentario breve que sintetice lo observado antes de evaluar rangos específicos.</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        <textarea
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 min-h-[60px] resize-y"
+                                            placeholder="Impresión observacional cualitativa final..."
+                                            value={exam.observationGeneral || ''}
+                                            onChange={(e) => handleUpdateExam('observationGeneral', e.target.value)}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -343,36 +415,103 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 return (
                                     <React.Fragment key={fila.id}>
                                         <tr className="bg-white hover:bg-slate-50/50 transition-colors group">
-                                            <td className="p-3 align-top">
-                                                <input
-                                                    type="text"
+                                            <td className="p-3 align-top min-w-[200px]">
+                                                <select
                                                     className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
-                                                    placeholder="Ej. Hombro"
                                                     value={fila.region}
                                                     onChange={(e) => handleFilaChange('region', e.target.value)}
                                                     disabled={isClosed}
-                                                />
+                                                >
+                                                    <option value="">-- Músculo / Articulación --</option>
+                                                    <optgroup label="Miembro Superior">
+                                                        <option value="Hombro">Hombro</option>
+                                                        <option value="Codo">Codo</option>
+                                                        <option value="Muñeca/Mano">Muñeca/Mano</option>
+                                                        <option value="Dedos">Dedos</option>
+                                                    </optgroup>
+                                                    <optgroup label="Miembro Inferior">
+                                                        <option value="Cadera">Cadera</option>
+                                                        <option value="Rodilla">Rodilla</option>
+                                                        <option value="Tobillo">Tobillo</option>
+                                                        <option value="Pie/Ortejos">Pie/Ortejos</option>
+                                                    </optgroup>
+                                                    <optgroup label="Columna / Axial">
+                                                        <option value="Cervical">Cervical</option>
+                                                        <option value="Torácica">Torácica</option>
+                                                        <option value="Lumbar">Lumbar</option>
+                                                        <option value="Pelvis/SI">Pelvis/SI</option>
+                                                        <option value="ATM">ATM</option>
+                                                    </optgroup>
+                                                    <option value="Otro">Otro/Personalizado...</option>
+                                                </select>
+                                                {fila.region === 'Otro' && (
+                                                    <input
+                                                        type="text"
+                                                        className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
+                                                        placeholder="Especificar región..."
+                                                        value={fila.regionCustom || ''}
+                                                        onChange={(e) => handleFilaChange('regionCustom', e.target.value)}
+                                                        disabled={isClosed}
+                                                    />
+                                                )}
                                                 <select
                                                     className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
                                                     value={fila.lado}
                                                     onChange={(e) => handleFilaChange('lado', e.target.value)}
                                                     disabled={isClosed}
                                                 >
-                                                    <option value="Derecho">Unilateral Derecho (Extr.)</option>
-                                                    <option value="Izquierdo">Unilateral Izquierdo (Extr.)</option>
-                                                    <option value="Bilateral">Bilateral Comparativo (Extr.)</option>
-                                                    <option value="Axial">Axial (Unilateral por defecto)</option>
+                                                    {['Cervical', 'Torácica', 'Lumbar', 'Pelvis/SI', 'ATM'].includes(fila.region) ? (
+                                                        <>
+                                                            <option value="Axial">Axial</option>
+                                                            <option value="Derecho">Rotación/Inclinación Derecha</option>
+                                                            <option value="Izquierdo">Rotación/Inclinación Izquierda</option>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <option value="Derecho">Derecho</option>
+                                                            <option value="Izquierdo">Izquierdo</option>
+                                                            <option value="Bilateral">Bilateral Comparativo</option>
+                                                        </>
+                                                    )}
                                                 </select>
                                             </td>
-                                            <td className="p-3 align-top">
-                                                <input
-                                                    type="text"
+                                            <td className="p-3 align-top min-w-[150px]">
+                                                <select
                                                     className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                    placeholder="Ej. Flexión"
                                                     value={fila.movimiento}
                                                     onChange={(e) => handleFilaChange('movimiento', e.target.value)}
                                                     disabled={isClosed}
-                                                />
+                                                >
+                                                    <option value="">-- Movimiento --</option>
+                                                    <option value="Flexión">Flexión</option>
+                                                    <option value="Extensión">Extensión</option>
+                                                    <option value="Abducción">Abducción</option>
+                                                    <option value="Aducción">Aducción</option>
+                                                    <option value="Rotación Interna">Rotación Interna</option>
+                                                    <option value="Rotación Externa">Rotación Externa</option>
+                                                    <option value="Inclinación Lateral">Inclinación Lateral</option>
+                                                    <option value="Rotación Axial">Rotación Axial</option>
+                                                    <option value="Elevación">Elevación</option>
+                                                    <option value="Depresión">Depresión</option>
+                                                    <option value="Pronación">Pronación</option>
+                                                    <option value="Supinación">Supinación</option>
+                                                    <option value="Inversión">Inversión</option>
+                                                    <option value="Eversión">Eversión</option>
+                                                    <option value="Dorsiflexión">Dorsiflexión</option>
+                                                    <option value="Plantiflexión">Plantiflexión</option>
+                                                    <option value="Compuesto/Funcional">Gesto Compuesto/Funcional</option>
+                                                    <option value="Otro">Otro/Personalizado...</option>
+                                                </select>
+                                                {fila.movimiento === 'Otro' && (
+                                                    <input
+                                                        type="text"
+                                                        className="w-full text-xs mt-2 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                        placeholder="Ej: Flexión cruzada..."
+                                                        value={fila.movimientoCustom || ''}
+                                                        onChange={(e) => handleFilaChange('movimientoCustom', e.target.value)}
+                                                        disabled={isClosed}
+                                                    />
+                                                )}
                                             </td>
                                             <td className="p-3 align-top text-center">
                                                 <label className="relative inline-flex items-center cursor-pointer mt-2">
