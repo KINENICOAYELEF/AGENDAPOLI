@@ -840,22 +840,27 @@ export interface EvaluacionInicial extends BaseEvaluacion {
 
     // PANTALLA 2: EXAMEN FISICO GUIADO
     guidedExam?: {
-        checklistSuggested?: {
-            essential: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
-            recommended: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
-            optional: Array<{ id: string, label: string, why: string, how: string, linked_focus: string | null }>;
-        };
         observation?: string;
-        inspection?: string;
+        analyticRom?: string;
+        strengthAndLoad?: string;
         palpation?: string;
-        functionalMobility?: Array<{ movement: string, achieves: string, pain: string, quality: string, comparison: string, reproducesFocusIds: string[], notes: string }>;
-        comparableRetest?: Array<{ focusId: string, result: string, reproduces: boolean, notes: string }>;
-        analyticMobility?: Array<{ test: string, degrees: string, notes: string }>;
-        strengthCapacity?: Array<{ test: string, pattern: string, mrc: string, dynamometry: string, notes: string }>;
+        neuroVascular?: string;
+        motorControl?: string;
+        orthopedicTestsText?: string;
+        functionalTests?: string;
+        retest?: string;
+        complementary?: string;
+        posture?: string;
+
+        // Retain for legacy support just in case, or define as any for strictness avoidance if needed.
+        checklistSuggested?: any;
+        functionalMobility?: any[];
+        comparableRetest?: any[];
+        analyticMobility?: any[];
+        strengthCapacity?: any[];
         neuro?: string;
         flexibility?: string;
-        orthopedicTests?: Array<{ test: string, result: string, reproducesFocusIds: string[], notes: string }>;
-        motorControl?: string;
+        orthopedicTests?: any[];
     };
 
     // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor)
