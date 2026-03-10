@@ -105,7 +105,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div>
                         <div className="flex items-center gap-3">
                             <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">A. Resumen Heredado (P1) <button type="button" onClick={() => setOpenHelp('A')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-100 transition-colors" title="Ayuda clínica">?</button></h2>
-                            
+
                         </div>
                         <p className="text-sm text-slate-500 mt-1">Si faltan datos críticos, puedes volver a la Anamnesis para completarlos.</p>
                     </div>
@@ -187,7 +187,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Observa primero el gesto o movimiento más representativo referido en la entrevista.
                         </p>
                     </div>
-                    
+
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col gap-6 bg-white">
@@ -758,7 +758,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Pruebas manuales, isometría, dinamometría o tests funcionales
                         </p>
                     </div>
-                    
+
                 </div>
 
                 {irritabilidad === "Alta" && (
@@ -1287,7 +1287,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </button>
                     </div>
 
-                    
+
                     <div className="flex flex-col gap-2 mt-2">
                         <label className="text-xs font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1">
                             <span className="text-lg">🦴</span> Movilidad Accesoria / Componentes Articulares
@@ -2257,8 +2257,8 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     Sintetizar hallazgos físicos y continuar
                 </button>
             </div>
-        
-            
+
+
             {/* Modal de Ayuda Universal */}
             {openHelp && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
@@ -2287,7 +2287,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <>
                                     <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                         <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
-                                        <p className="text-xs text-indigo-600 mt-1">Observación basal y palpación estructural superficial.</p>
+                                        <p className="text-xs text-indigo-600 mt-1">Observación basal estricta de la conducta motora.</p>
                                     </div>
                                     <ul className="list-disc pl-5 space-y-2 mt-2">
                                         <li><strong>No sobre-diagnostiques la postura:</strong> Las asimetrías son normales. Anota la postura solo si crees que está <strong>directamente ligada</strong> a la sintomatología actual (ej. shift antálgico).</li>
@@ -2299,18 +2299,17 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             {openHelp === 'C' && (
                                 <>
                                     <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                                        <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM) y Fuerza</p>
-                                        <p className="text-xs text-emerald-600 mt-1">El testeo analítico de la capacidad articular y muscular basal.</p>
+                                        <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM)</p>
+                                        <p className="text-xs text-emerald-600 mt-1">Testeo analítico de la capacidad articular y deducción de hipótesis mecánicas.</p>
                                     </div>
                                     <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>A/PROM Clínico:</strong> Evalúa Movimiento Activo (capacidad motora) y el Pasivo con Overpressure para sentir el <em>End-feel</em>.</li>
-                                        <li><strong>Fuerza MMT:</strong> La escala de Daniels (1-5) es útil en debilidades graves. En atletas es pobrísima para detectar asimetrías (techo clínico).</li>
-                                        <li><strong>Dinamometría (HHD):</strong> El Gold Standard en kinesiología moderna. Anota Kg o Newtons y evalúa la Valla de Asimetría (LSI &gt; 90%).</li>
-                                        <li><strong>Integración:</strong> Si duele Activo pero NO pasivo $\rightarrow$ Foco Contráctil/Muscular. Si duele Activo Y Pasivo en el mismo sentido $\rightarrow$ Foco Articular.</li>
+                                        <li><strong>A/PROM Clínico:</strong> Comienza siempre evaluando el Movimiento Activo libre. Aplica movimiento Pasivo con Overpressure al final para discriminar el <em>End-feel</em> capsular, elástico o vacío.</li>
+                                        <li><strong>Hipótesis por Diferenciación:</strong> Si duele predominantemente el movimiento Activo pero NO el pasivo, inclina tu hipótesis hacia un foco contráctil. Si duele el Activo Y el Pasivo en el mismo sentido, sugiere fuertemente un compromiso Articular.</li>
+                                        <li><strong>Calidad vs Cantidad:</strong> Registra la calidad del movimiento ("arco doloroso", "tope rígido") por sobre la pura medición goniométrica, que rara vez correlaciona con mejoría del dolor por sí misma.</li>
                                     </ul>
                                 </>
                             )}
-                            
+
                             {openHelp === 'D' && (
                                 <>
                                     <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
@@ -2395,7 +2394,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <p className="text-xs text-fuchsia-600 mt-1">Confirmación intrasesión de efectividad.</p>
                                     </div>
                                     <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Auditoría Cínica:</strong> Consiste en encontrar un signo doloroso o restringido en la evaluación, aplicar una intervención de prueba ràpida (ej. terapia manual, un tape, o instrucción motora) y <strong>re-evaluar el mismo signo inmediatamente</strong>.</li>
+                                        <li><strong>Auditoría Clínica:</strong> Consiste en encontrar un signo doloroso o restringido en la evaluación, aplicar una intervención de prueba rápida (ej. terapia manual, un tape, o instrucción motora) y <strong>re-evaluar el mismo signo inmediatamente</strong>.</li>
                                         <li><strong>Si cambia:</strong> Te confirma al 100% la pertinencia del tratamiento seleccionado a nivel neuromecánico y aumenta la confianza del paciente.</li>
                                     </ul>
                                 </>
@@ -2419,6 +2418,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
             )}
 
-</div>
+        </div>
     );
 }
