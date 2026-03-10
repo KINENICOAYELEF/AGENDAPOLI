@@ -321,7 +321,28 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
         }
         // Fuerza (D)
         if (exam.fuerzaCargaConfig?.filas?.length) {
-            pSyn.fuerza = exam.fuerzaCargaConfig.filas.map((f: any) => `${f.tipoEvaluacion || 'Carga'} ${f.region}: ${f.dolorDurante ? 'Dolor ' + f.dolorDurante : 'Sin dolor'} | ${f.calidadEsfuerzo}`).join('; ');
+            pSyn.fuerza = exam.fuerzaCargaConfig.filas.map((f: any) => {
+                let text = `${f.tipoEvaluacion || 'Carga'} ${f.region}: ${f.dolorDurante ? 'Dolor ' + f.dolorDurante : 'Sin dolor'} | ${f.calidadEsfuerzo}`;
+
+                // Agregar detalles de dinamometría (RFD)
+                if (f.tipoEvaluacion?.includes('Dinamometría')) {
+                    if (f.dinamometriaDer || f.dinamometriaIzq) {
+                        text += ` [Der: ${f.dinamometriaDer || '-'} ${f.dinamometriaUnidad}, Izq: ${f.dinamometriaIzq || '-'} ${f.dinamometriaUnidad}]`;
+                    }
+                    if (f.rfdData && f.rfdData.length > 0) {
+                        const rfdText = f.rfdData.map((r: any) => `${r.ms}ms:${r.valor}`).join(', ');
+                        text += ` | RFD: ${rfdText}`;
+                    }
+                }
+
+                // Agregar detalles de Encoder / Carga
+                if (f.tipoEvaluacion === 'Ejercicios con Carga (Encoder)') {
+                    if (f.cargaKg) text += ` | Carga: ${f.cargaKg}Kg`;
+                    if (f.velocidadEncoder) text += ` | Vel: ${f.velocidadEncoder}m/s`;
+                }
+
+                return text;
+            }).join('; ');
         }
         // Neuro (F)
         if (exam.neuroVascularConfig && Object.values(exam.neuroVascularConfig).some((v: any) => v.evalua)) {

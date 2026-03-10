@@ -1010,6 +1010,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         nuevasFilas[i].repeticionesN = '';
                                         nuevasFilas[i].repeticionesCorte = '';
                                         nuevasFilas[i].testFuncionalNombre = '';
+                                        nuevasFilas[i].rfdData = [];
+                                        nuevasFilas[i].cargaKg = '';
+                                        nuevasFilas[i].velocidadEncoder = '';
                                     }
 
                                     // Lógica automática para dinamometría comparativa
@@ -1089,10 +1092,12 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             >
                                                 <option value="">-- Seleccionar --</option>
                                                 <option value="Manual">Manual (MMT)</option>
-                                                <option value="Dinamometría">Dinamometría</option>
+                                                <option value="Dinamometría Isométrica Máxima">Dinamometría Isom. Máxima</option>
+                                                <option value="Dinamometría Isométrica Submáxima">Dinamometría Isom. Submáxima</option>
                                                 <option value="Isometría mantenida">Isometría mantenida</option>
                                                 <option value="Repeticiones submáximas">Reps submáximas</option>
                                                 <option value="Test funcional de carga">Test Func. Carga</option>
+                                                <option value="Ejercicios con Carga (Encoder)">Ejercicios con Carga (Encoder)</option>
                                             </select>
                                         </td>
                                         <td className="p-3 align-top bg-slate-50/50 border-x border-slate-100">
@@ -1114,7 +1119,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     <option value="0 Nula">0 - Nula (Sin contracción)</option>
                                                 </select>
                                             )}
-                                            {fila.tipoEvaluacion === 'Dinamometría' && (
+                                            {(fila.tipoEvaluacion === 'Dinamometría Isométrica Máxima' || fila.tipoEvaluacion === 'Dinamometría Isométrica Submáxima') && (
                                                 <div className="flex flex-col gap-1.5">
                                                     <div className="flex gap-1.5 items-center">
                                                         <div className="flex-1 flex flex-col items-center gap-0.5 relative">
@@ -1135,6 +1140,81 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                             <span className="opacity-80 uppercase tracking-widest">{fila.clasificacionAutomatica}</span>
                                                         </div>
                                                     )}
+
+                                                    {/* BLOQUE RFD */}
+                                                    <div className="w-full mt-2 bg-white rounded border border-emerald-100 p-1.5 flex flex-col gap-1">
+                                                        <div className="flex justify-between items-center px-1">
+                                                            <span className="text-[9px] font-bold text-emerald-700">RFD (Rate of Force Dev.)</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                    const currentRFD = nuevas[i].rfdData || [];
+                                                                    nuevas[i].rfdData = [...currentRFD, { ms: '', valor: '' }];
+                                                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                }}
+                                                                disabled={isClosed}
+                                                                className="text-[9px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded"
+                                                            >
+                                                                + Añadir Ms
+                                                            </button>
+                                                        </div>
+                                                        {(fila.rfdData || []).map((rfd: any, idxRfd: number) => (
+                                                            <div key={idxRfd} className="flex gap-1 items-center bg-slate-50 p-1 rounded">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="ms"
+                                                                    className="w-12 text-[10px] text-center bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
+                                                                    value={rfd.ms || ''}
+                                                                    onChange={(e) => {
+                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                        if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
+                                                                        nuevas[i].rfdData[idxRfd].ms = e.target.value;
+                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                    }}
+                                                                    disabled={isClosed}
+                                                                />
+                                                                <span className="text-[8px] text-slate-400 font-bold">ms</span>
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    placeholder="Valor"
+                                                                    className="flex-1 text-[10px] bg-white border border-slate-200 rounded p-1 outline-none focus:border-emerald-400"
+                                                                    value={rfd.valor || ''}
+                                                                    onChange={(e) => {
+                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                        if (!nuevas[i].rfdData) nuevas[i].rfdData = [];
+                                                                        nuevas[i].rfdData[idxRfd].valor = e.target.value;
+                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                    }}
+                                                                    disabled={isClosed}
+                                                                />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const nuevas = [...exam.fuerzaCargaConfig.filas];
+                                                                        nuevas[i].rfdData = nuevas[i].rfdData.filter((_: any, index: number) => index !== idxRfd);
+                                                                        handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevas });
+                                                                    }}
+                                                                    className="text-red-400 hover:text-red-600 px-1"
+                                                                    disabled={isClosed}
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                </div>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Ejercicios con Carga (Encoder)' && (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <input type="number" step="0.5" placeholder="Kg" className="w-16 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.cargaKg || ''} onChange={(e) => handleFilaChange('cargaKg', e.target.value)} disabled={isClosed} />
+                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Kg Cargados</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input type="number" step="0.01" placeholder="m/s" className="flex-1 text-xs text-center font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.velocidadEncoder || ''} onChange={(e) => handleFilaChange('velocidadEncoder', e.target.value)} disabled={isClosed} />
+                                                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider w-20">Vel. (m/s)</span>
+                                                    </div>
                                                 </div>
                                             )}
                                             {fila.tipoEvaluacion === 'Isometría mantenida' && (
