@@ -851,6 +851,7 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         retest?: string;
         complementary?: string;
         posture?: string;
+        observacionInicialConfig?: any;
         romAnaliticoConfig?: any;
         fuerzaCargaConfig?: any;
         palpacionConfig?: any;
