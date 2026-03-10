@@ -28,6 +28,85 @@
   }
 }
 
+@layer utilities {
+
+  /*
+   * TABLE RESPONSIVE UTILITIES FOR EXAMEN FISICO
+   * Convierte tablas anchas en "tarjetas apiladas" para smartphones.
+   * Útil para bloques C, D, H e I.
+   */
+  @media (max-width: 639px) {
+
+    /* sm breakpoint en Tailwind */
+    .table-mobile-cards {
+      display: block;
+      width: 100%;
+    }
+
+    .table-mobile-cards thead {
+      display: none;
+      /* Ocultamos los encabezados de tabla tradicionales */
+    }
+
+    .table-mobile-cards tbody,
+    .table-mobile-cards th,
+    .table-mobile-cards td,
+    .table-mobile-cards tr {
+      display: block;
+      width: 100%;
+    }
+
+    .table-mobile-cards tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--color-slate-200, #e2e8f0);
+      border-radius: 0.75rem;
+      background-color: #fff;
+      padding: 0.75rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      position: relative;
+    }
+
+    .table-mobile-cards td {
+      /* Estilo flex para etiqueta-valor */
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.5rem 0;
+      border: none !important;
+      text-align: left !important;
+    }
+
+    .table-mobile-cards td:not(:last-child) {
+      border-bottom: 1px dashed var(--color-slate-100, #f1f5f9) !important;
+    }
+
+    /* La pseudo-etiqueta ::before agarra el texto del atributo data-label */
+    .table-mobile-cards td[data-label]::before {
+      content: attr(data-label);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: var(--color-slate-500, #64748b);
+      margin-bottom: 0.1rem;
+    }
+
+    /* El botón de eliminar fila en móviles a veces es mejor posicionarlo absoluto arriba a la derecha */
+    .table-mobile-cards td.td-action-mobile {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0;
+      border: none !important;
+      width: auto;
+    }
+
+    .table-mobile-cards td.td-action-mobile::before {
+      display: none;
+    }
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

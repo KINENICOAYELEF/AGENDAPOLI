@@ -861,7 +861,8 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         funcionalesConfig?: any;
         retestConfig?: {
             tareaIndice: string;
-            resultadoPost: 'Mejoró' | 'Igual' | 'Empeoró' | 'No reevaluable' | '';
+            resultadoPost: 'Mejoró' | 'Mejoró parcialmente' | 'Sin cambio' | 'Empeoró' | 'No comparable' | '';
+            intervencion?: string;
             comentario: string;
         };
         medidasComplementariasConfig?: {
@@ -870,6 +871,12 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             imc?: string;
             perimetroEdema?: string;
             otraMedida?: string;
+            // FASE 51: Signos vitales ocultos
+            signosVitalesActivos?: boolean;
+            pa?: string;
+            fc?: string;
+            satO2?: string;
+            fovea?: boolean | null;
         };
         // Retain for legacy support just in case, or define as any for strictness avoidance if needed.
         checklistSuggested?: any;
