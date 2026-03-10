@@ -45,6 +45,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const [isNeuroOpen, setIsNeuroOpen] = React.useState(sugerenciaNeuro);
     const [isKOpen, setIsKOpen] = React.useState(false);
     const [isGuideOpen, setIsGuideOpen] = React.useState(false);
+    const [openHelp, setOpenHelp] = React.useState<string | null>(null);
 
     const handleUpdateExam = (field: string, value: any) => {
         updateFormData((prev) => ({
@@ -763,21 +764,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Pruebas manuales, isometría, dinamometría o tests funcionales
                         </p>
                     </div>
-                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
-                        ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                            <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
-                            <ul className="list-disc pl-4 space-y-1 mb-2">
-                                <li>**Manual (MMT):** Eval. rápida 1-5. Poco sensible para deportistas.</li>
-                                <li>**Dinamometría:** Eval. comparativa dorada. Usa siempre Lado A vs Lado B para el cálculo automático de asimetría.</li>
-                                <li>**Isometría mantenida:** Para tendinopatías o control analítico de dolor/tiempo.</li>
-                                <li>**Reps submáximas:** Capacidad de resistencia local (ej. heel raises).</li>
-                                <li>**Test Funcional:** Carga en cadena cinética / deportiva.</li>
-                            </ul>
-                            <p className="font-bold text-emerald-800">¿Qué registrar?</p>
-                            <p>Siempre documentar calidad del movimiento y si el dolor fue un factor limitante en lugar de la debilidad real.</p>
-                        </div>
-                    </button>
+                    <button type="button" onClick={() => setOpenHelp('C')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
                 {irritabilidad === "Alta" && (
@@ -1163,13 +1150,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-amber-700/80 mt-0.5">Temperatura, derrame, sensibilidad tisular, dolor focal</p>
                         </div>
                     </div>
-                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
-                        ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                            <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
-                            <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
-                        </div>
-                    </button>
+                    <button type="button" onClick={() => setOpenHelp('E')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
                 <div className="p-4 grid grid-cols-1 gap-4 bg-slate-50/50">
@@ -1384,15 +1365,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                     <span>2.</span> Evaluación Específica (Subdominios)
                                 </h4>
-                                <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
-                                    ?
-                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                                        <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
-                                        <p>Si el screening es NORMAL, puedes saltar esto.</p>
-                                        <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica.</p>
-                                        <p className="mt-2 text-slate-500 italic">Marca solo lo que realmente evaluaste para no "ensuciar" el reporte.</p>
-                                    </div>
-                                </button>
+                                <button type="button" onClick={() => setOpenHelp('F')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors" title="Ayuda clínica">?</button>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1468,17 +1441,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-teal-700/80 mt-0.5">Control segmentario, lumbopélvico, escapular, balance, gesto</p>
                         </div>
                     </div>
-                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
-                        ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                            <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
-                            <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
-                                <li><strong>Qué suele ser relevante:</strong> Asimetrías marcadas, provocación del síntoma concordante.</li>
-                                <li><strong>Compensación vs Déficit Real:</strong> Re-evalúa modificando la carga oral/manual o dándole "pistas" (cues) al paciente. Si corrige inmediato, es motor (software); si no puede, suele ser capacidad o miedo (hardware).</li>
-                            </ul>
-                        </div>
-                    </button>
+                    <button type="button" onClick={() => setOpenHelp('G')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
                 <div className="p-4 sm:p-5 flex flex-col gap-4 bg-slate-50/50">
                     {(!exam.controlMotorConfig?.filas || exam.controlMotorConfig.filas.length === 0) ? (
@@ -1615,17 +1578,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-sky-700/80 mt-0.5">Integración clínica según hipótesis</p>
                         </div>
                     </div>
-                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
-                        ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                            <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas</p>
-                            <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico.</li>
-                                <li><strong>Integrar:</strong> Sumar hallazgos de entrevista, movilidad, fuerza y función.</li>
-                                <li><strong>Evitar redundancia:</strong> No repetir varias pruebas que exploran casi lo mismo.</li>
-                            </ul>
-                        </div>
-                    </button>
+                    <button type="button" onClick={() => setOpenHelp('H')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
                 <div className="p-4 bg-sky-50/30 border-b border-sky-100 flex flex-col gap-3">
@@ -1873,17 +1826,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <option value="Preventivo">Preventivo / Carga</option>
                             </select>
                         </div>
-                        <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
-                            ?
-                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 sm:right-0 sm:left-auto w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left sm:origin-top-right z-[60] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
-                                <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
-                                <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                    <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
-                                    <li><strong>Documentación:</strong> Registrar el valor exacto (métrica) para poder ver la evolución gráfica a lo largo de las sesiones.</li>
-                                    <li><strong>Sugerencias:</strong> Cambia el 'Objetivo Principal' para ver listas sugeridas de tests que aplican a esa meta.</li>
-                                </ul>
-                            </div>
-                        </button>
+                        <button type="button" onClick={() => setOpenHelp('I')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors" title="Ayuda clínica">?</button>
                     </div>
                 </div>
                 <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
@@ -2306,6 +2249,71 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     Sintetizar hallazgos físicos y continuar
                 </button>
             </div>
-        </div>
+        
+            {/* Modal de Ayuda Universal */}
+            {openHelp && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="font-bold text-slate-800 text-lg">Guía Clínica</h3>
+                            <button onClick={() => setOpenHelp(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold">✕</button>
+                        </div>
+                        <div className="text-sm text-slate-600 space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                            {openHelp === 'C' && (
+                                <>
+                                    <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li><strong>Manual (MMT):</strong> Eval. rápida 1-5. Poco sensible para deportistas.</li>
+                                        <li><strong>Dinamómetro (HHD):</strong> Gold standard clínico. </li>
+                                        <li><strong>RM / Asimétrico:</strong> Gym / Cargas altas.</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'E' && (
+                                <>
+                                    <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
+                                    <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
+                                </>
+                            )}
+                            {openHelp === 'F' && (
+                                <>
+                                    <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
+                                    <p>Si el screening es NORMAL, puedes saltar esto.</p>
+                                    <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica aquí para documentar objetivamente lesiones neurales.</p>
+                                </>
+                            )}
+                            {openHelp === 'G' && (
+                                <>
+                                    <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
+                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                        <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
+                                        <li><strong>Cómo evaluar:</strong> Tarea simple deportiva o diaria (saltar, agacharse, single leg squat).</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'H' && (
+                                <>
+                                    <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas Especiales</p>
+                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                        <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico que sumen a la anamnesis.</li>
+                                        <li><strong>Integrar:</strong> ¿La prueba especial provoca el mismo dolor familiar del paciente? Anotar precisión en las observaciones.</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'I' && (
+                                <>
+                                    <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
+                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                        <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento y objetivar el alta médica, que para diagnóstico pato-anatómico.</li>
+                                        <li><strong>Documentación:</strong> Registrar el valor exacto (métrica) para ver su progresión en las sesiones futuras.</li>
+                                        <li><strong>Sugerencias:</strong> Cambia el objetivo para ver listas sugeridas dependientes de la meta deportiva o civil.</li>
+                                    </ul>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+</div>
     );
 }
