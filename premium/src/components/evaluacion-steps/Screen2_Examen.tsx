@@ -73,7 +73,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     };
 
     return (
-        <div className="flex flex-col gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col gap-4 sm:gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-x-hidden w-full max-w-full">
             {/* GUÍA GLOBAL COLAPSABLE */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl overflow-hidden transition-all duration-300">
                 <button
@@ -149,8 +149,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                             Modalidad de examen hoy
                         </label>
-                        <select
-                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                        <select className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed text-ellipsis"
                             value={exam.examModality || ''}
                             onChange={(e) => handleUpdateExam('examModality', e.target.value)}
                             disabled={isClosed}
@@ -446,7 +445,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             {fila.evalAct && (
                                                 <div>
                                                     <label className="text-[10px] uppercase font-bold text-indigo-400">Resultado Activo</label>
-                                                    <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-indigo-400" value={fila[`resAct${ext}`] || ''} onChange={(e) => handleFilaChange(`resAct${ext}`, e.target.value)} disabled={isClosed}>
+                                                    <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-indigo-400 text-ellipsis" value={fila[`resAct${ext}`] || ''} onChange={(e) => handleFilaChange(`resAct${ext}`, e.target.value)} disabled={isClosed}>
                                                         <option value="">-- Activo --</option>
                                                         <option value="Completo no doloroso">Completo no doloroso</option>
                                                         <option value="Completo doloroso">Completo doloroso</option>
@@ -459,7 +458,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 <div className="flex gap-2">
                                                     <div className="flex-1">
                                                         <label className="text-[10px] uppercase font-bold text-orange-400">Resultado Pasivo</label>
-                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-orange-400" value={fila[`resPas${ext}`] || ''} onChange={(e) => handleFilaChange(`resPas${ext}`, e.target.value)} disabled={isClosed}>
+                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-orange-400 text-ellipsis" value={fila[`resPas${ext}`] || ''} onChange={(e) => handleFilaChange(`resPas${ext}`, e.target.value)} disabled={isClosed}>
                                                             <option value="">-- Pasivo --</option>
                                                             <option value="Completo no doloroso">Completo no doloroso</option>
                                                             <option value="Completo doloroso">Completo doloroso</option>
@@ -469,7 +468,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     </div>
                                                     <div className="w-24">
                                                         <label className="text-[10px] uppercase font-bold text-slate-400">Tope</label>
-                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none" value={fila[`topeFinal${ext}`] || ''} onChange={(e) => handleFilaChange(`topeFinal${ext}`, e.target.value)} disabled={isClosed}>
+                                                        <select className="w-full mt-1 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none text-ellipsis" value={fila[`topeFinal${ext}`] || ''} onChange={(e) => handleFilaChange(`topeFinal${ext}`, e.target.value)} disabled={isClosed}>
                                                             <option value="">--</option>
                                                             <option value="Blando">Blando</option><option value="Firme">Firme</option><option value="Duro">Duro</option><option value="Vacío">Vacío</option><option value="Espástico">Espástico</option>
                                                         </select>
@@ -531,7 +530,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                     {/* Controles Base */}
                                     <div className="md:col-span-4 flex flex-col gap-3">
-                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.region} onChange={(e) => handleFilaChange('region', e.target.value)} disabled={isClosed}>
+                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.region} onChange={(e) => handleFilaChange('region', e.target.value)} disabled={isClosed}>
                                             <option value="">-- Región --</option>
                                             <optgroup label="Miembro Superior"><option value="Hombro">Hombro</option><option value="Codo">Codo</option><option value="Muñeca/Mano">Muñeca/Mano</option><option value="Dedos">Dedos</option></optgroup>
                                             <optgroup label="Miembro Inferior"><option value="Cadera">Cadera</option><option value="Rodilla">Rodilla</option><option value="Tobillo">Tobillo</option><option value="Pie/Ortejos">Pie/Ortejos</option></optgroup>
@@ -539,7 +538,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             <option value="Otro">Otro/Personalizado...</option>
                                         </select>
 
-                                        <select className="w-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.lado} onChange={(e) => handleFilaChange('lado', e.target.value)} disabled={isClosed}>
+                                        <select className="w-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.lado} onChange={(e) => handleFilaChange('lado', e.target.value)} disabled={isClosed}>
                                             {isAxial ? (
                                                 <><option value="Axial">Segmento Axial</option><option value="Derecho">Rotación/Inclinación Der.</option><option value="Izquierdo">Rotación/Inclinación Izq.</option></>
                                             ) : (
@@ -549,13 +548,13 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         </select>
 
                                         {!isAxial && fila.lado === 'Unilateral' && (
-                                            <select className="w-full text-xs font-medium bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.ladoEspecifico || 'Derecho'} onChange={(e) => handleFilaChange('ladoEspecifico', e.target.value)} disabled={isClosed}>
+                                            <select className="w-full text-xs font-medium bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.ladoEspecifico || 'Derecho'} onChange={(e) => handleFilaChange('ladoEspecifico', e.target.value)} disabled={isClosed}>
                                                 <option value="Derecho">Derecho</option>
                                                 <option value="Izquierdo">Izquierdo</option>
                                             </select>
                                         )}
 
-                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400" value={fila.movimiento} onChange={(e) => handleFilaChange('movimiento', e.target.value)} disabled={isClosed}>
+                                        <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.movimiento} onChange={(e) => handleFilaChange('movimiento', e.target.value)} disabled={isClosed}>
                                             <option value="">-- Movimiento --</option>
                                             <option value="Flexión">Flexión</option><option value="Extensión">Extensión</option><option value="Abducción">Abducción</option><option value="Aducción">Aducción</option><option value="Rotación Interna">Rotación Interna</option><option value="Rotación Externa">Rotación Externa</option><option value="Inclinación Lateral">Inclinación Lateral</option><option value="Rotación Axial">Rotación Axial</option><option value="Elevación">Elevación</option><option value="Depresión">Depresión</option><option value="Pronación">Pronación</option><option value="Supinación">Supinación</option><option value="Inversión">Inversión</option><option value="Eversión">Eversión</option><option value="Dorsiflexión">Dorsiflexión</option><option value="Plantiflexión">Plantiflexión</option><option value="Compuesto/Funcional">Gesto Compuesto/Funcional</option><option value="Otro">Otro/Personalizado...</option>
                                         </select>
@@ -667,7 +666,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             </button>
                         </div>
 
-                        <div className="overflow-x-auto rounded-xl border border-indigo-100 bg-white shadow-sm">
+                        <div className="overflow-x-auto rounded-xl border border-indigo-100 bg-white shadow-sm w-full max-w-full">
                             <table className="w-full text-left text-sm">
                                 <thead>
                                     <tr className="bg-indigo-50 text-[10px] uppercase text-indigo-500 font-bold">
@@ -695,7 +694,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     <input type="text" className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" placeholder="Ej. Isquiosurales" value={tejido.nombre} onChange={(e) => handleTejidoChange('nombre', e.target.value)} disabled={isClosed} />
                                                 </td>
                                                 <td className="p-2">
-                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" value={tejido.lado} onChange={(e) => handleTejidoChange('lado', e.target.value)} disabled={isClosed}>
+                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400 text-ellipsis" value={tejido.lado} onChange={(e) => handleTejidoChange('lado', e.target.value)} disabled={isClosed}>
                                                         <option value="Derecho">Derecho</option>
                                                         <option value="Izquierdo">Izquierdo</option>
                                                         <option value="Bilateral">Bilateral</option>
@@ -705,7 +704,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     <input type="text" className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" placeholder="Ej. Elevación pierna recta (SLR)" value={tejido.prueba} onChange={(e) => handleTejidoChange('prueba', e.target.value)} disabled={isClosed} />
                                                 </td>
                                                 <td className="p-2">
-                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" value={tejido.resultado} onChange={(e) => handleTejidoChange('resultado', e.target.value)} disabled={isClosed}>
+                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400 text-ellipsis" value={tejido.resultado} onChange={(e) => handleTejidoChange('resultado', e.target.value)} disabled={isClosed}>
                                                         <option value="">-- Seleccionar --</option>
                                                         <option value="Normal">Normal</option>
                                                         <option value="Acortado">Acortado / Restringido</option>
@@ -766,7 +765,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
                             <ul className="list-disc pl-4 space-y-1 mb-2">
                                 <li>**Manual (MMT):** Eval. rápida 1-5. Poco sensible para deportistas.</li>
@@ -887,8 +886,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         onChange={(e) => handleFilaChange('region', e.target.value)}
                                                         disabled={isClosed}
                                                     />
-                                                    <select
-                                                        className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400"
+                                                    <select className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400 text-ellipsis"
                                                         value={fila.lado}
                                                         onChange={(e) => handleFilaChange('lado', e.target.value)}
                                                         disabled={isClosed}
@@ -898,8 +896,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         <option value="Bilateral">Bilateral</option>
                                                         <option value="Axial">Axial</option>
                                                     </select>
-                                                    <select
-                                                        className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400 max-w-[180px]"
+                                                    <select className="text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded px-2 py-1 outline-none focus:border-emerald-400 max-w-[180px] text-ellipsis"
                                                         value={fila.tipoEvaluacion}
                                                         onChange={(e) => handleFilaChange('tipoEvaluacion', e.target.value)}
                                                         disabled={isClosed}
@@ -935,8 +932,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         <div className="text-xs text-slate-400 italic p-3 bg-slate-50 border border-slate-200 border-dashed rounded text-center">Selecciona un tipo de evaluación para ingresar resultados.</div>
                                                     )}
                                                     {fila.tipoEvaluacion === 'Manual' && (
-                                                        <select
-                                                            className="w-full text-xs bg-white border border-slate-200 text-slate-700 font-bold rounded p-2 outline-none focus:border-emerald-400"
+                                                        <select className="w-full text-xs bg-white border border-slate-200 text-slate-700 font-bold rounded p-2 outline-none focus:border-emerald-400 text-ellipsis"
                                                             value={fila.resultado} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed}
                                                         >
                                                             <option value="">-- Escala MMT / MRC --</option>
@@ -959,7 +955,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                                     <span className="text-[10px] font-bold text-slate-400 uppercase text-center">Izq</span>
                                                                     <input type="number" step="0.1" className="w-full text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.dinamometriaIzq || ''} onChange={(e) => handleFilaChange('dinamometriaIzq', e.target.value)} disabled={isClosed} />
                                                                 </div>
-                                                                <select className="w-14 items-end mt-4 text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-700 rounded p-1.5 outline-none" value={fila.dinamometriaUnidad || 'Kg'} onChange={(e) => handleFilaChange('dinamometriaUnidad', e.target.value)} disabled={isClosed}>
+                                                                <select className="w-14 items-end mt-4 text-[10px] font-bold bg-slate-100 border border-slate-200 text-slate-700 rounded p-1.5 outline-none text-ellipsis" value={fila.dinamometriaUnidad || 'Kg'} onChange={(e) => handleFilaChange('dinamometriaUnidad', e.target.value)} disabled={isClosed}>
                                                                     <option value="Kg">Kg</option><option value="N">N</option><option value="Lbs">Lbs</option>
                                                                 </select>
                                                             </div>
@@ -1049,7 +1045,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide w-[70px]">Tiempo:</span>
-                                                                <input type="number" placeholder="Seg" className="w-[80px] text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.isometriaSegundos || ''} onChange={(e) => handleFilaChange('isometriaSegundos', e.target.value)} disabled={isClosed} />
+                                                                <input type="number" placeholder="Seg" className="w-[80px] shrink-0 text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.isometriaSegundos || ''} onChange={(e) => handleFilaChange('isometriaSegundos', e.target.value)} disabled={isClosed} />
                                                                 <span className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">seg</span>
                                                             </div>
                                                             <input type="text" placeholder="Motivo de corte (ej. Dolor / Fatiga)" className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.isometriaMotivo || ''} onChange={(e) => handleFilaChange('isometriaMotivo', e.target.value)} disabled={isClosed} />
@@ -1059,9 +1055,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         <div className="flex flex-col gap-2 bg-slate-50/50 p-2 border border-slate-100 rounded">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide w-[70px]">Reps:</span>
-                                                                <input type="number" className="w-[80px] text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.repeticionesN || ''} onChange={(e) => handleFilaChange('repeticionesN', e.target.value)} disabled={isClosed} />
+                                                                <input type="number" className="w-[80px] shrink-0 text-sm text-center font-bold bg-white border border-slate-200 text-slate-800 rounded p-1 outline-none focus:border-emerald-400" value={fila.repeticionesN || ''} onChange={(e) => handleFilaChange('repeticionesN', e.target.value)} disabled={isClosed} />
                                                             </div>
-                                                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400" value={fila.repeticionesCorte || ''} onChange={(e) => handleFilaChange('repeticionesCorte', e.target.value)} disabled={isClosed}>
+                                                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:border-emerald-400 text-ellipsis" value={fila.repeticionesCorte || ''} onChange={(e) => handleFilaChange('repeticionesCorte', e.target.value)} disabled={isClosed}>
                                                                 <option value="">-- Criterio de detención --</option>
                                                                 <option value="Fatiga muscular">Fatiga muscular</option>
                                                                 <option value="Pérdida de técnica">Pérdida de técnica</option>
@@ -1082,8 +1078,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 <div className="flex flex-col gap-2 md:border-l md:border-slate-100 pl-0 md:pl-4 justify-center">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Durante:</span>
-                                                        <select
-                                                            className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                        <select className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400 text-ellipsis"
                                                             value={fila.dolorDurante} onChange={(e) => handleFilaChange('dolorDurante', e.target.value)} disabled={isClosed}
                                                         >
                                                             <option value="">No duele</option>
@@ -1094,8 +1089,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Después:</span>
-                                                        <select
-                                                            className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                        <select className="flex-1 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400 text-ellipsis"
                                                             value={fila.dolorPosterior} onChange={(e) => handleFilaChange('dolorPosterior', e.target.value)} disabled={isClosed}
                                                         >
                                                             <option value="">No repercute</option>
@@ -1105,8 +1099,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Calidad:</span>
-                                                        <select
-                                                            className="flex-1 text-[11px] bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400"
+                                                        <select className="flex-1 text-[11px] bg-slate-50 border border-slate-200 text-slate-700 rounded p-1.5 outline-none focus:bg-white focus:border-emerald-400 text-ellipsis"
                                                             value={fila.calidadEsfuerzo} onChange={(e) => handleFilaChange('calidadEsfuerzo', e.target.value)} disabled={isClosed}
                                                         >
                                                             <option value="">-- Calidad Mov. --</option>
@@ -1172,7 +1165,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
                             <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
                         </div>
@@ -1203,8 +1196,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             disabled={isClosed}
                                             placeholder="Estructura anatómica"
                                         />
-                                        <select
-                                            className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-amber-400"
+                                        <select className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-amber-400 text-ellipsis"
                                             value={fila.lado || 'Derecho'}
                                             onChange={e => handleChange('lado', e.target.value)}
                                             disabled={isClosed}
@@ -1233,8 +1225,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="flex flex-col gap-2">
                                         <label className="text-[10px] uppercase font-bold text-slate-400">Hallazgo Principal</label>
-                                        <select
-                                            className="w-full text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400"
+                                        <select className="w-full text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
                                             value={fila.hallazgoPrincipal || ''}
                                             onChange={e => handleChange('hallazgoPrincipal', e.target.value)}
                                             disabled={isClosed}
@@ -1268,8 +1259,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         </div>
                                         <div className="flex-1 min-w-[60px]">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Edema</label>
-                                            <select
-                                                className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400"
+                                            <select className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
                                                 value={fila.edema || 'Normal'}
                                                 onChange={e => handleChange('edema', e.target.value)}
                                                 disabled={isClosed}
@@ -1282,8 +1272,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         </div>
                                         <div className="flex-1 min-w-[60px]">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Temp.</label>
-                                            <select
-                                                className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400"
+                                            <select className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
                                                 value={fila.temperatura || 'Normal'}
                                                 onChange={e => handleChange('temperatura', e.target.value)}
                                                 disabled={isClosed}
@@ -1397,7 +1386,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 </h4>
                                 <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
                                     ?
-                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                         <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
                                         <p>Si el screening es NORMAL, puedes saltar esto.</p>
                                         <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica.</p>
@@ -1481,7 +1470,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
@@ -1518,7 +1507,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     <div key={fila.id} className="bg-white border text-sm rounded-xl border-teal-100 hover:border-teal-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
                                         {/* Header */}
                                         <div className="bg-teal-50/50 p-3 border-b border-teal-100 flex flex-wrap items-center gap-2 justify-between">
-                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 flex-1 relative pr-8">
                                                 <input
                                                     className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1.5 outline-none w-full sm:w-[180px] focus:border-teal-400"
                                                     value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Región/Tarea (Ej. Y-Balance)"
@@ -1553,8 +1542,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-3 gap-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Síntoma:</span>
-                                                <select
-                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-bold text-slate-700"
+                                                <select className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-bold text-slate-700 text-ellipsis"
                                                     value={fila.sintoma || ''} onChange={e => handleChange('sintoma', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Estado --</option>
@@ -1567,8 +1555,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Calidad:</span>
-                                                <select
-                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium"
+                                                <select className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium text-ellipsis"
                                                     value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Seleccionar --</option>
@@ -1579,8 +1566,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] uppercase font-bold text-slate-500 w-[60px]">Compens.:</span>
-                                                <select
-                                                    className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium"
+                                                <select className="flex-1 text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-teal-400 font-medium text-ellipsis"
                                                     value={fila.compensacion || ''} onChange={e => handleChange('compensacion', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Ninguna --</option>
@@ -1631,7 +1617,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico.</li>
@@ -1646,8 +1632,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                             <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Región a explorar</label>
-                            <select
-                                className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400"
+                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.regionGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, regionGlobal: e.target.value })}
                                 disabled={isClosed}
@@ -1667,8 +1652,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <div>
                             <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Hipótesis Principal</label>
-                            <select
-                                className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400"
+                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.hipotesisGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, hipotesisGlobal: e.target.value })}
                                 disabled={isClosed}
@@ -1688,8 +1672,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <div>
                             <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Objetivo de pruebas</label>
-                            <select
-                                className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400"
+                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.objetivoGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, objetivoGlobal: e.target.value })}
                                 disabled={isClosed}
@@ -1770,7 +1753,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 return (
                                     <div key={fila.id} className="bg-white border text-sm rounded-xl border-sky-100 hover:border-sky-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
                                         <div className="bg-sky-50/50 p-3 border-b border-sky-100 flex flex-wrap items-center gap-2 justify-between">
-                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 flex-1 relative pr-8">
                                                 <input
                                                     className="flex-1 text-sm bg-white border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 min-w-[100px]"
                                                     value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Nombre del Test (Ej. Neer)"
@@ -1801,8 +1784,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] uppercase font-bold text-slate-500 w-[70px]">Resultado:</span>
-                                                <select
-                                                    className="flex-1 text-xs font-bold rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700"
+                                                <select className="flex-1 text-xs font-bold rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700 text-ellipsis"
                                                     value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Seleccionar --</option>
@@ -1813,8 +1795,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-[10px] uppercase font-bold text-slate-500 w-[70px]">Síntoma:</span>
-                                                <select
-                                                    className="flex-1 text-xs font-medium rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700"
+                                                <select className="flex-1 text-xs font-medium rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700 text-ellipsis"
                                                     value={fila.reproduceTexto || ''} onChange={e => handleChange('reproduceTexto', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Reproducción --</option>
@@ -1877,7 +1858,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] uppercase font-bold text-orange-700">Objetivo Principal:</span>
-                            <select className="text-xs p-2 border border-orange-200 rounded-md bg-white text-orange-900 outline-none focus:border-orange-400 font-bold"
+                            <select className="text-xs p-2 border border-orange-200 rounded-md bg-white text-orange-900 outline-none focus:border-orange-400 font-bold text-ellipsis"
                                 value={exam.funcionalesConfig?.objetivo || ''}
                                 onChange={e => handleUpdateExam('funcionalesConfig', { ...(exam.funcionalesConfig || {}), objetivo: e.target.value })}
                                 disabled={isClosed}
@@ -1894,7 +1875,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
                             ?
-                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                 <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
                                 <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                     <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
@@ -1945,10 +1926,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     <div key={fila.id} className="bg-white border text-sm rounded-xl border-orange-100 hover:border-orange-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
                                         {/* Header */}
                                         <div className="bg-orange-50/50 p-3 border-b border-orange-100 flex flex-wrap items-center gap-2 justify-between">
-                                            <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
+                                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 flex-1 relative pr-8">
                                                 <input
                                                     type="text" list={`func-list-${fila.id}`}
-                                                    className="w-full sm:w-[220px] text-sm font-bold p-1.5 border border-slate-200 rounded outline-none focus:border-orange-400 focus:bg-white bg-slate-50 text-slate-800"
+                                                    className="w-full min-w-[120px] flex-1 text-sm font-bold p-1.5 border border-slate-200 rounded outline-none focus:border-orange-400 focus:bg-white bg-slate-50 text-slate-800"
                                                     value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Test (Ej. CMJ, TUG, 1RM...)"
                                                 />
                                                 <datalist id={`func-list-${fila.id}`}>
@@ -1983,8 +1964,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     className="w-full text-base font-bold bg-transparent outline-none text-center text-orange-600 placeholder:text-slate-400"
                                                     value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="Valor"
                                                 />
-                                                <select
-                                                    className="bg-transparent text-xs font-bold text-slate-500 border-l border-slate-200 outline-none pl-2 ml-2"
+                                                <select className="bg-transparent text-xs font-bold text-slate-500 border-l border-slate-200 outline-none pl-2 ml-2 text-ellipsis"
                                                     value={fila.tipoMetrica || ''} onChange={e => handleChange('tipoMetrica', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">Tipo...</option>
@@ -2087,8 +2067,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Resultado Post-Examen</label>
-                            <select
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed font-medium"
+                            <select className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed font-medium text-ellipsis"
                                 value={exam.retestConfig?.resultadoPost || ''}
                                 onChange={(e) => handleUpdateExam('retestConfig', { ...exam.retestConfig, resultadoPost: e.target.value })}
                                 disabled={isClosed}
