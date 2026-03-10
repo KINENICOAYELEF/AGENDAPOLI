@@ -2245,7 +2245,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             (pSyn.complementary_measures && pSyn.complementary_measures.length > 0)
                         );
 
-                        const hasIndexTask = Boolean(pSyn?.frame?.tarea_indice) || Boolean(exam.retestConfig?.tareaIndice);
+                        const indexTaskP1 = (pSyn?.frame?.tarea_indice || '').trim();
+                        const indexTaskA = (exam.retestGesture || '').trim();
+                        const indexTaskJ = (exam.retestConfig?.tareaIndice || '').trim();
+                        const hasIndexTask = indexTaskP1.length > 0 || indexTaskA.length > 0 || indexTaskJ.length > 0;
 
                         if (!hasFindings) {
                             alert('El examen físico está vacío. Registra al menos un hallazgo para continuar.');
