@@ -50,15 +50,16 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
 
     useEffect(() => {
         if (initialData) {
+            const anyInitial = initialData as any;
             // Migración hidratada al vuelo si faltan datos en identity
             const mergedIdentity = {
                 ...formData.identity,
                 ...(initialData.identity || {}),
-                fullName: initialData.identity?.fullName || initialData.nombreCompleto || "",
-                rut: initialData.identity?.rut || initialData.rut || "",
-                telefono: initialData.identity?.telefono || initialData.telefono || "",
-                correo: initialData.identity?.correo || initialData.email || "",
-                observacionesAdministrativas: initialData.identity?.observacionesAdministrativas || initialData.notasAdministrativas || "",
+                fullName: initialData.identity?.fullName || anyInitial.nombreCompleto || "",
+                rut: initialData.identity?.rut || anyInitial.rut || "",
+                telefono: initialData.identity?.telefono || anyInitial.telefono || "",
+                correo: initialData.identity?.correo || anyInitial.email || "",
+                observacionesAdministrativas: initialData.identity?.observacionesAdministrativas || anyInitial.notasAdministrativas || "",
             };
             setFormData({
                 ...initialData,
@@ -118,7 +119,7 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             const calcEdad = calcularEdad(fechaNacimiento!);
             const finalEdad = typeof calcEdad === 'number' ? calcEdad : undefined;
 
-            const payload: PersonaUsuaria = {
+            const payload: any = {
                 ...formData,
                 id: targetId,
                 identity: {
