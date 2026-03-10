@@ -104,7 +104,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-black text-slate-800 tracking-tight">A. Resumen Heredado (P1)</h2>
+                            <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">A. Resumen Heredado (P1) <button type="button" onClick={() => setOpenHelp('A')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-100 transition-colors" title="Ayuda clínica">?</button></h2>
                             <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors" title="Cuándo usarlo: siempre revisa este bloque antes de tocar al paciente.&#10;Qué registrar: Verifica si falta info para derivar o tener cuidado.&#10;Cuándo no profundizar: Esto es solo contexto, no modifiques aquí.">
                                 ?
                             </button>
@@ -183,7 +183,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="bg-slate-50 p-4 flex justify-between items-start border-b border-slate-200">
                     <div>
                         <h3 className="font-bold text-slate-800 flex items-center gap-2 tracking-wide">
-                            <span className="text-lg">👀</span> B. Evaluación Observacional
+                            <span className="text-lg">👀</span> <span className="flex-1">B. Evaluación Observacional</span> <button type="button" onClick={() => setOpenHelp('B')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-indigo-200 bg-white text-indigo-600 font-bold hover:bg-indigo-100 transition-colors" title="Ayuda clínica">?</button>
                         </h3>
                         <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-slate-600">
                             Observa primero el gesto o movimiento más representativo referido en la entrevista.
@@ -758,7 +758,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="bg-emerald-50/50 p-4 flex justify-between items-start border-b border-emerald-200">
                     <div>
                         <h3 className="font-bold text-emerald-900 flex items-center gap-2 tracking-wide">
-                            <span className="text-lg">🦾</span> D. Fuerza y tolerancia a carga
+                            <span className="text-lg">🦾</span> <span className="flex-1">D. Fuerza y tolerancia a carga</span> <button type="button" onClick={() => setOpenHelp('D')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-indigo-200 bg-white text-indigo-600 font-bold hover:bg-indigo-100 transition-colors" title="Ayuda clínica">?</button>
                         </h3>
                         <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-emerald-900">
                             Pruebas manuales, isometría, dinamometría o tests funcionales
@@ -1312,7 +1312,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             <div className="bg-white rounded-2xl shadow-sm border border-rose-200 flex flex-col">
                 <div onClick={() => setIsNeuroOpen(!isNeuroOpen)} className="bg-rose-50/50 hover:bg-rose-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 transition-colors">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">⚡</div>
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">🧠</div>
                         <div>
                             <h3 className="font-bold text-rose-900 text-lg">F. Neurológico / vascular / somatosensorial</h3>
                             <p className="text-xs text-rose-700/80 mt-0.5">Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad</p>
@@ -2250,70 +2250,166 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </button>
             </div>
         
+            
             {/* Modal de Ayuda Universal */}
             {openHelp && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-bold text-slate-800 text-lg">Guía Clínica</h3>
-                            <button onClick={() => setOpenHelp(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold">✕</button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 scroll-m-0 overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3 shrink-0">
+                            <div>
+                                <h3 className="font-black text-slate-800 text-xl tracking-tight">💡 Guía Clínica Profesional</h3>
+                                <p className="text-xs text-slate-500 mt-1">Sugerencias basadas en práctica basada en evidencia.</p>
+                            </div>
+                            <button onClick={() => setOpenHelp(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold shrink-0">✕</button>
                         </div>
-                        <div className="text-sm text-slate-600 space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+                        <div className="text-sm text-slate-600 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                            {openHelp === 'A' && (
+                                <>
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                        <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">📋</span> A. Historial y Contexto</p>
+                                        <p className="text-xs text-slate-500 mt-1">Este bloque extrae las hipótesis y focos marcados en las pantallas previas (P1).</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Revisión rápida:</strong> Antes de tocar al paciente, verifica sus "Red Flags" y la irritabilidad reportada.</li>
+                                        <li><strong>Planificación:</strong> Si la irritabilidad es ALTA, tu examen físico (los bloques siguientes) deben ser limitados, suaves e ir directo al punto para no exacerbar los síntomas.</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'B' && (
+                                <>
+                                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                        <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
+                                        <p className="text-xs text-indigo-600 mt-1">Observación basal y palpación estructural superficial.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>No sobre-diagnostiques la postura:</strong> Las asimetrías son normales. Anota la postura solo si crees que está <strong>directamente ligada</strong> a la sintomatología actual (ej. shift antálgico).</li>
+                                        <li><strong>Palpación:</strong> Busca cambios en temperatura, contornos anormales, o la reproducción exacta del dolor característico del paciente ("¿Es este tu dolor?").</li>
+                                        <li><strong>Marcha:</strong> Observa disimetrías dinámicas, velocidad o cojeras evidentes y anótalo de forma breve.</li>
+                                    </ul>
+                                </>
+                            )}
                             {openHelp === 'C' && (
                                 <>
-                                    <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
-                                    <ul className="list-disc pl-4 space-y-1">
-                                        <li><strong>Manual (MMT):</strong> Eval. rápida 1-5. Poco sensible para deportistas.</li>
-                                        <li><strong>Dinamómetro (HHD):</strong> Gold standard clínico. </li>
-                                        <li><strong>RM / Asimétrico:</strong> Gym / Cargas altas.</li>
+                                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                                        <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM) y Fuerza</p>
+                                        <p className="text-xs text-emerald-600 mt-1">El testeo analítico de la capacidad articular y muscular basal.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>A/PROM Clínico:</strong> Evalúa Movimiento Activo (capacidad motora) y el Pasivo con Overpressure para sentir el <em>End-feel</em>.</li>
+                                        <li><strong>Fuerza MMT:</strong> La escala de Daniels (1-5) es útil en debilidades graves. En atletas es pobrísima para detectar asimetrías (techo clínico).</li>
+                                        <li><strong>Dinamometría (HHD):</strong> El Gold Standard en kinesiología moderna. Anota Kg o Newtons y evalúa la Valla de Asimetría (LSI &gt; 90%).</li>
+                                        <li><strong>Integración:</strong> Si duele Activo pero NO pasivo $\rightarrow$ Foco Contráctil/Muscular. Si duele Activo Y Pasivo en el mismo sentido $\rightarrow$ Foco Articular.</li>
+                                    </ul>
+                                </>
+                            )}
+                            
+                            {openHelp === 'D' && (
+                                <>
+                                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                        <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">🦾</span> D. Fuerza y Tolerancia a Carga</p>
+                                        <p className="text-xs text-indigo-600 mt-1">Valoración analítica de la capacidad contráctil del tejido.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Dolor frente a la resistencia:</strong> Si el test isométrico duele, es indicativo fuerte de un problema contráctil (tendinopatía, desgarro).</li>
+                                        <li><strong>Debilidad sin dolor:</strong> Alerta neurológica (Miotoma / Nervio Periférico) o rotura masiva completa del tendón.</li>
+                                        <li><strong>Cuantificar:</strong> En deportistas usa Dinamometría de mano (HHD) o RM estimado para tener un <em>baseline</em> objetivo y evaluar asimetrías de torque.</li>
                                     </ul>
                                 </>
                             )}
                             {openHelp === 'E' && (
                                 <>
-                                    <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
-                                    <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
+                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                        <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
+                                        <p className="text-xs text-amber-600 mt-1">Juego articular (Accessory motions) y provocación ligamentosa.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Movimientos Accesorios (Glide):</strong> Evalúa rigidez capsular o micro-inestabilidad. Documentar hiper o hipomovilidad correlacionada con los hallazgos del ROM.</li>
+                                        <li><strong>Test de Ligamentos:</strong> Registrar laxitud (grados I-III) y calidad del tope blando/duro tras un trauma agudo.</li>
+                                        <li><em>Tip Evidencia:</em> Solo utiliza estas maniobras si tu hipótesis sugiere un limitador mecánico local. En dolores crónicos nociplásticos aportarían poco valor.</li>
+                                    </ul>
                                 </>
                             )}
                             {openHelp === 'F' && (
                                 <>
-                                    <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
-                                    <p>Si el screening es NORMAL, puedes saltar esto.</p>
-                                    <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica aquí para documentar objetivamente lesiones neurales.</p>
+                                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
+                                        <p className="font-bold text-rose-800 flex items-center gap-2"><span className="text-lg">🧠</span> F. Examen Neuro / Sensitivo / Neural</p>
+                                        <p className="text-xs text-rose-600 mt-1">Descarte o confirmación de involucro del Sistema Nervioso Periférico.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Dermatomas y Miotomas:</strong> Obligatorio si el paciente refiere irradiación, parestesia o debilidad que no responde anatómicamente a un músculo local.</li>
+                                        <li><strong>Reflejos Osteotendíneos:</strong> Testea comparativamente asimetrías L/R para evaluar daño de raíz nerviosa (Hiporreflexia).</li>
+                                        <li><strong>Neurodinamia:</strong> SLUMP, ULTT, PKB. Tensión neural adversa. Es Positiva SÓLO si altera los síntomas al mover un segmento distal (ej. flexión cervical altera el dolor del brazo).</li>
+                                    </ul>
                                 </>
                             )}
                             {openHelp === 'G' && (
                                 <>
-                                    <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
-                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                        <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
-                                        <li><strong>Cómo evaluar:</strong> Tarea simple deportiva o diaria (saltar, agacharse, single leg squat).</li>
+                                    <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
+                                        <p className="font-bold text-teal-800 flex items-center gap-2"><span className="text-lg">⚖️</span> G. Control Motor y Biomecánica</p>
+                                        <p className="text-xs text-teal-600 mt-1">Observación cualitativa de estrategias de movimiento.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Calidad vs Cantidad:</strong> Observa oscilaciones, pérdida de balance, estrategias de evitación (guarding) y control lumbopélvico (ej. valgo dinámico de rodilla en sentadilla).</li>
+                                        <li><strong>Relevancia Clínica:</strong> No todos los "déficits" de control motor causan dolor (muchos asintomáticos los tienen). Evalúa si la corrección del patrón disminuye los síntomas del paciente al instante.</li>
                                     </ul>
                                 </>
                             )}
                             {openHelp === 'H' && (
                                 <>
-                                    <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas Especiales</p>
-                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                        <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico que sumen a la anamnesis.</li>
-                                        <li><strong>Integrar:</strong> ¿La prueba especial provoca el mismo dolor familiar del paciente? Anotar precisión en las observaciones.</li>
+                                    <div className="p-3 bg-sky-50 rounded-lg border border-sky-200">
+                                        <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">🩺</span> H. Pruebas Ortopédicas Especiales (Tests)</p>
+                                        <p className="text-xs text-sky-600 mt-1">Tests clínicos específicos orientados a un tejido.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Clusterización:</strong> Un test aislado falla. Clínicamente SIEMPRE usa un "Cluster" de al menos 3 tests (Ej: Cluster de Laslett para Sacroilíaca, Hawkins+Neer+Jobe para manguito rotador).</li>
+                                        <li><strong>Reproducción de Síntomas:</strong> El test ortopédico solo es positivo y útil si reproduce "EL" dolor del paciente. Si causa un dolor diferente, no confirma la hipótesis clínica.</li>
                                     </ul>
                                 </>
                             )}
                             {openHelp === 'I' && (
                                 <>
-                                    <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
-                                    <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
-                                        <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento y objetivar el alta médica, que para diagnóstico pato-anatómico.</li>
-                                        <li><strong>Documentación:</strong> Registrar el valor exacto (métrica) para ver su progresión en las sesiones futuras.</li>
-                                        <li><strong>Sugerencias:</strong> Cambia el objetivo para ver listas sugeridas dependientes de la meta deportiva o civil.</li>
+                                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                        <p className="font-bold text-orange-800 flex items-center gap-2"><span className="text-lg">🏃</span> I. Functional & Performance Tests</p>
+                                        <p className="text-xs text-orange-600 mt-1">Métricas objetivas para cuantificar alta o rendimiento.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Métricas Duras:</strong> CMJ (Salto Vertical en cm), Hop Tests cruzados (distancia LSI), Agilidad (Segundos). Todo requiere de datos exactos.</li>
+                                        <li><strong>Adulto Mayor / Sedentario:</strong> No es exclusivo de atletas. El Timed Up and Go (TUG), Sit-to-Stand 30s o la Marcha 6 Min. son medidas funcionales vitales para predecir morbilidad y riesgo de caídas.</li>
+                                        <li><strong>Progreso:</strong> Son la herramienta definitiva para demostrarle al paciente en la sesión 10 que ha mejorado un X% respecto al día 1.</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'J' && (
+                                <>
+                                    <div className="p-3 bg-fuchsia-50 rounded-lg border border-fuchsia-200">
+                                        <p className="font-bold text-fuchsia-800 flex items-center gap-2"><span className="text-lg">🔄</span> J. Signo Comparable / Re-test</p>
+                                        <p className="text-xs text-fuchsia-600 mt-1">Confirmación intrasesión de efectividad.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li><strong>Auditoría Cínica:</strong> Consiste en encontrar un signo doloroso o restringido en la evaluación, aplicar una intervención de prueba ràpida (ej. terapia manual, un tape, o instrucción motora) y <strong>re-evaluar el mismo signo inmediatamente</strong>.</li>
+                                        <li><strong>Si cambia:</strong> Te confirma al 100% la pertinencia del tratamiento seleccionado a nivel neuromecánico y aumenta la confianza del paciente.</li>
+                                    </ul>
+                                </>
+                            )}
+                            {openHelp === 'K' && (
+                                <>
+                                    <div className="p-3 bg-slate-100 rounded-lg border border-slate-300">
+                                        <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🩻</span> K. Exámenes Complementarios</p>
+                                        <p className="text-xs text-slate-600 mt-1">Registro de imágenes o reportes médicos aportados.</p>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-2 mt-2">
+                                        <li>Recuerda la regla clínica máxima: <strong>Tratamos pacientes, no resonancias magnéticas</strong>. Úsalas para descartar banderas rojas graves, o como confirmación de hipótesis (ej. roturas completas) solo si el test clínico correlaciona con la imagen.</li>
                                     </ul>
                                 </>
                             )}
                         </div>
+                        <div className="mt-4 pt-3 border-t border-slate-100 shrink-0">
+                            <button onClick={() => setOpenHelp(null)} className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">Entendido</button>
+                        </div>
                     </div>
                 </div>
             )}
+
 </div>
     );
 }
