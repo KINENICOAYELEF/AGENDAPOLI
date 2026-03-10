@@ -34,7 +34,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     };
 
     const blocks = [
-        { id: 'strengthAndLoad', icon: '🦾', theme: 'emerald', title: 'D. Fuerza y tolerancia a carga', sub: 'Pruebas isométricas, RM, dinamometría o tolerancia a cargar peso', placeholder: 'Fuerza isométrica conservada pero dolorosa (4/5) en abducción...' },
         { id: 'palpation', icon: '🖐️', theme: 'amber', title: 'E. Palpación', sub: 'Temperatura, derrame, puntos gatillo, sensibilidad tisular', placeholder: 'Dolor exquisito a la palpación del epicóndilo lateral, sin aumento de temperatura local...' },
         { id: 'neuroVascular', icon: '⚡', theme: 'rose', title: 'F. Neurológico / vascular / somatosensorial', sub: 'Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad', placeholder: 'Sensibilidad conservada, reflejos osteotendíneos ++/++, pulsos distales presentes y simétricos...' },
         { id: 'motorControl', icon: '🧘', theme: 'teal', title: 'G. Control motor y estabilidad funcional', sub: 'Disociación, estabilizadores, propiocepción', placeholder: 'Pobre control lumbopélvico durante sentadilla profunda, valgo dinámico de rodilla derecha...' },
@@ -633,7 +632,289 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 )}
             </div>
 
-            {/* D-K BLOQUES CLINICOS RESTANTES*/}
+            {/* D. FUERZA Y TOLERANCIA A CARGA */}
+            <div className="bg-white border text-sm border-emerald-200 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+                <div className="bg-emerald-50/50 p-4 flex justify-between items-start border-b border-emerald-200">
+                    <div>
+                        <h3 className="font-bold text-emerald-900 flex items-center gap-2 tracking-wide">
+                            <span className="text-lg">🦾</span> D. Fuerza y tolerancia a carga
+                        </h3>
+                        <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-emerald-900">
+                            Pruebas manuales, isometría, dinamometría o tests funcionales
+                        </p>
+                    </div>
+                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 opacity-60 hover:opacity-100 transition-opacity" title="📝 Fuerza no es solo MMT (1-5). Selecciona el tipo de evaluación adecuado según los recursos disponibles (ej. dinamómetro), la irritabilidad del paciente y el objetivo clínico de la fase actual.">
+                        ?
+                    </button>
+                </div>
+
+                {irritabilidad === "Alta" && (
+                    <div className="bg-red-50 border-b border-red-100 p-3 text-red-700 text-xs font-medium flex items-center gap-2">
+                        <span className="text-sm">⚠️</span>
+                        <span>Orientación: Prioriza carga dosificada y evita máximos si no son necesarios debido a la irritabilidad actual.</span>
+                    </div>
+                )}
+
+                <div className="p-0 overflow-x-auto bg-slate-50/30">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr className="bg-emerald-50/40 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 w-40">Región / Patrón</th>
+                                <th className="p-3 w-28">Lado</th>
+                                <th className="p-3 w-40">Tipo Evaluación</th>
+                                <th className="p-3 min-w-[200px]">Resultado Principal</th>
+                                <th className="p-3 w-32">Dolor (Durante/Post)</th>
+                                <th className="p-3 w-36">Calidad / Comparación</th>
+                                <th className="p-3 w-40">Obs. Breve</th>
+                                <th className="p-3 w-12 text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(!exam.fuerzaCargaConfig?.filas || exam.fuerzaCargaConfig.filas.length === 0) && (
+                                <tr>
+                                    <td colSpan={8} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
+                                        No hay pruebas de fuerza ingresadas. Presiona "+ Añadir Prueba" para comenzar.
+                                    </td>
+                                </tr>
+                            )}
+                            {(exam.fuerzaCargaConfig?.filas || []).map((fila: any, i: number) => {
+                                const handleFilaChange = (campo: string, valor: any) => {
+                                    const nuevasFilas = [...exam.fuerzaCargaConfig.filas];
+
+                                    // Limpieza condicional
+                                    if (campo === 'tipoEvaluacion' && fila.tipoEvaluacion !== valor) {
+                                        nuevasFilas[i].resultado = '';
+                                        nuevasFilas[i].dinamometriaValor = '';
+                                        nuevasFilas[i].dinamometriaUnidad = 'Kg';
+                                        nuevasFilas[i].isometriaSegundos = '';
+                                        nuevasFilas[i].repeticionesN = '';
+                                        nuevasFilas[i].repeticionesCorte = '';
+                                        nuevasFilas[i].testFuncionalNombre = '';
+                                    }
+
+                                    nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
+                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
+                                };
+
+                                return (
+                                    <tr key={fila.id} className="bg-white hover:bg-emerald-50/30 transition-colors group">
+                                        <td className="p-3 align-top">
+                                            <input
+                                                type="text"
+                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                                                placeholder="Ej. Cuádriceps / Push up"
+                                                value={fila.region}
+                                                onChange={(e) => handleFilaChange('region', e.target.value)}
+                                                disabled={isClosed}
+                                            />
+                                        </td>
+                                        <td className="p-3 align-top">
+                                            <select
+                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                                                value={fila.lado}
+                                                onChange={(e) => handleFilaChange('lado', e.target.value)}
+                                                disabled={isClosed}
+                                            >
+                                                <option value="Derecho">Derecho</option>
+                                                <option value="Izquierdo">Izquierdo</option>
+                                                <option value="Bilateral">Bilateral</option>
+                                                <option value="Axial">Axial</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-3 align-top">
+                                            <select
+                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 font-medium text-emerald-700"
+                                                value={fila.tipoEvaluacion}
+                                                onChange={(e) => handleFilaChange('tipoEvaluacion', e.target.value)}
+                                                disabled={isClosed}
+                                            >
+                                                <option value="">-- Seleccionar --</option>
+                                                <option value="Manual">Manual (MMT)</option>
+                                                <option value="Dinamometría">Dinamometría</option>
+                                                <option value="Isometría mantenida">Isometría mantenida</option>
+                                                <option value="Repeticiones submáximas">Reps submáximas</option>
+                                                <option value="Test funcional de carga">Test Func. Carga</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-3 align-top bg-slate-50/50 border-x border-slate-100">
+                                            {/* Renders Condicionales para Resultado */}
+                                            {!fila.tipoEvaluacion && (
+                                                <span className="text-xs text-slate-400 italic">Selecciona un tipo.</span>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Manual' && (
+                                                <select
+                                                    className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                                                    value={fila.resultado}
+                                                    onChange={(e) => handleFilaChange('resultado', e.target.value)}
+                                                    disabled={isClosed}
+                                                >
+                                                    <option value="">-- Escala MRC --</option>
+                                                    <option value="5 Normal">5 - Normal (Vence resistencia máxima)</option>
+                                                    <option value="4 Buena">4 - Buena (Vence resistencia moderada)</option>
+                                                    <option value="3 Regular">3 - Regular (Vence gravedad)</option>
+                                                    <option value="2 Deficiente">2 - Deficiente (Movimiento en plano sin gravedad)</option>
+                                                    <option value="1 Vestigio">1 - Vestigio (Contracción palpable sin movimiento)</option>
+                                                    <option value="0 Nula">0 - Nula (Sin contracción)</option>
+                                                </select>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Dinamometría' && (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="number" step="0.1" placeholder="Valor"
+                                                        className="w-20 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                        value={fila.dinamometriaValor || ''} onChange={(e) => handleFilaChange('dinamometriaValor', e.target.value)} disabled={isClosed}
+                                                    />
+                                                    <select
+                                                        className="w-16 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                        value={fila.dinamometriaUnidad || 'Kg'} onChange={(e) => handleFilaChange('dinamometriaUnidad', e.target.value)} disabled={isClosed}
+                                                    >
+                                                        <option value="Kg">Kg</option>
+                                                        <option value="N">N</option>
+                                                        <option value="Lbs">Lbs</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Isometría mantenida' && (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number" placeholder="Tiempo"
+                                                        className="w-20 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                        value={fila.isometriaSegundos || ''} onChange={(e) => handleFilaChange('isometriaSegundos', e.target.value)} disabled={isClosed}
+                                                    />
+                                                    <span className="text-xs text-slate-500 font-medium">segundos</span>
+                                                </div>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Repeticiones submáximas' && (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number" placeholder="Cant."
+                                                            className="w-16 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                            value={fila.repeticionesN || ''} onChange={(e) => handleFilaChange('repeticionesN', e.target.value)} disabled={isClosed}
+                                                        />
+                                                        <span className="text-xs text-slate-500">reps max</span>
+                                                    </div>
+                                                    <input
+                                                        type="text" placeholder="Ej. Corte por pérdida técnica..."
+                                                        className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                        value={fila.repeticionesCorte || ''} onChange={(e) => handleFilaChange('repeticionesCorte', e.target.value)} disabled={isClosed}
+                                                    />
+                                                </div>
+                                            )}
+                                            {fila.tipoEvaluacion === 'Test funcional de carga' && (
+                                                <div className="flex flex-col gap-2">
+                                                    <input
+                                                        type="text" placeholder="Nombre Test (ej. Heel raise)"
+                                                        className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400 font-medium"
+                                                        value={fila.testFuncionalNombre || ''} onChange={(e) => handleFilaChange('testFuncionalNombre', e.target.value)} disabled={isClosed}
+                                                    />
+                                                    <input
+                                                        type="text" placeholder="Resultado / Criterio obs."
+                                                        className="w-full text-xs bg-white border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:border-emerald-400"
+                                                        value={fila.resultado || ''} onChange={(e) => handleFilaChange('resultado', e.target.value)} disabled={isClosed}
+                                                    />
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="p-3 align-top">
+                                            <div className="flex flex-col gap-2">
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
+                                                    value={fila.dolorDurante} onChange={(e) => handleFilaChange('dolorDurante', e.target.value)} disabled={isClosed}
+                                                    title="Dolor durante la prueba"
+                                                >
+                                                    <option value="">-- Durante --</option>
+                                                    <option value="No">No duele</option>
+                                                    <option value="Leve">S/S Leve</option>
+                                                    <option value="Moderado">S/S Moderado</option>
+                                                    <option value="Alto">S/S Alto</option>
+                                                </select>
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
+                                                    value={fila.dolorPosterior} onChange={(e) => handleFilaChange('dolorPosterior', e.target.value)} disabled={isClosed}
+                                                    title="Dolor posterior a la prueba"
+                                                >
+                                                    <option value="">-- Posterior --</option>
+                                                    <option value="No">No repercute</option>
+                                                    <option value="Sí breve">Repercusión Breve</option>
+                                                    <option value="Sí persistente">Repercusión Persistente</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td className="p-3 align-top">
+                                            <div className="flex flex-col gap-2">
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
+                                                    value={fila.calidadEsfuerzo} onChange={(e) => handleFilaChange('calidadEsfuerzo', e.target.value)} disabled={isClosed}
+                                                    title="Calidad del esfuerzo"
+                                                >
+                                                    <option value="">-- Calidad --</option>
+                                                    <option value="Buena">Buena contracción</option>
+                                                    <option value="Compensa">Patrón Compensatorio</option>
+                                                    <option value="Inhibido por dolor">Inhibición por Dolor</option>
+                                                    <option value="Duda / inconsistente">Dudosa / Inconsistente</option>
+                                                </select>
+                                                <select
+                                                    className="w-full text-[11px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400"
+                                                    value={fila.comparacion} onChange={(e) => handleFilaChange('comparacion', e.target.value)} disabled={isClosed}
+                                                    title="Comparación contralateral"
+                                                >
+                                                    <option value="">-- Vs Contralateral --</option>
+                                                    <option value="Similar">Similar (±10%)</option>
+                                                    <option value="Menor">Menor (10-30% déficit)</option>
+                                                    <option value="Mucho menor">Mucho menor (&gt;30%)</option>
+                                                    <option value="No comparable">Lado sano afectado / NA</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td className="p-3 align-top">
+                                            <textarea
+                                                className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-emerald-400 min-h-[65px] resize-y"
+                                                placeholder="Observación breve..."
+                                                value={fila.observacion}
+                                                onChange={(e) => handleFilaChange('observacion', e.target.value)}
+                                                disabled={isClosed}
+                                            />
+                                        </td>
+                                        <td className="p-3 align-top text-center border-l border-slate-100">
+                                            <button
+                                                onClick={() => {
+                                                    const nuevasFilas = exam.fuerzaCargaConfig.filas.filter((_: any, idx: number) => idx !== i);
+                                                    handleUpdateExam('fuerzaCargaConfig', { ...exam.fuerzaCargaConfig, filas: nuevasFilas });
+                                                }}
+                                                disabled={isClosed}
+                                                className="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 mt-5 mx-auto disabled:opacity-0"
+                                                title="Eliminar prueba"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="bg-slate-50 p-4 border-t border-slate-200">
+                    <button
+                        onClick={() => {
+                            const configBase = exam.fuerzaCargaConfig || { filas: [] };
+                            const nuevaFila = {
+                                id: Date.now().toString(), region: '', lado: 'Derecho', tipoEvaluacion: '',
+                                dolorDurante: '', dolorPosterior: '', calidadEsfuerzo: '', comparacion: '', observacion: ''
+                            };
+                            handleUpdateExam('fuerzaCargaConfig', { ...configBase, filas: [...configBase.filas, nuevaFila] });
+                        }}
+                        disabled={isClosed}
+                        className="text-sm font-bold text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        <span>+</span> Añadir Prueba de Fuerza/Carga
+                    </button>
+                </div>
+            </div>
+
+            {/* E-K BLOQUES CLINICOS RESTANTES*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {blocks.map((block) => {
                     const theme = getThemeClasses(block.theme);

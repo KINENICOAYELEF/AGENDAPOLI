@@ -852,6 +852,7 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         complementary?: string;
         posture?: string;
         romAnaliticoConfig?: any;
+        fuerzaCargaConfig?: any;
 
         // Retain for legacy support just in case, or define as any for strictness avoidance if needed.
         checklistSuggested?: any;
