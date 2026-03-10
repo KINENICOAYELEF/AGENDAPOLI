@@ -197,14 +197,14 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <span className="text-lg">📋</span> Síntesis del Examen Físico (P2)
                     </h3>
 
-                    {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis).summary_text_short && (
+                    {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_short && (
                         <div className="bg-indigo-50 text-indigo-900 p-3 rounded-lg border border-indigo-100 mb-4 whitespace-pre-wrap text-xs font-medium">
-                            {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis).summary_text_short}
+                            {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_short}
                         </div>
                     )}
 
                     <div className="bg-slate-50 border-slate-200 border rounded-lg p-3 text-xs text-slate-700 whitespace-pre-wrap font-mono h-[200px] overflow-y-auto">
-                        {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis).summary_text_structured}
+                        {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_structured}
                     </div>
                 </div>
             )}
