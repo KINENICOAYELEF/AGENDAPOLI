@@ -765,7 +765,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                             <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
                             <ul className="list-disc pl-4 space-y-1 mb-2">
                                 <li>**Manual (MMT):** Eval. rápida 1-5. Poco sensible para deportistas.</li>
@@ -1165,7 +1165,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                             <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
                             <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
                         </div>
@@ -1386,7 +1386,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 </h4>
                                 <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
                                     ?
-                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                                         <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
                                         <p>Si el screening es NORMAL, puedes saltar esto.</p>
                                         <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica.</p>
@@ -1470,7 +1470,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left z-[60] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                             <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
@@ -1617,7 +1617,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                             <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico.</li>
@@ -1847,7 +1847,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
             {/* I. PRUEBAS FUNCIONALES, CAPACIDAD Y REINTEGRO */}
             <div className="bg-white rounded-2xl shadow-sm border border-orange-200 flex flex-col">
-                <div className="bg-orange-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-orange-100">
+                <div className="bg-orange-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-orange-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0">🏃</div>
                         <div>
@@ -1875,7 +1875,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
                             ?
-                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-right z-[60] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] left-0 sm:right-0 sm:left-auto w-[260px] sm:w-[320px] max-w-[90vw] sm:max-w-none origin-top-left sm:origin-top-right z-[60] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left text-xs font-normal text-slate-700">
                                 <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
                                 <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                     <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
