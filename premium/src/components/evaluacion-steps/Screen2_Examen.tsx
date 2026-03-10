@@ -179,7 +179,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* B. BLOQUE ESTRUCTURADO OBSERVACIÓN Y MOVIMIENTO INICIAL */}
-            <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+            <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm flex flex-col transition-shadow hover:shadow-md">
                 <div className="bg-slate-50 p-4 flex justify-between items-start border-b border-slate-200">
                     <div>
                         <h3 className="font-bold text-slate-800 flex items-center gap-2 tracking-wide">
@@ -339,7 +339,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* C. RANGO DE MOVIMIENTO ANALÍTICO */}
-            <div className="bg-white border text-sm border-indigo-200 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+            <div className="bg-white border text-sm border-indigo-200 rounded-2xl shadow-sm flex flex-col transition-shadow hover:shadow-md">
                 <div className="bg-indigo-50/50 p-4 flex justify-between items-start border-b border-indigo-200">
                     <div>
                         <h3 className="font-bold text-indigo-900 flex items-center gap-2 tracking-wide">
@@ -926,7 +926,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* D. FUERZA Y TOLERANCIA A CARGA */}
-            <div className="bg-white border text-sm border-emerald-200 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+            <div className="bg-white border text-sm border-emerald-200 rounded-2xl shadow-sm flex flex-col transition-shadow hover:shadow-md">
                 <div className="bg-emerald-50/50 p-4 flex justify-between items-start border-b border-emerald-200">
                     <div>
                         <h3 className="font-bold text-emerald-900 flex items-center gap-2 tracking-wide">
@@ -936,9 +936,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Pruebas manuales, isometría, dinamometría o tests funcionales
                         </p>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
+                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
                             <ul className="list-disc pl-4 space-y-1 mb-2">
                                 <li>**Manual (MMT):** Eval. rápida 1-5. Poco sensible para deportistas.</li>
@@ -1259,7 +1259,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* E. PALPACIÓN */}
-            <div className="bg-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm border border-amber-200 flex flex-col">
                 <div className="bg-amber-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">🖐️</div>
@@ -1268,9 +1268,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-amber-700/80 mt-0.5">Temperatura, derrame, sensibilidad tisular, dolor focal</p>
                         </div>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
+                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
                             <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
                         </div>
@@ -1389,7 +1389,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* F. NEUROLÓGICO / VASCULAR */}
-            <div className="bg-white rounded-2xl shadow-sm border border-rose-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm border border-rose-200 flex flex-col">
                 <div onClick={() => setIsNeuroOpen(!isNeuroOpen)} className="bg-rose-50/50 hover:bg-rose-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">⚡</div>
@@ -1407,7 +1407,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 {isNeuroOpen && (
-                    <div className="p-0 overflow-hidden flex flex-col gap-0 bg-slate-50">
+                    <div className="p-0 flex flex-col gap-0 bg-slate-50">
                         {/* Screening Rápido */}
                         <div className="p-4 sm:p-5 border-b border-rose-100 bg-white">
                             <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -1445,9 +1445,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                     <span>2.</span> Evaluación Específica (Subdominios)
                                 </h4>
-                                <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
+                                <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
                                     ?
-                                    <div className="hidden group-hover:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                         <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
                                         <p>Si el screening es NORMAL, puedes saltar esto.</p>
                                         <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica.</p>
@@ -1520,7 +1520,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* G. CONTROL MOTOR Y ESTABILIDAD FUNCIONAL */}
-            <div className="bg-white rounded-2xl shadow-sm border border-teal-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm border border-teal-200 flex flex-col">
                 <div className="bg-teal-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-teal-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-xl shrink-0">🧘</div>
@@ -1529,9 +1529,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-teal-700/80 mt-0.5">Control segmentario, lumbopélvico, escapular, balance, gesto</p>
                         </div>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
+                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-72 p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-72 p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
@@ -1646,7 +1646,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* H. PRUEBAS ORTOPÉDICAS */}
-            <div className="bg-white rounded-2xl shadow-sm border border-sky-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm border border-sky-200 flex flex-col">
                 <div className="bg-sky-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-sky-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-xl shrink-0">🔨</div>
@@ -1655,9 +1655,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <p className="text-xs text-sky-700/80 mt-0.5">Pruebas orientadas por hipótesis y clústeres</p>
                         </div>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
+                    <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas y Clústeres</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>No uses pruebas aisladas</strong> como diagnóstico definitivo. Su valor clínico suele ser muy bajo de forma individual.</li>
@@ -1788,7 +1788,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* I. PRUEBAS FUNCIONALES, CAPACIDAD Y REINTEGRO */}
-            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 flex flex-col">
                 <div className="bg-orange-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-orange-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0">🏃</div>
@@ -1815,9 +1815,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <option value="Preventivo">Preventivo / Carga</option>
                             </select>
                         </div>
-                        <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
+                        <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
                             ?
-                            <div className="hidden group-hover:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                 <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
                                 <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                     <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
@@ -1954,7 +1954,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* J. RE-TEST Y CIERRE */}
-            <div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 overflow-hidden flex flex-col mt-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 flex flex-col mt-6">
                 <div className="bg-fuchsia-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fuchsia-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-fuchsia-100 flex items-center justify-center text-xl shrink-0">🔄</div>
@@ -2021,7 +2021,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div>
 
             {/* K. MEDIDAS COMPLEMENTARIAS */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mt-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col mt-6">
                 <div onClick={() => setIsKOpen(!isKOpen)} className="bg-slate-50 hover:bg-slate-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-xl shrink-0">🩻</div>
