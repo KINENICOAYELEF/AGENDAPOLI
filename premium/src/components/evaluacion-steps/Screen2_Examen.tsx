@@ -103,12 +103,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-black text-slate-800 tracking-tight">A. Resumen Heredado (P1)</h2>
-                            <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors" title="Cuándo usarlo: siempre revisa este bloque antes de tocar al paciente.&#10;Qué registrar: Verifica si falta info para derivar o tener cuidado.&#10;Cuándo no profundizar: Esto es solo contexto, no modifiques aquí.">
+                            <h2 className="text-xl font-black text-slate-800 tracking-tight">A. Inicio del examen físico</h2>
+                            <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors" title="Usa esta franja para definir qué vas a re-evaluar al final del examen. No diagnostica. Solo orienta el examen físico de hoy.">
                                 ?
                             </button>
                         </div>
-                        <p className="text-sm text-slate-500 mt-1">Si faltan datos críticos, puedes volver a la Anamnesis para completarlos.</p>
                     </div>
                 </div>
 
@@ -137,9 +136,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">⚠️ Manejo Clínico (Red Flags)</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">⚠️ Alertas Clínicas</p>
                         <p className={`text-xs font-semibold leading-tight ${alertasActivas ? 'text-red-600' : 'text-emerald-600'}`}>
-                            {alertasActivas ? alertasActivas : "Seguro para evaluación"}
+                            {alertasActivas ? alertasActivas : "Ninguna alerta activa"}
                         </p>
                     </div>
                 </div>
@@ -164,7 +163,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 relative">
                             Tarea o gesto índice para re-test
-                            <span className="text-[10px] text-indigo-500 font-normal absolute right-0 top-0 hidden sm:inline">(Se conectará con el final de P2)</span>
                         </label>
                         <input
                             type="text"
@@ -183,21 +181,18 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 <div className="bg-slate-50 p-4 flex justify-between items-start border-b border-slate-200">
                     <div>
                         <h3 className="font-bold text-slate-800 flex items-center gap-2 tracking-wide">
-                            <span className="text-lg">👀</span> B. Evaluación Observacional
+                            <span className="text-lg">👀</span> B. Observación y movimiento inicial
                         </h3>
-                        <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-slate-600">
-                            Postura, Marcha, Movimiento libre y Reacción al síntoma
-                        </p>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-600 opacity-60 hover:opacity-100 transition-opacity" title="Cuándo usarlo: Al inicio o mientras el paciente relata.&#10;Cómo aplicarlo: Observa libremente y selecciona los chips rápidos.&#10;Qué registrar: Solo anomalías, asimetrías o hallazgos relevantes de conducta del dolor.&#10;Cuándo no profundizar: Evita estar rato anotando si todo es normal.">
+                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-600 opacity-60 hover:opacity-100 transition-opacity" title="Abre el examen evaluando en estado de reposo.&#10;Mira primero simetrías y alineaciones evidentes.&#10;Registra solo anomalías; no sobreescribas lo normal.">
                         ?
                     </button>
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col gap-6 bg-white">
                     {irritabilidad === "Alta" && (
-                        <div className="bg-red-50 border border-red-100 text-red-800 text-xs p-3 rounded-lg flex items-center gap-2 font-medium">
-                            <span className="text-lg">⚠️</span> Prefiere observación inicial para no sobre-provocar dolor.
+                        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-lg flex items-center gap-2 font-medium">
+                            <span className="text-lg">⚠️</span> Prefiere observación, movimiento dosificado y evita sobreprovocar al inicio.
                         </div>
                     )}
 
@@ -206,7 +201,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         const setObs = (patch: any) => handleUpdateExam('observacionInicialConfig', { ...obs, ...patch });
 
                         const renderChipGroup = (field: string, options: string[]) => (
-                            <div className="flex flex-wrap gap-2 mt-2">
+                            <div className="flex flex-wrap gap-2 mt-2 mb-2">
                                 {options.map(opt => {
                                     const isSelected = (obs[field] || []).includes(opt);
                                     return (
@@ -227,20 +222,42 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         );
 
                         return (
-                            <div className="grid grid-cols-1 bg-slate-50/50 p-4 rounded-xl border border-slate-100 gap-6">
-                                {/* 1. Observación general (Postura/Trofismo) */}
+                            <div className="grid grid-cols-1 bg-slate-50 p-4 rounded-xl border border-slate-100 gap-6">
+                                {/* 1. Observación general */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">1. Postura y Trofismo</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Estado general, simetría muscular, alineación del segmento.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Asimetrías o atrofias relevantes.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">1. Observación general</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Estado global, actitud, uso de soportes.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Apariencia inicial o contexto evidente.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Edema / Aumento vol.'])}
+                                        {renderChipGroup('obsGenChips', ['Sin hallazgos', 'Actitud antiálgica', 'Usa órtesis/ayuda', 'Edema/Eritema'])}
                                         <input
                                             type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detalles sobre postura o asimetrías evidentes..."
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Hallazgo breve observacional..."
+                                            value={obs.obsGenTxt || ''}
+                                            onChange={(e) => setObs({ obsGenTxt: e.target.value })}
+                                            disabled={isClosed}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-200"></div>
+
+                                {/* 2. Postura/alineación si aporta */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start">
+                                    <div className="md:w-1/3">
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">2. Postura / Alineación</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Asimetrías, trofismo, ejes articulares.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Solo si aporta al caso clínico.</p>
+                                    </div>
+                                    <div className="w-full md:w-2/3">
+                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada'])}
+                                        <input
+                                            type="text"
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Hallazgo breve postural..."
                                             value={exam.postureAlignment || ''}
                                             onChange={(e) => handleUpdateExam('postureAlignment', e.target.value)}
                                             disabled={isClosed}
@@ -250,19 +267,19 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 <div className="border-t border-slate-200"></div>
 
-                                {/* 2. Marcha */}
+                                {/* 3. Marcha o gesto básico */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">2. Marcha / Gesto habitual</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Fases de la marcha, cojera, uso de ayudas ortopédicas.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: "Normal" o patrón compensatorio.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">3. Marcha o gesto habitual</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Ritmo funcional, claudicación, fluidez.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Anomalías dinámicas de base.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
                                         {renderChipGroup('marchaChips', ['Normal', 'Antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
                                         <input
                                             type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar alteraciones en la marcha..."
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Hallazgo breve de marcha/gesto..."
                                             value={exam.gaitBasicGesture || ''}
                                             onChange={(e) => handleUpdateExam('gaitBasicGesture', e.target.value)}
                                             disabled={isClosed}
@@ -272,19 +289,19 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 <div className="border-t border-slate-200"></div>
 
-                                {/* 3. Mov activo general */}
+                                {/* 4. Movimiento activo inicial */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">3. Movilidad visual libre</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Calidad y confianza con la que mueve el segmento libremente.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Aprehensión o bloqueo funcional visible.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">4. Movimiento activo inicial</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Calidad y rango al pedirle que mueva libremente la zona.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Bloqueos funcionales o limitaciones obvias.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
                                         {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango limitado', 'Evita usar zona'])}
                                         <input
                                             type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar calidad del movimiento libre..."
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Hallazgo breve del mov. activo libre..."
                                             value={exam.initialActiveMovement || ''}
                                             onChange={(e) => handleUpdateExam('initialActiveMovement', e.target.value)}
                                             disabled={isClosed}
@@ -294,40 +311,21 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 <div className="border-t border-slate-200"></div>
 
-                                {/* 4. Conducta Dolor */}
+                                {/* 5. Conducta del síntoma */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">4. Conducta al síntoma</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Facies (gestos faciales) y reacción al llegar al rango doloroso.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Si lo tolera, si hay arco doloroso, o temor (kinesiofobia).</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Conducta del síntoma</label>
+                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Gestos, aprehensión o miedo a mover.</p>
+                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Reacción ante el límite doloroso.</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Aprensivo', 'Arco doloroso', 'Temor al movimiento'])}
+                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Aprensivo', 'Arco doloroso', 'Kinesiofobia'])}
                                         <input
                                             type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detallar dónde o cómo reacciona al dolor..."
+                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
+                                            placeholder="Detalle de la reacción del paciente..."
                                             value={exam.symptomBehaviorMovement || ''}
                                             onChange={(e) => handleUpdateExam('symptomBehaviorMovement', e.target.value)}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-200"></div>
-
-                                {/* Impresión General Opcional */}
-                                <div className="flex flex-col md:flex-row gap-4 items-start">
-                                    <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Impresión Global</label>
-                                        <p className="text-[11px] text-slate-500">Comentario breve que sintetice lo observado antes de evaluar rangos específicos.</p>
-                                    </div>
-                                    <div className="w-full md:w-2/3">
-                                        <textarea
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 min-h-[60px] resize-y"
-                                            placeholder="Impresión observacional cualitativa final..."
-                                            value={exam.observationGeneral || ''}
-                                            onChange={(e) => handleUpdateExam('observationGeneral', e.target.value)}
                                             disabled={isClosed}
                                         />
                                     </div>
