@@ -828,6 +828,21 @@ export interface AnamnesisProximaV4 {
     };
 }
 
+export interface OrtopedicasConfig {
+    filas: Array<{
+        id: string;
+        region: string;
+        hipotesis: string;
+        test_name: string;
+        side: 'Izquierdo' | 'Derecho' | 'Bilateral' | 'N/A' | string;
+        result: 'Positivo' | 'Negativo' | 'No Evaluado' | 'No concluyente' | 'N/A' | string;
+        symptom_relation: string;
+        optional_reason: string;
+        comment: string;
+    }>;
+    sintesisFinal: string;
+}
+
 export interface EvaluacionInicial extends BaseEvaluacion {
     type: 'INITIAL';
     // PANTALLA 1: ENTREVISTA INTEGRAL (FASE 2.2.X ACTUALIZADA)
@@ -857,7 +872,7 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         palpacionConfig?: any;
         neuroVascularConfig?: any;
         controlMotorConfig?: any;
-        ortopedicasConfig?: any;
+        ortopedicasConfig?: OrtopedicasConfig;
         funcionalesConfig?: any;
         retestConfig?: {
             tareaIndice: string;
@@ -898,16 +913,19 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         trafficLightRationale?: string;
         presentationTags?: string[];
         physicalSynthesis?: {
-            observacion: string;
-            movilidad: string;
-            fuerza: string;
-            neuro: string;
-            controlMotor: string;
-            ortopedicas: string;
-            funcion: string;
-            retest: string;
-            deficitsPrincipales: string[];
-            hipotesisSoportada: string[];
+            frame: { foco: string; lado: string; queja_prioritaria: string; irritabilidad: string; tarea_indice: string };
+            observation: string[];
+            mobility: string[];
+            strength_load: string[];
+            palpation: string[];
+            neurovascular_sensorimotor: string[];
+            motor_control: string[];
+            orthopedic_tests: string[];
+            functional_tests: string[];
+            retest: string[];
+            complementary_measures: string[];
+            summary_text_short: string;
+            summary_text_structured: string;
         };
     };
 

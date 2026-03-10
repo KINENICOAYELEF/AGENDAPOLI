@@ -1583,107 +1583,34 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-xl shrink-0">⚖️</div>
                         <div>
                             <h3 className="font-bold text-sky-900 text-lg">Pruebas ortopédicas dirigidas</h3>
-                            <p className="text-xs text-sky-700/80 mt-0.5">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico</p>
+                            <p className="text-xs text-sky-700/80 mt-0.5">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico.</p>
                         </div>
                     </div>
                     <button type="button" onClick={() => setOpenHelp('H')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
-                <div className="p-4 bg-sky-50/30 border-b border-sky-100 flex flex-col gap-4">
-                    <div className="text-xs font-bold text-sky-800 uppercase tracking-widest border-b border-sky-200 pb-1 mb-1">PARTE A. ORIENTACIÓN CLÍNICA BREVE</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Región</label>
-                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
-                                value={exam.ortopedicasConfig?.regionGlobal || ''}
-                                onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, regionGlobal: e.target.value })}
-                                disabled={isClosed}
-                            >
-                                <option value="">-- Seleccionar --</option>
-                                <option value="hombro">hombro</option>
-                                <option value="codo">codo</option>
-                                <option value="muñeca / mano">muñeca / mano</option>
-                                <option value="cervical">cervical</option>
-                                <option value="torácica">torácica</option>
-                                <option value="lumbar">lumbar</option>
-                                <option value="cadera">cadera</option>
-                                <option value="rodilla">rodilla</option>
-                                <option value="tobillo / pie">tobillo / pie</option>
-                                <option value="otro">otro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Hipótesis a explorar</label>
-                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
-                                value={exam.ortopedicasConfig?.hipotesisGlobal || ''}
-                                onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, hipotesisGlobal: e.target.value })}
-                                disabled={isClosed}
-                            >
-                                <option value="">-- Seleccionar --</option>
-                                <option value="tejido contráctil">tejido contráctil</option>
-                                <option value="tejido articular / capsular">tejido articular / capsular</option>
-                                <option value="inestabilidad ligamentaria">inestabilidad ligamentaria</option>
-                                <option value="dolor meniscal / intraarticular">dolor meniscal / intraarticular</option>
-                                <option value="tendinopatía">tendinopatía</option>
-                                <option value="dolor referido / radicular">dolor referido / radicular</option>
-                                <option value="compromiso neural">compromiso neural</option>
-                                <option value="conflicto mecánico / pinzamiento">conflicto mecánico / pinzamiento</option>
-                                <option value="otro">otro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Motivo de usar pruebas</label>
-                            <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
-                                value={exam.ortopedicasConfig?.objetivoGlobal || ''}
-                                onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, objetivoGlobal: e.target.value })}
-                                disabled={isClosed}
-                            >
-                                <option value="">-- Seleccionar --</option>
-                                <option value="descartar">descartar</option>
-                                <option value="acercarse a confirmar">acercarse a confirmar</option>
-                                <option value="precisar irritabilidad">precisar irritabilidad</option>
-                                <option value="otro">otro</option>
-                            </select>
-                        </div>
-                    </div>
-                    <p className="text-xs text-sky-600 italic mt-1">Elige pocas pruebas y solo si pueden cambiar tu razonamiento.</p>
-
-                    {exam.ortopedicasConfig?.regionGlobal && exam.ortopedicasConfig?.hipotesisGlobal && (
-                        <div className="mt-1">
-                            <p className="text-[11px] font-medium text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100 inline-block">
-                                💡 Suele ser más útil elegir 1 a 3 pruebas con sentido clínico que muchas pruebas parecidas.
-                            </p>
-                        </div>
-                    )}
+                <div className="p-4 bg-sky-50/30 border-b border-sky-100">
+                    <p className="text-sm font-medium text-sky-700">
+                        💡 Elige pocas pruebas y solo si pueden cambiar tu razonamiento.
+                    </p>
                 </div>
 
                 <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
-                    <div className="flex items-center justify-between border-b border-sky-200 pb-2 mb-1">
-                        <div className="text-xs font-bold text-sky-800 uppercase tracking-widest">PARTE B. FILAS DE PRUEBAS</div>
-                        <button
-                            onClick={() => {
-                                const m = exam.ortopedicasConfig?.filas || [];
-                                handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), test: '', lado: '', resultado: '', reproduceTexto: '', comentario: '' }] });
-                            }}
-                            className="text-[11px] font-bold text-sky-600 bg-white border border-sky-200 px-3 py-1.5 rounded shadow-sm hover:bg-sky-50 transition outline-none flex items-center gap-1"
-                            disabled={isClosed}
-                        >
-                            <span>+</span> Agregar prueba
-                        </button>
-                    </div>
                     {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) ? (
                         <div className="p-8 text-center border-2 border-dashed border-sky-200 rounded-xl bg-white">
                             <p className="text-sm font-bold text-sky-800 mb-2">No hay pruebas asociadas</p>
-                            <p className="text-xs text-slate-500 mb-4">Agrega test ortopédicos usando las sugerencias de arriba o el botón manual.</p>
+                            <p className="text-xs text-slate-500 mb-4">Agrega test ortopédicos específicos a evaluar.</p>
                             <button
                                 onClick={() => {
                                     const m = exam.ortopedicasConfig?.filas || [];
-                                    handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), test: '', lado: '', resultado: '', reproduceTexto: '', comentario: '' }] });
+                                    const regionDefault = v4?.focos?.[0]?.region || '';
+                                    const ladoDefault = v4?.focos?.[0]?.lado || '';
+                                    handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), region: regionDefault, hipotesis: '', test_name: '', side: ladoDefault, result: '', symptom_relation: '', optional_reason: '', comment: '' }] });
                                 }}
                                 className="text-sky-600 font-bold hover:text-sky-700 transition outline-none bg-sky-50 px-4 py-2 rounded-lg border border-sky-200"
                                 disabled={isClosed}
                             >
-                                + Prueba Manual Opcional
+                                + Agregar prueba
                             </button>
                         </div>
                     ) : (
@@ -1695,73 +1622,167 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     handleUpdateExam('ortopedicasConfig', { filas: m });
                                 };
 
+                                const suggestionsByRegion: Record<string, string[]> = {
+                                    'hombro': ['Hawkins', 'Neer', 'ER lag', 'Belly press', 'Speed', 'O\'Brien', 'Drop arm'],
+                                    'codo': ['Cozens', 'Mills', 'Valgus stress', 'Varus stress', 'Tinel'],
+                                    'muñeca / mano': ['Finkelstein', 'Phalen', 'Tinel', 'Froment'],
+                                    'cervical': ['Spurling', 'Distracción', '1er Costilla', 'Lhermitte'],
+                                    'torácico': ['Slump', 'Expansión torácica'],
+                                    'lumbar': ['Slump', 'SLR', 'Prone Instability', 'Extensión-Rotación'],
+                                    'cadera': ['FABER', 'FADIR', 'Ober', 'Thomas'],
+                                    'rodilla': ['Thessaly', 'Lachman', 'Valgo (0°, 30°)', 'Varo (0°, 30°)', 'McMurray', 'Pivot shift'],
+                                    'tobillo / pie': ['Cajón anterior', 'Talar tilt', 'Thompson', 'Squeeze test', 'Windlass']
+                                };
+                                const testSuggestions = suggestionsByRegion[(fila.region || '').toLowerCase()] || [];
+
                                 return (
                                     <div key={fila.id} className="bg-white border text-sm rounded-xl border-sky-100 hover:border-sky-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
-                                        <div className="bg-sky-50/50 p-3 border-b border-sky-100 flex flex-wrap items-center gap-2 justify-between">
-                                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 flex-1 relative pr-8">
+                                        <div className="absolute right-2 top-2 z-10">
+                                            <button
+                                                onClick={() => {
+                                                    const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
+                                                    handleUpdateExam('ortopedicasConfig', { filas: m });
+                                                }}
+                                                className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100"
+                                                disabled={isClosed} title="Eliminar prueba"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-sky-50/50 p-3 flex flex-wrap gap-3 items-start pr-10 border-b border-sky-100">
+                                            <div className="flex flex-col flex-1 min-w-[120px]">
+                                                <label className="text-[10px] uppercase font-bold text-sky-600 mb-1">Región</label>
                                                 <input
-                                                    className="flex-1 text-sm bg-white border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 min-w-[100px]"
-                                                    value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Nombre del Test (Ej. Neer)"
+                                                    type="text" list={`orto-region-${fila.id}`}
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded px-2 py-1.5 outline-none focus:border-sky-400"
+                                                    value={fila.region || ''} onChange={e => handleChange('region', e.target.value)} disabled={isClosed} placeholder="-- Región --"
                                                 />
-                                                <select
-                                                    className="flex-1 min-w-[90px] text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400"
-                                                    value={fila.lado || ''} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}
-                                                >
-                                                    <option value="">Lado...</option>
-                                                    <option value="Derecho">Derecho</option>
-                                                    <option value="Izquierdo">Izquierdo</option>
-                                                    <option value="Bilateral">Bilateral</option>
-                                                    <option value="Axial">Axial</option>
-                                                </select>
-                                                <button
-                                                    onClick={() => {
-                                                        const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
-                                                        handleUpdateExam('ortopedicasConfig', { filas: m });
-                                                    }}
-                                                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
-                                                    disabled={isClosed} title="Eliminar prueba"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
+                                                <datalist id={`orto-region-${fila.id}`}>
+                                                    <option value="hombro" />
+                                                    <option value="codo" />
+                                                    <option value="muñeca / mano" />
+                                                    <option value="cervical" />
+                                                    <option value="torácica" />
+                                                    <option value="lumbar" />
+                                                    <option value="cadera" />
+                                                    <option value="rodilla" />
+                                                    <option value="tobillo / pie" />
+                                                </datalist>
+                                            </div>
+                                            <div className="flex flex-col flex-1 min-w-[140px]">
+                                                <label className="text-[10px] uppercase font-bold text-sky-600 mb-1">Hipótesis</label>
+                                                <input
+                                                    type="text" list={`orto-hipotesis-${fila.id}`}
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded px-2 py-1.5 outline-none focus:border-sky-400"
+                                                    value={fila.hipotesis || ''} onChange={e => handleChange('hipotesis', e.target.value)} disabled={isClosed} placeholder="-- Hipótesis --"
+                                                />
+                                                <datalist id={`orto-hipotesis-${fila.id}`}>
+                                                    <option value="tejido contráctil" />
+                                                    <option value="tejido articular / capsular" />
+                                                    <option value="inestabilidad ligamentaria" />
+                                                    <option value="dolor meniscal / intraarticular" />
+                                                    <option value="tendinopatía" />
+                                                    <option value="dolor referido / radicular" />
+                                                    <option value="compromiso neural" />
+                                                    <option value="conflicto mecánico / pinzamiento" />
+                                                </datalist>
+                                            </div>
+                                            <div className="flex flex-col flex-1 min-w-[140px]">
+                                                <label className="text-[10px] uppercase font-bold text-sky-600 mb-1">Motivo (Opcional)</label>
+                                                <input
+                                                    type="text" list={`orto-motivo-${fila.id}`}
+                                                    className="text-[11px] bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400"
+                                                    value={fila.optional_reason || ''} onChange={e => handleChange('optional_reason', e.target.value)} disabled={isClosed} placeholder="-- Opcional --"
+                                                />
+                                                <datalist id={`orto-motivo-${fila.id}`}>
+                                                    <option value="descartar" />
+                                                    <option value="acercar confirmación" />
+                                                    <option value="aclarar estructura" />
+                                                    <option value="comparar" />
+                                                    <option value="irritabilidad" />
+                                                </datalist>
                                             </div>
                                         </div>
 
-                                        <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] uppercase font-bold text-slate-500 w-[70px]">Resultado:</span>
+                                        <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <div className="flex flex-col lg:col-span-2">
+                                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1">Nombre del test / Lado</label>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text" list={`orto-list-${fila.id}`}
+                                                        className="flex-1 text-sm bg-white border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 min-w-[100px]"
+                                                        value={fila.test_name || fila.test || ''} onChange={e => handleChange('test_name', e.target.value)} disabled={isClosed} placeholder="Ej. Neer"
+                                                    />
+                                                    <datalist id={`orto-list-${fila.id}`}>
+                                                        {testSuggestions.map(s => <option key={s} value={s} />)}
+                                                    </datalist>
+                                                    <select
+                                                        className="min-w-[90px] text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400"
+                                                        value={fila.side || fila.lado || ''} onChange={e => handleChange('side', e.target.value)} disabled={isClosed}
+                                                    >
+                                                        <option value="">Lado...</option>
+                                                        <option value="Derecho">Derecho</option>
+                                                        <option value="Izquierdo">Izquierdo</option>
+                                                        <option value="Bilateral">Bilateral</option>
+                                                        <option value="Axial">Axial</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1">Resultado</label>
                                                 <select className="flex-1 text-xs font-bold rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700 text-ellipsis"
-                                                    value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}
+                                                    value={fila.result || fila.resultado || ''} onChange={e => handleChange('result', e.target.value)} disabled={isClosed}
                                                 >
-                                                    <option value="">-- Seleccionar --</option>
-                                                    <option value="Positivo">Positivo (+)</option>
-                                                    <option value="Negativo">Negativo (-)</option>
-                                                    <option value="Equívoco">Equívoco</option>
+                                                    <option value="">-- Resultado --</option>
+                                                    <option value="positivo">Positivo (+)</option>
+                                                    <option value="negativo">Negativo (-)</option>
+                                                    <option value="dudoso">Dudoso</option>
+                                                    <option value="no concluyente">No concluyente</option>
+                                                    <option value="no tolerado">No tolerado</option>
                                                 </select>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] uppercase font-bold text-slate-500 w-[70px]">Síntoma:</span>
-                                                <select className="flex-1 text-xs font-medium rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700 text-ellipsis"
-                                                    value={fila.reproduceTexto || ''} onChange={e => handleChange('reproduceTexto', e.target.value)} disabled={isClosed}
+
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] uppercase font-bold text-slate-500 mb-1">Síntoma</label>
+                                                <select className="flex-1 text-xs font-bold rounded p-1.5 border outline-none focus:ring-1 focus:ring-sky-400 bg-slate-50 text-slate-700 text-ellipsis"
+                                                    value={fila.symptom_relation || fila.reproduceTexto || ''} onChange={e => handleChange('symptom_relation', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Reproducción --</option>
-                                                    <option value="Exacto">Reproduce síntoma exacto</option>
-                                                    <option value="Parcial">Reproduce parcialmente</option>
-                                                    <option value="Distinto">Provoca dolor distinto</option>
-                                                    <option value="No reproduce">No duele</option>
+                                                    <option value="reproduce claramente">Reproduce claramente</option>
+                                                    <option value="reproduce parcialmente">Reproduce parcialmente</option>
+                                                    <option value="dolor distinto">Dolor distinto</option>
+                                                    <option value="solo tensión">Solo tensión</option>
+                                                    <option value="no reproduce">No reproduce</option>
                                                 </select>
                                             </div>
                                         </div>
 
-                                        <div className="px-3 pb-3 border-t border-slate-50 pt-2 bg-slate-50/50">
+                                        <div className="px-3 pb-3 pt-2 bg-slate-50/50">
                                             <input
-                                                className="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-400 bg-white"
-                                                placeholder="Comentarios adicionales, ej: Sólo siente tensión, no el dolor familiar..."
-                                                value={fila.comentario || ''} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed}
+                                                className="w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-none focus:border-sky-400 bg-white"
+                                                placeholder="Comentario breve..."
+                                                value={fila.comment || fila.comentario || ''} onChange={e => handleChange('comment', e.target.value)} disabled={isClosed}
                                             />
                                         </div>
                                     </div>
                                 );
                             })}
+                            <div className="mt-2 flex justify-start">
+                                <button
+                                    onClick={() => {
+                                        const m = exam.ortopedicasConfig?.filas || [];
+                                        const regionDefault = v4?.focos?.[0]?.region || '';
+                                        const ladoDefault = v4?.focos?.[0]?.lado || '';
+                                        handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), region: regionDefault, hipotesis: '', test_name: '', side: ladoDefault, result: '', symptom_relation: '', optional_reason: '', comment: '' }] });
+                                    }}
+                                    className="text-[12px] font-bold text-sky-600 bg-white border border-sky-200 px-4 py-2 rounded-lg shadow-sm hover:bg-sky-50 transition outline-none flex items-center gap-2"
+                                    disabled={isClosed}
+                                >
+                                    <span>+</span> Agregar prueba
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2203,41 +2224,46 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
             </div >
 
             {/* BOTÓN FINAL */}
-            < div className="flex justify-end pt-6 border-t border-slate-200 mt-4" >
+            <div className="flex flex-col items-end pt-6 border-t border-slate-200 mt-4 gap-2">
                 <button
                     onClick={() => {
                         const synthesis = autoSynthesizeFindings(exam, formData.interview);
 
-                        // Validación de Mínimos
+                        // Validación de Mínimos Razonables
                         const pSyn = synthesis.physicalSynthesis;
+
+                        const hasIndexTask = !!pSyn?.frame?.tarea_indice?.trim();
                         const hasFindings = pSyn && (
-                            pSyn.movilidad?.trim() ||
-                            pSyn.fuerza?.trim() ||
-                            pSyn.neuro?.trim() ||
-                            pSyn.controlMotor?.trim() ||
-                            pSyn.ortopedicas?.trim() ||
-                            pSyn.funcion?.trim() ||
-                            pSyn.retest?.trim() ||
-                            pSyn.observacion?.trim()
+                            (pSyn.mobility && pSyn.mobility.length > 0) ||
+                            (pSyn.strength_load && pSyn.strength_load.length > 0) ||
+                            (pSyn.neurovascular_sensorimotor && pSyn.neurovascular_sensorimotor.some(s => !s.includes('sin hallazgos'))) ||
+                            (pSyn.motor_control && pSyn.motor_control.length > 0) ||
+                            (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
+                            (pSyn.functional_tests && pSyn.functional_tests.length > 0)
                         );
 
-                        if (!hasFindings) {
-                            alert('Faltan hallazgos físicos mínimos para sintetizar. Por favor evalúa y registra al menos un dominio.');
+                        if (!hasIndexTask || !hasFindings) {
+                            alert('Aún falta registrar al menos un hallazgo físico relevante para poder sintetizar (Se requiere Tarea Índice/Signo Comparable de P1 y un hallazgo útil en bloques C, D, F, G, H o I).');
                             return;
                         }
 
                         updateFormData((prev) => ({
                             autoSynthesis: { ...prev.autoSynthesis, ...synthesis }
                         }));
-                        if (onNext) onNext();
+
+                        // Fake un pequeño delay para dar feedback visual de progreso
+                        setTimeout(() => {
+                            if (onNext) onNext();
+                        }, 500);
                     }}
                     disabled={isClosed}
-                    className="bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg transition-all flex items-center gap-2"
+                    className="bg-indigo-600 text-white font-bold py-3.5 px-8 rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 group w-full sm:w-auto"
                 >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Sintetizar hallazgos físicos y continuar
+                    <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Sintetizar hallazgos físicos
                 </button>
-            </div >
+                <p className="text-[11px] text-slate-500 font-medium italic pr-2 text-right">Ordena los hallazgos del examen y prepara la síntesis para P3</p>
+            </div>
 
 
             {/* Modal de Ayuda Universal */}
@@ -2348,45 +2374,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     <>
                                         <div className="p-3 bg-sky-50 rounded-lg border border-sky-200 mb-3">
                                             <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">⚖️</span> H. Pruebas Ortopédicas Dirigidas</p>
-                                            <p className="text-xs text-sky-600 mt-1">Guía para el uso racional de pruebas.</p>
+                                            <p className="text-xs text-sky-600 mt-1">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico.</p>
                                         </div>
-                                        <div className="flex flex-col gap-3">
-                                            <div className="bg-white border rounded p-2">
-                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">A. CUÁNDO USAR PRUEBAS ORTOPÉDICAS</p>
-                                                <ul className="text-xs list-disc pl-4 space-y-1">
-                                                    <li>Úsalas solo si la entrevista, el rango, la fuerza o la función dejan una hipótesis que vale la pena explorar.</li>
-                                                    <li>No las hagas por rutina.</li>
-                                                </ul>
-                                            </div>
-                                            <div className="bg-white border rounded p-2">
-                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">B. CÓMO ELEGIRLAS</p>
-                                                <ul className="text-xs list-disc pl-4 space-y-1">
-                                                    <li>Elige pocas pruebas y con propósito.</li>
-                                                    <li>Si varias exploran casi lo mismo, no repitas sin necesidad.</li>
-                                                    <li>Primero usa la información de la entrevista y del examen físico general para orientar qué vale la pena probar.</li>
-                                                </ul>
-                                            </div>
-                                            <div className="bg-white border rounded p-2">
-                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">C. CÓMO INTERPRETARLAS</p>
-                                                <ul className="text-xs list-disc pl-4 space-y-1">
-                                                    <li>Una prueba positiva no confirma por sí sola.</li>
-                                                    <li>Una prueba negativa no siempre descarta sola.</li>
-                                                    <li>Lo importante es si el resultado cambia o no tu hipótesis dentro del contexto clínico completo.</li>
-                                                </ul>
-                                            </div>
-                                            <div className="bg-white border rounded p-2">
-                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">D. QUÉ REGISTRAR</p>
-                                                <ul className="text-xs list-disc pl-4 space-y-1">
-                                                    <li>Qué prueba hiciste</li>
-                                                    <li>Si fue positiva, negativa, dudosa o no tolerada</li>
-                                                    <li>Si reprodujo el síntoma principal exacto, parcial o no</li>
-                                                    <li>Un comentario breve si hubo algo clínicamente relevante</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <p className="text-xs font-bold text-sky-700 italic border-t pt-2 mt-3 text-center">
-                                            "El valor está en la combinación de entrevista + examen físico + pruebas, no en una prueba aislada."
-                                        </p>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2 text-sm text-slate-700">
+                                            <li><strong>Cuándo usar estas pruebas:</strong> "Cuando la entrevista y el examen físico ya acotaron hipótesis y necesitas afinar o descartar."</li>
+                                            <li><strong>Qué evitar:</strong> "No usar baterías largas de pruebas que evalúan lo mismo."</li>
+                                            <li><strong>Cómo pensar:</strong> "Primero descarta con la información global; luego usa pocas pruebas para acercarte a confirmar."</li>
+                                            <li><strong>Qué vale más:</strong> "Importa más la combinación entre historia, movilidad, fuerza, control motor y respuesta de la prueba que una prueba aislada."</li>
+                                        </ul>
                                     </>
                                 )}
                                 {openHelp === 'I' && (

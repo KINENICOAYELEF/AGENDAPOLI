@@ -190,6 +190,25 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                 </div>
             </div>
 
+            {/* SÍNTESIS FÍSICA IMPORTADA DESDE P2 */}
+            {autoSynth.physicalSynthesis?.summary_text_structured && (
+                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                        <span className="text-lg">📋</span> Síntesis del Examen Físico (P2)
+                    </h3>
+
+                    {autoSynth.physicalSynthesis.summary_text_short && (
+                        <div className="bg-indigo-50 text-indigo-900 p-3 rounded-lg border border-indigo-100 mb-4 whitespace-pre-wrap text-xs font-medium">
+                            {autoSynth.physicalSynthesis.summary_text_short}
+                        </div>
+                    )}
+
+                    <div className="bg-slate-50 border-slate-200 border rounded-lg p-3 text-xs text-slate-700 whitespace-pre-wrap font-mono h-[200px] overflow-y-auto">
+                        {autoSynth.physicalSynthesis.summary_text_structured}
+                    </div>
+                </div>
+            )}
+
             {/* SEMÁFORO GLOBAL DE CARGA */}
             <div className={`p-4 sm:p-6 rounded-2xl border flex flex-col md:flex-row gap-4 sm:gap-6 items-center md:items-start shadow-lg transition-colors ${autoSynth.trafficLight === 'Rojo' ? 'bg-rose-50 border-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
                 <div className="shrink-0 flex flex-col items-center gap-3 bg-white p-4 rounded-xl border shadow-sm w-full md:w-auto">

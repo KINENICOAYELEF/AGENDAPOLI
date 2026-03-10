@@ -256,16 +256,19 @@ export interface AutoSynthesisResult {
     functionalDeficits: { label: string; baseline: string; side: string; linkedPsfs: boolean }[];
     bpsNotes: { topBarriers: string[]; topFacilitators: string[] };
     physicalSynthesis?: {
-        observacion: string;
-        movilidad: string;
-        fuerza: string;
-        neuro: string;
-        controlMotor: string;
-        ortopedicas: string;
-        funcion: string;
-        retest: string;
-        deficitsPrincipales: string[];
-        hipotesisSoportada: string[];
+        frame: { foco: string; lado: string; queja_prioritaria: string; irritabilidad: string; tarea_indice: string };
+        observation: string[];
+        mobility: string[];
+        strength_load: string[];
+        palpation: string[];
+        neurovascular_sensorimotor: string[];
+        motor_control: string[];
+        orthopedic_tests: string[];
+        functional_tests: string[];
+        retest: string[];
+        complementary_measures: string[];
+        summary_text_short: string;
+        summary_text_structured: string;
     };
 }
 
@@ -274,8 +277,11 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     const functionalDeficits: AutoSynthesisResult['functionalDeficits'] = [];
     const bpsNotes: AutoSynthesisResult['bpsNotes'] = { topBarriers: [], topFacilitators: [] };
     const pSyn: NonNullable<AutoSynthesisResult['physicalSynthesis']> = {
-        observacion: '', movilidad: '', fuerza: '', neuro: '', controlMotor: '',
-        ortopedicas: '', funcion: '', retest: '', deficitsPrincipales: [], hipotesisSoportada: []
+        frame: { foco: '', lado: '', queja_prioritaria: '', irritabilidad: '', tarea_indice: '' },
+        observation: [], mobility: [], strength_load: [], palpation: [],
+        neurovascular_sensorimotor: [], motor_control: [], orthopedic_tests: [],
+        functional_tests: [], retest: [], complementary_measures: [],
+        summary_text_short: '', summary_text_structured: ''
     };
 
     if (!interview) return { structuralCandidates, functionalDeficits, bpsNotes };
@@ -287,98 +293,281 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
 
     if (isSleepIssue) bpsNotes.topBarriers.push('Alteración de Recuperación (Sueño)');
     if (isStressIssue) bpsNotes.topBarriers.push('Kinesiofobia / Sobrecarga Cognitiva');
-
     if (bpsNotes.topBarriers.length === 0) bpsNotes.topFacilitators.push('Paciente sin red-flags biopsicosociales aparentes (Buen pronóstico base).');
 
+    // A. Frame / Contexto base
     const focos = getFocos(interview);
-    focos.forEach((f: any) => {
-        const primaryComparableName = f.signoComparable || f.signoComparableEstrella?.nombre || f.primaryComparable?.name;
-        const comparablePain = f.dolorEnSigno ?? f.signoComparableEstrella?.dolor ?? f.primaryComparable?.painLevel ?? '';
+    if (focos.length > 0) {
+        const primary = focos[0];
+        pSyn.frame.foco = primary.region || '';
+        pSyn.frame.lado = primary.lado || primary.side || '';
+        pSyn.frame.queja_prioritaria = primary.sintomasTags?.join(', ') || '';
+        pSyn.frame.irritabilidad = computeIrritability(primary).level;
+
+        const primaryComparableName = primary.signoComparable || primary.signoComparableEstrella?.nombre || primary.primaryComparable?.name;
+        const comparablePain = primary.dolorEnSigno ?? primary.signoComparableEstrella?.dolor ?? primary.primaryComparable?.painLevel ?? '';
 
         if (primaryComparableName) {
+            pSyn.frame.tarea_indice = `${primaryComparableName} (${comparablePain}/10)`;
             functionalDeficits.push({
                 label: primaryComparableName,
                 baseline: `Dolor EVA ${comparablePain}/10 bajo condiciones declaradas`,
-                side: f.lado || f.side || 'N/A',
+                side: primary.lado || primary.side || 'N/A',
                 linkedPsfs: true
             });
-            pSyn.observacion += `Signo Comparable Base: ${primaryComparableName} (${comparablePain}/10). `;
         }
-
-        if (!exam?.roms) {
-            structuralCandidates.push({
-                label: `Posible disfunción en ${f.region} (Tejido contráctil vs inerte a confirmar en P2)`,
-                confidence: 'Baja', reproduceSymptom: false, source: 'Entrevista Subjetiva'
-            });
-        }
-    });
-
-    // Populate physicalSynthesis from exam config
-    if (exam) {
-        // Movilidad (C)
-        if (exam.romAnaliticoConfig?.filas?.length) {
-            pSyn.movilidad = exam.romAnaliticoConfig.filas.map((f: any) => `${f.region || f.movimiento || 'Mov'}: Act(${f.resAct || '-'}) | Pas(${f.resPas || '-'}) ${f.usaGoniometro && f.grados ? `(${f.grados}º)` : ''}`).join('; ');
-        }
-        // Fuerza (D)
-        if (exam.fuerzaCargaConfig?.filas?.length) {
-            pSyn.fuerza = exam.fuerzaCargaConfig.filas.map((f: any) => {
-                let text = `${f.tipoEvaluacion || 'Carga'} ${f.region}: ${f.dolorDurante ? 'Dolor ' + f.dolorDurante : 'Sin dolor'} | ${f.calidadEsfuerzo}`;
-
-                // Agregar detalles de dinamometría (RFD)
-                if (f.tipoEvaluacion?.includes('Dinamometría')) {
-                    if (f.dinamometriaDer || f.dinamometriaIzq) {
-                        text += ` [Der: ${f.dinamometriaDer || '-'} ${f.dinamometriaUnidad}, Izq: ${f.dinamometriaIzq || '-'} ${f.dinamometriaUnidad}]`;
-                    }
-                    if (f.rfdData && f.rfdData.length > 0) {
-                        const rfdText = f.rfdData.map((r: any) => `${r.ms}ms:${r.valor}`).join(', ');
-                        text += ` | RFD: ${rfdText}`;
-                    }
-                }
-
-                // Agregar detalles de Encoder / Carga
-                if (f.tipoEvaluacion === 'Ejercicios con Carga (Encoder)') {
-                    if (f.cargaKg) text += ` | Carga: ${f.cargaKg}Kg`;
-                    if (f.velocidadEncoder) text += ` | Vel: ${f.velocidadEncoder}m/s`;
-                }
-
-                return text;
-            }).join('; ');
-        }
-        // Neuro (F)
-        if (exam.neuroVascularConfig && Object.values(exam.neuroVascularConfig).some((v: any) => v.evalua)) {
-            const arr = [];
-            for (const [k, v] of Object.entries(exam.neuroVascularConfig) as any) {
-                if (v.evalua && k !== 'observacion') arr.push(`${k}: ${v.hallazgo || 'S/A'}`);
-            }
-            if (exam.neuroVascularConfig.observacion) arr.push(`Obs: ${exam.neuroVascularConfig.observacion}`);
-            pSyn.neuro = arr.join('; ');
-        }
-        // Control Motor (G)
-        if (exam.controlMotorConfig?.filas?.length) {
-            pSyn.controlMotor = exam.controlMotorConfig.filas.map((f: any) => `${f.region}: ${f.observacion}`).join('; ');
-        }
-        // Ortopedicas (H)
-        if (exam.ortopedicasConfig?.filas?.length) {
-            pSyn.ortopedicas = exam.ortopedicasConfig.filas.map((f: any) => `${f.test} (${f.lado}): ${f.resultado} ${f.reproduce ? '(reproduce síntoma) ' : ''}${f.comentario}`).join('; ');
-        }
-        // Funcionales (I)
-        if (exam.funcionalesConfig?.filas?.length) {
-            pSyn.funcion = exam.funcionalesConfig.filas.map((f: any) => `${f.test} ${f.lado}: Res(${f.resultado}), Dolor(${f.dolor || 0}), Calidad(${f.calidad})`).join('; ');
-        }
-        if (exam.funcionalesConfig?.objetivo) {
-            pSyn.funcion = `[Obj: ${exam.funcionalesConfig.objetivo}] ` + pSyn.funcion;
-        }
-        // Retest (J)
-        if (exam.retestConfig) {
-            pSyn.retest = `Gestos post-intervención (${exam.retestConfig.tareaIndice}): ${exam.retestConfig.resultadoPost}. ${exam.retestConfig.comentario}`;
-        }
-
-        // Simular un procesamiento de deficits
-        if (pSyn.movilidad.includes('Incompleto')) pSyn.deficitsPrincipales.push('Limitación de Movilidad');
-        if (pSyn.fuerza.includes('Pobre') || pSyn.fuerza.includes('Dolor') || pSyn.fuerza.includes('Debilidad')) pSyn.deficitsPrincipales.push('Déficit de Fuerza/Tolerancia de Carga');
-        if (exam.ortopedicasConfig?.filas?.some((f: any) => f.resultado === 'Positivo' || f.reproduce)) pSyn.hipotesisSoportada.push('Pruebas provocativas positivas respaldan implicación de estructuras mecánicas/nociceptivas');
-        if (pSyn.funcion.includes('Pobre')) pSyn.deficitsPrincipales.push('Mala calidad en gesto funcional');
     }
+
+    if (!exam) return { structuralCandidates, functionalDeficits, bpsNotes };
+
+    // B. Observación
+    if (exam.observacionConfig) {
+        const { general, postura, marcha, movimiento, conducta } = exam.observacionConfig;
+        if (general?.trim()) pSyn.observation.push(`General: ${general.trim()}`);
+        if (postura?.trim()) pSyn.observation.push(`Postura/Alineación: ${postura.trim()}`);
+        if (marcha?.trim()) pSyn.observation.push(`Marcha/Gesto: ${marcha.trim()}`);
+        if (movimiento?.trim()) pSyn.observation.push(`Movim. Inicial: ${movimiento.trim()}`);
+        if (conducta?.trim()) pSyn.observation.push(`Conducta Síntoma: ${conducta.trim()}`);
+    }
+
+    // C. Movilidad (ROM)
+    if (exam.romAnaliticoConfig?.filas?.length) {
+        exam.romAnaliticoConfig.filas.forEach((f: any) => {
+            if (!f.region && !f.movimiento) return;
+            const context = `${f.region || ''} ${f.movimiento || ''}`.trim();
+            const type = f.tipoEval || 'unilateral';
+
+            let finding = context + ': ';
+            if (type === 'bilateral') {
+                finding += `Der [Act ${f.actDer || '-'}, Pas ${f.pasDer || '-'}], Izq [Act ${f.actIzq || '-'}, Pas ${f.pasIzq || '-'}]`;
+                if (f.asimetriaObservada?.trim()) finding += ` (Asimetría: ${f.asimetriaObservada})`;
+            } else if (type === 'axial') {
+                finding += `Act ${f.resAct || '-'} / Pas ${f.resPas || '-'}`;
+            } else {
+                finding += `Lado ${f.ladoUnilateral || '-'}: Act ${f.resAct || '-'} / Pas ${f.resPas || '-'}`;
+            }
+            if (f.usaGoniometro && f.grados) finding += ` -> ${f.grados}º`;
+            if (f.dolorActivo || f.dolorPasivo) {
+                finding += ` | Dolor: ${[f.dolorActivo ? 'Activo' : '', f.dolorPasivo ? 'Pasivo' : ''].filter(Boolean).join('/')}`;
+            }
+            if (f.calidadMovimiento?.trim()) finding += ` | Calidad: ${f.calidadMovimiento}`;
+
+            pSyn.mobility.push(finding);
+
+            // Si hay módulo de tejidos, agregarlo discretamente sin mezclar
+            if (f.tejidosConfig?.activo && f.tejidosConfig?.tejidoObjectivo) {
+                const tStatus = f.tejidosConfig.estadoCorto === 'Normal' ? 'Normal' : f.tejidosConfig.estadoCorto;
+                pSyn.mobility.push(` * Longitud/Tejido ${f.tejidosConfig.tejidoObjectivo}: ${tStatus}`);
+            }
+        });
+    }
+
+    // D. Fuerza y Carga
+    if (exam.fuerzaCargaConfig?.filas?.length) {
+        exam.fuerzaCargaConfig.filas.forEach((f: any) => {
+            if (!f.region) return;
+            let finding = `${f.tipoEvaluacion || 'Carga'} - ${f.region}:`;
+
+            if (f.tipoEvaluacion?.includes('Dinamometría')) {
+                if (f.dinamometriaDer || f.dinamometriaIzq) {
+                    finding += ` Der: ${f.dinamometriaDer || '-'} ${f.dinamometriaUnidad}, Izq: ${f.dinamometriaIzq || '-'} ${f.dinamometriaUnidad}`;
+                    if (f.asimetriaDina) finding += ` (Déficit ${f.asimetriaDina}%)`;
+                }
+            } else if (f.tipoEvaluacion === 'Ejercicios con Carga (Encoder)') {
+                finding += ` Carga ${f.cargaKg || '-'}Kg, Vel ${f.velocidadEncoder || '-'}m/s`;
+            } else {
+                finding += ` ${f.calidadEsfuerzo || 'Esfuerzo no medido'}`;
+            }
+
+            if (f.dolorDurante) finding += ` | Provocación: ${f.dolorDurante}`;
+            if (f.observacionExtra?.trim()) finding += ` | Obs: ${f.observacionExtra.trim()}`;
+
+            pSyn.strength_load.push(finding.trim());
+        });
+    }
+
+    // E. Palpación
+    if (exam.palpacionConfig?.estructuras?.length) {
+        exam.palpacionConfig.estructuras.forEach((e: any) => {
+            if (!e.nombre) return;
+            let finding = `${e.nombre} (${e.lado}):`;
+            if (e.dolorCalificacion) finding += ` Dolor ${e.dolorCalificacion}.`;
+            if (e.temperatura && e.temperatura !== 'Normal') finding += ` Temp ${e.temperatura}.`;
+            if (e.edema) finding += ` Edema local.`;
+            if (e.observacion?.trim()) finding += ` ${e.observacion.trim()}`;
+            pSyn.palpation.push(finding.trim());
+        });
+    }
+
+    // F. Neurovascular (Screening)
+    if (exam.neuroVascularConfig) {
+        const nv = exam.neuroVascularConfig;
+        let hasRelevantNeuro = false;
+        const neuroMap = [
+            { key: 'miotomas', label: 'Miotomas' },
+            { key: 'sensibilidad', label: 'Sensibilidad/Dermatomas' },
+            { key: 'reflejos', label: 'Reflejos' },
+            { key: 'neurodinamia', label: 'Neurodinamia (SLR/Slump/ULTT)' },
+            { key: 'pulsos', label: 'Perfusión/Pulsos' },
+            { key: 'equilibrio', label: 'Equilibrio/Propiocepción' }
+        ];
+
+        neuroMap.forEach(item => {
+            if (nv[item.key]?.evalua) {
+                const hallazgo = nv[item.key]?.hallazgo || '';
+                // Consideramos normal o screening limpio si dice "Normal", "Sin alteraciones", o está vacío.
+                if (hallazgo && !hallazgo.toLowerCase().includes('normal') && !hallazgo.toLowerCase().includes('sin alter')) {
+                    hasRelevantNeuro = true;
+                    pSyn.neurovascular_sensorimotor.push(`${item.label}: ${hallazgo}`);
+                }
+            }
+        });
+
+        if (nv.observacion?.trim()) {
+            hasRelevantNeuro = true;
+            pSyn.neurovascular_sensorimotor.push(`Obs Neuro: ${nv.observacion.trim()}`);
+        }
+
+        if (!hasRelevantNeuro && Object.values(nv).some((v: any) => v?.evalua)) {
+            pSyn.neurovascular_sensorimotor.push('Screening neurológico/vascular sin hallazgos relevantes registrados.');
+        }
+    }
+
+    // G. Control Motor
+    if (exam.controlMotorConfig?.filas?.length) {
+        exam.controlMotorConfig.filas.forEach((f: any) => {
+            if (!f.region) return;
+            // Region aqui es la Tarea Funcional evaluada
+            let finding = `${f.region}: ${f.calidadEjecucion || ''}`;
+            if (f.compensaciones) finding += ` | Compensación: ${f.compensaciones}`;
+            if (f.observacion?.trim()) finding += ` | Obs: ${f.observacion.trim()}`;
+            pSyn.motor_control.push(finding.trim());
+        });
+    }
+
+    // H. Ortopédicas Dirigidas
+    if (exam.ortopedicasConfig?.filas?.length) {
+        const groupedByRegion: Record<string, string[]> = {};
+
+        exam.ortopedicasConfig.filas.forEach((f: any) => {
+            const tName = f.test_name || f.test;
+            if (!tName) return;
+
+            const regionName = f.region || 'Global';
+            if (!groupedByRegion[regionName]) groupedByRegion[regionName] = [];
+
+            const hipotesis = f.hipotesis || 'Sin hipótesis';
+            let findingLine = `[${hipotesis}] ${tName} (${f.side || f.lado || 'N/A'}): ${f.result || f.resultado || '-'}`;
+
+            const reproduce = f.symptom_relation || f.reproduceTexto;
+            if (reproduce) {
+                findingLine += ` -> Síntoma índice: ${reproduce}`;
+                const isPositive = f.result?.toLowerCase() === 'positivo' || f.resultado?.toLowerCase() === 'positivo';
+                if (isPositive || reproduce.toLowerCase().includes('reproduce') || reproduce.toLowerCase().includes('exact')) {
+                    structuralCandidates.push({
+                        label: `Posible implicación mecánica explorada en ${tName} (${hipotesis}) - Región: ${regionName}`,
+                        confidence: 'Media', reproduceSymptom: true, source: 'Pruebas Ortopédicas P2'
+                    });
+                }
+            }
+            if (f.optional_reason) findingLine += ` [Motivo: ${f.optional_reason}]`;
+
+            const comment = f.comment || f.comentario;
+            if (comment?.trim()) findingLine += ` | ${comment.trim()}`;
+
+            groupedByRegion[regionName].push(findingLine);
+        });
+
+        Object.entries(groupedByRegion).forEach(([region, strings]) => {
+            pSyn.orthopedic_tests.push(`Región ${region.toUpperCase()}:`);
+            strings.forEach(s => pSyn.orthopedic_tests.push(`  - ${s}`));
+        });
+
+        if (exam.ortopedicasConfig.sintesisFinal?.trim()) {
+            pSyn.orthopedic_tests.push(`Lectura clínica: ${exam.ortopedicasConfig.sintesisFinal.trim()}`);
+        }
+    }
+
+    // I. Funcionales / Capacidad
+    if (exam.funcionalesConfig?.filas?.length) {
+        exam.funcionalesConfig.filas.forEach((f: any) => {
+            if (!f.test) return;
+            let finding = `${f.test} (${f.lado}):`;
+            if (f.metricaObj?.trim()) finding += ` ${f.metricaObj}`;
+            else if (f.resultado?.trim()) finding += ` Res: ${f.resultado}`;
+
+            if (f.dolor) finding += ` | Dolor: ${f.dolor}/10`;
+            if (f.calidad) finding += ` | Calidad: ${f.calidad}`;
+            pSyn.functional_tests.push(finding.trim());
+        });
+        if (exam.funcionalesConfig.objetivo?.trim()) {
+            pSyn.functional_tests.unshift(`Objetivo de bloque: ${exam.funcionalesConfig.objetivo.trim()}`);
+        }
+    }
+
+    // J. Retest / Comparable
+    if (exam.retestConfig && exam.retestConfig.tareaIndice) {
+        let finding = `Signo Re-test: ${exam.retestConfig.tareaIndice} -> RESULTADO POST: ${exam.retestConfig.resultadoPost || 'No evaluado'}`;
+        if (exam.retestConfig.intervencion?.trim()) finding += ` (Modificador: ${exam.retestConfig.intervencion.trim()})`;
+        if (exam.retestConfig.comentario?.trim()) finding += `. Cambio observado: ${exam.retestConfig.comentario.trim()}`;
+        pSyn.retest.push(finding);
+    }
+
+    // K. Medidas Complementarias (Solo si hay datos reales)
+    if (exam.medidasComplementariasConfig) {
+        const mc = exam.medidasComplementariasConfig;
+        if (mc.peso || mc.talla || mc.otraMedida) {
+            let f = [];
+            if (mc.peso) f.push(`Peso: ${mc.peso}kg`);
+            if (mc.talla) f.push(`Talla: ${mc.talla}cm`);
+            if (mc.imc) f.push(`IMC: ${mc.imc}`);
+            if (mc.otraMedida?.trim()) f.push(`Otra medida: ${mc.otraMedida.trim()}`);
+            pSyn.complementary_measures.push(f.join(' | '));
+        }
+        if (mc.signosVitalesActivos && (mc.pa || mc.fc || mc.satO2 || mc.perimetroEdema || mc.fovea !== null)) {
+            let s = [];
+            if (mc.pa) s.push(`PA: ${mc.pa}`);
+            if (mc.fc) s.push(`FC: ${mc.fc}lpm`);
+            if (mc.satO2) s.push(`SatO2: ${mc.satO2}%`);
+            if (mc.perimetroEdema?.trim()) s.push(`Edema: ${mc.perimetroEdema.trim()}`);
+            if (mc.fovea !== null) s.push(`Fóvea: ${mc.fovea ? 'Positiva' : 'Negativa'}`);
+            pSyn.complementary_measures.push(`Vitales: ` + s.join(' | '));
+        }
+    }
+
+    // TEXTOS DE SALIDA DETERMINÍSTICOS
+    const domainsWithFindings = [];
+    if (pSyn.mobility.length) domainsWithFindings.push('movilidad articular');
+    if (pSyn.strength_load.length) domainsWithFindings.push('fuerza y carga');
+    if (pSyn.orthopedic_tests.length) domainsWithFindings.push('pruebas ortopédicas');
+    if (pSyn.neurovascular_sensorimotor.some(s => !s.includes('sin hallazgos'))) domainsWithFindings.push('screening neurosensorial');
+    if (pSyn.functional_tests.length) domainsWithFindings.push('función objetiva');
+    if (pSyn.retest.length) domainsWithFindings.push('re-evaluación intrasesión');
+
+    const domainListStr = domainsWithFindings.length > 0 ? `Hallazgos objetivos localizados en: ${domainsWithFindings.join(', ')}.` : 'Examen físico sin dominios objetivos estructurados.';
+
+    // Texto Corto
+    pSyn.summary_text_short = `Paciente con cuadro de irritabilidad ${pSyn.frame.irritabilidad || 'Pendiente'}. 
+    Tarea Índice a re-evaluar: ${pSyn.frame.tarea_indice || 'No definida claramente'}. 
+    ${domainListStr}
+    ${pSyn.retest.length ? 'Respuesta a intervención de prueba: ' + pSyn.retest[0] : ''}
+    Síntesis física registrada correctamente para P3.`.replace(/\n\s+/g, '\n').trim();
+
+    // Texto Estructurado Completo (Para P3)
+    const structuredChunks = [];
+    if (pSyn.frame.tarea_indice) structuredChunks.push(`[MARCO CLÍNICO]\nFoco: ${pSyn.frame.foco || '-'} | Irritabilidad: ${pSyn.frame.irritabilidad}\nTarea Índice: ${pSyn.frame.tarea_indice}`);
+    if (pSyn.observation.length) structuredChunks.push(`[OBSERVACIÓN]\n` + pSyn.observation.map(o => `• ${o}`).join('\n'));
+    if (pSyn.mobility.length) structuredChunks.push(`[MOVILIDAD (ROM)]\n` + pSyn.mobility.map(o => `• ${o}`).join('\n'));
+    if (pSyn.strength_load.length) structuredChunks.push(`[FUERZA Y CARGA]\n` + pSyn.strength_load.map(o => `• ${o}`).join('\n'));
+    if (pSyn.palpation.length) structuredChunks.push(`[PALPACIÓN]\n` + pSyn.palpation.map(o => `• ${o}`).join('\n'));
+    if (pSyn.neurovascular_sensorimotor.length) structuredChunks.push(`[NEURO/SENSORIAL]\n` + pSyn.neurovascular_sensorimotor.map(o => `• ${o}`).join('\n'));
+    if (pSyn.motor_control.length) structuredChunks.push(`[CONTROL MOTOR]\n` + pSyn.motor_control.map(o => `• ${o}`).join('\n'));
+    if (pSyn.orthopedic_tests.length) structuredChunks.push(`[PRUEBAS ORTOPÉDICAS]\n` + pSyn.orthopedic_tests.map(o => (o.startsWith('-') || o.startsWith('[') || o.startsWith(' ') || o.startsWith('Región') || o.startsWith('Lectura')) ? o : `• ${o}`).join('\n'));
+    if (pSyn.functional_tests.length) structuredChunks.push(`[PRUEBAS FUNCIONALES]\n` + pSyn.functional_tests.map(o => o.startsWith('Objeti') ? o : `• ${o}`).join('\n'));
+    if (pSyn.complementary_measures.length) structuredChunks.push(`[COMPLEMENTARIOS]\n` + pSyn.complementary_measures.map(o => `• ${o}`).join('\n'));
+    if (pSyn.retest.length) structuredChunks.push(`[RE-TEST INTRA-SESIÓN]\n` + pSyn.retest.map(o => `• ${o}`).join('\n'));
+
+    pSyn.summary_text_structured = structuredChunks.join('\n\n');
 
     return { structuralCandidates, functionalDeficits, bpsNotes, physicalSynthesis: pSyn };
 }
