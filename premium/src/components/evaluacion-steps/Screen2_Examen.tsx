@@ -381,18 +381,19 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 // Lógica de Orientación Clínica Inteligente
                                 let orientacionClinica = "";
                                 if (fila.evalAct && fila.evalPas) {
-                                    const actInt = fila.resAct === 'Completo doloroso' || fila.resAct === 'Incompleto doloroso' ? 'dolor' : (fila.resAct === 'Incompleto no doloroso' ? 'deficit' : 'ok');
-                                    const actNum = fila.resAct?.includes('Incompleto') ? 0 : 1;
-                                    const pasNum = fila.resPas?.includes('Incompleto') ? 0 : 1;
+                                    const rAct = fila.lado === 'Bilateral' ? (fila.resActDer || fila.resActIzq || '') : (fila.resAct || '');
+                                    const rPas = fila.lado === 'Bilateral' ? (fila.resPasDer || fila.resPasIzq || '') : (fila.resPas || '');
 
-                                    if (actNum === 0 && pasNum === 1) { // Activo incompleto, Pasivo completo
+                                    const actNum = rAct.includes('Incompleto') ? 0 : 1;
+                                    const pasNum = rPas.includes('Incompleto') ? 0 : 1;
+
+                                    if (actNum === 0 && pasNum === 1 && rAct !== '') { // Activo incompleto, Pasivo completo
                                         orientacionClinica = "Orientación: podría haber influencia de dolor, inhibición o componente contráctil. Interpretar con fuerza y control motor.";
-                                    } else if (actNum === 0 && pasNum === 0) { // Ambos incompletos
+                                    } else if (actNum === 0 && pasNum === 0 && rAct !== '' && rPas !== '') { // Ambos incompletos
                                         orientacionClinica = "Orientación: la limitación compartida sugiere revisar movilidad articular/tejidos no contráctiles dentro del cuadro completo.";
-                                    } else if (actNum === 1 && fila.resPas === 'Completo doloroso') { // Activo y pasivo completos, pero pasivo duele
+                                    } else if (actNum === 1 && rPas === 'Completo doloroso') { // Activo y pasivo completos, pero pasivo duele
                                         orientacionClinica = "Orientación: revisar irritabilidad, sobrepresión o sensibilidad mecánica.";
-                                    } else if (fila.resAct === 'Completo doloroso' || fila.resAct === 'Incompleto doloroso') {
-                                        // Doloroso pero llegó, ya no evalúa rango funcional puro que es difuso en estos strings pero aplica la logica de dolor de movimiento
+                                    } else if (rAct === 'Completo doloroso' || rAct === 'Incompleto doloroso') {
                                         orientacionClinica = "Orientación: registrar dolor de movimiento, no asumir déficit biológico de movilidad por sí solo.";
                                     }
                                 }
@@ -520,18 +521,43 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 </label>
                                             </td>
                                             <td className="p-3 align-top">
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
-                                                    value={fila.resAct}
-                                                    onChange={(e) => handleFilaChange('resAct', e.target.value)}
-                                                    disabled={isClosed || !fila.evalAct}
-                                                >
-                                                    <option value="">-- Resultado Activo --</option>
-                                                    <option value="Completo no doloroso">Completo no doloroso</option>
-                                                    <option value="Completo doloroso">Completo doloroso</option>
-                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                </select>
+                                                {fila.lado === 'Bilateral' ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6">DER</span>
+                                                            <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resActDer || ''} onChange={(e) => handleFilaChange('resActDer', e.target.value)} disabled={isClosed || !fila.evalAct}>
+                                                                <option value="">-- Activo --</option>
+                                                                <option value="Completo no doloroso">Completo no doloroso</option>
+                                                                <option value="Completo doloroso">Completo doloroso</option>
+                                                                <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                                <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6">IZQ</span>
+                                                            <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resActIzq || ''} onChange={(e) => handleFilaChange('resActIzq', e.target.value)} disabled={isClosed || !fila.evalAct}>
+                                                                <option value="">-- Activo --</option>
+                                                                <option value="Completo no doloroso">Completo no doloroso</option>
+                                                                <option value="Completo doloroso">Completo doloroso</option>
+                                                                <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                                <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <select
+                                                        className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                                                        value={fila.resAct || ''}
+                                                        onChange={(e) => handleFilaChange('resAct', e.target.value)}
+                                                        disabled={isClosed || !fila.evalAct}
+                                                    >
+                                                        <option value="">-- Resultado Activo --</option>
+                                                        <option value="Completo no doloroso">Completo no doloroso</option>
+                                                        <option value="Completo doloroso">Completo doloroso</option>
+                                                        <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                        <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                    </select>
+                                                )}
                                             </td>
                                             <td className="p-3 align-top text-center border-l border-slate-100">
                                                 <label className="relative inline-flex items-center cursor-pointer mt-2">
@@ -540,80 +566,191 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 </label>
                                             </td>
                                             <td className="p-3 align-top">
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50 mb-2"
-                                                    value={fila.resPas}
-                                                    onChange={(e) => handleFilaChange('resPas', e.target.value)}
-                                                    disabled={isClosed || !fila.evalPas}
-                                                >
-                                                    <option value="">-- Resultado Pasivo --</option>
-                                                    <option value="Completo no doloroso">Completo no doloroso</option>
-                                                    <option value="Completo doloroso">Completo doloroso</option>
-                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
-                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
-                                                </select>
-                                                <select
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
-                                                    value={fila.topeFinal}
-                                                    onChange={(e) => handleFilaChange('topeFinal', e.target.value)}
-                                                    disabled={isClosed || !fila.evalPas}
-                                                >
-                                                    <option value="">-- Tope Final --</option>
-                                                    <option value="No evaluado">No evaluado</option>
-                                                    <option value="Blando">Blando (Aproximación tej.)</option>
-                                                    <option value="Firme">Firme (Cápsula/Lig.)</option>
-                                                    <option value="Duro">Duro (Hueso-Hueso)</option>
-                                                    <option value="Vacío">Vacío (Dolor excesivo)</option>
-                                                    <option value="Espástico">Espástico (Resorte)</option>
-                                                </select>
+                                                {fila.lado === 'Bilateral' ? (
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex items-start gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
+                                                            <div className="flex flex-col gap-1 w-full">
+                                                                <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resPasDer || ''} onChange={(e) => handleFilaChange('resPasDer', e.target.value)} disabled={isClosed || !fila.evalPas}>
+                                                                    <option value="">-- Pasivo --</option>
+                                                                    <option value="Completo no doloroso">Completo no doloroso</option>
+                                                                    <option value="Completo doloroso">Completo doloroso</option>
+                                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                                </select>
+                                                                <select className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.topeFinalDer || ''} onChange={(e) => handleFilaChange('topeFinalDer', e.target.value)} disabled={isClosed || !fila.evalPas}>
+                                                                    <option value="">-- Tope --</option>
+                                                                    <option value="No evaluado">No evaluado</option>
+                                                                    <option value="Blando">Blando</option>
+                                                                    <option value="Firme">Firme</option>
+                                                                    <option value="Duro">Duro</option>
+                                                                    <option value="Vacío">Vacío</option>
+                                                                    <option value="Espástico">Espástico</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
+                                                            <div className="flex flex-col gap-1 w-full">
+                                                                <select className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.resPasIzq || ''} onChange={(e) => handleFilaChange('resPasIzq', e.target.value)} disabled={isClosed || !fila.evalPas}>
+                                                                    <option value="">-- Pasivo --</option>
+                                                                    <option value="Completo no doloroso">Completo no doloroso</option>
+                                                                    <option value="Completo doloroso">Completo doloroso</option>
+                                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                                </select>
+                                                                <select className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50" value={fila.topeFinalIzq || ''} onChange={(e) => handleFilaChange('topeFinalIzq', e.target.value)} disabled={isClosed || !fila.evalPas}>
+                                                                    <option value="">-- Tope --</option>
+                                                                    <option value="No evaluado">No evaluado</option>
+                                                                    <option value="Blando">Blando</option>
+                                                                    <option value="Firme">Firme</option>
+                                                                    <option value="Duro">Duro</option>
+                                                                    <option value="Vacío">Vacío</option>
+                                                                    <option value="Espástico">Espástico</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <select
+                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50 mb-2"
+                                                            value={fila.resPas || ''}
+                                                            onChange={(e) => handleFilaChange('resPas', e.target.value)}
+                                                            disabled={isClosed || !fila.evalPas}
+                                                        >
+                                                            <option value="">-- Resultado Pasivo --</option>
+                                                            <option value="Completo no doloroso">Completo no doloroso</option>
+                                                            <option value="Completo doloroso">Completo doloroso</option>
+                                                            <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                            <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                        </select>
+                                                        <select
+                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                                                            value={fila.topeFinal || ''}
+                                                            onChange={(e) => handleFilaChange('topeFinal', e.target.value)}
+                                                            disabled={isClosed || !fila.evalPas}
+                                                        >
+                                                            <option value="">-- Tope Final --</option>
+                                                            <option value="No evaluado">No evaluado</option>
+                                                            <option value="Blando">Blando (Aproximación tej.)</option>
+                                                            <option value="Firme">Firme (Cápsula/Lig.)</option>
+                                                            <option value="Duro">Duro (Hueso-Hueso)</option>
+                                                            <option value="Vacío">Vacío (Dolor excesivo)</option>
+                                                            <option value="Espástico">Espástico (Resorte)</option>
+                                                        </select>
+                                                    </>
+                                                )}
                                             </td>
                                             <td className="p-3 align-top">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-[10px] uppercase font-bold text-slate-400">EVA</span>
-                                                    <input
-                                                        type="number"
-                                                        min="0" max="10"
-                                                        className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                        placeholder="0-10"
-                                                        value={fila.eva}
-                                                        onChange={(e) => handleFilaChange('eva', e.target.value)}
-                                                        disabled={isClosed}
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <label className="flex items-center gap-1 cursor-pointer">
-                                                        <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
-                                                        <span className="text-[10px] uppercase font-bold text-slate-400">Gon.</span>
-                                                    </label>
-                                                    {fila.usaGoniometro && (
+                                                {fila.lado === 'Bilateral' ? (
+                                                    <div className="flex flex-col gap-3">
+                                                        <div className="flex items-start gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
+                                                            <div className="flex flex-col gap-1.5 w-full">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[9px] uppercase font-bold text-slate-400 w-6">EVA</span>
+                                                                    <input type="number" min="0" max="10" className="w-12 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="0-10" value={fila.evaDer || ''} onChange={(e) => handleFilaChange('evaDer', e.target.value)} disabled={isClosed} />
+                                                                </div>
+                                                                {fila.usaGoniometro && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[9px] uppercase font-bold text-slate-400 w-6">Gon.</span>
+                                                                        <input type="text" className="w-14 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="°" value={fila.gradosDer || ''} onChange={(e) => handleFilaChange('gradosDer', e.target.value)} disabled={isClosed} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-1.5 border-t border-slate-100 pt-2 text-center">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
+                                                            <div className="flex flex-col gap-1.5 w-full items-start">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[9px] uppercase font-bold text-slate-400 w-6">EVA</span>
+                                                                    <input type="number" min="0" max="10" className="w-12 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="0-10" value={fila.evaIzq || ''} onChange={(e) => handleFilaChange('evaIzq', e.target.value)} disabled={isClosed} />
+                                                                </div>
+                                                                {fila.usaGoniometro && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[9px] uppercase font-bold text-slate-400 w-6">Gon.</span>
+                                                                        <input type="text" className="w-14 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="°" value={fila.gradosIzq || ''} onChange={(e) => handleFilaChange('gradosIzq', e.target.value)} disabled={isClosed} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-1 flex justify-center items-center gap-1 border-t border-slate-100 pt-2">
+                                                            <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
+                                                            <span className="text-[9px] uppercase font-bold text-slate-400">Usar Gon.</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">EVA</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0" max="10"
+                                                                className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                                placeholder="0-10"
+                                                                value={fila.eva || ''}
+                                                                onChange={(e) => handleFilaChange('eva', e.target.value)}
+                                                                disabled={isClosed}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="flex items-center gap-1 cursor-pointer">
+                                                                <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
+                                                                <span className="text-[10px] uppercase font-bold text-slate-400">Gon.</span>
+                                                            </label>
+                                                            {fila.usaGoniometro && (
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                                    placeholder="Grados°"
+                                                                    value={fila.grados || ''}
+                                                                    onChange={(e) => handleFilaChange('grados', e.target.value)}
+                                                                    disabled={isClosed}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td className="p-3 align-top min-w-[200px]">
+                                                {fila.lado === 'Bilateral' ? (
+                                                    <div className="flex flex-col gap-3">
+                                                        <div className="flex items-start gap-1.5">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">DER</span>
+                                                            <div className="flex flex-col gap-1.5 w-full">
+                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Calidad/Compensación (ej. temblor)" value={fila.calidadDer || ''} onChange={(e) => handleFilaChange('calidadDer', e.target.value)} disabled={isClosed} />
+                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Hallazgo breve" value={fila.hallazgoDer || ''} onChange={(e) => handleFilaChange('hallazgoDer', e.target.value)} disabled={isClosed} />
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-1.5 border-t border-slate-100 pt-2">
+                                                            <span className="text-[9px] font-bold text-slate-400 w-6 mt-2">IZQ</span>
+                                                            <div className="flex flex-col gap-1.5 w-full">
+                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Calidad/Compensación (ej. temblor)" value={fila.calidadIzq || ''} onChange={(e) => handleFilaChange('calidadIzq', e.target.value)} disabled={isClosed} />
+                                                                <input type="text" className="w-full text-[10px] bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-1.5 outline-none focus:bg-white focus:border-indigo-400" placeholder="Hallazgo breve" value={fila.hallazgoIzq || ''} onChange={(e) => handleFilaChange('hallazgoIzq', e.target.value)} disabled={isClosed} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
                                                         <input
                                                             type="text"
-                                                            className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                            placeholder="Grados°"
-                                                            value={fila.grados}
-                                                            onChange={(e) => handleFilaChange('grados', e.target.value)}
+                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
+                                                            placeholder="Calidad/Compensación (ej. temblor)"
+                                                            value={fila.calidad || ''}
+                                                            onChange={(e) => handleFilaChange('calidad', e.target.value)}
                                                             disabled={isClosed}
                                                         />
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="p-3 align-top">
-                                                <input
-                                                    type="text"
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
-                                                    placeholder="Calidad/Compensación (ej. temblor)"
-                                                    value={fila.calidad}
-                                                    onChange={(e) => handleFilaChange('calidad', e.target.value)}
-                                                    disabled={isClosed}
-                                                />
-                                                <input
-                                                    type="text"
-                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-                                                    placeholder="Hallazgo breve"
-                                                    value={fila.hallazgo}
-                                                    onChange={(e) => handleFilaChange('hallazgo', e.target.value)}
-                                                    disabled={isClosed}
-                                                />
+                                                        <input
+                                                            type="text"
+                                                            className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                            placeholder="Hallazgo breve"
+                                                            value={fila.hallazgo || ''}
+                                                            onChange={(e) => handleFilaChange('hallazgo', e.target.value)}
+                                                            disabled={isClosed}
+                                                        />
+                                                    </>
+                                                )}
                                             </td>
                                             <td className="p-3 align-top text-center border-l border-slate-100">
                                                 <button
