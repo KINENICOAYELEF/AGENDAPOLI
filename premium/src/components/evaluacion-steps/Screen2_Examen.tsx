@@ -766,7 +766,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-emerald-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-emerald-800 mb-1">¿Qué evaluación elegir?</p>
                             <ul className="list-disc pl-4 space-y-1 mb-2">
                                 <li>**Manual (MMT):** Eval. rápida 1-5. Poco sensible para deportistas.</li>
@@ -1172,7 +1172,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-amber-200 bg-white text-amber-600 font-bold hover:bg-amber-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-amber-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-amber-800 mb-1">¿Cuándo usar este bloque?</p>
                             <p>Úsalo <strong>solo si suma valor</strong> a tu hipótesis o para descartar (ej. calor articular marcado, sensibilidad ósea exquisita).</p>
                         </div>
@@ -1197,7 +1197,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <div className="bg-amber-50/50 p-3 border-b border-amber-100 flex flex-wrap items-center gap-2 justify-between">
                                     <div className="flex flex-wrap items-center gap-2 flex-1 relative">
                                         <input
-                                            className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 outline-none w-[160px] focus:border-amber-400"
+                                            className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 outline-none flex-1 min-w-[140px] focus:border-amber-400"
                                             value={fila.estructura || ''}
                                             onChange={e => handleChange('estructura', e.target.value)}
                                             disabled={isClosed}
@@ -1253,7 +1253,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         </select>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <div className="flex-1 min-w-[60px]">
+                                        <div className="flex-1 min-w-[50px]">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Dolor EVA</label>
                                             <input
                                                 type="number"
@@ -1266,7 +1266,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 disabled={isClosed}
                                             />
                                         </div>
-                                        <div className="flex-1 min-w-[70px]">
+                                        <div className="flex-1 min-w-[60px]">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Edema</label>
                                             <select
                                                 className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400"
@@ -1280,7 +1280,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 <option value="Intenso">Intenso</option>
                                             </select>
                                         </div>
-                                        <div className="flex-1 min-w-[70px]">
+                                        <div className="flex-1 min-w-[60px]">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Temp.</label>
                                             <select
                                                 className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400"
@@ -1397,7 +1397,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 </h4>
                                 <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors group relative" title="Ayuda clínica">
                                     ?
-                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-64 p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                                    <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-rose-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                         <p className="font-bold text-rose-800 mb-1">¿Cuándo usar subdominios?</p>
                                         <p>Si el screening es NORMAL, puedes saltar esto.</p>
                                         <p className="mt-2">Si hay síntomas distales, irradiación o debilidad inexplicable, realiza y registra la evaluación específica.</p>
@@ -1481,7 +1481,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-72 p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
@@ -1524,7 +1524,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Región/Tarea (Ej. Y-Balance)"
                                                 />
                                                 <select
-                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 flex-1 min-w-[160px]"
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 flex-1 min-w-[100px]"
                                                     value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">Tipo de tarea...</option>
@@ -1631,7 +1631,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
                         ?
-                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                        <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                             <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas</p>
                             <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                 <li><strong>No usar para diagnosticar asiladamente:</strong> Elegir pocas pruebas con sentido clínico.</li>
@@ -1772,11 +1772,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         <div className="bg-sky-50/50 p-3 border-b border-sky-100 flex flex-wrap items-center gap-2 justify-between">
                                             <div className="flex flex-wrap items-center gap-2 flex-1 relative pr-8">
                                                 <input
-                                                    className="flex-1 text-sm bg-white border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 min-w-[150px]"
+                                                    className="flex-1 text-sm bg-white border border-slate-200 text-slate-800 font-bold rounded px-2 py-1.5 outline-none focus:border-sky-400 min-w-[100px]"
                                                     value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Nombre del Test (Ej. Neer)"
                                                 />
                                                 <select
-                                                    className="w-28 text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400"
+                                                    className="flex-1 min-w-[90px] text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-sky-400"
                                                     value={fila.lado || ''} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">Lado...</option>
@@ -1894,7 +1894,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                         <button tabIndex={0} type="button" className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
                             ?
-                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <div className="hidden group-hover:block group-focus:block absolute top-[110%] -right-2 sm:right-0 w-[260px] sm:w-[320px] max-w-[calc(100vw-2rem)] p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
                                 <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
                                 <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
                                     <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
@@ -1956,7 +1956,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 </datalist>
 
                                                 <select
-                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-orange-400 min-w-[120px]"
+                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-orange-400 min-w-[100px]"
                                                     value={fila.lado || 'Bilateral'} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="Bilateral">Bilateral</option>
@@ -1999,14 +1999,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <select
-                                                    className="w-[90px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold text-slate-600"
+                                                    className="flex-1 min-w-[70px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold text-slate-600"
                                                     value={fila.dolor || ''} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">Dolor (EVA)</option>
                                                     {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n.toString()}>{n}</option>)}
                                                 </select>
                                                 <select
-                                                    className="w-[110px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold"
+                                                    className="flex-1 min-w-[90px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-bold"
                                                     value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Calidad --</option>
@@ -2015,7 +2015,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                     <option value="Deficiente">Deficiente</option>
                                                 </select>
                                                 <select
-                                                    className="flex-1 min-w-[120px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-medium"
+                                                    className="flex-1 min-w-[100px] text-[11px] p-1.5 border border-slate-200 rounded outline-none bg-slate-50 focus:border-orange-400 font-medium"
                                                     value={fila.criterioFuncional || ''} onChange={e => handleChange('criterioFuncional', e.target.value)} disabled={isClosed}
                                                 >
                                                     <option value="">-- Criterio --</option>
