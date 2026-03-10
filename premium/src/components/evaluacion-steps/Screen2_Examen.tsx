@@ -105,9 +105,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div>
                         <div className="flex items-center gap-3">
                             <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">A. Resumen Heredado (P1) <button type="button" onClick={() => setOpenHelp('A')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-100 transition-colors" title="Ayuda clínica">?</button></h2>
-                            <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 transition-colors" title="Cuándo usarlo: siempre revisa este bloque antes de tocar al paciente.&#10;Qué registrar: Verifica si falta info para derivar o tener cuidado.&#10;Cuándo no profundizar: Esto es solo contexto, no modifiques aquí.">
-                                ?
-                            </button>
+                            
                         </div>
                         <p className="text-sm text-slate-500 mt-1">Si faltan datos críticos, puedes volver a la Anamnesis para completarlos.</p>
                     </div>
@@ -189,9 +187,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Observa primero el gesto o movimiento más representativo referido en la entrevista.
                         </p>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-600 opacity-60 hover:opacity-100 transition-opacity" title="Cuándo usarlo: Al inicio o mientras el paciente relata.&#10;Cómo aplicarlo: Observa libremente y selecciona los chips rápidos.&#10;Qué registrar: Solo anomalías, asimetrías o hallazgos relevantes de conducta del dolor.&#10;Cuándo no profundizar: Evita estar rato anotando si todo es normal.">
-                        ?
-                    </button>
+                    
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col gap-6 bg-white">
@@ -366,9 +362,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Mov. activo, pasivo y end-feel. <span className="text-emerald-600 font-bold ml-1">ORIENTACIÓN CLÍNICA, NO DIAGNÓSTICO.</span>
                         </p>
                     </div>
-                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-indigo-200 bg-white text-indigo-500 opacity-60 hover:opacity-100 transition-opacity" title="Cuándo usarlo: Si hay déficit activo o dolor reportado.&#10;Cómo aplicarlo: Partir por exploración activa. Pasar a pasiva si aporta o hay déficit activo.&#10;Qué registrar: Comparar extremidades (Bilateral) o evaluar unilateral (Axial).&#10;Cuándo no profundizar: Usar goniómetro solo si el número es relevante (ej. post-op).">
-                        ?
-                    </button>
+                    <button type="button" onClick={() => setOpenHelp('C')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-indigo-200 bg-white text-indigo-600 font-bold hover:bg-indigo-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
                 <div className="p-4 bg-slate-50 flex flex-col gap-4">
@@ -764,7 +758,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Pruebas manuales, isometría, dinamometría o tests funcionales
                         </p>
                     </div>
-                    <button type="button" onClick={() => setOpenHelp('C')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-emerald-200 bg-white text-emerald-600 font-bold hover:bg-emerald-100 transition-colors" title="Ayuda clínica">?</button>
+                    
                 </div>
 
                 {irritabilidad === "Alta" && (
@@ -1293,6 +1287,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </button>
                     </div>
 
+                    
+                    <div className="flex flex-col gap-2 mt-2">
+                        <label className="text-xs font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+                            <span className="text-lg">🦴</span> Movilidad Accesoria / Componentes Articulares
+                        </label>
+                        <textarea
+                            className="w-full text-sm bg-orange-50/30 border border-amber-200 text-slate-700 rounded p-3 outline-none focus:border-amber-400 min-h-[60px]"
+                            placeholder="Ej. Hipomovilidad PA en C5-C6 dolorosa. Hiperlaxitud grado II en LLI sin tope blando..."
+                            value={exam.palpacionConfig?.movilidadAccesoria || ''}
+                            onChange={(e) => handleUpdateExam('palpacionConfig', { ...exam.palpacionConfig, movilidadAccesoria: e.target.value })}
+                            disabled={isClosed}
+                        />
+                    </div>
+
                     <div className="flex flex-col gap-2">
                         <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">
                             Síntesis final de palpación (Opcional)
@@ -1314,7 +1322,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">🧠</div>
                         <div>
-                            <h3 className="font-bold text-rose-900 text-lg">F. Neurológico / vascular / somatosensorial</h3>
+                            <h3 className="font-bold text-rose-900 text-lg flex items-center gap-2">F. Neurológico / vascular / somatosensorial <button type="button" onClick={() => setOpenHelp('F')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-rose-200 bg-white text-rose-600 font-bold hover:bg-rose-100 transition-colors" title="Ayuda clínica">?</button></h3>
                             <p className="text-xs text-rose-700/80 mt-0.5">Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad</p>
                         </div>
                     </div>
@@ -1998,7 +2006,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                                 Tarea o Gesto Índice
-                                <button className="text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-500 hover:bg-slate-100 transition-colors shrink-0" title="Heredado del bloque A. Puedes modificarlo si el re-test evalúa un foco distinto.">?</button>
+                                <button type="button" onClick={() => setOpenHelp('J')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-fuchsia-200 bg-white text-fuchsia-600 font-bold hover:bg-fuchsia-100 transition-colors" title="Ayuda clínica">?</button>
                             </label>
                             <input
                                 type="text"
@@ -2283,7 +2291,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     </div>
                                     <ul className="list-disc pl-5 space-y-2 mt-2">
                                         <li><strong>No sobre-diagnostiques la postura:</strong> Las asimetrías son normales. Anota la postura solo si crees que está <strong>directamente ligada</strong> a la sintomatología actual (ej. shift antálgico).</li>
-                                        <li><strong>Palpación:</strong> Busca cambios en temperatura, contornos anormales, o la reproducción exacta del dolor característico del paciente ("¿Es este tu dolor?").</li>
+                                        <li><strong>Desviaciones antálgicas:</strong> Notas si el paciente evita apoyar peso, hace pausas por dolor o acorta la zancada. Es observación estricta de conducta, no palpación.</li>
                                         <li><strong>Marcha:</strong> Observa disimetrías dinámicas, velocidad o cojeras evidentes y anótalo de forma breve.</li>
                                     </ul>
                                 </>
@@ -2320,10 +2328,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 <>
                                     <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                                         <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
-                                        <p className="text-xs text-amber-600 mt-1">Juego articular (Accessory motions) y provocación ligamentosa.</p>
+                                        <p className="text-xs text-amber-600 mt-1">Palpación estructural focal y juego articular (Accessory motions).</p>
                                     </div>
                                     <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Movimientos Accesorios (Glide):</strong> Evalúa rigidez capsular o micro-inestabilidad. Documentar hiper o hipomovilidad correlacionada con los hallazgos del ROM.</li>
+                                        <li><strong>Palpación Anatómica:</strong> Busca calor, derrame intra/extra articular, o reproducción exquisita en la inserción ("¿Este es TU dolor?").</li>
+                                        <li><strong>Movimientos Accesorios (Glide):</strong> Evalúa rigidez capsular o micro-inestabilidad en bloque articular. Anota las diferencias (hiper/hipo) aquí mismo en el área de texto libre.</li>
                                         <li><strong>Test de Ligamentos:</strong> Registrar laxitud (grados I-III) y calidad del tope blando/duro tras un trauma agudo.</li>
                                         <li><em>Tip Evidencia:</em> Solo utiliza estas maniobras si tu hipótesis sugiere un limitador mecánico local. En dolores crónicos nociplásticos aportarían poco valor.</li>
                                     </ul>
