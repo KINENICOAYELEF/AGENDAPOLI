@@ -2239,13 +2239,21 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             (pSyn.motor_control && pSyn.motor_control.length > 0) ||
                             (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
                             (pSyn.functional_tests && pSyn.functional_tests.length > 0) ||
-                            (exam.observacion_basal && exam.observacion_basal.trim() !== '') ||
+                            (pSyn.observation && pSyn.observation.length > 0) ||
                             (exam.ortopedicasConfig?.sintesisFinal && exam.ortopedicasConfig?.sintesisFinal.trim() !== '') ||
-                            (exam.retestConfig?.resultadoPost && exam.retestConfig?.resultadoPost.trim() !== '')
+                            (exam.retestConfig?.comentario && exam.retestConfig?.comentario.trim() !== '') ||
+                            (pSyn.complementary_measures && pSyn.complementary_measures.length > 0)
                         );
 
+                        const hasIndexTask = Boolean(pSyn?.frame?.tarea_indice) || Boolean(exam.retestConfig?.tareaIndice);
+
                         if (!hasFindings) {
-                            const proceed = window.confirm('Estás avanzando con muy pocos hallazgos físicos registrados. ¿Deseas continuar hacia el panel de razonamiento de todas formas?');
+                            alert('El examen físico está vacío. Registra al menos un hallazgo para continuar.');
+                            return;
+                        }
+
+                        if (!hasIndexTask) {
+                            const proceed = window.confirm('Aviso: No se ha registrado la Tarea Índice/Signo Comparable. ¿Deseas continuar a P3 de todas formas?');
                             if (!proceed) return;
                         }
 

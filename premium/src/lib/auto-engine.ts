@@ -284,41 +284,63 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
         summary_text_short: '', summary_text_structured: ''
     };
 
-    if (!interview) return { structuralCandidates, functionalDeficits, bpsNotes };
+    if (interview) {
+        // BPS
+        const bps = interview.v3?.bpsQuick || interview.yellowFlags || {} as any;
+        const isSleepIssue = bps.sueno > 0 || bps.sleepImpact > 0;
+        const isStressIssue = bps.estres > 0 || bps.highStress > 0 || bps.kinesiophobia > 0 || bps.miedoMoverCargar > 0 || bps.preocupacionDano > 0;
 
-    // BPS
-    const bps = interview.v3?.bpsQuick || interview.yellowFlags || {} as any;
-    const isSleepIssue = bps.sueno > 0 || bps.sleepImpact > 0;
-    const isStressIssue = bps.estres > 0 || bps.highStress > 0 || bps.kinesiophobia > 0 || bps.miedoMoverCargar > 0 || bps.preocupacionDano > 0;
+        if (isSleepIssue) bpsNotes.topBarriers.push('Alteración de Recuperación (Sueño)');
+        if (isStressIssue) bpsNotes.topBarriers.push('Kinesiofobia / Sobrecarga Cognitiva');
+        if (bpsNotes.topBarriers.length === 0) bpsNotes.topFacilitators.push('Paciente sin red-flags biopsicosociales aparentes (Buen pronóstico base).');
 
-    if (isSleepIssue) bpsNotes.topBarriers.push('Alteración de Recuperación (Sueño)');
-    if (isStressIssue) bpsNotes.topBarriers.push('Kinesiofobia / Sobrecarga Cognitiva');
-    if (bpsNotes.topBarriers.length === 0) bpsNotes.topFacilitators.push('Paciente sin red-flags biopsicosociales aparentes (Buen pronóstico base).');
+        // A. Frame / Contexto base
+        const focos = getFocos(interview);
+        if (focos.length > 0) {
+            const primary = focos[0];
+            pSyn.frame.foco = primary.region || '';
+            pSyn.frame.lado = primary.lado || primary.side || '';
+            pSyn.frame.queja_prioritaria = primary.sintomasTags?.join(', ') || '';
+            pSyn.frame.irritabilidad = computeIrritability(primary).level;
 
-    // A. Frame / Contexto base
-    const focos = getFocos(interview);
-    if (focos.length > 0) {
-        const primary = focos[0];
-        pSyn.frame.foco = primary.region || '';
-        pSyn.frame.lado = primary.lado || primary.side || '';
-        pSyn.frame.queja_prioritaria = primary.sintomasTags?.join(', ') || '';
-        pSyn.frame.irritabilidad = computeIrritability(primary).level;
+            const primaryComparableName = primary.signoComparable || primary.signoComparableEstrella?.nombre || primary.primaryComparable?.name;
+            const comparablePain = primary.dolorEnSigno ?? primary.signoComparableEstrella?.dolor ?? primary.primaryComparable?.painLevel ?? '';
 
-        const primaryComparableName = primary.signoComparable || primary.signoComparableEstrella?.nombre || primary.primaryComparable?.name;
-        const comparablePain = primary.dolorEnSigno ?? primary.signoComparableEstrella?.dolor ?? primary.primaryComparable?.painLevel ?? '';
-
-        if (primaryComparableName) {
-            pSyn.frame.tarea_indice = `${primaryComparableName} (${comparablePain}/10)`;
-            functionalDeficits.push({
-                label: primaryComparableName,
-                baseline: `Dolor EVA ${comparablePain}/10 bajo condiciones declaradas`,
-                side: primary.lado || primary.side || 'N/A',
-                linkedPsfs: true
-            });
+            if (primaryComparableName) {
+                pSyn.frame.tarea_indice = `${primaryComparableName} (${comparablePain}/10)`;
+                functionalDeficits.push({
+                    label: primaryComparableName,
+                    baseline: `Dolor EVA ${comparablePain}/10 bajo condiciones declaradas`,
+                    side: primary.lado || primary.side || 'N/A',
+                    linkedPsfs: true
+                });
+            }
         }
     }
 
-    if (!exam) return { structuralCandidates, functionalDeficits, bpsNotes };
+    if (!exam) return { structuralCandidates, functionalDeficits, bpsNotes, physicalSynthesis: pSyn };
+
+    // Fallbacks si no hubo P1 o la Tarea Índice no se configuró en P1 pero sí en P2
+    if (!pSyn.frame.tarea_indice && exam.retestConfig?.tareaIndice) {
+        pSyn.frame.tarea_indice = exam.retestConfig.tareaIndice;
+        functionalDeficits.push({
+            label: exam.retestConfig.tareaIndice,
+            baseline: 'Base registrada en Re-test (P2)',
+            side: pSyn.frame.lado || 'N/A',
+            linkedPsfs: false
+        });
+    }
+
+    // Si aún no tenemos foco, inferirlo rudimentariamente de Pruebas Ortopédicas, ROM, o Fuerza
+    if (!pSyn.frame.foco) {
+        if (exam.ortopedicasConfig?.filas?.[0]?.region) {
+            pSyn.frame.foco = exam.ortopedicasConfig.filas[0].region;
+        } else if (exam.romAnaliticoConfig?.filas?.[0]?.region) {
+            pSyn.frame.foco = exam.romAnaliticoConfig.filas[0].region;
+        } else if (exam.fuerzaCargaConfig?.filas?.[0]?.region) {
+            pSyn.frame.foco = exam.fuerzaCargaConfig.filas[0].region;
+        }
+    }
 
     // B. Observación
     if (exam.observacionConfig) {
@@ -547,15 +569,20 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     const domainListStr = domainsWithFindings.length > 0 ? `Hallazgos objetivos localizados en: ${domainsWithFindings.join(', ')}.` : 'Examen físico sin dominios objetivos estructurados.';
 
     // Texto Corto
-    pSyn.summary_text_short = `Paciente con cuadro de irritabilidad ${pSyn.frame.irritabilidad || 'Pendiente'}. 
-    Tarea Índice a re-evaluar: ${pSyn.frame.tarea_indice || 'No definida claramente'}. 
-    ${domainListStr}
-    ${pSyn.retest.length ? 'Respuesta a intervención de prueba: ' + pSyn.retest[0] : ''}
-    Síntesis física registrada correctamente para P3.`.replace(/\n\s+/g, '\n').trim();
+    const shortChunks = [];
+    if (pSyn.frame.irritabilidad) shortChunks.push(`Paciente con cuadro de irritabilidad ${pSyn.frame.irritabilidad}.`);
+    shortChunks.push(`Tarea Índice a re-evaluar: ${pSyn.frame.tarea_indice || 'No definida'}.`);
+    shortChunks.push(domainListStr);
+    if (pSyn.retest.length) shortChunks.push(`Respuesta a intervención de prueba: ${pSyn.retest[0]}`);
+    shortChunks.push('Síntesis física registrada correctamente para P3.');
+
+    pSyn.summary_text_short = shortChunks.join('\n');
 
     // Texto Estructurado Completo (Para P3)
     const structuredChunks = [];
-    if (pSyn.frame.tarea_indice) structuredChunks.push(`[MARCO CLÍNICO]\nFoco: ${pSyn.frame.foco || '-'} | Irritabilidad: ${pSyn.frame.irritabilidad}\nTarea Índice: ${pSyn.frame.tarea_indice}`);
+    if (pSyn.frame.foco || pSyn.frame.irritabilidad || pSyn.frame.tarea_indice) {
+        structuredChunks.push(`[MARCO CLÍNICO]\nFoco: ${pSyn.frame.foco || 'No definido'} | Irritabilidad: ${pSyn.frame.irritabilidad || 'No definida'}\nTarea Índice: ${pSyn.frame.tarea_indice || 'No definida'}`);
+    }
     if (pSyn.observation.length) structuredChunks.push(`[OBSERVACIÓN]\n` + pSyn.observation.map(o => `• ${o}`).join('\n'));
     if (pSyn.mobility.length) structuredChunks.push(`[MOVILIDAD (ROM)]\n` + pSyn.mobility.map(o => `• ${o}`).join('\n'));
     if (pSyn.strength_load.length) structuredChunks.push(`[FUERZA Y CARGA]\n` + pSyn.strength_load.map(o => `• ${o}`).join('\n'));
