@@ -1479,8 +1479,8 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 <div className="flex gap-2">
                                                     <select
                                                         className={`w-36 text-[11px] p-2 border rounded-lg outline-none focus:border-rose-400 font-bold ${dominio.resultado === 'Normal' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                                dominio.resultado === 'Alterado' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                                                    'bg-slate-50 text-slate-500 border-slate-200'
+                                                            dominio.resultado === 'Alterado' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                                'bg-slate-50 text-slate-500 border-slate-200'
                                                             }`}
                                                         value={dominio.resultado || 'No evaluado'}
                                                         onChange={(e) => {
@@ -1521,23 +1521,47 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
             {/* G. CONTROL MOTOR Y ESTABILIDAD FUNCIONAL */}
             <div className="bg-white rounded-2xl shadow-sm border border-teal-200 overflow-hidden flex flex-col">
-                <div className="bg-teal-50/50 p-4 sm:p-5 flex items-center gap-3 border-b border-teal-100">
-                    <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-xl shrink-0">🧘</div>
-                    <div>
-                        <h3 className="font-bold text-teal-900 text-lg">G. Control motor y estabilidad funcional</h3>
-                        <p className="text-xs text-teal-700/80 mt-0.5">Control segmentario, lumbopélvico, escapular, balance, gesto</p>
+                <div className="bg-teal-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-teal-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-xl shrink-0">🧘</div>
+                        <div>
+                            <h3 className="font-bold text-teal-900 text-lg">G. Control motor y estabilidad funcional</h3>
+                            <p className="text-xs text-teal-700/80 mt-0.5">Control segmentario, lumbopélvico, escapular, balance, gesto</p>
+                        </div>
                     </div>
+                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors group relative" title="Ayuda clínica">
+                        ?
+                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-72 p-3 bg-white border border-teal-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <p className="font-bold text-teal-800 mb-1">Guía de Control Motor</p>
+                            <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                <li><strong>Qué mirar:</strong> Fluidez, alineación segmentaria, velocidad de ajuste.</li>
+                                <li><strong>Qué suele ser relevante:</strong> Asimetrías marcadas, provocación del síntoma concordante.</li>
+                                <li><strong>Compensación vs Déficit Real:</strong> Re-evalúa modificando la carga oral/manual o dándole "pistas" (cues) al paciente. Si corrige inmediato, es motor (software); si no puede, suele ser capacidad o miedo (hardware).</li>
+                            </ul>
+                        </div>
+                    </button>
                 </div>
                 <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1000px]">
                         <thead>
                             <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4 w-48">Región / Tarea</th>
-                                <th className="p-3">Observación estructurada (Calidad, compensaciones)</th>
-                                <th className="p-3 w-10"></th>
+                                <th className="p-3 pl-4 w-40">Región / Tarea</th>
+                                <th className="p-3 w-40">Tipo de tarea</th>
+                                <th className="p-3 w-32">Síntoma durante</th>
+                                <th className="p-3 w-32">Calidad Mov.</th>
+                                <th className="p-3 w-40">Compensación Ppal</th>
+                                <th className="p-3 w-48">Observación breve</th>
+                                <th className="p-3 w-10 text-center"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
+                            {(!exam.controlMotorConfig?.filas || exam.controlMotorConfig.filas.length === 0) && (
+                                <tr>
+                                    <td colSpan={7} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
+                                        Sin datos de control motor en este momento.
+                                    </td>
+                                </tr>
+                            )}
                             {(exam.controlMotorConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.controlMotorConfig.filas];
@@ -1547,23 +1571,63 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 return (
                                     <tr key={fila.id} className="hover:bg-slate-50">
                                         <td className="p-2 pl-4">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.region} onChange={e => handleChange('region', e.target.value)} disabled={isClosed}>
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-teal-400" value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Ej. Y-Balance, Step down" />
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}>
                                                 <option value="">Seleccione...</option>
-                                                <option value="Control Segmentario Local">Control Segmentario Local</option>
-                                                <option value="Estabilidad Lumbopélvica">Estabilidad Lumbopélvica</option>
-                                                <option value="Estabilidad Escapular">Estabilidad Escapular</option>
-                                                <option value="Balance / Postura">Balance / Postura</option>
-                                                <option value="Desaceleración / Aterrizaje">Desaceleración / Aterrizaje</option>
-                                                <option value="Control Unipodal">Control Unipodal</option>
-                                                <option value="Control del Gesto Específico">Control del Gesto Específico</option>
+                                                <option value="Control segmentario local">Control segmentario local</option>
+                                                <option value="Control lumbopélvico">Control lumbopélvico</option>
+                                                <option value="Control escapular">Control escapular</option>
+                                                <option value="Balance / postura">Balance / postura</option>
+                                                <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
+                                                <option value="Control unipodal">Control unipodal</option>
+                                                <option value="Control del gesto específico">Control del gesto específico</option>
+                                                <option value="Otro">Otro</option>
                                             </select>
                                         </td>
-                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.observacion} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Ej. Valgo dinámico moderado en aterrizaje" /></td>
-                                        <td className="p-2 right-0">
+                                        <td className="p-2">
+                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.sintoma || ''} onChange={e => handleChange('sintoma', e.target.value)} disabled={isClosed}>
+                                                <option value="">-- Estado --</option>
+                                                <option value="Sin síntomas">Sin síntomas</option>
+                                                <option value="Dolor leve">Dolor leve</option>
+                                                <option value="Dolor limitante">Dolor limitante</option>
+                                                <option value="Inseguridad / Miedo">Inseguridad / Miedo</option>
+                                                <option value="Fatiga">Fatiga</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
+                                                <option value="">-- Calidad --</option>
+                                                <option value="Óptima">Óptima</option>
+                                                <option value="Adecuada (compensa leve)">Adecuada (compensa leve)</option>
+                                                <option value="Deficiente">Deficiente</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-teal-400" value={fila.compensacion || ''} onChange={e => handleChange('compensacion', e.target.value)} disabled={isClosed}>
+                                                <option value="">-- Ninguna --</option>
+                                                <option value="Valgo dinámico">Valgo dinámico</option>
+                                                <option value="Hip drop">Hip drop</option>
+                                                <option value="Rigidez">Rigidez</option>
+                                                <option value="Wobble">Wobble</option>
+                                                <option value="Pérdida de disociación">Pérdida de disociación</option>
+                                                <option value="Control deficiente">Control deficiente</option>
+                                                <option value="Miedo al movimiento">Miedo al movimiento</option>
+                                                <option value="Estrategia antálgica">Estrategia antálgica</option>
+                                                <option value="Otro">Otro</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-teal-400" value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Corrigió c/ feedback visual..." />
+                                        </td>
+                                        <td className="p-2 text-center">
                                             <button onClick={() => {
                                                 const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
                                                 handleUpdateExam('controlMotorConfig', { filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar fila">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -1571,71 +1635,141 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
                     <button onClick={() => {
                         const m = exam.controlMotorConfig || { filas: [] };
-                        handleUpdateExam('controlMotorConfig', { filas: [...m.filas, { id: Date.now().toString(), region: '', observacion: '' }] });
-                    }} disabled={isClosed} className="text-xs font-bold text-teal-600 bg-white border border-teal-200 px-3 py-1.5 rounded shadow-sm hover:bg-teal-50">
-                        + Añadir tarea motora
+                        handleUpdateExam('controlMotorConfig', { filas: [...m.filas, { id: Date.now().toString(), regionTarea: '', tipoTarea: '', sintoma: '', calidad: '', compensacion: '', observacion: '' }] });
+                    }} disabled={isClosed} className="text-sm font-bold text-teal-600 bg-white border border-teal-200 px-4 py-2 rounded shadow-sm hover:bg-teal-50 flex items-center gap-2 transition outline-none">
+                        <span>+</span> Añadir Tarea Motora
                     </button>
                 </div>
             </div>
 
             {/* H. PRUEBAS ORTOPÉDICAS */}
             <div className="bg-white rounded-2xl shadow-sm border border-sky-200 overflow-hidden flex flex-col">
-                <div className="bg-sky-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sky-100">
+                <div className="bg-sky-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-sky-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-xl shrink-0">🔨</div>
                         <div>
                             <h3 className="font-bold text-sky-900 text-lg">H. Pruebas ortopédicas</h3>
-                            <p className="text-xs text-sky-700/80 mt-0.5">Tests provocativos o clústeres</p>
+                            <p className="text-xs text-sky-700/80 mt-0.5">Pruebas orientadas por hipótesis y clústeres</p>
                         </div>
                     </div>
-                    <div className="text-xs bg-sky-100/50 text-sky-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                        <span className="font-bold">⚠️</span> No usar aisladas para diagnosticar.
-                    </div>
+                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors group relative" title="Ayuda clínica">
+                        ?
+                        <div className="hidden group-hover:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-sky-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                            <p className="font-bold text-sky-800 mb-1">Pruebas Ortopédicas y Clústeres</p>
+                            <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                <li><strong>No uses pruebas aisladas</strong> como diagnóstico definitivo. Su valor clínico suele ser muy bajo de forma individual.</li>
+                                <li><strong>Dependen de la hipótesis:</strong> La selección de qué pruebas hacer debe confirmar o descartar probabilidades que ya generaste en la anamnesis.</li>
+                                <li><strong>Cambio de probabilidad:</strong> Lo importante no es "Positivo o Negativo", sino si el resultado <em>cambia tu probabilidad clínica</em> sumado a la historia previa.</li>
+                            </ul>
+                        </div>
+                    </button>
                 </div>
                 <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1000px]">
                         <thead>
                             <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4">Nombre del Test / Clúster</th>
-                                <th className="p-3 w-28">Lado</th>
+                                <th className="p-3 pl-4 w-32">Región</th>
+                                <th className="p-3 w-40">Clúster Sugerido</th>
+                                <th className="p-3 w-40">Test Específico</th>
+                                <th className="p-3 w-24">Lado</th>
                                 <th className="p-3 w-32">Resultado</th>
-                                <th className="p-3 w-32 text-center">Reproduce Síntoma</th>
-                                <th className="p-3">Comentario</th>
-                                <th className="p-3 w-10"></th>
+                                <th className="p-3 w-28 text-center">Reproduce Síntoma</th>
+                                <th className="p-3 w-40">Comentario</th>
+                                <th className="p-3 w-10 text-center"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
+                            {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) && (
+                                <tr>
+                                    <td colSpan={8} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
+                                        Agrega pruebas ortopédicas orientadas por tu hipótesis principal.
+                                    </td>
+                                </tr>
+                            )}
                             {(exam.ortopedicasConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.ortopedicasConfig.filas];
                                     m[i] = { ...m[i], [k]: v };
                                     handleUpdateExam('ortopedicasConfig', { filas: m });
                                 };
+
+                                const suggestionsByRegion: Record<string, string[]> = {
+                                    'Hombro': ['Clúster de Pinzamiento', 'Clúster Manguito Rotador', 'Inestabilidad Anterior', 'Inestabilidad Posterior', 'SLAP / Biceps'],
+                                    'Codo': ['Epicondilalgia Lateral', 'Epicondilalgia Medial', 'Inestabilidad PLRI'],
+                                    'Muñeca/Mano': ['Tenosinovitis de De Quervain', 'Síndrome Túnel Carpiano'],
+                                    'Cervical': ['Clúster Radiculopatía (Wainner)', 'Inestabilidad Cervical Alta', 'Disfunción Facetaria'],
+                                    'Lumbar/Pélvica': ['Clúster Dolor Pélvico (Laslett)', 'Radiculopatía Lumbar', 'Estenosis Foraminal', 'Inestabilidad Lumbar'],
+                                    'Cadera': ['Pinzamiento FAI / Labrum', 'Tendinopatía Glútea', 'Artrosis de Cadera'],
+                                    'Rodilla': ['Clúster Meniscal', 'Valuación LCA', 'Valuación LCP', 'Inestabilidad Patelofemoral', 'Esguinces Colaterales'],
+                                    'Tobillo/Pie': ['Reglas de Ottawa', 'Esguince Lateral', 'Tendinopatía Aquílea', 'Fascitis Plantar / Dolor Talón'],
+                                    'Otra': []
+                                };
+
+                                const currentSuggestions = fila.region && suggestionsByRegion[fila.region] ? suggestionsByRegion[fila.region] : [];
+
                                 return (
                                     <tr key={fila.id} className="hover:bg-slate-50">
-                                        <td className="p-2 pl-4"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.test} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Ej. Neer" /></td>
-                                        <td className="p-2">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.lado} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
-                                                <option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
+                                        <td className="p-2 pl-4">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.region || ''} onChange={e => handleChange('region', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option>
+                                                <option value="Cervical">Cervical</option>
+                                                <option value="Hombro">Hombro</option>
+                                                <option value="Codo">Codo</option>
+                                                <option value="Muñeca/Mano">Muñeca/Mano</option>
+                                                <option value="Lumbar/Pélvica">Lumbar/Pélvica</option>
+                                                <option value="Cadera">Cadera</option>
+                                                <option value="Rodilla">Rodilla</option>
+                                                <option value="Tobillo/Pie">Tobillo/Pie</option>
+                                                <option value="Otra">Otra</option>
                                             </select>
                                         </td>
                                         <td className="p-2">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.resultado} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option><option value="Positivo">Positivo (+)</option><option value="Negativo">Negativo (-)</option><option value="Equívoco">Equívoco</option><option value="No realizado">No realizado</option>
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.cluster || ''} onChange={e => handleChange('cluster', e.target.value)} disabled={isClosed || !fila.region}>
+                                                <option value="">{fila.region ? '(Opcional)' : 'Elija región antes'}</option>
+                                                {currentSuggestions.map(sug => <option key={sug} value={sug}>{sug}</option>)}
+                                                <option value="Otro">Otro cluster</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400" value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Ej. Neer, Lachman..." />
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-sky-400" value={fila.lado || ''} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
+                                                <option value="">-- Lado --</option>
+                                                <option value="Derecho">Derecho</option>
+                                                <option value="Izquierdo">Izquierdo</option>
+                                                <option value="Bilateral">Bilateral</option>
+                                                <option value="N/A">N/A</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className={`w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400 bg-white ${fila.resultado === 'Positivo' ? 'text-rose-600 font-bold' : fila.resultado === 'Negativo' ? 'text-emerald-600' : ''}`} value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option>
+                                                <option value="Positivo">Positivo (+)</option>
+                                                <option value="Negativo">Negativo (-)</option>
+                                                <option value="Equívoco">Equívoco</option>
+                                                <option value="No realizado">No realizado</option>
                                             </select>
                                         </td>
                                         <td className="p-2 text-center">
-                                            <input type="checkbox" checked={fila.reproduce} onChange={e => handleChange('reproduce', e.target.checked)} disabled={isClosed} className="rounded text-sky-500 w-4 h-4 cursor-pointer" />
+                                            <label className="flex items-center justify-center gap-1 cursor-pointer">
+                                                <input type="checkbox" checked={fila.reproduce || false} onChange={e => handleChange('reproduce', e.target.checked)} disabled={isClosed} className="rounded text-sky-500 w-4 h-4 cursor-pointer" />
+                                                <span className="text-[10px] text-slate-500">Síntoma<br />Ppal.</span>
+                                            </label>
                                         </td>
-                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.comentario} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed} placeholder="Dolor agudo..." /></td>
-                                        <td className="p-2 right-0">
+                                        <td className="p-2">
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-sky-400" value={fila.comentario || ''} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed} placeholder="Ej. Dolor agudo al final del rango..." />
+                                        </td>
+                                        <td className="p-2 text-center">
                                             <button onClick={() => {
                                                 const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
                                                 handleUpdateExam('ortopedicasConfig', { filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar prueba">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -1643,93 +1777,165 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
                     <button onClick={() => {
                         const m = exam.ortopedicasConfig || { filas: [] };
-                        handleUpdateExam('ortopedicasConfig', { filas: [...m.filas, { id: Date.now().toString(), test: '', lado: lado !== 'No definido' ? lado : 'Derecho', resultado: '', reproduce: false, comentario: '' }] });
-                    }} disabled={isClosed} className="text-xs font-bold text-sky-600 bg-white border border-sky-200 px-3 py-1.5 rounded shadow-sm hover:bg-sky-50">
-                        + Añadir test ortopédico
+                        handleUpdateExam('ortopedicasConfig', { filas: [...m.filas, { id: Date.now().toString(), region: '', cluster: '', test: '', lado: '', resultado: '', reproduce: false, comentario: '' }] });
+                    }} disabled={isClosed} className="text-sm font-bold text-sky-600 bg-white border border-sky-200 px-4 py-2 rounded shadow-sm hover:bg-sky-50 flex items-center gap-2 transition outline-none">
+                        <span>+</span> Añadir Prueba o Clúster
                     </button>
                 </div>
             </div>
 
-            {/* I. PRUEBAS FUNCIONALES Y REINTEGRO */}
+            {/* I. PRUEBAS FUNCIONALES, CAPACIDAD Y REINTEGRO */}
             <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden flex flex-col">
-                <div className="bg-orange-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-orange-100">
+                <div className="bg-orange-50/50 p-4 sm:p-5 flex items-center justify-between gap-4 border-b border-orange-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0">🏃</div>
                         <div>
-                            <h3 className="font-bold text-orange-900 text-lg">I. Pruebas funcionales y reintegro</h3>
+                            <h3 className="font-bold text-orange-900 text-lg">I. Pruebas funcionales, capacidad y reintegro</h3>
+                            <p className="text-xs text-orange-700/80 mt-0.5">Evaluación orientada al rendimiento y seguimiento analítico</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-orange-700">Objetivo Principal:</span>
-                        <select className="text-xs p-2 border border-orange-200 rounded-md bg-white text-orange-900 outline-none focus:border-orange-400"
-                            value={exam.funcionalesConfig?.objetivo || ''}
-                            onChange={e => handleUpdateExam('funcionalesConfig', { ...(exam.funcionalesConfig || {}), objetivo: e.target.value })}
-                            disabled={isClosed}
-                        >
-                            <option value="">Selección general</option>
-                            <option value="Vida diaria">Vida diaria</option>
-                            <option value="Volver a entrenar">Volver a entrenar</option>
-                            <option value="Volver a competir">Volver a competir</option>
-                            <option value="Prevención / Carga">Prevención / Carga</option>
-                        </select>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold text-orange-700">Objetivo Principal:</span>
+                            <select className="text-xs p-2 border border-orange-200 rounded-md bg-white text-orange-900 outline-none focus:border-orange-400 font-bold"
+                                value={exam.funcionalesConfig?.objetivo || ''}
+                                onChange={e => handleUpdateExam('funcionalesConfig', { ...(exam.funcionalesConfig || {}), objetivo: e.target.value })}
+                                disabled={isClosed}
+                            >
+                                <option value="">Selección general</option>
+                                <option value="Vida diaria">Vida diaria</option>
+                                <option value="Gimnasio">Gimnasio</option>
+                                <option value="Carrera">Carrera</option>
+                                <option value="Salto/Aterrizaje">Salto / Aterrizaje</option>
+                                <option value="Cambio de dirección">Cambio de dirección</option>
+                                <option value="Reintegro deportivo">Reintegro deportivo</option>
+                                <option value="Preventivo">Preventivo / Carga</option>
+                            </select>
+                        </div>
+                        <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-orange-200 bg-white text-orange-600 font-bold hover:bg-orange-100 transition-colors group relative" title="Ayuda clínica">
+                            ?
+                            <div className="hidden group-hover:block absolute top-[110%] right-0 w-80 p-3 bg-white border border-orange-200 rounded-lg shadow-xl text-left z-50 text-xs font-normal text-slate-700">
+                                <p className="font-bold text-orange-800 mb-1">Pruebas Funcionales</p>
+                                <ul className="list-disc pl-4 space-y-1 mt-1 text-slate-600">
+                                    <li><strong>Objetivo:</strong> Sirven mucho más para medir capacidad base, seguimiento (baseline) y alta médica, que para diagnóstico pato-anatómico.</li>
+                                    <li><strong>Documentación:</strong> Registrar el valor exacto (métrica) para poder ver la evolución gráfica a lo largo de las sesiones.</li>
+                                    <li><strong>Sugerencias:</strong> Cambia el 'Objetivo Principal' para ver listas sugeridas de tests que aplican a esa meta.</li>
+                                </ul>
+                            </div>
+                        </button>
                     </div>
                 </div>
                 <div className="p-0 overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                    <table className="w-full text-left text-sm whitespace-nowrap min-w-[1200px]">
                         <thead>
                             <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
-                                <th className="p-3 pl-4">Plantilla / Test</th>
+                                <th className="p-3 pl-4 w-40">Plantilla / Test</th>
                                 <th className="p-3 w-28">Lado</th>
-                                <th className="p-3 w-28">Resultado</th>
+                                <th className="p-3 w-32">Métrica</th>
+                                <th className="p-3 w-24">Resultado</th>
                                 <th className="p-3 w-20">Dolor</th>
                                 <th className="p-3 w-28">Calidad</th>
+                                <th className="p-3 w-36">Criterio Funcional</th>
                                 <th className="p-3">Obs / Tolerancia</th>
-                                <th className="p-3 w-10"></th>
+                                <th className="p-3 w-10 text-center"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
+                            {(!exam.funcionalesConfig?.filas || exam.funcionalesConfig.filas.length === 0) && (
+                                <tr>
+                                    <td colSpan={9} className="p-8 text-center text-slate-400 italic font-medium text-sm border-b border-transparent">
+                                        No hay pruebas funcionales registradas. Ingresa métricas clave para el reintegro.
+                                    </td>
+                                </tr>
+                            )}
                             {(exam.funcionalesConfig?.filas || []).map((fila: any, i: number) => {
                                 const handleChange = (k: string, v: any) => {
                                     const m = [...exam.funcionalesConfig.filas];
                                     m[i] = { ...m[i], [k]: v };
                                     handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
                                 };
+
+                                const suggestionsByObj: Record<string, string[]> = {
+                                    'Vida diaria': ['Sit to stand 30s', 'Timed Up and Go (TUG)', 'Step down test', 'Alcance funcional'],
+                                    'Gimnasio': ['1RM', 'RM Estimado', 'Sentadilla (Reps/kg)', 'Peso Muerto (Reps/kg)', 'Push ups máximos', 'Pull ups'],
+                                    'Carrera': ['Test de marcha 6min', 'Cooper', 'VAM-Eval', 'Hop test continuo'],
+                                    'Salto/Aterrizaje': ['Countermovement Jump (CMJ)', 'Drop Jump', 'Single Hop Test', 'Triple Hop Test', 'Crossover Hop Test', 'Landing Error Scoring System (LESS)'],
+                                    'Cambio de dirección': ['T-Test', 'Pro-Agility (5-10-5)', 'Illinois Agility', 'MAT Test'],
+                                    'Reintegro deportivo': ['Batería Hop Tests (LSI >90%)', 'Agilidad Reactiva', 'Test específico deporte'],
+                                    'Preventivo': ['Y-Balance Test LQ', 'Y-Balance Test UQ', 'FMS', 'Perfil Isométrico (CST)', 'Cuestionario Readiness']
+                                };
+                                const currentGoal = exam.funcionalesConfig?.objetivo || '';
+                                const testSuggestions = suggestionsByObj[currentGoal] || suggestionsByObj['Salto/Aterrizaje'];
+
                                 return (
                                     <tr key={fila.id} className="hover:bg-slate-50">
                                         <td className="p-2 pl-4">
-                                            <input type="text" list={`func-list-${fila.id}`} className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.test} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="VD, Gym, Salto..." />
+                                            <input type="text" list={`func-list-${fila.id}`} className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400 font-medium" value={fila.test || ''} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="VD, Gym, Salto..." />
                                             <datalist id={`func-list-${fila.id}`}>
-                                                <option value="Y-Balance Test" />
-                                                <option value="Hop Test (Single)" />
-                                                <option value="Hop Test (Triple)" />
-                                                <option value="Change of Direction (COD)" />
-                                                <option value="Sentadilla overhead" />
-                                                <option value="Drop Jump" />
-                                                <option value="Upper Quarter Y-Balance" />
-                                                <option value="CBT (Closed Kinetic Chain Upper)" />
+                                                {testSuggestions.map(s => <option key={s} value={s} />)}
                                             </datalist>
                                         </td>
                                         <td className="p-2">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.lado} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
-                                                <option value="Bilateral">Bilateral</option><option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option>
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.lado || 'Bilateral'} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
+                                                <option value="Bilateral">Bilateral</option>
+                                                <option value="Derecho">Derecho</option>
+                                                <option value="Izquierdo">Izquierdo</option>
                                             </select>
                                         </td>
-                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.resultado} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="cm, seg, %" /></td>
-                                        <td className="p-2"><input type="number" min="0" max="10" className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.dolor} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed} placeholder="0-10" /></td>
                                         <td className="p-2">
-                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.calidad} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
-                                                <option value="">Seleccione...</option><option value="Óptima">Óptima</option><option value="Aceptable">Aceptable</option><option value="Pobre">Pobre</option>
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.tipoMetrica || ''} onChange={e => handleChange('tipoMetrica', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option>
+                                                <option value="Repeticiones">Repeticiones</option>
+                                                <option value="Segundos">Segundos</option>
+                                                <option value="Distancia (cm/m)">Distancia (cm/m)</option>
+                                                <option value="Altura (cm)">Altura (cm)</option>
+                                                <option value="Simetría (LSI %)">Simetría (LSI %)</option>
+                                                <option value="Aprobado / No aprobado">Aprobado / No aprobado</option>
+                                                <option value="Otro">Otro</option>
                                             </select>
                                         </td>
-                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.observacion} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Fatiga, valgo..." /></td>
-                                        <td className="p-2 right-0">
+                                        <td className="p-2">
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400 font-bold text-center" value={fila.resultado || ''} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="Valor" />
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.dolor || ''} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed}>
+                                                <option value="">0-10</option>
+                                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n.toString()}>{n}</option>)}
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.calidad || ''} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
+                                                <option value="">Calidad...</option>
+                                                <option value="Óptima">Óptima</option>
+                                                <option value="Aceptable">Aceptable</option>
+                                                <option value="Deficiente">Deficiente</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-[11px] p-2 border border-slate-200 rounded outline-none bg-white focus:border-orange-400" value={fila.criterioFuncional || ''} onChange={e => handleChange('criterioFuncional', e.target.value)} disabled={isClosed}>
+                                                <option value="">-- Criterio observado --</option>
+                                                <option value="Adecuado">Adecuado</option>
+                                                <option value="Compensado">Compensado</option>
+                                                <option value="Doloroso">Doloroso</option>
+                                                <option value="Fatiga precoz">Fatiga precoz</option>
+                                                <option value="Inestable">Inestable</option>
+                                                <option value="No completa">No completa</option>
+                                                <option value="Otro">Otro</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <input className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-orange-400" value={fila.observacion || ''} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Ej. Pérdida de balance al finalizar..." />
+                                        </td>
+                                        <td className="p-2 text-center">
                                             <button onClick={() => {
                                                 const m = exam.funcionalesConfig.filas.filter((_: any, index: number) => index !== i);
                                                 handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
-                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                            }} className="text-red-400 hover:text-red-600 p-1 outline-none" disabled={isClosed} title="Eliminar métrica">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -1737,12 +1943,12 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                <div className="bg-slate-50 p-4 border-t border-slate-200 flex">
                     <button onClick={() => {
                         const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
-                        handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', resultado: '', dolor: '', calidad: '', observacion: '' }] });
-                    }} disabled={isClosed} className="text-xs font-bold text-orange-600 bg-white border border-orange-200 px-3 py-1.5 rounded shadow-sm hover:bg-orange-50">
-                        + Añadir prueba funcional
+                        handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
+                    }} disabled={isClosed} className="text-sm font-bold text-orange-600 bg-white border border-orange-200 px-4 py-2 rounded shadow-sm hover:bg-orange-50 flex items-center gap-2 transition outline-none">
+                        <span>+</span> Añadir Prueba Funcional / Métrica
                     </button>
                 </div>
             </div>
