@@ -2232,19 +2232,21 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         // Validación de Mínimos Razonables
                         const pSyn = synthesis.physicalSynthesis;
 
-                        const hasIndexTask = !!pSyn?.frame?.tarea_indice?.trim();
                         const hasFindings = pSyn && (
                             (pSyn.mobility && pSyn.mobility.length > 0) ||
                             (pSyn.strength_load && pSyn.strength_load.length > 0) ||
                             (pSyn.neurovascular_sensorimotor && pSyn.neurovascular_sensorimotor.some(s => !s.includes('sin hallazgos'))) ||
                             (pSyn.motor_control && pSyn.motor_control.length > 0) ||
                             (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
-                            (pSyn.functional_tests && pSyn.functional_tests.length > 0)
+                            (pSyn.functional_tests && pSyn.functional_tests.length > 0) ||
+                            (exam.observacion_basal && exam.observacion_basal.trim() !== '') ||
+                            (exam.ortopedicasConfig?.sintesisFinal && exam.ortopedicasConfig?.sintesisFinal.trim() !== '') ||
+                            (exam.retestConfig?.resultadoPost && exam.retestConfig?.resultadoPost.trim() !== '')
                         );
 
-                        if (!hasIndexTask || !hasFindings) {
-                            alert('Aún falta registrar al menos un hallazgo físico relevante para poder sintetizar (Se requiere Tarea Índice/Signo Comparable de P1 y un hallazgo útil en bloques C, D, F, G, H o I).');
-                            return;
+                        if (!hasFindings) {
+                            const proceed = window.confirm('Estás avanzando con muy pocos hallazgos físicos registrados. ¿Deseas continuar hacia el panel de razonamiento de todas formas?');
+                            if (!proceed) return;
                         }
 
                         updateFormData((prev) => ({
