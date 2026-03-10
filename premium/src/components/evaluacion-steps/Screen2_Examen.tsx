@@ -43,6 +43,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     }, [v4]);
 
     const [isNeuroOpen, setIsNeuroOpen] = React.useState(sugerenciaNeuro);
+    const [isKOpen, setIsKOpen] = React.useState(false);
 
     const handleUpdateExam = (field: string, value: any) => {
         updateFormData((prev) => ({
@@ -1284,38 +1285,133 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
             </div>
 
-            {/* J-K BLOQUES CLINICOS RESTANTES (Opcionales)*/}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            {/* J. RE-TEST Y CIERRE */}
+            <div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 overflow-hidden flex flex-col">
+                <div className="bg-fuchsia-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fuchsia-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-fuchsia-100 flex items-center justify-center text-xl shrink-0">🔄</div>
+                        <div>
+                            <h3 className="font-bold text-fuchsia-900 text-lg">J. Re-test y cierre del examen físico</h3>
+                            <p className="text-xs text-fuchsia-700/80 mt-0.5">Cambio post intervenciones de prueba (Signo comparable)</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 sm:p-6 flex flex-col gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tarea / Gesto Índice</label>
+                            <input
+                                type="text"
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                value={exam.retestConfig?.tareaIndice ?? exam.retestGesture ?? ''}
+                                onChange={(e) => handleUpdateExam('retestConfig', { ...exam.retestConfig, tareaIndice: e.target.value })}
+                                disabled={isClosed}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Resultado Post-Examen</label>
+                            <select
+                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                value={exam.retestConfig?.resultadoPost || ''}
+                                onChange={(e) => handleUpdateExam('retestConfig', { ...exam.retestConfig, resultadoPost: e.target.value })}
+                                disabled={isClosed}
+                            >
+                                <option value="">Selecciona...</option>
+                                <option value="Mejoró">Mejoró</option>
+                                <option value="Igual">Igual</option>
+                                <option value="Empeoró">Empeoró</option>
+                                <option value="No reevaluable">No reevaluable</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Comentario Breve</label>
+                        <textarea
+                            className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed min-h-[80px]"
+                            placeholder="Qué cambió tras el examen..."
+                            value={exam.retestConfig?.comentario || ''}
+                            onChange={(e) => handleUpdateExam('retestConfig', { ...exam.retestConfig, comentario: e.target.value })}
+                            disabled={isClosed}
+                        />
+                    </div>
+                </div>
+            </div>
 
-                {blocks.map((block) => {
-                    const theme = getThemeClasses(block.theme);
-                    return (
-                        <div key={block.id} className={`bg-white border text-sm ${theme.border} rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md`}>
-                            <div className={`${theme.bg} p-4 flex justify-between items-start border-b ${theme.border}`}>
-                                <div>
-                                    <h3 className={`font-bold ${theme.text} flex items-center gap-2 tracking-wide`}>
-                                        <span className="text-lg">{block.icon}</span> {block.title}
-                                    </h3>
-                                    <p className={`text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest ${theme.text}`}>
-                                        {block.sub}
-                                    </p>
-                                </div>
-                                <button className={`text-[10px] w-6 h-6 rounded-full flex items-center justify-center border ${theme.border} bg-white opacity-60 hover:opacity-100 transition-opacity`} title="Ayuda sobre este bloque">
-                                    ?
-                                </button>
+            {/* K. MEDIDAS COMPLEMENTARIAS */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mt-6">
+                <div onClick={() => setIsKOpen(!isKOpen)} className="bg-slate-50 hover:bg-slate-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-xl shrink-0">🩻</div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-lg">K. Medidas complementarias (opcional)</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">Peso, IMC, Edema, Perímetros</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-slate-300 bg-white text-slate-500 hover:bg-slate-100 transition-colors shrink-0" title="Usa este bloque solo si agrega valor al seguimiento, al control de carga, al posoperatorio o al análisis del caso.">?</button>
+                        <span className="text-slate-400 text-sm font-bold">{isKOpen ? '▲ Ocultar' : '▼ Expandir'}</span>
+                    </div>
+                </div>
+                {isKOpen && (
+                    <div className="p-4 sm:p-6 flex flex-col gap-4 bg-white">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Peso (kg)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                    value={exam.medidasComplementariasConfig?.peso || ''}
+                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, peso: e.target.value })}
+                                    disabled={isClosed}
+                                />
                             </div>
-                            <div className="p-4 flex-1 flex flex-col">
-                                <textarea
-                                    className={`w-full flex-1 bg-slate-50 border border-slate-200 text-slate-700 text-[14px] rounded-xl p-3 sm:p-4 outline-none ${theme.focus} focus:ring-2 focus:ring-opacity-20 focus:bg-white min-h-[120px] shadow-inner transition-all resize-y leading-relaxed disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed`}
-                                    placeholder={block.placeholder}
-                                    value={exam[block.id] || ''}
-                                    onChange={(e) => handleUpdateExam(block.id, e.target.value)}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Talla (cm)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                    value={exam.medidasComplementariasConfig?.talla || ''}
+                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, talla: e.target.value })}
+                                    disabled={isClosed}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">IMC Calc</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                    value={exam.medidasComplementariasConfig?.imc || ''}
+                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, imc: e.target.value })}
                                     disabled={isClosed}
                                 />
                             </div>
                         </div>
-                    );
-                })}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Perímetro / Edema (cm)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                    placeholder="Ej. rodilla DER +2cm"
+                                    value={exam.medidasComplementariasConfig?.perimetroEdema || ''}
+                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, perimetroEdema: e.target.value })}
+                                    disabled={isClosed}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Otra Medida Segmentaria</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                    placeholder="Ángulo Q, Navicular drop..."
+                                    value={exam.medidasComplementariasConfig?.otraMedida || ''}
+                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, otraMedida: e.target.value })}
+                                    disabled={isClosed}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* BOTÓN FINAL */}

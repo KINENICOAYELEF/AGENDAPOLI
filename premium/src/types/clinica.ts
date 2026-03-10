@@ -858,7 +858,18 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         controlMotorConfig?: any;
         ortopedicasConfig?: any;
         funcionalesConfig?: any;
-
+        retestConfig?: {
+            tareaIndice: string;
+            resultadoPost: 'Mejoró' | 'Igual' | 'Empeoró' | 'No reevaluable' | '';
+            comentario: string;
+        };
+        medidasComplementariasConfig?: {
+            peso?: string;
+            talla?: string;
+            imc?: string;
+            perimetroEdema?: string;
+            otraMedida?: string;
+        };
         // Retain for legacy support just in case, or define as any for strictness avoidance if needed.
         checklistSuggested?: any;
         functionalMobility?: any[];
@@ -878,6 +889,18 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
         trafficLightRationale?: string;
         presentationTags?: string[];
+        physicalSynthesis?: {
+            observacion: string;
+            movilidad: string;
+            fuerza: string;
+            neuro: string;
+            controlMotor: string;
+            ortopedicas: string;
+            funcion: string;
+            retest: string;
+            deficitsPrincipales: string[];
+            hipotesisSoportada: string[];
+        };
     };
 
     // PANTALLA 4: DIAGNOSTICO Y METAS (Gemini + Editor)

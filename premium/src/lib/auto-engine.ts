@@ -255,12 +255,28 @@ export interface AutoSynthesisResult {
     structuralCandidates: { label: string; confidence: string; reproduceSymptom: boolean; source: string }[];
     functionalDeficits: { label: string; baseline: string; side: string; linkedPsfs: boolean }[];
     bpsNotes: { topBarriers: string[]; topFacilitators: string[] };
+    physicalSynthesis?: {
+        observacion: string;
+        movilidad: string;
+        fuerza: string;
+        neuro: string;
+        controlMotor: string;
+        ortopedicas: string;
+        funcion: string;
+        retest: string;
+        deficitsPrincipales: string[];
+        hipotesisSoportada: string[];
+    };
 }
 
 export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesisResult {
     const structuralCandidates: AutoSynthesisResult['structuralCandidates'] = [];
     const functionalDeficits: AutoSynthesisResult['functionalDeficits'] = [];
     const bpsNotes: AutoSynthesisResult['bpsNotes'] = { topBarriers: [], topFacilitators: [] };
+    const pSyn: NonNullable<AutoSynthesisResult['physicalSynthesis']> = {
+        observacion: '', movilidad: '', fuerza: '', neuro: '', controlMotor: '',
+        ortopedicas: '', funcion: '', retest: '', deficitsPrincipales: [], hipotesisSoportada: []
+    };
 
     if (!interview) return { structuralCandidates, functionalDeficits, bpsNotes };
 
@@ -286,6 +302,7 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
                 side: f.lado || f.side || 'N/A',
                 linkedPsfs: true
             });
+            pSyn.observacion += `Signo Comparable Base: ${primaryComparableName} (${comparablePain}/10). `;
         }
 
         if (!exam?.roms) {
@@ -296,7 +313,53 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
         }
     });
 
-    return { structuralCandidates, functionalDeficits, bpsNotes };
+    // Populate physicalSynthesis from exam config
+    if (exam) {
+        // Movilidad (C)
+        if (exam.romAnaliticoConfig?.filas?.length) {
+            pSyn.movilidad = exam.romAnaliticoConfig.filas.map((f: any) => `${f.region || f.movimiento || 'Mov'}: Act(${f.resAct || '-'}) | Pas(${f.resPas || '-'}) ${f.usaGoniometro && f.grados ? `(${f.grados}º)` : ''}`).join('; ');
+        }
+        // Fuerza (D)
+        if (exam.fuerzaCargaConfig?.filas?.length) {
+            pSyn.fuerza = exam.fuerzaCargaConfig.filas.map((f: any) => `${f.tipoEvaluacion || 'Carga'} ${f.region}: ${f.dolorDurante ? 'Dolor ' + f.dolorDurante : 'Sin dolor'} | ${f.calidadEsfuerzo}`).join('; ');
+        }
+        // Neuro (F)
+        if (exam.neuroVascularConfig && Object.values(exam.neuroVascularConfig).some((v: any) => v.evalua)) {
+            const arr = [];
+            for (const [k, v] of Object.entries(exam.neuroVascularConfig) as any) {
+                if (v.evalua && k !== 'observacion') arr.push(`${k}: ${v.hallazgo || 'S/A'}`);
+            }
+            if (exam.neuroVascularConfig.observacion) arr.push(`Obs: ${exam.neuroVascularConfig.observacion}`);
+            pSyn.neuro = arr.join('; ');
+        }
+        // Control Motor (G)
+        if (exam.controlMotorConfig?.filas?.length) {
+            pSyn.controlMotor = exam.controlMotorConfig.filas.map((f: any) => `${f.region}: ${f.observacion}`).join('; ');
+        }
+        // Ortopedicas (H)
+        if (exam.ortopedicasConfig?.filas?.length) {
+            pSyn.ortopedicas = exam.ortopedicasConfig.filas.map((f: any) => `${f.test} (${f.lado}): ${f.resultado} ${f.reproduce ? '(reproduce síntoma) ' : ''}${f.comentario}`).join('; ');
+        }
+        // Funcionales (I)
+        if (exam.funcionalesConfig?.filas?.length) {
+            pSyn.funcion = exam.funcionalesConfig.filas.map((f: any) => `${f.test} ${f.lado}: Res(${f.resultado}), Dolor(${f.dolor || 0}), Calidad(${f.calidad})`).join('; ');
+        }
+        if (exam.funcionalesConfig?.objetivo) {
+            pSyn.funcion = `[Obj: ${exam.funcionalesConfig.objetivo}] ` + pSyn.funcion;
+        }
+        // Retest (J)
+        if (exam.retestConfig) {
+            pSyn.retest = `Gestos post-intervención (${exam.retestConfig.tareaIndice}): ${exam.retestConfig.resultadoPost}. ${exam.retestConfig.comentario}`;
+        }
+
+        // Simular un procesamiento de deficits
+        if (pSyn.movilidad.includes('Incompleto')) pSyn.deficitsPrincipales.push('Limitación de Movilidad');
+        if (pSyn.fuerza.includes('Pobre') || pSyn.fuerza.includes('Dolor') || pSyn.fuerza.includes('Debilidad')) pSyn.deficitsPrincipales.push('Déficit de Fuerza/Tolerancia de Carga');
+        if (exam.ortopedicasConfig?.filas?.some((f: any) => f.resultado === 'Positivo' || f.reproduce)) pSyn.hipotesisSoportada.push('Pruebas provocativas positivas respaldan implicación de estructuras mecánicas/nociceptivas');
+        if (pSyn.funcion.includes('Pobre')) pSyn.deficitsPrincipales.push('Mala calidad en gesto funcional');
+    }
+
+    return { structuralCandidates, functionalDeficits, bpsNotes, physicalSynthesis: pSyn };
 }
 
 export function generateP2Priorities(interviewV3: AnamnesisProximaV3): AnamnesisProximaV3['automatizacionP2'] {
