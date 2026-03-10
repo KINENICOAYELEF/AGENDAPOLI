@@ -49,6 +49,7 @@ export interface RemoteHistory {
     baseActivity: {
         primarySport: string;
         categoria?: string; // FASE 45: Running, Fútbol, etc.
+        rolDeportivo?: string; // FASE 46.6: Rol, posición o especialidad
         level: string;
         weeklyFrequency: string;
         typicalDuration: string;

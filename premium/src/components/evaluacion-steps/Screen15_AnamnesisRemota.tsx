@@ -18,7 +18,7 @@ const INITIAL_REMOTE_HISTORY: RemoteHistory = {
         relevantInjuries: [], recurrences: '', mskSurgeries: [], usefulTreatments: '', uselessTreatments: '', previousImaging: '', persistentSequelae: '', historicalProblemRegion: '', dominancia: '', usoOrtesis: ''
     },
     baseActivity: {
-        primarySport: '', categoria: '', level: '', weeklyFrequency: '', typicalDuration: '', yearsExperience: '', basalGoal: '', competitiveCalendar: '', surfaceOrEquipment: '', doubleLoad: ''
+        primarySport: '', categoria: '', rolDeportivo: '', level: '', weeklyFrequency: '', typicalDuration: '', yearsExperience: '', basalGoal: '', competitiveCalendar: '', surfaceOrEquipment: '', doubleLoad: ''
     },
     occupationalContext: {
         mainRole: '', physicalDemands: '', shifts: '', timeSitting: '', timeStanding: '', weightLifting: '', repetitiveMovements: '', driving: '', adherenceBarriers: []
@@ -531,6 +531,9 @@ export function Screen15_AnamnesisRemota({
                             <label className="block text-[10px] font-bold text-emerald-800/70 mb-1.5 uppercase tracking-wider">Actividad / Deporte Central</label>
                             <input type="text" value={history.baseActivity?.primarySport || ''} onChange={e => updateNested('baseActivity', 'primarySport', e.target.value)} disabled={isClosed} placeholder="Ej. Fútbol" className="w-full border border-emerald-200/60 focus:border-emerald-400 rounded-lg text-sm px-3 py-2.5 outline-none mb-3 bg-white" />
 
+                            <label className="block text-[10px] font-bold text-emerald-800/70 mb-1.5 uppercase tracking-wider">Rol / posición / especialidad (opcional)</label>
+                            <input type="text" value={history.baseActivity?.rolDeportivo || ''} onChange={e => updateNested('baseActivity', 'rolDeportivo', e.target.value)} disabled={isClosed} placeholder="Ej: Arquero, central, fondista, halterofilia, dobles..." className="w-full border border-emerald-200/60 focus:border-emerald-400 rounded-lg text-sm px-3 py-2.5 outline-none mb-3 bg-white" />
+
                             <label className="block text-[10px] font-bold text-emerald-800/70 mb-1.5 uppercase tracking-wider">Categoría</label>
                             <select disabled={isClosed} value={history.baseActivity?.categoria || ''} onChange={e => updateNested('baseActivity', 'categoria', e.target.value)} className="w-full border border-emerald-200/60 rounded-lg text-sm px-3 py-2.5 outline-none bg-white">
                                 <option value="">Seleccione Categoría...</option>
@@ -679,11 +682,12 @@ export function Screen15_AnamnesisRemota({
                             <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Vive con</label>
                             <select value={history.occupationalContext?.contextoDomiciliario?.viveCon || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), viveCon: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
                                 <option value="">Seleccione...</option>
-                                <option value="solo">Solo/a</option>
-                                <option value="pareja">Pareja</option>
-                                <option value="familia">Familia</option>
-                                <option value="hijos">Hijos</option>
-                                <option value="otros">Otros</option>
+                                <option value="Solo/a">Solo/a</option>
+                                <option value="Pareja">Pareja</option>
+                                <option value="Hijos">Hijos</option>
+                                <option value="Padres / familia">Padres / familia</option>
+                                <option value="Roommates / comparte vivienda">Roommates / comparte vivienda</option>
+                                <option value="Otro">Otro</option>
                             </select>
                         </div>
                         <div>
@@ -699,10 +703,11 @@ export function Screen15_AnamnesisRemota({
                             <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Personas a cargo / Cuidados</label>
                             <select value={history.occupationalContext?.contextoDomiciliario?.personasACargo || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), personasACargo: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
                                 <option value="">Seleccione...</option>
-                                <option value="no">No</option>
-                                <option value="ninos">Niños</option>
-                                <option value="adulto_mayor">Adulto Mayor</option>
-                                <option value="otro">Otro dependiente</option>
+                                <option value="Nadie">Nadie</option>
+                                <option value="Hijos">Hijos</option>
+                                <option value="Adulto mayor">Adulto mayor</option>
+                                <option value="Familiar dependiente">Familiar dependiente</option>
+                                <option value="Otro">Otro</option>
                             </select>
                         </div>
                         <div className="md:col-span-2 lg:col-span-3">
@@ -916,7 +921,7 @@ export function Screen15_AnamnesisRemota({
                             value={history.permanentNotes || ''}
                             onChange={e => handleChange({ ...history, permanentNotes: e.target.value })}
                             disabled={isClosed}
-                            placeholder="Construye un relato macro del paciente en el tiempo. Ej: 'Paciente aprehensivo respecto a su hombro tras caída en 2011. Mejor canal de enseñanza: cinestésico.' NO uses este espacio para dolor actual."
+                            placeholder="Resumen basal persistente útil para futuras atenciones. No registrar aquí el dolor o episodio actual."
                             className="w-full border border-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl px-4 py-4 text-[14px] min-h-[120px] resize-y leading-relaxed outline-none shadow-inner bg-slate-50/50"
                         />
                     </div>
