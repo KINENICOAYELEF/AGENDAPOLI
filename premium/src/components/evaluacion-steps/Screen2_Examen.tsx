@@ -1582,111 +1582,95 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-xl shrink-0">⚖️</div>
                         <div>
-                            <h3 className="font-bold text-sky-900 text-lg">H. Pruebas Ortopédicas Guiadas</h3>
-                            <p className="text-xs text-sky-700/80 mt-0.5">Integración clínica según hipótesis</p>
+                            <h3 className="font-bold text-sky-900 text-lg">Pruebas ortopédicas dirigidas</h3>
+                            <p className="text-xs text-sky-700/80 mt-0.5">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico</p>
                         </div>
                     </div>
                     <button type="button" onClick={() => setOpenHelp('H')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-sky-200 bg-white text-sky-600 font-bold hover:bg-sky-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
 
-                <div className="p-4 bg-sky-50/30 border-b border-sky-100 flex flex-col gap-3">
+                <div className="p-4 bg-sky-50/30 border-b border-sky-100 flex flex-col gap-4">
+                    <div className="text-xs font-bold text-sky-800 uppercase tracking-widest border-b border-sky-200 pb-1 mb-1">PARTE A. ORIENTACIÓN CLÍNICA BREVE</div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Región a explorar</label>
+                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Región</label>
                             <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.regionGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, regionGlobal: e.target.value })}
                                 disabled={isClosed}
                             >
                                 <option value="">-- Seleccionar --</option>
-                                <option value="Hombro">Hombro</option>
-                                <option value="Codo">Codo</option>
-                                <option value="Muñeca/Mano">Muñeca/Mano</option>
-                                <option value="Columna Cervical">Columna Cervical</option>
-                                <option value="Columna Torácica">Columna Torácica</option>
-                                <option value="Columna Lumbar">Columna Lumbar</option>
-                                <option value="Cadera">Cadera</option>
-                                <option value="Rodilla">Rodilla</option>
-                                <option value="Tobillo/Pie">Tobillo/Pie</option>
-                                <option value="Otra">Otra</option>
+                                <option value="hombro">hombro</option>
+                                <option value="codo">codo</option>
+                                <option value="muñeca / mano">muñeca / mano</option>
+                                <option value="cervical">cervical</option>
+                                <option value="torácica">torácica</option>
+                                <option value="lumbar">lumbar</option>
+                                <option value="cadera">cadera</option>
+                                <option value="rodilla">rodilla</option>
+                                <option value="tobillo / pie">tobillo / pie</option>
+                                <option value="otro">otro</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Hipótesis Principal</label>
+                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Hipótesis a explorar</label>
                             <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.hipotesisGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, hipotesisGlobal: e.target.value })}
                                 disabled={isClosed}
                             >
                                 <option value="">-- Seleccionar --</option>
-                                <option value="Irritación contráctil">Irritación de tejido contráctil</option>
-                                <option value="Irritación articular">Irritación articular / Capsular</option>
-                                <option value="Compromiso meniscal">Compromiso meniscal / intraarticular</option>
-                                <option value="Inestabilidad">Inestabilidad ligamentaria</option>
-                                <option value="Dolor femoropatelar">Dolor femoropatelar / Control</option>
-                                <option value="Compromiso neural">Compromiso neural</option>
-                                <option value="Tendinopatía">Tendinopatía</option>
-                                <option value="Dolor referido">Dolor referido / radicular</option>
-                                <option value="Pinzamiento">Pinzamiento / Conflicto mecánico</option>
-                                <option value="Otra">Otra</option>
+                                <option value="tejido contráctil">tejido contráctil</option>
+                                <option value="tejido articular / capsular">tejido articular / capsular</option>
+                                <option value="inestabilidad ligamentaria">inestabilidad ligamentaria</option>
+                                <option value="dolor meniscal / intraarticular">dolor meniscal / intraarticular</option>
+                                <option value="tendinopatía">tendinopatía</option>
+                                <option value="dolor referido / radicular">dolor referido / radicular</option>
+                                <option value="compromiso neural">compromiso neural</option>
+                                <option value="conflicto mecánico / pinzamiento">conflicto mecánico / pinzamiento</option>
+                                <option value="otro">otro</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Objetivo de pruebas</label>
+                            <label className="text-[10px] uppercase font-bold text-sky-600 mb-1 block">Motivo de usar pruebas</label>
                             <select className="w-full text-xs font-bold bg-white border border-slate-200 text-slate-700 rounded p-2 outline-none focus:border-sky-400 text-ellipsis"
                                 value={exam.ortopedicasConfig?.objetivoGlobal || ''}
                                 onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, objetivoGlobal: e.target.value })}
                                 disabled={isClosed}
                             >
                                 <option value="">-- Seleccionar --</option>
-                                <option value="Descarte">Descarte (Alta Sensibilidad)</option>
-                                <option value="Aproximación diagnóstica">Aproximación diagnóstica (Alta Especificidad)</option>
-                                <option value="Irritabilidad">Evaluar nivel de irritabilidad</option>
-                                <option value="Confirmar func">Confirmar patrón funcional</option>
-                                <option value="Otra">Otra</option>
+                                <option value="descartar">descartar</option>
+                                <option value="acercarse a confirmar">acercarse a confirmar</option>
+                                <option value="precisar irritabilidad">precisar irritabilidad</option>
+                                <option value="otro">otro</option>
                             </select>
                         </div>
                     </div>
+                    <p className="text-xs text-sky-600 italic mt-1">Elige pocas pruebas y solo si pueden cambiar tu razonamiento.</p>
 
                     {exam.ortopedicasConfig?.regionGlobal && exam.ortopedicasConfig?.hipotesisGlobal && (
-                        <div className="mt-2 p-3 bg-white border border-sky-100 rounded-lg shadow-sm">
-                            <span className="text-[10px] uppercase font-bold text-sky-800 block mb-2">Sugerencias Útiles (Haz Clic p/Agregar)</span>
-                            <div className="flex flex-wrap gap-2">
-                                {(() => {
-                                    const r = exam.ortopedicasConfig.regionGlobal;
-                                    const h = exam.ortopedicasConfig.hipotesisGlobal;
-                                    let sugerencias = [];
-
-                                    if (r === 'Hombro' && h === 'Pinzamiento') sugerencias = ['Neer', 'Hawkins-Kennedy', 'Yocum', 'Aprehensión Anterior'];
-                                    else if (r === 'Hombro' && h === 'Irritación contráctil') sugerencias = ['Jobe (Empty Can)', 'Gerber (Lift-off)', 'Speed', 'Resistencia Isométrica'];
-                                    else if (r === 'Rodilla' && h === 'Compromiso meniscal') sugerencias = ['Thessaly', 'McMurray', 'Apley Grinding', 'Joint Line Tenderness'];
-                                    else if (r === 'Rodilla' && h === 'Inestabilidad') sugerencias = ['Lachman', 'Cajón Anterior/Posterior', 'Pivot Shift', 'Valgo/Varo Forzado'];
-                                    else if (r === 'Cadera' && h === 'Pinzamiento') sugerencias = ['FADIR', 'FABER', 'Log Roll'];
-                                    else if (r === 'Tobillo/Pie' && h === 'Inestabilidad') sugerencias = ['Cajón Anterior', 'Talar Tilt', 'Squeeze Test'];
-                                    else if (r.includes('Cervical') && h === 'Compromiso neural') sugerencias = ['Spurling', 'Distracción Cervical', 'ULTT (Neurodinamia)'];
-                                    else if (r.includes('Lumbar') && h === 'Compromiso neural') sugerencias = ['Slump Test', 'SLR (Lasegue)', 'Prone Knee Bend (Ely)'];
-                                    else sugerencias = ['Considerar test provacativos locales', 'Test de diferenciación estructural', 'Resistencia / Estiramiento'];
-
-                                    return sugerencias.map(s => (
-                                        <button
-                                            key={s}
-                                            onClick={() => {
-                                                const m = exam.ortopedicasConfig?.filas || [];
-                                                handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), test: s, lado: '', resultado: '', reproduceTexto: '', comentario: '' }] });
-                                            }}
-                                            className="text-xs font-bold bg-sky-50 text-sky-700 px-2 py-1 rounded border border-sky-200 hover:bg-sky-100 transition"
-                                            disabled={isClosed}
-                                        >
-                                            + {s}
-                                        </button>
-                                    ));
-                                })()}
-                            </div>
+                        <div className="mt-1">
+                            <p className="text-[11px] font-medium text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100 inline-block">
+                                💡 Suele ser más útil elegir 1 a 3 pruebas con sentido clínico que muchas pruebas parecidas.
+                            </p>
                         </div>
                     )}
                 </div>
 
                 <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
+                    <div className="flex items-center justify-between border-b border-sky-200 pb-2 mb-1">
+                        <div className="text-xs font-bold text-sky-800 uppercase tracking-widest">PARTE B. FILAS DE PRUEBAS</div>
+                        <button
+                            onClick={() => {
+                                const m = exam.ortopedicasConfig?.filas || [];
+                                handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), test: '', lado: '', resultado: '', reproduceTexto: '', comentario: '' }] });
+                            }}
+                            className="text-[11px] font-bold text-sky-600 bg-white border border-sky-200 px-3 py-1.5 rounded shadow-sm hover:bg-sky-50 transition outline-none flex items-center gap-1"
+                            disabled={isClosed}
+                        >
+                            <span>+</span> Agregar prueba
+                        </button>
+                    </div>
                     {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) ? (
                         <div className="p-8 text-center border-2 border-dashed border-sky-200 rounded-xl bg-white">
                             <p className="text-sm font-bold text-sky-800 mb-2">No hay pruebas asociadas</p>
@@ -1782,27 +1766,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     )}
                 </div>
 
-                <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                    <button
-                        onClick={() => {
-                            const m = exam.ortopedicasConfig?.filas || [];
-                            handleUpdateExam('ortopedicasConfig', { filas: [...m, { id: Date.now().toString(), test: '', lado: '', resultado: '', reproduceTexto: '', comentario: '' }] });
-                        }}
-                        disabled={isClosed}
-                        className="text-sm font-bold text-sky-600 bg-white border border-sky-200 px-4 py-2 rounded-xl shadow-sm hover:bg-sky-50 transition-colors disabled:opacity-50 flex items-center gap-2 w-full md:w-auto justify-center"
-                    >
-                        <span>+</span> Añadir Otra Prueba Manual
-                    </button>
-
-                    <div className="w-full md:w-[60%]">
-                        <input
-                            className="w-full text-xs p-2 border border-slate-200 rounded-lg outline-none focus:border-sky-400 bg-white shadow-sm"
-                            placeholder="Síntesis / Lectura integrada de estas pruebas (Opcional)..."
-                            value={exam.ortopedicasConfig?.lecturaIntegrada || ''}
-                            onChange={e => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, lecturaIntegrada: e.target.value })}
-                            disabled={isClosed}
-                        />
-                    </div>
+                <div className="bg-slate-50 p-4 border-t border-slate-200">
+                    <details className="group">
+                        <summary className="text-xs font-bold text-sky-700 cursor-pointer list-none flex items-center gap-2 select-none">
+                            <span className="w-5 h-5 rounded bg-sky-100 flex items-center justify-center transition-transform group-open:rotate-90">▶</span>
+                            Añadir lectura clínica final (Opcional)
+                        </summary>
+                        <div className="mt-3 pl-7">
+                            <input
+                                className="w-full text-sm p-3 border border-slate-200 rounded-lg outline-none focus:border-sky-400 bg-white shadow-sm"
+                                placeholder="Síntesis / Lectura integrada de estas pruebas (Opcional)..."
+                                value={exam.ortopedicasConfig?.sintesisFinal || ''} onChange={(e) => handleUpdateExam('ortopedicasConfig', { ...exam.ortopedicasConfig, sintesisFinal: e.target.value })} disabled={isClosed}
+                            />
+                        </div>
+                    </details>
                 </div>
             </div>
 
@@ -1975,23 +1952,25 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     )}
                 </div>
                 {/* Footer Acciones */}
-                {exam.funcionalesConfig?.filas?.length > 0 && (
-                    <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col md:flex-row gap-4 justify-center items-center">
-                        <button
-                            onClick={() => {
-                                const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
-                                handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
-                            }}
-                            disabled={isClosed}
-                            className="text-sm font-bold text-orange-600 bg-white border border-orange-200 px-4 py-2 rounded-xl shadow-sm hover:bg-orange-50 flex items-center gap-2 transition outline-none w-full md:w-auto justify-center"
-                        >
-                            <span>+</span> Añadir Otra Prueba / Métrica
-                        </button>
-                    </div>
-                )}
-            </div>
+                {
+                    exam.funcionalesConfig?.filas?.length > 0 && (
+                        <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-col md:flex-row gap-4 justify-center items-center">
+                            <button
+                                onClick={() => {
+                                    const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
+                                    handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', tipoMetrica: '', resultado: '', dolor: '', calidad: '', criterioFuncional: '', observacion: '' }] });
+                                }}
+                                disabled={isClosed}
+                                className="text-sm font-bold text-orange-600 bg-white border border-orange-200 px-4 py-2 rounded-xl shadow-sm hover:bg-orange-50 flex items-center gap-2 transition outline-none w-full md:w-auto justify-center"
+                            >
+                                <span>+</span> Añadir Otra Prueba / Métrica
+                            </button>
+                        </div>
+                    )
+                }
+            </div >
             {/* J. RE-TEST Y CIERRE */}
-            <div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 flex flex-col mt-6">
+            < div className="bg-white rounded-2xl shadow-sm border border-fuchsia-200 flex flex-col mt-6" >
                 <div className="bg-fuchsia-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fuchsia-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-fuchsia-100 flex items-center justify-center text-xl shrink-0">🔄</div>
@@ -2054,10 +2033,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         />
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* K. MEDIDAS COMPLEMENTARIAS */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col mt-6">
+            < div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col mt-6" >
                 <div onClick={() => setIsKOpen(!isKOpen)} className="bg-slate-50 hover:bg-slate-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 transition-colors">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-xl shrink-0">🩻</div>
@@ -2070,159 +2049,161 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         <span className="text-slate-400 text-sm font-bold">{isKOpen ? '▲ Ocultar' : '▼ Expandir'}</span>
                     </div>
                 </div>
-                {isKOpen && (
-                    <div className="p-4 sm:p-6 flex flex-col gap-6 bg-white">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Peso (kg)</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                    value={exam.medidasComplementariasConfig?.peso || ''}
-                                    placeholder="Ej. 75"
-                                    onChange={(e) => {
-                                        const peso = e.target.value;
-                                        const tallaStr = exam.medidasComplementariasConfig?.talla;
-                                        let imcStr = '';
-                                        if (peso && tallaStr && parseFloat(tallaStr) > 0) {
-                                            const tallaM = parseFloat(tallaStr) / 100;
-                                            const imcCalc = parseFloat(peso) / (tallaM * tallaM);
-                                            imcStr = imcCalc.toFixed(1);
-                                        }
-                                        handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, peso, imc: imcStr });
-                                    }}
-                                    disabled={isClosed}
-                                />
+                {
+                    isKOpen && (
+                        <div className="p-4 sm:p-6 flex flex-col gap-6 bg-white">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Peso (kg)</label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                        value={exam.medidasComplementariasConfig?.peso || ''}
+                                        placeholder="Ej. 75"
+                                        onChange={(e) => {
+                                            const peso = e.target.value;
+                                            const tallaStr = exam.medidasComplementariasConfig?.talla;
+                                            let imcStr = '';
+                                            if (peso && tallaStr && parseFloat(tallaStr) > 0) {
+                                                const tallaM = parseFloat(tallaStr) / 100;
+                                                const imcCalc = parseFloat(peso) / (tallaM * tallaM);
+                                                imcStr = imcCalc.toFixed(1);
+                                            }
+                                            handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, peso, imc: imcStr });
+                                        }}
+                                        disabled={isClosed}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Talla (cm)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                        value={exam.medidasComplementariasConfig?.talla || ''}
+                                        placeholder="Ej. 175"
+                                        onChange={(e) => {
+                                            const talla = e.target.value;
+                                            const pesoStr = exam.medidasComplementariasConfig?.peso;
+                                            let imcStr = '';
+                                            if (talla && parseFloat(talla) > 0 && pesoStr) {
+                                                const tallaM = parseFloat(talla) / 100;
+                                                const imcCalc = parseFloat(pesoStr) / (tallaM * tallaM);
+                                                imcStr = imcCalc.toFixed(1);
+                                            }
+                                            handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, talla, imc: imcStr });
+                                        }}
+                                        disabled={isClosed}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">IMC Automático</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-100 border border-slate-200 text-slate-500 font-bold text-sm rounded-xl p-3 outline-none cursor-not-allowed text-center"
+                                        value={exam.medidasComplementariasConfig?.imc || '-'}
+                                        disabled
+                                        readOnly
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perímetro Espec. (cm)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                                        value={exam.medidasComplementariasConfig?.otraMedida || ''}
+                                        placeholder="Ej. Muslo 45cm"
+                                        onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, otraMedida: e.target.value })}
+                                        disabled={isClosed}
+                                    />
+                                </div>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Talla (cm)</label>
-                                <input
-                                    type="number"
-                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                    value={exam.medidasComplementariasConfig?.talla || ''}
-                                    placeholder="Ej. 175"
-                                    onChange={(e) => {
-                                        const talla = e.target.value;
-                                        const pesoStr = exam.medidasComplementariasConfig?.peso;
-                                        let imcStr = '';
-                                        if (talla && parseFloat(talla) > 0 && pesoStr) {
-                                            const tallaM = parseFloat(talla) / 100;
-                                            const imcCalc = parseFloat(pesoStr) / (tallaM * tallaM);
-                                            imcStr = imcCalc.toFixed(1);
-                                        }
-                                        handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, talla, imc: imcStr });
-                                    }}
-                                    disabled={isClosed}
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">IMC Automático</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-100 border border-slate-200 text-slate-500 font-bold text-sm rounded-xl p-3 outline-none cursor-not-allowed text-center"
-                                    value={exam.medidasComplementariasConfig?.imc || '-'}
-                                    disabled
-                                    readOnly
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perímetro Espec. (cm)</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                    value={exam.medidasComplementariasConfig?.otraMedida || ''}
-                                    placeholder="Ej. Muslo 45cm"
-                                    onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, otraMedida: e.target.value })}
-                                    disabled={isClosed}
-                                />
-                            </div>
-                        </div>
 
-                        {/* Signos vitales / Oculto por defecto */}
-                        {!exam.medidasComplementariasConfig?.signosVitalesActivos && (
-                            <div className="border border-dashed border-slate-300 rounded-xl p-4 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, signosVitalesActivos: true }); }}>
-                                <span className="text-sm font-bold text-slate-500 flex items-center gap-2">
-                                    <span className="text-lg text-slate-400">+</span> Añadir Signos Vitales y Medidas Clínicas Complementarias
-                                </span>
-                            </div>
-                        )}
+                            {/* Signos vitales / Oculto por defecto */}
+                            {!exam.medidasComplementariasConfig?.signosVitalesActivos && (
+                                <div className="border border-dashed border-slate-300 rounded-xl p-4 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, signosVitalesActivos: true }); }}>
+                                    <span className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                                        <span className="text-lg text-slate-400">+</span> Añadir Signos Vitales y Medidas Clínicas Complementarias
+                                    </span>
+                                </div>
+                            )}
 
-                        {exam.medidasComplementariasConfig?.signosVitalesActivos && (
-                            <div className="border border-rose-100 bg-rose-50/30 rounded-xl p-4 sm:p-5 relative mt-2">
-                                <button onClick={(e) => { e.stopPropagation(); handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, signosVitalesActivos: false, pa: '', fc: '', satO2: '', perimetroEdema: '', fovea: null }); }} className="absolute top-4 right-4 text-[10px] text-slate-400 hover:text-rose-500 font-bold uppercase tracking-wider outline-none">
-                                    Quitar bloque
-                                </button>
-                                <h4 className="text-sm font-bold text-rose-900 mb-4 flex items-center gap-2">
-                                    <span className="text-rose-500">❤️</span> Signos Vitales y Fisiológicos
-                                </h4>
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Presión Arterial</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
-                                            value={exam.medidasComplementariasConfig?.pa || ''}
-                                            placeholder="Ej. 120/80"
-                                            onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, pa: e.target.value })}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Frec. Cardiaca (lpm)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
-                                            value={exam.medidasComplementariasConfig?.fc || ''}
-                                            placeholder="Ej. 75"
-                                            onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fc: e.target.value })}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sat. O2 (%)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
-                                            value={exam.medidasComplementariasConfig?.satO2 || ''}
-                                            placeholder="Ej. 98"
-                                            onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, satO2: e.target.value })}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Evaluación Edema</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
-                                            value={exam.medidasComplementariasConfig?.perimetroEdema || ''}
-                                            placeholder="Volumen, asimetría..."
-                                            onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, perimetroEdema: e.target.value })}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signo de Fóvea</label>
-                                        <div className="flex items-center gap-3 h-[38px] px-2">
-                                            <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
-                                                <input type="radio" checked={exam.medidasComplementariasConfig?.fovea === true} onChange={() => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fovea: true })} disabled={isClosed} className="text-rose-500 focus:ring-rose-500" />
-                                                Positivo
-                                            </label>
-                                            <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
-                                                <input type="radio" checked={exam.medidasComplementariasConfig?.fovea === false} onChange={() => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fovea: false })} disabled={isClosed} className="text-rose-500 focus:ring-rose-500" />
-                                                Negativo
-                                            </label>
+                            {exam.medidasComplementariasConfig?.signosVitalesActivos && (
+                                <div className="border border-rose-100 bg-rose-50/30 rounded-xl p-4 sm:p-5 relative mt-2">
+                                    <button onClick={(e) => { e.stopPropagation(); handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, signosVitalesActivos: false, pa: '', fc: '', satO2: '', perimetroEdema: '', fovea: null }); }} className="absolute top-4 right-4 text-[10px] text-slate-400 hover:text-rose-500 font-bold uppercase tracking-wider outline-none">
+                                        Quitar bloque
+                                    </button>
+                                    <h4 className="text-sm font-bold text-rose-900 mb-4 flex items-center gap-2">
+                                        <span className="text-rose-500">❤️</span> Signos Vitales y Fisiológicos
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Presión Arterial</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
+                                                value={exam.medidasComplementariasConfig?.pa || ''}
+                                                placeholder="Ej. 120/80"
+                                                onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, pa: e.target.value })}
+                                                disabled={isClosed}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Frec. Cardiaca (lpm)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
+                                                value={exam.medidasComplementariasConfig?.fc || ''}
+                                                placeholder="Ej. 75"
+                                                onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fc: e.target.value })}
+                                                disabled={isClosed}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sat. O2 (%)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
+                                                value={exam.medidasComplementariasConfig?.satO2 || ''}
+                                                placeholder="Ej. 98"
+                                                onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, satO2: e.target.value })}
+                                                disabled={isClosed}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Evaluación Edema</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-lg p-2.5 outline-none focus:border-rose-400"
+                                                value={exam.medidasComplementariasConfig?.perimetroEdema || ''}
+                                                placeholder="Volumen, asimetría..."
+                                                onChange={(e) => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, perimetroEdema: e.target.value })}
+                                                disabled={isClosed}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signo de Fóvea</label>
+                                            <div className="flex items-center gap-3 h-[38px] px-2">
+                                                <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                                                    <input type="radio" checked={exam.medidasComplementariasConfig?.fovea === true} onChange={() => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fovea: true })} disabled={isClosed} className="text-rose-500 focus:ring-rose-500" />
+                                                    Positivo
+                                                </label>
+                                                <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                                                    <input type="radio" checked={exam.medidasComplementariasConfig?.fovea === false} onChange={() => handleUpdateExam('medidasComplementariasConfig', { ...exam.medidasComplementariasConfig, fovea: false })} disabled={isClosed} className="text-rose-500 focus:ring-rose-500" />
+                                                    Negativo
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                            )}
+                        </div>
+                    )
+                }
+            </div >
 
             {/* BOTÓN FINAL */}
-            <div className="flex justify-end pt-6 border-t border-slate-200 mt-4">
+            < div className="flex justify-end pt-6 border-t border-slate-200 mt-4" >
                 <button
                     onClick={() => {
                         const synthesis = autoSynthesizeFindings(exam, formData.interview);
@@ -2256,168 +2237,203 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     Sintetizar hallazgos físicos y continuar
                 </button>
-            </div>
+            </div >
 
 
             {/* Modal de Ayuda Universal */}
-            {openHelp && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 scroll-m-0 overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3 shrink-0">
-                            <div>
-                                <h3 className="font-black text-slate-800 text-xl tracking-tight">💡 Guía Clínica Profesional</h3>
-                                <p className="text-xs text-slate-500 mt-1">Sugerencias basadas en práctica basada en evidencia.</p>
+            {
+                openHelp && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setOpenHelp(null)}>
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 scroll-m-0 overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3 shrink-0">
+                                <div>
+                                    <h3 className="font-black text-slate-800 text-xl tracking-tight">💡 Guía Clínica Profesional</h3>
+                                    <p className="text-xs text-slate-500 mt-1">Sugerencias basadas en práctica basada en evidencia.</p>
+                                </div>
+                                <button onClick={() => setOpenHelp(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold shrink-0">✕</button>
                             </div>
-                            <button onClick={() => setOpenHelp(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold shrink-0">✕</button>
-                        </div>
-                        <div className="text-sm text-slate-600 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                            {openHelp === 'A' && (
-                                <>
-                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                        <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">📋</span> A. Historial y Contexto</p>
-                                        <p className="text-xs text-slate-500 mt-1">Este bloque extrae las hipótesis y focos marcados en las pantallas previas (P1).</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Revisión rápida:</strong> Antes de tocar al paciente, verifica sus "Red Flags" y la irritabilidad reportada.</li>
-                                        <li><strong>Planificación:</strong> Si la irritabilidad es ALTA, tu examen físico (los bloques siguientes) deben ser limitados, suaves e ir directo al punto para no exacerbar los síntomas.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'B' && (
-                                <>
-                                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                                        <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
-                                        <p className="text-xs text-indigo-600 mt-1">Observación basal estricta de la conducta motora.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>No sobre-diagnostiques la postura:</strong> Las asimetrías son normales. Anota la postura solo si crees que está <strong>directamente ligada</strong> a la sintomatología actual (ej. shift antálgico).</li>
-                                        <li><strong>Desviaciones antálgicas:</strong> Notas si el paciente evita apoyar peso, hace pausas por dolor o acorta la zancada. Es observación estricta de conducta, no palpación.</li>
-                                        <li><strong>Marcha:</strong> Observa disimetrías dinámicas, velocidad o cojeras evidentes y anótalo de forma breve.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'C' && (
-                                <>
-                                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                                        <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM)</p>
-                                        <p className="text-xs text-emerald-600 mt-1">Testeo analítico de la capacidad articular y deducción de hipótesis mecánicas.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>A/PROM Clínico:</strong> Comienza siempre evaluando el Movimiento Activo libre. Aplica movimiento Pasivo con Overpressure al final para discriminar el <em>End-feel</em> capsular, elástico o vacío.</li>
-                                        <li><strong>Hipótesis por Diferenciación:</strong> Si duele predominantemente el movimiento Activo pero NO el pasivo, inclina tu hipótesis hacia un foco contráctil. Si duele el Activo Y el Pasivo en el mismo sentido, sugiere fuertemente un compromiso Articular.</li>
-                                        <li><strong>Calidad vs Cantidad:</strong> Registra la calidad del movimiento ("arco doloroso", "tope rígido") por sobre la pura medición goniométrica, que rara vez correlaciona con mejoría del dolor por sí misma.</li>
-                                    </ul>
-                                </>
-                            )}
+                            <div className="text-sm text-slate-600 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                                {openHelp === 'A' && (
+                                    <>
+                                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                            <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">📋</span> A. Historial y Contexto</p>
+                                            <p className="text-xs text-slate-500 mt-1">Este bloque extrae las hipótesis y focos marcados en las pantallas previas (P1).</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Revisión rápida:</strong> Antes de tocar al paciente, verifica sus "Red Flags" y la irritabilidad reportada.</li>
+                                            <li><strong>Planificación:</strong> Si la irritabilidad es ALTA, tu examen físico (los bloques siguientes) deben ser limitados, suaves e ir directo al punto para no exacerbar los síntomas.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'B' && (
+                                    <>
+                                        <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
+                                            <p className="text-xs text-indigo-600 mt-1">Observación basal estricta de la conducta motora.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>No sobre-diagnostiques la postura:</strong> Las asimetrías son normales. Anota la postura solo si crees que está <strong>directamente ligada</strong> a la sintomatología actual (ej. shift antálgico).</li>
+                                            <li><strong>Desviaciones antálgicas:</strong> Notas si el paciente evita apoyar peso, hace pausas por dolor o acorta la zancada. Es observación estricta de conducta, no palpación.</li>
+                                            <li><strong>Marcha:</strong> Observa disimetrías dinámicas, velocidad o cojeras evidentes y anótalo de forma breve.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'C' && (
+                                    <>
+                                        <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM)</p>
+                                            <p className="text-xs text-emerald-600 mt-1">Testeo analítico de la capacidad articular y deducción de hipótesis mecánicas.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>A/PROM Clínico:</strong> Comienza siempre evaluando el Movimiento Activo libre. Aplica movimiento Pasivo con Overpressure al final para discriminar el <em>End-feel</em> capsular, elástico o vacío.</li>
+                                            <li><strong>Hipótesis por Diferenciación:</strong> Si duele predominantemente el movimiento Activo pero NO el pasivo, inclina tu hipótesis hacia un foco contráctil. Si duele el Activo Y el Pasivo en el mismo sentido, sugiere fuertemente un compromiso Articular.</li>
+                                            <li><strong>Calidad vs Cantidad:</strong> Registra la calidad del movimiento ("arco doloroso", "tope rígido") por sobre la pura medición goniométrica, que rara vez correlaciona con mejoría del dolor por sí misma.</li>
+                                        </ul>
+                                    </>
+                                )}
 
-                            {openHelp === 'D' && (
-                                <>
-                                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                                        <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">🦾</span> D. Fuerza y Tolerancia a Carga</p>
-                                        <p className="text-xs text-indigo-600 mt-1">Valoración analítica de la capacidad contráctil del tejido.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Dolor frente a la resistencia:</strong> Si el test isométrico duele, es indicativo fuerte de un problema contráctil (tendinopatía, desgarro).</li>
-                                        <li><strong>Debilidad sin dolor:</strong> Alerta neurológica (Miotoma / Nervio Periférico) o rotura masiva completa del tendón.</li>
-                                        <li><strong>Cuantificar:</strong> En deportistas usa Dinamometría de mano (HHD) o RM estimado para tener un <em>baseline</em> objetivo y evaluar asimetrías de torque.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'E' && (
-                                <>
-                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                        <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
-                                        <p className="text-xs text-amber-600 mt-1">Palpación estructural focal y juego articular (Accessory motions).</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Palpación Anatómica:</strong> Busca calor, derrame intra/extra articular, o reproducción exquisita en la inserción ("¿Este es TU dolor?").</li>
-                                        <li><strong>Movimientos Accesorios (Glide):</strong> Evalúa rigidez capsular o micro-inestabilidad en bloque articular. Anota las diferencias (hiper/hipo) aquí mismo en el área de texto libre.</li>
-                                        <li><strong>Test de Ligamentos:</strong> Registrar laxitud (grados I-III) y calidad del tope blando/duro tras un trauma agudo.</li>
-                                        <li><em>Tip Evidencia:</em> Solo utiliza estas maniobras si tu hipótesis sugiere un limitador mecánico local. En dolores crónicos nociplásticos aportarían poco valor.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'F' && (
-                                <>
-                                    <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
-                                        <p className="font-bold text-rose-800 flex items-center gap-2"><span className="text-lg">🧠</span> F. Examen Neuro / Sensitivo / Neural</p>
-                                        <p className="text-xs text-rose-600 mt-1">Descarte o confirmación de involucro del Sistema Nervioso Periférico.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Dermatomas y Miotomas:</strong> Obligatorio si el paciente refiere irradiación, parestesia o debilidad que no responde anatómicamente a un músculo local.</li>
-                                        <li><strong>Reflejos Osteotendíneos:</strong> Testea comparativamente asimetrías L/R para evaluar daño de raíz nerviosa (Hiporreflexia).</li>
-                                        <li><strong>Neurodinamia:</strong> SLUMP, ULTT, PKB. Tensión neural adversa. Es Positiva SÓLO si altera los síntomas al mover un segmento distal (ej. flexión cervical altera el dolor del brazo).</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'G' && (
-                                <>
-                                    <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
-                                        <p className="font-bold text-teal-800 flex items-center gap-2"><span className="text-lg">⚖️</span> G. Control Motor y Biomecánica</p>
-                                        <p className="text-xs text-teal-600 mt-1">Observación cualitativa de estrategias de movimiento.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Calidad vs Cantidad:</strong> Observa oscilaciones, pérdida de balance, estrategias de evitación (guarding) y control lumbopélvico (ej. valgo dinámico de rodilla en sentadilla).</li>
-                                        <li><strong>Relevancia Clínica:</strong> No todos los "déficits" de control motor causan dolor (muchos asintomáticos los tienen). Evalúa si la corrección del patrón disminuye los síntomas del paciente al instante.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'H' && (
-                                <>
-                                    <div className="p-3 bg-sky-50 rounded-lg border border-sky-200">
-                                        <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">🩺</span> H. Pruebas Ortopédicas Especiales (Tests)</p>
-                                        <p className="text-xs text-sky-600 mt-1">Tests clínicos específicos orientados a un tejido.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Clusterización:</strong> Un test aislado falla. Clínicamente SIEMPRE usa un "Cluster" de al menos 3 tests (Ej: Cluster de Laslett para Sacroilíaca, Hawkins+Neer+Jobe para manguito rotador).</li>
-                                        <li><strong>Reproducción de Síntomas:</strong> El test ortopédico solo es positivo y útil si reproduce "EL" dolor del paciente. Si causa un dolor diferente, no confirma la hipótesis clínica.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'I' && (
-                                <>
-                                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                                        <p className="font-bold text-orange-800 flex items-center gap-2"><span className="text-lg">🏃</span> I. Functional & Performance Tests</p>
-                                        <p className="text-xs text-orange-600 mt-1">Métricas objetivas para cuantificar alta o rendimiento.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Métricas Duras:</strong> CMJ (Salto Vertical en cm), Hop Tests cruzados (distancia LSI), Agilidad (Segundos). Todo requiere de datos exactos.</li>
-                                        <li><strong>Adulto Mayor / Sedentario:</strong> No es exclusivo de atletas. El Timed Up and Go (TUG), Sit-to-Stand 30s o la Marcha 6 Min. son medidas funcionales vitales para predecir morbilidad y riesgo de caídas.</li>
-                                        <li><strong>Progreso:</strong> Son la herramienta definitiva para demostrarle al paciente en la sesión 10 que ha mejorado un X% respecto al día 1.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'J' && (
-                                <>
-                                    <div className="p-3 bg-fuchsia-50 rounded-lg border border-fuchsia-200">
-                                        <p className="font-bold text-fuchsia-800 flex items-center gap-2"><span className="text-lg">🔄</span> J. Signo Comparable / Re-test</p>
-                                        <p className="text-xs text-fuchsia-600 mt-1">Confirmación intrasesión de efectividad.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li><strong>Auditoría Clínica:</strong> Consiste en encontrar un signo doloroso o restringido en la evaluación, aplicar una intervención de prueba rápida (ej. terapia manual, un tape, o instrucción motora) y <strong>re-evaluar el mismo signo inmediatamente</strong>.</li>
-                                        <li><strong>Si cambia:</strong> Te confirma al 100% la pertinencia del tratamiento seleccionado a nivel neuromecánico y aumenta la confianza del paciente.</li>
-                                    </ul>
-                                </>
-                            )}
-                            {openHelp === 'K' && (
-                                <>
-                                    <div className="p-3 bg-slate-100 rounded-lg border border-slate-300">
-                                        <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🩻</span> K. Exámenes Complementarios</p>
-                                        <p className="text-xs text-slate-600 mt-1">Registro de imágenes o reportes médicos aportados.</p>
-                                    </div>
-                                    <ul className="list-disc pl-5 space-y-2 mt-2">
-                                        <li>Recuerda la regla clínica máxima: <strong>Tratamos pacientes, no resonancias magnéticas</strong>. Úsalas para descartar banderas rojas graves, o como confirmación de hipótesis (ej. roturas completas) solo si el test clínico correlaciona con la imagen.</li>
-                                    </ul>
-                                </>
-                            )}
-                        </div>
-                        <div className="mt-4 pt-3 border-t border-slate-100 shrink-0">
-                            <button onClick={() => setOpenHelp(null)} className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">Entendido</button>
+                                {openHelp === 'D' && (
+                                    <>
+                                        <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                            <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">🦾</span> D. Fuerza y Tolerancia a Carga</p>
+                                            <p className="text-xs text-indigo-600 mt-1">Valoración analítica de la capacidad contráctil del tejido.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Dolor frente a la resistencia:</strong> Si el test isométrico duele, es indicativo fuerte de un problema contráctil (tendinopatía, desgarro).</li>
+                                            <li><strong>Debilidad sin dolor:</strong> Alerta neurológica (Miotoma / Nervio Periférico) o rotura masiva completa del tendón.</li>
+                                            <li><strong>Cuantificar:</strong> En deportistas usa Dinamometría de mano (HHD) o RM estimado para tener un <em>baseline</em> objetivo y evaluar asimetrías de torque.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'E' && (
+                                    <>
+                                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                            <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
+                                            <p className="text-xs text-amber-600 mt-1">Palpación estructural focal y juego articular (Accessory motions).</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Palpación Anatómica:</strong> Busca calor, derrame intra/extra articular, o reproducción exquisita en la inserción ("¿Este es TU dolor?").</li>
+                                            <li><strong>Movimientos Accesorios (Glide):</strong> Evalúa rigidez capsular o micro-inestabilidad en bloque articular. Anota las diferencias (hiper/hipo) aquí mismo en el área de texto libre.</li>
+                                            <li><strong>Test de Ligamentos:</strong> Registrar laxitud (grados I-III) y calidad del tope blando/duro tras un trauma agudo.</li>
+                                            <li><em>Tip Evidencia:</em> Solo utiliza estas maniobras si tu hipótesis sugiere un limitador mecánico local. En dolores crónicos nociplásticos aportarían poco valor.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'F' && (
+                                    <>
+                                        <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
+                                            <p className="font-bold text-rose-800 flex items-center gap-2"><span className="text-lg">🧠</span> F. Examen Neuro / Sensitivo / Neural</p>
+                                            <p className="text-xs text-rose-600 mt-1">Descarte o confirmación de involucro del Sistema Nervioso Periférico.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Dermatomas y Miotomas:</strong> Obligatorio si el paciente refiere irradiación, parestesia o debilidad que no responde anatómicamente a un músculo local.</li>
+                                            <li><strong>Reflejos Osteotendíneos:</strong> Testea comparativamente asimetrías L/R para evaluar daño de raíz nerviosa (Hiporreflexia).</li>
+                                            <li><strong>Neurodinamia:</strong> SLUMP, ULTT, PKB. Tensión neural adversa. Es Positiva SÓLO si altera los síntomas al mover un segmento distal (ej. flexión cervical altera el dolor del brazo).</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'G' && (
+                                    <>
+                                        <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
+                                            <p className="font-bold text-teal-800 flex items-center gap-2"><span className="text-lg">⚖️</span> G. Control Motor y Biomecánica</p>
+                                            <p className="text-xs text-teal-600 mt-1">Observación cualitativa de estrategias de movimiento.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Calidad vs Cantidad:</strong> Observa oscilaciones, pérdida de balance, estrategias de evitación (guarding) y control lumbopélvico (ej. valgo dinámico de rodilla en sentadilla).</li>
+                                            <li><strong>Relevancia Clínica:</strong> No todos los "déficits" de control motor causan dolor (muchos asintomáticos los tienen). Evalúa si la corrección del patrón disminuye los síntomas del paciente al instante.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'H' && (
+                                    <>
+                                        <div className="p-3 bg-sky-50 rounded-lg border border-sky-200 mb-3">
+                                            <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">⚖️</span> H. Pruebas Ortopédicas Dirigidas</p>
+                                            <p className="text-xs text-sky-600 mt-1">Guía para el uso racional de pruebas.</p>
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            <div className="bg-white border rounded p-2">
+                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">A. CUÁNDO USAR PRUEBAS ORTOPÉDICAS</p>
+                                                <ul className="text-xs list-disc pl-4 space-y-1">
+                                                    <li>Úsalas solo si la entrevista, el rango, la fuerza o la función dejan una hipótesis que vale la pena explorar.</li>
+                                                    <li>No las hagas por rutina.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white border rounded p-2">
+                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">B. CÓMO ELEGIRLAS</p>
+                                                <ul className="text-xs list-disc pl-4 space-y-1">
+                                                    <li>Elige pocas pruebas y con propósito.</li>
+                                                    <li>Si varias exploran casi lo mismo, no repitas sin necesidad.</li>
+                                                    <li>Primero usa la información de la entrevista y del examen físico general para orientar qué vale la pena probar.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white border rounded p-2">
+                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">C. CÓMO INTERPRETARLAS</p>
+                                                <ul className="text-xs list-disc pl-4 space-y-1">
+                                                    <li>Una prueba positiva no confirma por sí sola.</li>
+                                                    <li>Una prueba negativa no siempre descarta sola.</li>
+                                                    <li>Lo importante es si el resultado cambia o no tu hipótesis dentro del contexto clínico completo.</li>
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white border rounded p-2">
+                                                <p className="text-xs font-bold text-sky-800 uppercase tracking-wider mb-1">D. QUÉ REGISTRAR</p>
+                                                <ul className="text-xs list-disc pl-4 space-y-1">
+                                                    <li>Qué prueba hiciste</li>
+                                                    <li>Si fue positiva, negativa, dudosa o no tolerada</li>
+                                                    <li>Si reprodujo el síntoma principal exacto, parcial o no</li>
+                                                    <li>Un comentario breve si hubo algo clínicamente relevante</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-bold text-sky-700 italic border-t pt-2 mt-3 text-center">
+                                            "El valor está en la combinación de entrevista + examen físico + pruebas, no en una prueba aislada."
+                                        </p>
+                                    </>
+                                )}
+                                {openHelp === 'I' && (
+                                    <>
+                                        <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                            <p className="font-bold text-orange-800 flex items-center gap-2"><span className="text-lg">🏃</span> I. Functional & Performance Tests</p>
+                                            <p className="text-xs text-orange-600 mt-1">Métricas objetivas para cuantificar alta o rendimiento.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Métricas Duras:</strong> CMJ (Salto Vertical en cm), Hop Tests cruzados (distancia LSI), Agilidad (Segundos). Todo requiere de datos exactos.</li>
+                                            <li><strong>Adulto Mayor / Sedentario:</strong> No es exclusivo de atletas. El Timed Up and Go (TUG), Sit-to-Stand 30s o la Marcha 6 Min. son medidas funcionales vitales para predecir morbilidad y riesgo de caídas.</li>
+                                            <li><strong>Progreso:</strong> Son la herramienta definitiva para demostrarle al paciente en la sesión 10 que ha mejorado un X% respecto al día 1.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'J' && (
+                                    <>
+                                        <div className="p-3 bg-fuchsia-50 rounded-lg border border-fuchsia-200">
+                                            <p className="font-bold text-fuchsia-800 flex items-center gap-2"><span className="text-lg">🔄</span> J. Signo Comparable / Re-test</p>
+                                            <p className="text-xs text-fuchsia-600 mt-1">Confirmación intrasesión de efectividad.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li><strong>Auditoría Clínica:</strong> Consiste en encontrar un signo doloroso o restringido en la evaluación, aplicar una intervención de prueba rápida (ej. terapia manual, un tape, o instrucción motora) y <strong>re-evaluar el mismo signo inmediatamente</strong>.</li>
+                                            <li><strong>Si cambia:</strong> Te confirma al 100% la pertinencia del tratamiento seleccionado a nivel neuromecánico y aumenta la confianza del paciente.</li>
+                                        </ul>
+                                    </>
+                                )}
+                                {openHelp === 'K' && (
+                                    <>
+                                        <div className="p-3 bg-slate-100 rounded-lg border border-slate-300">
+                                            <p className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🩻</span> K. Exámenes Complementarios</p>
+                                            <p className="text-xs text-slate-600 mt-1">Registro de imágenes o reportes médicos aportados.</p>
+                                        </div>
+                                        <ul className="list-disc pl-5 space-y-2 mt-2">
+                                            <li>Recuerda la regla clínica máxima: <strong>Tratamos pacientes, no resonancias magnéticas</strong>. Úsalas para descartar banderas rojas graves, o como confirmación de hipótesis (ej. roturas completas) solo si el test clínico correlaciona con la imagen.</li>
+                                        </ul>
+                                    </>
+                                )}
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-slate-100 shrink-0">
+                                <button onClick={() => setOpenHelp(null)} className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">Entendido</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div>
+        </div >
     );
 }
