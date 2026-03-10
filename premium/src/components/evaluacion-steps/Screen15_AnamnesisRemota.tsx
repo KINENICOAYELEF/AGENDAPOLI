@@ -344,7 +344,7 @@ export function Screen15_AnamnesisRemota({
                 </div>
                 <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                     <div className="lg:col-span-2">
-                        <CondicionesClinicasSelector />
+                        <CondicionesClinicasSelector history={history} updateNested={updateNested} isClosed={isClosed} />
                     </div>
 
                     <ArrayField label="Diagnósticos médicos (Texto libre u otros)" items={history.medicalHistory?.diagnoses} onChange={(v: any) => updateNested('medicalHistory', 'diagnoses', v)} placeholder="HTA, Hipotiroidismo, Cáncer..." disabled={isClosed} />
