@@ -141,12 +141,12 @@ export function Screen15_AnamnesisRemota({
             <div className="flex flex-wrap gap-2">
                 {options.map((opt: any) => (
                     <button
-                        key={opt.value} type="button" disabled={disabled} onClick={() => onChange(opt.value)}
+                        key={opt.value} type="button" disabled={disabled} onClick={() => onChange(value === opt.value ? '' : opt.value)}
                         className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200 
-                            ${value === opt.value
+                        ${value === opt.value
                                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200 font-semibold'
                                 : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50'} 
-                            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {opt.label}
                     </button>
@@ -177,10 +177,10 @@ export function Screen15_AnamnesisRemota({
                             <button
                                 key={opt.value} type="button" disabled={disabled} onClick={() => toggleValue(opt.value)}
                                 className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200 
-                                    ${isSelected
+                                ${isSelected
                                         ? 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-200 font-semibold'
                                         : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50'} 
-                                    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 {opt.label}
                             </button>
@@ -192,7 +192,7 @@ export function Screen15_AnamnesisRemota({
     };
 
     // Componente especializado para Condiciones Clínicas (Fase 45)
-    const CondicionesClinicasSelector = () => {
+    const CondicionesClinicasSelector = ({ history, updateNested, isClosed }: any) => {
         const opciones = [
             'Hipertensión arterial', 'Diabetes', 'Enfermedad tiroidea', 'Enfermedad inflamatoria / reumatológica',
             'Osteopenia / osteoporosis', 'Antecedente oncológico', 'Enfermedad neurológica relevante',
@@ -201,10 +201,10 @@ export function Screen15_AnamnesisRemota({
         const actuales = history.medicalHistory.condicionesClinicasRelevantes || [];
 
         const toggleCondicion = (name: string) => {
-            const exists = actuales.find(c => c.name === name);
+            const exists = actuales.find((c: any) => c.name === name);
             let nuevas;
             if (exists) {
-                nuevas = actuales.filter(c => c.name !== name);
+                nuevas = actuales.filter((c: any) => c.name !== name);
             } else {
                 nuevas = [...actuales, { name, estado: '', tratamiento: false, observacion: '' }];
             }
@@ -212,7 +212,7 @@ export function Screen15_AnamnesisRemota({
         };
 
         const updateDetalle = (name: string, field: string, value: any) => {
-            const nuevas = actuales.map(c => c.name === name ? { ...c, [field]: value } : c);
+            const nuevas = actuales.map((c: any) => c.name === name ? { ...c, [field]: value } : c);
             updateNested('medicalHistory', 'condicionesClinicasRelevantes', nuevas);
         };
 
@@ -221,7 +221,7 @@ export function Screen15_AnamnesisRemota({
                 <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider">Condiciones Clínicas Relevantes</label>
                 <div className="flex flex-wrap gap-2">
                     {opciones.map(opt => {
-                        const isSelected = actuales.some(c => c.name === opt);
+                        const isSelected = actuales.some((c: any) => c.name === opt);
                         return (
                             <button
                                 key={opt} type="button" disabled={isClosed} onClick={() => toggleCondicion(opt)}
@@ -234,7 +234,7 @@ export function Screen15_AnamnesisRemota({
                 </div>
                 {actuales.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        {actuales.map(c => (
+                        {actuales.map((c: any) => (
                             <div key={c.name} className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl space-y-3">
                                 <h4 className="text-[11px] font-bold text-rose-900 border-b border-rose-200 pb-1.5 uppercase">{c.name}</h4>
                                 <div className="grid grid-cols-2 gap-2">
@@ -245,7 +245,11 @@ export function Screen15_AnamnesisRemota({
                                         <option value="No sabe">No sabe</option>
                                     </select>
                                     <label className="flex items-center gap-2 text-[11px] font-medium text-slate-700 cursor-pointer">
-                                        <input disabled={isClosed} type="checkbox" checked={c.tratamiento} onChange={e => updateDetalle(c.name, 'tratamiento', e.target.checked)} className="rounded border-slate-300 text-rose-600 focus:ring-rose-500" />
+                                        <input
+                                            disabled={isClosed} type="checkbox"
+                                            checked={c.tratamiento} onChange={e => updateDetalle(c.name, 'tratamiento', e.target.checked)}
+                                            className="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                                        />
                                         Tratamiento actual
                                     </label>
                                 </div>
@@ -279,6 +283,59 @@ export function Screen15_AnamnesisRemota({
                 </div>
             </div>
 
+            {/* GUIA DE ENTREVISTA REMOTA */}
+            <details className="bg-indigo-50/50 rounded-xl border border-indigo-100 shadow-sm group">
+                <summary className="p-4 flex items-center justify-between cursor-pointer text-indigo-900 font-bold text-sm tracking-wide select-none">
+                    <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Guía de Entrevista Remota
+                    </div>
+                    <svg className="w-5 h-5 text-indigo-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div className="p-5 border-t border-indigo-100 bg-white grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-700 leading-relaxed">
+                    <div className="space-y-4">
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">1. Historial Médico Clínico</h4>
+                            <p><b>Cómo abrir la pregunta:</b> "¿Hay alguna enfermedad, cirugía o tratamiento que hoy condicione tu ejercicio, recuperación o controles médicos?"</p>
+                            <p><b>Si responde muy general:</b> "¿Eso sigue activo? ¿Está controlado? ¿Usas tratamiento actual?"</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Solo condiciones que cambien evaluación, recuperación, seguridad o pronóstico.</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">2. Antecedentes MSK Previos</h4>
+                            <p><b>Cómo abrir la pregunta:</b> "¿Has tenido dolores o lesiones pasadas que hayan dejado alguna molestia, limitación o temor?"</p>
+                            <p><b>Si responde muy general:</b> "¿De todas esas, alguna requirió kine larga, cirugía o no mejoró del todo?"</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Regiones problemáticas, secuelas, y qué le sirvió o no le sirvió históricamente.</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">3. Actividad Física y Carga</h4>
+                            <p><b>Cómo abrir la pregunta:</b> "En una semana típica actual o de la que vienes, ¿qué tipo de actividad o ejercicio haces?"</p>
+                            <p><b>Si responde muy general:</b> "¿Cuántos días a la semana? ¿Cuánto tiempo? ¿Tienes algún torneo pronto o es solo por salud?"</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Deporte central, si compite o es recreacional, frecuencia acumulada y su meta de salud/deporte basal.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">4. Contexto Ocupacional</h4>
+                            <p><b>Cómo abrir la pregunta:</b> "¿En qué trabajas o estudias principalmente, y cómo es tu jornada de carga física allí?"</p>
+                            <p><b>Si responde muy general:</b> "¿Pasas muchas horas sentado, levantas peso ocasional, haces turnos de noche, pasas muchas horas viajando?"</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Posiciones sostenidas, logística y barreras para venir a kine o hacer ejercicios en casa.</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">5. Terreno Biopsicosocial y Hábitos</h4>
+                            <p><b>Cómo abrir la pregunta:</b> "¿Cómo sientes que estás durmiendo y manejando el estrés o factores que no son netamente físicos?"</p>
+                            <p><b>Si responde muy general:</b> "¿Despiertas cansado? ¿Sientes mucho estrés laboral? ¿Has podido mantener un buen ritmo antes en otros tratamientos de salud?"</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Calidad y horas de sueño crónico, red de apoyo de la que dispone, predisposición al tratamiento (ánimo, adherencia pasada) y exposición tóxica.</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <h4 className="font-bold text-indigo-800 mb-2 uppercase text-[10px] tracking-wider border-b border-indigo-100 pb-1">6. Notas Clínicas Basales</h4>
+                            <p><b>Cómo abrir la pregunta:</b> (No es pregunta, sintetizas al final).</p>
+                            <p><b>Si responde muy general:</b> (NA)</p>
+                            <p className="text-rose-600 font-medium"><b>Qué registrar:</b> Observación del profesional. "Paciente aprehensivo, mejor explicarle visualmente", "Desafío enorme en disponibilidad de horario, enfocar plan a domicilio", etc.</p>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
             {/* SECCION 1: HISTORIA MEDICA Y CONSIDERACIONES */}
             <div className="bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-rose-50/50 border-b border-rose-100 p-4 sm:p-5 flex items-center gap-3">
@@ -292,12 +349,12 @@ export function Screen15_AnamnesisRemota({
 
                     <ArrayField label="Diagnósticos médicos (Texto libre u otros)" items={history.medicalHistory?.diagnoses} onChange={(v: any) => updateNested('medicalHistory', 'diagnoses', v)} placeholder="HTA, Hipotiroidismo, Cáncer..." disabled={isClosed} />
                     <ArrayField label="Farmacoterapia actual relevante" items={history.medicalHistory?.medications} onChange={(v: any) => updateNested('medicalHistory', 'medications', v)} placeholder="Losartán, Omeprazol, Anticonceptivos..." disabled={isClosed} />
-                    <ArrayField label="Alergias / RAM" items={history.medicalHistory?.allergies} onChange={(v: any) => updateNested('medicalHistory', 'allergies', v)} placeholder="Penicilina, AINES..." disabled={isClosed} />
+                    <ArrayField label="Alergias / reacciones a medicamentos" items={history.medicalHistory?.allergies} onChange={(v: any) => updateNested('medicalHistory', 'allergies', v)} placeholder="Penicilina, AINES..." disabled={isClosed} />
                     <ArrayField label="Cirugías previas" items={history.medicalHistory?.surgeries} onChange={(v: any) => updateNested('medicalHistory', 'surgeries', v)} placeholder="Apendicectomía, Cesárea..." disabled={isClosed} />
 
                     <div className="lg:col-span-2">
                         <label className="block text-[10px] font-bold text-rose-800 mb-1.5 uppercase tracking-wider">
-                            Detalle Clínico Agregado <span className="text-[10px] font-normal text-rose-500 bg-rose-100 px-2 py-0.5 rounded-full ml-2">Consideración clínica especial</span>
+                            Detalle Clínico Relevante <span className="text-[10px] font-normal text-rose-500 bg-rose-100 px-2 py-0.5 rounded-full ml-2">Consideración clínica especial</span>
                         </label>
                         <textarea
                             value={history.medicalHistory?.clinicalConsiderations || ''}
@@ -341,7 +398,7 @@ export function Screen15_AnamnesisRemota({
                             Antecedente pélvico/ginecológico (relevante para ejercicio)
                         </label>
                         <div className="col-span-full mt-2">
-                            <input disabled={isClosed} type="text" placeholder="Observación breve sobre factura biológica..." value={history.biologicalFactors?.observacion || ''} onChange={e => updateNested('biologicalFactors', 'observacion', e.target.value)} className="w-full text-xs p-2.5 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400 shadow-sm" />
+                            <input disabled={isClosed} type="text" placeholder="Observación breve sobre factor biológico..." value={history.biologicalFactors?.observacion || ''} onChange={e => updateNested('biologicalFactors', 'observacion', e.target.value)} className="w-full text-xs p-2.5 rounded-lg border border-slate-200 outline-none bg-white placeholder:text-slate-400 shadow-sm" />
                         </div>
                     </div>
                 </details>
@@ -559,6 +616,62 @@ export function Screen15_AnamnesisRemota({
                         </div>
                     </div>
                 </div>
+
+                <div className="bg-sky-50/20 px-5 sm:px-6 pb-6 pt-4 border-t border-sky-100">
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Contexto Domiciliario y Red de Apoyo</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-sky-50/50 p-4 border border-sky-100/60 rounded-xl">
+                        <div>
+                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Vive con</label>
+                            <select value={history.occupationalContext?.contextoDomiciliario?.viveCon || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), viveCon: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
+                                <option value="">Seleccione...</option>
+                                <option value="solo">Solo/a</option>
+                                <option value="pareja">Pareja</option>
+                                <option value="familia">Familia</option>
+                                <option value="hijos">Hijos</option>
+                                <option value="otros">Otros</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Red de apoyo (Tto/Ej)</label>
+                            <select value={history.occupationalContext?.contextoDomiciliario?.redApoyo || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), redApoyo: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
+                                <option value="">Seleccione...</option>
+                                <option value="si">Sí</option>
+                                <option value="parcial">Parcial</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Personas a cargo / Cuidados</label>
+                            <select value={history.occupationalContext?.contextoDomiciliario?.personasACargo || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), personasACargo: e.target.value })} disabled={isClosed} className="w-full border border-sky-200/60 rounded-lg text-sm py-2 px-3 outline-none bg-white">
+                                <option value="">Seleccione...</option>
+                                <option value="no">No</option>
+                                <option value="ninos">Niños</option>
+                                <option value="adulto_mayor">Adulto Mayor</option>
+                                <option value="otro">Otro dependiente</option>
+                            </select>
+                        </div>
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <MultiSelectChips
+                                label="Barreras del Domicilio / Entorno"
+                                values={history.occupationalContext?.contextoDomiciliario?.barrerasEntorno || []}
+                                onChange={(v: any) => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), barrerasEntorno: v })}
+                                disabled={isClosed}
+                                options={[
+                                    { label: 'Escaleras', value: 'escaleras' },
+                                    { label: 'Traslado largo', value: 'traslado_largo' },
+                                    { label: 'Zona rural/lejana', value: 'rural' },
+                                    { label: 'Poco espacio en casa', value: 'espacio' },
+                                    { label: 'No tiene implementos', value: 'sin_implementos' },
+                                    { label: 'Otra', value: 'otra' }
+                                ]}
+                            />
+                        </div>
+                        <div className="md:col-span-2 lg:col-span-3">
+                            <label className="block text-[10px] font-bold text-sky-800 mb-1.5 uppercase tracking-wider">Observación contexto domiciliario</label>
+                            <input type="text" value={history.occupationalContext?.contextoDomiciliario?.observacion || ''} onChange={e => updateNested('occupationalContext', 'contextoDomiciliario', { ...(history.occupationalContext?.contextoDomiciliario || {}), observacion: e.target.value })} disabled={isClosed} placeholder="Breves anotaciones clave sobre el hogar..." className="w-full border border-sky-200/60 rounded-lg text-sm px-3 py-2 outline-none shadow-sm bg-white" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* SECCION 5: BPS Y FACTORES PROTECTORES */}
@@ -573,44 +686,69 @@ export function Screen15_AnamnesisRemota({
                     <div className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 border-t border-amber-50">
 
                         <div className="space-y-6">
-                            <RadioGroup
-                                label="Calidad del Sueño (Basal)"
-                                value={history.bpsContext?.sleepQuality || ''}
-                                onChange={(v: string) => updateNested('bpsContext', 'sleepQuality', v)}
-                                disabled={isClosed}
-                                options={[
-                                    { label: '🟢 Buena/Reparadora', value: 'good' },
-                                    { label: '🟡 Regular', value: 'ok' },
-                                    { label: '🔴 Mala / Insomnio', value: 'poor' }
-                                ]}
-                            />
+                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-4">
+                                <RadioGroup
+                                    label="Calidad del Sueño (Basal)"
+                                    value={history.bpsContext?.sleepQuality || ''}
+                                    onChange={(v: string) => updateNested('bpsContext', 'sleepQuality', v)}
+                                    disabled={isClosed}
+                                    options={[
+                                        { label: '🟢 Buena/Reparadora', value: 'good' },
+                                        { label: '🟡 Regular', value: 'ok' },
+                                        { label: '🔴 Mala / Insomnio', value: 'poor' }
+                                    ]}
+                                />
+                                <div className="grid grid-cols-2 gap-3 mt-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Horas Promedio</label>
+                                        <input disabled={isClosed} type="text" placeholder="Ej: 6-7 hrs" value={history.bpsContext?.sueno?.horasPromedio || ''} onChange={e => updateNested('bpsContext', 'sueno', { ...(history.bpsContext?.sueno || {}), horasPromedio: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Despertares nocturnos</label>
+                                        <select disabled={isClosed} value={history.bpsContext?.sueno?.despertares || ''} onChange={e => updateNested('bpsContext', 'sueno', { ...(history.bpsContext?.sueno || {}), despertares: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white">
+                                            <option value="">Seleccione...</option>
+                                            <option value="ninguno">Ninguno</option>
+                                            <option value="1">1 vez</option>
+                                            <option value="2_o_mas">2 o más</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">¿Sentimiento reparador?</label>
+                                        <select disabled={isClosed} value={history.bpsContext?.sueno?.reparador || ''} onChange={e => updateNested('bpsContext', 'sueno', { ...(history.bpsContext?.sueno || {}), reparador: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white">
+                                            <option value="">Seleccione...</option>
+                                            <option value="si">Sí</option>
+                                            <option value="no">No</option>
+                                            <option value="variable">Variable</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <RadioGroup
-                                label="Niveles de Estrés (Basal)"
-                                value={history.bpsContext?.stressLevel || ''}
-                                onChange={(v: string) => updateNested('bpsContext', 'stressLevel', v)}
-                                disabled={isClosed}
-                                options={[
-                                    { label: '🟢 Bajo', value: 'low' },
-                                    { label: '🟡 Medio (Picos)', value: 'med' },
-                                    { label: '🔴 Alto/Crónico', value: 'high' }
-                                ]}
-                            />
+                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-4">
+                                <RadioGroup
+                                    label="Niveles de Estrés (Basal)"
+                                    value={history.bpsContext?.stressLevel || ''}
+                                    onChange={(v: string) => updateNested('bpsContext', 'stressLevel', v)}
+                                    disabled={isClosed}
+                                    options={[
+                                        { label: '🟢 Bajo', value: 'low' },
+                                        { label: '🟡 Medio (Picos)', value: 'med' },
+                                        { label: '🔴 Alto/Crónico', value: 'high' }
+                                    ]}
+                                />
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 mt-3 mb-1.5 uppercase tracking-wider">Fuente Principal de Estrés</label>
+                                    <select disabled={isClosed} value={history.bpsContext?.estres?.fuentePrincipal || ''} onChange={e => updateNested('bpsContext', 'estres', { ...(history.bpsContext?.estres || {}), fuentePrincipal: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white">
+                                        <option value="">Seleccione...</option>
+                                        <option value="laboral">Laboral / Económica</option>
+                                        <option value="familiar">Familiar / Pareja</option>
+                                        <option value="academica">Académica</option>
+                                        <option value="salud">Problemas de Salud</option>
+                                        <option value="otra">Otra</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                            <RadioGroup
-                                label="Adherencia Histórica a Tratamientos/Ejercicio"
-                                value={history.bpsContext?.poorAdherenceHistory || ''}
-                                onChange={(v: string) => updateNested('bpsContext', 'poorAdherenceHistory', v)}
-                                disabled={isClosed}
-                                options={[
-                                    { label: 'Buena / Habitual', value: 'buena' },
-                                    { label: 'Intermitente', value: 'intermitente' },
-                                    { label: 'Baja / Suele Abandonar', value: 'baja' }
-                                ]}
-                            />
-                        </div>
-
-                        <div className="space-y-6">
                             <RadioGroup
                                 label="Estado de Ánimo Basal"
                                 value={history.bpsContext?.basalMood || ''}
@@ -622,37 +760,83 @@ export function Screen15_AnamnesisRemota({
                                     { label: 'Bajo/Ansioso', value: 'low' }
                                 ]}
                             />
+                        </div>
+
+                        <div className="space-y-6">
+                            <RadioGroup
+                                label="Adherencia Histórica a Tratamientos/Ejercicio"
+                                value={history.bpsContext?.poorAdherenceHistory || ''}
+                                onChange={(v: string) => updateNested('bpsContext', 'poorAdherenceHistory', v)}
+                                disabled={isClosed}
+                                options={[
+                                    { label: 'Buena / Habitual', value: 'buena' },
+                                    { label: 'Intermitente', value: 'intermitente' },
+                                    { label: 'Baja / Suele Abandonar', value: 'baja' }
+                                ]}
+                            />
 
                             <RadioGroup
-                                label="Red de Apoyo Social"
+                                label="Red de Apoyo Social/Emocional Fuerte"
                                 value={history.bpsContext?.socialSupport || ''}
                                 onChange={(v: string) => updateNested('bpsContext', 'socialSupport', v)}
                                 disabled={isClosed}
                                 options={[
                                     { label: 'Fuerte apoyo', value: 'high' },
-                                    { label: 'Normal', value: 'ok' },
+                                    { label: 'Normal / Parcial', value: 'ok' },
                                     { label: 'Aislado / Bajo', value: 'low' }
                                 ]}
                             />
 
-                            <RadioGroup
-                                label="Tabaquismo"
-                                value={history.bpsContext?.smoking || ''}
-                                onChange={(v: string) => updateNested('bpsContext', 'smoking', v)}
-                                disabled={isClosed}
-                                options={[
-                                    { label: 'No Fuma', value: 'no' },
-                                    { label: 'Ex Fumador', value: 'ex_fumador' },
-                                    { label: 'Nocturno/Social', value: 'fuma_social' },
-                                    { label: 'Diario', value: 'fuma_diario' }
-                                ]}
-                            />
+                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-4">
+                                <RadioGroup
+                                    label="Tabaquismo"
+                                    value={history.bpsContext?.smoking || ''}
+                                    onChange={(v: string) => updateNested('bpsContext', 'smoking', v)}
+                                    disabled={isClosed}
+                                    options={[
+                                        { label: 'No Fuma', value: 'no' },
+                                        { label: 'Ex Fumador', value: 'ex_fumador' },
+                                        { label: 'Nocturno/Social', value: 'fuma_social' },
+                                        { label: 'Diario', value: 'fuma_diario' }
+                                    ]}
+                                />
+                                {history.bpsContext?.smoking === 'fuma_diario' && (
+                                    <div className="mt-3 animate-in fade-in zoom-in-95 duration-200">
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Cantidad Diaria Aprox.</label>
+                                        <select disabled={isClosed} value={history.bpsContext?.tabaquismo?.cantidadDiaria || ''} onChange={e => updateNested('bpsContext', 'tabaquismo', { ...(history.bpsContext?.tabaquismo || {}), cantidadDiaria: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white">
+                                            <option value="">Seleccione...</option>
+                                            <option value="1_5">1 a 5 diarios</option>
+                                            <option value="6_10">6 a 10 diarios</option>
+                                            <option value="mas_10">Más de 10 diarios</option>
+                                            <option value="variable">Variable</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-4">
+                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-amber-100/50 pb-1.5">Otros Hábitos y Nutrición</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[10px] font-medium text-slate-600 mb-1">Alcohol</label>
+                                        <input disabled={isClosed} type="text" placeholder="Ej: Ocasional, Diario..." value={history.bpsContext?.habitos?.alcohol || ''} onChange={e => updateNested('bpsContext', 'habitos', { ...(history.bpsContext?.habitos || {}), alcohol: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-medium text-slate-600 mb-1">Cafeína</label>
+                                        <input disabled={isClosed} type="text" placeholder="Ej: 3 tazas diarias" value={history.bpsContext?.habitos?.cafeina || ''} onChange={e => updateNested('bpsContext', 'habitos', { ...(history.bpsContext?.habitos || {}), cafeina: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white" />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-medium text-slate-600 mb-1">Patrón de Dieta principal</label>
+                                        <input disabled={isClosed} type="text" placeholder="Omnívoro balanceado, hipercalórico..." value={history.bpsContext?.habitos?.dieta || ''} onChange={e => updateNested('bpsContext', 'habitos', { ...(history.bpsContext?.habitos || {}), dieta: e.target.value })} className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none bg-white" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-amber-50">
                             <div>
-                                <label className="block text-[10px] font-bold text-amber-800 mb-1.5 uppercase tracking-wider">Otros Hábitos (Alcohol/Café/Dieta)</label>
-                                <input type="text" value={history.bpsContext?.otherHabits || ''} onChange={e => updateNested('bpsContext', 'otherHabits', e.target.value)} disabled={isClosed} placeholder="Dieta hipercalórica, Alcohol fines de semana..." className="w-full border border-amber-200/60 rounded-lg text-sm px-3 py-2 outline-none shadow-sm bg-white" />
+                                <label className="block text-[10px] font-bold text-amber-800 mb-1.5 uppercase tracking-wider">Actividades Significativas / Hobbies / Bienestar</label>
+                                <input type="text" value={history.bpsContext?.actividadesSignificativas || ''} onChange={e => updateNested('bpsContext', 'actividadesSignificativas', e.target.value)} disabled={isClosed} placeholder="Ej: caminar, huerto, iglesia, salir con amigos..." className="w-full border border-amber-200/60 rounded-lg text-sm px-3 py-2 outline-none shadow-sm bg-white" />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-emerald-700 mb-1.5 uppercase tracking-wider">Factores Protectores a destacar</label>

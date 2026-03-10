@@ -69,6 +69,15 @@ export interface RemoteHistory {
         repetitiveMovements: string;
         driving: string;
         adherenceBarriers: string[];
+
+        // FASE 46: Contexto domiciliario y red de apoyo
+        contextoDomiciliario?: {
+            viveCon: 'solo' | 'pareja' | 'familia' | 'hijos' | 'otros' | '';
+            redApoyo: 'si' | 'parcial' | 'no' | '';
+            personasACargo: 'no' | 'ninos' | 'adulto_mayor' | 'otro' | '';
+            barrerasEntorno: string[];
+            observacion: string;
+        };
     };
 
     // 5) BPS (Factores Basales de Recuperación)
@@ -83,6 +92,26 @@ export interface RemoteHistory {
         otherHabits: string;
         poorAdherenceHistory: string;
         protectiveFactors: string;
+
+        // FASE 46: Cuantificación BPS
+        sueno?: {
+            horasPromedio: string;
+            despertares: 'ninguno' | '1' | '2_o_mas' | '';
+            reparador: 'si' | 'no' | 'variable' | '';
+        };
+        estres?: {
+            fuentePrincipal: 'laboral' | 'familiar' | 'economica' | 'academica' | 'salud' | 'otra' | '';
+        };
+        tabaquismo?: {
+            cantidadDiaria: '1_5' | '6_10' | 'mas_10' | 'variable' | '';
+        };
+        habitos?: {
+            alcohol: string;
+            cafeina: string;
+            dieta: string;
+            otrasSustancias: string;
+        };
+        actividadesSignificativas?: string;
     };
 
     // 6) Notas Basales del Expediente
