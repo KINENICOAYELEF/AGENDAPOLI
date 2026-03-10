@@ -34,7 +34,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     };
 
     const blocks = [
-        { id: 'analyticRom', icon: '📐', theme: 'indigo', title: 'C. Rango de movimiento analítico', sub: 'Movilidad activa, pasiva y end-feel', placeholder: 'Flexión activa hombro 120° con dolor, pasiva completa...' },
         { id: 'strengthAndLoad', icon: '🦾', theme: 'emerald', title: 'D. Fuerza y tolerancia a carga', sub: 'Pruebas isométricas, RM, dinamometría o tolerancia a cargar peso', placeholder: 'Fuerza isométrica conservada pero dolorosa (4/5) en abducción...' },
         { id: 'palpation', icon: '🖐️', theme: 'amber', title: 'E. Palpación', sub: 'Temperatura, derrame, puntos gatillo, sensibilidad tisular', placeholder: 'Dolor exquisito a la palpación del epicóndilo lateral, sin aumento de temperatura local...' },
         { id: 'neuroVascular', icon: '⚡', theme: 'rose', title: 'F. Neurológico / vascular / somatosensorial', sub: 'Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad', placeholder: 'Sensibilidad conservada, reflejos osteotendíneos ++/++, pulsos distales presentes y simétricos...' },
@@ -251,7 +250,390 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
             </div>
 
-            {/* C-K BLOQUES CLINICOS RESTANTES*/}
+            {/* C. RANGO DE MOVIMIENTO ANALÍTICO */}
+            <div className="bg-white border text-sm border-indigo-200 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-shadow hover:shadow-md">
+                <div className="bg-indigo-50/50 p-4 flex justify-between items-start border-b border-indigo-200">
+                    <div>
+                        <h3 className="font-bold text-indigo-900 flex items-center gap-2 tracking-wide">
+                            <span className="text-lg">📐</span> C. Rango de movimiento analítico
+                        </h3>
+                        <p className="text-[11px] font-medium opacity-80 mt-1 uppercase tracking-widest text-indigo-900">
+                            Movilidad activa, pasiva y end-feel
+                        </p>
+                    </div>
+                    <button className="text-[10px] w-6 h-6 rounded-full flex items-center justify-center border border-indigo-200 bg-white text-indigo-500 opacity-60 hover:opacity-100 transition-opacity" title="📝 Partir por exploración activa.\n👉 Pasar a pasiva si aporta o hay déficit activo.\n📐 Usar goniómetro solo si el número es relevante (ej. post-op).\n🆚 Comparar lado sano y anotar calidad del movimiento (temblor, trinquete, vacilación).">
+                        ?
+                    </button>
+                </div>
+
+                <div className="p-0 overflow-x-auto bg-slate-50/30">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-indigo-50/40 text-[10px] uppercase tracking-wider text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 w-40 max-w-[12rem]">Articulación / Lado</th>
+                                <th className="p-3 w-40 max-w-[12rem]">Movimiento</th>
+                                <th className="p-3 text-center w-28">¿Activo?</th>
+                                <th className="p-3 w-48">Resultado ACT</th>
+                                <th className="p-3 text-center w-28">¿Pasivo?</th>
+                                <th className="p-3 w-48">Resultado PAS / Tope</th>
+                                <th className="p-3 w-40">EVA / Ángulo</th>
+                                <th className="p-3">Calidad / Hallazgo</th>
+                                <th className="p-3 w-16 text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(!exam.romAnaliticoConfig?.filas || exam.romAnaliticoConfig.filas.length === 0) && (
+                                <tr>
+                                    <td colSpan={9} className="p-8 text-center text-slate-400 italic font-medium text-sm">
+                                        No hay movimientos ingresados. Presiona "+ Añadir Movimiento" para comenzar.
+                                    </td>
+                                </tr>
+                            )}
+                            {(exam.romAnaliticoConfig?.filas || []).map((fila: any, i: number) => {
+                                // Lógica de Orientación Clínica Inteligente
+                                let orientacionClinica = "";
+                                if (fila.evalAct && fila.evalPas) {
+                                    const actInt = fila.resAct === 'Completo doloroso' || fila.resAct === 'Incompleto doloroso' ? 'dolor' : (fila.resAct === 'Incompleto no doloroso' ? 'deficit' : 'ok');
+                                    const actNum = fila.resAct?.includes('Incompleto') ? 0 : 1;
+                                    const pasNum = fila.resPas?.includes('Incompleto') ? 0 : 1;
+
+                                    if (actNum === 0 && pasNum === 1) { // Activo incompleto, Pasivo completo
+                                        orientacionClinica = "Orientación: podría haber influencia de dolor, inhibición o componente contráctil. Interpretar con fuerza y control motor.";
+                                    } else if (actNum === 0 && pasNum === 0) { // Ambos incompletos
+                                        orientacionClinica = "Orientación: la limitación compartida sugiere revisar movilidad articular/tejidos no contráctiles dentro del cuadro completo.";
+                                    } else if (actNum === 1 && fila.resPas === 'Completo doloroso') { // Activo y pasivo completos, pero pasivo duele
+                                        orientacionClinica = "Orientación: revisar irritabilidad, sobrepresión o sensibilidad mecánica.";
+                                    } else if (fila.resAct === 'Completo doloroso' || fila.resAct === 'Incompleto doloroso') {
+                                        // Doloroso pero llegó, ya no evalúa rango funcional puro que es difuso en estos strings pero aplica la logica de dolor de movimiento
+                                        orientacionClinica = "Orientación: registrar dolor de movimiento, no asumir déficit biológico de movilidad por sí solo.";
+                                    }
+                                }
+
+                                const handleFilaChange = (campo: string, valor: any) => {
+                                    const nuevasFilas = [...exam.romAnaliticoConfig.filas];
+                                    nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
+
+                                    // Limpiezas automáticas si se desactiva
+                                    if (campo === 'evalAct' && !valor) nuevasFilas[i].resAct = '';
+                                    if (campo === 'evalPas' && !valor) {
+                                        nuevasFilas[i].resPas = '';
+                                        nuevasFilas[i].topeFinal = '';
+                                    }
+                                    if (campo === 'usaGoniometro' && !valor) nuevasFilas[i].grados = '';
+
+                                    handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
+                                };
+
+                                return (
+                                    <React.Fragment key={fila.id}>
+                                        <tr className="bg-white hover:bg-slate-50/50 transition-colors group">
+                                            <td className="p-3 align-top">
+                                                <input
+                                                    type="text"
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
+                                                    placeholder="Ej. Hombro"
+                                                    value={fila.region}
+                                                    onChange={(e) => handleFilaChange('region', e.target.value)}
+                                                    disabled={isClosed}
+                                                />
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                    value={fila.lado}
+                                                    onChange={(e) => handleFilaChange('lado', e.target.value)}
+                                                    disabled={isClosed}
+                                                >
+                                                    <option value="Derecho">Derecho</option>
+                                                    <option value="Izquierdo">Izquierdo</option>
+                                                    <option value="Bilateral">Bilateral</option>
+                                                    <option value="Axial">Axial</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <input
+                                                    type="text"
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                    placeholder="Ej. Flexión"
+                                                    value={fila.movimiento}
+                                                    onChange={(e) => handleFilaChange('movimiento', e.target.value)}
+                                                    disabled={isClosed}
+                                                />
+                                            </td>
+                                            <td className="p-3 align-top text-center">
+                                                <label className="relative inline-flex items-center cursor-pointer mt-2">
+                                                    <input type="checkbox" className="sr-only peer" checked={fila.evalAct} onChange={(e) => handleFilaChange('evalAct', e.target.checked)} disabled={isClosed} />
+                                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500"></div>
+                                                </label>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                                                    value={fila.resAct}
+                                                    onChange={(e) => handleFilaChange('resAct', e.target.value)}
+                                                    disabled={isClosed || !fila.evalAct}
+                                                >
+                                                    <option value="">-- Resultado Activo --</option>
+                                                    <option value="Completo no doloroso">Completo no doloroso</option>
+                                                    <option value="Completo doloroso">Completo doloroso</option>
+                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 align-top text-center border-l border-slate-100">
+                                                <label className="relative inline-flex items-center cursor-pointer mt-2">
+                                                    <input type="checkbox" className="sr-only peer" checked={fila.evalPas} onChange={(e) => handleFilaChange('evalPas', e.target.checked)} disabled={isClosed} />
+                                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-400"></div>
+                                                </label>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50 mb-2"
+                                                    value={fila.resPas}
+                                                    onChange={(e) => handleFilaChange('resPas', e.target.value)}
+                                                    disabled={isClosed || !fila.evalPas}
+                                                >
+                                                    <option value="">-- Resultado Pasivo --</option>
+                                                    <option value="Completo no doloroso">Completo no doloroso</option>
+                                                    <option value="Completo doloroso">Completo doloroso</option>
+                                                    <option value="Incompleto no doloroso">Incompleto no doloroso</option>
+                                                    <option value="Incompleto doloroso">Incompleto doloroso</option>
+                                                </select>
+                                                <select
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                                                    value={fila.topeFinal}
+                                                    onChange={(e) => handleFilaChange('topeFinal', e.target.value)}
+                                                    disabled={isClosed || !fila.evalPas}
+                                                >
+                                                    <option value="">-- Tope Final --</option>
+                                                    <option value="No evaluado">No evaluado</option>
+                                                    <option value="Blando">Blando (Aproximación tej.)</option>
+                                                    <option value="Firme">Firme (Cápsula/Lig.)</option>
+                                                    <option value="Duro">Duro (Hueso-Hueso)</option>
+                                                    <option value="Vacío">Vacío (Dolor excesivo)</option>
+                                                    <option value="Espástico">Espástico (Resorte)</option>
+                                                </select>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400">EVA</span>
+                                                    <input
+                                                        type="number"
+                                                        min="0" max="10"
+                                                        className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                        placeholder="0-10"
+                                                        value={fila.eva}
+                                                        onChange={(e) => handleFilaChange('eva', e.target.value)}
+                                                        disabled={isClosed}
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <label className="flex items-center gap-1 cursor-pointer">
+                                                        <input type="checkbox" className="rounded text-indigo-500 w-3 h-3 border-slate-300" checked={fila.usaGoniometro} onChange={(e) => handleFilaChange('usaGoniometro', e.target.checked)} disabled={isClosed} />
+                                                        <span className="text-[10px] uppercase font-bold text-slate-400">Gon.</span>
+                                                    </label>
+                                                    {fila.usaGoniometro && (
+                                                        <input
+                                                            type="text"
+                                                            className="w-16 text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                            placeholder="Grados°"
+                                                            value={fila.grados}
+                                                            onChange={(e) => handleFilaChange('grados', e.target.value)}
+                                                            disabled={isClosed}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <input
+                                                    type="text"
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 mb-2"
+                                                    placeholder="Calidad/Compensación (ej. temblor)"
+                                                    value={fila.calidad}
+                                                    onChange={(e) => handleFilaChange('calidad', e.target.value)}
+                                                    disabled={isClosed}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2 outline-none focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                                                    placeholder="Hallazgo breve"
+                                                    value={fila.hallazgo}
+                                                    onChange={(e) => handleFilaChange('hallazgo', e.target.value)}
+                                                    disabled={isClosed}
+                                                />
+                                            </td>
+                                            <td className="p-3 align-top text-center border-l border-slate-100">
+                                                <button
+                                                    onClick={() => {
+                                                        const nuevasFilas = exam.romAnaliticoConfig.filas.filter((_: any, idx: number) => idx !== i);
+                                                        handleUpdateExam('romAnaliticoConfig', { ...exam.romAnaliticoConfig, filas: nuevasFilas });
+                                                    }}
+                                                    disabled={isClosed}
+                                                    className="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 mt-2 mx-auto disabled:opacity-0"
+                                                    title="Eliminar fila"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {orientacionClinica && (
+                                            <tr className="bg-indigo-50/20 border-b border-indigo-100">
+                                                <td colSpan={9} className="p-3">
+                                                    <div className="flex gap-2 items-start text-xs text-indigo-800 font-medium">
+                                                        <span className="text-sm mt-[-2px]">💡</span>
+                                                        <p>{orientacionClinica}</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <button
+                        onClick={() => {
+                            const configBase = exam.romAnaliticoConfig || { filas: [], configTejidos: { mostrar: false, filas: [] } };
+                            const nuevaFila = {
+                                id: Date.now().toString(), region: '', lado: 'Derecho', movimiento: '',
+                                evalAct: true, evalPas: false, resAct: '', resPas: '', topeFinal: '',
+                                eva: '', usaGoniometro: false, grados: '', calidad: '', hallazgo: ''
+                            };
+                            handleUpdateExam('romAnaliticoConfig', { ...configBase, filas: [...configBase.filas, nuevaFila] });
+                        }}
+                        disabled={isClosed}
+                        className="text-sm font-bold text-indigo-600 bg-white border border-indigo-200 px-4 py-2 rounded-xl shadow-sm hover:bg-indigo-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        <span>+</span> Añadir Movimiento
+                    </button>
+
+                    {!exam.romAnaliticoConfig?.configTejidos?.mostrar && (
+                        <button
+                            onClick={() => {
+                                const configBase = exam.romAnaliticoConfig || { filas: [] };
+                                handleUpdateExam('romAnaliticoConfig', {
+                                    ...configBase,
+                                    configTejidos: { mostrar: true, filas: [] }
+                                });
+                            }}
+                            disabled={isClosed}
+                            className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors underline underline-offset-2"
+                        >
+                            + Añadir análisis específico de tejido (Opcional)
+                        </button>
+                    )}
+                </div>
+
+                {/* Submódulo opcional de Tejidos */}
+                {exam.romAnaliticoConfig?.configTejidos?.mostrar && (
+                    <div className="border-t-2 border-dashed border-indigo-100 bg-indigo-50/20 p-4 animate-in fade-in duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                                🧬 Movilidad / longitud de tejidos (Submódulo)
+                            </h4>
+                            <button
+                                onClick={() => {
+                                    const configBase = exam.romAnaliticoConfig || { filas: [] };
+                                    handleUpdateExam('romAnaliticoConfig', {
+                                        ...configBase,
+                                        configTejidos: { mostrar: false, filas: [] }
+                                    });
+                                }}
+                                disabled={isClosed}
+                                className="text-[10px] text-red-500 uppercase font-bold tracking-widest hover:bg-red-50 px-2 py-1 rounded"
+                            >
+                                Quitar módulo
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto rounded-xl border border-indigo-100 bg-white shadow-sm">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="bg-indigo-50 text-[10px] uppercase text-indigo-500 font-bold">
+                                        <th className="p-3">Tejido / Músculo / Cadena</th>
+                                        <th className="p-3">Lado</th>
+                                        <th className="p-3">Prueba Usada</th>
+                                        <th className="p-3">Resultado</th>
+                                        <th className="p-3">Comentario Breve</th>
+                                        <th className="p-3 w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-indigo-50">
+                                    {(exam.romAnaliticoConfig.configTejidos.filas || []).map((tejido: any, i: number) => {
+                                        const handleTejidoChange = (campo: string, valor: string) => {
+                                            const nuevasFilas = [...exam.romAnaliticoConfig.configTejidos.filas];
+                                            nuevasFilas[i] = { ...nuevasFilas[i], [campo]: valor };
+                                            handleUpdateExam('romAnaliticoConfig', {
+                                                ...exam.romAnaliticoConfig,
+                                                configTejidos: { ...exam.romAnaliticoConfig.configTejidos, filas: nuevasFilas }
+                                            });
+                                        };
+                                        return (
+                                            <tr key={tejido.id} className="hover:bg-slate-50 group">
+                                                <td className="p-2">
+                                                    <input type="text" className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" placeholder="Ej. Isquiosurales" value={tejido.nombre} onChange={(e) => handleTejidoChange('nombre', e.target.value)} disabled={isClosed} />
+                                                </td>
+                                                <td className="p-2">
+                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" value={tejido.lado} onChange={(e) => handleTejidoChange('lado', e.target.value)} disabled={isClosed}>
+                                                        <option value="Derecho">Derecho</option>
+                                                        <option value="Izquierdo">Izquierdo</option>
+                                                        <option value="Bilateral">Bilateral</option>
+                                                    </select>
+                                                </td>
+                                                <td className="p-2">
+                                                    <input type="text" className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" placeholder="Ej. Elevación pierna recta (SLR)" value={tejido.prueba} onChange={(e) => handleTejidoChange('prueba', e.target.value)} disabled={isClosed} />
+                                                </td>
+                                                <td className="p-2">
+                                                    <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" value={tejido.resultado} onChange={(e) => handleTejidoChange('resultado', e.target.value)} disabled={isClosed}>
+                                                        <option value="">-- Seleccionar --</option>
+                                                        <option value="Normal">Normal</option>
+                                                        <option value="Acortado">Acortado / Restringido</option>
+                                                        <option value="Hiperlaxo">Hiperlaxo / Excesivo</option>
+                                                        <option value="Doloroso sin restricción">Doloroso (sin restricción térmica)</option>
+                                                    </select>
+                                                </td>
+                                                <td className="p-2">
+                                                    <input type="text" className="w-full text-xs p-2 border border-slate-200 rounded outline-none focus:border-indigo-400" placeholder="Ej. Dolor ciático a 40°..." value={tejido.comentario} onChange={(e) => handleTejidoChange('comentario', e.target.value)} disabled={isClosed} />
+                                                </td>
+                                                <td className="p-2 text-center">
+                                                    <button onClick={() => {
+                                                        const nuevasFilas = exam.romAnaliticoConfig.configTejidos.filas.filter((_: any, idx: number) => idx !== i);
+                                                        handleUpdateExam('romAnaliticoConfig', {
+                                                            ...exam.romAnaliticoConfig,
+                                                            configTejidos: { ...exam.romAnaliticoConfig.configTejidos, filas: nuevasFilas }
+                                                        });
+                                                    }} disabled={isClosed} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar">
+                                                        ✖
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                            <div className="p-3 bg-slate-50 border-t border-indigo-50">
+                                <button
+                                    onClick={() => {
+                                        const configBase = exam.romAnaliticoConfig;
+                                        const nuevaFila = { id: Date.now().toString(), nombre: '', lado: 'Derecho', prueba: '', resultado: '', comentario: '' };
+                                        handleUpdateExam('romAnaliticoConfig', {
+                                            ...configBase,
+                                            configTejidos: { ...configBase.configTejidos, filas: [...configBase.configTejidos.filas, nuevaFila] }
+                                        });
+                                    }}
+                                    disabled={isClosed}
+                                    className="text-xs font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+                                >
+                                    + Añadir tejido
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* D-K BLOQUES CLINICOS RESTANTES*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {blocks.map((block) => {
                     const theme = getThemeClasses(block.theme);
