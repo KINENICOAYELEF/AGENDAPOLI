@@ -853,6 +853,11 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         posture?: string;
         romAnaliticoConfig?: any;
         fuerzaCargaConfig?: any;
+        palpacionConfig?: any;
+        neuroVascularConfig?: any;
+        controlMotorConfig?: any;
+        ortopedicasConfig?: any;
+        funcionalesConfig?: any;
 
         // Retain for legacy support just in case, or define as any for strictness avoidance if needed.
         checklistSuggested?: any;

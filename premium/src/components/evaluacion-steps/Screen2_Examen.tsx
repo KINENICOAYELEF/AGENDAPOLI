@@ -27,18 +27,30 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     ].filter(Boolean).join(", ");
     const alertas = alertasActivas || "Ninguna alerta roja detectada";
 
-    const handleUpdateExam = (field: string, value: string) => {
+    const sugerenciaNeuro = React.useMemo(() => {
+        const porFocos = v4?.focos?.some(f =>
+            (f.sintomasNeurologicos?.activados && f.sintomasNeurologicos.activados.length > 0) ||
+            ["Regional", "Distal", "Radicular", "Referido"].includes(f.irradiacion as string)
+        ) || false;
+
+        const porQuejas = v4?.experienciaPersona?.quejas?.some(q =>
+            /irradiaci|hormigue|adormeci|debilid|trauma/i.test(q)
+        ) || false;
+
+        const porSeguridad = v4?.seguridad?.neuroGraveProgresivo_esfinteres_sillaMontar || false;
+
+        return porFocos || porQuejas || porSeguridad;
+    }, [v4]);
+
+    const [isNeuroOpen, setIsNeuroOpen] = React.useState(sugerenciaNeuro);
+
+    const handleUpdateExam = (field: string, value: any) => {
         updateFormData((prev) => ({
             guidedExam: { ...prev.guidedExam, [field]: value }
         }));
     };
 
     const blocks = [
-        { id: 'palpation', icon: '🖐️', theme: 'amber', title: 'E. Palpación', sub: 'Temperatura, derrame, puntos gatillo, sensibilidad tisular', placeholder: 'Dolor exquisito a la palpación del epicóndilo lateral, sin aumento de temperatura local...' },
-        { id: 'neuroVascular', icon: '⚡', theme: 'rose', title: 'F. Neurológico / vascular / somatosensorial', sub: 'Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad', placeholder: 'Sensibilidad conservada, reflejos osteotendíneos ++/++, pulsos distales presentes y simétricos...' },
-        { id: 'motorControl', icon: '🧘', theme: 'teal', title: 'G. Control motor y estabilidad funcional', sub: 'Disociación, estabilizadores, propiocepción', placeholder: 'Pobre control lumbopélvico durante sentadilla profunda, valgo dinámico de rodilla derecha...' },
-        { id: 'orthopedicTestsText', icon: '🔨', theme: 'sky', title: 'H. Pruebas ortopédicas', sub: 'Tests especiales y provocativos', placeholder: 'Test de Neer (+), Hawkins-Kennedy (+), Drop Arm (-)...' },
-        { id: 'functionalTests', icon: '🏃', theme: 'orange', title: 'I. Pruebas funcionales y reintegro', sub: 'Saltos, agilidad, gestos deportivos específicos', placeholder: 'Y-Balance Test asimetría > 4cm en alcance anterior, dolor en aterrizaje de salto...' },
         { id: 'retest', icon: '🔄', theme: 'fuchsia', title: 'J. Re-test y cierre del examen físico', sub: 'Cambio post intervenciones de prueba (Signo comparable)', placeholder: 'Re-test de dolor a flexión disminuye de 7/10 a 3/10 tras modificación escapular...' },
         { id: 'complementary', icon: '🩻', theme: 'slate', title: 'K. Medidas complementarias (opcional)', sub: 'Imágenes traídas, exámenes de laboratorio o derivaciones', placeholder: 'Resonancia (05/03/2026) muestra tendinopatía supraespinoso sin rotura...' },
     ];
@@ -914,8 +926,367 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
             </div>
 
-            {/* E-K BLOQUES CLINICOS RESTANTES*/}
+            {/* E. PALPACIÓN */}
+            <div className="bg-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden flex flex-col">
+                <div className="bg-amber-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl shrink-0">🖐️</div>
+                        <div>
+                            <h3 className="font-bold text-amber-900 text-lg">E. Palpación</h3>
+                            <p className="text-xs text-amber-700/80 mt-0.5">Temperatura, derrame, sensibilidad tisular</p>
+                        </div>
+                    </div>
+                    <div className="text-xs bg-amber-100/50 text-amber-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <span className="font-bold">💡</span> Úsala si agrega valor a tu hipótesis o al descarte.
+                    </div>
+                </div>
+
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 pl-4">Estructura</th>
+                                <th className="p-3 w-28">Lado</th>
+                                <th className="p-3">Hallazgo ppal</th>
+                                <th className="p-3 w-32">Dolor (0-10)</th>
+                                <th className="p-3 w-32">Edema</th>
+                                <th className="p-3 w-32">Temp.</th>
+                                <th className="p-3">Obs</th>
+                                <th className="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(exam.palpacionConfig?.filas || []).map((fila: any, i: number) => {
+                                const handleChange = (k: string, v: any) => {
+                                    const m = [...exam.palpacionConfig.filas];
+                                    m[i] = { ...m[i], [k]: v };
+                                    handleUpdateExam('palpacionConfig', { filas: m });
+                                };
+                                return (
+                                    <tr key={fila.id} className="hover:bg-slate-50">
+                                        <td className="p-2 pl-4"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.estructura} onChange={e => handleChange('estructura', e.target.value)} disabled={isClosed} placeholder="Ej. T. Rotuliano" /></td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.lado} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
+                                                <option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.hallazgo} onChange={e => handleChange('hallazgo', e.target.value)} disabled={isClosed} placeholder="Tensión, gap..." /></td>
+                                        <td className="p-2"><input type="number" min="0" max="10" className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.dolor} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed} placeholder="0-10" /></td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.edema} onChange={e => handleChange('edema', e.target.value)} disabled={isClosed}>
+                                                <option value="No">No</option><option value="Leve">Leve</option><option value="Moderado">Moderado</option><option value="Severo">Severo</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.temperatura} onChange={e => handleChange('temperatura', e.target.value)} disabled={isClosed}>
+                                                <option value="Normal">Normal</option><option value="Aumentada">Aumentada</option><option value="Disminuida">Disminuida</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.observacion} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Breve nota" /></td>
+                                        <td className="p-2 right-0">
+                                            <button onClick={() => {
+                                                const m = exam.palpacionConfig.filas.filter((_: any, index: number) => index !== i);
+                                                handleUpdateExam('palpacionConfig', { filas: m });
+                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                    <button onClick={() => {
+                        const m = exam.palpacionConfig || { filas: [] };
+                        handleUpdateExam('palpacionConfig', { filas: [...m.filas, { id: Date.now().toString(), estructura: '', lado: lado !== 'No definido' ? lado : 'Derecho', hallazgo: '', dolor: '', edema: 'No', temperatura: 'Normal', observacion: '' }] });
+                    }} disabled={isClosed} className="text-xs font-bold text-amber-600 bg-white border border-amber-200 px-3 py-1.5 rounded shadow-sm hover:bg-amber-50">
+                        + Añadir estructura
+                    </button>
+                </div>
+            </div>
+
+            {/* F. NEUROLÓGICO / VASCULAR */}
+            <div className="bg-white rounded-2xl shadow-sm border border-rose-200 overflow-hidden flex flex-col">
+                <div onClick={() => setIsNeuroOpen(!isNeuroOpen)} className="bg-rose-50/50 hover:bg-rose-100/50 cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0">⚡</div>
+                        <div>
+                            <h3 className="font-bold text-rose-900 text-lg">F. Neurológico / vascular / somatosensorial</h3>
+                            <p className="text-xs text-rose-700/80 mt-0.5">Dermatomas, reflejos, neurodinamia, pulsos, sensibilidad</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        {sugerenciaNeuro && (
+                            <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-1 rounded-full animate-pulse">Sugerido por P1</span>
+                        )}
+                        <span className="text-rose-400 text-sm font-bold">{isNeuroOpen ? '▲ Ocultar' : '▼ Expandir'}</span>
+                    </div>
+                </div>
+
+                {isNeuroOpen && (
+                    <div className="p-4 sm:p-6 flex flex-col gap-5 bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {['Miotomas', 'Sensibilidad / Dermatomas', 'Reflejos (ROT)', 'Neurodinamia', 'Pulsos / Perfusión', 'Equilibrio / Propiocepción'].map((item) => {
+                                const key = item.split(' ')[0].toLowerCase().replace('é', 'e');
+                                const val = exam.neuroVascularConfig?.[key] || { evalua: false, hallazgo: '' };
+                                return (
+                                    <div key={item} className={`p-3 rounded-xl border transition-colors ${val.evalua ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100 bg-slate-50 hover:bg-slate-100/50'}`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <input type="checkbox" checked={val.evalua} className="rounded text-rose-500 w-4 h-4" disabled={isClosed} onChange={(e) => {
+                                                const current = exam.neuroVascularConfig || {};
+                                                handleUpdateExam('neuroVascularConfig', { ...current, [key]: { ...val, evalua: e.target.checked } });
+                                            }} />
+                                            <span className="text-sm font-bold text-slate-700">{item}</span>
+                                        </div>
+                                        {val.evalua && (
+                                            <input type="text" className="w-full text-xs p-2 border border-rose-200 rounded outline-none focus:border-rose-400 mt-1" placeholder={`Resultados de ${item.toLowerCase()}...`} value={val.hallazgo} onChange={(e) => {
+                                                const current = exam.neuroVascularConfig || {};
+                                                handleUpdateExam('neuroVascularConfig', { ...current, [key]: { ...val, hallazgo: e.target.value } });
+                                            }} disabled={isClosed} />
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="mt-2">
+                            <p className="text-xs font-bold text-slate-500 mb-1">Observación General Neuro/Vascular</p>
+                            <textarea className="w-full text-sm p-3 border border-slate-200 rounded-xl outline-none focus:border-rose-400 min-h-[80px]" placeholder="Síntesis neurológica..." value={exam.neuroVascularConfig?.observacion || ''} onChange={(e) => handleUpdateExam('neuroVascularConfig', { ...exam.neuroVascularConfig, observacion: e.target.value })} disabled={isClosed} />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* G. CONTROL MOTOR Y ESTABILIDAD FUNCIONAL */}
+            <div className="bg-white rounded-2xl shadow-sm border border-teal-200 overflow-hidden flex flex-col">
+                <div className="bg-teal-50/50 p-4 sm:p-5 flex items-center gap-3 border-b border-teal-100">
+                    <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-xl shrink-0">🧘</div>
+                    <div>
+                        <h3 className="font-bold text-teal-900 text-lg">G. Control motor y estabilidad funcional</h3>
+                        <p className="text-xs text-teal-700/80 mt-0.5">Control segmentario, lumbopélvico, escapular, balance, gesto</p>
+                    </div>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 pl-4 w-48">Región / Tarea</th>
+                                <th className="p-3">Observación estructurada (Calidad, compensaciones)</th>
+                                <th className="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(exam.controlMotorConfig?.filas || []).map((fila: any, i: number) => {
+                                const handleChange = (k: string, v: any) => {
+                                    const m = [...exam.controlMotorConfig.filas];
+                                    m[i] = { ...m[i], [k]: v };
+                                    handleUpdateExam('controlMotorConfig', { filas: m });
+                                };
+                                return (
+                                    <tr key={fila.id} className="hover:bg-slate-50">
+                                        <td className="p-2 pl-4">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.region} onChange={e => handleChange('region', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option>
+                                                <option value="Control Segmentario Local">Control Segmentario Local</option>
+                                                <option value="Estabilidad Lumbopélvica">Estabilidad Lumbopélvica</option>
+                                                <option value="Estabilidad Escapular">Estabilidad Escapular</option>
+                                                <option value="Balance / Postura">Balance / Postura</option>
+                                                <option value="Desaceleración / Aterrizaje">Desaceleración / Aterrizaje</option>
+                                                <option value="Control Unipodal">Control Unipodal</option>
+                                                <option value="Control del Gesto Específico">Control del Gesto Específico</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.observacion} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Ej. Valgo dinámico moderado en aterrizaje" /></td>
+                                        <td className="p-2 right-0">
+                                            <button onClick={() => {
+                                                const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
+                                                handleUpdateExam('controlMotorConfig', { filas: m });
+                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                    <button onClick={() => {
+                        const m = exam.controlMotorConfig || { filas: [] };
+                        handleUpdateExam('controlMotorConfig', { filas: [...m.filas, { id: Date.now().toString(), region: '', observacion: '' }] });
+                    }} disabled={isClosed} className="text-xs font-bold text-teal-600 bg-white border border-teal-200 px-3 py-1.5 rounded shadow-sm hover:bg-teal-50">
+                        + Añadir tarea motora
+                    </button>
+                </div>
+            </div>
+
+            {/* H. PRUEBAS ORTOPÉDICAS */}
+            <div className="bg-white rounded-2xl shadow-sm border border-sky-200 overflow-hidden flex flex-col">
+                <div className="bg-sky-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-sky-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-xl shrink-0">🔨</div>
+                        <div>
+                            <h3 className="font-bold text-sky-900 text-lg">H. Pruebas ortopédicas</h3>
+                            <p className="text-xs text-sky-700/80 mt-0.5">Tests provocativos o clústeres</p>
+                        </div>
+                    </div>
+                    <div className="text-xs bg-sky-100/50 text-sky-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <span className="font-bold">⚠️</span> No usar aisladas para diagnosticar.
+                    </div>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 pl-4">Nombre del Test / Clúster</th>
+                                <th className="p-3 w-28">Lado</th>
+                                <th className="p-3 w-32">Resultado</th>
+                                <th className="p-3 w-32 text-center">Reproduce Síntoma</th>
+                                <th className="p-3">Comentario</th>
+                                <th className="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(exam.ortopedicasConfig?.filas || []).map((fila: any, i: number) => {
+                                const handleChange = (k: string, v: any) => {
+                                    const m = [...exam.ortopedicasConfig.filas];
+                                    m[i] = { ...m[i], [k]: v };
+                                    handleUpdateExam('ortopedicasConfig', { filas: m });
+                                };
+                                return (
+                                    <tr key={fila.id} className="hover:bg-slate-50">
+                                        <td className="p-2 pl-4"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.test} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="Ej. Neer" /></td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.lado} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
+                                                <option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option><option value="Bilateral">Bilateral</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.resultado} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option><option value="Positivo">Positivo (+)</option><option value="Negativo">Negativo (-)</option><option value="Equívoco">Equívoco</option><option value="No realizado">No realizado</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2 text-center">
+                                            <input type="checkbox" checked={fila.reproduce} onChange={e => handleChange('reproduce', e.target.checked)} disabled={isClosed} className="rounded text-sky-500 w-4 h-4 cursor-pointer" />
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.comentario} onChange={e => handleChange('comentario', e.target.value)} disabled={isClosed} placeholder="Dolor agudo..." /></td>
+                                        <td className="p-2 right-0">
+                                            <button onClick={() => {
+                                                const m = exam.ortopedicasConfig.filas.filter((_: any, index: number) => index !== i);
+                                                handleUpdateExam('ortopedicasConfig', { filas: m });
+                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                    <button onClick={() => {
+                        const m = exam.ortopedicasConfig || { filas: [] };
+                        handleUpdateExam('ortopedicasConfig', { filas: [...m.filas, { id: Date.now().toString(), test: '', lado: lado !== 'No definido' ? lado : 'Derecho', resultado: '', reproduce: false, comentario: '' }] });
+                    }} disabled={isClosed} className="text-xs font-bold text-sky-600 bg-white border border-sky-200 px-3 py-1.5 rounded shadow-sm hover:bg-sky-50">
+                        + Añadir test ortopédico
+                    </button>
+                </div>
+            </div>
+
+            {/* I. PRUEBAS FUNCIONALES Y REINTEGRO */}
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden flex flex-col">
+                <div className="bg-orange-50/50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-orange-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0">🏃</div>
+                        <div>
+                            <h3 className="font-bold text-orange-900 text-lg">I. Pruebas funcionales y reintegro</h3>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-orange-700">Objetivo Principal:</span>
+                        <select className="text-xs p-2 border border-orange-200 rounded-md bg-white text-orange-900 outline-none focus:border-orange-400"
+                            value={exam.funcionalesConfig?.objetivo || ''}
+                            onChange={e => handleUpdateExam('funcionalesConfig', { ...(exam.funcionalesConfig || {}), objetivo: e.target.value })}
+                            disabled={isClosed}
+                        >
+                            <option value="">Selección general</option>
+                            <option value="Vida diaria">Vida diaria</option>
+                            <option value="Volver a entrenar">Volver a entrenar</option>
+                            <option value="Volver a competir">Volver a competir</option>
+                            <option value="Prevención / Carga">Prevención / Carga</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="p-0 overflow-x-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold border-b border-slate-200">
+                                <th className="p-3 pl-4">Plantilla / Test</th>
+                                <th className="p-3 w-28">Lado</th>
+                                <th className="p-3 w-28">Resultado</th>
+                                <th className="p-3 w-20">Dolor</th>
+                                <th className="p-3 w-28">Calidad</th>
+                                <th className="p-3">Obs / Tolerancia</th>
+                                <th className="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {(exam.funcionalesConfig?.filas || []).map((fila: any, i: number) => {
+                                const handleChange = (k: string, v: any) => {
+                                    const m = [...exam.funcionalesConfig.filas];
+                                    m[i] = { ...m[i], [k]: v };
+                                    handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
+                                };
+                                return (
+                                    <tr key={fila.id} className="hover:bg-slate-50">
+                                        <td className="p-2 pl-4">
+                                            <input type="text" list={`func-list-${fila.id}`} className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.test} onChange={e => handleChange('test', e.target.value)} disabled={isClosed} placeholder="VD, Gym, Salto..." />
+                                            <datalist id={`func-list-${fila.id}`}>
+                                                <option value="Y-Balance Test" />
+                                                <option value="Hop Test (Single)" />
+                                                <option value="Hop Test (Triple)" />
+                                                <option value="Change of Direction (COD)" />
+                                                <option value="Sentadilla overhead" />
+                                                <option value="Drop Jump" />
+                                                <option value="Upper Quarter Y-Balance" />
+                                                <option value="CBT (Closed Kinetic Chain Upper)" />
+                                            </datalist>
+                                        </td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.lado} onChange={e => handleChange('lado', e.target.value)} disabled={isClosed}>
+                                                <option value="Bilateral">Bilateral</option><option value="Derecho">Derecho</option><option value="Izquierdo">Izquierdo</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.resultado} onChange={e => handleChange('resultado', e.target.value)} disabled={isClosed} placeholder="cm, seg, %" /></td>
+                                        <td className="p-2"><input type="number" min="0" max="10" className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.dolor} onChange={e => handleChange('dolor', e.target.value)} disabled={isClosed} placeholder="0-10" /></td>
+                                        <td className="p-2">
+                                            <select className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.calidad} onChange={e => handleChange('calidad', e.target.value)} disabled={isClosed}>
+                                                <option value="">Seleccione...</option><option value="Óptima">Óptima</option><option value="Aceptable">Aceptable</option><option value="Pobre">Pobre</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2"><input className="w-full text-xs p-2 border border-slate-200 rounded outline-none" value={fila.observacion} onChange={e => handleChange('observacion', e.target.value)} disabled={isClosed} placeholder="Fatiga, valgo..." /></td>
+                                        <td className="p-2 right-0">
+                                            <button onClick={() => {
+                                                const m = exam.funcionalesConfig.filas.filter((_: any, index: number) => index !== i);
+                                                handleUpdateExam('funcionalesConfig', { ...exam.funcionalesConfig, filas: m });
+                                            }} className="text-red-400 hover:text-red-600 p-1" disabled={isClosed}>✕</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="bg-slate-50 p-3 border-t border-slate-200">
+                    <button onClick={() => {
+                        const baseConfig = exam.funcionalesConfig || { objetivo: '', filas: [] };
+                        handleUpdateExam('funcionalesConfig', { ...baseConfig, filas: [...(baseConfig.filas || []), { id: Date.now().toString(), test: '', lado: 'Bilateral', resultado: '', dolor: '', calidad: '', observacion: '' }] });
+                    }} disabled={isClosed} className="text-xs font-bold text-orange-600 bg-white border border-orange-200 px-3 py-1.5 rounded shadow-sm hover:bg-orange-50">
+                        + Añadir prueba funcional
+                    </button>
+                </div>
+            </div>
+
+            {/* J-K BLOQUES CLINICOS RESTANTES (Opcionales)*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
                 {blocks.map((block) => {
                     const theme = getThemeClasses(block.theme);
                     return (
