@@ -30,48 +30,91 @@ interface GeminiCallParams {
 export async function callGemini(params: GeminiCallParams): Promise<string> {
     const { systemInstruction, userPrompt, temperature = 0.2 } = params;
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
         throw new Error('GEMINI_API_KEY no detectada en las variables de entorno server-side.');
     }
 
-    try {
-        const configParams: any = {
-            systemInstruction: systemInstruction,
+    const activeModel = params.modelId || DEFAULT_MODEL;
+
+    // Build the request payload natively for the v1beta Google Generative Language API
+    const requestPayload: any = {
+        contents: [
+            {
+                role: 'user',
+                parts: [{ text: userPrompt }]
+            }
+        ],
+        generationConfig: {
             temperature: temperature,
             topP: params.topP,
             topK: params.topK,
             responseMimeType: params.responseMimeType || "application/json"
-        };
-        
-        const activeModel = params.modelId || DEFAULT_MODEL;
-
-        if (activeModel.startsWith('gemini-3')) {
-            if (params.thinkingBudget) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingBudget. Use thinkingLevel.`);
-            if (params.thinkingLevel) configParams.thinkingConfig = { thinkingLevel: params.thinkingLevel };
-        } else if (activeModel.startsWith('gemini-2.5')) {
-            if (params.thinkingLevel) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingLevel. Use thinkingBudget.`);
-            if (params.thinkingBudget) configParams.thinkingConfig = { thinkingBudget: params.thinkingBudget };
         }
+    };
 
-        const response = await ai.models.generateContent({
-            model: activeModel,
-            contents: userPrompt,
-            config: configParams
+    if (systemInstruction) {
+        requestPayload.systemInstruction = {
+            role: 'system',
+            parts: [{ text: systemInstruction }]
+        };
+    }
+
+    if (activeModel.startsWith('gemini-3')) {
+        if (params.thinkingBudget) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingBudget. Use thinkingLevel.`);
+        if (params.thinkingLevel) {
+            requestPayload.generationConfig.thinkingConfig = { thinkingLevel: params.thinkingLevel === 'low' ? 'LOW' : params.thinkingLevel === 'high' ? 'HIGH' : 'STANDARD' };
+        }
+    } else if (activeModel.startsWith('gemini-2.5')) {
+        if (params.thinkingLevel) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingLevel. Use thinkingBudget.`);
+        if (params.thinkingBudget) {
+            requestPayload.generationConfig.thinkingConfig = { thinkingBudget: params.thinkingBudget };
+        }
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
+
+    // Implementar AbortController para evitar hangs infinitos en Vercel
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos máximo por llamada individual (evita 504 global de Vercel)
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestPayload),
+            signal: controller.signal
         });
 
-        // REVISIÓN EXPLÍCITA DE Finish Reason para evitar bloqueos ciegos
-        const finishReason = response.candidates?.[0]?.finishReason;
+        clearTimeout(timeoutId);
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || `HTTP ${response.status}: ${JSON.stringify(data)}`);
+        }
+
+        const candidate = data.candidates?.[0];
+        const finishReason = candidate?.finishReason;
+        
         if (finishReason === 'SAFETY' || finishReason === 'BLOCKLIST' || finishReason === 'PROHIBITED_CONTENT' || finishReason === 'SPII' || finishReason === 'RECITATION') {
             throw new Error(`OUTPUT_BLOCKED: FinishReason=${finishReason}`);
         }
-        
-        if (!response.text) {
+
+        const text = candidate?.content?.parts?.[0]?.text;
+
+        if (!text) {
              throw new Error(`Respuesta vacía del modelo Gemini. Probable filtro de toxicidad sin finishReason explícito.`);
         }
 
-        return response.text;
+        return text;
     } catch (error: any) {
-        console.error('Error in callGemini SDK:', error);
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+             console.error(`[TIMEOUT] callGemini superó el límite de tiempo (45s) para el modelo ${activeModel}`);
+             throw new Error(`Timeout: El modelo ${activeModel} tardó demasiado en responder.`);
+        }
+        console.error('Error in callGemini fetch:', error);
         throw new Error(`Fallo en llamada a Gemini: ${error.message}`);
     }
 }
