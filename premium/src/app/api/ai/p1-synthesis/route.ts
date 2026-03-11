@@ -191,7 +191,7 @@ export async function POST(req: Request) {
         const sanitizedPayload = sanitizeClinicalTextForModel(jsonPayload);
         
         // 3. Generar hash de caché
-        const inputHash = await generateSHA256(`p1-synthesis:v2:${sanitizedPayload}`);
+        const inputHash = await generateSHA256(`p1-synthesis:v3:${sanitizedPayload}`);
 
         const userPrompt = `
 Genera la síntesis de P1 estructurada en json según las reglas. Responde de forma clínica, precisa y compacta.
@@ -205,7 +205,7 @@ ${sanitizedPayload}
             systemInstruction: SYSTEM_PROMPT_P1_SYNTHESIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v2.0',
+            promptVersion: 'v3.0',
             temperature: 0.1,
             validator: (data) => {
                 // Validación robusta
