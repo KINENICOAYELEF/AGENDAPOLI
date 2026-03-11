@@ -263,6 +263,12 @@ export function Screen15_AnamnesisRemota({
     const [history, setHistory] = useState<RemoteHistory>(deepMergeWithInitial(formData.remoteHistorySnapshot as any));
 
     useEffect(() => {
+        if ((formData as any)._importedAt) {
+            setHistory(deepMergeWithInitial(formData.remoteHistorySnapshot as any));
+        }
+    }, [(formData as any)._importedAt]);
+
+    useEffect(() => {
         if (formData.remoteHistorySnapshot) return;
         if (!globalActiveYear || !usuariaId) return;
 
