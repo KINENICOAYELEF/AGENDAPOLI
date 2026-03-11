@@ -684,6 +684,8 @@ export interface AnamnesisProximaV4 {
     status: "draft" | "approved";
     updatedAt: string; // ISOString
 
+    p1_ai_structured?: any; // FASE 11: Unified P1 Output
+
     focos: FocoV4[];
 
     // MINI FASE 12: Función y PSFS

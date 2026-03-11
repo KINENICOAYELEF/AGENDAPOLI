@@ -59,8 +59,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [lastSaved, setLastSaved] = useState<string | null>(null);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
-    const [isProcessingPreguntasIA, setIsProcessingPreguntasIA] = useState(false);
-    const [isProcessingExamenIA, setIsProcessingExamenIA] = useState(false);
     const [showFocoGuide, setShowFocoGuide] = useState(false);
     const [focoGuideTab, setFocoGuideTab] = useState(0);
     const [showRelatoGuide, setShowRelatoGuide] = useState(false);
@@ -1769,21 +1767,20 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     )}
                 </div>
 
-                {/* 5. Procesar con IA */}
+                {/* 5. Procesar con IA (FASE 11: Unified P1 Refactor) */}
                 <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm p-4">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="flex items-center justify-center w-5 h-5 rounded-md bg-purple-700 text-white font-bold text-[10px]">5</span>
-                        <h3 className="font-bold text-purple-900 text-sm">Procesar con Inteligencia Artificial</h3>
+                        <h3 className="font-bold text-purple-900 text-sm">Sintetizar Entrevista Clínica con Inteligencia Artificial</h3>
                     </div>
 
                     <button
                         onClick={async (e) => {
                             e.preventDefault();
 
-                            // Control de Relato Vacío (Fase 20 / QA)
                             const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
                             if (relatoLength < 10) {
-                                alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica antes de solicitar análisis a la IA.");
+                                alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica completa antes de solicitar el análisis a la IA.");
                                 return;
                             }
 
@@ -1793,100 +1790,43 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     interviewV4: interviewV4,
                                     remoteHistorySnapshot: formData.remoteHistorySnapshot
                                 };
-                                const response = await fetch('/api/ai/fase7-extract', {
+                                const response = await fetch('/api/ai/p1-synthesis', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
+                                    body: JSON.stringify({ payload })
                                 });
                                 const data = await response.json();
 
-                                if (response.ok && data) {
-                                    if (data._IS_JSON_ERROR) {
-                                        console.error("Soft Error from AI Parser:", data);
-                                        updateV4({
-                                            jsonExtractError: true,
-                                            jsonExtractRawBackup: data.raw_text,
-                                            analisisIA: null as any // Reset to show error state in UI
-                                        } as any);
-                                    } else {
-                                        // FASE 19 y FASE 24 (Auto-Llenado Extendido de Anclas y Datos Modificados)
-                                        let updatedFocos = [...interviewV4.focos];
-                                        let newObjetivo = interviewV4.objetivoPersona;
-                                        let newHayLimitacion = interviewV4.hayLimitacionFuncional;
+                                if (response.ok && data.success) {
+                                    const aiData = data.data;
 
-                                        // Extracción general (Objetivo)
-                                        const objVal = getFieldText(data.extraccion_general?.objetivo_expectativa_plazo);
-                                        if (objVal) {
-                                            newObjetivo = objVal;
-                                        }
+                                    // Auto-hidratar Foco Principal Básico si viene en el JSON
+                                    let updatedFocos = [...interviewV4.focos];
+                                    if (updatedFocos.length > 0 && aiData.foco_principal) {
+                                        const f0 = { ...updatedFocos[0] };
+                                        if (aiData.foco_principal.region) f0.region = aiData.foco_principal.region;
+                                        if (aiData.foco_principal.lado) f0.lado = aiData.foco_principal.lado;
+                                        if (aiData.foco_principal.actividad_indice) f0.actividadIndice = aiData.foco_principal.actividad_indice;
+                                        updatedFocos[0] = f0;
+                                    }
 
-                                        // Foco Principal (Índice 0)
-                                        if (updatedFocos.length > 0) {
-                                            const f0 = { ...updatedFocos[0] };
+                                    updateV4({
+                                        jsonExtractError: false,
+                                        jsonExtractRawBackup: null,
+                                        p1_ai_structured: aiData,
+                                        focos: updatedFocos
+                                    } as any);
 
-                                            // 1. Antigüedad/Inicio
-                                            const antVal = getFieldText(data.ALICIA?.antiguedad_inicio).toLowerCase();
-                                            if (antVal) {
-                                                const txt = antVal;
-
-                                                // Mapeo Inicio
-                                                if (txt.includes("agud") || txt.includes("subit") || txt.includes("súbit") || txt.includes("recien") || txt.includes("dia") || txt.includes("día") || txt.includes("hora")) f0.inicio = "Súbito";
-                                                else if (txt.includes("mes") || txt.includes("ano") || txt.includes("año") || txt.includes("semana") || txt.includes("gradual") || txt.includes("lento")) f0.inicio = "Gradual";
-
-                                                // Mapeo Antigüedad
-                                                if (txt.includes("hora") || (txt.includes("dia") && txt.includes(" 1 ")) || txt.includes("ayer")) f0.antiguedad = "<24hrs";
-                                                else if (txt.includes("seman") || txt.includes("dia") || txt.includes("día")) f0.antiguedad = "1-4 semanas";
-                                                else if (txt.includes("mese") && (txt.includes("4") || txt.includes("5") || txt.includes("6"))) f0.antiguedad = "3-6 meses";
-                                                else if (txt.includes("año") || txt.includes("ano") || txt.includes("cronico") || txt.includes("crónico") || txt.match(/\b([6-9]|1[0-9])\s*meses\b/)) f0.antiguedad = ">6 meses";
-                                                else if (txt.includes("mes")) f0.antiguedad = "1-3 meses";
-                                            }
-
-                                            // 2. Dolor Actual (Intensidad Actual)
-                                            const intVal = getFieldText(data.ALICIA?.intensidad?.actual);
-                                            if (intVal) {
-                                                const matchNum = intVal.match(/\d+/);
-                                                if (matchNum) f0.dolorActual = Number(matchNum[0]);
-                                            }
-
-                                            // 3. Actividad Índice
-                                            const comp1Val = getFieldText(data.extraccion_general?.comportamiento_24h).toLowerCase();
-                                            if (comp1Val) {
-                                                const txt = comp1Val;
-                                                if (txt.includes("empeor") || txt.includes("agrav") || txt.includes("peor")) f0.evolucion = "Empeorando";
-                                                else if (txt.includes("mejor") || txt.includes("alivi") || txt.includes("disminu")) f0.evolucion = "Mejorando";
-                                                else if (txt.includes("fluct") || txt.includes("vari") || txt.includes("intermit")) f0.evolucion = "Fluctuante";
-                                                else if (txt.includes("mantiene") || txt.includes("igual") || txt.includes("estab")) f0.evolucion = "Estable";
-                                            }
-
-                                            // 4. Evolución Global
-                                            const limVal = getFieldText(data.extraccion_general?.limitaciones_funcionales);
-                                            if (limVal) {
-                                                newHayLimitacion = true; // Forzamos si halló texto de limitaciones
-                                                if (!f0.actividadIndice) {
-                                                    f0.actividadIndice = limVal.split(",")[0].trim(); // Extract primary activity as index roughly
-                                                }
-                                            }
-
-                                            updatedFocos[0] = f0;
-                                        }
-
-                                        updateV4({
-                                            jsonExtractError: false,
-                                            jsonExtractRawBackup: null,
-                                            analisisIA: data,
-                                            objetivoPersona: newObjetivo,
-                                            hayLimitacionFuncional: newHayLimitacion,
-                                            focos: updatedFocos,
-                                            confirmacionesCriticas: {
-                                                irritabilidad_global: { estado: 'Pendiente' },
-                                                naturaleza_sugerida: { estado: 'Pendiente' },
-                                                hipotesis_orientativas: { estado: 'Pendiente' }
-                                            }
-                                        } as any);
+                                    // Debug telemetría
+                                    if (data.telemetry) {
+                                        console.log("Telemetry P1:", data.telemetry);
                                     }
                                 } else {
-                                    console.error("Error from AI:", data);
-                                    alert("Error en la llamada a la IA: " + (data.error || "Desconocido"));
+                                    console.error("Error from AI Synthesis:", data);
+                                    updateV4({
+                                        jsonExtractError: true,
+                                        jsonExtractRawBackup: JSON.stringify(data, null, 2),
+                                    } as any);
                                 }
                             } catch (err: any) {
                                 console.error("Fetch error:", err);
@@ -1900,142 +1840,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         className="w-full bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold py-4 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 border border-purple-800"
                     >
                         {isProcessingAI ? (
-                            <><span className="animate-spin text-sm">⏳</span> Analizando datos con IA (Puede tomar unos segundos)...</>
+                            <><span className="animate-spin text-sm">⏳</span> Analizando toda la entrevista (Tomará unos segundos)...</>
                         ) : (
-                            <><span>🧠</span> IA: Ordenar y extraer (Strict Mode)</>
+                            <><span>🧠</span> Generar Síntesis Clínica en 1 Clic</>
                         )}
                     </button>
 
-                    {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
-                    {interviewV4.jsonExtractError && (
-                        <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl relative overflow-hidden">
-                            <div className="flex items-start gap-3 relative z-10">
-                                <span className="text-xl">⚠️</span>
-                                <div className="flex flex-col flex-1 gap-1">
-                                    <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la respuesta estructurada IA</h4>
-                                    <p className="text-xs text-rose-600 mb-2">Gemini respondió en un formato ilegible o que rompe la matriz clínica. Tu relato libre está a salvo y no se ha borrado nada.</p>
-
-                                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                const el = document.getElementById('debug-raw-ia');
-                                                if (el) el.classList.toggle('hidden');
-                                            }}
-                                            className="bg-white border text-xs border-rose-300 text-rose-700 hover:bg-rose-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
-                                        >
-                                            👁️ Ver respuesta cruda
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                // Retrigger process automatically via hidden click or calling the button
-                                                document.getElementById('btn-ia-main-extract')?.click();
-                                            }}
-                                            className="bg-rose-600 hover:bg-rose-700 text-xs text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
-                                        >
-                                            <span>🔄</span> Reintentar extracción
-                                        </button>
-                                    </div>
-
-                                    <div id="debug-raw-ia" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto">
-                                        {interviewV4.jsonExtractRawBackup || "No se pudo respaldar el texto crudo."}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* FASE 13: Botones Opcionales Rápidos */}
-                    {!interviewV4.jsonExtractError && (
-                        <div className="flex flex-col sm:flex-row gap-3 mt-3">
-                            <button
-                                onClick={async (e) => {
-                                    e.preventDefault();
-                                    if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
-                                        alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
-                                        return;
-                                    }
-                                    setIsProcessingPreguntasIA(true);
-                                    try {
-                                        const payload = { interviewV4, remoteHistorySnapshot: formData.remoteHistorySnapshot };
-                                        const response = await fetch('/api/ai/f13-preguntas', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify(payload)
-                                        });
-                                        const data = await response.json();
-                                        if (response.ok && data) {
-                                            updateV4({
-                                                analisisIA: {
-                                                    ...(interviewV4.analisisIA || {}),
-                                                    preguntas_faltantes: data.preguntas_faltantes
-                                                }
-                                            } as any);
-                                        } else {
-                                            alert("Error en la extracción IA: " + (data.error || "Desconocido"));
-                                        }
-                                    } catch (err: any) {
-                                        alert("Error servidor: " + err.message);
-                                    } finally {
-                                        setIsProcessingPreguntasIA(false);
-                                    }
-                                }}
-                                disabled={isClosed || isProcessingPreguntasIA || isProcessingAI}
-                                className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
-                            >
-                                {isProcessingPreguntasIA ? (
-                                    <><span className="animate-spin text-sm">⏳</span> Preguntando...</>
-                                ) : (
-                                    <><span>❓</span> IA: Preguntas faltantes (máx 5)</>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={async (e) => {
-                                    e.preventDefault();
-                                    if (!interviewV4.experienciaPersona.relatoLibre?.trim()) {
-                                        alert("El relato libre está vacío. Especifique detalles antes de preguntar a la IA.");
-                                        return;
-                                    }
-                                    setIsProcessingExamenIA(true);
-                                    try {
-                                        const payload = { interviewV4, remoteHistorySnapshot: formData.remoteHistorySnapshot };
-                                        const response = await fetch('/api/ai/f13-examen', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify(payload)
-                                        });
-                                        const data = await response.json();
-                                        if (response.ok && data) {
-                                            updateV4({
-                                                analisisIA: {
-                                                    ...(interviewV4.analisisIA || {}),
-                                                    sugerencias_examen_fisico_P2: data.sugerencias_examen_fisico_P2
-                                                }
-                                            } as any);
-                                        } else {
-                                            alert("Error en la extracción IA: " + (data.error || "Desconocido"));
-                                        }
-                                    } catch (err: any) {
-                                        alert("Error servidor: " + err.message);
-                                    } finally {
-                                        setIsProcessingExamenIA(false);
-                                    }
-                                }}
-                                disabled={isClosed || isProcessingExamenIA || isProcessingAI}
-                                className="flex-1 bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 text-[11px] font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
-                            >
-                                {isProcessingExamenIA ? (
-                                    <><span className="animate-spin text-sm">⏳</span> Sugiriendo...</>
-                                ) : (
-                                    <><span>🩺</span> IA: Sugerir examen físico (P2)</>
-                                )}
-                            </button>
-                        </div>
-                    )}
                     <p className="text-center text-[10px] text-purple-600 font-medium mt-3 mb-1">
-                        La IA ordena y estructura lo escrito. No reemplaza tu criterio clínico.
+                        La IA razona, extrae y ordena el relato de arriba. No reemplaza tu criterio clínico.
                     </p>
 
                     {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
@@ -2085,293 +1897,142 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     )}
 
-                    {/* Salida IA de FASE 7 y Renderizado FASE 8 */}
-                    {(!interviewV4.jsonExtractError && interviewV4.analisisIA) && (
-                        <div className="mt-4 flex flex-col gap-4">
-
-                            {/* FASE 12: Banner de No Definitivo */}
+                    {/* Salida Estructurada FASE 11 */}
+                    {(!interviewV4.jsonExtractError && interviewV4.p1_ai_structured) && (
+                        <div className="mt-4 flex flex-col gap-4 animate-in fade-in duration-300">
+                            
                             <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl shadow-sm text-xs flex items-center justify-center gap-2 font-medium">
                                 <span>ℹ️</span>
-                                <span><strong>Modo Sugerencia:</strong> Toda esta extracción es una hipótesis generada para ser validada en P2/P3. Nada está fijado como diagnóstico definitivo en esta etapa.</span>
+                                <span><strong>Modo Hipótesis:</strong> Todo este bloque proviene del análisis estructurado de IA basado en el relato. Debes confirmarlo en P2/P3.</span>
                             </div>
-
-                            {/* FASE 11: La alerta de seguridad se ha movido al bloque final de confirmaciones críticas */}
 
                             {/* 1. Resúmenes Editables */}
                             <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden">
                                 <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
-                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">📝 Resumen Clínico (Editable)</span>
+                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">📝 Resumen Médico-Clínico Editable</span>
                                 </div>
                                 <div className="p-3">
                                     <textarea
                                         disabled={isClosed}
                                         rows={4}
                                         className="w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-none bg-slate-50 focus:bg-white focus:border-emerald-400 transition-colors leading-relaxed text-slate-700"
-                                        value={interviewV4.analisisIA.resumen_clinico || ""}
-                                        onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_clinico: e.target.value } })}
+                                        value={interviewV4.p1_ai_structured.resumen_clinico_editable || ""}
+                                        onChange={e => updateV4({ p1_ai_structured: { ...interviewV4.p1_ai_structured, resumen_clinico_editable: e.target.value } })}
                                     />
                                 </div>
                             </div>
 
                             <div className="bg-white rounded-xl shadow-sm border border-emerald-200 overflow-hidden">
                                 <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
-                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">🗣️ Resumen para la Persona Usuaria (Editable)</span>
+                                    <span className="text-xs font-bold text-emerald-800 flex items-center gap-2">🗣️ Resumen para la Persona Usuaria (Borrador)</span>
                                 </div>
                                 <div className="p-3 flex flex-col gap-3">
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[11px] font-bold text-slate-600">Lo que entendí:</label>
-                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_entiendi || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_entiendi: e.target.value } } })} />
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.p1_ai_structured.resumen_persona_usuaria?.lo_que_entendi || ""} onChange={e => updateV4({ p1_ai_structured: { ...interviewV4.p1_ai_structured, resumen_persona_usuaria: { ...interviewV4.p1_ai_structured.resumen_persona_usuaria, lo_que_entendi: e.target.value } } })} />
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-[11px] font-bold text-slate-600">Lo que te preocupa:</label>
-                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_te_preocupa || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_te_preocupa: e.target.value } } })} />
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.p1_ai_structured.resumen_persona_usuaria?.lo_que_te_preocupa || ""} onChange={e => updateV4({ p1_ai_structured: { ...interviewV4.p1_ai_structured, resumen_persona_usuaria: { ...interviewV4.p1_ai_structured.resumen_persona_usuaria, lo_que_te_preocupa: e.target.value } } })} />
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <label className="text-[11px] font-bold text-slate-600">Lo que haremos ahora:</label>
-                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.analisisIA.resumen_persona_usuaria?.lo_que_haremos_ahora || ""} onChange={e => updateV4({ analisisIA: { ...interviewV4.analisisIA!, resumen_persona_usuaria: { ...interviewV4.analisisIA!.resumen_persona_usuaria, lo_que_haremos_ahora: e.target.value } } })} />
+                                        <label className="text-[11px] font-bold text-slate-600">Opciones para empezar:</label>
+                                        <textarea disabled={isClosed} rows={2} className="w-full text-xs p-2 border border-slate-200 rounded outline-none bg-slate-50 focus:border-emerald-400" value={interviewV4.p1_ai_structured.resumen_persona_usuaria?.lo_que_haremos_ahora || ""} onChange={e => updateV4({ p1_ai_structured: { ...interviewV4.p1_ai_structured, resumen_persona_usuaria: { ...interviewV4.p1_ai_structured.resumen_persona_usuaria, lo_que_haremos_ahora: e.target.value } } })} />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Función Helper para las Tarjetas */}
-                            {(() => {
-                                const handleHighlight = (evidencia: string) => {
-                                    if (!evidencia || evidencia === "No_mencionado") return;
+                            {/* ALICIA */}
+                            {interviewV4.p1_ai_structured.alicia && (
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                                    <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
+                                        <span className="text-xs font-bold text-slate-700">🔎 Extracción A.L.I.C.I.A</span>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
+                                        {Object.entries(interviewV4.p1_ai_structured.alicia).map(([k, v]) => (
+                                            <div key={k} className="bg-white border border-slate-200 rounded p-2 text-xs">
+                                                <strong className="text-slate-500 uppercase text-[9px] block mb-0.5">{k.replace(/_/g, " ")}</strong>
+                                                <span className="text-slate-800 font-medium">{String(v || "N/A")}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                                    const relatoRaw = interviewV4.experienciaPersona.relatoLibre || "";
-                                    if (relatoRaw.indexOf(evidencia) === -1) {
-                                        alert("No se pudo resaltar: cita no encontrada");
-                                        return;
-                                    }
+                            {/* SINS */}
+                            {interviewV4.p1_ai_structured.sins && (
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                                    <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
+                                        <span className="text-xs font-bold text-slate-700">⚖️ Foco S.I.N.S Evaluado</span>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
+                                        {Object.entries(interviewV4.p1_ai_structured.sins).map(([k, v]) => (
+                                            <div key={k} className="bg-white border border-slate-200 rounded p-2 text-xs">
+                                                <strong className="text-slate-500 uppercase text-[9px] block mb-0.5">{k.replace(/_/g, " ")}</strong>
+                                                <span className="text-slate-800 font-medium">{String(v || "N/A")}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
-                                    setHighlightTexts(prev => prev.includes(evidencia) ? prev.filter(e => e !== evidencia) : [...prev, evidencia]);
-
-                                    // Scroll to the relato textarea
-                                    const textarea = document.getElementById("relato-libre-textarea");
-                                    if (textarea) {
-                                        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }
-                                };
-
-                                const renderTarjeta = (titulo: string, data: any, key: string) => {
-                                    if (!data) return null;
-                                    const hasEvidencia = data.evidencia_textual && data.evidencia_textual !== "No_mencionado";
-                                    return (
-                                        <div key={key} className="bg-white border border-slate-200 rounded-lg p-3 flex flex-col justify-between hover:shadow-md transition-shadow">
-                                            <div>
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{titulo.replace(/_/g, ' ')}</h4>
-                                                    {data.origen && (
-                                                        <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{data.origen}</span>
-                                                    )}
+                            {/* Hipótesis, Módulo P2, Contexto */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                                <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 lg:col-span-2">
+                                    <h4 className="text-xs font-bold text-indigo-800 mb-2">💡 Hipótesis Orientativas</h4>
+                                    <div className="space-y-2">
+                                        {interviewV4.p1_ai_structured.hipotesis_orientativas?.map((h: any, i: number) => (
+                                            <div key={i} className="bg-white border border-indigo-50 p-2 rounded text-[11px] gap-1 flex flex-col">
+                                                <div className="flex justify-between">
+                                                    <strong className="text-indigo-900">{h.ranking}. {h.titulo}</strong>
+                                                    <span className="text-[9px] uppercase px-1 py-0.5 rounded bg-indigo-100 text-indigo-700">{h.probabilidad?.replace("_", " ")}</span>
                                                 </div>
-                                                <p className={`text-xs font-semibold ${data.valor === 'No_mencionado' ? 'text-slate-400 italic' : 'text-slate-800'}`}>
-                                                    {data.valor}
-                                                </p>
+                                                <p className="text-indigo-700">{h.fundamento_breve}</p>
+                                                <div className="grid grid-cols-2 gap-2 mt-1 border-t border-indigo-50 pt-1">
+                                                    <p className="text-emerald-700"><strong className="block text-[9px] uppercase">A Confirmar:</strong>{h.que_hay_que_confirmar}</p>
+                                                    <p className="text-rose-700"><strong className="block text-[9px] uppercase">A Descartar:</strong>{h.que_hay_que_descartar}</p>
+                                                </div>
                                             </div>
-                                            <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                                <span className={`text-[9px] truncate max-w-[60%] ${hasEvidencia ? 'text-slate-500 italic' : 'text-slate-300'}`}>
-                                                    {hasEvidencia ? `"${data.evidencia_textual}"` : 'Sin evidencia directa'}
-                                                </span>
-                                                <button
-                                                    disabled={!hasEvidencia}
-                                                    onClick={(e) => { e.preventDefault(); handleHighlight(data.evidencia_textual); }}
-                                                    className={`text-[9px] font-bold px-2 py-1 rounded transition-colors ${!hasEvidencia ? 'bg-slate-50 text-slate-300 cursor-not-allowed' : highlightTexts.includes(data.evidencia_textual) ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-700' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}`}
-                                                    title={hasEvidencia ? "Ver en texto original" : "No hay cita exacta para resaltar"}
-                                                >
-                                                    {highlightTexts.includes(data.evidencia_textual) ? '👁️ Quitar' : '👁️ Resaltar'}
-                                                </button>
-                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3 flex flex-col gap-3">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes Clave</h4>
+                                        <div className="space-y-2">
+                                            {interviewV4.p1_ai_structured.preguntas_faltantes?.map((p: any, i: number) => (
+                                                <div key={i} className="bg-white border border-amber-50 rounded p-2">
+                                                    <p className="text-[11px] text-amber-900 font-medium">{p.pregunta}</p>
+                                                    <p className="text-[9px] text-amber-700 border-t border-amber-50 mt-1 pt-1 opacity-80">{p.por_que_importa}</p>
+                                                </div>
+                                            ))}
+                                            {(!interviewV4.p1_ai_structured.preguntas_faltantes || interviewV4.p1_ai_structured.preguntas_faltantes.length === 0) && (
+                                                <p className="text-xs text-amber-700 italic">No hay preguntas sugeridas.</p>
+                                            )}
                                         </div>
-                                    );
-                                };
-
-                                return (
-                                    <>
-                                        {/* 2. ALICIA */}
-                                        {interviewV4.analisisIA.ALICIA && (
-                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
-                                                    <span className="text-xs font-bold text-slate-700">🔎 A.L.I.C.I.A (Extraído)</span>
-                                                </div>
-                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
-                                                    {Object.entries(interviewV4.analisisIA.ALICIA).map(([key, val]) => {
-                                                        if (key === 'intensidad' && val) {
-                                                            // Handle nested intensidad object specially if needed, or map its subkeys
-                                                            return Object.entries(val).map(([subKey, subVal]) => renderTarjeta(`Intensidad: ${subKey}`, subVal, `alicia-int-${subKey}`));
-                                                        }
-                                                        return renderTarjeta(key, val, `alicia-${key}`);
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 3. SINS */}
-                                        {interviewV4.analisisIA.SINS && (
-                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100 flex justify-between items-center">
-                                                    <span className="text-xs font-bold text-slate-700">⚖️ S.I.N.S (Sugerido/Calculado)</span>
-                                                </div>
-                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
-                                                    {renderTarjeta("Severidad", interviewV4.analisisIA.SINS.severidad, "sins-sev")}
-                                                    {renderTarjeta("Posible naturaleza del dolor", interviewV4.analisisIA.SINS.naturaleza_sugerida, "sins-nat")}
-                                                    {renderTarjeta("Etapa", interviewV4.analisisIA.SINS.etapa, "sins-etapa")}
-
-                                                    {/* Irritabilidad (Nested) */}
-                                                    {interviewV4.analisisIA.SINS.irritabilidad && (
-                                                        <div className="col-span-1 sm:col-span-2 bg-white border border-rose-100 rounded-lg p-3">
-                                                            <div className="flex justify-between items-center mb-2 border-b border-rose-50 pb-2">
-                                                                <h4 className="text-[11px] font-bold text-rose-800">Irritabilidad sugerida: {interviewV4.analisisIA.SINS.irritabilidad.irritabilidad_global?.valor || "Desconocida"}</h4>
-                                                                <p className="text-[9px] text-rose-600 max-w-[60%] text-right italic">{interviewV4.analisisIA.SINS.irritabilidad.explicacion}</p>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                {renderTarjeta("Facilidad Provocación", interviewV4.analisisIA.SINS.irritabilidad.facilidad_provocacion, "irr-fac")}
-                                                                {renderTarjeta("Momento Aparición", interviewV4.analisisIA.SINS.irritabilidad.momento_aparicion, "irr-mom")}
-                                                                {renderTarjeta("Tiempo a Calmarse", interviewV4.analisisIA.SINS.irritabilidad.tiempo_a_calmarse, "irr-tie")}
-                                                                {renderTarjeta("Efecto Posterior (After-efecto)", interviewV4.analisisIA.SINS.irritabilidad.after_efecto, "irr-aft")}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 4. Extracción General */}
-                                        {interviewV4.analisisIA.extraccion_general && (
-                                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                                                <div className="bg-slate-50 px-3 py-2 border-b border-slate-100">
-                                                    <span className="text-xs font-bold text-slate-700">📋 Datos Generales (Extraído)</span>
-                                                </div>
-                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/50">
-                                                    {Object.entries(interviewV4.analisisIA.extraccion_general).map(([key, val]) => {
-                                                        if (key === 'banderas_amarillas_orientativas') return null; // Handle separately or skip
-                                                        return renderTarjeta(key, val, `gen-${key}`);
-                                                    })}
-                                                </div>
-
-                                                {/* Banderas amarillas orientativas */}
-                                                {interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas && interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas.length > 0 && (
-                                                    <div className="px-3 pb-3">
-                                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2">
-                                                            <strong className="text-[10px] text-yellow-800 uppercase block mb-1">Posibles Banderas Amarillas Mencionadas:</strong>
-                                                            <ul className="list-disc pl-4 text-[10px] text-yellow-700">
-                                                                {interviewV4.analisisIA.extraccion_general.banderas_amarillas_orientativas.map((b, i) => <li key={i}>{b}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* 5. Listas Estáticas (Hipótesis, Preguntas, Examen) */}
-                                        {interviewV4.analisisIA.hipotesis_orientativas_por_sistema && interviewV4.analisisIA.hipotesis_orientativas_por_sistema.length > 0 && (
-                                            <div className="bg-indigo-50/30 rounded-xl shadow-sm border border-indigo-100 p-3">
-                                                <h4 className="text-xs font-bold text-indigo-800 mb-2">💡 Hipótesis Orientativas</h4>
-                                                <div className="space-y-2">
-                                                    {interviewV4.analisisIA.hipotesis_orientativas_por_sistema.map((h, i) => (
-                                                        <div key={i} className="bg-white p-2 rounded border border-indigo-50 flex flex-col gap-1">
-                                                            <div className="flex justify-between items-start">
-                                                                <strong className="text-[11px] text-indigo-900">{h.nombre}</strong>
-                                                                <button onClick={(e) => { e.preventDefault(); handleHighlight(h.evidencia_textual); }} className={`text-[8px] px-1 py-0.5 rounded transition-colors flex items-center gap-1 ${highlightTexts.includes(h.evidencia_textual) ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>👁️ {highlightTexts.includes(h.evidencia_textual) ? 'Quitar' : 'Resaltar'}</button>
-                                                            </div>
-                                                            <p className="text-[10px] text-indigo-700 leading-relaxed">{h.explicacion}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Consideraciones de Contexto Basal (Prompt E) / FASE 44 */}
-                                        <div className="bg-amber-50 p-3 rounded-xl shadow-sm border border-amber-200 mt-3">
-                                            <h4 className="text-xs font-bold text-amber-900 mb-3 flex items-center gap-1 border-b border-amber-200/50 pb-2">
-                                                <span>🔍</span> Consideraciones por Contexto Basal
-                                            </h4>
-                                            {(() => {
-                                                const cb = interviewV4.analisisIA.consideraciones_basales as any;
-                                                const hasData = cb && typeof cb === 'object' && !Array.isArray(cb) && (
-                                                    (cb.modifican_evaluacion && cb.modifican_evaluacion !== 'No_mencionado' && cb.modifican_evaluacion !== 'null') ||
-                                                    (cb.modifican_pronostico && cb.modifican_pronostico !== 'No_mencionado' && cb.modifican_pronostico !== 'null') ||
-                                                    (cb.modifican_tolerancia_carga && cb.modifican_tolerancia_carga !== 'No_mencionado' && cb.modifican_tolerancia_carga !== 'null') ||
-                                                    (cb.modifican_adherencia && cb.modifican_adherencia !== 'No_mencionado' && cb.modifican_adherencia !== 'null')
-                                                );
-
-                                                if (hasData) {
-                                                    const renderCbList = (label: string, val: any) => {
-                                                        if (!val || val === 'No_mencionado' || val === 'null') return null;
-                                                        const arr = Array.isArray(val) ? val : [val];
-                                                        const validItems = arr.filter(i => i && i !== 'No_mencionado' && i !== 'null');
-                                                        if (validItems.length === 0) return null;
-                                                        return (
-                                                            <div className="mb-2">
-                                                                <strong className="text-[10px] text-amber-900 uppercase tracking-widest">{label}</strong>
-                                                                <ul className="list-disc pl-4 text-[11px] text-amber-800 mt-0.5 space-y-0.5">
-                                                                    {validItems.map((item, idx) => <li key={idx}>{item}</li>)}
-                                                                </ul>
-                                                            </div>
-                                                        );
-                                                    };
-                                                    return (
-                                                        <div className="flex flex-col">
-                                                            {renderCbList('Evaluación Física / Razonamiento', cb.modifican_evaluacion)}
-                                                            {renderCbList('Pronóstico / Tiempos', cb.modifican_pronostico)}
-                                                            {renderCbList('Tolerancia a Carga Fisiológica', cb.modifican_tolerancia_carga)}
-                                                            {renderCbList('Adherencia y Barreras Ocupacionales / BPS', cb.modifican_adherencia)}
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Fallback legacy array u objeto vacío
-                                                if (Array.isArray(cb) && cb.length > 0) {
-                                                    return (
-                                                        <ul className="list-disc list-inside text-[11px] text-amber-800 space-y-1">
-                                                            {cb.map((c: string, i: number) => <li key={i}>{c}</li>)}
-                                                        </ul>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <p className="text-[11px] text-amber-700 italic">
-                                                        {cb?.mensaje_carencia_hallazgos || "Sin antecedentes basales que modifiquen de forma evidente esta evaluación."}
-                                                    </p>
-                                                );
-                                            })()}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-emerald-800 mb-2 mt-2 pt-2 border-t border-amber-200">Factores Contextuales</h4>
+                                        <div className="text-[10px] space-y-2">
+                                            {interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas?.length > 0 && <p><strong className="text-rose-600 block">Rojas:</strong> {interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.join(", ")}</p>}
+                                            {interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas?.length > 0 && <p><strong className="text-amber-600 block">Amarillas:</strong> {interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_amarillas.join(", ")}</p>}
                                         </div>
-                                        {interviewV4.analisisIA.preguntas_faltantes && interviewV4.analisisIA.preguntas_faltantes.length > 0 && (
-                                            <div className="bg-amber-50/30 rounded-xl shadow-sm border border-amber-100 p-3">
-                                                <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes (Sugeridas)</h4>
-                                                <div className="space-y-2">
-                                                    {interviewV4.analisisIA.preguntas_faltantes.map((p, i) => (
-                                                        <div key={i} className="bg-white p-2 rounded border border-amber-50 flex flex-col gap-1">
-                                                            <strong className="text-[11px] text-amber-900">Falta: {p.tema_faltante}</strong>
-                                                            <p className="text-[10px] text-slate-600"><em>Ejemplo: "{p.como_preguntarlo}"</em></p>
-                                                            <p className="text-[9px] text-amber-700 mt-1 border-t border-amber-50 pt-1"><strong>Por qué:</strong> {p.por_que_importa}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-3 lg:col-span-3">
+                                    <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Foco Examen Físico (Paso 2) Recomendado</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
+                                        {Object.entries(interviewV4.p1_ai_structured.recomendaciones_p2_por_modulo || {}).map(([mod, data]: any) => (
+                                            <div key={mod} className="bg-white border border-teal-100 rounded p-2 flex flex-col justify-between">
+                                                <strong className="text-teal-900 whitespace-nowrap overflow-hidden text-ellipsis mb-1 block capitalize">{mod.replace(/_/g, " ")}</strong>
+                                                <p className="text-teal-700 line-clamp-2">{data.objetivo}</p>
                                             </div>
-                                        )}
-
-                                        {interviewV4.analisisIA.sugerencias_examen_fisico_P2 && interviewV4.analisisIA.sugerencias_examen_fisico_P2.length > 0 && (
-                                            <div className="bg-teal-50/30 rounded-xl shadow-sm border border-teal-100 p-3 mb-2">
-                                                <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Sugerencias Examen Físico (Paso 2)</h4>
-                                                <div className="space-y-2">
-                                                    {interviewV4.analisisIA.sugerencias_examen_fisico_P2.map((s, i) => (
-                                                        <div key={i} className="bg-white p-2 rounded border border-teal-50 flex items-start gap-2">
-                                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded text-white mt-0.5 ${s.objetivo === 'confirmar' ? 'bg-emerald-500' : s.objetivo === 'descartar' ? 'bg-rose-500' : 'bg-blue-500'}`}>
-                                                                {s.objetivo.substring(0, 4).toUpperCase()}
-                                                            </span>
-                                                            <div className="flex-1">
-                                                                <strong className="text-[11px] text-teal-900 block">{s.paso}</strong>
-                                                                <p className="text-[10px] text-teal-700 leading-tight">{s.por_que}</p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                );
-                            })()}
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Raw JSON Debug View */}
                             <details className="mt-2 bg-slate-900 rounded-xl shadow-inner border border-slate-700">
@@ -2379,7 +2040,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     <span>Ver JSON Crudo (Developer)</span>
                                 </summary>
                                 <pre className="p-3 whitespace-pre-wrap font-mono text-[11px] text-blue-300 overflow-x-auto leading-relaxed max-h-96 overflow-y-auto">
-                                    {JSON.stringify(interviewV4.analisisIA, null, 2)}
+                                    {JSON.stringify(interviewV4.p1_ai_structured, null, 2)}
                                 </pre>
                             </details>
                         </div>

@@ -197,3 +197,74 @@ export const MissingnessCheckSchema = z.object({
     })).describe("Ej. 'Falta documentar si el dolor despierta de noche'. Solo datos que puedan afectar triage funcional o estructural.")
 });
 export type MissingnessCheckType = z.infer<typeof MissingnessCheckSchema>;
+
+// G) FASE 11 (Refactor Total P1)
+export const P1SynthesisSchema = z.object({
+    resumen_clinico_editable: z.string(),
+    resumen_persona_usuaria: z.object({
+        lo_que_entendi: z.string(),
+        lo_que_te_preocupa: z.string(),
+        lo_que_haremos_ahora: z.string()
+    }),
+    alicia: z.object({
+        agravantes: z.string(),
+        atenuantes: z.string(),
+        localizacion_extension: z.string(),
+        intensidad_actual: z.string(),
+        intensidad_mejor_24h: z.string(),
+        intensidad_peor_24h: z.string(),
+        caracter_naturaleza: z.string(),
+        irritabilidad_relato: z.string(),
+        antiguedad_inicio: z.string(),
+        historia_mecanismo: z.string()
+    }),
+    sins: z.object({
+        severidad: z.string(),
+        irritabilidad_global: z.string(),
+        naturaleza_sugerida: z.string(),
+        etapa: z.string(),
+        facilidad_provocacion: z.string(),
+        momento_aparicion: z.string(),
+        tiempo_a_calmarse: z.string(),
+        after_effect: z.string()
+    }),
+    foco_principal: z.object({
+        region: z.string(),
+        lado: z.string(),
+        queja_prioritaria: z.string(),
+        actividad_indice: z.string(),
+        semaforo_carga_sugerido: z.string()
+    }),
+    hipotesis_orientativas: z.array(z.object({
+        ranking: z.number(),
+        titulo: z.string(),
+        probabilidad: z.string(), // "mas_probable" | "probable_alternativa" | "menos_probable"
+        fundamento_breve: z.string(),
+        que_hay_que_descartar: z.string(),
+        que_hay_que_confirmar: z.string()
+    })).length(3),
+    preguntas_faltantes: z.array(z.object({
+        pregunta: z.string(),
+        por_que_importa: z.string(),
+        prioridad: z.string() // "alta"
+    })).max(5),
+    recomendaciones_p2_por_modulo: z.object({
+        observacion_movimiento_inicial: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        rango_movimiento_analitico: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        fuerza_tolerancia_carga: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        palpacion: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        neuro_vascular_somatosensorial: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        control_motor_sensoriomotor: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        pruebas_ortopedicas_dirigidas: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
+        pruebas_funcionales_reintegro: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() })
+    }),
+    factores_contextuales_clave: z.object({
+        banderas_rojas: z.array(z.string()),
+        banderas_amarillas: z.array(z.string()),
+        facilitadores: z.array(z.string()),
+        barreras: z.array(z.string())
+    })
+});
+
+export type P1SynthesisType = z.infer<typeof P1SynthesisSchema>;
+

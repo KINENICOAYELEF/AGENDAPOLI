@@ -1,4 +1,5 @@
 export type AIAction = 
+    | 'P1_SYNTHESIS'
     | 'P1_EXTRACT' 
     | 'P1_QUESTIONS' 
     | 'P1_EXAM' 
@@ -30,7 +31,7 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     const allowStructuredOutput = true;
     const maxRetries = 1; // 1 retry per model, max 3 tries total handles by array len
 
-    if (screen === 'P1' || aiAction === 'FASE1' || aiAction === 'EVAL_MINIMO') {
+    if (screen === 'P1' || aiAction === 'FASE1' || aiAction === 'EVAL_MINIMO' || aiAction === 'P1_SYNTHESIS') {
         cacheBucket = 'p1_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'medium' },
