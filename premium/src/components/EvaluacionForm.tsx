@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Evaluacion, KineFocusArea, EvaluacionInicial, EvaluacionReevaluacion, Proceso } from "@/types/clinica";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -42,6 +42,11 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     // AI Integration States
     const [aiError, setAiError] = useState<string | null>(null);
+
+    // Save Feedback State
+    const [saveFeedback, setSaveFeedback] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // TEMPORIZADOR CLINICO DOCENTE (Pill)
     const [secondsElapsed, setSecondsElapsed] = useState(initialData?.timer?.totalSeconds || 0);
@@ -98,6 +103,70 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
     };
 
     // FORM STATE
+    const handleExportJSON = () => {
+        try {
+            const exportPayload = {
+                meta: {
+                    app: "Polideportivo",
+                    exportedAt: new Date().toISOString(),
+                    patientId: usuariaId,
+                    episodeId: procesoId,
+                    evaluationStatus: formData?.status || 'DRAFT',
+                    schemaVersion: "2.5"
+                },
+                payload: formData
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `eval_${usuariaId}_${Date.now()}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            document.body.removeChild(dlAnchorElem);
+            
+            setSaveFeedback({ message: "JSON descargado correctamente", type: 'success' });
+            setTimeout(() => setSaveFeedback(null), 3000);
+        } catch (error) {
+            console.error(error);
+            setSaveFeedback({ message: "Error al exportar JSON", type: 'error' });
+            setTimeout(() => setSaveFeedback(null), 3000);
+        }
+    };
+
+    const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const result = event.target?.result as string;
+                const parsed = JSON.parse(result);
+                
+                if (!parsed.payload) {
+                    throw new Error("Formato inválido: falta la llave 'payload'.");
+                }
+
+                if (window.confirm("Cargar este archivo JSON reemplazará el estado actual de toda la evaluación en pantalla. ¿Deseas continuar?")) {
+                    setFormData(parsed.payload);
+                    setSaveFeedback({ message: "JSON cargado correctamente", type: 'success' });
+                    setTimeout(() => setSaveFeedback(null), 3000);
+                }
+            } catch (error) {
+                console.error("Error importando JSON:", error);
+                setSaveFeedback({ message: "No se pudo cargar el archivo JSON. Formato inválido.", type: 'error' });
+                setTimeout(() => setSaveFeedback(null), 4000);
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const [formData, setFormData] = useState<any>({
         usuariaId,
         procesoId,
@@ -445,12 +514,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
             }
 
-            onSaveSuccess(payload, !isEditMode);
-            if (isClosing) onClose();
-        } catch (error) {
-            console.error(error);
-            alert("Error al guardar.");
-        } finally {
+            setLoading(false);
+            setLoading(false);
+            setSaveFeedback({ message: isClosing ? "Evaluación guardada definitivamente" : "Borrador guardado correctamente", type: 'success' });
+            setTimeout(() => setSaveFeedback(null), 3000);
+
+            if (isClosing) {
+                onClose(); // Cerrar overlay
+            }
+        } catch (err) {
+            console.error("Error guardando:", err);
+            setSaveFeedback({ message: "Error al guardar. Revisa tu conexión.", type: 'error' });
+            setTimeout(() => setSaveFeedback(null), 4000);
             setLoading(false);
         }
     };
@@ -546,7 +621,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 </div>
 
                 {/* NAVEGACION HORIZONTAL ENTRE PANTALLAS (TABS) */}
-                <div className="bg-white border-b border-slate-200 shadow-sm z-40 relative w-full">
+                <div className="bg-white px-2 sm:px-6 py-3 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between sticky top-0 z-40 shadow-sm gap-3">
+
                     <div className="flex overflow-x-auto gap-2 px-3 md:px-6 py-2.5 items-center w-full max-w-5xl mx-auto custom-scrollbar hide-scrollbar scroll-smooth">
                         {SCREENS.map(s => (
                             <button
@@ -601,26 +677,41 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 {/* BOTTOM BAR STICKY (GUARDADO) */}
                 {!isClosed && (
                     <div className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out pb-safe p-3 ${isKeyboardOpen ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
-                        <div className="max-w-5xl mx-auto flex flex-row gap-3">
-                            <button
-                                onClick={() => handleSave(false)}
-                                disabled={loading}
-                                className="flex-1 bg-white text-slate-700 font-bold border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 py-3.5 px-4 rounded-xl transition-all shadow-sm text-sm"
-                            >
-                                {loading ? 'Guardando...' : 'Guardar Borrador'}
-                            </button>
+                        <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-3 items-center justify-between">
+                            
+                            {/* ESTADO DE GUARDADO */}
+                            <div className="flex items-center gap-2 text-sm md:w-1/3">
+                                {saveFeedback ? (
+                                    <span className={`px-3 py-1.5 rounded-md font-bold text-xs ${saveFeedback.type === 'success' ? 'bg-emerald-100 text-emerald-800' : saveFeedback.type === 'error' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'}`}>
+                                        {saveFeedback.message}
+                                    </span>
+                                ) : (
+                                    <span className="text-slate-500 font-medium text-xs px-2">Cambios sin guardar</span>
+                                )}
+                            </div>
 
-                            <button
-                                onClick={() => handleSave(true)}
-                                disabled={loading}
-                                className={`flex-[1.5] font-bold py-3.5 px-4 rounded-xl transition-all shadow-md text-sm flex justify-center items-center gap-2 ${getValidationContext.allValid
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-lg'
-                                    : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                    }`}
-                            >
-                                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                {getValidationContext.allValid ? 'Fijar y Cerrar' : 'Revisar Cierre'}
-                            </button>
+                            {/* BOTONES */}
+                            <div className="flex w-full md:w-2/3 md:justify-end gap-3">
+                                <button
+                                    onClick={() => handleSave(false)}
+                                    disabled={loading}
+                                    className="flex-1 md:flex-none md:w-48 bg-white text-slate-700 font-black border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 py-3.5 px-4 rounded-xl transition-all shadow-sm text-sm"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar borrador'}
+                                </button>
+
+                                <button
+                                    onClick={() => handleSave(true)}
+                                    disabled={loading}
+                                    className={`flex-1 md:flex-none md:w-56 font-black py-3.5 px-4 rounded-xl transition-all shadow-md text-sm flex justify-center items-center gap-2 ${getValidationContext.allValid
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
+                                        : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Guardar definitivo
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
