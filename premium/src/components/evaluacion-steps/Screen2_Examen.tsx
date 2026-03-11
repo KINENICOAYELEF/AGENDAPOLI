@@ -47,6 +47,11 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const [isGuideOpen, setIsGuideOpen] = React.useState(false);
     const [openHelp, setOpenHelp] = React.useState<string | null>(null);
 
+    const [isKeyboardOpen, setIsKeyboardOpen] = React.useState(false);
+    const [isSynthesizing, setIsSynthesizing] = React.useState(false);
+    const [synthesisSuccess, setSynthesisSuccess] = React.useState(false);
+    const [localPreview, setLocalPreview] = React.useState<any>(null);
+
     const handleUpdateExam = (field: string, value: any) => {
         updateFormData((prev) => ({
             guidedExam: { ...prev.guidedExam, [field]: value }
@@ -2223,59 +2228,119 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 }
             </div >
 
+            {/* L. RESUMEN ESTRUCTURADO (PREVIEW) */}
+            {localPreview && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm flex flex-col mt-6 p-4 sm:p-5 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-xl shrink-0">✨</div>
+                        <div>
+                            <h3 className="font-bold text-emerald-900 text-lg">Resumen estructurado del examen físico</h3>
+                            <p className="text-xs text-emerald-700/80 mt-0.5">Síntesis generada correctamente. Los datos de tu examen físico permanecen intactos.</p>
+                        </div>
+                    </div>
+                    {localPreview.summary_text_short && (
+                        <div className="bg-white text-emerald-900 p-3 rounded-lg border border-emerald-100 mb-4 whitespace-pre-wrap text-xs font-medium shadow-sm">
+                            {localPreview.summary_text_short}
+                        </div>
+                    )}
+                    <div className="bg-white border-emerald-100 border shadow-sm rounded-lg p-3 text-xs text-emerald-800 whitespace-pre-wrap font-mono h-[200px] overflow-y-auto custom-scrollbar">
+                        {localPreview.summary_text_structured}
+                    </div>
+                </div>
+            )}
+
             {/* BOTÓN FINAL */}
             <div className="flex flex-col items-end pt-6 border-t border-slate-200 mt-4 gap-2">
                 <button
                     onClick={() => {
-                        const synthesis = autoSynthesizeFindings(exam, formData.interview);
+                        setIsSynthesizing(true);
+                        setSynthesisSuccess(false);
+                        setLocalPreview(null);
 
-                        // Validación de Mínimos Razonables
-                        const pSyn = synthesis.physicalSynthesis;
+                        // Guardamos copia inmutable para rollback por si acaso
+                        const snapshotOriginal = JSON.parse(JSON.stringify(formData));
 
-                        const hasFindings = pSyn && (
-                            (pSyn.mobility && pSyn.mobility.length > 0) ||
-                            (pSyn.strength_load && pSyn.strength_load.length > 0) ||
-                            (pSyn.neurovascular_sensorimotor && pSyn.neurovascular_sensorimotor.some(s => !s.includes('sin hallazgos'))) ||
-                            (pSyn.motor_control && pSyn.motor_control.length > 0) ||
-                            (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
-                            (pSyn.functional_tests && pSyn.functional_tests.length > 0) ||
-                            (pSyn.observation && pSyn.observation.length > 0) ||
-                            (exam.ortopedicasConfig?.sintesisFinal && exam.ortopedicasConfig?.sintesisFinal.trim() !== '') ||
-                            (exam.retestConfig?.comentario && exam.retestConfig?.comentario.trim() !== '') ||
-                            (pSyn.complementary_measures && pSyn.complementary_measures.length > 0)
-                        );
+                        try {
+                            // Operar sobre copias inmutables
+                            const examCopy = JSON.parse(JSON.stringify(exam));
+                            const interviewCopy = JSON.parse(JSON.stringify(formData.interview || {}));
 
-                        const indexTaskP1 = (pSyn?.frame?.tarea_indice || '').trim();
-                        const indexTaskA = (exam.retestGesture || '').trim();
-                        const indexTaskJ = (exam.retestConfig?.tareaIndice || '').trim();
-                        const hasIndexTask = indexTaskP1.length > 0 || indexTaskA.length > 0 || indexTaskJ.length > 0;
+                            const synthesis = autoSynthesizeFindings(examCopy, interviewCopy);
+                            const pSyn = synthesis.physicalSynthesis;
 
-                        if (!hasFindings) {
-                            alert('El examen físico está vacío. Registra al menos un hallazgo para continuar.');
-                            return;
+                            // Validación de Mínimos Razonables flexible (solo bloquea si todo está vacío)
+                            const hasFindings = pSyn && (
+                                (pSyn.mobility && pSyn.mobility.length > 0) ||
+                                (pSyn.strength_load && pSyn.strength_load.length > 0) ||
+                                (pSyn.neurovascular_sensorimotor && pSyn.neurovascular_sensorimotor.some((s: string) => !s.includes('sin hallazgos'))) ||
+                                (pSyn.motor_control && pSyn.motor_control.length > 0) ||
+                                (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
+                                (pSyn.functional_tests && pSyn.functional_tests.length > 0) ||
+                                (pSyn.observation && pSyn.observation.length > 0) ||
+                                (examCopy.ortopedicasConfig?.sintesisFinal && examCopy.ortopedicasConfig?.sintesisFinal.trim() !== '') ||
+                                (examCopy.retestConfig?.comentario && examCopy.retestConfig?.comentario.trim() !== '') ||
+                                (pSyn.complementary_measures && pSyn.complementary_measures.length > 0)
+                            );
+
+                            const indexTaskP1 = (pSyn?.frame?.tarea_indice || '').trim();
+                            const indexTaskA = (examCopy.retestGesture || '').trim();
+                            const indexTaskJ = (examCopy.retestConfig?.tareaIndice || '').trim();
+                            const hasIndexTask = indexTaskP1.length > 0 || indexTaskA.length > 0 || indexTaskJ.length > 0;
+
+                            if (!hasFindings) {
+                                alert('Faltan mínimos para sintetizar, pero tu examen no fue modificado. Registra al menos un hallazgo útil.');
+                                setIsSynthesizing(false);
+                                return;
+                            }
+
+                            // Actualizar SIN borrar lo existente, asegurando inmutabilidad en top-level
+                            updateFormData((prev) => {
+                                const newState = {
+                                    ...prev,
+                                    autoSynthesis: { ...(prev.autoSynthesis || {}), ...synthesis }
+                                };
+                                return newState;
+                            });
+
+                            setLocalPreview(pSyn);
+
+                            setTimeout(() => {
+                                setIsSynthesizing(false);
+                                setSynthesisSuccess(true);
+                                if (onNext) onNext();
+                            }, 1200);
+                        } catch (error) {
+                            console.error("Error al sintetizar:", error);
+                            alert("Hubo un error al generar la síntesis. El examen original no se ha modificado.");
+                            // updateFormData((prev) => ({ ...prev, ...snapshotOriginal })); // Optional rollback if we mutated, but here we operated on copy
+                            setIsSynthesizing(false);
+                            setSynthesisSuccess(false);
                         }
-
-                        if (!hasIndexTask) {
-                            const proceed = window.confirm('Aviso: No se ha registrado la Tarea Índice/Signo Comparable. ¿Deseas continuar a P3 de todas formas?');
-                            if (!proceed) return;
-                        }
-
-                        updateFormData((prev) => ({
-                            autoSynthesis: { ...prev.autoSynthesis, ...synthesis }
-                        }));
-
-                        // Fake un pequeño delay para dar feedback visual de progreso
-                        setTimeout(() => {
-                            if (onNext) onNext();
-                        }, 500);
                     }}
-                    disabled={isClosed}
-                    className="bg-indigo-600 text-white font-bold py-3.5 px-8 rounded-xl shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 group w-full sm:w-auto"
+                    disabled={isClosed || isSynthesizing || synthesisSuccess}
+                    className={`font-bold py-3.5 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group w-full sm:w-auto ${synthesisSuccess
+                        ? 'bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700'
+                        : (isSynthesizing ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg')
+                        }`}
                 >
-                    <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Sintetizar hallazgos físicos
+                    {isSynthesizing ? (
+                        <>
+                            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" /></svg>
+                            Sintetizando hallazgos...
+                        </>
+                    ) : synthesisSuccess ? (
+                        <>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                            Síntesis generada correctamente
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            Sintetizar hallazgos físicos
+                        </>
+                    )}
                 </button>
-                <p className="text-[11px] text-slate-500 font-medium italic pr-2 text-right">Ordena los hallazgos del examen y prepara la síntesis para P3</p>
+                <p className="text-[11px] text-slate-500 font-medium italic pr-2 text-right">Ordena los hallazgos del examen y genera un resumen estructurado (no borra nada)</p>
             </div>
 
 
