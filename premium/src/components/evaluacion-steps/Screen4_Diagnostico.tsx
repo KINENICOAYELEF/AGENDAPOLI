@@ -69,6 +69,17 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         setModeSelected(true);
     };
 
+    const moveItem = (key: 'generalObjectiveOptions' | 'smartGoals' | 'pillars', idx: number, direction: 'up' | 'down') => {
+        if (isClosed) return;
+        const copy = [...(geminiDiagnostic[key] || [])];
+        if (direction === 'up' && idx > 0) {
+            [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
+        } else if (direction === 'down' && idx < copy.length - 1) {
+            [copy[idx + 1], copy[idx]] = [copy[idx], copy[idx + 1]];
+        }
+        handleUpdateGemini({ [key]: copy });
+    };
+
     return (
         <div className="flex flex-col gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
@@ -90,13 +101,16 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     >
                         📝 Completar manualmente
                     </button>
-                    <button 
-                        onClick={handleGenerateAi} 
-                        disabled={isClosed || isGenerating} 
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                        {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Redactar diagnóstico y plan con IA</>}
-                    </button>
+                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                        <button 
+                            onClick={handleGenerateAi} 
+                            disabled={isClosed || isGenerating} 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Redactar diagnóstico y plan con IA</>}
+                        </button>
+                        <span className="text-[10px] text-emerald-800 text-center font-medium opacity-80">⚠️ Esta propuesta puede contener errores y debe ser revisada clínicamente.</span>
+                    </div>
                 </div>
             </div>
 
@@ -109,6 +123,17 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
             {modeSelected && (
                 <div className="flex flex-col gap-6 mt-4 animate-in fade-in duration-700">
                     
+                    {/* REFERENCIA PASIVA DE P3 */}
+                    <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                        <h4 className="font-bold text-blue-900 text-sm mb-2 flex items-center gap-2">🔍 Referencia P3 (Clasificación Estructurada)</h4>
+                        <p className="text-xs text-blue-800 mb-2">Utiliza esta información generada en P3 como base pasiva para completar los siguientes bloques.</p>
+                        <div className="bg-white/60 p-3 rounded text-xs text-slate-700 max-h-40 overflow-y-auto whitespace-pre-wrap font-mono border border-blue-100">
+                            {formData.autoSynthesis?.clinicalClassification 
+                                ? `${formData.autoSynthesis.clinicalClassification.category} - ${formData.autoSynthesis.clinicalClassification.subtype}\n${formData.autoSynthesis.clinicalClassification.rationale}`
+                                : (formData.clinicalSynthesis || 'Sin clasificación P3 disponible en el episodio.')
+                            }
+                        </div>
+                    </div>
                     {/* BLOQUE B — DIAGNÓSTICO KINESIOLÓGICO NARRATIVO FINAL */}
                     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">📜</span> B. Diagnóstico Kinesiológico Narrativo</h3>
@@ -131,9 +156,16 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Opciones Inteligentes (Selecciona para copiar al cuadro final)</label>
                                 <div className="space-y-2">
                                     {geminiDiagnostic.generalObjectiveOptions?.map((opt: string, idx: number) => (
-                                        <div key={idx} className="flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded cursor-pointer hover:bg-emerald-100 transition-colors" onClick={() => !isClosed && handleUpdateGemini({ generalObjective: opt })}>
-                                            <input type="radio" className="mt-1" checked={geminiDiagnostic.generalObjective === opt} readOnly />
-                                            <span className="text-sm text-emerald-900">{opt}</span>
+                                        <div key={idx} className="flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded cursor-pointer hover:bg-emerald-100 transition-colors group">
+                                            <input type="radio" className="mt-1" checked={geminiDiagnostic.generalObjective === opt} readOnly onClick={() => !isClosed && handleUpdateGemini({ generalObjective: opt })} />
+                                            <span className="text-sm text-emerald-900 flex-1" onClick={() => !isClosed && handleUpdateGemini({ generalObjective: opt })}>{opt}</span>
+                                            {!isClosed && (
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => { e.stopPropagation(); moveItem('generalObjectiveOptions', idx, 'up'); }} className="text-emerald-600 hover:bg-emerald-200 p-1 rounded font-bold leading-none text-xs" disabled={idx === 0}>↑</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); moveItem('generalObjectiveOptions', idx, 'down'); }} className="text-emerald-600 hover:bg-emerald-200 p-1 rounded font-bold leading-none text-xs" disabled={idx === (geminiDiagnostic.generalObjectiveOptions?.length || 0) - 1}>↓</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); const copy = [...(geminiDiagnostic.generalObjectiveOptions || [])]; copy.splice(idx, 1); handleUpdateGemini({ generalObjectiveOptions: copy }); }} className="text-rose-500 hover:bg-rose-100 p-1 rounded font-bold leading-none text-xs">✕</button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -168,7 +200,14 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             )}
                             {(geminiDiagnostic.smartGoals || []).map((goal: any, idx: number) => (
                                 <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-4 relative group">
-                                    {!isClosed && <button onClick={() => { const copy = [...(geminiDiagnostic.smartGoals || [])]; copy.splice(idx, 1); handleUpdateGemini({ smartGoals: copy }); }} className="absolute top-2 right-2 text-rose-400 hover:text-rose-600 font-bold text-lg leading-none hidden group-hover:block px-2">×</button>}
+                                    {!isClosed && (
+                                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-slate-50 border border-slate-200 rounded-md shadow-sm p-1 z-10">
+                                            <button onClick={() => moveItem('smartGoals', idx, 'up')} disabled={idx === 0} className="text-slate-400 hover:text-emerald-600 hover:bg-slate-100 p-1 rounded font-bold leading-none disabled:opacity-30">↑</button>
+                                            <button onClick={() => moveItem('smartGoals', idx, 'down')} disabled={idx === (geminiDiagnostic.smartGoals?.length || 0) - 1} className="text-slate-400 hover:text-emerald-600 hover:bg-slate-100 p-1 rounded font-bold leading-none disabled:opacity-30">↓</button>
+                                            <div className="w-px h-3 bg-slate-200 mx-1"></div>
+                                            <button onClick={() => { const copy = [...(geminiDiagnostic.smartGoals || [])]; copy.splice(idx, 1); handleUpdateGemini({ smartGoals: copy }); }} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded font-bold leading-none">✕</button>
+                                        </div>
+                                    )}
                                     
                                     <div className="mb-3 pr-6">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Redacción SMART {idx + 1}</label>
@@ -244,7 +283,14 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             {(geminiDiagnostic.pillars || []).length === 0 && <p className="text-xs text-slate-400">Sin pilares definidos.</p>}
                             {(geminiDiagnostic.pillars || []).map((pilar: any, idx: number) => (
                                 <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-lg relative group">
-                                    {!isClosed && <button onClick={() => { const copy = [...(geminiDiagnostic.pillars || [])]; copy.splice(idx, 1); handleUpdateGemini({ pillars: copy }); }} className="absolute top-1 right-1 text-rose-400 hover:bg-rose-100 p-1 rounded-full hidden group-hover:block leading-none text-xs">✕</button>}
+                                    {!isClosed && (
+                                        <div className="absolute top-1 right-1 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white border border-slate-200 rounded-md shadow-sm p-1 z-10">
+                                            <button onClick={() => moveItem('pillars', idx, 'up')} disabled={idx === 0} className="text-slate-400 hover:text-emerald-600 hover:bg-slate-100 p-1.5 rounded text-[10px] leading-none disabled:opacity-30">▲</button>
+                                            <button onClick={() => moveItem('pillars', idx, 'down')} disabled={idx === (geminiDiagnostic.pillars?.length || 0) - 1} className="text-slate-400 hover:text-emerald-600 hover:bg-slate-100 p-1.5 rounded text-[10px] leading-none disabled:opacity-30">▼</button>
+                                            <div className="w-px h-3 bg-slate-200 mx-0.5"></div>
+                                            <button onClick={() => { const copy = [...(geminiDiagnostic.pillars || [])]; copy.splice(idx, 1); handleUpdateGemini({ pillars: copy }); }} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded text-[10px] font-bold leading-none">✕</button>
+                                        </div>
+                                    )}
                                     <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-sm font-bold text-slate-800 mb-2 truncate pr-6" value={pilar.name} onChange={(e) => { const copy = [...(geminiDiagnostic.pillars || [])]; copy[idx].name = e.target.value; handleUpdateGemini({ pillars: copy }); }} placeholder="Nombre del Pilar" disabled={isClosed} />
                                     <textarea className="w-full bg-transparent border-none p-0 text-xs text-slate-600 outline-none resize-none h-16" value={pilar.description} onChange={(e) => { const copy = [...(geminiDiagnostic.pillars || [])]; copy[idx].description = e.target.value; handleUpdateGemini({ pillars: copy }); }} placeholder="Por qué y cómo se abordará..." disabled={isClosed} />
                                 </div>
