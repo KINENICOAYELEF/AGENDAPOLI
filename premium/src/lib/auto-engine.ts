@@ -273,6 +273,10 @@ export interface AutoSynthesisResult {
 }
 
 export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesisResult {
+    console.log("=== [DEBUG] autoSynthesizeFindings INIT ===");
+    console.log("Exam Keys provided:", exam ? Object.keys(exam) : "null");
+    console.log("Exam Data:", JSON.stringify(exam, null, 2));
+
     const structuralCandidates: AutoSynthesisResult['structuralCandidates'] = [];
     const functionalDeficits: AutoSynthesisResult['functionalDeficits'] = [];
     const bpsNotes: AutoSynthesisResult['bpsNotes'] = { topBarriers: [], topFacilitators: [] };
@@ -321,14 +325,21 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     if (!exam) return { structuralCandidates, functionalDeficits, bpsNotes, physicalSynthesis: pSyn };
 
     // Fallbacks si no hubo P1 o la Tarea Índice no se configuró en P1 pero sí en P2
-    if (!pSyn.frame.tarea_indice && exam.retestConfig?.tareaIndice) {
-        pSyn.frame.tarea_indice = exam.retestConfig.tareaIndice;
-        functionalDeficits.push({
-            label: exam.retestConfig.tareaIndice,
-            baseline: 'Base registrada en Re-test (P2)',
-            side: pSyn.frame.lado || 'N/A',
-            linkedPsfs: false
-        });
+    if (!pSyn.frame.tarea_indice) {
+        const p2Task = exam.retestGesture || exam.contextoConfig?.reTestTask || exam.retestConfig?.tareaIndice;
+        if (p2Task) {
+            pSyn.frame.tarea_indice = p2Task;
+            functionalDeficits.push({
+                label: p2Task,
+                baseline: 'Base registrada en Evaluación (P2)',
+                side: pSyn.frame.lado || 'N/A',
+                linkedPsfs: false
+            });
+        }
+    }
+
+    if (exam.examModality) {
+        pSyn.observation.push(`Modalidad Evaluación: ${exam.examModality}`);
     }
 
     // Si aún no tenemos foco, inferirlo rudimentariamente de Pruebas Ortopédicas, ROM, o Fuerza
@@ -343,13 +354,37 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     }
 
     // B. Observación
+    const obsChips = exam.observacionInicialConfig || {};
+
+    let obsGeneral = exam.observationGeneral?.trim() ? `General: ${exam.observationGeneral.trim()}` : '';
+    if (obsChips.posturaChips?.length) obsGeneral += ` [Tags: ${obsChips.posturaChips.join(', ')}]`;
+    if (obsGeneral) pSyn.observation.push(obsGeneral.trim());
+
+    let obsPostura = exam.postureAlignment?.trim() ? `Postura/Alineación: ${exam.postureAlignment.trim()}` : '';
+    if (obsPostura) pSyn.observation.push(obsPostura);
+
+    let obsMarcha = exam.gaitBasicGesture?.trim() ? `Marcha/Gesto: ${exam.gaitBasicGesture.trim()}` : '';
+    if (obsChips.marchaChips?.length) obsMarcha += ` [Tags: ${obsChips.marchaChips.join(', ')}]`;
+    if (obsMarcha) pSyn.observation.push(obsMarcha.trim());
+
+    let obsMovActivo = exam.initialActiveMovement?.trim() ? `Movim. Activo Inicial: ${exam.initialActiveMovement.trim()}` : '';
+    if (obsChips.movVisualChips?.length) obsMovActivo += ` [Tags: ${obsChips.movVisualChips.join(', ')}]`;
+    if (obsMovActivo) pSyn.observation.push(obsMovActivo.trim());
+
+    let obsSintoma = exam.symptomBehaviorMovement?.trim() ? `Comportamiento Síntoma: ${exam.symptomBehaviorMovement.trim()}` : '';
+    if (obsChips.conductaSintomaChips?.length) obsSintoma += ` [Tags: ${obsChips.conductaSintomaChips.join(', ')}]`;
+    if (obsSintoma) pSyn.observation.push(obsSintoma.trim());
+
+    if (exam.movimientoObservadoHoy?.trim()) pSyn.observation.push(`Movimiento Hoy: ${exam.movimientoObservadoHoy.trim()}`);
+
+    // Fallback al antiguo observacionConfig por si acaso
     if (exam.observacionConfig) {
         const { general, postura, marcha, movimiento, conducta } = exam.observacionConfig;
-        if (general?.trim()) pSyn.observation.push(`General: ${general.trim()}`);
-        if (postura?.trim()) pSyn.observation.push(`Postura/Alineación: ${postura.trim()}`);
-        if (marcha?.trim()) pSyn.observation.push(`Marcha/Gesto: ${marcha.trim()}`);
-        if (movimiento?.trim()) pSyn.observation.push(`Movim. Inicial: ${movimiento.trim()}`);
-        if (conducta?.trim()) pSyn.observation.push(`Conducta Síntoma: ${conducta.trim()}`);
+        if (general?.trim() && !obsGeneral) pSyn.observation.push(`General (Legado): ${general.trim()}`);
+        if (postura?.trim() && !obsPostura) pSyn.observation.push(`Postura/Alineación (Legado): ${postura.trim()}`);
+        if (marcha?.trim() && !obsMarcha) pSyn.observation.push(`Marcha/Gesto (Legado): ${marcha.trim()}`);
+        if (movimiento?.trim() && !obsMovActivo) pSyn.observation.push(`Movim. Inicial (Legado): ${movimiento.trim()}`);
+        if (conducta?.trim() && !obsSintoma) pSyn.observation.push(`Conducta Síntoma (Legado): ${conducta.trim()}`);
     }
 
     // C. Movilidad (ROM)
@@ -361,7 +396,7 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
 
             let finding = context + ': ';
             if (type === 'bilateral') {
-                finding += `Der [Act ${f.actDer || '-'}, Pas ${f.pasDer || '-'}], Izq [Act ${f.actIzq || '-'}, Pas ${f.pasIzq || '-'}]`;
+                finding += `Der [Act ${f.resActDer || f.actDer || '-'}, Pas ${f.resPasDer || f.pasDer || '-'}], Izq [Act ${f.resActIzq || f.actIzq || '-'}, Pas ${f.resPasIzq || f.pasIzq || '-'}]`;
                 if (f.asimetriaObservada?.trim()) finding += ` (Asimetría: ${f.asimetriaObservada})`;
             } else if (type === 'axial') {
                 finding += `Act ${f.resAct || '-'} / Pas ${f.resPas || '-'}`;
@@ -388,20 +423,38 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     if (exam.fuerzaCargaConfig?.filas?.length) {
         exam.fuerzaCargaConfig.filas.forEach((f: any) => {
             if (!f.region) return;
-            let finding = `${f.tipoEvaluacion || 'Carga'} - ${f.region}:`;
+            let finding = `${f.tipoEvaluacion || 'Carga'} - ${f.region} (${f.lado || 'N/A'}):`;
 
             if (f.tipoEvaluacion?.includes('Dinamometría')) {
                 if (f.dinamometriaDer || f.dinamometriaIzq) {
-                    finding += ` Der: ${f.dinamometriaDer || '-'} ${f.dinamometriaUnidad}, Izq: ${f.dinamometriaIzq || '-'} ${f.dinamometriaUnidad}`;
-                    if (f.asimetriaDina) finding += ` (Déficit ${f.asimetriaDina}%)`;
+                    finding += ` Der: ${f.dinamometriaDer || '-'} ${f.dinamometriaUnidad || 'kg'}, Izq: ${f.dinamometriaIzq || '-'} ${f.dinamometriaUnidad || 'kg'}`;
+                    if (f.diferenciaCalculada || f.asimetriaDina) finding += ` (Déficit ${f.diferenciaCalculada || f.asimetriaDina}%)`;
                 }
-            } else if (f.tipoEvaluacion === 'Ejercicios con Carga (Encoder)') {
-                finding += ` Carga ${f.cargaKg || '-'}Kg, Vel ${f.velocidadEncoder || '-'}m/s`;
+            } else if (f.tipoEvaluacion === 'Ejercicios con Carga (Encoder)' || f.cargaKg) {
+                finding += ` Carga ${f.cargaKg || '-'}Kg`;
+                if (f.velocidadEncoder) finding += `, Vel ${f.velocidadEncoder}m/s`;
+            } else if (f.tipoEvaluacion === 'Test Resistencia / Capacidad') {
+                if (f.repeticionesN) finding += ` Reps: ${f.repeticionesN}`;
+                if (f.repeticionesCorte) finding += ` (Corte: ${f.repeticionesCorte})`;
+            } else if (f.tipoEvaluacion === 'Isometría Sostenida (Tiempo)') {
+                if (f.isometriaSegundos) finding += ` Tiempo: ${f.isometriaSegundos}s`;
+                if (f.isometriaMotivo) finding += ` (Motivo corte: ${f.isometriaMotivo})`;
+            } else if (f.tipoEvaluacion === 'Fuerza Muscular Manual (Maddox/Daniel\'s)') {
+                finding += ` Grado: ${f.resultado || '-'}`;
+            } else if (f.resultado) {
+                finding += ` Res: ${f.resultado}`;
             } else {
                 finding += ` ${f.calidadEsfuerzo || 'Esfuerzo no medido'}`;
             }
 
-            if (f.dolorDurante) finding += ` | Provocación: ${f.dolorDurante}`;
+            if (f.clasificacionAutomatica) finding += ` [Nivel: ${f.clasificacionAutomatica}]`;
+
+            let dolores = [];
+            if (f.dolorDurante) dolores.push(`Durante: ${f.dolorDurante}`);
+            if (f.dolorPosterior) dolores.push(`Posterior: ${f.dolorPosterior}`);
+            if (dolores.length > 0) finding += ` | Provocación: ${dolores.join(', ')}`;
+
+            if (f.calidadEsfuerzo && !finding.includes(f.calidadEsfuerzo)) finding += ` | Calidad: ${f.calidadEsfuerzo}`;
             if (f.observacionExtra?.trim()) finding += ` | Obs: ${f.observacionExtra.trim()}`;
 
             pSyn.strength_load.push(finding.trim());
@@ -409,38 +462,68 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     }
 
     // E. Palpación
-    if (exam.palpacionConfig?.estructuras?.length) {
-        exam.palpacionConfig.estructuras.forEach((e: any) => {
-            if (!e.nombre) return;
-            let finding = `${e.nombre} (${e.lado}):`;
-            if (e.dolorCalificacion) finding += ` Dolor ${e.dolorCalificacion}.`;
-            if (e.temperatura && e.temperatura !== 'Normal') finding += ` Temp ${e.temperatura}.`;
-            if (e.edema) finding += ` Edema local.`;
+    const palpItems = exam.palpacionConfig?.filas || exam.palpacionConfig?.estructuras;
+    if (palpItems?.length) {
+        palpItems.forEach((e: any) => {
+            if (!e.estructura && !e.nombre) return;
+            let finding = `${e.estructura || e.nombre} (${e.lado || e.side || 'N/A'}):`;
+
+            if (e.hallazgoPrincipal) finding += ` ${e.hallazgoPrincipal}.`;
+            if (e.dolor === 'Exquisito' || e.dolorCalificacion === 'Exquisito') finding += ` Dolor exquisito al tacto.`;
+            else if (e.dolor || e.dolorCalificacion) finding += ` Dolor: ${e.dolor || e.dolorCalificacion}.`;
+
+            if (e.temperatura && e.temperatura !== 'Normal') finding += ` Temp: ${e.temperatura}.`;
+            if (e.edema === 'Presente' || e.edema === true) finding += ` Edema local presente.`;
             if (e.observacion?.trim()) finding += ` ${e.observacion.trim()}`;
             pSyn.palpation.push(finding.trim());
         });
+    }
+    if (exam.palpacionConfig?.movilidadAccesoria?.trim()) {
+        pSyn.palpation.push(`Movilidad Accesoria/Articular: ${exam.palpacionConfig.movilidadAccesoria.trim()}`);
     }
 
     // F. Neurovascular (Screening)
     if (exam.neuroVascularConfig) {
         const nv = exam.neuroVascularConfig;
         let hasRelevantNeuro = false;
+
+        if (nv.screening && nv.screening !== 'no_evaluado') {
+            hasRelevantNeuro = true;
+            pSyn.neurovascular_sensorimotor.push(`Screening Global: ${nv.screening}`);
+            if (nv.screeningComentario?.trim()) pSyn.neurovascular_sensorimotor.push(`Nota: ${nv.screeningComentario.trim()}`);
+        }
+
         const neuroMap = [
             { key: 'miotomas', label: 'Miotomas' },
             { key: 'sensibilidad', label: 'Sensibilidad/Dermatomas' },
-            { key: 'reflejos', label: 'Reflejos' },
+            { key: 'rot', label: 'Reflejos' },
+            { key: 'reflejos', label: 'Reflejos (Legado)' },
             { key: 'neurodinamia', label: 'Neurodinamia (SLR/Slump/ULTT)' },
             { key: 'pulsos', label: 'Perfusión/Pulsos' },
-            { key: 'equilibrio', label: 'Equilibrio/Propiocepción' }
+            { key: 'propiocepcion', label: 'Propiocepción' },
+            { key: 'coordinacion', label: 'Coordinación' },
+            { key: 'equilibrio', label: 'Equilibrio (Legado)' },
+            { key: 'especifico', label: 'Test Específico' }
         ];
 
+        // Usamos el objeto "dominios" si existe, o caemos al nivel raíz
+        const src = nv.dominios || nv;
+
         neuroMap.forEach(item => {
-            if (nv[item.key]?.evalua) {
-                const hallazgo = nv[item.key]?.hallazgo || '';
-                // Consideramos normal o screening limpio si dice "Normal", "Sin alteraciones", o está vacío.
-                if (hallazgo && !hallazgo.toLowerCase().includes('normal') && !hallazgo.toLowerCase().includes('sin alter')) {
+            const domainData = src[item.key];
+            if (domainData && (domainData.evalua || domainData.resultado)) {
+                const hallazgo = domainData.detalle || domainData.hallazgo || '';
+                const resultado = domainData.resultado || (domainData.evalua ? 'Evaluado' : '');
+
+                // Consideramos normal o screening limpio si dice "Normal", "Sin alteraciones", o está vacío y el resultado también es Normal.
+                const isNormalResultado = resultado.toLowerCase().includes('normal') || resultado.toLowerCase().includes('sin alter');
+                const isNormalHallazgo = !hallazgo || hallazgo.toLowerCase().includes('normal') || hallazgo.toLowerCase().includes('sin alter');
+
+                if (!isNormalResultado || !isNormalHallazgo) {
                     hasRelevantNeuro = true;
-                    pSyn.neurovascular_sensorimotor.push(`${item.label}: ${hallazgo}`);
+                    let line = `${item.label}: ${resultado}`;
+                    if (hallazgo) line += ` - ${hallazgo}`;
+                    pSyn.neurovascular_sensorimotor.push(line);
                 }
             }
         });
@@ -450,28 +533,30 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
             pSyn.neurovascular_sensorimotor.push(`Obs Neuro: ${nv.observacion.trim()}`);
         }
 
-        if (!hasRelevantNeuro && Object.values(nv).some((v: any) => v?.evalua)) {
-            pSyn.neurovascular_sensorimotor.push('Screening neurológico/vascular sin hallazgos relevantes registrados.');
+        if (!hasRelevantNeuro && ((nv.screening === 'limpio' || nv.screening === 'Normal') || Object.values(src).some((v: any) => v?.evalua || v?.resultado === 'Normal'))) {
+            pSyn.neurovascular_sensorimotor.push('Screening neurológico/vascular realizado sin hallazgos patológicos o relevantes.');
         }
     }
 
     // G. Control Motor
     if (exam.controlMotorConfig?.filas?.length) {
         exam.controlMotorConfig.filas.forEach((f: any) => {
-            if (!f.region) return;
+            if (!f.regionTarea) return;
             // Region aqui es la Tarea Funcional evaluada
-            let finding = `${f.region}: ${f.calidadEjecucion || ''}`;
-            if (f.compensaciones) finding += ` | Compensación: ${f.compensaciones}`;
+            let finding = `${f.regionTarea} [${f.tipoTarea || 'Test'}]: ${f.calidad || f.calidadEjecucion || ''}`;
+            if (f.sintoma) finding += ` | Provocación: ${f.sintoma}`;
+            if (f.compensacion || f.compensaciones) finding += ` | Compensación: ${f.compensacion || f.compensaciones}`;
             if (f.observacion?.trim()) finding += ` | Obs: ${f.observacion.trim()}`;
             pSyn.motor_control.push(finding.trim());
         });
     }
 
     // H. Ortopédicas Dirigidas
-    if (exam.ortopedicasConfig?.filas?.length) {
+    if (exam.ortopedicasConfig?.filas?.length || (exam.ortopedicasConfig && Object.keys(exam.ortopedicasConfig).length > 0 && !exam.ortopedicasConfig.filas)) {
+        const filasOrto = exam.ortopedicasConfig.filas || [];
         const groupedByRegion: Record<string, string[]> = {};
 
-        exam.ortopedicasConfig.filas.forEach((f: any) => {
+        filasOrto.forEach((f: any) => {
             const tName = f.test_name || f.test;
             if (!tName) return;
 
@@ -505,31 +590,40 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
             strings.forEach(s => pSyn.orthopedic_tests.push(`  - ${s}`));
         });
 
-        if (exam.ortopedicasConfig.sintesisFinal?.trim()) {
+        if (exam.ortopedicasConfig?.sintesisFinal?.trim()) {
             pSyn.orthopedic_tests.push(`Lectura clínica: ${exam.ortopedicasConfig.sintesisFinal.trim()}`);
         }
     }
 
     // I. Funcionales / Capacidad
     if (exam.funcionalesConfig?.filas?.length) {
+        if (exam.funcionalesConfig.objetivo?.trim()) {
+            pSyn.functional_tests.push(`Objetivo de bloque: ${exam.funcionalesConfig.objetivo.trim()}`);
+        }
         exam.funcionalesConfig.filas.forEach((f: any) => {
             if (!f.test) return;
-            let finding = `${f.test} (${f.lado}):`;
-            if (f.metricaObj?.trim()) finding += ` ${f.metricaObj}`;
-            else if (f.resultado?.trim()) finding += ` Res: ${f.resultado}`;
+            let finding = `${f.test} (${f.lado || 'Bilateral'}):`;
+
+            if (f.resultado?.trim()) {
+                finding += ` Res: ${f.resultado}`;
+                if (f.tipoMetrica) finding += ` ${f.tipoMetrica}`;
+            } else if (f.metricaObj?.trim()) {
+                finding += ` ${f.metricaObj}`;
+            }
 
             if (f.dolor) finding += ` | Dolor: ${f.dolor}/10`;
             if (f.calidad) finding += ` | Calidad: ${f.calidad}`;
+            if (f.criterioFuncional) finding += ` | Criterio: ${f.criterioFuncional}`;
+            if (f.observacion?.trim()) finding += ` | Obs: ${f.observacion.trim()}`;
+
             pSyn.functional_tests.push(finding.trim());
         });
-        if (exam.funcionalesConfig.objetivo?.trim()) {
-            pSyn.functional_tests.unshift(`Objetivo de bloque: ${exam.funcionalesConfig.objetivo.trim()}`);
-        }
     }
 
     // J. Retest / Comparable
-    if (exam.retestConfig && exam.retestConfig.tareaIndice) {
-        let finding = `Signo Re-test: ${exam.retestConfig.tareaIndice} -> RESULTADO POST: ${exam.retestConfig.resultadoPost || 'No evaluado'}`;
+    if (exam.retestConfig && (exam.retestConfig.tareaIndice || exam.retestConfig.intervencion || exam.retestConfig.comentario || exam.retestConfig.resultadoPost)) {
+        let finding = `Signo Re-test: ${exam.retestConfig.tareaIndice || pSyn.frame.tarea_indice || exam.retestGesture || 'Tarea base'}`;
+        if (exam.retestConfig.resultadoPost) finding += ` -> RESULTADO POST: ${exam.retestConfig.resultadoPost}`;
         if (exam.retestConfig.intervencion?.trim()) finding += ` (Modificador: ${exam.retestConfig.intervencion.trim()})`;
         if (exam.retestConfig.comentario?.trim()) finding += `. Cambio observado: ${exam.retestConfig.comentario.trim()}`;
         pSyn.retest.push(finding);
@@ -570,8 +664,8 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
 
     // Texto Corto
     const shortChunks = [];
-    if (pSyn.frame.irritabilidad) shortChunks.push(`Paciente con cuadro de irritabilidad ${pSyn.frame.irritabilidad}.`);
-    shortChunks.push(`Tarea Índice a re-evaluar: ${pSyn.frame.tarea_indice || 'No definida'}.`);
+    if (pSyn.frame.irritabilidad && pSyn.frame.irritabilidad !== 'Desconocida') shortChunks.push(`Paciente con cuadro de irritabilidad ${pSyn.frame.irritabilidad}.`);
+    if (pSyn.frame.tarea_indice) shortChunks.push(`Tarea Índice a re-evaluar: ${pSyn.frame.tarea_indice}.`);
     shortChunks.push(domainListStr);
     if (pSyn.retest.length) shortChunks.push(`Respuesta a intervención de prueba: ${pSyn.retest[0]}`);
     shortChunks.push('Síntesis física registrada correctamente para P3.');
@@ -581,7 +675,10 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     // Texto Estructurado Completo (Para P3)
     const structuredChunks = [];
     if (pSyn.frame.foco || pSyn.frame.irritabilidad || pSyn.frame.tarea_indice) {
-        structuredChunks.push(`[MARCO CLÍNICO]\nFoco: ${pSyn.frame.foco || 'No definido'} | Irritabilidad: ${pSyn.frame.irritabilidad || 'No definida'}\nTarea Índice: ${pSyn.frame.tarea_indice || 'No definida'}`);
+        let frameText = `[MARCO CLÍNICO]`;
+        if (pSyn.frame.foco || pSyn.frame.irritabilidad) frameText += `\nFoco: ${pSyn.frame.foco || 'Sistémico/Global'} | Irritabilidad: ${pSyn.frame.irritabilidad || 'No evaluada'}`;
+        if (pSyn.frame.tarea_indice) frameText += `\nTarea Índice: ${pSyn.frame.tarea_indice}`;
+        structuredChunks.push(frameText);
     }
     if (pSyn.observation.length) structuredChunks.push(`[OBSERVACIÓN]\n` + pSyn.observation.map(o => `• ${o}`).join('\n'));
     if (pSyn.mobility.length) structuredChunks.push(`[MOVILIDAD (ROM)]\n` + pSyn.mobility.map(o => `• ${o}`).join('\n'));
@@ -591,10 +688,13 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     if (pSyn.motor_control.length) structuredChunks.push(`[CONTROL MOTOR]\n` + pSyn.motor_control.map(o => `• ${o}`).join('\n'));
     if (pSyn.orthopedic_tests.length) structuredChunks.push(`[PRUEBAS ORTOPÉDICAS]\n` + pSyn.orthopedic_tests.map(o => (o.startsWith('-') || o.startsWith('[') || o.startsWith(' ') || o.startsWith('Región') || o.startsWith('Lectura')) ? o : `• ${o}`).join('\n'));
     if (pSyn.functional_tests.length) structuredChunks.push(`[PRUEBAS FUNCIONALES]\n` + pSyn.functional_tests.map(o => o.startsWith('Objeti') ? o : `• ${o}`).join('\n'));
-    if (pSyn.complementary_measures.length) structuredChunks.push(`[COMPLEMENTARIOS]\n` + pSyn.complementary_measures.map(o => `• ${o}`).join('\n'));
     if (pSyn.retest.length) structuredChunks.push(`[RE-TEST INTRA-SESIÓN]\n` + pSyn.retest.map(o => `• ${o}`).join('\n'));
+    if (pSyn.complementary_measures.length) structuredChunks.push(`[COMPLEMENTARIOS]\n` + pSyn.complementary_measures.map(o => `• ${o}`).join('\n'));
 
     pSyn.summary_text_structured = structuredChunks.join('\n\n');
+
+    console.log("=== [DEBUG] autoSynthesizeFindings OUTPUT ===");
+    console.log("Physical Synthesis Generated:", JSON.stringify(pSyn, null, 2));
 
     return { structuralCandidates, functionalDeficits, bpsNotes, physicalSynthesis: pSyn };
 }
