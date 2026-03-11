@@ -198,6 +198,17 @@ export const MissingnessCheckSchema = z.object({
 });
 export type MissingnessCheckType = z.infer<typeof MissingnessCheckSchema>;
 
+const P2ModuleRecommendationSchema = z.object({
+    objetivo: z.string(),
+    por_que_aporta_en_este_caso: z.string(),
+    que_descarta: z.string(),
+    que_confirma: z.string(),
+    hallazgo_que_apoya_hipotesis_principal: z.string(),
+    hallazgo_que_debilita_hipotesis_principal: z.string(),
+    pruebas_o_tareas_sugeridas: z.array(z.string()),
+    prioridad: z.string()
+});
+
 // G) FASE 11 (Refactor Total P1)
 export const P1SynthesisSchema = z.object({
     resumen_clinico_editable: z.string(),
@@ -247,16 +258,16 @@ export const P1SynthesisSchema = z.object({
         pregunta: z.string(),
         por_que_importa: z.string(),
         prioridad: z.string() // "alta"
-    })).max(5),
+    })).min(3).max(5),
     recomendaciones_p2_por_modulo: z.object({
-        observacion_movimiento_inicial: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        rango_movimiento_analitico: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        fuerza_tolerancia_carga: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        palpacion: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        neuro_vascular_somatosensorial: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        control_motor_sensoriomotor: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        pruebas_ortopedicas_dirigidas: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() }),
-        pruebas_funcionales_reintegro: z.object({ objetivo: z.string(), que_descarta: z.string(), que_confirma: z.string(), prioridad: z.string() })
+        observacion_movimiento_inicial: P2ModuleRecommendationSchema,
+        rango_movimiento_analitico: P2ModuleRecommendationSchema,
+        fuerza_tolerancia_carga: P2ModuleRecommendationSchema,
+        palpacion: P2ModuleRecommendationSchema,
+        neuro_vascular_somatosensorial: P2ModuleRecommendationSchema,
+        control_motor_sensoriomotor: P2ModuleRecommendationSchema,
+        pruebas_ortopedicas_dirigidas: P2ModuleRecommendationSchema,
+        pruebas_funcionales_reintegro: P2ModuleRecommendationSchema
     }),
     factores_contextuales_clave: z.object({
         banderas_rojas: z.array(z.string()),
