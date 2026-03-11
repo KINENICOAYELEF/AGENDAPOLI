@@ -33,14 +33,18 @@ export function validateGuardrails(jsonString: string): { valid: boolean; banned
     const lowerText = jsonString.toLowerCase();
     const found: string[] = [];
 
+    // Use regex with word boundaries to only match standalone words, not accidental substrings 
+    // Example: "tens" should NOT block "intensidad" or "extensión".
     for (const term of BANNED_TERMS) {
-        if (lowerText.includes(term)) {
+        const regex = new RegExp(`\\b${term}\\b`, 'i');
+        if (regex.test(lowerText)) {
             found.push(term);
         }
     }
 
     for (const term of MEDICAL_DIAGNOSES) {
-        if (lowerText.includes(term)) {
+        const regex = new RegExp(`\\b${term}\\b`, 'i');
+        if (regex.test(lowerText)) {
             found.push(term);
         }
     }

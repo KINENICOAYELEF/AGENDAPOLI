@@ -34,6 +34,8 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY no detectada en las variables de entorno server-side.');
     }
+    
+    console.log(`[AUTH DEBUG] Next.js loaded API Key starting with: ${apiKey.substring(0, 15)}...`);
 
     const activeModel = params.modelId || DEFAULT_MODEL;
 
