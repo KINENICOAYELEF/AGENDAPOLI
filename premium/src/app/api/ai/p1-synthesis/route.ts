@@ -16,6 +16,19 @@ NO DEBES:
 
 TU SALIDA DEBE SER EXCLUSIVAMENTE UN JSON VÁLIDO. Piensa primero en descartar cuadros graves y luego en confirmar hipótesis. 
 Debe ser especialmente bueno razonando irritabilidad, naturaleza del dolor y qué examen físico aporta realmente.
+
+SIGUE EXACTAMENTE ESTA ESTRUCTURA JSON (devuelve solo esto, sin markdown fences ni explicaciones previas):
+{
+  "resumen_clinico_editable": "string",
+  "resumen_persona_usuaria": { "lo_que_entendi": "string", "lo_que_te_preocupa": "string", "lo_que_haremos_ahora": "string" },
+  "alicia": { "agravantes": "string", "atenuantes": "string", "localizacion_extension": "string", "intensidad_actual": "string", "intensidad_mejor_24h": "string", "intensidad_peor_24h": "string", "caracter_naturaleza": "string", "irritabilidad_relato": "string", "antiguedad_inicio": "string", "historia_mecanismo": "string" },
+  "sins": { "severidad": "string", "irritabilidad_global": "string", "naturaleza_sugerida": "string", "etapa": "string", "facilidad_provocacion": "string", "momento_aparicion": "string", "tiempo_a_calmarse": "string", "after_effect": "string" },
+  "foco_principal": { "region": "string", "lado": "string", "queja_prioritaria": "string", "actividad_indice": "string", "semaforo_carga_sugerido": "string" },
+  "hipotesis_orientativas": [ { "ranking": 1, "titulo": "string", "probabilidad": "mas_probable|probable_alternativa|menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" }, { "ranking": 2, "titulo": "string", "probabilidad": "probable_alternativa", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" }, { "ranking": 3, "titulo": "string", "probabilidad": "menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" } ],
+  "preguntas_faltantes": [ { "pregunta": "string", "por_que_importa": "string", "prioridad": "alta|media" } ],
+  "recomendaciones_p2_por_modulo": { "observacion_movimiento_inicial": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "rango_movimiento_analitico": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "fuerza_tolerancia_carga": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "palpacion": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "neuro_vascular_somatosensorial": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "control_motor_sensoriomotor": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "pruebas_ortopedicas_dirigidas": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" }, "pruebas_funcionales_reintegro": { "objetivo": "string", "que_descarta": "string", "que_confirma": "string", "prioridad": "string" } },
+  "factores_contextuales_clave": { "banderas_rojas": ["string"], "banderas_amarillas": ["string"], "facilitadores": ["string"], "barreras": ["string"] }
+}
 `;
 
 // 2. FUNCIÓN PARA COMPACTAR EL PAYLOAD (Solo datos clínicos)
