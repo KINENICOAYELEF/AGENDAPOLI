@@ -209,7 +209,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }));
     };
 
-    const handleAISynthesis = async (useSanitized: boolean = false) => {
+    const handleAISynthesis = async () => {
         const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
         if (relatoLength < 10) {
             alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica completa antes de solicitar el análisis a la IA.");
@@ -217,7 +217,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }
 
         setIsProcessingAI(true);
-        setAiBlockInfo(null); // Reset block err on new intent
+        updateV4({ jsonExtractError: false } as any); // Limpiar error anterior
+
         try {
             const payload = {
                 interviewV4: interviewV4,
@@ -226,7 +227,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             const response = await fetch('/api/ai/p1-synthesis', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payload, useSanitized })
+                body: JSON.stringify({ payload })
             });
             const data = await response.json();
 
@@ -245,30 +246,19 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 updateV4({
                     jsonExtractError: false,
-                    jsonExtractRawBackup: null,
                     p1_ai_structured: aiData,
                     focos: updatedFocos
                 } as any);
 
                 if (data.telemetry) console.log("Telemetry P1:", data.telemetry);
                 
-            } else if (response.ok && data.isBlocked) {
-                console.warn("[P1 UI] AI Bloqueada por filtros del safety model", data);
-                setAiBlockInfo({
-                    isBlocked: true,
-                    reason: data.blockedReason,
-                    telemetry: data.telemetry
-                });
             } else {
                 console.error("Error from AI Synthesis:", data);
-                updateV4({
-                    jsonExtractError: true,
-                    jsonExtractRawBackup: JSON.stringify(data, null, 2),
-                } as any);
+                updateV4({ jsonExtractError: true } as any);
             }
         } catch (err: any) {
             console.error("Fetch error:", err);
-            alert("Error de servidor o conexión: " + err.message);
+            updateV4({ jsonExtractError: true } as any);
         } finally {
             setIsProcessingAI(false);
         }
@@ -1845,7 +1835,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <button
                         onClick={(e) => {
                             e.preventDefault();
-                            handleAISynthesis(false);
+                            handleAISynthesis();
                         }}
                         disabled={isClosed || isProcessingAI}
                         id="btn-ia-main-extract"
@@ -1862,129 +1852,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         La IA razona, extrae y ordena el relato de arriba. No reemplaza tu criterio clínico.
                     </p>
 
-                    {/* FASE 12 UX Fallback: OUTPUT_BLOCKED Catcher */}
-                    {aiBlockInfo?.isBlocked && (
-                        <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-xl relative overflow-hidden">
-                            <div className="flex items-start gap-3 relative z-10">
-                                <span className="text-2xl mt-1">🛡️</span>
-                                <div className="flex flex-col flex-1 gap-2">
-                                    <h4 className="font-bold text-amber-900 text-sm">
-                                        {aiBlockInfo.reason === "sanitization_failed_prevented_retry"
-                                            ? "La IA volvió a ser bloqueada. Ya puedes continuar con extracción local sin perder tu texto."
-                                            : "La IA fue bloqueada por filtros del modelo al interpretar el relato clínico."}
-                                    </h4>
-                                    <p className="text-[12px] text-amber-800">Se conservó tu texto y no se ha borrado nada. ¿Cómo deseas proceder?</p>
-                                    
-                                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                                        {aiBlockInfo.reason !== "sanitization_failed_prevented_retry" && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    handleAISynthesis(true); // Reintento sanitizado
-                                                }}
-                                                className="bg-amber-600 hover:bg-amber-700 text-xs text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
-                                            >
-                                                <span>🧽</span> Reintentar con versión clínica sanitizada
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                // Extracción local rústica
-                                                setAiBlockInfo(null);
-                                                updateV4({
-                                                    jsonExtractError: false,
-                                                    jsonExtractRawBackup: null,
-                                                    p1_ai_structured: {
-                                                        resumen_clinico_editable: interviewV4.experienciaPersona.relatoLibre || "Generado localmente por bloqueo AI.",
-                                                        resumen_persona_usuaria: {
-                                                            lo_que_entiendi: "No inferido por IA: revisar manualmente",
-                                                            lo_que_te_preocupa: "No inferido por IA: revisar manualmente",
-                                                            lo_que_haremos_ahora: "Avanzaremos evaluando físicamente."
-                                                        },
-                                                        foco_principal: {
-                                                            region: interviewV4.focos[0]?.region || "",
-                                                            lado: interviewV4.focos[0]?.lado || "",
-                                                            motivo_prioritario: "Revisar manualmente",
-                                                            actividad_indice: interviewV4.focos[0]?.actividadIndice || "No definida",
-                                                            semaforo_carga: "Ambar"
-                                                        },
-                                                        alicia: { antiguedad: "", localizacion: "", irradiacion: "", caracter: "", intensidad: "", atenuantes: "", agravantes: "" },
-                                                        sins: { severidad: "Leve", irritabilidad: "Media", naturaleza: "Mecánica", estadio: "Subagudo" },
-                                                        fases_curacion: { fase_predominante: "Proliferación / Remodelación temprana" },
-                                                        hipotesis_orientativas: [],
-                                                        preguntas_faltantes: [],
-                                                        recomendaciones_p2_por_modulo: {},
-                                                        factores_contextuales_clave: { red_flags_sugeridas: [], yellow_flags: [], facilitadores: [], barreras: [] }
-                                                    }
-                                                } as any);
-                                            }}
-                                            className="bg-slate-700 hover:bg-slate-800 text-[11px] text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all"
-                                        >
-                                            ⚡ Usar extracción parcial local
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                const el = document.getElementById('debug-raw-block');
-                                                if (el) el.classList.toggle('hidden');
-                                            }}
-                                            className="bg-white border text-xs border-amber-300 text-amber-700 hover:bg-amber-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
-                                        >
-                                            👁️ Ver detalle técnico
-                                        </button>
-                                    </div>
-                                    <div id="debug-raw-block" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto select-all">
-                                        <p>Motivo: {aiBlockInfo.reason}</p>
-                                        <p>Telemetria: {JSON.stringify(aiBlockInfo.telemetry || {}, null, 2)}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
+                    {/* FASE 14 UX Simple Error Fallback */}
                     {interviewV4.jsonExtractError && (
-                        <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl relative overflow-hidden">
-                            <div className="flex items-start gap-3 relative z-10">
+                        <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+                            <div className="flex items-center gap-3">
                                 <span className="text-xl">⚠️</span>
-                                <div className="flex flex-col flex-1 gap-1">
-                                    <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la respuesta IA. Reintenta.</h4>
-                                    <p className="text-[11px] text-rose-600 mb-2">Gemini respondió en un formato ilegible o que rompe la matriz clínica. Tu relato libre está a salvo y no se ha borrado nada.</p>
-
-                                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                const el = document.getElementById('debug-raw-ia');
-                                                if (el) el.classList.toggle('hidden');
-                                            }}
-                                            className="bg-white border text-xs border-rose-300 text-rose-700 hover:bg-rose-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
-                                        >
-                                            👁️ Ver respuesta cruda
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                updateV4({
-                                                    jsonExtractError: false,
-                                                    jsonExtractRawBackup: null
-                                                } as any);
-
-                                                const evt = new MouseEvent('click', { bubbles: true, cancelable: true });
-                                                const btn = document.getElementById('btn-ia-main-extract');
-                                                if (btn) btn.dispatchEvent(evt);
-                                                else alert("Por favor presione manualmente el botón de Procesar con Inteligencia Artificial.");
-                                            }}
-                                            className="bg-rose-600 hover:bg-rose-700 text-xs text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
-                                        >
-                                            <span>🔄</span> Reintentar extracción
-                                        </button>
-                                    </div>
-
-                                    <div id="debug-raw-ia" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto select-all">
-                                        {interviewV4.jsonExtractRawBackup || "No se pudo respaldar el texto crudo."}
-                                    </div>
+                                <div className="flex flex-col flex-1">
+                                    <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la síntesis clínica en este intento.</h4>
+                                    <p className="text-[12px] text-rose-600">Tu relato está guardado y no se ha borrado. Reintenta.</p>
                                 </div>
                             </div>
                         </div>
