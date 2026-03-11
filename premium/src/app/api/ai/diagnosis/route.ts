@@ -34,11 +34,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Has excedido el límite de peticiones (10 requests / 10 min).' }, { status: 429 });
         }
 
+        // El frontend ahora entrega obj minimalistas/compactos (payload.compactInterview, payload.compactPhysical) en lugar del formData inmenso.
         const normalizedPayload = normalizePayload({
-            interview: payload.interview,
-            guidedExam: payload.guidedExam,
-            autoSynthesis: payload.autoSynthesis,
-            autoEngineOutputs: payload.autoEngineOutputs
+            compactInterview: payload.compactInterview,
+            compactPhysical: payload.compactPhysical,
+            remoteHistorySnapshot: payload.remoteHistorySnapshot,
+            autoTrafficLight: payload.autoTrafficLight
         });
 
         const inputHash = await generateSHA256(`diagnosis:${normalizedPayload}`);

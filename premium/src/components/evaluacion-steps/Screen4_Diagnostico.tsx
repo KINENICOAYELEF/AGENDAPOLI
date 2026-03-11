@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
+import { normalizeEvaluationState } from "@/lib/state-normalizer";
 
 export interface Screen4Props {
     formData: Partial<EvaluacionInicial>;
@@ -35,12 +36,20 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         setAiError(null);
         setModeSelected(true);
         try {
+            const normalizedCase = normalizeEvaluationState(formData);
+            const minimalContext = {
+                identificacion: normalizedCase.identificacion,
+                focoPrincipal: normalizedCase.focoPrincipal ? `${normalizedCase.focoPrincipal.region || 'S/N'} (${normalizedCase.ladoPrincipal})` : 'No definido',
+                irritabilidad: normalizedCase.irritabilidad,
+                tareaIndice: normalizedCase.tareaIndice,
+                quejaPrioritaria: normalizedCase.quejaPrioritaria
+            };
+
             const res = await fetch('/api/ai/narrative', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    interview: formData.interview,
-                    exam: formData.guidedExam,
+                    normalizedContext: minimalContext,
                     synthesis: autoSynth // MUST be autoSynthesis as it contains P3 structured output
                 })
             });

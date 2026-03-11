@@ -37,9 +37,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Has excedido el límite de peticiones (10 requests / 10 min).' }, { status: 429 });
         }
 
+        // El frontend ahora entrega la estructura destilada (normalizedContext) junto con la synthesis P3 íntegra
         const normalizedPayload = normalizePayload({
-            interview: payload.interview,
-            guidedExam: payload.exam || payload.guidedExam,
+            normalizedContext: payload.normalizedContext,
             synthesis: payload.synthesis || payload.autoSynthesis
         });
 

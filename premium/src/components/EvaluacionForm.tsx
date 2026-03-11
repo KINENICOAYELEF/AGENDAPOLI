@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { OutcomesService } from "@/services/outcomes";
+import { normalizeEvaluationState, buildCompactPhysicalForAI } from "@/lib/state-normalizer";
 
 // Nuevas 5 Pantallas Integrales
 import { Screen1_Entrevista } from "./evaluacion-steps/Screen1_Entrevista";
@@ -234,9 +235,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     const getValidationContext = useMemo(() => {
         const missing: string[] = [];
+        const warnings: string[] = [];
 
         if (type === 'INITIAL') {
+            const normalizedCase = normalizeEvaluationState(formData);
             const fd = formData as EvaluacionInicial;
+
             const hasFocosV4 = (fd.interview?.v4?.focos?.length || 0) > 0;
             const hasFocosV3 = (fd.interview?.v3?.focos?.length || 0) > 0;
             const hasFocos = hasFocosV4 || hasFocosV3;
@@ -249,13 +253,19 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const hasPsfs = hasPsfsV4 || hasPsfsParams || hasFocosPsfs;
             if (!hasPsfs) missing.push("Al menos 1 PSFS (Escala Funcional)");
 
-            // Comparable sign may be inside new `primaryComparable` or legacy fields
-            const hasComparableV2 = (fd.guidedExam?.comparableRetest?.length || 0) > 0 || !!((fd as any).comparableSign?.name);
-            const hasComparableFoco = fd.interview?.v3?.focos?.some((f: any) => f.primaryComparable?.name || f.signoComparableEstrella?.nombre) || false;
-            const hasComparableV4 = fd.interview?.v4?.focos?.some((f: any) => f.signoComparable) || false;
-            const hasComparable = hasComparableV2 || hasComparableFoco || hasComparableV4;
+            // Comparable sign through Normalized State
+            const hasComparable = !!normalizedCase.tareaIndice;
 
-            if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
+            if (!hasComparable) {
+                warnings.push("Signo Comparable/Tarea Índice no definida (Sugerido)");
+                // Strict block ONLY if there are absolutely no findings
+                const physicalFindings = buildCompactPhysicalForAI(normalizedCase);
+                const hasAnyFinding = Object.keys(physicalFindings).some(key => key !== 'tareaIndiceTarget' && key !== 'indiciosGlobales');
+                
+                if (!hasAnyFinding) {
+                    missing.push("Debe registrar al menos un hallazgo clínico (Observación, ROM, etc.) o una Tarea Índice en Examen Físico (P2).");
+                }
+            }
 
             const hasSx = (fd.autoSynthesis?.alterations?.structural?.length || 0) > 0;
             if (!hasSx) missing.push("Clasificación Estructuras (P3)");
@@ -282,6 +292,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             return {
                 allValid: missing.length === 0,
                 missing,
+                warnings,
                 hasFocos, hasDx, hasSmartObs // legacy retrocompatibilidad visual tabs
             };
         } else {
@@ -295,6 +306,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             return {
                 allValid: missing.length === 0,
                 missing,
+                warnings,
                 hasFocos: true, hasDx: true, hasSmartObs: true // fake legacy
             };
         }
@@ -304,7 +316,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         if (!globalActiveYear || !user) return;
 
         if (isClosing && !getValidationContext.allValid) {
-            alert("⚠️ EXISTEN HITOS CLÍNICOS PENDIENTES\\n\\nFalta completar:\\n - " + getValidationContext.missing.join('\\n - ') + "\\n\\nNo puedes cerrar la evaluación hasta completarlos.");
+            const warnMsg = (getValidationContext as any).warnings && (getValidationContext as any).warnings.length > 0 
+                ? `\\n\\n⚠️ ADVERTENCIAS:\\n - ${(getValidationContext as any).warnings.join('\\n - ')}` 
+                : '';
+            alert("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\\n\\nFalta completar:\\n - " + getValidationContext.missing.join('\\n - ') + warnMsg + "\\n\\nNo puedes cerrar la evaluación hasta completarlos.");
             return;
         }
         if (isClosing && !window.confirm("¿Seguro que deseas Cerrar y Fijar esta evaluación? Generará el Set de Objetivos inmutable del Proceso.")) {

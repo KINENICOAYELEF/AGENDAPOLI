@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
+import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI } from "@/lib/state-normalizer";
 
 export interface Screen3Props {
     formData: Partial<EvaluacionInicial>;
@@ -47,15 +48,23 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
         setIsGenerating(true);
         setAiError(null);
         try {
+            // NORMALIZED AND COMPACTED PAYLOAD CONSTRUCTION
+            const normalizedCase = normalizeEvaluationState(formData);
+            const compactInterview = buildCompactInterviewForAI(normalizedCase, formData.interview);
+            const compactPhysical = buildCompactPhysicalForAI(normalizedCase);
+
+            const payloadForAI = {
+                compactInterview,
+                remoteHistorySnapshot: formData.remoteHistorySnapshot || null,
+                compactPhysical,
+                autoTrafficLight: engine.safety.level
+            };
+
             const response = await fetch('/api/ai/diagnosis', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    payload: {
-                        interview: formData.interview,
-                        guidedExam: formData.guidedExam,
-                        autoEngineOutputs: { trafficLight: engine.safety, synthesis: engine.synth }
-                    }
+                    payload: payloadForAI
                 })
             });
             const data = await response.json();
@@ -87,7 +96,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
 
     // Block A helper extraction
     const safetyAlerts = engine.safety.reasons;
-    const initialFocus = formData.interview?.v4?.focos?.find(f => f.esPrincipal) || formData.interview?.v3?.focos?.find(f => f.isPrimary);
+    const normalizedCase = normalizeEvaluationState(formData);
 
     return (
         <div className="flex flex-col gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -98,13 +107,13 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
 
             {/* BLOQUE A — RESUMEN AUTOMÁTICO DEL CASO (Solo lectura) */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm text-sm">
-                <h3 className="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A. Snapshot Clínico (P1 y P2)</h3>
+                <h3 className="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A. Snapshot Clínico Normalizado (P1 y P2)</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Identificación</span><span className="font-bold text-slate-800">{(formData as any).paciente?.nombres || 'No registrado'} {((formData as any).paciente?.edad || (formData as any).paciente?.sexoBiomecanico) ? `(${(formData as any).paciente?.edad ? `${(formData as any).paciente.edad} años` : ''}${((formData as any).paciente?.edad && (formData as any).paciente?.sexoBiomecanico) ? ', ' : ''}${(formData as any).paciente?.sexoBiomecanico})` : ''}</span></div>
-                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Motivo / Foco Principal</span><span className="font-medium text-slate-800">{initialFocus ? `${initialFocus.region} (${initialFocus.lado})` : ((formData.interview as any)?.v4?.motivoConsulta || (formData.interview as any)?.v3?.motivoConsulta || 'No definido')}</span></div>
-                    <div><span className="text-xs text-slate-500 block">Irritabilidad Sugerida</span><span className="font-medium text-slate-800">{initialFocus ? (engine.synth as any).perFocus?.[(initialFocus as any).id]?.irritabilityLevel : 'Desconocida'}</span></div>
+                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Identificación</span><span className="font-bold text-slate-800">{normalizedCase.identificacion}</span></div>
+                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Motivo / Foco Principal</span><span className="font-medium text-slate-800">{normalizedCase.focoPrincipal ? `${normalizedCase.focoPrincipal.region || 'S/N'} (${normalizedCase.ladoPrincipal})` : 'No definido'}</span></div>
+                    <div><span className="text-xs text-slate-500 block">Irritabilidad Sugerida</span><span className="font-medium text-slate-800">{normalizedCase.irritabilidad}</span></div>
                     <div><span className="text-xs text-slate-500 block">Semáforo de Carga</span><span className={`font-bold ${engine.safety.level === 'Rojo' ? 'text-rose-600' : engine.safety.level === 'Amarillo' ? 'text-amber-600' : 'text-emerald-600'}`}>{engine.safety.level}</span></div>
-                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Tarea Índice</span><span className="font-medium text-slate-800">{(initialFocus as any)?.signoComparable || (initialFocus as any)?.primaryComparable?.name || 'No definida'}</span></div>
+                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Tarea Índice</span><span className="font-medium text-slate-800">{normalizedCase.tareaIndice || 'No definida'}</span></div>
                 </div>
                 {safetyAlerts && safetyAlerts.length > 0 && (
                     <div className="mt-4 bg-rose-50 border border-rose-100 text-rose-700 p-2 rounded text-xs font-medium">

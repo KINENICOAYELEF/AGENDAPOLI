@@ -1,6 +1,7 @@
 import React from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { autoSynthesizeFindings } from "@/lib/auto-engine";
+import { normalizeEvaluationState } from "@/lib/state-normalizer";
 
 export interface Screen2Props {
     formData: Partial<EvaluacionInicial>;
@@ -12,21 +13,26 @@ export interface Screen2Props {
 export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: Screen2Props) {
     const exam = (formData.guidedExam as any) || {};
 
+    // 1. STATE NORMALIZATION
+    const normalizedCase = normalizeEvaluationState(formData);
+    
+    // Fallbacks para UI Legacy
+    const focoPrincipal = normalizedCase.focoPrincipal;
+    const lado = normalizedCase.ladoPrincipal;
+    const queja = normalizedCase.quejaPrioritaria;
+    const irritabilidad = normalizedCase.irritabilidad;
+
     const v4 = formData.interview?.v4;
-    const focoPrincipal = v4?.focos?.find(f => f.esPrincipal) || v4?.focos?.[0];
-    const lado = focoPrincipal?.lado || "No definido";
-    const queja = v4?.experienciaPersona?.prioridadPrincipal || "No definida";
-    const irritabilidad = focoPrincipal?.irritabilidadAuto?.nivel || "No definido";
     const alertasActivas = [
         v4?.seguridad?.fiebre_sistemico_cancerPrevio && "Fiebre/Sistémico/Cáncer",
         v4?.seguridad?.bajaPeso_noIntencionada && "Baja de peso",
         v4?.seguridad?.dolorNocturno_inexplicable_noMecanico && "Dolor nocturno no mecánico",
         v4?.seguridad?.trauma_altaEnergia_caidaImportante && "Trauma alta energía",
         v4?.seguridad?.neuroGraveProgresivo_esfinteres_sillaMontar && "Neuro grave/Esfínteres",
-        v4?.seguridad?.sospechaFractura_incapacidadCarga && "Sospecha fractura/Incapacidad carga"
+        v4?.seguridad?.sospechaFractura_incapacidadCarga && "Sospecha fractura/Incapacidad carga",
+        v4?.seguridad?.riesgoEmocionalAgudo && "Riesgo Emocional Agudo"
     ].filter(Boolean).join(", ");
-    const alertas = alertasActivas || "Ninguna alerta roja detectada";
-
+    
     const sugerenciaNeuro = React.useMemo(() => {
         const porFocos = v4?.focos?.some(f =>
             (f.sintomasNeurologicos?.activados && f.sintomasNeurologicos.activados.length > 0) ||
@@ -137,7 +143,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             {irritabilidad === "Alta" && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
                             {irritabilidad === "Media" && <span className="w-2 h-2 rounded-full bg-yellow-500"></span>}
                             {irritabilidad === "Baja" && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
-                            {irritabilidad !== "No definido" ? irritabilidad : <span className="text-orange-500 font-normal">No registrado...</span>}
+                            {irritabilidad !== "No definida" ? irritabilidad : <span className="text-orange-500 font-normal">No registrado...</span>}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
@@ -154,7 +160,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             Modalidad de examen hoy
                         </label>
                         <select className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed text-ellipsis"
-                            value={exam.examModality || ''}
+                            value={normalizedCase.modalidadExamen !== 'Completo' ? exam.examModality || '' : 'Completo'}
                             onChange={(e) => handleUpdateExam('examModality', e.target.value)}
                             disabled={isClosed}
                         >
@@ -202,9 +208,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         </div>
                     )}
 
-                    {exam.retestGesture && (
+                    {normalizedCase.tareaIndice && (
                         <div className="bg-indigo-50 border border-indigo-100 text-indigo-800 text-xs p-3 rounded-lg flex items-center gap-2 font-medium">
-                            <span className="text-lg">📌</span> Tarea / Gesto índice referido: <span className="font-bold">{exam.retestGesture}</span>
+                            <span className="text-lg">📌</span> Tarea / Gesto índice referido: <span className="font-bold">{normalizedCase.tareaIndice}</span>
                         </div>
                     )}
                     <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg">
