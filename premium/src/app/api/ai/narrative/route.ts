@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { callGemini } from '@/lib/ai/geminiClient';
 import { PROMPTS, SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
-import { DiagnosisSchema } from '@/lib/ai/schemas';
+import { NarrativeSchema } from '@/lib/ai/schemas';
 import { generateSHA256, normalizePayload } from '@/lib/ai/hash';
 import { validateGuardrails } from '@/lib/ai/guardrails';
 
@@ -28,7 +28,10 @@ function checkRateLimit(userId: string): boolean {
 
 export async function POST(req: Request) {
     try {
-        const { payload, userId } = await req.json();
+        const payloadArgs = await req.json();
+        // Puede venir como un json plano o encapsulado en .payload (soporta ambos casos antiguos)
+        const payload = payloadArgs.payload || payloadArgs;
+        const userId = payloadArgs.userId;
 
         if (userId && !checkRateLimit(userId)) {
             return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Has excedido el límite de peticiones (10 requests / 10 min).' }, { status: 429 });
@@ -36,21 +39,19 @@ export async function POST(req: Request) {
 
         const normalizedPayload = normalizePayload({
             interview: payload.interview,
-            guidedExam: payload.guidedExam,
-            autoSynthesis: payload.autoSynthesis,
-            autoEngineOutputs: payload.autoEngineOutputs
+            guidedExam: payload.exam || payload.guidedExam,
+            synthesis: payload.synthesis || payload.autoSynthesis
         });
 
-        const inputHash = await generateSHA256(`diagnosis:${normalizedPayload}`);
+        const inputHash = await generateSHA256(`narrative:${normalizedPayload}`);
 
         const expectedJsonExample = `{
   "version": "1.0",
-  "clinicalClassification": { "category": "Aparente nociceptivo|Aparente neuropático|Aparente nociplástico|Mixto|No concluyente", "subtype": "...", "rationale": "..." },
-  "systems": { "primarySystem": "Tejido contráctil|Articulación / cápsula|Ligamento / estabilidad pasiva|Sistema neural|Control motor / movimiento|Carga ósea|Tejido conectivo / fascia|Mixto", "primaryStructure": "...", "secondaryStructures": ["..."] },
-  "alterations": { "structural": [{ "name": "...", "certainty": "Posible|Probable|Casi confirmada", "comment": "..." }], "functional": [{ "name": "...", "severity": "Leve|Moderada|Severa" }] },
-  "activityParticipation": { "limitations": [{ "name": "...", "severity": "Leve|Moderada|Severa" }], "restrictions": [{ "name": "...", "severity": "Leve|Moderada|Severa" }] },
-  "bpsFactors": { "personalPos": ["..."], "personalNeg": ["..."], "envFacilitators": ["..."], "envBarriers": ["..."] },
-  "clinicalReminders": ["..."]
+  "safety_alerts": ["..."],
+  "clinical_considerations": ["..."],
+  "missing_data_to_confirm": ["..."],
+  "diagnosis_narrative": "...",
+  "differential_functional": ["..."]
 }`;
 
         const userPrompt = `
@@ -66,7 +67,7 @@ ${normalizedPayload}
         try {
             const gStart = Date.now();
             const rawText = await callGemini({
-                systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.DIAGNOSIS,
+                systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
                 userPrompt: userPrompt,
                 temperature: 0.2
             });
@@ -79,7 +80,7 @@ ${normalizedPayload}
             }
 
             const parsedObj = JSON.parse(cleanJsonText);
-            finalJsonResult = DiagnosisSchema.parse(parsedObj);
+            finalJsonResult = NarrativeSchema.parse(parsedObj);
 
             const latencyMs = Date.now() - gStart;
 
@@ -99,14 +100,14 @@ TU OBLIGACIÓN:
 Devuelve un JSON STRICT que cumpla con TODOS los campos faltantes, la estructura exacta:
 ${expectedJsonExample}
             `;
-                const rawText2 = await callGemini({ systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.DIAGNOSIS, userPrompt: repairPrompt, temperature: 0.1 });
+                const rawText2 = await callGemini({ systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE, userPrompt: repairPrompt, temperature: 0.1 });
                 const cleanJsonText2 = rawText2.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
                 const guardrailCheck2 = validateGuardrails(cleanJsonText2);
                 if (!guardrailCheck2.valid) {
                     return NextResponse.json({ error: 'OUTPUT_BLOCKED', message: 'Modelo insistió en términos prohibidos.', bannedTerms: guardrailCheck2.bannedTermsFound }, { status: 400 });
                 }
                 const parsedObj2 = JSON.parse(cleanJsonText2);
-                finalJsonResult = DiagnosisSchema.parse(parsedObj2);
+                finalJsonResult = NarrativeSchema.parse(parsedObj2);
 
                 return NextResponse.json({ success: true, data: finalJsonResult, hash: inputHash, latencyMs: 9999, repaired: true });
             } catch (repairError: any) {
@@ -116,7 +117,7 @@ ${expectedJsonExample}
         }
 
     } catch (err: any) {
-        console.error('Error in /api/ai/diagnosis:', err);
+        console.error('Error in /api/ai/narrative:', err);
         return NextResponse.json({ error: 'INTERNAL_ERROR', message: err.message }, { status: 500 });
     }
 }

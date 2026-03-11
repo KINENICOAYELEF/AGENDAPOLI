@@ -185,8 +185,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
             if (!hasComparable) missing.push("Signo Comparable (Asterisco)");
 
-            const hasSx = (fd.autoSynthesis?.structuralSuspicions?.length || 0) > 0;
-            if (!hasSx) missing.push("Sospecha Estructural (P3)");
+            const hasSx = (fd.autoSynthesis?.alterations?.structural?.length || 0) > 0;
+            if (!hasSx) missing.push("Clasificación Estructuras (P3)");
 
             const hasTraffic = !!(fd.autoSynthesis?.trafficLight);
             if (!hasTraffic) missing.push("Semáforo de Carga");
@@ -306,7 +306,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
                         psfsBaseline: (fd as any).interview?.psfs || [],
-                        topDeficits: fd.autoSynthesis?.functionalDeficits || []
+                        topDeficits: fd.autoSynthesis?.alterations?.functional?.map(a => a.name) || []
                     },
                     activeObjectiveSet: {
                         versionId,

@@ -32,54 +32,56 @@ export const EvalMinimoSchema = z.object({
     stop_rules: z.array(z.string()).describe("Si aparece X, considerar Y (derivar/ajustar)"),
 });
 
-// Esquema B) diagnosis
+// Esquema B) diagnosis (Case Organizer P3)
 export const DiagnosisSchema = z.object({
+    version: z.string(),
+    clinicalClassification: z.object({
+        category: z.enum(['Aparente nociceptivo', 'Aparente neuropático', 'Aparente nociplástico', 'Mixto', 'No concluyente']),
+        subtype: z.string().describe("Ej: de origen inflamatorio, mecánico por carga, etc."),
+        rationale: z.string().describe("Explicación breve de por qué se sugiere esta clasificación"),
+    }),
+    systems: z.object({
+        primarySystem: z.enum(['Tejido contráctil', 'Articulación / cápsula', 'Ligamento / estabilidad pasiva', 'Sistema neural', 'Control motor / movimiento', 'Carga ósea', 'Tejido conectivo / fascia', 'Mixto']),
+        primaryStructure: z.string().describe("Estructura o foco principal"),
+        secondaryStructures: z.array(z.string()).describe("Estructuras secundarias, si aplica"),
+    }),
+    alterations: z.object({
+        structural: z.array(z.object({
+            name: z.string(),
+            certainty: z.enum(['Casi confirmada', 'Probable', 'Posible']),
+            comment: z.string().describe("Comentario breve, redactado de forma prudente si no hay certeza")
+        })),
+        functional: z.array(z.object({
+            name: z.string().describe("Ej: dolor, disminución de rango, disminución de fuerza, etc."),
+            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+        }))
+    }),
+    activityParticipation: z.object({
+        limitations: z.array(z.object({
+            name: z.string().describe("Actividades directas Ej: caminar, correr, agacharse"),
+            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+        })),
+        restrictions: z.array(z.object({
+            name: z.string().describe("Roles, ej: trabajo, deporte, vida social"),
+            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+        }))
+    }),
+    bpsFactors: z.object({
+        personalPos: z.array(z.string()).describe("Ej: buena adherencia, motivación alta"),
+        personalNeg: z.array(z.string()).describe("Ej: miedo al movimiento, estrés alto"),
+        envFacilitators: z.array(z.string()).describe("Ej: apoyo familiar, acceso a gimnasio"),
+        envBarriers: z.array(z.string()).describe("Ej: turnos, cuidar a terceros, distancia")
+    }),
+    clinicalReminders: z.array(z.string()).describe("Recordatorios útiles no invasivos (ej: correlacionar componente neural)")
+});
+
+// Esquema B.5) narrative (Screen 4 P4 Narrative)
+export const NarrativeSchema = z.object({
     version: z.string(),
     safety_alerts: z.array(z.string()).describe("Alertas por red flags o comorbilidades"),
     clinical_considerations: z.array(z.string()).describe("Consideraciones de seguridad o ajuste clínico (sin sugerir fármacos)"),
     missing_data_to_confirm: z.array(z.string()).describe("Qué falta medir o preguntar para precisar el diagnóstico"),
-    diagnosis_narrative: z.string().describe("Texto en formato kinésico funcional, sin diagnóstico médico de imagen"),
-    diagnosis_structured: z.object({
-        body_structures: z.array(z.object({
-            region: z.string(),
-            side: z.enum(["Derecho", "Izquierdo", "Bilateral", "N/A"]),
-            finding: z.string(),
-            source: z.enum(["imagen", "clinica"]),
-            confidence: z.enum(["baja", "media", "alta"]),
-        })),
-        body_functions: z.array(z.object({
-            domain: z.enum(["movilidad", "fuerza", "control_motor", "capacidad", "dolor", "neuro", "equilibrio", "otra"]),
-            region: z.string(),
-            side: z.enum(["Derecho", "Izquierdo", "Bilateral", "N/A"]),
-            baseline: z.string(),
-            severity: z.enum(["leve", "moderada", "severa"]),
-            reproduces_comparable: z.boolean(),
-        })),
-        activities: z.array(z.object({
-            psfs_item: z.string(),
-            score: z.number().min(0).max(10),
-            linked_focus: z.string().nullable(),
-        })),
-        participation: z.array(z.object({
-            area: z.enum(["trabajo", "deporte", "hogar", "otro"]),
-            restriction: z.string(),
-        })),
-        personal_factors: z.array(z.object({
-            factor: z.string(),
-            valence: z.enum(["positivo", "negativo"]),
-            severity_0_2: z.number().min(0).max(2),
-        })),
-        environment_factors: z.array(z.object({
-            factor: z.string(),
-            valence: z.enum(["facilitador", "barrera"]),
-            severity_0_2: z.number().min(0).max(2),
-        })),
-        classifications: z.object({
-            irritabilidad: z.enum(["baja", "media", "alta"]),
-            pain_mechanism: z.enum(["nociceptivo", "neuropatico", "nociplastico", "mixto"]),
-            tags: z.array(z.string()),
-        }),
-    }),
+    diagnosis_narrative: z.string().describe("Texto en formato kinésico funcional integrativo, utilizando los hallazgos de P1, P2 y la clasificación estructurada de P3."),
     differential_functional: z.array(z.string()).describe("Alternativas funcionales clínicas si falla la hipótesis principal"),
 });
 

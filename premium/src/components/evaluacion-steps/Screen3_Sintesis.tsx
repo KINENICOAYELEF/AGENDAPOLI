@@ -8,54 +8,26 @@ export interface Screen3Props {
     isClosed: boolean;
 }
 
-const COMMON_STRUCTURAL = ['Tendinopatía', 'Desgarro muscular', 'Esguince ligamentos', 'Disfunción articular', 'Radiculopatía', 'Artrosis sintomática', 'Sobrecarga ósea', 'Síndrome compresivo'];
-const COMMON_FUNCTIONAL = ['Déficit ROM', 'Debilidad MMT < 4', 'Déficit Control Motor', 'Alteración Propioceptiva', 'Rigidez matinal', 'Pobre tolerancia a la carga'];
-const COMMON_BPS = ['Kinesiofobia alta', 'Expectativas bajas', 'Estrés laboral', 'Pobre red apoyo', 'Catastrofización', 'Miedo al movimiento'];
-
 export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3Props) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
 
     const autoSynth = formData.autoSynthesis || {};
+    
+    // Engine local extraction
     const engine = useMemo(() => {
-        const irritability = computeIrritability({} as any); // Screen3 doesn't display it directly
+        const irritability = computeIrritability({} as any); // fallback
         const safety = computeSafety(formData.interview);
         const synth = autoSynthesizeFindings(formData.guidedExam, formData.interview);
         return { safety, synth };
     }, [formData.interview, formData.guidedExam]);
 
-    // Pre-poblar el Semáforo si no existe basado en el Engine
+    // Pre-pobla el semáforo
     useEffect(() => {
-        if (!isClosed && !autoSynth.trafficLight && engine.safety.level !== 'Verde') {
+        if (!isClosed && !autoSynth.trafficLight && engine.safety.level) {
             handleUpdateSynth({ trafficLight: engine.safety.level });
-        } else if (!isClosed && !autoSynth.trafficLight && engine.safety.level === 'Verde') {
-            handleUpdateSynth({ trafficLight: 'Verde' });
         }
     }, [isClosed, autoSynth.trafficLight, engine.safety.level]);
-
-    // Pre-poblar Estructurales
-    useEffect(() => {
-        if (!isClosed && (!autoSynth.structuralSuspicions || autoSynth.structuralSuspicions.length === 0)) {
-            const labels = engine.synth.structuralCandidates.map((c: any) => c.label);
-            if (labels.length > 0) handleUpdateSynth({ structuralSuspicions: labels });
-        }
-    }, [isClosed, autoSynth.structuralSuspicions, engine.synth.structuralCandidates]);
-
-    // Pre-poblar Funcionales
-    useEffect(() => {
-        if (!isClosed && (!autoSynth.functionalDeficits || autoSynth.functionalDeficits.length === 0)) {
-            const labels = engine.synth.functionalDeficits.map((c: any) => c.label);
-            if (labels.length > 0) handleUpdateSynth({ functionalDeficits: labels });
-        }
-    }, [isClosed, autoSynth.functionalDeficits, engine.synth.functionalDeficits]);
-
-    // Pre-poblar BPS
-    useEffect(() => {
-        if (!isClosed && (!autoSynth.contextBps || autoSynth.contextBps.length === 0)) {
-            const labels = [...engine.synth.bpsNotes.topBarriers, ...engine.synth.bpsNotes.topFacilitators];
-            if (labels.length > 0) handleUpdateSynth({ contextBps: labels });
-        }
-    }, [isClosed, autoSynth.contextBps, engine.synth.bpsNotes]);
 
     const handleUpdateSynth = (patch: any) => {
         updateFormData((prev: any) => ({
@@ -63,42 +35,15 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
         }));
     };
 
-    const toggleArrayItemObj = (key: 'structuralSuspicions' | 'functionalDeficits', value: string) => {
-        if (isClosed) return;
-        const current: any[] = autoSynth[key] || [];
-        const exists = current.find(item => item.label === value);
-        const next = exists ? current.filter(item => item.label !== value) : [...current, { label: value, source: 'Manual', linkedPsfs: false, side: 'N/A', baseline: '', confidence: 'Media', reproduceSymptom: false }];
-        handleUpdateSynth({ [key]: next });
-    };
-
-    const handleCustomAddObj = (key: 'structuralSuspicions' | 'functionalDeficits', e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && e.currentTarget.value.trim() !== '') {
-            e.preventDefault();
-            if (isClosed) return;
-            const current: any[] = autoSynth[key] || [];
-            handleUpdateSynth({ [key]: [...current, { label: e.currentTarget.value.trim(), source: 'Manual', linkedPsfs: false, side: 'N/A', baseline: '', confidence: 'Media', reproduceSymptom: false }] });
-            e.currentTarget.value = '';
-        }
-    };
-
-    const toggleArrayItem = (key: 'contextBps', value: string) => {
-        if (isClosed) return;
-        const current: string[] = autoSynth[key] || [];
-        const next = current.includes(value) ? current.filter(item => item !== value) : [...current, value];
-        handleUpdateSynth({ [key]: next });
-    };
-
-    const handleCustomAdd = (key: 'contextBps', e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && e.currentTarget.value.trim() !== '') {
-            e.preventDefault();
-            if (isClosed) return;
-            const current: string[] = autoSynth[key] || [];
-            handleUpdateSynth({ [key]: [...current, e.currentTarget.value.trim()] });
-            e.currentTarget.value = '';
-        }
+    // Generic updater for deep nested objects
+    const updateDeepObj = (key: string, patch: any) => {
+        handleUpdateSynth({
+            [key]: { ...(autoSynth as any)[key], ...patch }
+        });
     };
 
     const handleRefineSynthesis = async () => {
+        if (isClosed) return;
         setIsGenerating(true);
         setAiError(null);
         try {
@@ -116,35 +61,22 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Error al conectar con la IA de Síntesis');
 
-            // Save raw output for next screen to avoid double billing
+            // Set raw output for next screen to avoid double billing or for historical reasons
             updateFormData(prev => ({
                 aiOutputs: { ...(prev.aiOutputs || {}), diagnosis: data.data }
             }));
 
-            // Map AI Structured Diagnosis back to Synthesis UI
-            const struct = data.data?.diagnosis_structured;
-            if (struct) {
-                const newStructural = struct.body_structures?.map((s: any) => ({
-                    label: `${s.region} - ${s.finding}`, confidence: s.confidence, source: 'IA Analítica', reproduceSymptom: false
-                })) || [];
-                const newFunctional = struct.body_functions?.map((f: any) => ({
-                    label: `${f.domain}: ${f.severity}`, baseline: f.baseline, side: f.side, linkedPsfs: f.reproduces_comparable
-                })) || [];
-                const newBps = [
-                    ...(struct.personal_factors?.map((p: any) => `${p.valence === 'positivo' ? '(+)' : '(-)'} ${p.factor}`) || []),
-                    ...(struct.environment_factors?.map((e: any) => `${e.valence === 'facilitador' ? '(F)' : '(B)'} ${e.factor}`) || [])
-                ];
-
-                updateFormData(prev => ({
-                    autoSynthesis: {
-                        ...prev.autoSynthesis,
-                        structuralSuspicions: newStructural.length > 0 ? newStructural : prev.autoSynthesis?.structuralSuspicions,
-                        functionalDeficits: newFunctional.length > 0 ? newFunctional : prev.autoSynthesis?.functionalDeficits,
-                        contextBps: newBps.length > 0 ? newBps : prev.autoSynthesis?.contextBps,
-                        trafficLight: struct.classifications?.irritabilidad === 'alta' ? 'Rojo' :
-                            struct.classifications?.irritabilidad === 'media' ? 'Amarillo' : 'Verde'
-                    }
-                }));
+            const aiResult = data.data; // DiagnosisSchema matched
+            if (aiResult) {
+                // Populate blocks C to H
+                handleUpdateSynth({
+                    clinicalClassification: aiResult.clinicalClassification,
+                    systems: aiResult.systems,
+                    alterations: aiResult.alterations,
+                    activityParticipation: aiResult.activityParticipation,
+                    bpsFactors: aiResult.bpsFactors,
+                    clinicalReminders: aiResult.clinicalReminders
+                });
             }
         } catch (err: any) {
             setAiError(err.message);
@@ -153,174 +85,279 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
         }
     };
 
+    // Block A helper extraction
+    const safetyAlerts = engine.safety.reasons;
+    const initialFocus = formData.interview?.v4?.focos?.find(f => f.esPrincipal) || formData.interview?.v3?.focos?.find(f => f.isPrimary);
+
     return (
-        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Síntesis y Clasificación</h2>
-                    <p className="text-sm text-slate-500 mt-1">Sintetiza los hallazgos del examen físico y confirma el Semáforo clínico de carga.</p>
-                </div>
-
-                {/* AI Assist Block */}
-                <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-100 rounded-xl p-4 sm:p-5 shadow-sm relative overflow-hidden shrink-0 w-full md:w-auto md:min-w-[280px]">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-500" />
-                    <h3 className="font-bold text-indigo-900 flex items-center gap-2 text-sm mb-2">
-                        <span className="text-base">✨</span> Pulir Síntesis con IA
-                    </h3>
-                    <p className="text-[10px] text-indigo-700/70 mb-3 leading-tight">
-                        Envía la data cruda a Gemini para detectar faltantes y ordenar déficits antes de pasar a P4.
-                    </p>
-
-                    {aiError && (
-                        <div className="bg-rose-50 text-rose-700 p-2 rounded-lg text-[10px] font-medium border border-rose-200 mb-3">
-                            ❌ {aiError}
-                        </div>
-                    )}
-
-                    {!isGenerating ? (
-                        <button onClick={handleRefineSynthesis} disabled={isClosed} className="w-full bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm border border-indigo-700 disabled:opacity-50">
-                            Analizar y Auto-completar
-                        </button>
-                    ) : (
-                        <span className="w-full flex justify-center text-xs text-indigo-600 font-bold animate-pulse items-center gap-2 bg-indigo-100 px-4 py-2 rounded-lg border border-indigo-200">
-                            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" /></svg>
-                            Sintetizando...
-                        </span>
-                    )}
-                </div>
+        <div className="flex flex-col gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Síntesis y Ordenamiento del Caso</h2>
+                <p className="text-sm text-slate-500 mt-1">Revisa el resumen y clasifica el caso estructuradamente antes de pasar a planificar.</p>
             </div>
 
-            {/* SÍNTESIS FÍSICA IMPORTADA DESDE P2 */}
-            {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_structured && (
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
-                        <span className="text-lg">📋</span> Síntesis del Examen Físico (P2)
-                    </h3>
-
-                    {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_short && (
-                        <div className="bg-indigo-50 text-indigo-900 p-3 rounded-lg border border-indigo-100 mb-4 whitespace-pre-wrap text-xs font-medium">
-                            {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_short}
-                        </div>
-                    )}
-
-                    <div className="bg-slate-50 border-slate-200 border rounded-lg p-3 text-xs text-slate-700 whitespace-pre-wrap font-mono h-[200px] overflow-y-auto">
-                        {(autoSynth.physicalSynthesis || engine.synth.physicalSynthesis)?.summary_text_structured}
+            {/* BLOQUE A — RESUMEN AUTOMÁTICO DEL CASO (Solo lectura) */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm text-sm">
+                <h3 className="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2">A. Snapshot Clínico (P1 y P2)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><span className="text-xs text-slate-500 block">Foco Principal</span><span className="font-medium text-slate-800">{initialFocus ? `${initialFocus.region} (${initialFocus.lado})` : 'No definido'}</span></div>
+                    <div><span className="text-xs text-slate-500 block">Irritabilidad Sugerida</span><span className="font-medium text-slate-800">{initialFocus ? (engine.synth as any).perFocus?.[(initialFocus as any).id]?.irritabilityLevel : 'Desconocida'}</span></div>
+                    <div><span className="text-xs text-slate-500 block">Semáforo de Carga</span><span className={`font-bold ${engine.safety.level === 'Rojo' ? 'text-rose-600' : engine.safety.level === 'Amarillo' ? 'text-amber-600' : 'text-emerald-600'}`}>{engine.safety.level}</span></div>
+                    <div><span className="text-xs text-slate-500 block">Tarea Índice</span><span className="font-medium text-slate-800">{(initialFocus as any)?.signoComparable || (initialFocus as any)?.primaryComparable?.name || 'No definida'}</span></div>
+                </div>
+                {safetyAlerts && safetyAlerts.length > 0 && (
+                    <div className="mt-4 bg-rose-50 border border-rose-100 text-rose-700 p-2 rounded text-xs font-medium">
+                        ⚠️ Alertas: {safetyAlerts.join(' | ')}
                     </div>
+                )}
+            </div>
+
+            {/* BLOQUE B — BOTÓN PRINCIPAL DE IA */}
+            <div className="bg-gradient-to-br from-indigo-50/50 to-purple-50/50 border border-indigo-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center">
+                <button 
+                    onClick={handleRefineSynthesis} 
+                    disabled={isClosed || isGenerating} 
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg px-8 py-4 rounded-2xl shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-3"
+                >
+                    {isGenerating ? <><span className="animate-spin text-2xl">⚙️</span> Procesando datos...</> : <><span className="text-2xl">✨</span> Ordenar caso con IA</>}
+                </button>
+                <p className="text-xs text-indigo-700/80 mt-3 max-w-md">
+                    La IA propondrá una síntesis clínica estructurada usando P1, P1.5 y P2. <br/><strong className="text-indigo-900">Esta propuesta puede contener errores y debe ser revisada clínicamente.</strong>
+                </p>
+                {aiError && (
+                    <div className="bg-rose-50 text-rose-700 p-3 rounded-lg text-sm font-medium border border-rose-200 mt-4">
+                        ❌ {aiError}
+                    </div>
+                )}
+            </div>
+
+            {/* RENDERIZADO DE BLOQUES (Solo si la IA llenó datos o ya existían) */}
+            {(autoSynth.clinicalClassification || autoSynth.systems || autoSynth.alterations) && (
+                <div className="flex flex-col gap-6 animate-in fade-in duration-700">
+                    
+                    {/* BLOQUE C — CLASIFICACIÓN CLÍNICA SUGERIDA */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔥</span> C. Clasificación del Dolor</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Categoría Principal</label>
+                                <select 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                    value={autoSynth.clinicalClassification?.category || ''}
+                                    onChange={(e) => updateDeepObj('clinicalClassification', { category: e.target.value })}
+                                    disabled={isClosed}
+                                >
+                                    <option value="">Selecciona...</option>
+                                    <option value="Aparente nociceptivo">Aparente nociceptivo</option>
+                                    <option value="Aparente neuropático">Aparente neuropático</option>
+                                    <option value="Aparente nociplástico">Aparente nociplástico</option>
+                                    <option value="Mixto">Mixto</option>
+                                    <option value="No concluyente">No concluyente</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Subtipo / Apellido</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                    value={autoSynth.clinicalClassification?.subtype || ''}
+                                    onChange={(e) => updateDeepObj('clinicalClassification', { subtype: e.target.value })}
+                                    disabled={isClosed}
+                                    placeholder="Ej: de origen inflamatorio"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
+                                <textarea 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[60px]"
+                                    value={autoSynth.clinicalClassification?.rationale || ''}
+                                    onChange={(e) => updateDeepObj('clinicalClassification', { rationale: e.target.value })}
+                                    disabled={isClosed}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE D — SISTEMA / ESTRUCTURA */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🦴</span> D. Sistema y Estructuras</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Sistema Principal</label>
+                                <select 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                    value={autoSynth.systems?.primarySystem || ''}
+                                    onChange={(e) => updateDeepObj('systems', { primarySystem: e.target.value })}
+                                    disabled={isClosed}
+                                >
+                                    <option value="">Selecciona...</option>
+                                    <option value="Tejido contráctil">Tejido contráctil</option>
+                                    <option value="Articulación / cápsula">Articulación / cápsula</option>
+                                    <option value="Ligamento / estabilidad pasiva">Ligamento / estabilidad pasiva</option>
+                                    <option value="Sistema neural">Sistema neural</option>
+                                    <option value="Control motor / movimiento">Control motor / movimiento</option>
+                                    <option value="Carga ósea">Carga ósea</option>
+                                    <option value="Tejido conectivo / fascia">Tejido conectivo / fascia</option>
+                                    <option value="Mixto">Mixto</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Estructura Principal</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                    value={autoSynth.systems?.primaryStructure || ''}
+                                    onChange={(e) => updateDeepObj('systems', { primaryStructure: e.target.value })}
+                                    disabled={isClosed}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Estructuras Secundarias (separadas por coma)</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                    value={(autoSynth.systems?.secondaryStructures || []).join(', ')}
+                                    onChange={(e) => updateDeepObj('systems', { secondaryStructures: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                    disabled={isClosed}
+                                    placeholder="Ej: Bursa subacromial, Bíceps largo..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE E — ALTERACIONES */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">⚙️</span> E. Alteraciones Detectadas</h3>
+                        
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E1. Estructurales</label>
+                            <div className="space-y-2">
+                                {(autoSynth.alterations?.structural || []).map((alt: any, idx: number) => (
+                                    <div key={idx} className="flex gap-2 items-start">
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.name} onChange={(e) => {
+                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].name = e.target.value; updateDeepObj('alterations', { structural: copy });
+                                        }} disabled={isClosed} />
+                                        <select className="w-1/4 bg-slate-50 border rounded p-2 text-sm" value={alt.certainty} onChange={(e) => {
+                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].certainty = e.target.value; updateDeepObj('alterations', { structural: copy });
+                                        }} disabled={isClosed}>
+                                            <option value="Posible">Posible</option><option value="Probable">Probable</option><option value="Casi confirmada">Casi confirmada</option>
+                                        </select>
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.comment} onChange={(e) => {
+                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].comment = e.target.value; updateDeepObj('alterations', { structural: copy });
+                                        }} disabled={isClosed} placeholder="Comentario..." />
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alterations?.structural || [])]; copy.splice(idx, 1); updateDeepObj('alterations', { structural: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                    </div>
+                                ))}
+                                {!isClosed && <button onClick={() => updateDeepObj('alterations', { structural: [...(autoSynth.alterations?.structural || []), { name: '', certainty: 'Posible', comment: '' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Estructural</button>}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E2. Funcionales</label>
+                            <div className="space-y-2">
+                                {(autoSynth.alterations?.functional || []).map((alt: any, idx: number) => (
+                                    <div key={idx} className="flex gap-2 items-center">
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.name} onChange={(e) => {
+                                            const copy = [...(autoSynth.alterations?.functional || [])]; copy[idx].name = e.target.value; updateDeepObj('alterations', { functional: copy });
+                                        }} disabled={isClosed} />
+                                        <select className="w-1/3 bg-slate-50 border rounded p-2 text-sm" value={alt.severity} onChange={(e) => {
+                                            const copy = [...(autoSynth.alterations?.functional || [])]; copy[idx].severity = e.target.value; updateDeepObj('alterations', { functional: copy });
+                                        }} disabled={isClosed}>
+                                            <option value="Leve">Leve</option><option value="Moderada">Moderada</option><option value="Severa">Severa</option>
+                                        </select>
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alterations?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alterations', { functional: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                    </div>
+                                ))}
+                                {!isClosed && <button onClick={() => updateDeepObj('alterations', { functional: [...(autoSynth.alterations?.functional || []), { name: '', severity: 'Moderada' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Funcional</button>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🏃‍♀️</span> F. Actividad y Participación</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">F1. Limitaciones Directas</label>
+                                <div className="space-y-2">
+                                    {(autoSynth.activityParticipation?.limitations || []).map((lim: any, idx: number) => (
+                                        <div key={idx} className="flex gap-2 items-center">
+                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={lim.name} onChange={(e) => {
+                                                const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy[idx].name = e.target.value; updateDeepObj('activityParticipation', { limitations: copy });
+                                            }} disabled={isClosed} />
+                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={lim.severity} onChange={(e) => {
+                                                const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy[idx].severity = e.target.value; updateDeepObj('activityParticipation', { limitations: copy });
+                                            }} disabled={isClosed}><option>Leve</option><option>Moderada</option><option>Severa</option></select>
+                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy.splice(idx, 1); updateDeepObj('activityParticipation', { limitations: copy }); }} className="px-1 text-rose-500">✕</button>}
+                                        </div>
+                                    ))}
+                                    {!isClosed && <button onClick={() => updateDeepObj('activityParticipation', { limitations: [...(autoSynth.activityParticipation?.limitations || []), { name: '', severity: 'Moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar L.</button>}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">F2. Restricciones (Participación)</label>
+                                <div className="space-y-2">
+                                    {(autoSynth.activityParticipation?.restrictions || []).map((res: any, idx: number) => (
+                                        <div key={idx} className="flex gap-2 items-center">
+                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={res.name} onChange={(e) => {
+                                                const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy[idx].name = e.target.value; updateDeepObj('activityParticipation', { restrictions: copy });
+                                            }} disabled={isClosed} />
+                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={res.severity} onChange={(e) => {
+                                                const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy[idx].severity = e.target.value; updateDeepObj('activityParticipation', { restrictions: copy });
+                                            }} disabled={isClosed}><option>Leve</option><option>Moderada</option><option>Severa</option></select>
+                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy.splice(idx, 1); updateDeepObj('activityParticipation', { restrictions: copy }); }} className="px-1 text-rose-500">✕</button>}
+                                        </div>
+                                    ))}
+                                    {!isClosed && <button onClick={() => updateDeepObj('activityParticipation', { restrictions: [...(autoSynth.activityParticipation?.restrictions || []), { name: '', severity: 'Moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar R.</button>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE G — FACTORES BPS */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🧠</span> G. Factores Biopsicosociales</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            {/* Personales (+) */}
+                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-2">Personales Positivos (+)</label>
+                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.personalPos || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { personalPos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            </div>
+                            {/* Personales (-) */}
+                            <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
+                                <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-2">Personales Negativos (-)</label>
+                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.personalNeg || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { personalNeg: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            </div>
+                            {/* Ambientales (F) */}
+                            <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
+                                <label className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block mb-2">Facilitadores Ambientales</label>
+                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.envFacilitators || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { envFacilitators: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            </div>
+                            {/* Ambientales (B) */}
+                            <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                                <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-2">Barreras Ambientales</label>
+                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.envBarriers || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { envBarriers: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE H — RECORDATORIOS CLÍNICOS */}
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><span className="text-lg">💡</span> H. Recordatorios y Coherencia</h3>
+                        <p className="text-[10px] text-indigo-700/80 mb-3">Puntos a vigilar durante el tratamiento sugeridos por la IA.</p>
+                        <textarea 
+                            className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-sm min-h-[80px]" 
+                            value={(autoSynth.clinicalReminders || []).join('\n')} 
+                            onChange={(e) => handleUpdateSynth({ clinicalReminders: e.target.value.split('\n').filter(Boolean) })} 
+                            disabled={isClosed} 
+                            placeholder="Ej: Vigilar componente neural..." 
+                        />
+                    </div>
+
                 </div>
             )}
-
-            {/* SEMÁFORO GLOBAL DE CARGA */}
-            <div className={`p-4 sm:p-6 rounded-2xl border flex flex-col md:flex-row gap-4 sm:gap-6 items-center md:items-start shadow-lg transition-colors ${autoSynth.trafficLight === 'Rojo' ? 'bg-rose-50 border-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                <div className="shrink-0 flex flex-col items-center gap-3 bg-white p-4 rounded-xl border shadow-sm w-full md:w-auto">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider text-center">Semáforo Clínico</span>
-                    <div className="flex gap-2">
-                        <button onClick={() => handleUpdateSynth({ trafficLight: 'Verde' })} disabled={isClosed} className={`w-10 h-10 rounded-full border-2 transition-all ${autoSynth.trafficLight === 'Verde' ? 'bg-emerald-500 border-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-110' : 'bg-slate-200 border-slate-300 hover:bg-emerald-200'}`} />
-                        <button onClick={() => handleUpdateSynth({ trafficLight: 'Amarillo' })} disabled={isClosed} className={`w-10 h-10 rounded-full border-2 transition-all ${autoSynth.trafficLight === 'Amarillo' ? 'bg-amber-500 border-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.5)] scale-110' : 'bg-slate-200 border-slate-300 hover:bg-amber-200'}`} />
-                        <button onClick={() => handleUpdateSynth({ trafficLight: 'Rojo' })} disabled={isClosed} className={`w-10 h-10 rounded-full border-2 transition-all ${autoSynth.trafficLight === 'Rojo' ? 'bg-rose-500 border-rose-600 shadow-[0_0_15px_rgba(244,63,94,0.5)] scale-110' : 'bg-slate-200 border-slate-300 hover:bg-rose-200'}`} />
-                    </div>
-                </div>
-                <div className="flex-1 w-full">
-                    <h3 className={`font-bold text-lg mb-1 ${autoSynth.trafficLight === 'Rojo' ? 'text-rose-800' : autoSynth.trafficLight === 'Amarillo' ? 'text-amber-800' : 'text-emerald-800'}`}>
-                        {autoSynth.trafficLight === 'Rojo' ? 'Alta Precaución (Carga Limitada)' : autoSynth.trafficLight === 'Amarillo' ? 'Progresión Cautelosa' : 'Carga Activa Agresiva'}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-3">Recomendación original del motor: <strong>{engine.safety.level}</strong>. {engine.safety.reasons[0]}</p>
-                    <input type="text" placeholder="Justificación breve de la clasificación elegida..." className={`w-full bg-white border rounded-xl p-3 min-h-[44px] text-sm outline-none focus:ring-2 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 ${autoSynth.trafficLight === 'Rojo' ? 'border-rose-200 focus:ring-rose-200' : autoSynth.trafficLight === 'Amarillo' ? 'border-amber-200 focus:ring-amber-200' : 'border-emerald-200 focus:ring-emerald-200'}`} value={autoSynth.trafficLightRationale || ''} onChange={e => handleUpdateSynth({ trafficLightRationale: e.target.value })} disabled={isClosed} />
-                </div>
-            </div>
-
-            {/* SEPARACIÓN SINTÉTICA (DRAG/DROP O CHIPS) */}
-            <div className="grid grid-cols-1 gap-6">
-
-                {/* Sospecha Estructural */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🦴</span> 1. Sospecha Estructural Principal</h3>
-                    <p className="text-xs text-slate-500 mb-4">Estructuras anatómicas que se presumen como la fuente generadora del dolor (nocicepción primaria).</p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {COMMON_STRUCTURAL.map(tag => {
-                            const isActive = (autoSynth.structuralSuspicions || []).some((i: any) => i.label === tag);
-                            return (
-                                <button key={tag} onClick={() => toggleArrayItemObj('structuralSuspicions', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                    {tag}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                        {(autoSynth.structuralSuspicions || []).filter((t: any) => !COMMON_STRUCTURAL.includes(t.label)).map((tagObj: any) => (
-                            <div key={tagObj.label} className="flex flex-col gap-1 bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-200">
-                                <div className="flex items-center gap-1">
-                                    {tagObj.label}
-                                    {!isClosed && <button onClick={() => toggleArrayItemObj('structuralSuspicions', tagObj.label)} className="hover:text-rose-500 ml-1"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>}
-                                </div>
-                                <span className="font-normal text-[10px] opacity-70 border-t border-indigo-200 pt-0.5 mt-0.5">{tagObj.source} | {tagObj.confidence}</span>
-                            </div>
-                        ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('structuralSuspicions', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-indigo-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
-                    </div>
-                </div>
-
-                {/* Déficits Funcionales (Base para Objetivos) */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">⚙️</span> 2. Déficits Funcionales Clave</h3>
-                    <p className="text-xs text-slate-500 mb-4">Alteraciones medibles de la función que están contribuyendo a la condición. (Serán la base para los Metas SMART en el siguiente paso).</p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {COMMON_FUNCTIONAL.map(tag => {
-                            const isActive = (autoSynth.functionalDeficits || []).some((i: any) => i.label === tag);
-                            return (
-                                <button key={tag} onClick={() => toggleArrayItemObj('functionalDeficits', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                    {tag}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                        {(autoSynth.functionalDeficits || []).filter((t: any) => !COMMON_FUNCTIONAL.includes(t.label)).map((tagObj: any) => (
-                            <div key={tagObj.label} className="flex items-center gap-1 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-emerald-200 flex-col items-start">
-                                <div className="flex justify-between w-full gap-2">
-                                    <span>{tagObj.label}</span>
-                                    {!isClosed && <button onClick={() => toggleArrayItemObj('functionalDeficits', tagObj.label)} className="hover:text-rose-500" title="Eliminar"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>}
-                                </div>
-                                {(tagObj.baseline || tagObj.side !== 'N/A') && (
-                                    <span className="font-normal text-[10px] opacity-70 border-t border-emerald-200 pt-0.5 mt-0.5 w-full">Medición base: {tagObj.baseline || 'N/A'} {tagObj.side !== 'N/A' && `(${tagObj.side})`}</span>
-                                )}
-                            </div>
-                        ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAddObj('functionalDeficits', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-emerald-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
-                    </div>
-                </div>
-
-                {/* Contexto BPS */}
-                <div className="bg-white border text-sm border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3"><span className="text-lg">🧠</span> 3. Moduladores Biopsicosociales</h3>
-                    <p className="text-xs text-slate-500 mb-4">Factores extrínsecos e intrínsecos que perpetúan o modulan la percepción de la amenaza.</p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {COMMON_BPS.map(tag => {
-                            const isActive = (autoSynth.contextBps || []).includes(tag);
-                            return (
-                                <button key={tag} onClick={() => toggleArrayItem('contextBps', tag)} disabled={isClosed} className={`p-3 min-h-[44px] rounded-xl text-sm font-bold transition-colors border shadow-sm ${isActive ? 'bg-amber-600 text-white border-amber-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                    {tag}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                        {(autoSynth.contextBps || []).filter((t: string) => !COMMON_BPS.includes(t)).map((tag: string) => (
-                            <div key={tag} className="flex items-center gap-1 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-amber-200">
-                                {tag}
-                                {!isClosed && <button onClick={() => toggleArrayItem('contextBps', tag)} className="hover:text-rose-500 ml-1"><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>}
-                            </div>
-                        ))}
-                        {!isClosed && <input type="text" placeholder="+ Añadir otro (Enter)" onKeyDown={(e) => handleCustomAdd('contextBps', e)} className="bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[44px] text-sm outline-none focus:border-amber-400 focus:bg-white w-full sm:w-64 mt-2 sm:mt-0 shadow-sm" />}
-                    </div>
-                </div>
-
-            </div>
         </div>
     );
 }

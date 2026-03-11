@@ -19,9 +19,21 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
 
   DIAGNOSIS: `
 Revisa la información integral clínica (Entrevista, Examen Físico y Cálculos Funcionales previos).
-Construye un Diagnóstico Kinesiológico narrativo avanzado y una estructura parametrizada estilo CIF (Clasificación Internacional del Funcionamiento).
-Incorpora los factores de seguridad, consideraciones clínicas y el diagnóstico diferencial funcional.
-Recuerda: Si falta información crítica, decláralo en "missing_data_to_confirm".
+NO REDACTES un diagnóstico narrativo final, ni un plan terapéutico, ni objetivos SMART.
+Tu objetivo ÚNICO es operar como un "Ordenador de Caso" que clasifica la data cruda en bloques estructurados.
+Clasifica inteligentemente el tipo de dolor, los sistemas afectados principal y secundarios.
+Lista TODAS las alteraciones estructurales y funcionales inferidas, asignando un grado de severidad/certeza realista y prudente.
+Lista limitaciones de actividad directa y restricciones de participación (rol social/trabajo/deporte).
+Identifica los factores Biopsicosociales separando en internos (Personales) y externos (Ambientales), cada uno en positivos/facilitadores y negativos/barreras.
+Genera recordatorios clínicos útiles y focalizados (ej: correlacionar hallazgos neurales o vigilancia de factores contextuales).
+  `,
+
+  NARRATIVE: `
+Revisa la información integral clínica (Entrevista P1, Examen Físico P2 y Síntesis Estructurada P3).
+Construye el Diagnóstico Kinesiológico Narrativo definitivo. 
+Debe ser profesional, conciso y basado en el framework BPS. 
+Destaca alteraciones funcionales y estructurales principales derivadas del bloque P3.
+Extrae explícitamente las red flags o missing data y un breve diagnóstico diferencial.
   `,
 
   PLAN: `

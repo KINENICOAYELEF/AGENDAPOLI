@@ -904,14 +904,37 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         orthopedicTests?: any[];
     };
 
-    // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor)
+    // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor / IA Ordenador)
     autoSynthesis?: {
-        structuralSuspicions?: Array<{ label: string; confidence: string; reproduceSymptom: boolean; source: string }>;
-        functionalDeficits?: Array<{ label: string; baseline: string; side: string; linkedPsfs: boolean }>;
-        contextBps?: string[];
+        clinicalClassification?: {
+            category: 'Aparente nociceptivo' | 'Aparente neuropático' | 'Aparente nociplástico' | 'Mixto' | 'No concluyente' | string;
+            subtype: string;
+            rationale: string;
+        };
+        systems?: {
+            primarySystem: 'Tejido contráctil' | 'Articulación / cápsula' | 'Ligamento / estabilidad pasiva' | 'Sistema neural' | 'Control motor / movimiento' | 'Carga ósea' | 'Tejido conectivo / fascia' | 'Mixto' | string;
+            primaryStructure: string;
+            secondaryStructures: string[];
+        };
+        alterations?: {
+            structural: Array<{ name: string; certainty: 'Casi confirmada' | 'Probable' | 'Posible' | string; comment: string }>;
+            functional: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
+        };
+        activityParticipation?: {
+            limitations: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
+            restrictions: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
+        };
+        bpsFactors?: {
+            personalPos: string[];
+            personalNeg: string[];
+            envFacilitators: string[];
+            envBarriers: string[];
+        };
+        clinicalReminders?: string[];
+
+        // Preservado para P2 / Semáforo
         trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';
         trafficLightRationale?: string;
-        presentationTags?: string[];
         physicalSynthesis?: {
             frame: { foco: string; lado: string; queja_prioritaria: string; irritabilidad: string; tarea_indice: string };
             observation: string[];

@@ -24,7 +24,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         setIsGeneratingDx(true);
         setAiError(null);
         try {
-            const res = await fetch('/api/ai/diagnosis', {
+            const res = await fetch('/api/ai/narrative', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
