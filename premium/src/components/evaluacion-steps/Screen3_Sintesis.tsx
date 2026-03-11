@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
 import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI } from "@/lib/state-normalizer";
+import { useAuth } from "@/context/AuthContext";
 
 export interface Screen3Props {
     formData: Partial<EvaluacionInicial>;
@@ -10,6 +11,7 @@ export interface Screen3Props {
 }
 
 export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3Props) {
+    const { user } = useAuth();
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
 
@@ -60,6 +62,15 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                 autoTrafficLight: engine.safety.level
             };
 
+            const stringifiedPayloadForAI = JSON.stringify(payloadForAI);
+            
+            // FRONTEND CACHE GUARD
+            if (formData.aiOutputs?.diagnosisLastInput === stringifiedPayloadForAI && autoSynth.clinicalClassification && !aiError) {
+                alert("Se reutilizó la última síntesis porque no hubo cambios clínicos relevantes en el borrador.");
+                setIsGenerating(false);
+                return;
+            }
+
             const response = await fetch('/api/ai/diagnosis', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -72,7 +83,17 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
 
             // Set raw output for next screen to avoid double billing or for historical reasons
             updateFormData(prev => ({
-                aiOutputs: { ...(prev.aiOutputs || {}), diagnosis: data.data }
+                aiOutputs: { 
+                    ...(prev.aiOutputs || {}), 
+                    diagnosis: data.data,
+                    diagnosisLastInput: stringifiedPayloadForAI,
+                    diagnosisTelemetry: {
+                        latencyMs: data.latencyMs,
+                        timestamp: new Date().toISOString(),
+                        hash: data.hash,
+                        estimatedInputTokens: Math.ceil(stringifiedPayloadForAI.length / 4)
+                    }
+                }
             }));
 
             const aiResult = data.data; // DiagnosisSchema matched
@@ -366,6 +387,17 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         />
                     </div>
 
+                </div>
+            )}
+
+            {/* PANEL DE TELEMETRÍA (ADMIN/DOCENTE) */}
+            {((user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE') && formData.aiOutputs?.diagnosisTelemetry && (
+                <div className="bg-slate-800 text-slate-300 p-4 rounded-xl text-xs font-mono mt-6 mb-2 flex flex-col gap-1 border border-slate-700 shadow-inner">
+                    <h4 className="text-slate-100 font-bold mb-2 flex items-center gap-2"><span className="text-base">📡</span> Terminal de Telemetría P3 (Admin)</h4>
+                    <p><span className="text-slate-500">Estim. Input Tokens:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.diagnosisTelemetry.estimatedInputTokens}</span></p>
+                    <p><span className="text-slate-500">Network Latency:</span> {formData.aiOutputs.diagnosisTelemetry.latencyMs}ms</p>
+                    <p><span className="text-slate-500">Payload Hash:</span> {formData.aiOutputs.diagnosisTelemetry.hash}</p>
+                    <p><span className="text-slate-500">Last Generated:</span> {new Date(formData.aiOutputs.diagnosisTelemetry.timestamp).toLocaleString()}</p>
                 </div>
             )}
         </div>

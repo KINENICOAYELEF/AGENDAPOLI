@@ -85,7 +85,8 @@ ${normalizedPayload}
             const rawText = await callGemini({
                 systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
                 userPrompt: userPrompt,
-                temperature: 0.2
+                temperature: 0.2,
+                modelId: 'gemini-2.5-pro'
             });
 
             const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
@@ -116,7 +117,7 @@ TU OBLIGACIÓN:
 Devuelve un JSON STRICT que cumpla con TODOS los campos faltantes, la estructura exacta:
 ${expectedJsonExample}
             `;
-                const rawText2 = await callGemini({ systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE, userPrompt: repairPrompt, temperature: 0.1 });
+                const rawText2 = await callGemini({ systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE, userPrompt: repairPrompt, temperature: 0.1, modelId: 'gemini-2.5-pro' });
                 const cleanJsonText2 = rawText2.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
                 const guardrailCheck2 = validateGuardrails(cleanJsonText2);
                 if (!guardrailCheck2.valid) {

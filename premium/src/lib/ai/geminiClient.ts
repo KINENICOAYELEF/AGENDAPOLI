@@ -15,6 +15,7 @@ interface GeminiCallParams {
     temperature?: number;
     topP?: number;
     topK?: number;
+    modelId?: string;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
@@ -26,7 +27,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
     try {
         const response = await ai.models.generateContent({
-            model: DEFAULT_MODEL,
+            model: params.modelId || DEFAULT_MODEL,
             contents: userPrompt,
             config: {
                 systemInstruction: systemInstruction,

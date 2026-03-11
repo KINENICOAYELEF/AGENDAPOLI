@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { normalizeEvaluationState } from "@/lib/state-normalizer";
+import { useAuth } from "@/context/AuthContext";
 
 export interface Screen4Props {
     formData: Partial<EvaluacionInicial>;
@@ -9,6 +10,7 @@ export interface Screen4Props {
 }
 
 export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Screen4Props) {
+    const { user } = useAuth();
     const { geminiDiagnostic = {} } = formData;
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
@@ -45,13 +47,24 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                 quejaPrioritaria: normalizedCase.quejaPrioritaria
             };
 
+            const payloadForAI = {
+                normalizedContext: minimalContext,
+                synthesis: autoSynth // MUST be autoSynthesis as it contains P3 structured output
+            };
+
+            const stringifiedPayloadForAI = JSON.stringify(payloadForAI);
+            
+            // FRONTEND CACHE GUARD
+            if (formData.aiOutputs?.narrativeLastInput === stringifiedPayloadForAI && geminiDiagnostic.narrativeDiagnosis && !aiError) {
+                alert("Se reutilizó la última redacción porque no hubo cambios en P3.");
+                setIsGenerating(false);
+                return;
+            }
+
             const res = await fetch('/api/ai/narrative', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    normalizedContext: minimalContext,
-                    synthesis: autoSynth // MUST be autoSynthesis as it contains P3 structured output
-                })
+                body: JSON.stringify(payloadForAI)
             });
             if (!res.ok) throw new Error("Error en IA Gemini de Diagnóstico y Planificación.");
             const data = await res.json();
@@ -67,6 +80,20 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                 masterPlan: aiData.masterPlan || '',
                 reassessmentRules: aiData.reassessmentRules || { comparableSign: '', variables: [], frequency: '', progressCriteria: '', stagnationCriteria: '' }
             });
+
+            // Persist telemetry and last input
+            updateFormData(prev => ({
+                aiOutputs: { 
+                    ...(prev.aiOutputs || {}), 
+                    narrativeLastInput: stringifiedPayloadForAI,
+                    narrativeTelemetry: {
+                        latencyMs: data.latencyMs,
+                        timestamp: new Date().toISOString(),
+                        hash: data.hash,
+                        estimatedInputTokens: Math.ceil(stringifiedPayloadForAI.length / 4)
+                    }
+                }
+            }));
         } catch (err: any) {
             setAiError(err.message || 'Falló la generación IA.');
         } finally {
@@ -349,7 +376,18 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
 
+            {/* PANEL DE TELEMETRÍA (ADMIN/DOCENTE) */}
+            {((user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE') && formData.aiOutputs?.narrativeTelemetry && (
+                <div className="bg-slate-800 text-slate-300 p-4 rounded-xl text-xs font-mono mt-6 mb-2 flex flex-col gap-1 border border-slate-700 shadow-inner">
+                    <h4 className="text-slate-100 font-bold mb-2 flex items-center gap-2"><span className="text-base">📡</span> Terminal de Telemetría P4 (Admin)</h4>
+                    <p><span className="text-slate-500">Estim. Input Tokens:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.narrativeTelemetry.estimatedInputTokens}</span></p>
+                    <p><span className="text-slate-500">Network Latency:</span> {formData.aiOutputs.narrativeTelemetry.latencyMs}ms</p>
+                    <p><span className="text-slate-500">Payload Hash:</span> {formData.aiOutputs.narrativeTelemetry.hash}</p>
+                    <p><span className="text-slate-500">Last Generated:</span> {new Date(formData.aiOutputs.narrativeTelemetry.timestamp).toLocaleString()}</p>
+                    <p><span className="text-slate-500">Active Model:</span> <span className="text-amber-400 font-bold">gemini-2.5-pro</span> (Modo Redacción)</p>
                 </div>
             )}
         </div>

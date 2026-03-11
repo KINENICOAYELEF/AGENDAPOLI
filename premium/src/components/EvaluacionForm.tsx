@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { OutcomesService } from "@/services/outcomes";
-import { normalizeEvaluationState, buildCompactPhysicalForAI } from "@/lib/state-normalizer";
+import { normalizeEvaluationState, buildCompactPhysicalForAI, buildCompactInterviewForAI } from "@/lib/state-normalizer";
 
 // Nuevas 5 Pantallas Integrales
 import { Screen1_Entrevista } from "./evaluacion-steps/Screen1_Entrevista";
@@ -166,6 +166,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+    };
+
+    const handleLogAdminPayloads = () => {
+        const nc = normalizeEvaluationState(formData);
+        const pi = buildCompactInterviewForAI(nc, formData.interview);
+        const pp = buildCompactPhysicalForAI(nc);
+        console.group("📡 [ADMIN TELEMETRY] - Payload Inspection");
+        console.log("🟦 Normalized Case Tree:", nc);
+        console.log("🟧 Compact Interview (P1):", pi);
+        console.log("🟩 Compact Physical Exam (P2):", pp);
+        console.groupEnd();
+        alert("Payloads estructurados impresos en la consola del navegador.");
     };
 
     const [formData, setFormData] = useState<any>({
@@ -677,6 +689,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             <button onClick={() => fileInputRef.current?.click()} className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Cargar JSON
+                            </button>
+                            <button onClick={handleLogAdminPayloads} className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Imprimir Tokens
                             </button>
                             <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportJSON} className="hidden" />
                         </div>
