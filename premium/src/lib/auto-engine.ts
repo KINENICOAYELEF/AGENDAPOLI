@@ -22,7 +22,7 @@ export function computeIrritability(foco: any): { level: 'Baja' | 'Media' | 'Alt
     if (maxPain >= 7) { score += 3; reasons.push(`Dolor severo reportado (>=7).`); }
     else if (maxPain >= 4) { score += 1; reasons.push(`Dolor moderado reportado.`); }
 
-    const isNightPain = foco.agravantes?.toLowerCase().includes('noche') || foco.wakesAtNight || foco.pattern24h === 'Noche peor';
+    const isNightPain = foco.agravantes?.toLowerCase()?.includes('noche') || foco.wakesAtNight || foco.pattern24h === 'Noche peor';
     if (isNightPain) {
         score += 2; reasons.push('Dolor nocturno interrumpe el sueño.');
     }
@@ -30,7 +30,7 @@ export function computeIrritability(foco: any): { level: 'Baja' | 'Media' | 'Alt
     const afterEffectFreq = foco.dolorPostActividad || foco.irritabilidadInputs?.dolorPostCarga || foco.afterEffectFreq;
     const settlingTime = foco.tiempoCalma || foco.irritabilidadInputs?.tiempoCalma || foco.settlingTime;
 
-    if (afterEffectFreq === 'Frecuente' || afterEffectFreq === 'Siempre' || settlingTime === '>24 h' || settlingTime === '1–24 h' || settlingTime.includes('hora') || settlingTime.includes('dia')) {
+    if (afterEffectFreq === 'Frecuente' || afterEffectFreq === 'Siempre' || settlingTime === '>24 h' || settlingTime === '1–24 h' || settlingTime?.includes('hora') || settlingTime?.includes('dia')) {
         score += 3; reasons.push('El síntoma tiene un after-effect prolongado o muy frecuente.');
     } else if (afterEffectFreq === 'A veces') {
         score += 1;
@@ -109,8 +109,8 @@ export function computeSafety(interview: any): { level: 'Verde' | 'Amarillo' | '
     const focos = getFocos(interview);
     const tieneTraumaAgudo = focos.some(f =>
         (f.onsetType === 'Súbito' && f.suddenSound === 'Chasquido' && f.suddenImmediateCapacity === 'Incapaz' && f.suddenSwellingVisible === 'Sí') ||
-        (f.inicio === 'Subito_Trauma' && f.contextoDetallado?.toLowerCase().includes('chasquido')) ||
-        (f.historia?.inicioTipo === 'Subito_Trauma' && f.historia?.mecanismoContexto?.toLowerCase().includes('chasquido'))
+        (f.inicio === 'Subito_Trauma' && f.contextoDetallado?.toLowerCase()?.includes('chasquido')) ||
+        (f.historia?.inicioTipo === 'Subito_Trauma' && f.historia?.mecanismoContexto?.toLowerCase()?.includes('chasquido'))
     );
     if (tieneTraumaAgudo && !isRed) {
         isYellow = true;
@@ -168,7 +168,7 @@ export function computePainMechanism(foco: any, interview: any): { category: 'No
 
     // Nociceptivo - Inflamatorio
     let isInflammatory = false;
-    const patternNight = foco.pattern24h === 'Noche peor' || foco.agravantes?.toLowerCase().includes('noche');
+    const patternNight = foco.pattern24h === 'Noche peor' || foco.agravantes?.toLowerCase()?.includes('noche');
     if (nature.includes('Pulsátil') || patternNight) {
         noci += 2;
         isInflammatory = true;
@@ -588,8 +588,8 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
                 const resultado = domainData.resultado || (domainData.evalua ? 'Evaluado' : '');
 
                 // Consideramos normal o screening limpio si dice "Normal", "Sin alteraciones", o está vacío y el resultado también es Normal.
-                const isNormalResultado = resultado.toLowerCase().includes('normal') || resultado.toLowerCase().includes('sin alter');
-                const isNormalHallazgo = !hallazgo || hallazgo.toLowerCase().includes('normal') || hallazgo.toLowerCase().includes('sin alter');
+                const isNormalResultado = resultado?.toLowerCase()?.includes('normal') || resultado?.toLowerCase()?.includes('sin alter');
+                const isNormalHallazgo = !hallazgo || hallazgo?.toLowerCase()?.includes('normal') || hallazgo?.toLowerCase()?.includes('sin alter');
 
                 if (!isNormalResultado || !isNormalHallazgo) {
                     hasRelevantNeuro = true;
@@ -642,7 +642,7 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
             if (reproduce) {
                 findingLine += ` -> Síntoma índice: ${reproduce}`;
                 const isPositive = f.result?.toLowerCase() === 'positivo' || f.resultado?.toLowerCase() === 'positivo';
-                if (isPositive || reproduce.toLowerCase().includes('reproduce') || reproduce.toLowerCase().includes('exact')) {
+                if (isPositive || reproduce?.toLowerCase()?.includes('reproduce') || reproduce?.toLowerCase()?.includes('exact')) {
                     structuralCandidates.push({
                         label: `Posible implicación mecánica explorada en ${tName} (${hipotesis}) - Región: ${regionName}`,
                         confidence: 'Media', reproduceSymptom: true, source: 'Pruebas Ortopédicas P2'
@@ -739,7 +739,7 @@ export function autoSynthesizeFindings(exam: any, interview: any): AutoSynthesis
     if (pSyn.mobility.length) domainsWithFindings.push('movilidad articular');
     if (pSyn.strength_load.length) domainsWithFindings.push('fuerza y carga');
     if (pSyn.orthopedic_tests.length) domainsWithFindings.push('pruebas ortopédicas');
-    if (pSyn.neurovascular_sensorimotor.some(s => !s.toLowerCase().includes('sin hallazgos'))) domainsWithFindings.push('screening neurosensorial');
+    if (pSyn.neurovascular_sensorimotor.some(s => !s?.toLowerCase()?.includes('sin hallazgos'))) domainsWithFindings.push('screening neurosensorial');
     if (pSyn.functional_tests.length) domainsWithFindings.push('función objetiva');
     
     // Texto Corto (Narrativo Breve)
@@ -824,7 +824,7 @@ export function generateP2Priorities(interviewV3: AnamnesisProximaV3): Anamnesis
 
         // 3) Neuro
         const nature = foco.sintomasTags || [];
-        const isNeuro = nature.includes('Hormigueo') || nature.includes('Adormecimiento') || nature.includes('Corriente') || nature.includes('Quemazón') || nature.includes('Debilidad') || foco.mecanismoClasificacion.categoria.includes('Neuropático');
+        const isNeuro = nature.includes('Hormigueo') || nature.includes('Adormecimiento') || nature.includes('Corriente') || nature.includes('Quemazón') || nature.includes('Debilidad') || foco.mecanismoClasificacion?.categoria?.includes('Neuropático');
         if (isNeuro) {
             items.push({ tipo: 'Neuro', label: 'Screen neurológico + neurodinamia / miotomos / dermatomos', razon: 'Patrón de síntomas neuropáticos', prioridad: 'Alta' });
             items.push({ tipo: 'TestEspecial', label: 'Diferenciar raíz vs nervio periférico según patrón', razon: 'Sospecha neuropática', prioridad: 'Media' });
@@ -847,13 +847,13 @@ export function generateP2Priorities(interviewV3: AnamnesisProximaV3): Anamnesis
         }
 
         // 6) Mecanismo
-        const isInflamatorio = foco.mecanismoClasificacion.subtipos.includes('Inflamatorio') || (foco.mecanismoClasificacion.categoria === 'NoDefinido' && nature.includes('Pulsátil'));
+        const isInflamatorio = foco.mecanismoClasificacion?.subtipos?.includes('Inflamatorio') || (foco.mecanismoClasificacion?.categoria === 'NoDefinido' && nature.includes('Pulsátil'));
         if (isInflamatorio) {
             items.push({ tipo: 'Palpacion', label: 'Signos inflamatorios locales según región', razon: 'Sospecha de nocicepción inflamatoria', prioridad: 'Media' });
             items.push({ tipo: 'Carga', label: 'Pruebas submáximas iniciales', razon: 'Proteger respuesta inflamatoria', prioridad: 'Media' });
         }
 
-        const isNociplastico = foco.mecanismoClasificacion.categoria.includes('Nociplástico');
+        const isNociplastico = foco.mecanismoClasificacion?.categoria?.includes('Nociplástico');
         if (isNociplastico) {
             items.push({ tipo: 'Educacion', label: 'Dolor persistente: explicación y expectativas', razon: 'Perfil nociplástico / sensibilización', prioridad: 'Alta' });
             items.push({ tipo: 'Screening', label: 'Factores psicosociales y sueño/estrés', razon: 'Sustento BPS del patrón persistente', prioridad: 'Media' });
