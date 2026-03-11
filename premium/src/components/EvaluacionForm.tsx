@@ -226,7 +226,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
     }, [isEditMode, formData.interview?.focos]);
 
     const updateFormData = (patch: Partial<Evaluacion> | ((prev: Partial<Evaluacion>) => Partial<Evaluacion>)) => {
-        setFormData((prev: any) => typeof patch === 'function' ? patch(prev) : { ...prev, ...patch });
+        setFormData((prev: any) => {
+            const updates = typeof patch === 'function' ? patch(prev) : patch;
+            return { ...prev, ...updates };
+        });
     };
 
     const getValidationContext = useMemo(() => {
