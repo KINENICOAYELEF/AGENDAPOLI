@@ -253,14 +253,29 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 return resultObj;
             }
 
-            const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
+            let cleanJsonText = rawText.trim();
+            // Forcefully extract JSON shape boundaries ignoring all hallucinated prefix/suffix text
+            const jsonExtractionRegex = /(\{[\s\S]*\}|\[[\s\S]*\])/;
+            const extractionMatch = cleanJsonText.match(jsonExtractionRegex);
             
+            if (extractionMatch) {
+                cleanJsonText = extractionMatch[0];
+            }
+
             const guardrailCheck = validateGuardrails(cleanJsonText);
             if (!guardrailCheck.valid) {
                  throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
             }
 
-            const parsed = JSON.parse(cleanJsonText);
+            let parsed: any;
+            try {
+                parsed = JSON.parse(cleanJsonText);
+            } catch (errParse) {
+                console.warn(`[AI Router] JSON.parse nativo falló. Rescatando con jsonrepair...`);
+                const repaired = jsonrepair(cleanJsonText);
+                parsed = JSON.parse(repaired);
+            }
+
             const validData = opts.validator(parsed);
             
             const resultObj = {

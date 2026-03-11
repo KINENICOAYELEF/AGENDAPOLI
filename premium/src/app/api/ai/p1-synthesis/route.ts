@@ -207,6 +207,7 @@ ${sanitizedPayload}
             inputHash,
             promptVersion: 'v3.0',
             temperature: 0.1,
+            responseMimeType: 'application/json',
             validator: (data) => {
                 // Validación robusta
                 const validation = P1SynthesisSchema.safeParse(data);
