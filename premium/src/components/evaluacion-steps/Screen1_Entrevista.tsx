@@ -4,7 +4,6 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import { useYear } from "@/context/YearContext";
-import { useAuth } from "@/context/AuthContext";
 
 
 export interface Screen1Props {
@@ -57,7 +56,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Screen1Props) {
     const { globalActiveYear } = useYear();
-    const { user } = useAuth();
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [lastSaved, setLastSaved] = useState<string | null>(null);
     const [isProcessingAI, setIsProcessingAI] = useState(false);
@@ -256,17 +254,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }
     }, [formData.id, formData.interview, formData.audit, globalActiveYear, isClosed]);
 
-    const autoSaveRef = React.useRef(autoSaveDraftToFirebase);
     useEffect(() => {
-        autoSaveRef.current = autoSaveDraftToFirebase;
-    }, [autoSaveDraftToFirebase]);
-
-    useEffect(() => {
+        // Evitamos disparar save en mount.
         if (initialRenderComplete && !isClosed) {
-            autoSaveRef.current(debouncedV4);
+            autoSaveDraftToFirebase(debouncedV4);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedV4, initialRenderComplete, isClosed]);
+    }, [debouncedV4, initialRenderComplete, isClosed, autoSaveDraftToFirebase]);
 
     const focoPrincipal = interviewV4.focos.find(f => f.esPrincipal) || interviewV4.focos[0];
 
@@ -1800,19 +1793,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     interviewV4: interviewV4,
                                     remoteHistorySnapshot: formData.remoteHistorySnapshot
                                 };
-                                const stringifiedPayload = JSON.stringify(payload);
-
-                                // FRONTEND CACHE GUARD
-                                if (formData.aiOutputs?.p1_ai_cache === stringifiedPayload && interviewV4.analisisIA) {
-                                    alert("Se reutilizó la última extracción porque no hubo cambios clínicos relevantes en el relato.");
-                                    setIsProcessingAI(false);
-                                    return;
-                                }
-
                                 const response = await fetch('/api/ai/fase7-extract', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: stringifiedPayload
+                                    body: JSON.stringify(payload)
                                 });
                                 const data = await response.json();
 
@@ -1899,24 +1883,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 hipotesis_orientativas: { estado: 'Pendiente' }
                                             }
                                         } as any);
-
-                                        // Guarda la telemetría y el hash en el scope raiz del form
-                                        updateFormData(prev => ({
-                                            aiOutputs: {
-                                                ...(prev.aiOutputs || {}),
-                                                p1_ai_cache: stringifiedPayload,
-                                                p1_telemetry: {
-                                                    model_used: data.telemetry?.modelUsed || 'unknown',
-                                                    fallback_used: data.telemetry?.fallbackUsed || false,
-                                                    input_hash: data.hash,
-                                                    created_at: new Date().toISOString(),
-                                                    schema_version: '1.0',
-                                                    raw_json_response: JSON.stringify(data),
-                                                    latencyMs: data.latencyMs,
-                                                    estimatedInputTokens: Math.ceil(stringifiedPayload.length / 4)
-                                                }
-                                            }
-                                        }));
                                     }
                                 } else {
                                     console.error("Error from AI:", data);
@@ -2788,18 +2754,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 {isClosed ? '✓ FINALIZADA' : 'Confirmar e Ir a Exámenes P2'}
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {/* PANEL DE TELEMETRÍA (ADMIN/DOCENTE) */}
-                {((user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE') && formData.aiOutputs?.p1_telemetry && (
-                    <div className="bg-slate-800 text-slate-300 p-4 rounded-xl text-xs font-mono mt-6 mb-2 flex flex-col gap-1 border border-slate-700 shadow-inner">
-                        <h4 className="text-slate-100 font-bold mb-2 flex items-center gap-2"><span className="text-base">📡</span> Terminal de Telemetría P1 (Admin)</h4>
-                        <p><span className="text-slate-500">Modelo Usado:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.p1_telemetry.model_used}</span> {formData.aiOutputs.p1_telemetry.fallback_used && <span className="text-rose-400">(Fallback)</span>}</p>
-                        <p><span className="text-slate-500">Estim. Input Tokens:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.p1_telemetry.estimatedInputTokens}</span></p>
-                        <p><span className="text-slate-500">Network Latency:</span> {formData.aiOutputs.p1_telemetry.latencyMs}ms</p>
-                        <p><span className="text-slate-500">Payload Hash:</span> {formData.aiOutputs.p1_telemetry.input_hash}</p>
-                        <p><span className="text-slate-500">Last Generated:</span> {new Date(formData.aiOutputs.p1_telemetry.created_at).toLocaleString()}</p>
                     </div>
                 )}
             </div >

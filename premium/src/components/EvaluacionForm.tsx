@@ -150,10 +150,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
 
                 if (window.confirm("Cargar este archivo JSON reemplazará el estado actual de toda la evaluación en pantalla. ¿Deseas continuar?")) {
-                    setFormData({
-                        ...parsed.payload,
-                        _importedAt: Date.now() // Flag para forzar render de subcomponentes con estado local
-                    });
+                    setFormData(parsed.payload);
                     setSaveFeedback({ message: "JSON cargado correctamente", type: 'success' });
                     setTimeout(() => setSaveFeedback(null), 3000);
                 }
@@ -181,22 +178,6 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         console.log("🟩 Compact Physical Exam (P2):", pp);
         console.groupEnd();
         alert("Payloads estructurados impresos en la consola del navegador.");
-    };
-
-    const handleClearAiCaches = () => {
-        if (window.confirm("¿Estás seguro de que quieres borrar TODA la caché de IA (P1, P3, P4)?\nEsto te permitirá generar resultados nuevos forzando llamadas a la API de Gemini.")) {
-            updateFormData((prev: any) => {
-                const updatedAiOutputs = { ...prev.aiOutputs };
-                delete updatedAiOutputs.p1_ai_cache;
-                delete updatedAiOutputs.p3_ai_cache;
-                delete updatedAiOutputs.p4_ai_cache;
-                return {
-                    aiOutputs: Object.keys(updatedAiOutputs).length > 0 ? updatedAiOutputs : null
-                };
-            });
-            setSaveFeedback({ message: "Cachés de IA borradas", type: 'success' });
-            setTimeout(() => setSaveFeedback(null), 3000);
-        }
     };
 
     const [formData, setFormData] = useState<any>({
@@ -712,10 +693,6 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             <button onClick={handleLogAdminPayloads} className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 Imprimir Tokens
-                            </button>
-                            <button onClick={handleClearAiCaches} className="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                Borrar Cachés IA
                             </button>
                             <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportJSON} className="hidden" />
                         </div>

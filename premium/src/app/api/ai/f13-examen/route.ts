@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { geminiClient } from '@/lib/ai/geminiClient';
+import { executeAIAction } from '@/lib/ai/geminiClient';
+import { generateSHA256 } from '@/lib/ai/hash';
 import { AnamnesisProximaV4 } from '@/types/clinica';
 
 export async function POST(req: Request) {
@@ -60,16 +61,20 @@ ${remoteHistorySnapshot ?
 
 Por favor, procede a extraer SOLO las sugerencias_examen_fisico_P2 (máximo 5). Asegúrate de considerar de forma crítica el CONTEXTO BASAL REMOTO provisto para fundamentar tus sugerencias de evaluación física (ej. precaución por cirugías, evaluación neuro dinámica por diabetes, evaluación de carga por exigencias deportivas basales).`;
 
-        const result = await geminiClient.generateStructuredObject({
-            schema: null,
-            systemMessage: systemPromo,
-            userMessage: userPrompt,
+        const inputHash = await generateSHA256(`f13-examen:${JSON.stringify(interviewV4)}:${JSON.stringify(remoteHistorySnapshot)}`);
+
+        const result = await executeAIAction({
+            screen: 'P1',
+            action: 'P1_EXAM',
+            systemInstruction: systemPromo,
+            userPrompt: userPrompt,
+            inputHash,
+            promptVersion: 'v1.1',
             temperature: 0.1,
-            topP: 0.8,
-            topK: 40
+            validator: (data) => data
         });
 
-        return NextResponse.json(result);
+        return NextResponse.json({ ...result.data, _telemetry: result.telemetry });
     } catch (e: any) {
         console.error("Error en FASE 13 examen:", e);
         return NextResponse.json({ error: e.message }, { status: 500 });

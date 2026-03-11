@@ -88,9 +88,13 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     diagnosis: data.data,
                     diagnosisLastInput: stringifiedPayloadForAI,
                     diagnosisTelemetry: {
-                        latencyMs: data.latencyMs,
-                        timestamp: new Date().toISOString(),
-                        hash: data.hash,
+                        latencyMs: data.telemetry?.latencyMs || data.latencyMs,
+                        timestamp: data.telemetry?.timestamp || new Date().toISOString(),
+                        hash: data.telemetry?.inputHash || data.hash,
+                        modelUsed: data.telemetry?.modelUsed || 'unknown',
+                        fallbackUsed: !!data.telemetry?.fallbackUsed,
+                        aiAction: data.telemetry?.aiAction || 'P3_SYNTHESIS',
+                        promptVersion: data.telemetry?.promptVersion || 'v2.1',
                         estimatedInputTokens: Math.ceil(stringifiedPayloadForAI.length / 4)
                     }
                 }
@@ -394,10 +398,14 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             {((user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE') && formData.aiOutputs?.diagnosisTelemetry && (
                 <div className="bg-slate-800 text-slate-300 p-4 rounded-xl text-xs font-mono mt-6 mb-2 flex flex-col gap-1 border border-slate-700 shadow-inner">
                     <h4 className="text-slate-100 font-bold mb-2 flex items-center gap-2"><span className="text-base">📡</span> Terminal de Telemetría P3 (Admin)</h4>
+                    <p><span className="text-slate-500">Action Type:</span> {formData.aiOutputs.diagnosisTelemetry.aiAction || 'P3_SYNTHESIS'}</p>
+                    <p><span className="text-slate-500">Active Model:</span> <span className="text-amber-400 font-bold">{formData.aiOutputs.diagnosisTelemetry.modelUsed || 'Desconocido'}</span></p>
+                    <p><span className="text-slate-500">Fallback Triggereado:</span> {formData.aiOutputs.diagnosisTelemetry.fallbackUsed ? <span className="text-rose-400 font-bold">SÍ</span> : <span className="text-emerald-400">NO</span>}</p>
                     <p><span className="text-slate-500">Estim. Input Tokens:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.diagnosisTelemetry.estimatedInputTokens}</span></p>
                     <p><span className="text-slate-500">Network Latency:</span> {formData.aiOutputs.diagnosisTelemetry.latencyMs}ms</p>
                     <p><span className="text-slate-500">Payload Hash:</span> {formData.aiOutputs.diagnosisTelemetry.hash}</p>
-                    <p><span className="text-slate-500">Last Generated:</span> {new Date(formData.aiOutputs.diagnosisTelemetry.timestamp).toLocaleString()}</p>
+                    <p><span className="text-slate-500">Version AI:</span> {formData.aiOutputs.diagnosisTelemetry.promptVersion || 'N/A'}</p>
+                    <p><span className="text-slate-500">Generado en:</span> {new Date(formData.aiOutputs.diagnosisTelemetry.timestamp).toLocaleString()}</p>
                 </div>
             )}
         </div>

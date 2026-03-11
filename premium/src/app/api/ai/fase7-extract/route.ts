@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { geminiClient } from '@/lib/ai/geminiClient';
+import { executeAIAction } from '@/lib/ai/geminiClient';
+import { generateSHA256 } from '@/lib/ai/hash';
 import { AnamnesisProximaV4 } from '@/types/clinica';
 
 export async function POST(req: Request) {
@@ -119,16 +120,21 @@ Plazo Esperado: ${interviewV4.plazoEsperado}
 Por favor, procede a hacer la extracción a JSON. 
 INSTRUCCIÓN VITAL (PROMPT E): Usa estrictamente los antecedentes remotos / contexto basal entregado arriba para formular la propiedad 'consideraciones_basales' (ej: "considerar diabetes en cicatrización", "cirugía previa relevante: contemplar secuelas", "anticoagulación / uso de corticoides: considerar en evaluación", "historia de recurrencias: considerar en hipótesis y pronóstico", "estrés y sueño basal bajos: considerar en adherencia/pronóstico"). NO incluyas diagnósticos definitivos aquí.`;
 
-        const result = await geminiClient.generateStructuredObject({
-            schema: null, // we ask for raw JSON text structured this way inside the prompt
-            systemMessage: systemPromo,
-            userMessage: userPrompt,
-            temperature: 0.1, // STRICT from prompt
-            topP: 0.8,
-            topK: 40
+        const inputHash = await generateSHA256(`fase7-extract:${JSON.stringify(interviewV4)}:${JSON.stringify(remoteHistorySnapshot)}`);
+
+        const result = await executeAIAction({
+            screen: 'P1',
+            action: 'P1_EXTRACT',
+            systemInstruction: systemPromo,
+            userPrompt: userPrompt,
+            inputHash,
+            promptVersion: 'v1.4',
+            temperature: 0.1,
+            validator: (data) => data
         });
 
-        return NextResponse.json(result);
+        // Híbrido: mantener compatibilidad con P1 UI devolviendo el spread data y telemetry oculta
+        return NextResponse.json({ ...result.data, _telemetry: result.telemetry });
     } catch (e: any) {
         console.error("Error en FASE 7 extract:", e);
         return NextResponse.json({ error: e.message }, { status: 500 });

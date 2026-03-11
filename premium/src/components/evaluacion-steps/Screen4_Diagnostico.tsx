@@ -32,7 +32,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         });
     };
 
-    const handleGenerateAi = async () => {
+    const handleGenerateAi = async (actionType: 'P4_BASE' | 'P4_PREMIUM' = 'P4_BASE') => {
         if (isClosed) return;
         setIsGenerating(true);
         setAiError(null);
@@ -49,14 +49,15 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
 
             const payloadForAI = {
                 normalizedContext: minimalContext,
-                synthesis: autoSynth // MUST be autoSynthesis as it contains P3 structured output
+                synthesis: autoSynth,
+                aiAction: actionType
             };
 
             const stringifiedPayloadForAI = JSON.stringify(payloadForAI);
             
             // FRONTEND CACHE GUARD
             if (formData.aiOutputs?.narrativeLastInput === stringifiedPayloadForAI && geminiDiagnostic.narrativeDiagnosis && !aiError) {
-                alert("Se reutilizó la última redacción porque no hubo cambios en P3.");
+                alert(`Resultado recuperado de cache: No hubo cambios en P3 para regenerar (${actionType}).`);
                 setIsGenerating(false);
                 return;
             }
@@ -87,9 +88,13 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     ...(prev.aiOutputs || {}), 
                     narrativeLastInput: stringifiedPayloadForAI,
                     narrativeTelemetry: {
-                        latencyMs: data.latencyMs,
-                        timestamp: new Date().toISOString(),
-                        hash: data.hash,
+                        latencyMs: data.telemetry?.latencyMs || data.latencyMs,
+                        timestamp: data.telemetry?.timestamp || new Date().toISOString(),
+                        hash: data.telemetry?.inputHash || data.hash,
+                        modelUsed: data.telemetry?.modelUsed || 'unknown',
+                        fallbackUsed: !!data.telemetry?.fallbackUsed,
+                        aiAction: data.telemetry?.aiAction || actionType,
+                        promptVersion: data.telemetry?.promptVersion || 'v1.0',
                         estimatedInputTokens: Math.ceil(stringifiedPayloadForAI.length / 4)
                     }
                 }
@@ -139,12 +144,21 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     </button>
                     <div className="flex flex-col gap-2 w-full md:w-auto">
                         <button 
-                            onClick={handleGenerateAi} 
+                            onClick={() => handleGenerateAi('P4_BASE')} 
                             disabled={isClosed || isGenerating} 
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Redactar diagnóstico y plan con IA</>}
+                            {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Borrador Base (Económico)</>}
                         </button>
+                        {modeSelected && (
+                             <button 
+                                onClick={() => handleGenerateAi('P4_PREMIUM')} 
+                                disabled={isClosed || isGenerating} 
+                                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[12px] px-4 py-2 rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                             >
+                                 🚀 Refinar con IA premium (Intenso)
+                             </button>
+                        )}
                         <span className="text-[10px] text-emerald-800 text-center font-medium opacity-80">⚠️ Esta propuesta puede contener errores y debe ser revisada clínicamente.</span>
                     </div>
                 </div>
@@ -383,11 +397,14 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
             {((user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE') && formData.aiOutputs?.narrativeTelemetry && (
                 <div className="bg-slate-800 text-slate-300 p-4 rounded-xl text-xs font-mono mt-6 mb-2 flex flex-col gap-1 border border-slate-700 shadow-inner">
                     <h4 className="text-slate-100 font-bold mb-2 flex items-center gap-2"><span className="text-base">📡</span> Terminal de Telemetría P4 (Admin)</h4>
+                    <p><span className="text-slate-500">Action Type:</span> {formData.aiOutputs.narrativeTelemetry.aiAction || 'P4_BASE'}</p>
+                    <p><span className="text-slate-500">Active Model:</span> <span className="text-amber-400 font-bold">{formData.aiOutputs.narrativeTelemetry.modelUsed || 'Desconocido'}</span></p>
+                    <p><span className="text-slate-500">Fallback Triggereado:</span> {formData.aiOutputs.narrativeTelemetry.fallbackUsed ? <span className="text-rose-400 font-bold">SÍ</span> : <span className="text-emerald-400">NO</span>}</p>
                     <p><span className="text-slate-500">Estim. Input Tokens:</span> <span className="text-emerald-400 font-bold">{formData.aiOutputs.narrativeTelemetry.estimatedInputTokens}</span></p>
                     <p><span className="text-slate-500">Network Latency:</span> {formData.aiOutputs.narrativeTelemetry.latencyMs}ms</p>
                     <p><span className="text-slate-500">Payload Hash:</span> {formData.aiOutputs.narrativeTelemetry.hash}</p>
-                    <p><span className="text-slate-500">Last Generated:</span> {new Date(formData.aiOutputs.narrativeTelemetry.timestamp).toLocaleString()}</p>
-                    <p><span className="text-slate-500">Active Model:</span> <span className="text-amber-400 font-bold">gemini-2.5-pro</span> (Modo Redacción)</p>
+                    <p><span className="text-slate-500">Version AI:</span> {formData.aiOutputs.narrativeTelemetry.promptVersion || 'N/A'}</p>
+                    <p><span className="text-slate-500">Generado en:</span> {new Date(formData.aiOutputs.narrativeTelemetry.timestamp).toLocaleString()}</p>
                 </div>
             )}
         </div>

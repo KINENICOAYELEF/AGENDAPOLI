@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { jsonrepair } from 'jsonrepair';
 import { generateSHA256, normalizePayload } from './hash';
+import { AIAction, resolveModelRoute } from './routing';
+import { validateGuardrails } from './guardrails';
 
 // Wrapper unificado para comunicarse con la API de Gemini Flash 2.0
 // Expone un método genérico que implementa en un futuro caching y reparaciones.
@@ -16,6 +18,8 @@ interface GeminiCallParams {
     topP?: number;
     topK?: number;
     modelId?: string;
+    thinkingLevel?: 'low' | 'medium' | 'high';
+    thinkingBudget?: number;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
@@ -26,18 +30,24 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
     }
 
     try {
+        const configParams: any = {
+            systemInstruction: systemInstruction,
+            temperature: temperature,
+            topP: params.topP,
+            topK: params.topK,
+            responseMimeType: "application/json"
+        };
+
+        if (params.thinkingLevel) {
+            configParams.thinkingConfig = { thinkingLevel: params.thinkingLevel };
+        } else if (params.thinkingBudget) {
+            configParams.thinkingConfig = { thinkingBudget: params.thinkingBudget };
+        }
+
         const response = await ai.models.generateContent({
             model: params.modelId || DEFAULT_MODEL,
             contents: userPrompt,
-            config: {
-                systemInstruction: systemInstruction,
-                temperature: temperature,
-                topP: params.topP,
-                topK: params.topK,
-                responseMimeType: "application/json",
-                // Si usamos responseSchema, importamos de zodToJsonSchema
-                // responseSchema: params.schema 
-            }
+            config: configParams
         });
 
         if (!response.text) {
@@ -98,3 +108,79 @@ export const geminiClient = {
         }
     }
 };
+
+export interface AIExecutionOptions<T> {
+    screen: string;
+    action: AIAction;
+    systemInstruction: string;
+    userPrompt: string;
+    inputHash: string;
+    promptVersion: string;
+    temperature?: number;
+    validator: (data: any) => T; 
+}
+
+export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
+    const route = resolveModelRoute(opts.screen, opts.action);
+    const startOverall = Date.now();
+    
+    let lastError: any = null;
+    let fallbackUsed = false;
+    let triesCount = 0;
+
+    for (let mIndex = 0; mIndex < route.orderedModels.length; mIndex++) {
+        if (triesCount >= 3) break; // Máximo 3 intentos globales permitidos
+        
+        const modelInfo = route.orderedModels[mIndex];
+        if (mIndex > 0) fallbackUsed = true;
+        
+        try {
+            triesCount++;
+            const rawText = await callGemini({
+                systemInstruction: opts.systemInstruction,
+                userPrompt: opts.userPrompt,
+                temperature: opts.temperature || 0.2,
+                modelId: modelInfo.modelId,
+                thinkingLevel: modelInfo.thinkingLevel,
+                thinkingBudget: modelInfo.thinkingBudget
+            });
+
+            // Validacion vacia/truncada local
+            if (!rawText || rawText.trim() === '') throw new Error("Respuesta vacía o truncada.");
+
+            const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
+            
+            const guardrailCheck = validateGuardrails(cleanJsonText);
+            if (!guardrailCheck.valid) {
+                 throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+            }
+
+            const parsed = JSON.parse(cleanJsonText);
+            const validData = opts.validator(parsed);
+            
+            return {
+                success: true,
+                data: validData,
+                telemetry: {
+                    modelUsed: modelInfo.modelId,
+                    fallbackUsed,
+                    cacheHit: false,
+                    promptVersion: opts.promptVersion,
+                    inputHash: opts.inputHash,
+                    aiAction: opts.action,
+                    screen: opts.screen,
+                    timestamp: new Date().toISOString(),
+                    latencyMs: Date.now() - startOverall
+                }
+            };
+
+        } catch (err: any) {
+            console.warn(`[AI Router] Falló intento ${triesCount} con modelo ${modelInfo.modelId}. Motivo: ${err.message}`);
+            lastError = err;
+            // Avanza en el loop usando la estrategia fallback telescópica nativa
+        }
+    }
+
+    throw new Error(`AI_FAILURE: Todas las rutas de fallback agotadas (intentos: ${triesCount}). Último error: ${lastError?.message}`);
+}
+

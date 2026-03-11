@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { callGemini } from '@/lib/ai/geminiClient';
+import { executeAIAction } from '@/lib/ai/geminiClient';
 import { PROMPTS, SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
 import { NarrativeSchema } from '@/lib/ai/schemas';
 import { generateSHA256, normalizePayload } from '@/lib/ai/hash';
-import { validateGuardrails } from '@/lib/ai/guardrails';
 
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -78,60 +77,27 @@ DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA:
 ${normalizedPayload}
     `;
 
-        let finalJsonResult: any;
+        const requestedAction = payloadArgs.aiAction === 'P4_PREMIUM' ? 'P4_PREMIUM' : 'P4_BASE';
 
-        try {
-            const gStart = Date.now();
-            const rawText = await callGemini({
-                systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
-                userPrompt: userPrompt,
-                temperature: 0.2,
-                modelId: 'gemini-2.5-pro'
-            });
+        const result = await executeAIAction({
+            screen: 'P4',
+            action: requestedAction,
+            systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
+            userPrompt,
+            inputHash,
+            promptVersion: 'v1.0',
+            temperature: 0.2, // Base temperature
+            validator: (data) => NarrativeSchema.parse(data)
+        });
 
-            const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
-
-            const guardrailCheck = validateGuardrails(cleanJsonText);
-            if (!guardrailCheck.valid) {
-                return NextResponse.json({ error: 'OUTPUT_BLOCKED', message: 'El modelo intentó sugerir terapias no permitidas.', bannedTerms: guardrailCheck.bannedTermsFound }, { status: 400 });
-            }
-
-            const parsedObj = JSON.parse(cleanJsonText);
-            finalJsonResult = NarrativeSchema.parse(parsedObj);
-
-            const latencyMs = Date.now() - gStart;
-
-            return NextResponse.json({ success: true, data: finalJsonResult, hash: inputHash, latencyMs });
-
-        } catch (parseError: any) {
-            console.warn("Fallo el parseo o validación Zod. Iniciando Repair. Error:", parseError.message);
-            try {
-                const repairPrompt = `
-FALLO LA VALIDACIÓN ZOD O EL PARSEO JSON DEL INTENTO ANTERIOR. Error:
-${parseError.message}
-
-DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA ORIGINALES:
-${normalizedPayload}
-
-TU OBLIGACIÓN:
-Devuelve un JSON STRICT que cumpla con TODOS los campos faltantes, la estructura exacta:
-${expectedJsonExample}
-            `;
-                const rawText2 = await callGemini({ systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE, userPrompt: repairPrompt, temperature: 0.1, modelId: 'gemini-2.5-pro' });
-                const cleanJsonText2 = rawText2.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
-                const guardrailCheck2 = validateGuardrails(cleanJsonText2);
-                if (!guardrailCheck2.valid) {
-                    return NextResponse.json({ error: 'OUTPUT_BLOCKED', message: 'Modelo insistió en términos prohibidos.', bannedTerms: guardrailCheck2.bannedTermsFound }, { status: 400 });
-                }
-                const parsedObj2 = JSON.parse(cleanJsonText2);
-                finalJsonResult = NarrativeSchema.parse(parsedObj2);
-
-                return NextResponse.json({ success: true, data: finalJsonResult, hash: inputHash, latencyMs: 9999, repaired: true });
-            } catch (repairError: any) {
-                console.error("Fallo irreparable", repairError);
-                return NextResponse.json({ error: 'JSON_SCHEMA_FAILURE', message: 'El motor falló en construir respuesta válida tras reparar.' }, { status: 500 });
-            }
-        }
+        // The UI currently expects `{ success: true, data: ..., hash, latencyMs }`
+        return NextResponse.json({
+            success: true,
+            data: result.data,
+            hash: result.telemetry.inputHash,
+            latencyMs: result.telemetry.latencyMs,
+            telemetry: result.telemetry
+        });
 
     } catch (err: any) {
         console.error('Error in /api/ai/narrative:', err);
