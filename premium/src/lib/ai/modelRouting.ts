@@ -35,7 +35,6 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p1_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash-lite', thinkingBudget: 1024 },
             { modelId: 'gemini-2.5-flash', thinkingBudget: 2048 }
         ];
     } 

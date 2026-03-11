@@ -29,14 +29,28 @@ TU SALIDA DEBE SER EXCLUSIVAMENTE UN JSON VÁLIDO QUE CUMPLA CON LA ESTRUCTURA E
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { payload } = body;
+        const { payload, useSanitized } = body;
 
         if (!payload) {
             return NextResponse.json({ error: 'Missing payload' }, { status: 400 });
         }
 
-        const normalizedPayload = normalizePayload(payload);
-        const inputHash = await generateSHA256(`p1-synthesis:${normalizedPayload}`);
+        let normalizedPayload = normalizePayload(payload);
+
+        // SANITIZACIÓN CLÍNICA (Evita bloqueos del modelo por mencionar dorgas/terapias)
+        if (useSanitized) {
+            normalizedPayload = normalizedPayload
+                .replace(/\b(paracetamol|ibuprofeno|ketorolaco|ketoprofeno|diclofenaco|naproxeno|meloxicam|celecoxib|etoricoxib|tramadol|pregabalina|gabapentina|ciclobenzaprina|relajante muscular|corticoides?|inyecci[oó]n|filtraci[oó]n)\b/gi, "analgésico de uso común")
+                .replace(/\b(tens|ultrasonido|magnetoterapia|laser|corrientes|electroterapia|electroanalgesia)\b/gi, "electroanalgesia/fisioterapia previa")
+                .replace(/\b(medicamento|medicamentos|pastillas|pastilla|remedios?|f[aá]rmacos?)\b/gi, "tratamiento farmacológico previo");
+            
+            // Truncar para evitar filtro por tamaño de contexto agresivo
+            if (normalizedPayload.length > 3000) {
+                normalizedPayload = normalizedPayload.substring(0, 3000) + "... [texto truncado en modo seguro]";
+            }
+        }
+
+        const inputHash = await generateSHA256(`p1-synthesis:${useSanitized ? 'sanitized' : 'raw'}:${normalizedPayload}`);
 
         const userPrompt = `
 Genera la síntesis de P1 estructurada en json según las reglas. Responde de forma clínica, precisa y compacta.
@@ -63,6 +77,16 @@ ${normalizedPayload}
 
     } catch (error: any) {
         console.error("Error en /api/ai/p1-synthesis:", error);
+
+        // Catch explicitly OUTPUT_BLOCKED so we don't crash
+        if (error.message?.includes('OUTPUT_BLOCKED') || error.message?.includes('SAFETY')) {
+            return NextResponse.json({
+                success: false,
+                isBlocked: true,
+                blockedReason: error.message
+            });
+        }
+
         return NextResponse.json(
             { error: 'Error generating P1 synthesis', details: error.message },
             { status: 500 }

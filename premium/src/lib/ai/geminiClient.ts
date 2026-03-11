@@ -59,8 +59,14 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             config: configParams
         });
 
+        // REVISIÓN EXPLÍCITA DE Finish Reason para evitar bloqueos ciegos
+        const finishReason = response.candidates?.[0]?.finishReason;
+        if (finishReason === 'SAFETY' || finishReason === 'BLOCKLIST' || finishReason === 'PROHIBITED_CONTENT' || finishReason === 'SPII' || finishReason === 'RECITATION') {
+            throw new Error(`OUTPUT_BLOCKED: FinishReason=${finishReason}`);
+        }
+        
         if (!response.text) {
-            throw new Error("Respuesta vacía del modelo Gemini.");
+             throw new Error(`Respuesta vacía del modelo Gemini. Probable filtro de toxicidad sin finishReason explícito.`);
         }
 
         return response.text;
@@ -234,7 +240,14 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
         } catch (err: any) {
             console.warn(`[AI Router] Falló intento ${triesCount} con modelo ${modelInfo.modelId}. Motivo: ${err.message}`);
             lastError = err;
-            // Avanza en el loop usando la estrategia fallback telescópica nativa
+            
+            // Abortar instantáneamente todos los fallbacks si es un bloqueo de filtros de seguridad. 
+            // Esto evita gastar cuota reintentando payloads que inminentemente fallarán de nuevo.
+            if (err.message.includes("OUTPUT_BLOCKED")) {
+                console.warn(`[AI Router] ABORTANDO FALLBACK LOOP POR BLOQUEO DE SEGURIDAD.`);
+                break;
+            }
+            // Avanza en el loop usando la estrategia fallback telescópica nativa si es error de parsing o time-out
         }
     }
 

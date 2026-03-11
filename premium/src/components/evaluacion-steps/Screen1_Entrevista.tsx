@@ -65,6 +65,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
     // FASE 8 & 9: Highlight State (Multiple Highlight support)
     const [highlightTexts, setHighlightTexts] = useState<string[]>([]);
+    
+    // FASE 12: Bloqueo de IA
+    const [aiBlockInfo, setAiBlockInfo] = useState<{isBlocked: boolean, reason?: string, telemetry?: any} | null>(null);
 
     const hasRedFlags = Boolean(
         formData.interview?.v4?.seguridad?.fiebre_sistemico_cancerPrevio ||
@@ -204,6 +207,71 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 v4: { ...(prev.interview?.v4 as AnamnesisProximaV4 || interviewV4), ...patch, updatedAt: new Date().toISOString() }
             }
         }));
+    };
+
+    const handleAISynthesis = async (useSanitized: boolean = false) => {
+        const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
+        if (relatoLength < 10) {
+            alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica completa antes de solicitar el análisis a la IA.");
+            return;
+        }
+
+        setIsProcessingAI(true);
+        setAiBlockInfo(null); // Reset block err on new intent
+        try {
+            const payload = {
+                interviewV4: interviewV4,
+                remoteHistorySnapshot: formData.remoteHistorySnapshot
+            };
+            const response = await fetch('/api/ai/p1-synthesis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload, useSanitized })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                const aiData = data.data;
+
+                // Auto-hidratar Foco Principal Básico si viene en el JSON
+                let updatedFocos = [...interviewV4.focos];
+                if (updatedFocos.length > 0 && aiData.foco_principal) {
+                    const f0 = { ...updatedFocos[0] };
+                    if (aiData.foco_principal.region) f0.region = aiData.foco_principal.region;
+                    if (aiData.foco_principal.lado) f0.lado = aiData.foco_principal.lado;
+                    if (aiData.foco_principal.actividad_indice) f0.actividadIndice = aiData.foco_principal.actividad_indice;
+                    updatedFocos[0] = f0;
+                }
+
+                updateV4({
+                    jsonExtractError: false,
+                    jsonExtractRawBackup: null,
+                    p1_ai_structured: aiData,
+                    focos: updatedFocos
+                } as any);
+
+                if (data.telemetry) console.log("Telemetry P1:", data.telemetry);
+                
+            } else if (response.ok && data.isBlocked) {
+                console.warn("[P1 UI] AI Bloqueada por filtros del safety model", data);
+                setAiBlockInfo({
+                    isBlocked: true,
+                    reason: data.blockedReason,
+                    telemetry: data.telemetry
+                });
+            } else {
+                console.error("Error from AI Synthesis:", data);
+                updateV4({
+                    jsonExtractError: true,
+                    jsonExtractRawBackup: JSON.stringify(data, null, 2),
+                } as any);
+            }
+        } catch (err: any) {
+            console.error("Fetch error:", err);
+            alert("Error de servidor o conexión: " + err.message);
+        } finally {
+            setIsProcessingAI(false);
+        }
     };
 
     // 3. AUTO-SAVE DEBOUNCED ROBUSTO EN BACKGROUND
@@ -1775,65 +1843,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     </div>
 
                     <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                             e.preventDefault();
-
-                            const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
-                            if (relatoLength < 10) {
-                                alert("El relato es demasiado corto o está vacío. Por favor escriba la historia clínica completa antes de solicitar el análisis a la IA.");
-                                return;
-                            }
-
-                            setIsProcessingAI(true);
-                            try {
-                                const payload = {
-                                    interviewV4: interviewV4,
-                                    remoteHistorySnapshot: formData.remoteHistorySnapshot
-                                };
-                                const response = await fetch('/api/ai/p1-synthesis', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ payload })
-                                });
-                                const data = await response.json();
-
-                                if (response.ok && data.success) {
-                                    const aiData = data.data;
-
-                                    // Auto-hidratar Foco Principal Básico si viene en el JSON
-                                    let updatedFocos = [...interviewV4.focos];
-                                    if (updatedFocos.length > 0 && aiData.foco_principal) {
-                                        const f0 = { ...updatedFocos[0] };
-                                        if (aiData.foco_principal.region) f0.region = aiData.foco_principal.region;
-                                        if (aiData.foco_principal.lado) f0.lado = aiData.foco_principal.lado;
-                                        if (aiData.foco_principal.actividad_indice) f0.actividadIndice = aiData.foco_principal.actividad_indice;
-                                        updatedFocos[0] = f0;
-                                    }
-
-                                    updateV4({
-                                        jsonExtractError: false,
-                                        jsonExtractRawBackup: null,
-                                        p1_ai_structured: aiData,
-                                        focos: updatedFocos
-                                    } as any);
-
-                                    // Debug telemetría
-                                    if (data.telemetry) {
-                                        console.log("Telemetry P1:", data.telemetry);
-                                    }
-                                } else {
-                                    console.error("Error from AI Synthesis:", data);
-                                    updateV4({
-                                        jsonExtractError: true,
-                                        jsonExtractRawBackup: JSON.stringify(data, null, 2),
-                                    } as any);
-                                }
-                            } catch (err: any) {
-                                console.error("Fetch error:", err);
-                                alert("Error de servidor o conexión: " + err.message);
-                            } finally {
-                                setIsProcessingAI(false);
-                            }
+                            handleAISynthesis(false);
                         }}
                         disabled={isClosed || isProcessingAI}
                         id="btn-ia-main-extract"
@@ -1849,6 +1861,81 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <p className="text-center text-[10px] text-purple-600 font-medium mt-3 mb-1">
                         La IA razona, extrae y ordena el relato de arriba. No reemplaza tu criterio clínico.
                     </p>
+
+                    {/* FASE 12 UX Fallback: OUTPUT_BLOCKED Catcher */}
+                    {aiBlockInfo?.isBlocked && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-xl relative overflow-hidden">
+                            <div className="flex items-start gap-3 relative z-10">
+                                <span className="text-2xl mt-1">🛡️</span>
+                                <div className="flex flex-col flex-1 gap-2">
+                                    <h4 className="font-bold text-amber-900 text-sm">La IA fue bloqueada por filtros del modelo al interpretar el relato clínico.</h4>
+                                    <p className="text-[12px] text-amber-800">Se conservó tu texto y no se ha borrado nada. ¿Cómo deseas proceder?</p>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleAISynthesis(true); // Reintento sanitizado
+                                            }}
+                                            className="bg-amber-600 hover:bg-amber-700 text-xs text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                                        >
+                                            <span>🧽</span> Reintentar con versión compacta / genérica
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                // Extracción local rústica
+                                                setAiBlockInfo(null);
+                                                updateV4({
+                                                    jsonExtractError: false,
+                                                    jsonExtractRawBackup: null,
+                                                    p1_ai_structured: {
+                                                        resumen_clinico_editable: interviewV4.experienciaPersona.relatoLibre || "Generado localmente por bloqueo AI.",
+                                                        resumen_persona_usuaria: {
+                                                            lo_que_entiendi: "No inferido por IA: revisar manualmente",
+                                                            lo_que_te_preocupa: "No inferido por IA: revisar manualmente",
+                                                            lo_que_haremos_ahora: "Avanzaremos evaluando físicamente."
+                                                        },
+                                                        foco_principal: {
+                                                            region: interviewV4.focos[0]?.region || "",
+                                                            lado: interviewV4.focos[0]?.lado || "",
+                                                            motivo_prioritario: "Revisar manualmente",
+                                                            actividad_indice: interviewV4.focos[0]?.actividadIndice || "No definida",
+                                                            semaforo_carga: "Ambar"
+                                                        },
+                                                        alicia: { antiguedad: "", localizacion: "", irradiacion: "", caracter: "", intensidad: "", atenuantes: "", agravantes: "" },
+                                                        sins: { severidad: "Leve", irritabilidad: "Media", naturaleza: "Mecánica", estadio: "Subagudo" },
+                                                        fases_curacion: { fase_predominante: "Proliferación / Remodelación temprana" },
+                                                        hipotesis_orientativas: [],
+                                                        preguntas_faltantes: [],
+                                                        recomendaciones_p2_por_modulo: {},
+                                                        factores_contextuales_clave: { red_flags_sugeridas: [], yellow_flags: [], facilitadores: [], barreras: [] }
+                                                    }
+                                                } as any);
+                                            }}
+                                            className="bg-slate-700 hover:bg-slate-800 text-[11px] text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all"
+                                        >
+                                            ⚡ Usar extracción parcial local
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                const el = document.getElementById('debug-raw-block');
+                                                if (el) el.classList.toggle('hidden');
+                                            }}
+                                            className="bg-white border text-xs border-amber-300 text-amber-700 hover:bg-amber-100 font-bold py-1.5 px-3 rounded-lg shadow-sm transition-all"
+                                        >
+                                            👁️ Ver detalle técnico
+                                        </button>
+                                    </div>
+                                    <div id="debug-raw-block" className="hidden mt-3 p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-mono text-[10px] whitespace-pre-wrap max-h-60 overflow-y-auto select-all">
+                                        <p>Motivo: {aiBlockInfo.reason}</p>
+                                        <p>Telemetria: {JSON.stringify(aiBlockInfo.telemetry || {}, null, 2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* FASE 27 UX Fallback: Alerta de Error y Respuesta Cruda */}
                     {interviewV4.jsonExtractError && (
