@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { jsonrepair } from 'jsonrepair';
 import { generateSHA256, normalizePayload } from './hash';
-import { AIAction, resolveModelRoute } from './routing';
+import { AIAction, resolveModelRoute } from './modelRouting';
 import { validateGuardrails } from './guardrails';
 
 // Wrapper unificado para comunicarse con la API de Gemini Flash 2.0
@@ -9,6 +9,10 @@ import { validateGuardrails } from './guardrails';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const DEFAULT_MODEL = 'gemini-2.5-flash';
+
+// CACHE EN MEMORIA (In-Memory Cache)
+// Para producción masiva se sugeriría Redis, pero para este requerimiento basta memoria.
+const globalAiCache = new Map<string, any>();
 
 interface GeminiCallParams {
     systemInstruction: string;
@@ -20,6 +24,7 @@ interface GeminiCallParams {
     modelId?: string;
     thinkingLevel?: 'low' | 'medium' | 'high';
     thinkingBudget?: number;
+    responseMimeType?: string;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
@@ -35,17 +40,21 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             temperature: temperature,
             topP: params.topP,
             topK: params.topK,
-            responseMimeType: "application/json"
+            responseMimeType: params.responseMimeType || "application/json"
         };
+        
+        const activeModel = params.modelId || DEFAULT_MODEL;
 
-        if (params.thinkingLevel) {
-            configParams.thinkingConfig = { thinkingLevel: params.thinkingLevel };
-        } else if (params.thinkingBudget) {
-            configParams.thinkingConfig = { thinkingBudget: params.thinkingBudget };
+        if (activeModel.startsWith('gemini-3')) {
+            if (params.thinkingBudget) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingBudget. Use thinkingLevel.`);
+            if (params.thinkingLevel) configParams.thinkingConfig = { thinkingLevel: params.thinkingLevel };
+        } else if (activeModel.startsWith('gemini-2.5')) {
+            if (params.thinkingLevel) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingLevel. Use thinkingBudget.`);
+            if (params.thinkingBudget) configParams.thinkingConfig = { thinkingBudget: params.thinkingBudget };
         }
 
         const response = await ai.models.generateContent({
-            model: params.modelId || DEFAULT_MODEL,
+            model: activeModel,
             contents: userPrompt,
             config: configParams
         });
@@ -118,12 +127,29 @@ export interface AIExecutionOptions<T> {
     promptVersion: string;
     temperature?: number;
     validator: (data: any) => T; 
+    responseMimeType?: string;
 }
 
 export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
     const route = resolveModelRoute(opts.screen, opts.action);
     const startOverall = Date.now();
     
+    // BACKEND CACHE CHECK
+    const cacheKey = `${route.cacheBucket}:${opts.inputHash}`;
+    if (globalAiCache.has(cacheKey)) {
+        const cachedResult = globalAiCache.get(cacheKey);
+        return {
+            success: true,
+            data: cachedResult.data,
+            telemetry: {
+                ...cachedResult.telemetry,
+                cacheHit: true,
+                latencyMs: Date.now() - startOverall,
+                timestamp: new Date().toISOString()
+            }
+        };
+    }
+
     let lastError: any = null;
     let fallbackUsed = false;
     let triesCount = 0;
@@ -142,11 +168,39 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 temperature: opts.temperature || 0.2,
                 modelId: modelInfo.modelId,
                 thinkingLevel: modelInfo.thinkingLevel,
-                thinkingBudget: modelInfo.thinkingBudget
+                thinkingBudget: modelInfo.thinkingBudget,
+                responseMimeType: opts.responseMimeType
             });
 
             // Validacion vacia/truncada local
             if (!rawText || rawText.trim() === '') throw new Error("Respuesta vacía o truncada.");
+
+            // Plaintext fallback bypass for non-json expectations
+            if (opts.responseMimeType === 'text/plain') {
+                const guardrailCheck = validateGuardrails(rawText);
+                if (!guardrailCheck.valid) {
+                     throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+                }
+                const validData = opts.validator(rawText);
+                const resultObj = {
+                    success: true,
+                    data: validData,
+                    telemetry: {
+                        modelUsed: modelInfo.modelId,
+                        fallbackUsed,
+                        cacheHit: false,
+                        promptVersion: opts.promptVersion,
+                        inputHash: opts.inputHash,
+                        aiAction: opts.action,
+                        screen: opts.screen,
+                        latencyMs: Date.now() - startOverall,
+                        timestamp: new Date().toISOString()
+                    }
+                };
+                
+                globalAiCache.set(cacheKey, resultObj);
+                return resultObj;
+            }
 
             const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
             
@@ -158,7 +212,7 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
             const parsed = JSON.parse(cleanJsonText);
             const validData = opts.validator(parsed);
             
-            return {
+            const resultObj = {
                 success: true,
                 data: validData,
                 telemetry: {
@@ -173,6 +227,9 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                     latencyMs: Date.now() - startOverall
                 }
             };
+            
+            globalAiCache.set(cacheKey, resultObj);
+            return resultObj;
 
         } catch (err: any) {
             console.warn(`[AI Router] Falló intento ${triesCount} con modelo ${modelInfo.modelId}. Motivo: ${err.message}`);

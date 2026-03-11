@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { callGemini } from '@/lib/ai/geminiClient';
+import { executeAIAction } from '@/lib/ai/geminiClient';
 import { SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
+import { generateSHA256 } from '@/lib/ai/hash';
 
 export async function POST(req: Request) {
     try {
@@ -46,18 +47,21 @@ Debes devolver obligatoriamente la siguiente estructura JSON (reemplaza los valo
 }
 `;
 
-        const rawText = await callGemini({
+        const result = await executeAIAction({
+            screen: 'FASE1',
+            action: 'FASE1',
             systemInstruction: SYSTEM_PROMPT_BASE,
-            userPrompt: userPrompt,
-            temperature: 0.0 // 0 to avoid hallucinations as much as possible
+            userPrompt,
+            inputHash: await generateSHA256(`fase1:${JSON.stringify(payload)}`),
+            promptVersion: 'v1.0',
+            temperature: 0.0,
+            validator: (data) => data // simple pass-through as fase1 doesn't have strict zod yet
         });
-
-        const cleanJsonText = rawText.replace(/^[\r\n\s]*```json/gi, '').replace(/```[\r\n\s]*$/g, '').trim();
-        const parsedObj = JSON.parse(cleanJsonText);
 
         return NextResponse.json({
             success: true,
-            data: parsedObj
+            data: result.data,
+            telemetry: result.telemetry
         });
 
     } catch (err: any) {

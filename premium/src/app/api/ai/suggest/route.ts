@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { executeAIAction } from '@/lib/ai/geminiClient';
+import { generateSHA256 } from '@/lib/ai/hash';
 
 export const dynamic = 'force-dynamic'; // FASE 2.1.28 - Previene crash estático en Vercel Build
 
@@ -47,18 +48,23 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
         }
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                systemInstruction: systemInstruction,
-                temperature: 0.2, // Baja temperatura para mantener consistencia médica y reducir alucinación
-            }
+        const payloadStr = JSON.stringify({ action, context });
+        const inputHash = await generateSHA256(`suggest:${payloadStr}`);
+
+        const aiResult = await executeAIAction({
+            screen: 'SUGGEST',
+            action: 'SUGGEST',
+            systemInstruction: systemInstruction,
+            userPrompt: prompt,
+            inputHash,
+            promptVersion: 'v1.0',
+            temperature: 0.2,
+            responseMimeType: 'text/plain',
+            validator: (data) => data
         });
 
         // Retornar solo el texto
-        return NextResponse.json({ result: response.text?.trim() });
+        return NextResponse.json({ result: aiResult.data?.trim ? aiResult.data.trim() : String(aiResult.data) });
 
     } catch (error: any) {
         console.error("Gemini API Error:", error);
