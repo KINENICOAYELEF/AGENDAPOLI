@@ -26,27 +26,83 @@ NO DEBES BAJO NINGUNA CIRCUNSTANCIA:
 TU SALIDA DEBE SER EXCLUSIVAMENTE UN JSON VÁLIDO QUE CUMPLA CON LA ESTRUCTURA EXACTA. Piensa primero en descartar cuadros graves y luego en acercarte a confirmar tus hipótesis. Debe orientar el examen físico por módulos, no en bloque general. Debe ser especialmente bueno razonando irritabilidad, naturaleza del dolor y qué examen físico aporta realmente.
 `;
 
+// FUNCIÓN DE SANITIZACIÓN ROBUSTA (FASE 13)
+function sanitizeClinicalTextForBlockedRetry(text: string): string {
+    if (!text) return "";
+    let sanitized = text;
+
+    // 1. Manejo analgésico físico previo
+    sanitized = sanitized.replace(/\b(tens|t\.e\.n\.s|ultrasonido|magnetoterapia|laser|láser|corrientes|electroterapia|electroanalgesia|fisioterapia|kinesiolog[ií]a previa|masaje|punci[oó]n|ondas de choque)\b/gi, "manejo analgésico físico previo");
+
+    // 2. Analgésico de uso común 
+    sanitized = sanitized.replace(/\b(paracetamol|ibuprofeno|ketorolaco|ketoprofeno|diclofenaco|naproxeno|meloxicam|celecoxib|etoricoxib|aspirina|viadil|tapsin|antiinflamatorio|antiinflamatorios)\b/gi, "antiinflamatorio o analgésico previo");
+
+    // 3. Tratamiento farmacológico previo genérico
+    sanitized = sanitized.replace(/\b(medicamento|medicamentos|medicaci[oó]n|pastillas|pastilla|remedios?|f[aá]rmacos?|relajante muscular|ciclobenzaprina|tramadol|pregabalina|gabapentina|corticoides?)\b/gi, "tratamiento farmacológico previo");
+
+    // 4. Procedimientos previos
+    sanitized = sanitized.replace(/\b(infiltraci[oó]n|filiaci[oó]n|cirug[ií]a|operaci[oó]n|inyecci[oó]n|bloqueo facetario)\b/gi, "procedimiento quirúrgico/mínimamente invasivo previo");
+
+    return sanitized;
+}
+
+// BANNED WORDS LIST: Validación pre-retry
+const BANNED_RETRY_WORDS = [
+    "tens", "paracetamol", "ketoprofeno", "ibuprofeno", "diclofenaco", 
+    "medicamento", "medicación", "fármaco", "pastilla", "tramadol"
+];
+
 export async function POST(req: Request) {
+    let useSanitizedGlobal = false;
     try {
         const body = await req.json();
         const { payload, useSanitized } = body;
+        useSanitizedGlobal = !!useSanitized;
 
         if (!payload) {
             return NextResponse.json({ error: 'Missing payload' }, { status: 400 });
         }
 
         let normalizedPayload = normalizePayload(payload);
+        let wasSanitized = false;
+        let sanitizationFailed = false;
 
-        // SANITIZACIÓN CLÍNICA (Evita bloqueos del modelo por mencionar dorgas/terapias)
+        // SANITIZACIÓN CLÍNICA ESTRICTA (FASE 13)
         if (useSanitized) {
-            normalizedPayload = normalizedPayload
-                .replace(/\b(paracetamol|ibuprofeno|ketorolaco|ketoprofeno|diclofenaco|naproxeno|meloxicam|celecoxib|etoricoxib|tramadol|pregabalina|gabapentina|ciclobenzaprina|relajante muscular|corticoides?|inyecci[oó]n|filtraci[oó]n)\b/gi, "analgésico de uso común")
-                .replace(/\b(tens|ultrasonido|magnetoterapia|laser|corrientes|electroterapia|electroanalgesia)\b/gi, "electroanalgesia/fisioterapia previa")
-                .replace(/\b(medicamento|medicamentos|pastillas|pastilla|remedios?|f[aá]rmacos?)\b/gi, "tratamiento farmacológico previo");
+            wasSanitized = true;
+            const originalPayload = normalizedPayload;
+            normalizedPayload = sanitizeClinicalTextForBlockedRetry(normalizedPayload);
             
             // Truncar para evitar filtro por tamaño de contexto agresivo
             if (normalizedPayload.length > 3000) {
                 normalizedPayload = normalizedPayload.substring(0, 3000) + "... [texto truncado en modo seguro]";
+            }
+
+            // Validación estricta pre-intento
+            const lowerSanitized = normalizedPayload.toLowerCase();
+            const containsBanned = BANNED_RETRY_WORDS.some(word => lowerSanitized.includes(word.toLowerCase()));
+
+            if (containsBanned) {
+                console.warn("[p1-synthesis] SANITIZATION_FAILED_PREVENTED_RETRY: El payload aún contiene palabras prohibidas.", { originalPayload, normalizedPayload });
+                sanitizationFailed = true;
+
+                // Forzamos salida de error con telemetría rica sin llamar a la IA
+                return NextResponse.json({
+                    success: false,
+                    isBlocked: true,
+                    blockedReason: "sanitization_failed_prevented_retry",
+                    telemetry: {
+                        modelUsed: null,
+                        fallbackUsed: false,
+                        attemptsCount: 0,
+                        blockedReason: "sanitization_failed_prevented_retry",
+                        sanitizedRetryUsed: true,
+                        localFallbackUsed: false, // El componente React pondrá esto en true al recibir este error
+                        inputHash: "prevented",
+                        estimatedTokensInput: 0,
+                        estimatedTokensOutput: 0
+                    }
+                });
             }
         }
 
@@ -69,10 +125,20 @@ ${normalizedPayload}
             validator: (data) => P1SynthesisSchema.parse(data)
         });
 
+        // Añadir metadata a la telemetría de exito
+        if (result.telemetry) {
+            result.telemetry = {
+                ...result.telemetry,
+                sanitizedRetryUsed: wasSanitized,
+                localFallbackUsed: false,
+                attemptsCount: result.telemetry.fallbackUsed ? 2 : 1
+            };
+        }
+
         return NextResponse.json({
             success: true,
             data: result.data,
-            telemetry: result.telemetry
+            telemetry: result.telemetry || { sanitizedRetryUsed: wasSanitized, localFallbackUsed: false }
         });
 
     } catch (error: any) {
@@ -83,7 +149,18 @@ ${normalizedPayload}
             return NextResponse.json({
                 success: false,
                 isBlocked: true,
-                blockedReason: error.message
+                blockedReason: error.message,
+                telemetry: {
+                    modelUsed: null,
+                    fallbackUsed: false,
+                    attemptsCount: 1, // o 2 si trackearamos más profundo, pero el wrapper lo lanza cuando falla un modelo en la cadena
+                    blockedReason: error.message,
+                    sanitizedRetryUsed: useSanitizedGlobal,
+                    localFallbackUsed: false,
+                    inputHash: "blocked",
+                    estimatedTokensInput: 0,
+                    estimatedTokensOutput: 0
+                }
             });
         }
 

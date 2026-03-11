@@ -1868,19 +1868,25 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             <div className="flex items-start gap-3 relative z-10">
                                 <span className="text-2xl mt-1">🛡️</span>
                                 <div className="flex flex-col flex-1 gap-2">
-                                    <h4 className="font-bold text-amber-900 text-sm">La IA fue bloqueada por filtros del modelo al interpretar el relato clínico.</h4>
+                                    <h4 className="font-bold text-amber-900 text-sm">
+                                        {aiBlockInfo.reason === "sanitization_failed_prevented_retry"
+                                            ? "La IA volvió a ser bloqueada. Ya puedes continuar con extracción local sin perder tu texto."
+                                            : "La IA fue bloqueada por filtros del modelo al interpretar el relato clínico."}
+                                    </h4>
                                     <p className="text-[12px] text-amber-800">Se conservó tu texto y no se ha borrado nada. ¿Cómo deseas proceder?</p>
                                     
                                     <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handleAISynthesis(true); // Reintento sanitizado
-                                            }}
-                                            className="bg-amber-600 hover:bg-amber-700 text-xs text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
-                                        >
-                                            <span>🧽</span> Reintentar con versión compacta / genérica
-                                        </button>
+                                        {aiBlockInfo.reason !== "sanitization_failed_prevented_retry" && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handleAISynthesis(true); // Reintento sanitizado
+                                                }}
+                                                className="bg-amber-600 hover:bg-amber-700 text-xs text-white font-bold py-2 px-3 rounded-lg shadow-sm transition-all flex items-center justify-center gap-1"
+                                            >
+                                                <span>🧽</span> Reintentar con versión clínica sanitizada
+                                            </button>
+                                        )}
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
