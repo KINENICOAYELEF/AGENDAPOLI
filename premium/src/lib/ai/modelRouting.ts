@@ -34,9 +34,9 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     if (screen === 'P1' || aiAction === 'FASE1' || aiAction === 'EVAL_MINIMO' || aiAction === 'P1_SYNTHESIS') {
         cacheBucket = 'p1_ai_cache';
         orderedModels = [
-            { modelId: 'gemini-3.1-flash-lite', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash-lite', thinkingBudget: 1024 },
-            { modelId: 'gemini-2.5-flash', thinkingBudget: 2048 }
+            { modelId: 'gemini-3.1-flash-lite' },
+            { modelId: 'gemini-2.5-flash-lite' },
+            { modelId: 'gemini-2.5-flash' }
         ];
     } 
     else if (screen === 'P3' || aiAction === 'P3_SYNTHESIS') {
