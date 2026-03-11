@@ -102,22 +102,7 @@ ${normalizedPayload}
                 inputHash,
                 promptVersion: 'v1.1',
                 temperature: 0.1,
-                validator: (data) => {
-                    const parsed = P1SynthesisSchema.safeParse(data);
-                    if (parsed.success) return parsed.data;
-                    console.warn("[P1 Schema Intento 1] Resilient fallback parsing triggered:", parsed.error.issues);
-                    return {
-                        resumen_clinico_editable: data.resumen_clinico_editable || "",
-                        resumen_persona_usuaria: data.resumen_persona_usuaria || { lo_que_entendi: "", lo_que_te_preocupa: "", lo_que_haremos_ahora: "" },
-                        alicia: data.alicia || {},
-                        sins: data.sins || {},
-                        foco_principal: data.foco_principal || {},
-                        hipotesis_orientativas: Array.isArray(data.hipotesis_orientativas) ? data.hipotesis_orientativas : [],
-                        preguntas_faltantes: Array.isArray(data.preguntas_faltantes) ? data.preguntas_faltantes : [],
-                        recomendaciones_p2_por_modulo: data.recomendaciones_p2_por_modulo || {},
-                        factores_contextuales_clave: data.factores_contextuales_clave || { banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: [] }
-                    };
-                }
+                validator: (data) => P1SynthesisSchema.parse(data)
             });
 
             return NextResponse.json({
@@ -156,22 +141,7 @@ ${retryPayload}
                     inputHash: inputHash + "-retry",
                     promptVersion: 'v1.1-retry',
                     temperature: 0.1,
-                    validator: (data) => {
-                        const parsed = P1SynthesisSchema.safeParse(data);
-                        if (parsed.success) return parsed.data;
-                        console.warn("[P1 Schema Intento 2] Resilient fallback parsing triggered:", parsed.error.issues);
-                        return {
-                            resumen_clinico_editable: data.resumen_clinico_editable || "",
-                            resumen_persona_usuaria: data.resumen_persona_usuaria || { lo_que_entendi: "", lo_que_te_preocupa: "", lo_que_haremos_ahora: "" },
-                            alicia: data.alicia || {},
-                            sins: data.sins || {},
-                            foco_principal: data.foco_principal || {},
-                            hipotesis_orientativas: Array.isArray(data.hipotesis_orientativas) ? data.hipotesis_orientativas : [],
-                            preguntas_faltantes: Array.isArray(data.preguntas_faltantes) ? data.preguntas_faltantes : [],
-                            recomendaciones_p2_por_modulo: data.recomendaciones_p2_por_modulo || {},
-                            factores_contextuales_clave: data.factores_contextuales_clave || { banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: [] }
-                        };
-                    }
+                    validator: (data) => P1SynthesisSchema.parse(data)
                 });
 
                 return NextResponse.json({
