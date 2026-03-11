@@ -1993,9 +1993,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Foco Examen Físico (Paso 2) Recomendado</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
                                         {Object.entries(interviewV4.p1_ai_structured.recomendaciones_p2_por_modulo || {}).map(([mod, data]: any) => (
-                                            <div key={mod} className="bg-white border border-teal-100 rounded p-2 flex flex-col justify-between">
-                                                <strong className="text-teal-900 whitespace-nowrap overflow-hidden text-ellipsis mb-1 block capitalize">{mod.replace(/_/g, " ")}</strong>
-                                                <p className="text-teal-700 line-clamp-2">{data.objetivo}</p>
+                                            <div key={mod} className="bg-white border border-teal-100 rounded p-2 flex flex-col justify-between max-h-[160px] overflow-y-auto">
+                                                <strong className="text-teal-900 mb-1 block capitalize tracking-wider">{mod.replace(/_/g, " ")}</strong>
+                                                <p className="text-teal-800 font-medium mb-1">{data.objetivo}</p>
+                                                {data.por_que_aporta_en_este_caso && <p className="text-teal-700 mb-1"><strong className="opacity-80">Por qué aporta:</strong> {data.por_que_aporta_en_este_caso}</p>}
+                                                {data.hallazgo_que_apoya_hipotesis_principal && <p className="text-emerald-700 mb-1 border-t border-emerald-50 pt-1"><strong className="opacity-80">Confirma H1 si:</strong> {data.hallazgo_que_apoya_hipotesis_principal}</p>}
+                                                {data.hallazgo_que_debilita_hipotesis_principal && <p className="text-rose-700"><strong className="opacity-80">Debilita H1 si:</strong> {data.hallazgo_que_debilita_hipotesis_principal}</p>}
+                                                {data.pruebas_o_tareas_sugeridas?.length > 0 && <span className="mt-1 bg-teal-50 text-teal-800 text-[9px] px-1.5 py-0.5 rounded border border-teal-100 w-fit">🎯 {data.pruebas_o_tareas_sugeridas.join(', ')}</span>}
                                             </div>
                                         ))}
                                     </div>
