@@ -232,7 +232,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                             <p className="text-xs font-bold text-slate-800 line-clamp-2">
                                                 {isEval
                                                     ? (item.data as Evaluacion).type === 'INITIAL'
-                                                        ? (item.data as any).geminiDiagnostic?.kinesiologicalDxNarrative || 'Diagnóstico no finalizado'
+                                                        ? (item.data as any).geminiDiagnostic?.narrativeDiagnosis || (item.data as any).geminiDiagnostic?.kinesiologicalDxNarrative || 'Diagnóstico no finalizado'
                                                         : (item.data as any).reevaluation?.progressSummary || 'Reevaluación en progreso'
                                                     : (item.data as Evolucion).sessionGoal || 'Sesión sin objetivo'
                                                 }

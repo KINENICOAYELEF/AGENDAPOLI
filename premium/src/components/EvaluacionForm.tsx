@@ -191,10 +191,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const hasTraffic = !!(fd.autoSynthesis?.trafficLight);
             if (!hasTraffic) missing.push("Semáforo de Carga");
 
-            const hasDx = !!(fd.geminiDiagnostic?.kinesiologicalDxNarrative?.trim());
+            const hasDx = !!(fd.geminiDiagnostic?.narrativeDiagnosis?.trim() || fd.geminiDiagnostic?.kinesiologicalDxNarrative?.trim());
             if (!hasDx) missing.push("Diagnóstico Narrativo");
 
-            const hasSmartObs = (fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
+            const hasSmartObs = (fd.geminiDiagnostic?.smartGoals?.length || fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
             if (!hasSmartObs) missing.push("Objetivos SMART");
 
             // Validación FASE 45: P1.5 Anamnesis Remota Mínima
@@ -289,17 +289,17 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     activeEvaluationId: targetId,
                     activeEvaluationIndexId: targetId,
                     activeObjectiveSetVersionId: versionId,
-                    diagnosisVigente: fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                    diagnosisVigente: fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                     flags: {
                         redFlagsSummary: (fd as any).interview?.redFlagsAction || '',
-                        consideracionesClinicas: fd.geminiDiagnostic?.clinicalConsiderations || []
+                        consideracionesClinicas: (fd as any).geminiDiagnostic?.clinicalConsiderations || []
                     },
                     loadManagementVigente: {
                         trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
                         rules: []
                     },
                     caseSnapshot: { // M13 Snapshot equivalente mejorado
-                        summary: fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                        summary: fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
                         trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
@@ -311,9 +311,9 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     activeObjectiveSet: {
                         versionId,
                         updatedAt: new Date().toISOString(),
-                        objectives: fd.geminiDiagnostic?.objectivesSmart?.map(o => ({
+                        objectives: (fd.geminiDiagnostic?.smartGoals || fd.geminiDiagnostic?.objectivesSmart)?.map((o: any) => ({
                             id: generateId(),
-                            label: o.text,
+                            label: o.description || o.text || '',
                             status: 'activo'
                         })) || []
                     }
@@ -367,8 +367,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
 
                 // FASE 2.2.4: Actualizar dx vigente si fue modificado
-                if ((fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
-                    updatePayload.diagnosisVigente = (fd as any).geminiDiagnostic.kinesiologicalDxNarrative;
+                if ((fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
+                    updatePayload.diagnosisVigente = (fd as any).geminiDiagnostic.narrativeDiagnosis || (fd as any).geminiDiagnostic.kinesiologicalDxNarrative;
                 }
 
                 // FASE 2.2.4: Actualizar semáforo si fue modificado
@@ -380,7 +380,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 // FASE 2.2.4 / 2.2.5: Crear nueva versión de objetivos si hay nuevos
                 let versionId = null;
                 // Intentar leer targets de objetivos editados en reevaluación (Screen5)
-                const newObjectives = (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
+                const newObjectives = (fd as any).geminiDiagnostic?.smartGoals || (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
                 if (newObjectives && newObjectives.length > 0) {
                     versionId = `v_${Date.now()}`;
                     updatePayload.activeObjectiveSetVersionId = versionId;

@@ -9,9 +9,13 @@ export interface Screen4Props {
 
 export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Screen4Props) {
     const { geminiDiagnostic = {} } = formData;
-    const [isGeneratingDx, setIsGeneratingDx] = useState(false);
-    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [aiError, setAiError] = useState<string | null>(null);
+
+    // Estado local para "Modo IA" vs "Modo Manual" si queremos ocultar la UI hasta que decida
+    const [modeSelected, setModeSelected] = useState<boolean>(!!geminiDiagnostic.narrativeDiagnosis || !!geminiDiagnostic.kinesiologicalDxNarrative);
+
+    const autoSynth = formData.autoSynthesis || {};
 
     const handleUpdateGemini = (patch: any) => {
         updateFormData(prev => ({
@@ -19,10 +23,17 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         }));
     };
 
-    const handleGenerateDx = async () => {
+    const updateDeepObj = (key: string, patch: any) => {
+        handleUpdateGemini({
+            [key]: { ...(geminiDiagnostic as any)[key], ...patch }
+        });
+    };
+
+    const handleGenerateAi = async () => {
         if (isClosed) return;
-        setIsGeneratingDx(true);
+        setIsGenerating(true);
         setAiError(null);
+        setModeSelected(true);
         try {
             const res = await fetch('/api/ai/narrative', {
                 method: 'POST',
@@ -30,277 +41,262 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                 body: JSON.stringify({
                     interview: formData.interview,
                     exam: formData.guidedExam,
-                    synthesis: formData.autoSynthesis
+                    synthesis: autoSynth // MUST be autoSynthesis as it contains P3 structured output
                 })
             });
-            if (!res.ok) throw new Error("Error en IA Gemini de Diagnóstico.");
+            if (!res.ok) throw new Error("Error en IA Gemini de Diagnóstico y Planificación.");
             const data = await res.json();
+            const aiData = data.data; // NarrativeSchema parsed
+
             handleUpdateGemini({
-                kinesiologicalDxNarrative: data.data?.diagnosis_narrative || '',
-                differentialFunctional: data.data?.differential_functional?.join('\\n') || '',
-                safetyAlerts: data.data?.safety_alerts || [],
-                clinicalConsiderations: data.data?.clinical_considerations || [],
-                missingData: data.data?.missing_data_to_confirm || []
+                narrativeDiagnosis: aiData.narrativeDiagnosis || '',
+                generalObjectiveOptions: aiData.generalObjectiveOptions || [],
+                generalObjective: (aiData.generalObjectiveOptions || [])[0] || '',
+                smartGoals: aiData.smartGoals || [],
+                prognosis: aiData.prognosis || { shortTerm: '', mediumTerm: '', category: '', justification: '' },
+                pillars: aiData.pillars || [],
+                masterPlan: aiData.masterPlan || '',
+                reassessmentRules: aiData.reassessmentRules || { comparableSign: '', variables: [], frequency: '', progressCriteria: '', stagnationCriteria: '' }
             });
         } catch (err: any) {
-            setAiError(err.message || 'Falló la generación de diagnóstico IA.');
+            setAiError(err.message || 'Falló la generación IA.');
         } finally {
-            setIsGeneratingDx(false);
+            setIsGenerating(false);
         }
     };
 
-    const handleGeneratePlan = async () => {
-        if (isClosed) return;
-        setIsGeneratingPlan(true);
-        setAiError(null);
-        try {
-            const res = await fetch('/api/ai/plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    diagnosticContext: formData.geminiDiagnostic,
-                    synthesis: formData.autoSynthesis
-                })
-            });
-            if (!res.ok) throw new Error("Error en IA Gemini de Planificación.");
-            const data = await res.json();
-            const plan = data.data; // Zod parsed PlanSchema
-
-            const fetchedSmart = plan.specific_goals?.map((g: any) => ({
-                text: g.statement,
-                linkedDeficit: g.linked_deficits?.join(', ') || ''
-            })) || [];
-
-            const fetchedInterventions = plan.interventions_by_goal?.flatMap((g: any) =>
-                g.interventions.map((i: any) => `- ${i.type.toUpperCase()}: ${i.summary} | Dosis: ${i.dose.freq_per_week}, ${i.dose.sets}x${i.dose.reps_or_time} (${i.dose.intensity}).`)
-            ) || [];
-
-            const fetchedProgRules = plan.load_management ?
-                `Carga sugerida: ${plan.load_management.traffic_light.toUpperCase()}\\nDolor permitido: ${plan.load_management.rules.pain_rule}\\nProgresión: ${plan.load_management.rules.progression_rule}`
-                : '';
-
-            handleUpdateGemini({
-                objectivesGeneral: plan.general_goals || [],
-                objectivesSmart: fetchedSmart,
-                operationalPlan: {
-                    interventions: fetchedInterventions,
-                    dosage: fetchedInterventions.join('\\n') + '\\n\\n-- REGLAS DE CARGA --\\n' + fetchedProgRules
-                },
-                prognosis: `${plan.functional_prognosis?.category?.toUpperCase()} - ${plan.functional_prognosis?.rationale?.join(' ')}`,
-                prognosisFactors: plan.functional_prognosis?.modifiable_factors?.join(', ') || ''
-            });
-        } catch (err: any) {
-            setAiError(err.message || 'Falló la generación de metas IA.');
-        } finally {
-            setIsGeneratingPlan(false);
-        }
-    };
-
-    // Helper functions for array updates
-    const updateSmartObj = (idx: number, patch: any) => {
-        const next = [...(geminiDiagnostic.objectivesSmart || [])];
-        next[idx] = { ...next[idx], ...patch };
-        handleUpdateGemini({ objectivesSmart: next });
-    };
-    const addSmartObj = () => {
-        handleUpdateGemini({ objectivesSmart: [...(geminiDiagnostic.objectivesSmart || []), { text: '', linkedDeficit: '' }] });
-    };
-    const removeSmartObj = (idx: number) => {
-        const next = [...(geminiDiagnostic.objectivesSmart || [])];
-        next.splice(idx, 1);
-        handleUpdateGemini({ objectivesSmart: next });
+    const enableManualMode = () => {
+        setModeSelected(true);
     };
 
     return (
-        <div className="flex flex-col gap-8 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col gap-6 pb-32 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">IA Gemini: Diagnóstico y Metas</h2>
-                <p className="text-sm text-slate-500 mt-1">Integra el motor inteligente para formatear narrativas y objetivos precisos (SMART).</p>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Narrativa y Planificación</h2>
+                <p className="text-sm text-slate-500 mt-1">Utiliza la estructura clínica clasificada en P3 para construir el diagnóstico narrativo y el plan de tratamiento.</p>
+            </div>
+
+            {/* BLOQUE A — MODO DE TRABAJO */}
+            <div className="bg-gradient-to-br from-emerald-50/50 to-teal-50/50 border border-emerald-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                    <h3 className="font-bold text-emerald-900 mb-1">A. Modo de Trabajo</h3>
+                    <p className="text-xs text-emerald-800">Puedes usar la propuesta de IA como base o completar esta etapa manualmente basándote en P3.</p>
+                </div>
+                <div className="flex gap-3 flex-col sm:flex-row w-full md:w-auto">
+                    <button 
+                        onClick={enableManualMode} 
+                        disabled={isClosed || isGenerating} 
+                        className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold text-sm px-4 py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        📝 Completar manualmente
+                    </button>
+                    <button 
+                        onClick={handleGenerateAi} 
+                        disabled={isClosed || isGenerating} 
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Redactar diagnóstico y plan con IA</>}
+                    </button>
+                </div>
             </div>
 
             {aiError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-sm flex gap-3 items-center">
-                    <span className="text-xl">⚠️</span> {aiError}
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-lg text-sm font-medium">
+                    ❌ {aiError}
                 </div>
             )}
 
-            {/* SECCIÓN 1: DIAGNÓSTICO KINESIOLÓGICO */}
-            <div className="bg-white border border-indigo-100 rounded-2xl shadow-md overflow-hidden flex flex-col">
-                <div className="bg-indigo-50 border-b border-indigo-100 p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 className="font-bold text-indigo-900 flex items-center gap-2"><span className="text-xl">🧠</span> 1. Categorización y Diagnóstico</h3>
-                        <p className="text-xs text-indigo-700 mt-0.5">Narrativa BPS, Diagnóstico Kinesiológico y Funcional Diferencial.</p>
-                    </div>
-                    {!isClosed && (
-                        <button onClick={handleGenerateDx} disabled={isGeneratingDx} className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-3 min-h-[44px] rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
-                            {isGeneratingDx ? <span className="animate-spin">🔄</span> : <span>✨</span>}
-                            {isGeneratingDx ? 'Procesando...' : 'Generar Dx. Kinesiológico'}
-                        </button>
-                    )}
-                </div>
-
-                <div className="p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diagnóstico Kinesiológico Narrativo</label>
+            {modeSelected && (
+                <div className="flex flex-col gap-6 mt-4 animate-in fade-in duration-700">
+                    
+                    {/* BLOQUE B — DIAGNÓSTICO KINESIOLÓGICO NARRATIVO FINAL */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">📜</span> B. Diagnóstico Kinesiológico Narrativo</h3>
+                        <p className="text-xs text-slate-500 mb-3">Redacción única continua que integra la identificación, alteraciones estructurales/funcionales, participación y factores biopsicosociales (bloques P3).</p>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[120px] text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white leading-relaxed disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
-                            placeholder="Ej: Impingement subacromial secundario a disquinesia escapular y déficit de control motor en rotadores externos, en contexto de sobrecarga deportiva y kinesiofobia moderada..."
-                            value={geminiDiagnostic.kinesiologicalDxNarrative || ''}
-                            onChange={e => handleUpdateGemini({ kinesiologicalDxNarrative: e.target.value })}
-                            disabled={isClosed}
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Diferencial Funcional</label>
-                        <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 min-h-[80px] text-sm text-slate-800 outline-none focus:border-indigo-400 focus:bg-white disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
-                            placeholder="Descarte o principal hipótesis funcional contrastante..."
-                            value={geminiDiagnostic.differentialFunctional || ''}
-                            onChange={e => handleUpdateGemini({ differentialFunctional: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[160px] text-sm text-slate-800 outline-none focus:border-emerald-400 focus:bg-white leading-relaxed disabled:opacity-75"
+                            placeholder="Comienza a escribir el diagnóstico en formato narrativo..."
+                            value={geminiDiagnostic.narrativeDiagnosis || geminiDiagnostic.kinesiologicalDxNarrative || ''}
+                            onChange={(e) => handleUpdateGemini({ narrativeDiagnosis: e.target.value })}
                             disabled={isClosed}
                         />
                     </div>
 
-                    {/* ALERTAS DEL DIAGNÓSTICO IA */}
-                    {((geminiDiagnostic.missingData?.length ?? 0) > 0 || (geminiDiagnostic.safetyAlerts?.length ?? 0) > 0) && (
-                        <div className="flex flex-col gap-3 mt-2 border-t border-indigo-100 pt-5">
-                            {(geminiDiagnostic.missingData?.length ?? 0) > 0 && (
-                                <div className="bg-amber-50 text-amber-800 p-3 rounded-xl border border-amber-200 text-xs shadow-sm flex gap-3">
-                                    <span className="text-base shrink-0">⚠️</span>
-                                    <div>
-                                        <strong className="block mb-1">Información Faltante Relevante:</strong>
-                                        <ul className="list-disc pl-4 space-y-0.5 opacity-90">
-                                            {geminiDiagnostic.missingData!.map((m: string, i: number) => <li key={i}>{m}</li>)}
-                                        </ul>
-                                    </div>
+                    {/* BLOQUE C — OBJETIVO GENERAL */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🎯</span> C. Objetivo General</h3>
+                        
+                        {(geminiDiagnostic.generalObjectiveOptions || []).length > 0 && (
+                            <div className="mb-4">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Opciones Inteligentes (Selecciona para copiar al cuadro final)</label>
+                                <div className="space-y-2">
+                                    {geminiDiagnostic.generalObjectiveOptions?.map((opt: string, idx: number) => (
+                                        <div key={idx} className="flex items-start gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded cursor-pointer hover:bg-emerald-100 transition-colors" onClick={() => !isClosed && handleUpdateGemini({ generalObjective: opt })}>
+                                            <input type="radio" className="mt-1" checked={geminiDiagnostic.generalObjective === opt} readOnly />
+                                            <span className="text-sm text-emerald-900">{opt}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
-                            {(geminiDiagnostic.safetyAlerts?.length ?? 0) > 0 && (
-                                <div className="bg-rose-50 text-rose-800 p-3 rounded-xl border border-rose-200 text-xs shadow-sm flex gap-3">
-                                    <span className="text-base shrink-0">🛑</span>
-                                    <div>
-                                        <strong className="block mb-1">Alertas de Seguridad:</strong>
-                                        <ul className="list-disc pl-4 space-y-0.5 opacity-90">
-                                            {geminiDiagnostic.safetyAlerts!.map((a: string, i: number) => <li key={i}>{a}</li>)}
-                                        </ul>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* SECCIÓN 2: METAS Y PLAN (DEPENDIENTE DEL DX) */}
-            <div className={`transition-all duration-700 ${!geminiDiagnostic.kinesiologicalDxNarrative ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-                <div className="bg-white border border-emerald-100 rounded-2xl shadow-md overflow-hidden flex flex-col">
-                    <div className="bg-emerald-50 border-b border-emerald-100 p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <h3 className="font-bold text-emerald-900 flex items-center gap-2"><span className="text-xl">🎯</span> 2. Plan Maestro y Objetivos SMART</h3>
-                            <p className="text-xs text-emerald-700 mt-0.5">Requiere tener contexto de evaluación completo y diagnóstico trazado.</p>
-                        </div>
-                        {!isClosed && (
-                            <button onClick={handleGeneratePlan} disabled={isGeneratingPlan || !geminiDiagnostic.kinesiologicalDxNarrative} className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white p-3 min-h-[44px] rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50">
-                                {isGeneratingPlan ? <span className="animate-spin">🔄</span> : <span>✨</span>}
-                                {isGeneratingPlan ? 'Calculando Plan...' : 'Generar Metas + Plan'}
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="p-4 sm:p-5 flex flex-col gap-6 sm:gap-8">
-
-                        {/* OBJETIVOS GENERALES */}
-                        {geminiDiagnostic.objectivesGeneral && geminiDiagnostic.objectivesGeneral.length > 0 && (
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Objetivos Generales (Propuesta IA)</label>
-                                <ul className="list-disc pl-5 text-sm space-y-1 text-slate-700">
-                                    {geminiDiagnostic.objectivesGeneral.map((og: string, idx: number) => <li key={idx}>{og}</li>)}
-                                </ul>
                             </div>
                         )}
-
-                        {/* OBJETIVOS SMART */}
+                        
                         <div>
-                            <div className="flex justify-between items-center mb-3">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Objetivos Funcionales Específicos (SMART)</label>
-                                {!isClosed && (
-                                    <button onClick={addSmartObj} className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold p-2 min-h-[44px] rounded border border-slate-200 uppercase tracking-wide flex items-center">
-                                        + Agregar Meta
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="space-y-3">
-                                {(geminiDiagnostic.objectivesSmart || []).length === 0 && (
-                                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-xl p-4 sm:p-6 text-center text-sm text-slate-500 italic">
-                                        Aún no hay metas SMART generadas. Presiona "Generar Metas + Plan".
-                                    </div>
-                                )}
-                                {(geminiDiagnostic.objectivesSmart || []).map((obj: any, idx: number) => (
-                                    <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm relative group flex flex-col gap-3">
-                                        {!isClosed && <button onClick={() => removeSmartObj(idx)} className="absolute top-2 sm:top-3 right-2 sm:right-3 text-slate-300 hover:text-rose-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>}
-
-                                        <div className="flex gap-2 sm:gap-3">
-                                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-100 text-emerald-700 font-black flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5 sm:mt-1 text-xs sm:text-base">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex-1 min-w-0 pr-6 sm:pr-8">
-                                                <textarea
-                                                    className="w-full bg-transparent border-b border-dashed border-slate-300 pb-1 pt-2 text-[13px] sm:text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 min-h-[44px] resize-y disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100 disabled:px-2 disabled:border-b-0"
-                                                    placeholder="Meta medible (Ej: Lograr 90° flexión activa hombro sin dolor pasadas 2 semanas)..."
-                                                    value={obj.text}
-                                                    onChange={e => updateSmartObj(idx, { text: e.target.value })}
-                                                    disabled={isClosed}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="pl-8 sm:pl-11">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 focus-within:border-emerald-300 focus-within:bg-emerald-50/30 transition-colors">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Déficit Dirigido:</span>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-transparent text-xs text-slate-700 outline-none p-1 min-h-[44px] disabled:bg-transparent disabled:text-slate-800 disabled:cursor-not-allowed disabled:[-webkit-text-fill-color:inherit] disabled:opacity-100"
-                                                    placeholder="Ej: Déficit ROM Flexión GH"
-                                                    value={obj.linkedDeficit}
-                                                    onChange={e => updateSmartObj(idx, { linkedDeficit: e.target.value })}
-                                                    disabled={isClosed}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Objetivo General Definido</label>
+                            <textarea
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm disabled:opacity-75 min-h-[60px]"
+                                placeholder="[Verbo] + [problema macro] + para + [participación]..."
+                                value={geminiDiagnostic.generalObjective || ''}
+                                onChange={(e) => handleUpdateGemini({ generalObjective: e.target.value })}
+                                disabled={isClosed}
+                            />
                         </div>
-
-                        {/* PLAN OPERACIONAL Y PRONÓSTICO */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <div>
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><span className="text-sm">🏥</span> Pilar de Intervención</label>
-                                <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 min-h-[120px] text-xs text-slate-700 outline-none focus:border-emerald-400"
-                                    placeholder="Terapia Manual, Educación al paciente, Ejercicio Terapéutico (Dosificación sugerida)..."
-                                    value={geminiDiagnostic.operationalPlan?.dosage || ''}
-                                    onChange={e => handleUpdateGemini({ operationalPlan: { ...geminiDiagnostic.operationalPlan, dosage: e.target.value } })}
-                                    disabled={isClosed}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><span className="text-sm">🔮</span> Pronóstico Funcional</label>
-                                <textarea
-                                    className="w-full bg-white border border-slate-200 rounded-xl p-3 min-h-[120px] text-xs text-slate-700 outline-none focus:border-emerald-400"
-                                    placeholder="Favorable / Reservado... dependiente de..."
-                                    value={geminiDiagnostic.prognosis || ''}
-                                    onChange={e => handleUpdateGemini({ prognosis: e.target.value })}
-                                    disabled={isClosed}
-                                />
-                            </div>
-                        </div>
-
                     </div>
-                </div>
-            </div>
 
+                    {/* BLOQUE D — OBJETIVOS SMART */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">📏</span> D. Objetivos SMART</h3>
+                            {!isClosed && (
+                                <button onClick={() => handleUpdateGemini({ smartGoals: [...(geminiDiagnostic.smartGoals || []), { description: '', linkedVariable: '' }] })} className="text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded hover:bg-emerald-100">
+                                    + Agregar SMART
+                                </button>
+                            )}
+                        </div>
+                        <div className="space-y-4">
+                            {(geminiDiagnostic.smartGoals || []).length === 0 && (
+                                <p className="text-sm text-slate-400 italic text-center py-4">No hay metas SMART configuradas.</p>
+                            )}
+                            {(geminiDiagnostic.smartGoals || []).map((goal: any, idx: number) => (
+                                <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-4 relative group">
+                                    {!isClosed && <button onClick={() => { const copy = [...(geminiDiagnostic.smartGoals || [])]; copy.splice(idx, 1); handleUpdateGemini({ smartGoals: copy }); }} className="absolute top-2 right-2 text-rose-400 hover:text-rose-600 font-bold text-lg leading-none hidden group-hover:block px-2">×</button>}
+                                    
+                                    <div className="mb-3 pr-6">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Redacción SMART {idx + 1}</label>
+                                        <textarea
+                                            className="w-full bg-white border border-slate-200 rounded p-2 text-sm disabled:opacity-75"
+                                            value={goal.description}
+                                            onChange={(e) => { const copy = [...(geminiDiagnostic.smartGoals || [])]; copy[idx].description = e.target.value; handleUpdateGemini({ smartGoals: copy }); }}
+                                            disabled={isClosed}
+                                            placeholder="Ej: Aumentar fuerza de cuádriceps de déficit moderado a leve en 6 semanas..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Variable Base Ligada</label>
+                                        <input
+                                            type="text"
+                                            className="w-full md:w-1/2 bg-white border border-slate-200 rounded p-2 text-xs disabled:opacity-75"
+                                            value={goal.linkedVariable}
+                                            onChange={(e) => { const copy = [...(geminiDiagnostic.smartGoals || [])]; copy[idx].linkedVariable = e.target.value; handleUpdateGemini({ smartGoals: copy }); }}
+                                            disabled={isClosed}
+                                            placeholder="Problema funcional, PSFS, o variable..."
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* BLOQUE E — PRONÓSTICO BPS */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔮</span> E. Pronóstico Biopsicosocial</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Pronóstico a Corto Plazo</label>
+                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm h-[60px]" value={geminiDiagnostic.prognosis?.shortTerm || ''} onChange={(e) => updateDeepObj('prognosis', { shortTerm: e.target.value })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Pronóstico a Mediano Plazo</label>
+                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm h-[60px]" value={geminiDiagnostic.prognosis?.mediumTerm || ''} onChange={(e) => updateDeepObj('prognosis', { mediumTerm: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Categoría Principal</label>
+                                <select className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" value={geminiDiagnostic.prognosis?.category || ''} onChange={(e) => updateDeepObj('prognosis', { category: e.target.value })} disabled={isClosed}>
+                                    <option value="">Selecciona...</option>
+                                    <option value="Favorable">Favorable</option>
+                                    <option value="Favorable con vigilancia">Favorable con vigilancia</option>
+                                    <option value="Reservado">Reservado</option>
+                                    <option value="Desfavorable">Desfavorable</option>
+                                    <option value="Incierto">Incierto / Dependiente</option>
+                                </select>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Justificación Clínica Integral</label>
+                                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" placeholder="Ej: Basado en severidad actual, adherencia y barreras ambientales..." value={geminiDiagnostic.prognosis?.justification || ''} onChange={(e) => updateDeepObj('prognosis', { justification: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* BLOQUE F — PILARES DE INTERVENCIÓN */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><span className="text-lg">🏛️</span> F. Pilares de Intervención</h3>
+                            {!isClosed && (
+                                <button onClick={() => handleUpdateGemini({ pillars: [...(geminiDiagnostic.pillars || []), { name: '', description: '' }] })} className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100 uppercase tracking-wider">
+                                    + Agregar Pilar
+                                </button>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {(geminiDiagnostic.pillars || []).length === 0 && <p className="text-xs text-slate-400">Sin pilares definidos.</p>}
+                            {(geminiDiagnostic.pillars || []).map((pilar: any, idx: number) => (
+                                <div key={idx} className="bg-slate-50 border border-slate-200 p-3 rounded-lg relative group">
+                                    {!isClosed && <button onClick={() => { const copy = [...(geminiDiagnostic.pillars || [])]; copy.splice(idx, 1); handleUpdateGemini({ pillars: copy }); }} className="absolute top-1 right-1 text-rose-400 hover:bg-rose-100 p-1 rounded-full hidden group-hover:block leading-none text-xs">✕</button>}
+                                    <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-sm font-bold text-slate-800 mb-2 truncate pr-6" value={pilar.name} onChange={(e) => { const copy = [...(geminiDiagnostic.pillars || [])]; copy[idx].name = e.target.value; handleUpdateGemini({ pillars: copy }); }} placeholder="Nombre del Pilar" disabled={isClosed} />
+                                    <textarea className="w-full bg-transparent border-none p-0 text-xs text-slate-600 outline-none resize-none h-16" value={pilar.description} onChange={(e) => { const copy = [...(geminiDiagnostic.pillars || [])]; copy[idx].description = e.target.value; handleUpdateGemini({ pillars: copy }); }} placeholder="Por qué y cómo se abordará..." disabled={isClosed} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* BLOQUE G — PLAN MAESTRO */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">🗺️</span> G. Plan Maestro (Hoja de Ruta)</h3>
+                        <p className="text-xs text-slate-500 mb-3">Narrativa libre que guía las primeras sesiones, progresiones esperadas, criterios de ajuste y alertas.</p>
+                        <textarea
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[140px] text-sm text-slate-800 outline-none focus:border-emerald-400 disabled:opacity-75"
+                            placeholder="Desarrolla el enfoque, sesiones sugeridas, focos de inicio de cuidado..."
+                            value={geminiDiagnostic.masterPlan || ''}
+                            onChange={(e) => handleUpdateGemini({ masterPlan: e.target.value })}
+                            disabled={isClosed}
+                        />
+                    </div>
+
+                    {/* BLOQUE H — REGLAS DE REEVALUACIÓN */}
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-emerald-900 mb-4 border-b border-emerald-200 pb-2 flex items-center gap-2"><span className="text-lg">🔄</span> H. Reglas de Reevaluación y Seguimiento</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Signo Comparable Principal</label>
+                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={geminiDiagnostic.reassessmentRules?.comparableSign || ''} onChange={(e) => updateDeepObj('reassessmentRules', { comparableSign: e.target.value })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Variables de Seguimiento (coma)</label>
+                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={(geminiDiagnostic.reassessmentRules?.variables || []).join(', ')} onChange={(e) => updateDeepObj('reassessmentRules', { variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Frecuencia Sugerida</label>
+                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" placeholder="Ej: Todas las sesiones / Quincenal" value={geminiDiagnostic.reassessmentRules?.frequency || ''} onChange={(e) => updateDeepObj('reassessmentRules', { frequency: e.target.value })} disabled={isClosed} />
+                            </div>
+                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                                    <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Criterio de Mejora Real</label>
+                                    <textarea className="w-full border-none outline-none text-xs h-[40px] resize-none" placeholder="Ej: Aumento >20% en dinamometría sin irritación..." value={geminiDiagnostic.reassessmentRules?.progressCriteria || ''} onChange={(e) => updateDeepObj('reassessmentRules', { progressCriteria: e.target.value })} disabled={isClosed} />
+                                </div>
+                                <div className="bg-white p-3 rounded-lg border border-emerald-100">
+                                    <label className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">Criterio de Estancamiento / Derivación</label>
+                                    <textarea className="w-full border-none outline-none text-xs h-[40px] resize-none" placeholder="Ej: Mismo dolor a las 4 semanas, derivar..." value={geminiDiagnostic.reassessmentRules?.stagnationCriteria || ''} onChange={(e) => updateDeepObj('reassessmentRules', { stagnationCriteria: e.target.value })} disabled={isClosed} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            )}
         </div>
     );
 }

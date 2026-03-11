@@ -954,22 +954,28 @@ export interface EvaluacionInicial extends BaseEvaluacion {
 
     // PANTALLA 4: DIAGNOSTICO Y METAS (Gemini + Editor)
     geminiDiagnostic?: {
-        kinesiologicalDxNarrative?: string;
-        differentialFunctional?: string;
-
-        safetyAlerts?: string[];
-        clinicalConsiderations?: string[];
-        missingData?: string[];
-
-        objectivesGeneral?: string[];
-        objectivesSmart?: Array<{ text: string, linkedDeficit: string }>;
-
-        operationalPlan?: {
-            interventions: string[];
-            dosage: string;
+        narrativeDiagnosis?: string;
+        generalObjectiveOptions?: string[];
+        generalObjective?: string; // El escogido (opcional, como estado)
+        smartGoals?: Array<{ description: string, linkedVariable: string }>;
+        prognosis?: {
+            shortTerm: string;
+            mediumTerm: string;
+            category: string;
+            justification: string;
         };
-        prognosis?: string;
-        prognosisFactors?: string;
+        pillars?: Array<{ name: string, description: string }>;
+        masterPlan?: string;
+        reassessmentRules?: {
+            comparableSign: string;
+            variables: string[];
+            frequency: string;
+            progressCriteria: string;
+            stagnationCriteria: string;
+        };
+        // Para compatibilidad retroactiva o drafts temporales:
+        kinesiologicalDxNarrative?: string;
+        objectivesSmart?: Array<any>;
     };
 }
 

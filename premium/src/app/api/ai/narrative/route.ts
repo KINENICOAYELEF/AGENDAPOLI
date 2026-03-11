@@ -46,12 +46,28 @@ export async function POST(req: Request) {
         const inputHash = await generateSHA256(`narrative:${normalizedPayload}`);
 
         const expectedJsonExample = `{
-  "version": "1.0",
-  "safety_alerts": ["..."],
-  "clinical_considerations": ["..."],
-  "missing_data_to_confirm": ["..."],
-  "diagnosis_narrative": "...",
-  "differential_functional": ["..."]
+  "narrativeDiagnosis": "...",
+  "generalObjectiveOptions": ["...", "..."],
+  "smartGoals": [
+    { "description": "...", "linkedVariable": "..." }
+  ],
+  "prognosis": {
+    "shortTerm": "...",
+    "mediumTerm": "...",
+    "category": "...",
+    "justification": "..."
+  },
+  "pillars": [
+    { "name": "...", "description": "..." }
+  ],
+  "masterPlan": "...",
+  "reassessmentRules": {
+    "comparableSign": "...",
+    "variables": ["..."],
+    "frequency": "...",
+    "progressCriteria": "...",
+    "stagnationCriteria": "..."
+  }
 }`;
 
         const userPrompt = `

@@ -29,11 +29,22 @@ Genera recordatorios clínicos útiles y focalizados (ej: correlacionar hallazgo
   `,
 
   NARRATIVE: `
-Revisa la información integral clínica (Entrevista P1, Examen Físico P2 y Síntesis Estructurada P3).
-Construye el Diagnóstico Kinesiológico Narrativo definitivo. 
-Debe ser profesional, conciso y basado en el framework BPS. 
-Destaca alteraciones funcionales y estructurales principales derivadas del bloque P3.
-Extrae explícitamente las red flags o missing data y un breve diagnóstico diferencial.
+Revisa la información integral clínica (Entrevista P1, Examen Físico P2 y principalmente la Síntesis Estructurada P3).
+Tu rol es:
+1. Redactar el DIAGNÓSTICO KINESIOLÓGICO NARRATIVO FINAL (narrativeDiagnosis) en UN SOLO BLOQUE de texto, siguiendo esta estructura:
+   - Párrafo 1: [Nombre], [edad], [sexo], consulta por [motivo de consulta] y/o presenta [diagnósticos médicos relevantes que afectan el caso].
+   - Párrafo 2: Presenta alteraciones estructurales a nivel de [solo las altas/casi confirmadas; si no, redactar de forma prudente "posible alteración..."].
+   - Párrafo 3: A nivel funcional presenta alteraciones de [todas las relevantes] con graduación.
+   - Párrafo 4: Lo anterior limita [actividades] (leve/mod/sev).
+   - Párrafo 5: Restringiendo su participación en [participación] (leve/mod/sev).
+   - Párrafo 6: Presenta como factores personales positivos... como negativos... y ambientales (facilitadores y barreras)...
+2. Proponer 2 a 3 opciones de OBJETIVO GENERAL (generalObjectiveOptions) bajo la estructura: [Verbo] + [problema macro] + para + [participación].
+3. Proponer OBJETIVOS SMART (smartGoals) priorizados, relacionando variables medidas.
+4. Generar PRONÓSTICO (prognosis) objetivo (corto y mediano plazo, categoría y justificación clínica).
+5. Sugerir 1 a 3 PILARES (pillars) principales (ej. educación, ejercicio).
+6. Sugerir un PLAN MAESTRO (masterPlan) que sirva como hoja de ruta general.
+7. Establecer REGLAS DE REEVALUACIÓN (reassessmentRules) (signo comparable, etc.).
+No repitas un listado JSON textual, redacta clínicamente apoyado estrictamente en la salida del P3.
   `,
 
   PLAN: `

@@ -141,7 +141,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
                                 <p className="font-semibold">{ev.type === 'INITIAL' && (ev as any).interview?.focos && (ev as any).interview.focos.length > 0 ? (ev as any).interview.focos.map((f: any) => `${f.region} ${f.lado}`).join(', ') : (ev.type === 'REEVALUATION' ? 'Reevaluación de Seguimiento' : 'Sin focos registrados')}</p>
                             </div>
                             <div className="text-slate-600 line-clamp-2 italic text-xs">
-                                "{ev.type === 'INITIAL' ? ((ev as any).geminiDiagnostic?.kinesiologicalDxNarrative || ev.clinicalSynthesis || 'Evaluación sin diagnóstico narrativo completado.') : ((ev as any).reevaluation?.progressSummary || 'Reevaluación sin resumen de progreso completado.')}"
+                                "{ev.type === 'INITIAL' ? ((ev as any).geminiDiagnostic?.narrativeDiagnosis || (ev as any).geminiDiagnostic?.kinesiologicalDxNarrative || ev.clinicalSynthesis || 'Evaluación sin diagnóstico narrativo completado.') : ((ev as any).reevaluation?.progressSummary || 'Reevaluación sin resumen de progreso completado.')}"
                             </div>
                         </div>
                     ))}

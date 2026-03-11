@@ -77,12 +77,30 @@ export const DiagnosisSchema = z.object({
 
 // Esquema B.5) narrative (Screen 4 P4 Narrative)
 export const NarrativeSchema = z.object({
-    version: z.string(),
-    safety_alerts: z.array(z.string()).describe("Alertas por red flags o comorbilidades"),
-    clinical_considerations: z.array(z.string()).describe("Consideraciones de seguridad o ajuste clínico (sin sugerir fármacos)"),
-    missing_data_to_confirm: z.array(z.string()).describe("Qué falta medir o preguntar para precisar el diagnóstico"),
-    diagnosis_narrative: z.string().describe("Texto en formato kinésico funcional integrativo, utilizando los hallazgos de P1, P2 y la clasificación estructurada de P3."),
-    differential_functional: z.array(z.string()).describe("Alternativas funcionales clínicas si falla la hipótesis principal"),
+    narrativeDiagnosis: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3."),
+    generalObjectiveOptions: z.array(z.string()).describe("2 a 3 opciones de objetivo general"),
+    smartGoals: z.array(z.object({
+        description: z.string().describe("El objetivo construido en formato SMART"),
+        linkedVariable: z.string().describe("La alteración, actividad o variable basal ligada al objetivo")
+    })),
+    prognosis: z.object({
+        shortTerm: z.string().describe("Pronóstico a corto plazo"),
+        mediumTerm: z.string().describe("Pronóstico a mediano plazo"),
+        category: z.string().describe("Ej: favorable, favorable con vigilancia, reservado, desfavorable, incierto / dependiente de evolución"),
+        justification: z.string().describe("Justificación clínica")
+    }),
+    pillars: z.array(z.object({
+        name: z.string().describe("Nombre del pilar, ej: Educación, Ejercicio, Terapia Manual..."),
+        description: z.string().describe("Nota breve sobre por qué se escogió y qué aborda")
+    })).describe("Pilares sugeridos principales (1 a 3)"),
+    masterPlan: z.string().describe("Texto editable hoja de ruta general: focos, qué testear, progresiones, alertas."),
+    reassessmentRules: z.object({
+        comparableSign: z.string().describe("Signo comparable principal"),
+        variables: z.array(z.string()).describe("Variables secundarias"),
+        frequency: z.string().describe("Frecuencia de reevaluación recomendada"),
+        progressCriteria: z.string().describe("Criterio para considerar mejora"),
+        stagnationCriteria: z.string().describe("Criterio para estancamiento o derivación")
+    })
 });
 
 // Esquema C) plan
