@@ -641,6 +641,30 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     </div>
                 </div>
 
+                {/* PANEL DE ADMINISTRADOR: IMPORT/EXPORT JSON */}
+                {((user?.role as string) === 'ADMIN' || user?.role === 'DOCENTE') && (
+                    <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex flex-col sm:flex-row shadow-sm gap-3 z-30">
+                        <div className="flex items-center gap-3 text-amber-900 flex-1">
+                            <span className="text-2xl">🛠️</span>
+                            <div>
+                                <h4 className="text-xs font-black uppercase tracking-wider">Herramientas de respaldo y prueba</h4>
+                                <p className="text-[11px] opacity-80 leading-tight">Módulo Admin/Docente. Exporta/Importa la evaluación completa.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <button onClick={handleExportJSON} className="flex-1 sm:flex-none bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                Descargar JSON
+                            </button>
+                            <button onClick={() => fileInputRef.current?.click()} className="flex-1 sm:flex-none bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Cargar JSON
+                            </button>
+                            <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportJSON} className="hidden" />
+                        </div>
+                    </div>
+                )}
+
                 {/* ERROR BANNER DE IA */}
                 {aiError && (
                     <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 flex items-start gap-3 z-30">
