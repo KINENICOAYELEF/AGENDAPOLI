@@ -34,45 +34,58 @@ export const EvalMinimoSchema = z.object({
 
 // Esquema B) diagnosis (Case Organizer P3)
 export const DiagnosisSchema = z.object({
-    version: z.string(),
-    clinicalClassification: z.object({
-        category: z.enum(['Aparente nociceptivo', 'Aparente neuropático', 'Aparente nociplástico', 'Mixto', 'No concluyente']),
-        subtype: z.string().describe("Ej: de origen inflamatorio, mecánico por carga, etc."),
-        rationale: z.string().describe("Explicación breve de por qué se sugiere esta clasificación"),
+    snapshot_clinico: z.object({
+        foco_principal: z.string(),
+        lado: z.string(),
+        irritabilidad_sugerida: z.string(),
+        semaforo_carga: z.string(),
+        tarea_indice: z.string(),
+        alertas_clinicas: z.array(z.string())
     }),
-    systems: z.object({
-        primarySystem: z.enum(['Tejido contráctil', 'Articulación / cápsula', 'Ligamento / estabilidad pasiva', 'Sistema neural', 'Control motor / movimiento', 'Carga ósea', 'Tejido conectivo / fascia', 'Mixto']),
-        primaryStructure: z.string().describe("Estructura o foco principal"),
-        secondaryStructures: z.array(z.string()).describe("Estructuras secundarias, si aplica"),
+    clasificacion_dolor: z.object({
+        categoria_principal: z.string(),
+        subtipo_apellido: z.string(),
+        fundamento_breve: z.string(),
+        nivel_confianza: z.string()
     }),
-    alterations: z.object({
-        structural: z.array(z.object({
-            name: z.string(),
-            certainty: z.enum(['Casi confirmada', 'Probable', 'Posible']),
-            comment: z.string().describe("Comentario breve, redactado de forma prudente si no hay certeza")
+    sistema_y_estructuras: z.object({
+        sistema_principal: z.string(),
+        estructura_principal: z.string(),
+        estructuras_secundarias: z.array(z.string())
+    }),
+    alteraciones_detectadas: z.object({
+        estructurales: z.array(z.object({
+            texto: z.string(),
+            certeza: z.enum(['casi_confirmada', 'probable', 'posible', 'no_concluyente']),
+            fundamento_breve: z.string()
         })),
         functional: z.array(z.object({
-            name: z.string().describe("Ej: dolor, disminución de rango, disminución de fuerza, etc."),
-            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+            texto: z.string(),
+            severidad: z.enum(['leve', 'moderada', 'severa'])
         }))
     }),
-    activityParticipation: z.object({
-        limitations: z.array(z.object({
-            name: z.string().describe("Actividades directas Ej: caminar, correr, agacharse"),
-            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+    actividad_y_participacion: z.object({
+        limitaciones_directas: z.array(z.object({
+            texto: z.string(),
+            severidad: z.enum(['leve', 'moderada', 'severa'])
         })),
-        restrictions: z.array(z.object({
-            name: z.string().describe("Roles, ej: trabajo, deporte, vida social"),
-            severity: z.enum(['Leve', 'Moderada', 'Severa'])
+        restricciones_participacion: z.array(z.object({
+            texto: z.string(),
+            severidad: z.enum(['leve', 'moderada', 'severa'])
         }))
     }),
-    bpsFactors: z.object({
-        personalPos: z.array(z.string()).describe("Ej: buena adherencia, motivación alta"),
-        personalNeg: z.array(z.string()).describe("Ej: miedo al movimiento, estrés alto"),
-        envFacilitators: z.array(z.string()).describe("Ej: apoyo familiar, acceso a gimnasio"),
-        envBarriers: z.array(z.string()).describe("Ej: turnos, cuidar a terceros, distancia")
+    factores_biopsicosociales: z.object({
+        factores_personales_positivos: z.array(z.string()),
+        factores_personales_negativos: z.array(z.string()),
+        facilitadores_ambientales: z.array(z.string()),
+        barreras_ambientales: z.array(z.string())
     }),
-    clinicalReminders: z.array(z.string()).describe("Recordatorios útiles no invasivos (ej: correlacionar componente neural)")
+    recordatorios_y_coherencia: z.object({
+        recordatorios_clinicos: z.array(z.string()),
+        cosas_a_vigilar_en_tratamiento: z.array(z.string()),
+        faltantes_no_criticos: z.array(z.string()),
+        incoherencias_detectadas: z.array(z.string())
+    })
 });
 
 // Esquema B.5) narrative (Screen 4 P4 Narrative)

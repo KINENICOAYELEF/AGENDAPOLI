@@ -908,31 +908,38 @@ export interface EvaluacionInicial extends BaseEvaluacion {
 
     // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor / IA Ordenador)
     autoSynthesis?: {
-        clinicalClassification?: {
-            category: 'Aparente nociceptivo' | 'Aparente neuropático' | 'Aparente nociplástico' | 'Mixto' | 'No concluyente' | string;
-            subtype: string;
-            rationale: string;
+        snapshot_clinico?: string;
+        clasificacion_dolor?: {
+            categoria_principal: 'Aparente nociceptivo' | 'Aparente neuropático' | 'Aparente nociplástico' | 'Mixto' | 'No concluyente' | string;
+            subtipo_apellido: string;
+            fundamento_breve: string;
+            nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };
-        systems?: {
-            primarySystem: 'Tejido contráctil' | 'Articulación / cápsula' | 'Ligamento / estabilidad pasiva' | 'Sistema neural' | 'Control motor / movimiento' | 'Carga ósea' | 'Tejido conectivo / fascia' | 'Mixto' | string;
-            primaryStructure: string;
-            secondaryStructures: string[];
+        sistema_y_estructuras?: {
+            sistema_principal: 'Tejido contráctil' | 'Articulación / cápsula' | 'Ligamento / estabilidad pasiva' | 'Sistema neural' | 'Control motor / movimiento' | 'Carga ósea' | 'Tejido conectivo / fascia' | 'Mixto' | string;
+            estructura_principal: string;
+            estructuras_secundarias: string[];
         };
-        alterations?: {
-            structural: Array<{ name: string; certainty: 'Casi confirmada' | 'Probable' | 'Posible' | string; comment: string }>;
-            functional: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
+        alteraciones_detectadas?: {
+            estructurales: Array<{ texto: string; certeza: 'casi_confirmada' | 'probable' | 'posible' | 'no_concluyente' | string; fundamento_breve: string }>;
+            functional: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
         };
-        activityParticipation?: {
-            limitations: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
-            restrictions: Array<{ name: string; severity: 'Leve' | 'Moderada' | 'Severa' | string }>;
+        actividad_y_participacion?: {
+            limitaciones_directas: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
+            restricciones_participacion: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
         };
-        bpsFactors?: {
-            personalPos: string[];
-            personalNeg: string[];
-            envFacilitators: string[];
-            envBarriers: string[];
+        factores_biopsicosociales?: {
+            factores_personales_positivos: string[];
+            factores_personales_negativos: string[];
+            facilitadores_ambientales: string[];
+            barreras_ambientales: string[];
         };
-        clinicalReminders?: string[];
+        recordatorios_y_coherencia?: {
+            recordatorios_clinicos?: string[];
+            cosas_a_vigilar_en_tratamiento?: string[];
+            faltantes_no_criticos?: string[];
+            incoherencias_detectadas?: string[];
+        };
 
         // Preservado para P2 / Semáforo
         trafficLight?: 'Verde' | 'Amarillo' | 'Rojo';

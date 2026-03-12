@@ -178,8 +178,8 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <h4 className="font-bold text-blue-900 text-sm mb-2 flex items-center gap-2">🔍 Referencia P3 (Clasificación Estructurada)</h4>
                         <p className="text-xs text-blue-800 mb-2">Utiliza esta información generada en P3 como base pasiva para completar los siguientes bloques.</p>
                         <div className="bg-white/60 p-3 rounded text-xs text-slate-700 max-h-40 overflow-y-auto whitespace-pre-wrap font-mono border border-blue-100">
-                            {formData.autoSynthesis?.clinicalClassification 
-                                ? `${formData.autoSynthesis.clinicalClassification.category} - ${formData.autoSynthesis.clinicalClassification.subtype}\n${formData.autoSynthesis.clinicalClassification.rationale}`
+                            {formData.autoSynthesis?.clasificacion_dolor 
+                                ? `${formData.autoSynthesis.clasificacion_dolor.categoria_principal} - ${formData.autoSynthesis.clasificacion_dolor.subtipo_apellido}\n${formData.autoSynthesis.clasificacion_dolor.fundamento_breve}`
                                 : (formData.clinicalSynthesis || 'Sin clasificación P3 disponible en el episodio.')
                             }
                         </div>

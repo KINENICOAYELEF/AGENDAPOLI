@@ -33,31 +33,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Has excedido el límite de peticiones (10 requests / 10 min).' }, { status: 429 });
         }
 
-        // El frontend ahora entrega obj minimalistas/compactos (payload.compactInterview, payload.compactPhysical) en lugar del formData inmenso.
-        const normalizedPayload = normalizePayload({
-            compactInterview: payload.compactInterview,
-            compactPhysical: payload.compactPhysical,
-            p15_core: payload.p15_core,
-            autoTrafficLight: payload.autoTrafficLight
-        });
+        // El frontend ahora ensambla la estructura compact_case_package completa
+        const normalizedPayload = normalizePayload(payload);
 
         const inputHash = await generateSHA256(`diagnosis:${normalizedPayload}`);
 
         const expectedJsonExample = `{
-  "version": "1.0",
-  "clinicalClassification": { "category": "Aparente nociceptivo|Aparente neuropático|Aparente nociplástico|Mixto|No concluyente", "subtype": "...", "rationale": "..." },
-  "systems": { "primarySystem": "Tejido contráctil|Articulación / cápsula|Ligamento / estabilidad pasiva|Sistema neural|Control motor / movimiento|Carga ósea|Tejido conectivo / fascia|Mixto", "primaryStructure": "...", "secondaryStructures": ["..."] },
-  "alterations": { "structural": [{ "name": "...", "certainty": "Posible|Probable|Casi confirmada", "comment": "..." }], "functional": [{ "name": "...", "severity": "Leve|Moderada|Severa" }] },
-  "activityParticipation": { "limitations": [{ "name": "...", "severity": "Leve|Moderada|Severa" }], "restrictions": [{ "name": "...", "severity": "Leve|Moderada|Severa" }] },
-  "bpsFactors": { "personalPos": ["..."], "personalNeg": ["..."], "envFacilitators": ["..."], "envBarriers": ["..."] },
-  "clinicalReminders": ["..."]
+  "snapshot_clinico": { "foco_principal": "", "lado": "", "irritabilidad_sugerida": "", "semaforo_carga": "", "tarea_indice": "", "alertas_clinicas": [] },
+  "clasificacion_dolor": { "categoria_principal": "", "subtipo_apellido": "", "fundamento_breve": "", "nivel_confianza": "" },
+  "sistema_y_estructuras": { "sistema_principal": "", "estructura_principal": "", "estructuras_secundarias": [] },
+  "alteraciones_detectadas": { "estructurales": [{ "texto": "", "certeza": "casi_confirmada|probable|posible|no_concluyente", "fundamento_breve": "" }], "functional": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|moderada|severa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
+  "factores_biopsicosociales": { "factores_personales_positivos": [], "factores_personales_negativos": [], "facilitadores_ambientales": [], "barreras_ambientales": [] },
+  "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
 }`;
 
         const userPrompt = `
 Genera el output requerido usando EXCLUSIVAMENTE formato JSON parseable y cumpliendo estrictamente con la siguiente estructura y tipos exactos:
 ${expectedJsonExample}
 
-DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA:
+DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA (COMPACT CASE PACKAGE):
 ${normalizedPayload}
     `;
 

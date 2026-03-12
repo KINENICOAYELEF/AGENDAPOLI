@@ -279,7 +279,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
             }
 
-            const hasSx = (fd.autoSynthesis?.alterations?.structural?.length || 0) > 0;
+            const hasSx = (fd.autoSynthesis?.alteraciones_detectadas?.estructurales?.length || (fd.autoSynthesis as any)?.alterations?.structural?.length || 0) > 0;
             if (!hasSx) missing.push("Clasificación Estructuras (P3)");
 
             const hasTraffic = !!(fd.autoSynthesis?.trafficLight);
@@ -405,7 +405,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
                         psfsBaseline: (fd as any).interview?.psfs || [],
-                        topDeficits: fd.autoSynthesis?.alterations?.functional?.map(a => a.name) || []
+                        topDeficits: fd.autoSynthesis?.alteraciones_detectadas?.functional?.map(a => a.texto) || (fd.autoSynthesis as any)?.alterations?.functional?.map((a: any) => a.name) || []
                     },
                     activeObjectiveSet: {
                         versionId,

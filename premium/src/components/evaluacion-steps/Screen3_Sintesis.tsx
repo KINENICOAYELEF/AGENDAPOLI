@@ -50,23 +50,29 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
         setIsGenerating(true);
         setAiError(null);
         try {
-            // NORMALIZED AND COMPACTED PAYLOAD CONSTRUCTION
-            const normalizedCase = normalizeEvaluationState(formData);
-            const compactInterview = buildCompactInterviewForAI(normalizedCase, formData.interview);
-            const compactPhysical = buildCompactPhysicalForAI(normalizedCase);
-            const p15_core = buildCompactContextForAI(formData.remoteHistorySnapshot);
+            // COMPARTA Y ENSAMBLA ESTRICTAMENTE LOS DATASETS ESTRUCTURADOS (P1, P1.5, P2) EN COMPACT_CASE_PACKAGE
+            const p1_struct = formData.interview?.v4?.p1_ai_structured || {};
+            const p15_struct = formData.remoteHistorySnapshot?.p15_context_structured || {};
+            const p15_flags = formData.remoteHistorySnapshot?.p15_context_flags || {};
+            const p2_struct = (formData.guidedExam as any)?.autoSynthesis || {};
+            const pat = (formData as any).paciente || {};
 
             const payloadForAI = {
-                compactInterview,
-                p15_core,
-                compactPhysical,
-                autoTrafficLight: engine.safety.level
+                demographics: {
+                    nombre: pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido",
+                    edad: pat.edad || "Desconocida",
+                    sexo: pat.sexoBiomecanico || "Desconocido"
+                },
+                p1_core: p1_struct,
+                p15_core: { ...p15_struct, ...p15_flags },
+                p2_core: p2_struct,
+                semaforo_seguridad_sugerido: engine.safety.level
             };
 
             const stringifiedPayloadForAI = JSON.stringify(payloadForAI);
             
             // FRONTEND CACHE GUARD
-            if (formData.aiOutputs?.diagnosisLastInput === stringifiedPayloadForAI && autoSynth.clinicalClassification && !aiError) {
+            if (formData.aiOutputs?.diagnosisLastInput === stringifiedPayloadForAI && autoSynth.clasificacion_dolor && !aiError) {
                 alert("Se reutilizó la última síntesis porque no hubo cambios clínicos relevantes en el borrador.");
                 setIsGenerating(false);
                 return;
@@ -103,14 +109,15 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
 
             const aiResult = data.data; // DiagnosisSchema matched
             if (aiResult) {
-                // Populate blocks C to H
+                // Populate new CIF schema blocks
                 handleUpdateSynth({
-                    clinicalClassification: aiResult.clinicalClassification,
-                    systems: aiResult.systems,
-                    alterations: aiResult.alterations,
-                    activityParticipation: aiResult.activityParticipation,
-                    bpsFactors: aiResult.bpsFactors,
-                    clinicalReminders: aiResult.clinicalReminders
+                    snapshot_clinico: aiResult.snapshot_clinico,
+                    clasificacion_dolor: aiResult.clasificacion_dolor,
+                    sistema_y_estructuras: aiResult.sistema_y_estructuras,
+                    alteraciones_detectadas: aiResult.alteraciones_detectadas,
+                    actividad_y_participacion: aiResult.actividad_y_participacion,
+                    factores_biopsicosociales: aiResult.factores_biopsicosociales,
+                    recordatorios_y_coherencia: aiResult.recordatorios_y_coherencia
                 });
             }
         } catch (err: any) {
@@ -167,8 +174,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                 )}
             </div>
 
-            {/* RENDERIZADO DE BLOQUES (Solo si la IA llenó datos o ya existían) */}
-            {(autoSynth.clinicalClassification || autoSynth.systems || autoSynth.alterations) && (
+            {/* RENDERIZADO DE BLOQUES CIF (Solo si la IA llenó datos) */}
+            {(autoSynth.clasificacion_dolor || autoSynth.sistema_y_estructuras || autoSynth.alteraciones_detectadas) && (
                 <div className="flex flex-col gap-6 animate-in fade-in duration-700">
                     
                     {/* BLOQUE C — CLASIFICACIÓN CLÍNICA SUGERIDA */}
@@ -179,8 +186,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Categoría Principal</label>
                                 <select 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.clinicalClassification?.category || ''}
-                                    onChange={(e) => updateDeepObj('clinicalClassification', { category: e.target.value })}
+                                    value={autoSynth.clasificacion_dolor?.categoria_principal || ''}
+                                    onChange={(e) => updateDeepObj('clasificacion_dolor', { categoria_principal: e.target.value })}
                                     disabled={isClosed}
                                 >
                                     <option value="">Selecciona...</option>
@@ -196,20 +203,36 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <input 
                                     type="text" 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.clinicalClassification?.subtype || ''}
-                                    onChange={(e) => updateDeepObj('clinicalClassification', { subtype: e.target.value })}
+                                    value={autoSynth.clasificacion_dolor?.subtipo_apellido || ''}
+                                    onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_apellido: e.target.value })}
                                     disabled={isClosed}
                                     placeholder="Ej: de origen inflamatorio"
                                 />
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
-                                <textarea 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[60px]"
-                                    value={autoSynth.clinicalClassification?.rationale || ''}
-                                    onChange={(e) => updateDeepObj('clinicalClassification', { rationale: e.target.value })}
-                                    disabled={isClosed}
-                                />
+                            <div className="md:col-span-2 flex gap-4">
+                                <div className="flex-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[60px]"
+                                        value={autoSynth.clasificacion_dolor?.fundamento_breve || ''}
+                                        onChange={(e) => updateDeepObj('clasificacion_dolor', { fundamento_breve: e.target.value })}
+                                        disabled={isClosed}
+                                    />
+                                </div>
+                                <div className="w-1/4">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Confianza</label>
+                                    <select 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                        value={autoSynth.clasificacion_dolor?.nivel_confianza || ''}
+                                        onChange={(e) => updateDeepObj('clasificacion_dolor', { nivel_confianza: e.target.value })}
+                                        disabled={isClosed}
+                                    >
+                                        <option value="">...</option>
+                                        <option value="Alta">Alta</option>
+                                        <option value="Media">Media</option>
+                                        <option value="Baja">Baja</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -222,8 +245,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Sistema Principal</label>
                                 <select 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.systems?.primarySystem || ''}
-                                    onChange={(e) => updateDeepObj('systems', { primarySystem: e.target.value })}
+                                    value={autoSynth.sistema_y_estructuras?.sistema_principal || ''}
+                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { sistema_principal: e.target.value })}
                                     disabled={isClosed}
                                 >
                                     <option value="">Selecciona...</option>
@@ -242,8 +265,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <input 
                                     type="text" 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.systems?.primaryStructure || ''}
-                                    onChange={(e) => updateDeepObj('systems', { primaryStructure: e.target.value })}
+                                    value={autoSynth.sistema_y_estructuras?.estructura_principal || ''}
+                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructura_principal: e.target.value })}
                                     disabled={isClosed}
                                 />
                             </div>
@@ -252,8 +275,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <input 
                                     type="text" 
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={(autoSynth.systems?.secondaryStructures || []).join(', ')}
-                                    onChange={(e) => updateDeepObj('systems', { secondaryStructures: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                    value={(autoSynth.sistema_y_estructuras?.estructuras_secundarias || []).join(', ')}
+                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_secundarias: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                                     disabled={isClosed}
                                     placeholder="Ej: Bursa subacromial, Bíceps largo..."
                                 />
@@ -268,43 +291,43 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <div className="mb-6">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E1. Estructurales</label>
                             <div className="space-y-2">
-                                {(autoSynth.alterations?.structural || []).map((alt: any, idx: number) => (
+                                {(autoSynth.alteraciones_detectadas?.estructurales || []).map((alt: any, idx: number) => (
                                     <div key={idx} className="flex gap-2 items-start">
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.name} onChange={(e) => {
-                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].name = e.target.value; updateDeepObj('alterations', { structural: copy });
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.texto} onChange={(e) => {
+                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
                                         }} disabled={isClosed} />
-                                        <select className="w-1/4 bg-slate-50 border rounded p-2 text-sm" value={alt.certainty} onChange={(e) => {
-                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].certainty = e.target.value; updateDeepObj('alterations', { structural: copy });
+                                        <select className="w-1/4 bg-slate-50 border rounded p-2 text-sm" value={alt.certeza} onChange={(e) => {
+                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].certeza = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
                                         }} disabled={isClosed}>
-                                            <option value="Posible">Posible</option><option value="Probable">Probable</option><option value="Casi confirmada">Casi confirmada</option>
+                                            <option value="posible">Posible</option><option value="probable">Probable</option><option value="casi_confirmada">Casi confirmada</option><option value="no_concluyente">No concluyente</option>
                                         </select>
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.comment} onChange={(e) => {
-                                            const copy = [...(autoSynth.alterations?.structural || [])]; copy[idx].comment = e.target.value; updateDeepObj('alterations', { structural: copy });
-                                        }} disabled={isClosed} placeholder="Comentario..." />
-                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alterations?.structural || [])]; copy.splice(idx, 1); updateDeepObj('alterations', { structural: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.fundamento_breve} onChange={(e) => {
+                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].fundamento_breve = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
+                                        }} disabled={isClosed} placeholder="Fundamento..." />
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { estructurales: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
                                 ))}
-                                {!isClosed && <button onClick={() => updateDeepObj('alterations', { structural: [...(autoSynth.alterations?.structural || []), { name: '', certainty: 'Posible', comment: '' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Estructural</button>}
+                                {!isClosed && <button onClick={() => updateDeepObj('alteraciones_detectadas', { estructurales: [...(autoSynth.alteraciones_detectadas?.estructurales || []), { texto: '', certeza: 'posible', fundamento_breve: '' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Estructural</button>}
                             </div>
                         </div>
 
                         <div>
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E2. Funcionales</label>
                             <div className="space-y-2">
-                                {(autoSynth.alterations?.functional || []).map((alt: any, idx: number) => (
+                                {(autoSynth.alteraciones_detectadas?.functional || []).map((alt: any, idx: number) => (
                                     <div key={idx} className="flex gap-2 items-center">
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.name} onChange={(e) => {
-                                            const copy = [...(autoSynth.alterations?.functional || [])]; copy[idx].name = e.target.value; updateDeepObj('alterations', { functional: copy });
+                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.texto} onChange={(e) => {
+                                            const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
                                         }} disabled={isClosed} />
-                                        <select className="w-1/3 bg-slate-50 border rounded p-2 text-sm" value={alt.severity} onChange={(e) => {
-                                            const copy = [...(autoSynth.alterations?.functional || [])]; copy[idx].severity = e.target.value; updateDeepObj('alterations', { functional: copy });
+                                        <select className="w-1/3 bg-slate-50 border rounded p-2 text-sm" value={alt.severidad} onChange={(e) => {
+                                            const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].severidad = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
                                         }} disabled={isClosed}>
-                                            <option value="Leve">Leve</option><option value="Moderada">Moderada</option><option value="Severa">Severa</option>
+                                            <option value="leve">Leve</option><option value="moderada">Moderada</option><option value="severa">Severa</option>
                                         </select>
-                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alterations?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alterations', { functional: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { functional: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
                                 ))}
-                                {!isClosed && <button onClick={() => updateDeepObj('alterations', { functional: [...(autoSynth.alterations?.functional || []), { name: '', severity: 'Moderada' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Funcional</button>}
+                                {!isClosed && <button onClick={() => updateDeepObj('alteraciones_detectadas', { functional: [...(autoSynth.alteraciones_detectadas?.functional || []), { texto: '', severidad: 'moderada' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Funcional</button>}
                             </div>
                         </div>
                     </div>
@@ -317,35 +340,35 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">F1. Limitaciones Directas</label>
                                 <div className="space-y-2">
-                                    {(autoSynth.activityParticipation?.limitations || []).map((lim: any, idx: number) => (
+                                    {(autoSynth.actividad_y_participacion?.limitaciones_directas || []).map((lim: any, idx: number) => (
                                         <div key={idx} className="flex gap-2 items-center">
-                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={lim.name} onChange={(e) => {
-                                                const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy[idx].name = e.target.value; updateDeepObj('activityParticipation', { limitations: copy });
+                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={lim.texto} onChange={(e) => {
+                                                const copy = [...(autoSynth.actividad_y_participacion?.limitaciones_directas || [])]; copy[idx].texto = e.target.value; updateDeepObj('actividad_y_participacion', { limitaciones_directas: copy });
                                             }} disabled={isClosed} />
-                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={lim.severity} onChange={(e) => {
-                                                const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy[idx].severity = e.target.value; updateDeepObj('activityParticipation', { limitations: copy });
-                                            }} disabled={isClosed}><option>Leve</option><option>Moderada</option><option>Severa</option></select>
-                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.activityParticipation?.limitations || [])]; copy.splice(idx, 1); updateDeepObj('activityParticipation', { limitations: copy }); }} className="px-1 text-rose-500">✕</button>}
+                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={lim.severidad} onChange={(e) => {
+                                                const copy = [...(autoSynth.actividad_y_participacion?.limitaciones_directas || [])]; copy[idx].severidad = e.target.value; updateDeepObj('actividad_y_participacion', { limitaciones_directas: copy });
+                                            }} disabled={isClosed}><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="severa">Severa</option></select>
+                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.actividad_y_participacion?.limitaciones_directas || [])]; copy.splice(idx, 1); updateDeepObj('actividad_y_participacion', { limitaciones_directas: copy }); }} className="px-1 text-rose-500">✕</button>}
                                         </div>
                                     ))}
-                                    {!isClosed && <button onClick={() => updateDeepObj('activityParticipation', { limitations: [...(autoSynth.activityParticipation?.limitations || []), { name: '', severity: 'Moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar L.</button>}
+                                    {!isClosed && <button onClick={() => updateDeepObj('actividad_y_participacion', { limitaciones_directas: [...(autoSynth.actividad_y_participacion?.limitaciones_directas || []), { texto: '', severidad: 'moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar L.</button>}
                                 </div>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">F2. Restricciones (Participación)</label>
                                 <div className="space-y-2">
-                                    {(autoSynth.activityParticipation?.restrictions || []).map((res: any, idx: number) => (
+                                    {(autoSynth.actividad_y_participacion?.restricciones_participacion || []).map((res: any, idx: number) => (
                                         <div key={idx} className="flex gap-2 items-center">
-                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={res.name} onChange={(e) => {
-                                                const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy[idx].name = e.target.value; updateDeepObj('activityParticipation', { restrictions: copy });
+                                            <input type="text" className="flex-1 bg-slate-50 border rounded px-2 py-1.5 text-sm" value={res.texto} onChange={(e) => {
+                                                const copy = [...(autoSynth.actividad_y_participacion?.restricciones_participacion || [])]; copy[idx].texto = e.target.value; updateDeepObj('actividad_y_participacion', { restricciones_participacion: copy });
                                             }} disabled={isClosed} />
-                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={res.severity} onChange={(e) => {
-                                                const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy[idx].severity = e.target.value; updateDeepObj('activityParticipation', { restrictions: copy });
-                                            }} disabled={isClosed}><option>Leve</option><option>Moderada</option><option>Severa</option></select>
-                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.activityParticipation?.restrictions || [])]; copy.splice(idx, 1); updateDeepObj('activityParticipation', { restrictions: copy }); }} className="px-1 text-rose-500">✕</button>}
+                                            <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={res.severidad} onChange={(e) => {
+                                                const copy = [...(autoSynth.actividad_y_participacion?.restricciones_participacion || [])]; copy[idx].severidad = e.target.value; updateDeepObj('actividad_y_participacion', { restricciones_participacion: copy });
+                                            }} disabled={isClosed}><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="severa">Severa</option></select>
+                                            {!isClosed && <button onClick={() => { const copy = [...(autoSynth.actividad_y_participacion?.restricciones_participacion || [])]; copy.splice(idx, 1); updateDeepObj('actividad_y_participacion', { restricciones_participacion: copy }); }} className="px-1 text-rose-500">✕</button>}
                                         </div>
                                     ))}
-                                    {!isClosed && <button onClick={() => updateDeepObj('activityParticipation', { restrictions: [...(autoSynth.activityParticipation?.restrictions || []), { name: '', severity: 'Moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar R.</button>}
+                                    {!isClosed && <button onClick={() => updateDeepObj('actividad_y_participacion', { restricciones_participacion: [...(autoSynth.actividad_y_participacion?.restricciones_participacion || []), { texto: '', severidad: 'moderada' }] })} className="text-[10px] text-indigo-600 font-bold p-1">+ Agregar R.</button>}
                                 </div>
                             </div>
                         </div>
@@ -359,22 +382,22 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             {/* Personales (+) */}
                             <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                                 <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-2">Personales Positivos (+)</label>
-                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.personalPos || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { personalPos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Personales (-) */}
                             <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
                                 <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-2">Personales Negativos (-)</label>
-                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.personalNeg || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { personalNeg: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Ambientales (F) */}
                             <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
                                 <label className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block mb-2">Facilitadores Ambientales</label>
-                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.envFacilitators || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { envFacilitators: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Ambientales (B) */}
                             <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
                                 <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-2">Barreras Ambientales</label>
-                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.bpsFactors?.envBarriers || []).join('\n')} onChange={(e) => updateDeepObj('bpsFactors', { envBarriers: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                         </div>
                     </div>
@@ -382,14 +405,25 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     {/* BLOQUE H — RECORDATORIOS CLÍNICOS */}
                     <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 shadow-sm">
                         <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><span className="text-lg">💡</span> H. Recordatorios y Coherencia</h3>
-                        <p className="text-[10px] text-indigo-700/80 mb-3">Puntos a vigilar durante el tratamiento sugeridos por la IA.</p>
-                        <textarea 
-                            className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-sm min-h-[80px]" 
-                            value={(autoSynth.clinicalReminders || []).join('\n')} 
-                            onChange={(e) => handleUpdateSynth({ clinicalReminders: e.target.value.split('\n').filter(Boolean) })} 
-                            disabled={isClosed} 
-                            placeholder="Ej: Vigilar componente neural..." 
-                        />
+                        <p className="text-[10px] text-indigo-700/80 mb-3">Puntos a vigilar sugeridos por la IA.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Recordatorios</label>
+                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.recordatorios_clinicos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { recordatorios_clinicos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Vigilar en tto</label>
+                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.cosas_a_vigilar_en_tratamiento || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { cosas_a_vigilar_en_tratamiento: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Faltantes no críticos</label>
+                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.faltantes_no_criticos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { faltantes_no_criticos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Incoherencias</label>
+                                <textarea className="w-full bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.incoherencias_detectadas || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { incoherencias_detectadas: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                        </div>
                     </div>
 
                 </div>

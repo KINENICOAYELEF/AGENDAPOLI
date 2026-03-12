@@ -18,14 +18,16 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-Revisa la información integral clínica (Entrevista, Examen Físico y Cálculos Funcionales previos).
+Revisa la información integral clínica contenida EXCLUSIVAMENTE en el paquete de caso entregado.
 NO REDACTES un diagnóstico narrativo final, ni un plan terapéutico, ni objetivos SMART.
-Tu objetivo ÚNICO es operar como un "Ordenador de Caso" que clasifica la data cruda en bloques estructurados.
-Clasifica inteligentemente el tipo de dolor, los sistemas afectados principal y secundarios.
-Lista TODAS las alteraciones estructurales y funcionales inferidas, asignando un grado de severidad/certeza realista y prudente.
-Lista limitaciones de actividad directa y restricciones de participación (rol social/trabajo/deporte).
-Identifica los factores Biopsicosociales separando en internos (Personales) y externos (Ambientales), cada uno en positivos/facilitadores y negativos/barreras.
-Genera recordatorios clínicos útiles y focalizados (ej: correlacionar hallazgos neurales o vigilancia de factores contextuales).
+Tu objetivo ÚNICO es operar como un "Ordenador de Caso" que clasifica la data cruda en bloques estructurados bajo lógica CIF para preparar la etapa P4.
+
+REGLAS CLÍNICAS:
+- NO sobreafirmar lo no confirmado. Si no alcanza la base, usa posible o probable.
+- Lista TODAS las disfunciones relevantes detectadas en el relato y examen, no solo una.
+- Organiza lógicamente en: estructura, función, actividad, participación, factores personales, ambiente.
+- Extrae alertas clínicas o incoherencias si las detectas.
+- NO te transformes en un diagnóstico narrativo final todavía.
   `,
 
   NARRATIVE: `
