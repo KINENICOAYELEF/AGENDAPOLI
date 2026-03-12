@@ -23,6 +23,8 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const lado = p1AI?.foco_principal?.lado || normalizedCase.ladoPrincipal;
     const queja = p1AI?.foco_principal?.queja_prioritaria || normalizedCase.quejaPrioritaria;
     const irritabilidad = p1AI?.sins?.irritabilidad_global?.split(' ')[0] || normalizedCase.irritabilidad; // ej "Alta (fácil de provocar)" -> "Alta"
+    const actividadIndiceP1 = p1AI?.foco_principal?.actividad_indice || normalizedCase.tareaIndice;
+    const recomendaciones = p1AI?.recomendaciones_p2_por_modulo;
 
     const v4 = formData.interview?.v4;
     const alertasActivas = [
@@ -107,6 +109,49 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
         }));
     };
 
+    const renderRecomendacionIA = (recomendacion: any) => {
+        if (!recomendacion || (!recomendacion.por_que_aporta_en_este_caso && !recomendacion.objetivo)) return null;
+        return (
+            <div className="mb-4 bg-amber-50 rounded-xl p-4 border border-amber-200 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-200/50 to-transparent rounded-bl-full pointer-events-none"></div>
+                <h4 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-3 flex items-center gap-2"><span className="text-base">🧠</span> Recomendación Clínica P1</h4>
+                
+                <div className="space-y-3 relative z-10">
+                    <div>
+                        <p className="text-[10px] font-bold text-amber-600 uppercase mb-0.5">Por qué usar este módulo</p>
+                        <p className="text-xs font-medium text-amber-900">{recomendacion.por_que_aporta_en_este_caso || recomendacion.objetivo}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        {(recomendacion.que_confirma || recomendacion.hallazgo_que_apoya_hipotesis_principal) && (
+                            <div className="bg-white/60 p-2 rounded-lg border border-amber-100/50">
+                                <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">A Confirmar</p>
+                                <p className="text-[11px] text-emerald-900 leading-snug">{recomendacion.que_confirma || recomendacion.hallazgo_que_apoya_hipotesis_principal}</p>
+                            </div>
+                        )}
+                        {(recomendacion.que_descarta || recomendacion.hallazgo_que_debilita_hipotesis_principal) && (
+                            <div className="bg-white/60 p-2 rounded-lg border border-amber-100/50">
+                                <p className="text-[10px] font-bold text-rose-700 uppercase mb-1">A Descartar</p>
+                                <p className="text-[11px] text-rose-900 leading-snug">{recomendacion.que_descarta || recomendacion.hallazgo_que_debilita_hipotesis_principal}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {recomendacion.pruebas_o_tareas_sugeridas && recomendacion.pruebas_o_tareas_sugeridas.length > 0 && (
+                        <div className="mt-2">
+                            <p className="text-[10px] font-bold text-indigo-700 uppercase mb-1 flex items-center gap-1"><span>⚡</span> Tests o Tareas Sugeridas</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {recomendacion.pruebas_o_tareas_sugeridas.map((test: string, idx: number) => (
+                                    <span key={idx} className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-2 py-0.5 rounded text-[10px] font-semibold">{test}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     const blocks = [
         { id: 'retest', icon: '🔄', theme: 'fuchsia', title: 'J. Re-test y cierre del examen físico', sub: 'Cambio post intervenciones de prueba (Signo comparable)', placeholder: 'Re-test de dolor a flexión disminuye de 7/10 a 3/10 tras modificación escapular...' },
         { id: 'complementary', icon: '🩻', theme: 'slate', title: 'K. Medidas complementarias (opcional)', sub: 'Imágenes traídas, exámenes de laboratorio o derivaciones', placeholder: 'Resonancia (05/03/2026) muestra tendinopatía supraespinoso sin rotura...' },
@@ -170,7 +215,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Foco / Lado</p>
                         <p className="text-sm font-medium text-slate-700">
-                            {focoPrincipal ? `Foco ${v4?.focos?.indexOf(focoPrincipal)! + 1}` : <span className="text-orange-500 font-normal">No registrado...</span>}
+                            {focoPrincipal ? `Foco ${Math.max(1, (v4?.focos?.findIndex(f => f?.id === (normalizedCase?.focoPrincipal as any)?.id || f?.id === (normalizedCase?.focoPrincipal as any)?.focoId) || 0) + 1)}` : <span className="text-orange-500 font-normal">No registrado...</span>}
                             {lado && lado !== "No definido" ? ` • ${lado}` : ''}
                         </p>
                     </div>
@@ -207,7 +252,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             type="text"
                             className="w-full bg-indigo-50/50 border border-indigo-100 shadow-sm text-indigo-700 text-sm font-medium rounded-xl p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
                             placeholder="Ej. sentadilla, levantar brazo, cambio de dirección..."
-                            value={exam.signoComparable || formData.interview?.v4?.focos?.find(f => f.esPrincipal)?.signoComparable || ''}
+                            value={exam.signoComparable || actividadIndiceP1 || formData.interview?.v4?.focos?.find((f: any) => f.esPrincipal)?.signoComparable || ''}
                             onChange={(e) => handleUpdateExam('signoComparable', e.target.value)}
                             disabled={isClosed}
                         />
@@ -2497,6 +2542,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'B' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.observacion_movimiento_inicial)}
                                         <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                             <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
                                             <p className="text-xs text-indigo-600 mt-1">Observación basal estricta de la conducta motora.</p>
@@ -2510,6 +2556,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'C' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.rango_movimiento_analitico)}
                                         <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                                             <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM)</p>
                                             <p className="text-xs text-emerald-600 mt-1">Testeo analítico de la capacidad articular y deducción de hipótesis mecánicas.</p>
@@ -2524,6 +2571,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 {openHelp === 'D' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.fuerza_tolerancia_carga)}
                                         <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                             <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">🦾</span> D. Fuerza y Tolerancia a Carga</p>
                                             <p className="text-xs text-indigo-600 mt-1">Valoración analítica de la capacidad contráctil del tejido.</p>
@@ -2537,6 +2585,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'E' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.palpacion)}
                                         <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                                             <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
                                             <p className="text-xs text-amber-600 mt-1">Palpación estructural focal y juego articular (Accessory motions).</p>
@@ -2551,6 +2600,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'F' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.neuro_vascular_somatosensorial)}
                                         <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
                                             <p className="font-bold text-rose-800 flex items-center gap-2"><span className="text-lg">🧠</span> F. Examen Neuro / Sensitivo / Neural</p>
                                             <p className="text-xs text-rose-600 mt-1">Descarte o confirmación de involucro del Sistema Nervioso Periférico.</p>
@@ -2564,6 +2614,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'G' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.control_motor_sensoriomotor)}
                                         <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
                                             <p className="font-bold text-teal-800 flex items-center gap-2"><span className="text-lg">⚖️</span> G. Control Motor y Biomecánica</p>
                                             <p className="text-xs text-teal-600 mt-1">Observación cualitativa de estrategias de movimiento.</p>
@@ -2576,6 +2627,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'H' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.pruebas_ortopedicas_dirigidas)}
                                         <div className="p-3 bg-sky-50 rounded-lg border border-sky-200 mb-3">
                                             <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">⚖️</span> H. Pruebas Ortopédicas Dirigidas</p>
                                             <p className="text-xs text-sky-600 mt-1">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico.</p>
@@ -2590,6 +2642,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'I' && (
                                     <>
+                                        {renderRecomendacionIA(recomendaciones?.pruebas_funcionales_reintegro)}
                                         <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                                             <p className="font-bold text-orange-800 flex items-center gap-2"><span className="text-lg">🏃</span> I. Functional & Performance Tests</p>
                                             <p className="text-xs text-orange-600 mt-1">Métricas objetivas para cuantificar alta o rendimiento.</p>
