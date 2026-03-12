@@ -1,5 +1,5 @@
 import { EvaluacionInicial } from "@/types/clinica";
-
+import { buildP2SummaryStructured } from "@/utils/synthesis/builder";
 export interface NormalizedCase {
     identificacion: string;
     focoPrincipal: any | null; // Tipado crudo por ahora, KineFocusArea ideal
@@ -239,7 +239,10 @@ export function buildCompactCasePackage(formData: any) {
     const p1_struct = formData.interview?.v4?.p1_ai_structured || {};
     const p15_struct = formData.remoteHistorySnapshot?.p15_context_structured || {};
     const p15_flags = formData.remoteHistorySnapshot?.p15_context_flags || {};
-    const p2_struct = formData.guidedExam?.autoSynthesis || {};
+    const p1_raw = formData.interview?.v4 || {};
+    
+    // Auto calculate if the user skipped the P2 synthesis button
+    const p2_struct = formData.guidedExam?.autoSynthesis || buildP2SummaryStructured(formData.guidedExam) || {};
 
     // Filter P1 Core to prevent sending massive hypotheses
     const p1_core = {
@@ -252,7 +255,9 @@ export function buildCompactCasePackage(formData: any) {
         hipotesis_titulos: (p1_struct.hipotesis_orientativas || []).map((h: any) => h.titulo),
         factores_contextuales: p1_struct.factores_contextuales || {
             banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: []
-        }
+        },
+        bps_scores: p1_raw.bps || {}, // Incluye dolor, sueño, estres, miedos, etc.
+        psfs_global: p1_raw.psfsGlobal || [] // Incluye expectativas y tareas de paciente
     };
 
     const p15_core = {
@@ -272,12 +277,14 @@ export function buildCompactCasePackage(formData: any) {
     };
 
     const p2_core = {
-        tarea_indice: formData.guidedExam?.retestGesture || "",
-        modulos_con_hallazgo: p2_struct.modulos_con_hallazgo || [],
-        hallazgos_clave: p2_struct.hallazgos_clave || [],
-        hipotesis_tracking: formData.guidedExam?.hipotesis_tracking || [],
-        retest_resumen: p2_struct.retest_resumen || "",
-        summary_text: p2_struct.summary_text || ""
+        tarea_indice: formData.guidedExam?.retestGesture || formData.guidedExam?.retestConfig?.tareaIndice || "",
+        signos_concordantes: p2_struct.signos_concordantes || [],
+        signos_discordantes: p2_struct.signos_discordantes || [],
+        resumen_hallazgos_positivos: p2_struct.resumen_hallazgos_positivos || "",
+        patron_movilidad: p2_struct.patron_movilidad || "",
+        patron_fuerza_control: p2_struct.patron_fuerza_control || "",
+        irritabilidad_tisular: p2_struct.irritabilidad_tisular || "",
+        hipotesis_tracking: formData.guidedExam?.hipotesis_tracking || []
     };
 
     return {
