@@ -192,6 +192,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         guidedExam: (initialData as any)?.guidedExam || {},
         autoSynthesis: (initialData as any)?.autoSynthesis || {},
         geminiDiagnostic: (initialData as any)?.geminiDiagnostic || {},
+        p4_plan_structured: (initialData as any)?.p4_plan_structured || {},
         reevaluation: (initialData as any)?.reevaluation || {},
         ...initialData
     });
@@ -285,10 +286,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const hasTraffic = !!(fd.autoSynthesis?.trafficLight);
             if (!hasTraffic) missing.push("Semáforo de Carga");
 
-            const hasDx = !!(fd.geminiDiagnostic?.narrativeDiagnosis?.trim() || fd.geminiDiagnostic?.kinesiologicalDxNarrative?.trim());
+            const hasDx = !!(fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo?.trim() || fd.geminiDiagnostic?.narrativeDiagnosis?.trim() || fd.geminiDiagnostic?.kinesiologicalDxNarrative?.trim());
             if (!hasDx) missing.push("Diagnóstico Narrativo");
 
-            const hasSmartObs = (fd.geminiDiagnostic?.smartGoals?.length || fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
+            const hasSmartObs = (fd.p4_plan_structured?.objetivos_smart?.length || fd.geminiDiagnostic?.smartGoals?.length || fd.geminiDiagnostic?.objectivesSmart?.length || 0) > 0;
             if (!hasSmartObs) missing.push("Objetivos SMART");
 
             // Validación FASE 45: P1.5 Anamnesis Remota Mínima
@@ -388,7 +389,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     activeEvaluationId: targetId,
                     activeEvaluationIndexId: targetId,
                     activeObjectiveSetVersionId: versionId,
-                    diagnosisVigente: fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                    diagnosisVigente: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                     flags: {
                         redFlagsSummary: (fd as any).interview?.redFlagsAction || '',
                         consideracionesClinicas: (fd as any).geminiDiagnostic?.clinicalConsiderations || []
@@ -398,7 +399,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         rules: []
                     },
                     caseSnapshot: { // M13 Snapshot equivalente mejorado
-                        summary: fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                        summary: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
                         trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
@@ -410,10 +411,10 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     activeObjectiveSet: {
                         versionId,
                         updatedAt: new Date().toISOString(),
-                        objectives: (fd.geminiDiagnostic?.smartGoals || fd.geminiDiagnostic?.objectivesSmart)?.map((o: any) => ({
-                            id: generateId(),
-                            label: o.description || o.text || '',
-                            status: 'activo'
+                        objectives: (fd.p4_plan_structured?.objetivos_smart || fd.geminiDiagnostic?.smartGoals || fd.geminiDiagnostic?.objectivesSmart)?.map((o: any) => ({
+                            id: o.id || generateId(),
+                            label: o.texto || o.description || o.text || '',
+                            status: o.status || 'activo'
                         })) || []
                     }
                 }, { merge: true });
@@ -466,8 +467,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
 
                 // FASE 2.2.4: Actualizar dx vigente si fue modificado
-                if ((fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
-                    updatePayload.diagnosisVigente = (fd as any).geminiDiagnostic.narrativeDiagnosis || (fd as any).geminiDiagnostic.kinesiologicalDxNarrative;
+                if ((fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
+                    updatePayload.diagnosisVigente = (fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative;
                 }
 
                 // FASE 2.2.4: Actualizar semáforo si fue modificado
@@ -479,7 +480,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 // FASE 2.2.4 / 2.2.5: Crear nueva versión de objetivos si hay nuevos
                 let versionId = null;
                 // Intentar leer targets de objetivos editados en reevaluación (Screen5)
-                const newObjectives = (fd as any).geminiDiagnostic?.smartGoals || (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
+                const newObjectives = (fd as any).p4_plan_structured?.objetivos_smart || (fd as any).geminiDiagnostic?.smartGoals || (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
                 if (newObjectives && newObjectives.length > 0) {
                     versionId = `v_${Date.now()}`;
                     updatePayload.activeObjectiveSetVersionId = versionId;
@@ -488,7 +489,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         updatedAt: new Date().toISOString(),
                         objectives: newObjectives.map((o: any) => ({
                             id: o.id || generateId(),
-                            label: o.text || o.label,
+                            label: o.texto || o.text || o.label || o.description,
                             status: o.status || 'activo'
                         }))
                     };

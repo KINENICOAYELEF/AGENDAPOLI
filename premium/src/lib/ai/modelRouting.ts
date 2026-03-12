@@ -50,16 +50,17 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     else if (screen === 'P4' && aiAction === 'P4_BASE') {
         cacheBucket = 'p4_base_ai_cache';
         orderedModels = [
-            { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash-lite', thinkingBudget: 1024 },
-            { modelId: 'gemini-2.5-flash', thinkingBudget: 2048 }
+            { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'low' },
+            { modelId: 'gemini-3.1-flash-lite', thinkingLevel: 'low' },
+            { modelId: 'gemini-2.5-flash' }
         ];
     }
     else if (screen === 'P4' && aiAction === 'P4_PREMIUM') {
         cacheBucket = 'p4_premium_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash', thinkingBudget: 3072 }
+            { modelId: 'gemini-3-flash', thinkingLevel: 'medium' },
+            { modelId: 'gemini-2.5-flash' }
         ];
     }
     else {

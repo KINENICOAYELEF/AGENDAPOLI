@@ -961,31 +961,52 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         };
     };
 
-    // PANTALLA 4: DIAGNOSTICO Y METAS (Gemini + Editor)
-    geminiDiagnostic?: {
-        narrativeDiagnosis?: string;
-        generalObjectiveOptions?: string[];
-        generalObjective?: string; // El escogido (opcional, como estado)
-        smartGoals?: Array<{ description: string, linkedVariable: string }>;
-        prognosis?: {
-            shortTerm: string;
-            mediumTerm: string;
-            category: string;
-            justification: string;
+    // PANTALLA 4: DIAGNOSTICO Y METAS (Gemini + Editor - FASE 21 P4)
+    p4_plan_structured?: {
+        referencia_p3_breve?: string;
+        diagnostico_kinesiologico_narrativo?: string;
+        objetivo_general?: {
+            opciones_sugeridas: string[];
+            seleccionado: string;
         };
-        pillars?: Array<{ name: string, description: string }>;
-        masterPlan?: string;
-        reassessmentRules?: {
-            comparableSign: string;
-            variables: string[];
-            frequency: string;
-            progressCriteria: string;
-            stagnationCriteria: string;
+        objetivos_smart?: Array<{
+            texto: string;
+            variable_base: string;
+            basal: string;
+            meta: string;
+            plazo: string;
+            prioridad: string;
+        }>;
+        pronostico_biopsicosocial?: {
+            corto_plazo: string;
+            mediano_plazo: string;
+            categoria: 'favorable' | 'favorable con vigilancia' | 'reservado' | 'reservado dependiente de adherencia/contexto' | 'desfavorable' | 'incierto' | string;
+            justificacion_clinica_integral: string;
         };
-        // Para compatibilidad retroactiva o drafts temporales:
-        kinesiologicalDxNarrative?: string;
-        objectivesSmart?: Array<any>;
+        pilares_intervencion?: Array<{
+            titulo: string;
+            justificacion: string;
+            foco_que_aborda: string[];
+        }>;
+        plan_maestro?: string;
+        reglas_reevaluacion?: {
+            signo_comparable_principal: string;
+            variables_seguimiento: string[];
+            frecuencia_sugerida: string;
+            criterio_mejora_real: string;
+            criterio_estancamiento_derivacion: string;
+        };
+        ia_metadata?: {
+            model_used: string;
+            fallback_used: boolean;
+            input_hash: string;
+            cache_hit: boolean;
+            draft_mode: string;
+        };
     };
+
+    // Soporte P4 Legacy
+    geminiDiagnostic?: any;
 }
 
 export interface EvaluacionReevaluacion extends BaseEvaluacion {

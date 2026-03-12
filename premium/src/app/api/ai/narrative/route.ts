@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { executeAIAction } from '@/lib/ai/geminiClient';
 import { PROMPTS, SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
-import { NarrativeSchema } from '@/lib/ai/schemas';
+import { P4PlanStructuredSchema } from '@/lib/ai/schemas';
 import { generateSHA256, normalizePayload } from '@/lib/ai/hash';
 
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
@@ -28,7 +28,6 @@ function checkRateLimit(userId: string): boolean {
 export async function POST(req: Request) {
     try {
         const payloadArgs = await req.json();
-        // Puede venir como un json plano o encapsulado en .payload (soporta ambos casos antiguos)
         const payload = payloadArgs.payload || payloadArgs;
         const userId = payloadArgs.userId;
 
@@ -36,8 +35,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Has excedido el límite de peticiones (10 requests / 10 min).' }, { status: 429 });
         }
 
-        // El frontend ahora entrega la estructura destilada (normalizedContext) junto con la synthesis P3 íntegra
         const normalizedPayload = normalizePayload({
+            p3_case_organizer: payload.p3_case_organizer,
+            compact_case_package: payload.compact_case_package,
+            p2_summary_structured: payload.p2_summary_structured,
+            // Fallbacks if existing legacy requests hit this endpoint
             normalizedContext: payload.normalizedContext,
             synthesis: payload.synthesis || payload.autoSynthesis
         });
@@ -45,27 +47,28 @@ export async function POST(req: Request) {
         const inputHash = await generateSHA256(`narrative:${normalizedPayload}`);
 
         const expectedJsonExample = `{
-  "narrativeDiagnosis": "...",
-  "generalObjectiveOptions": ["...", "..."],
-  "smartGoals": [
-    { "description": "...", "linkedVariable": "..." }
+  "referencia_p3_breve": "...",
+  "diagnostico_kinesiologico_narrativo": "...",
+  "objetivo_general": { "opciones_sugeridas": ["...", "..."], "seleccionado": "..." },
+  "objetivos_smart": [
+    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "..." }
   ],
-  "prognosis": {
-    "shortTerm": "...",
-    "mediumTerm": "...",
-    "category": "...",
-    "justification": "..."
+  "pronostico_biopsicosocial": {
+    "corto_plazo": "...",
+    "mediano_plazo": "...",
+    "categoria": "favorable",
+    "justificacion_clinica_integral": "..."
   },
-  "pillars": [
-    { "name": "...", "description": "..." }
+  "pilares_intervencion": [
+    { "titulo": "...", "justificacion": "...", "foco_que_aborda": ["..."] }
   ],
-  "masterPlan": "...",
-  "reassessmentRules": {
-    "comparableSign": "...",
-    "variables": ["..."],
-    "frequency": "...",
-    "progressCriteria": "...",
-    "stagnationCriteria": "..."
+  "plan_maestro": "...",
+  "reglas_reevaluacion": {
+    "signo_comparable_principal": "...",
+    "variables_seguimiento": ["..."],
+    "frecuencia_sugerida": "...",
+    "criterio_mejora_real": "...",
+    "criterio_estancamiento_derivacion": "..."
   }
 }`;
 
@@ -78,6 +81,7 @@ ${normalizedPayload}
     `;
 
         const requestedAction = payloadArgs.aiAction === 'P4_PREMIUM' ? 'P4_PREMIUM' : 'P4_BASE';
+        const modelTemp = requestedAction === 'P4_PREMIUM' ? 0.4 : 0.2; // Premium gets slightly more narrative variance
 
         const result = await executeAIAction({
             screen: 'P4',
@@ -85,15 +89,25 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
             userPrompt,
             inputHash,
-            promptVersion: 'v1.0',
-            temperature: 0.2, // Base temperature
-            validator: (data) => NarrativeSchema.parse(data)
+            promptVersion: 'v2.0_p4_refactor',
+            temperature: modelTemp,
+            validator: (data) => P4PlanStructuredSchema.parse(data)
         });
 
-        // The UI currently expects `{ success: true, data: ..., hash, latencyMs }`
+        const finalData = {
+            ...result.data,
+            ia_metadata: {
+                model_used: result.telemetry.modelUsed,
+                fallback_used: !!result.telemetry.fallbackUsed,
+                input_hash: result.telemetry.inputHash,
+                cache_hit: false,
+                draft_mode: requestedAction
+            }
+        };
+
         return NextResponse.json({
             success: true,
-            data: result.data,
+            data: finalData,
             hash: result.telemetry.inputHash,
             latencyMs: result.telemetry.latencyMs,
             telemetry: result.telemetry

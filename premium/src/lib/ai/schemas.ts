@@ -89,32 +89,49 @@ export const DiagnosisSchema = z.object({
 });
 
 // Esquema B.5) narrative (Screen 4 P4 Narrative)
-export const NarrativeSchema = z.object({
-    narrativeDiagnosis: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3."),
-    generalObjectiveOptions: z.array(z.string()).describe("2 a 3 opciones de objetivo general"),
-    smartGoals: z.array(z.object({
-        description: z.string().describe("El objetivo construido en formato SMART"),
-        linkedVariable: z.string().describe("La alteración, actividad o variable basal ligada al objetivo")
-    })),
-    prognosis: z.object({
-        shortTerm: z.string().describe("Pronóstico a corto plazo"),
-        mediumTerm: z.string().describe("Pronóstico a mediano plazo"),
-        category: z.string().describe("Ej: favorable, favorable con vigilancia, reservado, desfavorable, incierto / dependiente de evolución"),
-        justification: z.string().describe("Justificación clínica")
+export const P4PlanStructuredSchema = z.object({
+    referencia_p3_breve: z.string().describe("Breve resumen pasivo del caso de P3"),
+    diagnostico_kinesiologico_narrativo: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3. Sigue exactamente la lógica y palabras pedidas."),
+    objetivo_general: z.object({
+        opciones_sugeridas: z.array(z.string()).describe("2 a 3 opciones de objetivo general recomendadas"),
+        seleccionado: z.string()
     }),
-    pillars: z.array(z.object({
-        name: z.string().describe("Nombre del pilar, ej: Educación, Ejercicio, Terapia Manual..."),
-        description: z.string().describe("Nota breve sobre por qué se escogió y qué aborda")
-    })).describe("Pilares sugeridos principales (1 a 3)"),
-    masterPlan: z.string().describe("Texto editable hoja de ruta general: focos, qué testear, progresiones, alertas."),
-    reassessmentRules: z.object({
-        comparableSign: z.string().describe("Signo comparable principal"),
-        variables: z.array(z.string()).describe("Variables secundarias"),
-        frequency: z.string().describe("Frecuencia de reevaluación recomendada"),
-        progressCriteria: z.string().describe("Criterio para considerar mejora"),
-        stagnationCriteria: z.string().describe("Criterio para estancamiento o derivación")
-    })
+    objetivos_smart: z.array(z.object({
+        texto: z.string().describe("El objetivo construido en formato SMART"),
+        variable_base: z.string().describe("La alteración, actividad o variable basal ligada al objetivo"),
+        basal: z.string().describe("Estado inicial"),
+        meta: z.string().describe("Estado esperado"),
+        plazo: z.string().describe("Tiempo sugerido"),
+        prioridad: z.string().describe("Prioridad clínica")
+    })),
+    pronostico_biopsicosocial: z.object({
+        corto_plazo: z.string(),
+        mediano_plazo: z.string(),
+        categoria: z.enum(["favorable", "favorable con vigilancia", "reservado", "reservado dependiente de adherencia/contexto", "desfavorable", "incierto"]),
+        justificacion_clinica_integral: z.string()
+    }),
+    pilares_intervencion: z.array(z.object({
+        titulo: z.string(),
+        justificacion: z.string(),
+        foco_que_aborda: z.array(z.string())
+    })).describe("Pilares priorizados base (educación, ejercicio, manejo carga)"),
+    plan_maestro: z.string().describe("Narrativa editable de desarrollo de intervención"),
+    reglas_reevaluacion: z.object({
+        signo_comparable_principal: z.string(),
+        variables_seguimiento: z.array(z.string()),
+        frecuencia_sugerida: z.string(),
+        criterio_mejora_real: z.string(),
+        criterio_estancamiento_derivacion: z.string()
+    }),
+    ia_metadata: z.object({
+        model_used: z.string(),
+        fallback_used: z.boolean(),
+        input_hash: z.string(),
+        cache_hit: z.boolean(),
+        draft_mode: z.string()
+    }).optional()
 });
+export type P4PlanStructuredType = z.infer<typeof P4PlanStructuredSchema>;
 
 // Esquema C) plan
 export const PlanSchema = z.object({

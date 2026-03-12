@@ -31,22 +31,25 @@ REGLAS CLÍNICAS:
   `,
 
   NARRATIVE: `
-Revisa la información integral clínica (Entrevista P1, Examen Físico P2 y principalmente la Síntesis Estructurada P3).
-Tu rol es:
-1. Redactar el DIAGNÓSTICO KINESIOLÓGICO NARRATIVO FINAL (narrativeDiagnosis) en UN SOLO BLOQUE de texto, siguiendo esta estructura:
-   - Párrafo 1: [Nombre], [edad], [sexo], consulta por [motivo de consulta] y/o presenta [diagnósticos médicos relevantes que afectan el caso].
-   - Párrafo 2: Presenta alteraciones estructurales a nivel de [solo las altas/casi confirmadas; si no, redactar de forma prudente "posible alteración..."].
-   - Párrafo 3: A nivel funcional presenta alteraciones de [todas las relevantes] con graduación.
-   - Párrafo 4: Lo anterior limita [actividades] (leve/mod/sev).
-   - Párrafo 5: Restringiendo su participación en [participación] (leve/mod/sev).
-   - Párrafo 6: Presenta como factores personales positivos... como negativos... y ambientales (facilitadores y barreras)...
-2. Proponer 2 a 3 opciones de OBJETIVO GENERAL (generalObjectiveOptions) bajo la estructura: [Verbo] + [problema macro] + para + [participación].
-3. Proponer OBJETIVOS SMART (smartGoals) priorizados, relacionando variables medidas.
-4. Generar PRONÓSTICO (prognosis) objetivo (corto y mediano plazo, categoría y justificación clínica).
-5. Sugerir 1 a 3 PILARES (pillars) principales (ej. educación, ejercicio).
-6. Sugerir un PLAN MAESTRO (masterPlan) que sirva como hoja de ruta general.
-7. Establecer REGLAS DE REEVALUACIÓN (reassessmentRules) (signo comparable, etc.).
-No repitas un listado JSON textual, redacta clínicamente apoyado estrictamente en la salida del P3.
+Revisa el "p3_case_organizer" (clasificación CIF), el "compact_case_package" y el "p2_summary_structured" entregados.
+Tu rol es actuar como un Kinesiólogo Experto y generar el Plan Estructurado P4.
+DEBES retornar un JSON estrictamente mapeado al esquema solicitado.
+
+1. "referencia_p3_breve": Breve resumen pasivo extraído de P3.
+2. "diagnostico_kinesiologico_narrativo": Redactar en UN SOLO BLOQUE de texto, siguiendo EXACTAMENTE esta lógica de plantilla (reemplaza corchetes con datos o elimínalos si no aplican):
+   "[Nombre / edad / sexo si existen], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, usar 'posible alteración estructural de ...']. A nivel funcional presenta alteraciones funcionales de [agregar TODAS las alteraciones funcionales relevantes]. Lo anterior limita [agregar TODAS las limitaciones de actividad relevantes, con severidad]. Restringiendo su participación en [agregar restricciones de participación relevantes, con severidad]. Presenta como factores personales positivos [...], como factores personales negativos [...], como facilitadores ambientales [...], y como barreras ambientales [...]."
+3. "objetivo_general": Proponer 2 a 3 opciones bajo la estructura: [Verbo] + [problema macro] + para + [participación].
+4. "objetivos_smart": Generar de 4 a 6 metas clínicamente necesarias. Estructura: [verbo] + [variable base] + [basal si existe] + [meta] + [plazo]. Cada uno debe vincularse a una variable concreta del caso.
+5. "pronostico_biopsicosocial": Pronóstico objetivo (corto y mediano plazo), eligiendo la "categoria" dictada por el esquema, y brindando una "justificacion_clinica_integral" honesta, no voluntarista.
+6. "pilares_intervencion": Sugerir pilares priorizados (ej. educación, ejercicio terapéutico, manejo de carga).
+7. "plan_maestro": Redactar la narrativa editable de desarrollo de intervención (primeras sesiones, progresión, alertas).
+8. "reglas_reevaluacion": Dictar el signo comparable principal, variables de seguimiento, frecuencia sugerida, y criterios reales de mejora vs estancamiento/derivación.
+
+REGLAS DE CALIDAD CLÍNICA:
+- NO clasificar de nuevo el caso. Usa la clasificación existente en P3 pasivamente.
+- Los SMART deben ser medibles.
+- El pronóstico no debe ser ingenuo.
+- Si es P4 Premium, enfócate en máxima elegancia narrativa y jerarquía clínica SIN inventar datos ni cambiar hallazgos de P3.
   `,
 
   PLAN: `
