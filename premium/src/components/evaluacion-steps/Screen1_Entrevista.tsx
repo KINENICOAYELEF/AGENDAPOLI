@@ -246,6 +246,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 updateV4({
                     jsonExtractError: false,
+                    jsonExtractErrorMsg: undefined,
                     p1_ai_structured: aiData,
                     focos: updatedFocos
                 } as any);
@@ -254,7 +255,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 
             } else {
                 console.error("Error from AI Synthesis:", data);
-                updateV4({ jsonExtractError: true } as any);
+                updateV4({ 
+                    jsonExtractError: true, 
+                    jsonExtractErrorMsg: data.errDetails || data.error || "Fallo desconocido de la IA (Timeout o filtro seguro)." 
+                } as any);
             }
         } catch (err: any) {
             console.error("Fetch error:", err);
@@ -1855,11 +1859,16 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     {/* FASE 14 UX Simple Error Fallback */}
                     {interviewV4.jsonExtractError && (
                         <div className="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-xl">
-                            <div className="flex items-center gap-3">
-                                <span className="text-xl">⚠️</span>
+                            <div className="flex items-start gap-3">
+                                <span className="text-xl shrink-0 leading-none mt-1">⚠️</span>
                                 <div className="flex flex-col flex-1">
                                     <h4 className="font-bold text-rose-800 text-sm">No se pudo procesar la síntesis clínica en este intento.</h4>
                                     <p className="text-[12px] text-rose-600">Tu relato está guardado y no se ha borrado. Reintenta.</p>
+                                    {(interviewV4 as any).jsonExtractErrorMsg && (
+                                        <div className="mt-2 text-[10px] p-2 bg-rose-100/50 rounded text-rose-900 border border-rose-200 break-words font-mono">
+                                            Detalle Técnico: {(interviewV4 as any).jsonExtractErrorMsg}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

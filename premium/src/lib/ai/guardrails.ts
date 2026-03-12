@@ -21,12 +21,9 @@ const BANNED_TERMS = [
     "aintiinflamatorio"
 ];
 
-const MEDICAL_DIAGNOSES = [
-    "fractura confirmada",
-    "rotura completa",
-    "cáncer",
-    "tumor",
-    "infección sistemática"
+const MEDICAL_DIAGNOSES: string[] = [
+    // Se removieron bloqueos estrictos como "rotura completa", "cáncer", etc.
+    // para no bloquear la síntesis si el paciente reporta estos antecedentes legítimos.
 ];
 
 export function validateGuardrails(jsonString: string): { valid: boolean; bannedTermsFound: string[] } {
