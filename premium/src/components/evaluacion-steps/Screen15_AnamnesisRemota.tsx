@@ -19,10 +19,14 @@ const Tooltip = ({ title, content }: { title: string, content: React.ReactNode }
                 ?
             </button>
             {isOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-[120%] mb-2 w-64 bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-xl border border-slate-700 z-50 animate-in fade-in zoom-in duration-200">
-                    <div className="flex justify-between items-start border-b border-slate-600 pb-1 mb-1">
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[280px] sm:w-[320px] bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-2xl border border-slate-700 z-[99999] animate-in fade-in zoom-in duration-200"
+                     style={{
+                         filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.3))'
+                     }}
+                >
+                    <div className="flex justify-between items-start border-b border-slate-600 pb-1 mb-2">
                         <h4 className="font-bold text-indigo-300">{title}</h4>
-                        <button type="button" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white text-[10px] px-1">✕</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} className="text-slate-400 hover:text-white text-[10px] w-5 h-5 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded-full transition-colors">✕</button>
                     </div>
                     <div className="text-[11px] leading-relaxed text-slate-200 space-y-1">{content}</div>
                     <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 border-4 border-transparent border-t-slate-800"></div>
@@ -511,7 +515,7 @@ export function Screen15_AnamnesisRemota({
             </div>
 
             {/* SECCION 2: MSK Y DEPORTIVO PREVIO */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg">🦴</div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center">
@@ -575,7 +579,7 @@ export function Screen15_AnamnesisRemota({
             </div>
 
             {/* SECCION 3: DEPORTE Y CARGA BASAL */}
-            <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm">
                 <details className="group" open>
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-emerald-50/30 transition-colors">
                         <div className="flex items-center gap-3">
@@ -663,7 +667,7 @@ export function Screen15_AnamnesisRemota({
             </div>
 
             {/* SECCION 4: OCUPACION Y CONTEXTO */}
-            <div className="bg-white rounded-2xl border border-sky-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
+            <div className="bg-white rounded-2xl border border-sky-100 shadow-sm group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-sky-50/50 border-b border-sky-100 p-4 sm:p-5 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">💼</div>
                     <h3 className="text-sm font-bold text-sky-950 uppercase tracking-widest flex items-center">
@@ -804,7 +808,7 @@ export function Screen15_AnamnesisRemota({
             </div>
 
             {/* SECCION 5: BPS Y FACTORES PROTECTORES */}
-            <div className="bg-white rounded-2xl border border-amber-200/60 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-amber-200/60 shadow-sm">
                 <details className="group" open>
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-amber-50/30 transition-colors">
                         <div className="flex items-center gap-3">
@@ -983,7 +987,7 @@ export function Screen15_AnamnesisRemota({
             </div>
 
             {/* SECCION 6: NOTAS BASALES */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
                 <details className="group" open>
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-slate-50 transition-colors">
                         <div className="flex items-center gap-3">
