@@ -7,16 +7,30 @@ import { RemoteHistory, PersonaUsuaria } from "@/types/personaUsuaria";
 import { BaseEvaluacion } from "@/types/clinica";
 import { buildBasalSynthesis, buildP15Structured, buildP15Flags } from "@/utils/remoteHistoryFormatter";
 
-const Tooltip = ({ title, content }: { title: string, content: React.ReactNode }) => (
-    <div className="relative group flex items-center">
-        <button type="button" className="ml-2 w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center text-[10px] font-bold hover:bg-indigo-100 hover:text-indigo-700 hover:border-indigo-200 transition-colors shadow-sm focus:outline-none">?</button>
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[120%] mb-2 hidden group-hover:block w-64 bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-xl border border-slate-700 z-50 animate-in fade-in zoom-in duration-200">
-            <h4 className="font-bold text-indigo-300 mb-1 border-b border-slate-600 pb-1">{title}</h4>
-            <div className="text-[11px] leading-relaxed text-slate-200 space-y-1">{content}</div>
-            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 border-4 border-transparent border-t-slate-800"></div>
+const Tooltip = ({ title, content }: { title: string, content: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="relative group flex items-center">
+            <button 
+                type="button" 
+                onClick={() => setIsOpen(!isOpen)}
+                className={`ml-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors shadow-sm focus:outline-none ${isOpen ? 'bg-indigo-600 text-white border-transparent' : 'bg-slate-100 border border-slate-200 text-slate-500 hover:bg-indigo-100 hover:text-indigo-700 hover:border-indigo-200'}`}
+            >
+                ?
+            </button>
+            {isOpen && (
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[120%] mb-2 w-64 bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-xl border border-slate-700 z-50 animate-in fade-in zoom-in duration-200">
+                    <div className="flex justify-between items-start border-b border-slate-600 pb-1 mb-1">
+                        <h4 className="font-bold text-indigo-300">{title}</h4>
+                        <button type="button" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white text-[10px] px-1">✕</button>
+                    </div>
+                    <div className="text-[11px] leading-relaxed text-slate-200 space-y-1">{content}</div>
+                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 border-4 border-transparent border-t-slate-800"></div>
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 const INITIAL_REMOTE_HISTORY: RemoteHistory = {
     medicalHistory: {
@@ -330,13 +344,12 @@ export function Screen15_AnamnesisRemota({
     };
 
     const updateNested = (category: keyof RemoteHistory, field: string, value: any) => {
-        handleChange({
-            ...history,
-            [category]: {
-                ...(history[category] as any),
-                [field]: value
-            }
-        });
+        const updatedCategory = {
+            ...(history[category] as any),
+            [field]: value
+        };
+        const newHistory = { ...history, [category]: updatedCategory };
+        handleChange(newHistory);
     };
 
     if (loading) {
