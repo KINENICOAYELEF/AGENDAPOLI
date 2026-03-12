@@ -78,7 +78,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
     // Implementar AbortController para evitar hangs infinitos en Vercel
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos máximo por llamada individual (evita 504 global de Vercel)
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 segundos máximo por llamada individual (evita 504 global de Vercel)
 
     try {
         const response = await fetch(url, {
@@ -113,7 +113,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
     } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
-             console.error(`[TIMEOUT] callGemini superó el límite de tiempo (45s) para el modelo ${activeModel}`);
+             console.error(`[TIMEOUT] callGemini superó el límite de tiempo (55s) para el modelo ${activeModel}`);
              throw new Error(`Timeout: El modelo ${activeModel} tardó demasiado en responder.`);
         }
         console.error('Error in callGemini fetch:', error);

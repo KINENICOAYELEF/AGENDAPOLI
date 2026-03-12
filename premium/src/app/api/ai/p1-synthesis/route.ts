@@ -21,6 +21,8 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 2. PREGUNTAS FALTANTES: 3 a 5 preguntas concretas orientadas a afinar hipótesis, seguridad, pronóstico o examen físico. 'por_que_importa' debe explicar qué hipótesis ayuda a discriminar (ej: episodios de falla real vs miedo a la falla).
 3. RECOMENDACIONES P2: Tienes rol de Tutor Clínico. Las recomendaciones para P2 deben ser específicas al caso, útiles para docencia clínica y orientadas a discriminar hipótesis. Evita frases genéricas ("evaluar marcha"). Indica qué buscar, qué hallazgos apoyan y qué hallazgos debilitan TODAS las hipótesis orientativas, y qué pruebas o tareas concretas conviene usar.
 4. PRIORIDAD P2: 'alta' = discrimina conducta/hipótesis. 'media' = útil. 'baja' = solo si aparecen hallazgos extras. Ej: en lesiones traumáticas el ROM, fuerza y pruebas dirigidas son casi siempre de alta prioridad versus palpación pura.
+5. SÉ EXTREMADAMENTE BREVE. Para cada campo de hallazgos, usa máximo 15 palabras.
+6. PROHIBIDO USAR las siguientes palabras bajo cualquier contexto: "farmaco", "fármaco", "medicamento", "medicación", "tens", "ultrasonido", "pastilla", "ibuprofeno", "paracetamol", "electroterapia". Usa el término "tratamiento conservador" si es necesario.
 
 TU SALIDA DEBE SER EXCLUSIVAMENTE UN JSON VÁLIDO. 
 
@@ -237,7 +239,8 @@ ${sanitizedPayload}
         // MENSAJE DE ERROR FINAL SOLICITADO
         return NextResponse.json({
             success: false,
-            error: "No se pudo procesar la síntesis clínica en este intento. Tu relato está guardado y no se ha borrado. Reintenta."
+            error: "No se pudo procesar la síntesis clínica en este intento. Tu relato está guardado y no se ha borrado. Reintenta.",
+            errDetails: error?.message || String(error)
         }, { status: 500 });
     }
 }
