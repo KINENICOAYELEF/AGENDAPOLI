@@ -221,7 +221,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Queja / Dolor</p>
-                        <p className="text-sm font-medium text-slate-700 truncate" title={queja}>
+                        <p className="text-sm font-medium text-slate-700" title={queja}>
                             {queja !== "No definida" ? queja : <span className="text-orange-500 font-normal">No registrado...</span>}
                         </p>
                     </div>
@@ -380,6 +380,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col gap-6 bg-white">
+                    {renderRecomendacionIA(recomendaciones?.observacion_movimiento_inicial)}
                     {irritabilidad === "Alta" && (
                         <div className="bg-red-50 border border-red-100 text-red-800 text-xs p-3 rounded-lg flex items-center gap-2 font-medium">
                             <span className="text-lg">⚠️</span> Prefiere observación inicial para no sobre-provocar dolor.
@@ -555,6 +556,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 <div className="p-4 bg-slate-50 flex flex-col gap-4">
+                    {renderRecomendacionIA(recomendaciones?.rango_movimiento_analitico)}
                     {(!exam.romAnaliticoConfig?.filas || exam.romAnaliticoConfig.filas.length === 0) && (
                         <div className="p-8 text-center bg-white border-2 border-dashed border-indigo-100 rounded-xl text-indigo-400 italic font-medium text-sm">
                             No hay movimientos ingresados. Presiona "+ Añadir Movimiento" para comenzar.
@@ -934,6 +936,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 )}
 
                 <div className="p-4 sm:p-5 flex flex-col gap-4 bg-slate-50/50">
+                    {renderRecomendacionIA(recomendaciones?.fuerza_tolerancia_carga)}
                     {/* Controles de Lado Global */}
                     <div className="flex flex-col gap-3">
                         {(!exam.fuerzaCargaConfig?.filas || exam.fuerzaCargaConfig.filas.length === 0) ? (
@@ -1313,6 +1316,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 <div className="p-4 grid grid-cols-1 gap-4 bg-slate-50/50">
+                    {renderRecomendacionIA(recomendaciones?.palpacion)}
                     {(!exam.palpacionConfig?.filas || exam.palpacionConfig.filas.length === 0) && (
                         <div className="p-8 text-center text-slate-400 italic font-medium text-sm rounded-xl border border-dashed border-slate-200 bg-white">
                             Bloque vacío. Presiona "+ Añadir Hallazgo" para documentar.
@@ -2542,7 +2546,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'B' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.observacion_movimiento_inicial)}
                                         <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                             <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">👀</span> B. Evaluación Observacional</p>
                                             <p className="text-xs text-indigo-600 mt-1">Observación basal estricta de la conducta motora.</p>
@@ -2556,7 +2559,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'C' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.rango_movimiento_analitico)}
                                         <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                                             <p className="font-bold text-emerald-800 flex items-center gap-2"><span className="text-lg">📐</span> C. Rango de Movimiento (ROM)</p>
                                             <p className="text-xs text-emerald-600 mt-1">Testeo analítico de la capacidad articular y deducción de hipótesis mecánicas.</p>
@@ -2571,7 +2573,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 {openHelp === 'D' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.fuerza_tolerancia_carga)}
                                         <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                                             <p className="font-bold text-indigo-800 flex items-center gap-2"><span className="text-lg">🦾</span> D. Fuerza y Tolerancia a Carga</p>
                                             <p className="text-xs text-indigo-600 mt-1">Valoración analítica de la capacidad contráctil del tejido.</p>
@@ -2585,7 +2586,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'E' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.palpacion)}
                                         <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                                             <p className="font-bold text-amber-800 flex items-center gap-2"><span className="text-lg">🦴</span> E. Evaluación Articular Específica</p>
                                             <p className="text-xs text-amber-600 mt-1">Palpación estructural focal y juego articular (Accessory motions).</p>
@@ -2600,7 +2600,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'F' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.neuro_vascular_somatosensorial)}
                                         <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
                                             <p className="font-bold text-rose-800 flex items-center gap-2"><span className="text-lg">🧠</span> F. Examen Neuro / Sensitivo / Neural</p>
                                             <p className="text-xs text-rose-600 mt-1">Descarte o confirmación de involucro del Sistema Nervioso Periférico.</p>
@@ -2614,7 +2613,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'G' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.control_motor_sensoriomotor)}
                                         <div className="p-3 bg-teal-50 rounded-lg border border-teal-200">
                                             <p className="font-bold text-teal-800 flex items-center gap-2"><span className="text-lg">⚖️</span> G. Control Motor y Biomecánica</p>
                                             <p className="text-xs text-teal-600 mt-1">Observación cualitativa de estrategias de movimiento.</p>
@@ -2627,7 +2625,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'H' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.pruebas_ortopedicas_dirigidas)}
                                         <div className="p-3 bg-sky-50 rounded-lg border border-sky-200 mb-3">
                                             <p className="font-bold text-sky-800 flex items-center gap-2"><span className="text-lg">⚖️</span> H. Pruebas Ortopédicas Dirigidas</p>
                                             <p className="text-xs text-sky-600 mt-1">Úsalas solo si aportan algo después de la entrevista y del resto del examen físico.</p>
@@ -2642,7 +2639,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 )}
                                 {openHelp === 'I' && (
                                     <>
-                                        {renderRecomendacionIA(recomendaciones?.pruebas_funcionales_reintegro)}
                                         <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                                             <p className="font-bold text-orange-800 flex items-center gap-2"><span className="text-lg">🏃</span> I. Functional & Performance Tests</p>
                                             <p className="text-xs text-orange-600 mt-1">Métricas objetivas para cuantificar alta o rendimiento.</p>

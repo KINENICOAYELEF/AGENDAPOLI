@@ -3,6 +3,8 @@ import { executeAIAction } from '@/lib/ai/geminiClient';
 import { P1SynthesisSchema } from '@/lib/ai/schemas';
 import { generateSHA256 } from '@/lib/ai/hash';
 
+export const maxDuration = 60; // Evitar timeout en Vercel (Hobby 10s -> 60s si Pro o límite superior)
+
 // 1. SISTEMA PROMPT (Corto, claro y enfocado en JSON)
 const SYSTEM_PROMPT_P1_SYNTHESIS = `
 [RESTRICCIÓN ABSOLUTA Y OBLIGATORIA]
