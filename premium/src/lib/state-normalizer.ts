@@ -232,3 +232,62 @@ export function buildCompactPhysicalForAI(normalized: NormalizedCase) {
 
     return compactPath;
 }
+
+// FASE 22: NEW DETERMINISTIC COMPACT CASE PACKAGE ASSEMBLER FOR P3/P4
+export function buildCompactCasePackage(formData: any) {
+    const pat = formData.paciente || {};
+    const p1_struct = formData.interview?.v4?.p1_ai_structured || {};
+    const p15_struct = formData.remoteHistorySnapshot?.p15_context_structured || {};
+    const p15_flags = formData.remoteHistorySnapshot?.p15_context_flags || {};
+    const p2_struct = formData.guidedExam?.autoSynthesis || {};
+
+    // Filter P1 Core to prevent sending massive hypotheses
+    const p1_core = {
+        motivo_consulta_breve: p1_struct.motivo_consulta_breve || "",
+        objetivo_expectativa_breve: p1_struct.objetivo_expectativa_breve || "",
+        resumen_clinico_breve: p1_struct.resumen_clinico_breve || "",
+        alicia_core: p1_struct.alicia_core || {},
+        sins_core: p1_struct.sins_core || {},
+        foco_principal: p1_struct.foco_principal || {},
+        hipotesis_titulos: (p1_struct.hipotesis_orientativas || []).map((h: any) => h.titulo),
+        factores_contextuales: p1_struct.factores_contextuales || {
+            banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: []
+        }
+    };
+
+    const p15_core = {
+        modificadores_clinicos: p15_struct.modificadores_clinicos || [],
+        antecedentes_relevantes: [
+            ...(p15_struct.antecedentes_msk?.lesiones_previas || []),
+            ...(p15_struct.antecedentes_msk?.cirugias_previas || []),
+            ...(p15_struct.factores_biologicos_relevantes?.comorbilidades_relevantes || [])
+        ],
+        deporte_contexto_breve: p15_struct.deporte_actividad_basal?.actividad_deporte_central || "",
+        ocupacion_contexto_breve: p15_struct.contexto_ocupacional?.ocupacion_principal || "",
+        hogar_contexto_breve: p15_struct.contexto_domiciliario?.vive_con || "",
+        factores_personales_positivos: p15_flags.factores_personales_positivos || [],
+        factores_personales_negativos: p15_flags.factores_personales_negativos || [],
+        facilitadores: p15_flags.facilitadores_ambientales || [],
+        barreras: p15_flags.barreras_ambientales || []
+    };
+
+    const p2_core = {
+        tarea_indice: formData.guidedExam?.retestGesture || "",
+        modulos_con_hallazgo: p2_struct.modulos_con_hallazgo || [],
+        hallazgos_clave: p2_struct.hallazgos_clave || [],
+        hipotesis_tracking: formData.guidedExam?.hipotesis_tracking || [],
+        retest_resumen: p2_struct.retest_resumen || "",
+        summary_text: p2_struct.summary_text || ""
+    };
+
+    return {
+        demographics: {
+            nombre: pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido",
+            edad: pat.edad || "Desconocida",
+            sexo: pat.sexoBiomecanico || "Desconocido"
+        },
+        p1_core,
+        p15_core,
+        p2_core
+    };
+}

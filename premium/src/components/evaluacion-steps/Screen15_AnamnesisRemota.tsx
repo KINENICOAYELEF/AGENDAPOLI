@@ -482,7 +482,7 @@ export function Screen15_AnamnesisRemota({
                         1. Historial Médico Clínico
                         <Tooltip 
                             title="Qué registrar aquí" 
-                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿Hay alguna enfermedad, cirugía o tratamiento que hoy condicione tu ejercicio, recuperación o dolor actual?"</p><p className="text-rose-300">Evite rellenar condiciones irrelevantes. Solo lo que cambie la evaluación, seguridad o pronóstico kinésico.</p></>} 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿Hay alguna enfermedad, cirugía o tratamiento que hoy condicione tu ejercicio, recuperación o dolor actual?"</p><p className="text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-100 mt-2"><b>Enfoque:</b> Evite rellenar condiciones irrelevantes. Solo lo que cambie la evaluación, seguridad o pronóstico kinésico.</p></>} 
                         />
                     </h3>
                 </div>
@@ -556,7 +556,7 @@ export function Screen15_AnamnesisRemota({
                         2. Antecedentes Musculoesqueléticos Previos
                         <Tooltip 
                             title="Qué registrar aquí" 
-                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿De tus lesiones pasadas, alguna requirió kine larga, cirugía o dejó alguna limitación / dolor crónico?"</p><p className="text-indigo-300">Enfoque: Regiones problemáticas constantes, secuelas actuales, y tratamientos explícitamente útiles o inútiles en el pasado.</p></>} 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿De tus lesiones pasadas, alguna requirió kine larga, cirugía o dejó alguna limitación / dolor crónico?"</p><p className="text-indigo-700 bg-indigo-50 p-2 rounded-lg border border-indigo-100 mt-2"><b>Enfoque:</b> Regiones problemáticas constantes, secuelas actuales, y tratamientos explícitamente útiles o inútiles en el pasado.</p></>} 
                         />
                     </h3>
                 </div>
@@ -622,7 +622,7 @@ export function Screen15_AnamnesisRemota({
                                 3. Actividad Física Habitual y Carga Basal
                                 <Tooltip 
                                     title="Qué registrar aquí" 
-                                    content={<><p className="mb-2"><b>Pregunta sugerida:</b> "En una semana típica actual o de la que vienes, ¿qué tipo de actividad o ejercicio haces?"</p><p className="text-emerald-300">Enfoque: Deporte principal, nivel de impacto, frecuencia exacta y meta base (recreacional vs competencia).</p></>} 
+                                    content={<><p className="mb-2"><b>Pregunta sugerida:</b> "En una semana típica actual o de la que vienes, ¿qué tipo de actividad o ejercicio haces?"</p><p className="text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-100 mt-2"><b>Enfoque:</b> Deporte principal, nivel de impacto, frecuencia exacta y meta base (recreacional vs competencia).</p></>} 
                                 />
                             </h3>
                         </div>
@@ -708,7 +708,7 @@ export function Screen15_AnamnesisRemota({
                         4. Contexto Ocupacional y Demandas Físicas
                         <Tooltip 
                             title="Qué registrar aquí" 
-                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿En qué trabajas o estudias principalmente, y cómo es tu jornada de carga física allí?"</p><p className="text-sky-300">Enfoque: Posturas prolongadas, esfuerzo físico que se suma al deportivo, turnos desgastantes y limitantes de tiempo o logística para el tratamiento.</p></>} 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿En qué trabajas o estudias principalmente, y cómo es tu jornada de carga física allí?"</p><p className="text-sky-700 bg-sky-50 p-2 rounded-lg border border-sky-100 mt-2"><b>Enfoque:</b> Posturas prolongadas, esfuerzo físico que se suma al deportivo, turnos desgastantes y limitantes de tiempo o logística para el tratamiento.</p></>} 
                         />
                     </h3>
                 </div>

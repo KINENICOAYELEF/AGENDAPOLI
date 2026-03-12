@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
-import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI, buildCompactContextForAI } from "@/lib/state-normalizer";
+import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI, buildCompactContextForAI, buildCompactCasePackage } from "@/lib/state-normalizer";
 import { useAuth } from "@/context/AuthContext";
 
 export interface Screen3Props {
@@ -51,21 +51,10 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
         setAiError(null);
         try {
             // COMPARTA Y ENSAMBLA ESTRICTAMENTE LOS DATASETS ESTRUCTURADOS (P1, P1.5, P2) EN COMPACT_CASE_PACKAGE
-            const p1_struct = formData.interview?.v4?.p1_ai_structured || {};
-            const p15_struct = formData.remoteHistorySnapshot?.p15_context_structured || {};
-            const p15_flags = formData.remoteHistorySnapshot?.p15_context_flags || {};
-            const p2_struct = (formData.guidedExam as any)?.autoSynthesis || {};
-            const pat = (formData as any).paciente || {};
-
+            const compactedCase = buildCompactCasePackage(formData);
+            
             const payloadForAI = {
-                demographics: {
-                    nombre: pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido",
-                    edad: pat.edad || "Desconocida",
-                    sexo: pat.sexoBiomecanico || "Desconocido"
-                },
-                p1_core: p1_struct,
-                p15_core: { ...p15_struct, ...p15_flags },
-                p2_core: p2_struct,
+                ...compactedCase,
                 semaforo_seguridad_sugerido: engine.safety.level
             };
 

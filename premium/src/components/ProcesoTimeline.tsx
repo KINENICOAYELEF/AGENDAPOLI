@@ -229,14 +229,19 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                     {item.date.toLocaleDateString()} {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <p className="text-xs font-bold text-slate-800 line-clamp-2">
-                                                {isEval
-                                                    ? (item.data as Evaluacion).type === 'INITIAL'
-                                                        ? (item.data as any).geminiDiagnostic?.narrativeDiagnosis || (item.data as any).geminiDiagnostic?.kinesiologicalDxNarrative || 'Diagnóstico no finalizado'
-                                                        : (item.data as any).reevaluation?.progressSummary || 'Reevaluación en progreso'
-                                                    : (item.data as Evolucion).sessionGoal || 'Sesión sin objetivo'
-                                                }
-                                            </p>
+                                            <div className="flex justify-between items-start gap-2">
+                                                <p className="text-xs font-bold text-slate-800 line-clamp-2 flex-1">
+                                                    {isEval
+                                                        ? (item.data as Evaluacion).type === 'INITIAL'
+                                                            ? (item.data as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (item.data as any).geminiDiagnostic?.narrativeDiagnosis || (item.data as any).geminiDiagnostic?.kinesiologicalDxNarrative || 'Diagnóstico no finalizado'
+                                                            : (item.data as any).reevaluation?.progressSummary || 'Reevaluación en progreso'
+                                                        : (item.data as Evolucion).sessionGoal || 'Sesión sin objetivo'
+                                                    }
+                                                </p>
+                                                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md mb-2 shrink-0 flex items-center gap-1">
+                                                    ✏️ Editar
+                                                </span>
+                                            </div>
 
                                             {(!isEval && (item.data as Evolucion).sessionStatus) && (
                                                 <div className="mt-2 text-[10px] font-medium text-slate-500 flex items-center gap-1">

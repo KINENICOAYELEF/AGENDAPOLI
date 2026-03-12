@@ -561,6 +561,14 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         }
     };
 
+    const handleTabChange = (targetScreenId: number) => {
+        if (!isClosed) {
+            handleSave(false).catch(e => console.error("Error auto-saving on tab change", e));
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setScreen(targetScreenId);
+    };
+
     const SCREENS = type === 'INITIAL' ? [
         { id: 1, label: 'P1: Entrevista', icon: '🗣️' },
         { id: 15, label: 'P1.5: Anam. Remota', icon: '📇' },
@@ -658,7 +666,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         {SCREENS.map(s => (
                             <button
                                 key={s.id}
-                                onClick={() => setScreen(s.id)}
+                                onClick={() => handleTabChange(s.id)}
                                 className={`flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-[11px] md:text-xs font-bold transition-all border whitespace-nowrap ${screen === s.id
                                     ? 'bg-indigo-600 text-white border-indigo-700 shadow-[0_2px_10px_-2px_rgba(79,70,229,0.5)]'
                                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'

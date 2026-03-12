@@ -215,14 +215,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Foco / Lado</p>
                         <p className="text-sm font-medium text-slate-700">
-                            {focoPrincipal ? `Foco ${Math.max(1, (v4?.focos?.findIndex(f => f?.id === (normalizedCase?.focoPrincipal as any)?.id || f?.id === (normalizedCase?.focoPrincipal as any)?.focoId) || 0) + 1)}` : <span className="text-orange-500 font-normal">No registrado...</span>}
+                            {focoPrincipal ? `Foco ${Math.max(1, (v4?.focos?.findIndex(f => f?.id === (normalizedCase?.focoPrincipal as any)?.id || f?.id === (normalizedCase?.focoPrincipal as any)?.focoId) || 0) + 1)}` : <span className="text-slate-400 font-normal italic">No registrado</span>}
                             {lado && lado !== "No definido" ? ` • ${lado}` : ''}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Queja / Dolor</p>
                         <p className="text-sm font-medium text-slate-700" title={queja}>
-                            {queja !== "No definida" ? queja : <span className="text-orange-500 font-normal">No registrado...</span>}
+                            {queja !== "No definida" && queja !== "NoDefinido" ? queja : <span className="text-slate-400 font-normal italic">No registrado</span>}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
@@ -231,7 +231,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             {irritabilidad === "Alta" && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
                             {irritabilidad === "Media" && <span className="w-2 h-2 rounded-full bg-yellow-500"></span>}
                             {irritabilidad === "Baja" && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
-                            {irritabilidad !== "No definida" ? irritabilidad : <span className="text-orange-500 font-normal">No registrado...</span>}
+                            {irritabilidad !== "No definida" && irritabilidad !== "NoDefinido" ? irritabilidad : <span className="text-slate-400 font-normal italic">No registrado</span>}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
@@ -252,7 +252,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             type="text"
                             className="w-full bg-indigo-50/50 border border-indigo-100 shadow-sm text-indigo-700 text-sm font-medium rounded-xl p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
                             placeholder="Ej. sentadilla, levantar brazo, cambio de dirección..."
-                            value={exam.signoComparable || actividadIndiceP1 || formData.interview?.v4?.focos?.find((f: any) => f.esPrincipal)?.signoComparable || ''}
+                            value={exam.signoComparable !== undefined ? exam.signoComparable : (actividadIndiceP1 || formData.interview?.v4?.focos?.find((f: any) => f.esPrincipal)?.signoComparable || '')}
                             onChange={(e) => handleUpdateExam('signoComparable', e.target.value)}
                             disabled={isClosed}
                         />
