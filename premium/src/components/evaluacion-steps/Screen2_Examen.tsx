@@ -17,11 +17,12 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     // 1. STATE NORMALIZATION
     const normalizedCase = normalizeEvaluationState(formData);
     
-    // Fallbacks para UI Legacy
-    const focoPrincipal = normalizedCase.focoPrincipal;
-    const lado = normalizedCase.ladoPrincipal;
-    const queja = normalizedCase.quejaPrioritaria;
-    const irritabilidad = normalizedCase.irritabilidad;
+    // Fallbacks para UI Legacy (Prioritizando IA P1)
+    const p1AI = (formData.interview as any)?.p1_ai_structured || (formData.interview as any)?.v4?.p1_ai_structured;
+    const focoPrincipal = p1AI?.foco_principal?.region ? { ...normalizedCase.focoPrincipal, region: p1AI.foco_principal.region } : normalizedCase.focoPrincipal;
+    const lado = p1AI?.foco_principal?.lado || normalizedCase.ladoPrincipal;
+    const queja = p1AI?.foco_principal?.queja_prioritaria || normalizedCase.quejaPrioritaria;
+    const irritabilidad = p1AI?.sins?.irritabilidad_global?.split(' ')[0] || normalizedCase.irritabilidad; // ej "Alta (fácil de provocar)" -> "Alta"
 
     const v4 = formData.interview?.v4;
     const alertasActivas = [

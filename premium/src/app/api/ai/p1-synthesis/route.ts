@@ -71,7 +71,7 @@ function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any) {
         antiguedadInicio: dolor.antiguedadInicio || "",
         mecanismoInicio: dolor.mecanismoInicio || "",
         contextoFuncional: dolor.contextoFuncional || "",
-        seguridad: (interviewV4.seguridadYExclusion || []).filter((s:any)=> s.aplica),
+        seguridad: interviewV4.seguridad || {},
         banderasAmarillas: (interviewV4.banderasAmarillas || []).filter((b:any)=> b.aplica),
         // Si hay historia remota, traer lo mas corto posible
         antecedentesBasales: remoteHistorySnapshot ? 
