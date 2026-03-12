@@ -2,6 +2,7 @@ import React from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { autoSynthesizeFindings } from "@/lib/auto-engine";
 import { normalizeEvaluationState } from "@/lib/state-normalizer";
+import { buildP2SummaryStructured } from "@/utils/synthesis/builder";
 
 export interface Screen2Props {
     formData: Partial<EvaluacionInicial>;
@@ -57,6 +58,47 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     const [isSynthesizing, setIsSynthesizing] = React.useState(false);
     const [synthesisSuccess, setSynthesisSuccess] = React.useState(false);
     const [localPreview, setLocalPreview] = React.useState<any>(null);
+
+    // FASE 20: Panel de Hipótesis y Estado
+    const [hipotesisTracking, setHipotesisTracking] = React.useState<any[]>(() => {
+        // Inicializar desde formData.guidedExam.hipotesis_tracking si existe (persistencia local)
+        if (exam.hipotesis_tracking && Array.isArray(exam.hipotesis_tracking) && exam.hipotesis_tracking.length > 0) {
+            return exam.hipotesis_tracking;
+        }
+        
+        // Si no existe, construir desde p1_ai_structured
+        const interviewData = formData.interview as any;
+        const p1Hipotesis = interviewData?.p1_ai_structured?.hipotesis_orientativas;
+        
+        if (p1Hipotesis && Array.isArray(p1Hipotesis)) {
+            return p1Hipotesis.map((h: any, index: number) => ({
+                ranking: index + 1,
+                titulo: h.titulo || h.nombre || `Hipótesis ${index + 1}`,
+                probabilidad: h.probabilidad || 'Moderada',
+                fundamento_breve: h.fundamento_breve || h.explicacion || '',
+                que_hay_que_confirmar: h.que_hay_que_confirmar || [],
+                que_hay_que_descartar: h.que_hay_que_descartar || [],
+                estado_en_p2: 'pendiente', // Por defecto
+                comentario_corto: ''
+            }));
+        }
+        
+        return [];
+    });
+
+    const updateHipotesisTracking = (index: number, changes: any) => {
+        setHipotesisTracking(prev => {
+            const newTracking = [...prev];
+            newTracking[index] = { ...newTracking[index], ...changes };
+            
+            // Auto-guardar en el formData al cambiar
+            updateFormData((current) => ({
+                guidedExam: { ...current.guidedExam, hipotesis_tracking: newTracking }
+            }));
+            
+            return newTracking;
+        });
+    };
 
     const handleUpdateExam = (field: string, value: any) => {
         updateFormData((prev) => ({
@@ -155,6 +197,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="lg:col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 relative">
+                            Tarea o gesto índice para re-test
+                            <span className="text-[10px] text-indigo-500 font-normal absolute right-0 top-0 hidden sm:inline">(Se conectará con el final de P2)</span>
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full bg-indigo-50/50 border border-indigo-100 shadow-sm text-indigo-700 text-sm font-medium rounded-xl p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                            placeholder="Ej. sentadilla, levantar brazo, cambio de dirección..."
+                            value={exam.signoComparable || formData.interview?.v4?.focos?.find(f => f.esPrincipal)?.signoComparable || ''}
+                            onChange={(e) => handleUpdateExam('signoComparable', e.target.value)}
+                            disabled={isClosed}
+                        />
+                    </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                             Modalidad de examen hoy
@@ -170,22 +226,98 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <option value="Muy acotado por seguridad/tolerancia">Muy acotado por seguridad/tolerancia</option>
                         </select>
                     </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 relative">
-                            Tarea o gesto índice para re-test
-                            <span className="text-[10px] text-indigo-500 font-normal absolute right-0 top-0 hidden sm:inline">(Se conectará con el final de P2)</span>
-                        </label>
-                        <input
-                            type="text"
-                            className="w-full bg-white border border-indigo-200 shadow-sm text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                            placeholder="Ej. sentadilla, levantar brazo, cambio de dirección..."
-                            value={exam.retestGesture || ''}
-                            onChange={(e) => handleUpdateExam('retestGesture', e.target.value)}
-                            disabled={isClosed}
-                        />
+                </div>
+
+                {/* FASE 20: Preguntas Faltantes Clave (Solo Lectura) */}
+                {(formData.interview as any)?.p1_ai_structured?.preguntas_faltantes?.length > 0 && (
+                    <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-100 mt-2">
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1"><span>❓</span> Preguntas Faltantes Clave (P1)</p>
+                        <ul className="text-xs text-amber-800 space-y-1.5 pl-4 list-disc">
+                            {(formData.interview as any).p1_ai_structured.preguntas_faltantes.map((q: any, i: number) => (
+                                <li key={i}><strong>{q.tema_faltante}:</strong> {q.como_preguntarlo} <span className="text-amber-600/70 italic">({q.por_que_importa})</span></li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </div>
+
+            {/* FASE 20: PANEL DE HIPÓTESIS Y ESTADO */}
+            {hipotesisTracking.length > 0 && (
+                <div className="bg-white rounded-2xl border border-indigo-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-indigo-50 border-b border-indigo-100 p-4 sm:p-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-200 text-indigo-800 flex items-center justify-center font-bold text-lg">🎯</div>
+                        <div>
+                            <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-widest flex items-center">
+                                Hipótesis de trabajo a contrastar en P2
+                            </h3>
+                            <p className="text-xs text-indigo-600 mt-1">Evalúa físicamente para confirmar o descartar estas sospechas de P1.</p>
+                        </div>
+                    </div>
+                    <div className="p-4 sm:p-5 bg-white space-y-4">
+                        {hipotesisTracking.map((hip, idx) => (
+                            <div key={idx} className="flex flex-col md:flex-row gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center shrink-0">{hip.ranking}</span>
+                                        <span className="font-bold text-slate-800 text-sm">{hip.titulo}</span>
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-600">{hip.probabilidad}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 mb-2">{hip.fundamento_breve}</p>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                        {hip.que_hay_que_confirmar?.length > 0 && (
+                                            <div className="bg-emerald-50/50 p-2 rounded border border-emerald-100">
+                                                <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">A Confirmar</p>
+                                                <ul className="text-[11px] text-emerald-800 pl-3 list-disc space-y-0.5">
+                                                    {hip.que_hay_que_confirmar.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {hip.que_hay_que_descartar?.length > 0 && (
+                                            <div className="bg-rose-50/50 p-2 rounded border border-rose-100">
+                                                <p className="text-[10px] font-bold text-rose-700 uppercase mb-1">A Descartar</p>
+                                                <ul className="text-[11px] text-rose-800 pl-3 list-disc space-y-0.5">
+                                                    {hip.que_hay_que_descartar.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="md:w-64 shrink-0 flex flex-col gap-2">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Estado en P2</label>
+                                    <select 
+                                        value={hip.estado_en_p2}
+                                        onChange={(e) => updateHipotesisTracking(idx, { estado_en_p2: e.target.value })}
+                                        disabled={isClosed}
+                                        className={`w-full text-xs font-medium py-2 px-3 rounded-lg border outline-none ${
+                                            hip.estado_en_p2 === 'gana_fuerza' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                                            hip.estado_en_p2 === 'pierde_fuerza' ? 'bg-orange-50 border-orange-200 text-orange-800' :
+                                            hip.estado_en_p2 === 'descartada' ? 'bg-rose-50 border-rose-200 text-rose-800' :
+                                            hip.estado_en_p2 === 'se_mantiene' ? 'bg-sky-50 border-sky-200 text-sky-800' :
+                                            'bg-slate-50 border-slate-200 text-slate-600'
+                                        }`}
+                                    >
+                                        <option value="pendiente">Pendiente de evaluación</option>
+                                        <option value="se_mantiene">Se mantiene (Neutral)</option>
+                                        <option value="gana_fuerza">Gana fuerza / Confirmada</option>
+                                        <option value="pierde_fuerza">Pierde fuerza</option>
+                                        <option value="descartada">Descartada Clínicamente</option>
+                                    </select>
+                                    
+                                    <input 
+                                        type="text"
+                                        placeholder="Comentario breve..."
+                                        value={hip.comentario_corto}
+                                        onChange={(e) => updateHipotesisTracking(idx, { comentario_corto: e.target.value })}
+                                        disabled={isClosed}
+                                        className="w-full text-xs py-2 px-3 rounded-lg border border-slate-200 focus:border-indigo-400 outline-none"
+                                    />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* B. BLOQUE ESTRUCTURADO OBSERVACIÓN Y MOVIMIENTO INICIAL */}
             <div className="bg-white border text-sm border-slate-200 rounded-2xl shadow-sm flex flex-col transition-shadow hover:shadow-md">
@@ -426,18 +558,6 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         };
 
                         const chipsDisponibles = ['Completo sin dolor', 'Completo doloroso', 'Limitado sin dolor', 'Limitado doloroso', 'Rígido', 'Temeroso', 'Arco doloroso', 'Compensa', 'No evaluado'];
-                        const isAxial = ['Cervical', 'Torácica', 'Lumbar', 'Pelvis/SI', 'ATM'].includes(fila.region);
-                        // MIGRACIÓN LÓGICA VUELO
-                        if (fila.lado === 'Derecho' || fila.lado === 'Izquierdo' || fila.lado === 'Unilateral Derecho' || fila.lado === 'Unilateral Izquierdo') {
-                            fila.ladoEspecifico = fila.lado.replace('Unilateral ', '');
-                            fila.lado = 'Unilateral';
-                        }
-                        if (fila.lado === 'Bilateral') {
-                            fila.lado = 'Bilateral comparativo';
-                        }
-
-                        const isBilateral = fila.lado === 'Bilateral comparativo' && !isAxial;
-                        const isUnilateral = fila.lado === 'Unilateral' && !isAxial;
 
                         const renderFields = (sideLabel: string = '') => {
                             const ext = sideLabel ? (sideLabel === 'DER' ? 'Der' : 'Izq') : '';
@@ -545,20 +665,12 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                         </select>
 
                                         <select className="w-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.lado} onChange={(e) => handleFilaChange('lado', e.target.value)} disabled={isClosed}>
-                                            {isAxial ? (
-                                                <><option value="Axial">Segmento Axial</option><option value="Derecho">Rotación/Inclinación Der.</option><option value="Izquierdo">Rotación/Inclinación Izq.</option></>
-                                            ) : (
-                                                <><option value="Unilateral">Unilateral</option>
-                                                    <option value="Bilateral comparativo">Bilateral comparativo</option></>
-                                            )}
+                                            <option value="">-- Lado --</option>
+                                            <option value="Derecho">Derecho</option>
+                                            <option value="Izquierdo">Izquierdo</option>
+                                            <option value="Bilateral">Bilateral comparativo</option>
+                                            <option value="Axial">N/A (Axial/Central)</option>
                                         </select>
-
-                                        {!isAxial && fila.lado === 'Unilateral' && (
-                                            <select className="w-full text-xs font-medium bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.ladoEspecifico || 'Derecho'} onChange={(e) => handleFilaChange('ladoEspecifico', e.target.value)} disabled={isClosed}>
-                                                <option value="Derecho">Derecho</option>
-                                                <option value="Izquierdo">Izquierdo</option>
-                                            </select>
-                                        )}
 
                                         <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.movimiento} onChange={(e) => handleFilaChange('movimiento', e.target.value)} disabled={isClosed}>
                                             <option value="">-- Movimiento --</option>
@@ -584,18 +696,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                     {/* Inputs de Resultados */}
                                     <div className="md:col-span-8 flex flex-col gap-3 justify-center">
-                                        {isBilateral ? (
+                                        {fila.lado === 'Bilateral' ? (
                                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                                 {renderFields('DER')}
                                                 {renderFields('IZQ')}
                                             </div>
-                                        ) : isUnilateral ? (
-                                            <div>
-                                                {renderFields(fila.ladoEspecifico === 'Izquierdo' ? 'IZQ' : 'DER')}
-                                            </div>
                                         ) : (
                                             <div>
-                                                {renderFields()}
+                                                {renderFields(fila.lado === 'Izquierdo' ? 'IZQ' : (fila.lado === 'Derecho' ? 'DER' : ''))}
                                             </div>
                                         )}
 
@@ -1172,65 +1280,69 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         };
                         return (
                             <div key={fila.id} className="bg-white border text-sm rounded-xl border-amber-100 hover:border-amber-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
-                                {/* Encabezado Tarjeta en Móvil */}
-                                <div className="bg-amber-50/50 p-3 border-b border-amber-100 flex flex-wrap items-center gap-2 justify-between">
-                                    <div className="flex flex-wrap items-center gap-2 flex-1 relative">
+                                {/* Encabezado Tarjeta */}
+                                <div className="bg-amber-50/50 p-2 sm:p-3 border-b border-amber-100 flex items-start justify-between">
+                                    <div className="flex-1 pr-8">
                                         <input
-                                            className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1 outline-none flex-1 min-w-[140px] focus:border-amber-400"
+                                            className="w-full text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1.5 outline-none focus:border-amber-400"
                                             value={fila.estructura || ''}
                                             onChange={e => handleChange('estructura', e.target.value)}
                                             disabled={isClosed}
-                                            placeholder="Estructura anatómica"
+                                            placeholder="Estructura anatómica (Ej. LCI, tendón rotuliano)"
                                         />
-                                        <select className="text-xs bg-white border border-slate-200 text-slate-600 font-bold rounded px-2 py-1 outline-none focus:border-amber-400 text-ellipsis"
-                                            value={fila.lado || 'Derecho'}
-                                            onChange={e => handleChange('lado', e.target.value)}
-                                            disabled={isClosed}
-                                        >
-                                            <option value="">Lado</option>
-                                            <option value="Derecho">Derecho</option>
-                                            <option value="Izquierdo">Izquierdo</option>
-                                            <option value="Bilateral">Bilateral</option>
-                                            <option value="N/A">N/A</option>
-                                        </select>
-
-                                        <button
-                                            onClick={() => {
-                                                const m = exam.palpacionConfig.filas.filter((_: any, index: number) => index !== i);
-                                                handleUpdateExam('palpacionConfig', { filas: m });
-                                            }}
-                                            disabled={isClosed}
-                                            className="w-6 h-6 rounded bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
-                                            title="Eliminar fila"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
                                     </div>
+                                    <button
+                                        onClick={() => {
+                                            const m = exam.palpacionConfig.filas.filter((_: any, index: number) => index !== i);
+                                            handleUpdateExam('palpacionConfig', { filas: m });
+                                        }}
+                                        disabled={isClosed}
+                                        className="w-7 h-7 shrink-0 rounded bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-2 top-2"
+                                        title="Eliminar fila"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </div>
-                                {/* Cuerpo Tarjeta */}
-                                <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[10px] uppercase font-bold text-slate-400">Hallazgo Principal</label>
-                                        <select className="w-full text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
-                                            value={fila.hallazgoPrincipal || ''}
-                                            onChange={e => handleChange('hallazgoPrincipal', e.target.value)}
-                                            disabled={isClosed}
-                                        >
-                                            <option value="">-- Seleccionar Hallazgo --</option>
-                                            <option value="Sensibilidad puntual">Sensibilidad puntual exquisita</option>
-                                            <option value="Tensión muscular">Tensión/espasmo muscular</option>
-                                            <option value="Punto gatillo">Punto gatillo activo</option>
-                                            <option value="Aumento Tº">Aumento Tº local</option>
-                                            <option value="Derrame aparente">Derrame articular aparente</option>
-                                            <option value="Derrame confirmado">Derrame articular confirmado</option>
-                                            <option value="Crepitación">Crepitación con movimiento</option>
-                                            <option value="Brecha/Gap">Brecha (gap) estructural</option>
-                                            <option value="Sin hallazgos">Sin hallazgos claros</option>
-                                            <option value="Otro">Otro hallazgo</option>
-                                        </select>
+                                {/* Cuerpo Tarjeta - Grid 2 Columnas Movil */}
+                                <div className="p-3 bg-white">
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase font-bold text-slate-400">Hallazgo Principal</label>
+                                            <select className="w-full text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
+                                                value={fila.hallazgoPrincipal || ''}
+                                                onChange={e => handleChange('hallazgoPrincipal', e.target.value)}
+                                                disabled={isClosed}
+                                            >
+                                                <option value="">-- Seleccionar Hallazgo --</option>
+                                                <option value="Sensibilidad puntual">Sensibilidad puntual exquisita</option>
+                                                <option value="Tensión muscular">Tensión/espasmo muscular</option>
+                                                <option value="Punto gatillo">Punto gatillo activo</option>
+                                                <option value="Aumento Tº">Aumento Tº local</option>
+                                                <option value="Derrame aparente">Derrame articular aparente</option>
+                                                <option value="Derrame confirmado">Derrame articular confirmado</option>
+                                                <option value="Crepitación">Crepitación con movimiento</option>
+                                                <option value="Brecha/Gap">Brecha (gap) estructural</option>
+                                                <option value="Sin hallazgos">Sin hallazgos claros</option>
+                                                <option value="Otro">Otro hallazgo</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase font-bold text-slate-400">Lado</label>
+                                            <select className="w-full text-xs font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
+                                                value={fila.lado || 'Derecho'}
+                                                onChange={e => handleChange('lado', e.target.value)}
+                                                disabled={isClosed}
+                                            >
+                                                <option value="">-- Lado --</option>
+                                                <option value="Derecho">Derecho</option>
+                                                <option value="Izquierdo">Izquierdo</option>
+                                                <option value="Bilateral">Bilateral</option>
+                                                <option value="N/A">N/A (Axial/Centro)</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <div className="flex-1 min-w-[50px]">
+                                    <div className="flex flex-wrap sm:grid sm:grid-cols-3 gap-3">
+                                        <div className="flex-1 min-w-[70px] flex flex-col gap-1">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Dolor EVA</label>
                                             <input
                                                 type="number"
@@ -1243,7 +1355,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 disabled={isClosed}
                                             />
                                         </div>
-                                        <div className="flex-1 min-w-[60px]">
+                                        <div className="flex-1 min-w-[80px] flex flex-col gap-1">
                                             <label className="text-[10px] uppercase font-bold text-slate-400">Edema</label>
                                             <select className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
                                                 value={fila.edema || 'Normal'}
@@ -1256,8 +1368,8 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                 <option value="Intenso">Intenso</option>
                                             </select>
                                         </div>
-                                        <div className="flex-1 min-w-[60px]">
-                                            <label className="text-[10px] uppercase font-bold text-slate-400">Temp.</label>
+                                        <div className="flex-1 min-w-[80px] flex flex-col gap-1">
+                                            <label className="text-[10px] uppercase font-bold text-slate-400">Temperatura</label>
                                             <select className="w-full text-[11px] font-bold bg-slate-50 border border-slate-200 text-slate-700 rounded p-2 outline-none focus:bg-white focus:border-amber-400 text-ellipsis"
                                                 value={fila.temperatura || 'Normal'}
                                                 onChange={e => handleChange('temperatura', e.target.value)}
@@ -1488,37 +1600,51 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                 return (
                                     <div key={fila.id} className="bg-white border text-sm rounded-xl border-teal-100 hover:border-teal-300 transition-colors shadow-sm overflow-hidden flex flex-col group relative">
                                         {/* Header */}
-                                        <div className="bg-teal-50/50 p-3 border-b border-teal-100 flex flex-wrap items-center gap-2 justify-between">
-                                            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 flex-1 relative pr-8">
+                                        <div className="bg-teal-50/50 p-2 sm:p-3 border-b border-teal-100 flex items-start justify-between">
+                                            <div className="flex-1 pr-8">
                                                 <input
-                                                    className="text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1.5 outline-none w-full sm:w-[180px] focus:border-teal-400"
-                                                    value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Región/Tarea (Ej. Y-Balance)"
+                                                    className="w-full text-sm font-bold bg-white border border-slate-200 text-slate-800 rounded px-2 py-1.5 outline-none focus:border-teal-400 mb-2"
+                                                    value={fila.regionTarea || ''} onChange={e => handleChange('regionTarea', e.target.value)} disabled={isClosed} placeholder="Región o Tarea Específica (Ej. Y-Balance, Salto Bipodal)"
                                                 />
-                                                <select
-                                                    className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 flex-1 min-w-[100px]"
-                                                    value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}
-                                                >
-                                                    <option value="">Tipo de tarea...</option>
-                                                    <option value="Control segmentario local">Control segmentario local</option>
-                                                    <option value="Control lumbopélvico">Control lumbopélvico</option>
-                                                    <option value="Control escapular">Control escapular</option>
-                                                    <option value="Balance / postura">Balance / postura</option>
-                                                    <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
-                                                    <option value="Control unipodal">Control unipodal</option>
-                                                    <option value="Control del gesto específico">Control del gesto específico</option>
-                                                    <option value="Otro">Otro/No listado</option>
-                                                </select>
-                                                <button
-                                                    onClick={() => {
-                                                        const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
-                                                        handleUpdateExam('controlMotorConfig', { filas: m });
-                                                    }}
-                                                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-0 top-0 bottom-0 my-auto"
-                                                    disabled={isClosed} title="Eliminar fila"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <select
+                                                        className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 min-w-[120px]"
+                                                        value={fila.tipoTarea || ''} onChange={e => handleChange('tipoTarea', e.target.value)} disabled={isClosed}
+                                                    >
+                                                        <option value="">-- Familia de tarea --</option>
+                                                        <option value="Control segmentario local">Control segmentario local</option>
+                                                        <option value="Control lumbopélvico">Control lumbopélvico</option>
+                                                        <option value="Control escapular">Control escapular</option>
+                                                        <option value="Balance / postura">Balance / postura</option>
+                                                        <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
+                                                        <option value="Control unipodal">Control unipodal</option>
+                                                        <option value="Gesto deportivo">Gesto deportivo específico</option>
+                                                        <option value="Otro">Otro...</option>
+                                                    </select>
+                                                    
+                                                    {['Control unipodal', 'Control segmentario local', 'Control escapular', 'Desaceleración / aterrizaje'].includes(fila.tipoTarea) && (
+                                                        <select
+                                                            className="text-xs font-bold bg-white border border-slate-200 text-slate-600 rounded px-2 py-1.5 outline-none focus:border-teal-400 min-w-[100px]"
+                                                            value={fila.ladoMotor || ''} onChange={e => handleChange('ladoMotor', e.target.value)} disabled={isClosed}
+                                                        >
+                                                            <option value="">Lado apoyado/activo</option>
+                                                            <option value="Derecho">Derecho</option>
+                                                            <option value="Izquierdo">Izquierdo</option>
+                                                            <option value="Bilateral">Ambos/Bilateral</option>
+                                                        </select>
+                                                    )}
+                                                </div>
                                             </div>
+                                            <button
+                                                onClick={() => {
+                                                    const m = exam.controlMotorConfig.filas.filter((_: any, index: number) => index !== i);
+                                                    handleUpdateExam('controlMotorConfig', { filas: m });
+                                                }}
+                                                className="w-7 h-7 shrink-0 rounded bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 absolute right-2 top-2"
+                                                disabled={isClosed} title="Eliminar fila"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
                                         </div>
                                         {/* Grid Detalles */}
                                         <div className="p-3 bg-white grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -2271,57 +2397,50 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             const examCopy = JSON.parse(JSON.stringify(exam));
                             const interviewCopy = JSON.parse(JSON.stringify(formData.interview || {}));
 
-                            const synthesis = autoSynthesizeFindings(examCopy, interviewCopy);
-                            const pSyn = synthesis.physicalSynthesis;
+                                const hasFindings = examCopy && (
+                                    (examCopy.romAnaliticoConfig?.filas?.length > 0) ||
+                                    (examCopy.fuerzaMrc?.length > 0) ||
+                                    (examCopy.palpacionConfig?.filas?.length > 0) ||
+                                    (examCopy.controlMotorConfig?.filas?.length > 0) ||
+                                    (examCopy.pruebasOrtopedicas?.length > 0) ||
+                                    (examCopy.neurologico?.fuerzaMiotomas?.length > 0) ||
+                                    (examCopy.retestConfig?.tareaIndice && examCopy.retestConfig?.estadoActual) ||
+                                    (examCopy.observacion?.postura || examCopy.observacion?.marcha)
+                                );
 
-                            // Validación de Mínimos Razonables flexible (solo bloquea si todo está vacío)
-                            const hasFindings = pSyn && (
-                                (pSyn.mobility && pSyn.mobility.length > 0) ||
-                                (pSyn.strength_load && pSyn.strength_load.length > 0) ||
-                                (pSyn.neurovascular_sensorimotor && pSyn.neurovascular_sensorimotor.some((s: string) => !s.includes('sin hallazgos'))) ||
-                                (pSyn.motor_control && pSyn.motor_control.length > 0) ||
-                                (pSyn.orthopedic_tests && pSyn.orthopedic_tests.length > 0) ||
-                                (pSyn.functional_tests && pSyn.functional_tests.length > 0) ||
-                                (pSyn.observation && pSyn.observation.length > 0) ||
-                                (examCopy.ortopedicasConfig?.sintesisFinal && examCopy.ortopedicasConfig?.sintesisFinal.trim() !== '') ||
-                                (examCopy.retestConfig?.comentario && examCopy.retestConfig?.comentario.trim() !== '') ||
-                                (pSyn.complementary_measures && pSyn.complementary_measures.length > 0)
-                            );
+                                if (!hasFindings) {
+                                    alert('Faltan mínimos para sintetizar, pero tu examen no fue modificado. Registra al menos un hallazgo clínico útil (ROM, Palpación, etc).');
+                                    setIsSynthesizing(false);
+                                    return;
+                                }
 
-                            const indexTaskP1 = (pSyn?.frame?.tarea_indice || '').trim();
-                            const indexTaskA = (examCopy.retestGesture || '').trim();
-                            const indexTaskJ = (examCopy.retestConfig?.tareaIndice || '').trim();
-                            const hasIndexTask = indexTaskP1.length > 0 || indexTaskA.length > 0 || indexTaskJ.length > 0;
+                                const p2_summary_structured = buildP2SummaryStructured(examCopy);
 
-                            if (!hasFindings) {
-                                alert('Faltan mínimos para sintetizar, pero tu examen no fue modificado. Registra al menos un hallazgo útil.');
+                                // Actualizar SIN borrar lo existente, asegurando inmutabilidad en top-level
+                                updateFormData((prev) => {
+                                    const newState = {
+                                        ...prev,
+                                        guidedExam: {
+                                            ...(prev.guidedExam || {}),
+                                            autoSynthesis: p2_summary_structured
+                                        }
+                                    };
+                                    return newState;
+                                });
+
+                                setLocalPreview(p2_summary_structured);
+
+                                setTimeout(() => {
+                                    setIsSynthesizing(false);
+                                    setSynthesisSuccess(true);
+                                    if (onNext) onNext();
+                                }, 1200);
+                            } catch (error) {
+                                console.error("Error al sintetizar localmente:", error);
+                                alert("Hubo un error al generar la síntesis. El examen original no se ha modificado.");
                                 setIsSynthesizing(false);
-                                return;
+                                setSynthesisSuccess(false);
                             }
-
-                            // Actualizar SIN borrar lo existente, asegurando inmutabilidad en top-level
-                            updateFormData((prev) => {
-                                const newState = {
-                                    ...prev,
-                                    autoSynthesis: { ...(prev.autoSynthesis || {}), ...synthesis }
-                                };
-                                return newState;
-                            });
-
-                            setLocalPreview(pSyn);
-
-                            setTimeout(() => {
-                                setIsSynthesizing(false);
-                                setSynthesisSuccess(true);
-                                if (onNext) onNext();
-                            }, 1200);
-                        } catch (error) {
-                            console.error("Error al sintetizar:", error);
-                            alert("Hubo un error al generar la síntesis. El examen original no se ha modificado.");
-                            // updateFormData((prev) => ({ ...prev, ...snapshotOriginal })); // Optional rollback if we mutated, but here we operated on copy
-                            setIsSynthesizing(false);
-                            setSynthesisSuccess(false);
-                        }
                     }}
                     disabled={isClosed || isSynthesizing || synthesisSuccess}
                     className={`font-bold py-3.5 px-8 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group w-full sm:w-auto ${synthesisSuccess
