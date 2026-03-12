@@ -203,8 +203,10 @@ const P2ModuleRecommendationSchema = z.object({
     por_que_aporta_en_este_caso: z.string(),
     que_descarta: z.string(),
     que_confirma: z.string(),
-    hallazgo_que_apoya_hipotesis_principal: z.string(),
-    hallazgo_que_debilita_hipotesis_principal: z.string(),
+    hallazgo_que_apoya_hipotesis_principal: z.string().optional(),
+    hallazgo_que_debilita_hipotesis_principal: z.string().optional(),
+    hallazgos_para_confirmar: z.string().optional(),
+    hallazgos_para_descartar: z.string().optional(),
     pruebas_o_tareas_sugeridas: z.array(z.string()),
     prioridad: z.string()
 });

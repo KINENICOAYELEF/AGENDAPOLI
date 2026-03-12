@@ -19,7 +19,7 @@ NO DEBES:
 REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 1. HIPÓTESIS: 3 distintas (principal, asociada/funcional, diferencial menos probable). Títulos clínicos específicos (evita vaguedades). El fundamento debe aterrizar al mecanismo.
 2. PREGUNTAS FALTANTES: 3 a 5 preguntas concretas orientadas a afinar hipótesis, seguridad, pronóstico o examen físico. 'por_que_importa' debe explicar qué hipótesis ayuda a discriminar (ej: episodios de falla real vs miedo a la falla).
-3. RECOMENDACIONES P2: Tienes rol de Tutor Clínico. Las recomendaciones para P2 deben ser específicas al caso, útiles para docencia clínica y orientadas a discriminar hipótesis. Evita frases genéricas ("evaluar marcha"). Indica qué buscar, qué hallazgo apoya o debilita la hipótesis principal y qué pruebas o tareas concretas conviene usar.
+3. RECOMENDACIONES P2: Tienes rol de Tutor Clínico. Las recomendaciones para P2 deben ser específicas al caso, útiles para docencia clínica y orientadas a discriminar hipótesis. Evita frases genéricas ("evaluar marcha"). Indica qué buscar, qué hallazgos apoyan y qué hallazgos debilitan TODAS las hipótesis orientativas, y qué pruebas o tareas concretas conviene usar.
 4. PRIORIDAD P2: 'alta' = discrimina conducta/hipótesis. 'media' = útil. 'baja' = solo si aparecen hallazgos extras. Ej: en lesiones traumáticas el ROM, fuerza y pruebas dirigidas son casi siempre de alta prioridad versus palpación pura.
 
 TU SALIDA DEBE SER EXCLUSIVAMENTE UN JSON VÁLIDO. 
@@ -34,14 +34,14 @@ ESTRUCTURA EXACTA JSON:
   "hipotesis_orientativas": [ { "ranking": 1, "titulo": "string", "probabilidad": "mas_probable|probable_alternativa|menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" }, { "ranking": 2, "titulo": "string", "probabilidad": "probable_alternativa", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" }, { "ranking": 3, "titulo": "string", "probabilidad": "menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" } ],
   "preguntas_faltantes": [ { "pregunta": "string", "por_que_importa": "string", "prioridad": "alta|media" } ],
   "recomendaciones_p2_por_modulo": {
-    "observacion_movimiento_inicial": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "rango_movimiento_analitico": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "fuerza_tolerancia_carga": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "palpacion": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "neuro_vascular_somatosensorial": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "control_motor_sensoriomotor": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "pruebas_ortopedicas_dirigidas": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "pruebas_funcionales_reintegro": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_que_apoya_hipotesis_principal": "string", "hallazgo_que_debilita_hipotesis_principal": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" }
+    "observacion_movimiento_inicial": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "rango_movimiento_analitico": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "fuerza_tolerancia_carga": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "palpacion": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "neuro_vascular_somatosensorial": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "control_motor_sensoriomotor": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "pruebas_ortopedicas_dirigidas": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
+    "pruebas_funcionales_reintegro": { "objetivo": "string", "por_que_aporta_en_este_caso": "string", "que_descarta": "string", "que_confirma": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" }
   },
   "factores_contextuales_clave": { "banderas_rojas": ["string"], "banderas_amarillas": ["string"], "facilitadores": ["string"], "barreras": ["string"] }
 }
@@ -110,6 +110,8 @@ function hydrateP2Module(mod: any) {
         que_confirma: mod?.que_confirma || "",
         hallazgo_que_apoya_hipotesis_principal: mod?.hallazgo_que_apoya_hipotesis_principal || "",
         hallazgo_que_debilita_hipotesis_principal: mod?.hallazgo_que_debilita_hipotesis_principal || "",
+        hallazgos_para_confirmar: mod?.hallazgos_para_confirmar || "",
+        hallazgos_para_descartar: mod?.hallazgos_para_descartar || "",
         pruebas_o_tareas_sugeridas: Array.isArray(mod?.pruebas_o_tareas_sugeridas) ? mod.pruebas_o_tareas_sugeridas : [],
         prioridad: mod?.prioridad || ""
     };

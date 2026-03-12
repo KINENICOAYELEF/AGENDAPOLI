@@ -123,16 +123,16 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                        {(recomendacion.que_confirma || recomendacion.hallazgo_que_apoya_hipotesis_principal) && (
+                        {(recomendacion.que_confirma || recomendacion.hallazgos_para_confirmar || recomendacion.hallazgo_que_apoya_hipotesis_principal) && (
                             <div className="bg-white/60 p-2 rounded-lg border border-amber-100/50">
                                 <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">A Confirmar</p>
-                                <p className="text-[11px] text-emerald-900 leading-snug">{recomendacion.que_confirma || recomendacion.hallazgo_que_apoya_hipotesis_principal}</p>
+                                <p className="text-[11px] text-emerald-900 leading-snug">{recomendacion.que_confirma || recomendacion.hallazgos_para_confirmar || recomendacion.hallazgo_que_apoya_hipotesis_principal}</p>
                             </div>
                         )}
-                        {(recomendacion.que_descarta || recomendacion.hallazgo_que_debilita_hipotesis_principal) && (
+                        {(recomendacion.que_descarta || recomendacion.hallazgos_para_descartar || recomendacion.hallazgo_que_debilita_hipotesis_principal) && (
                             <div className="bg-white/60 p-2 rounded-lg border border-amber-100/50">
                                 <p className="text-[10px] font-bold text-rose-700 uppercase mb-1">A Descartar</p>
-                                <p className="text-[11px] text-rose-900 leading-snug">{recomendacion.que_descarta || recomendacion.hallazgo_que_debilita_hipotesis_principal}</p>
+                                <p className="text-[11px] text-rose-900 leading-snug">{recomendacion.que_descarta || recomendacion.hallazgos_para_descartar || recomendacion.hallazgo_que_debilita_hipotesis_principal}</p>
                             </div>
                         )}
                     </div>
@@ -1509,6 +1509,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                 {isNeuroOpen && (
                     <div className="p-0 flex flex-col gap-0 bg-slate-50">
+                        <div className="p-4 sm:p-5 pb-0 bg-white">
+                            {renderRecomendacionIA(recomendaciones?.neuro_vascular_somatosensorial)}
+                        </div>
                         {/* Screening Rápido */}
                         <div className="p-4 sm:p-5 border-b border-rose-100 bg-white">
                             <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -1625,6 +1628,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <button type="button" onClick={() => setOpenHelp('G')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-teal-200 bg-white text-teal-600 font-bold hover:bg-teal-100 transition-colors" title="Ayuda clínica">?</button>
                 </div>
                 <div className="p-4 sm:p-5 flex flex-col gap-4 bg-slate-50/50">
+                    {renderRecomendacionIA(recomendaciones?.control_motor_sensoriomotor)}
                     {(!exam.controlMotorConfig?.filas || exam.controlMotorConfig.filas.length === 0) ? (
                         <div className="p-8 text-center border-2 border-dashed border-teal-200 rounded-xl bg-teal-50/30">
                             <button
@@ -1783,6 +1787,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                 </div>
 
                 <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
+                    {renderRecomendacionIA(recomendaciones?.pruebas_ortopedicas_dirigidas)}
                     {(!exam.ortopedicasConfig?.filas || exam.ortopedicasConfig.filas.length === 0) ? (
                         <div className="p-8 text-center border-2 border-dashed border-sky-200 rounded-xl bg-white">
                             <p className="text-sm font-bold text-sky-800 mb-2">No hay pruebas asociadas</p>
@@ -2023,6 +2028,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                 </div>
                 <div className="p-4 flex flex-col gap-4 bg-slate-50/50">
+                    {renderRecomendacionIA(recomendaciones?.pruebas_funcionales_reintegro)}
                     {(!exam.funcionalesConfig?.filas || exam.funcionalesConfig.filas.length === 0) ? (
                         <div className="p-8 text-center border-2 border-dashed border-orange-200 rounded-xl bg-orange-50/30">
                             <button
