@@ -137,6 +137,30 @@ export function buildCompactInterviewForAI(normalized: NormalizedCase, interview
     };
 }
 
+export function buildCompactContextForAI(remoteHistory: any) {
+    if (!remoteHistory || (!remoteHistory.p15_context_structured && !remoteHistory.p15_context_flags)) {
+        return null;
+    }
+    const struct = remoteHistory.p15_context_structured || {};
+    const flags = remoteHistory.p15_context_flags || {};
+    
+    return {
+        modificadores_clinicos: struct.modificadores_clinicos || [],
+        antecedentes_relevantes: [
+            ...(struct.antecedentes_msk?.lesiones_previas || []),
+            ...(struct.antecedentes_msk?.cirugias_previas || []),
+            ...(struct.factores_biologicos_relevantes?.comorbilidades_relevantes || [])
+        ],
+        deporte_contexto_breve: struct.deporte_actividad_basal?.actividad_deporte_central || '',
+        ocupacion_contexto_breve: struct.contexto_ocupacional?.ocupacion_principal || '',
+        hogar_contexto_breve: struct.contexto_domiciliario?.vive_con || '',
+        factores_personales_positivos: flags.factores_personales_positivos || [],
+        factores_personales_negativos: flags.factores_personales_negativos || [],
+        facilitadores: flags.facilitadores_ambientales || [],
+        barreras: flags.barreras_ambientales || []
+    };
+}
+
 export function buildCompactPhysicalForAI(normalized: NormalizedCase) {
     const p2 = normalized.hallazgosP2 || {};
     const compactPath: any = {

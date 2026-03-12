@@ -5,7 +5,18 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { RemoteHistory, PersonaUsuaria } from "@/types/personaUsuaria";
 import { BaseEvaluacion } from "@/types/clinica";
-import { buildBasalSynthesis } from "@/utils/remoteHistoryFormatter";
+import { buildBasalSynthesis, buildP15Structured, buildP15Flags } from "@/utils/remoteHistoryFormatter";
+
+const Tooltip = ({ title, content }: { title: string, content: React.ReactNode }) => (
+    <div className="relative group flex items-center">
+        <button type="button" className="ml-2 w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center text-[10px] font-bold hover:bg-indigo-100 hover:text-indigo-700 hover:border-indigo-200 transition-colors shadow-sm focus:outline-none">?</button>
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[120%] mb-2 hidden group-hover:block w-64 bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-xl border border-slate-700 z-50 animate-in fade-in zoom-in duration-200">
+            <h4 className="font-bold text-indigo-300 mb-1 border-b border-slate-600 pb-1">{title}</h4>
+            <div className="text-[11px] leading-relaxed text-slate-200 space-y-1">{content}</div>
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 border-4 border-transparent border-t-slate-800"></div>
+        </div>
+    </div>
+);
 
 const INITIAL_REMOTE_HISTORY: RemoteHistory = {
     medicalHistory: {
@@ -274,11 +285,25 @@ export function Screen15_AnamnesisRemota({
                     const data = docSnap.data() as PersonaUsuaria;
                     if (data.remoteHistory) {
                         const mergedHistory = deepMergeWithInitial(data.remoteHistory as any);
-                        const historyConSintesis = { ...mergedHistory, basalSynthesis: buildBasalSynthesis(mergedHistory) };
+                        const struct = buildP15Structured(mergedHistory);
+                        const flags = buildP15Flags(mergedHistory);
+                        const historyConSintesis: RemoteHistory = { 
+                            ...mergedHistory, 
+                            basalSynthesis: buildBasalSynthesis(mergedHistory),
+                            p15_context_structured: struct,
+                            p15_context_flags: flags
+                        };
                         setHistory(historyConSintesis);
                         updateFormData({ remoteHistorySnapshot: historyConSintesis });
                     } else {
-                        const baseConSintesis = { ...history, basalSynthesis: buildBasalSynthesis(history) };
+                        const struct = buildP15Structured(history);
+                        const flags = buildP15Flags(history);
+                        const baseConSintesis: RemoteHistory = { 
+                            ...history, 
+                            basalSynthesis: buildBasalSynthesis(history),
+                            p15_context_structured: struct,
+                            p15_context_flags: flags
+                        };
                         updateFormData({ remoteHistorySnapshot: baseConSintesis });
                     }
                 }
@@ -292,7 +317,14 @@ export function Screen15_AnamnesisRemota({
     }, [globalActiveYear, usuariaId, formData.remoteHistorySnapshot]);
 
     const handleChange = (newHistory: RemoteHistory) => {
-        const historyConSintesis = { ...newHistory, basalSynthesis: buildBasalSynthesis(newHistory) };
+        const struct = buildP15Structured(newHistory);
+        const flags = buildP15Flags(newHistory);
+        const historyConSintesis: RemoteHistory = { 
+            ...newHistory, 
+            basalSynthesis: buildBasalSynthesis(newHistory),
+            p15_context_structured: struct,
+            p15_context_flags: flags
+        };
         setHistory(historyConSintesis);
         updateFormData({ remoteHistorySnapshot: historyConSintesis });
     };
@@ -395,7 +427,13 @@ export function Screen15_AnamnesisRemota({
             <div className="bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-rose-50/50 border-b border-rose-100 p-4 sm:p-5 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-lg">🏥</div>
-                    <h3 className="text-sm font-bold text-rose-950 uppercase tracking-widest">1. Historial Médico Clínico</h3>
+                    <h3 className="text-sm font-bold text-rose-950 uppercase tracking-widest flex items-center">
+                        1. Historial Médico Clínico
+                        <Tooltip 
+                            title="Qué registrar aquí" 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿Hay alguna enfermedad, cirugía o tratamiento que hoy condicione tu ejercicio, recuperación o dolor actual?"</p><p className="text-rose-300">Evite rellenar condiciones irrelevantes. Solo lo que cambie la evaluación, seguridad o pronóstico kinésico.</p></>} 
+                        />
+                    </h3>
                 </div>
                 <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                     <div className="lg:col-span-2">
@@ -463,7 +501,13 @@ export function Screen15_AnamnesisRemota({
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-slate-50 border-b border-slate-200 p-4 sm:p-5 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-lg">🦴</div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">2. Antecedentes Musculoesqueléticos Previos</h3>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center">
+                        2. Antecedentes Musculoesqueléticos Previos
+                        <Tooltip 
+                            title="Qué registrar aquí" 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿De tus lesiones pasadas, alguna requirió kine larga, cirugía o dejó alguna limitación / dolor crónico?"</p><p className="text-indigo-300">Enfoque: Regiones problemáticas constantes, secuelas actuales, y tratamientos explícitamente útiles o inútiles en el pasado.</p></>} 
+                        />
+                    </h3>
                 </div>
                 <div className="p-5 sm:p-6 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
@@ -523,7 +567,13 @@ export function Screen15_AnamnesisRemota({
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-emerald-50/30 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">🏃</div>
-                            <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-widest">3. Actividad Física Habitual y Carga Basal</h3>
+                            <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-widest flex items-center">
+                                3. Actividad Física Habitual y Carga Basal
+                                <Tooltip 
+                                    title="Qué registrar aquí" 
+                                    content={<><p className="mb-2"><b>Pregunta sugerida:</b> "En una semana típica actual o de la que vienes, ¿qué tipo de actividad o ejercicio haces?"</p><p className="text-emerald-300">Enfoque: Deporte principal, nivel de impacto, frecuencia exacta y meta base (recreacional vs competencia).</p></>} 
+                                />
+                            </h3>
                         </div>
                     </summary>
                     <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 border-t border-emerald-50">
@@ -603,7 +653,13 @@ export function Screen15_AnamnesisRemota({
             <div className="bg-white rounded-2xl border border-sky-100 shadow-sm overflow-hidden group hover:shadow-md transition-shadow duration-300">
                 <div className="bg-sky-50/50 border-b border-sky-100 p-4 sm:p-5 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">💼</div>
-                    <h3 className="text-sm font-bold text-sky-950 uppercase tracking-widest">4. Contexto Ocupacional y Demandas Físicas</h3>
+                    <h3 className="text-sm font-bold text-sky-950 uppercase tracking-widest flex items-center">
+                        4. Contexto Ocupacional y Demandas Físicas
+                        <Tooltip 
+                            title="Qué registrar aquí" 
+                            content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿En qué trabajas o estudias principalmente, y cómo es tu jornada de carga física allí?"</p><p className="text-sky-300">Enfoque: Posturas prolongadas, esfuerzo físico que se suma al deportivo, turnos desgastantes y limitantes de tiempo o logística para el tratamiento.</p></>} 
+                        />
+                    </h3>
                 </div>
                 <div className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
@@ -740,7 +796,13 @@ export function Screen15_AnamnesisRemota({
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-amber-50/30 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">🔋</div>
-                            <h3 className="text-sm font-bold text-amber-950 uppercase tracking-widest">5. Terreno Biopsicosocial y Hábitos Basales</h3>
+                            <h3 className="text-sm font-bold text-amber-950 uppercase tracking-widest flex items-center">
+                                5. Terreno Biopsicosocial y Hábitos Basales
+                                <Tooltip 
+                                    title="Qué registrar aquí" 
+                                    content={<><p className="mb-2"><b>Pregunta sugerida:</b> "¿Cómo sientes que estás durmiendo y manejando el estrés o factores que no son netamente físicos?"</p><p className="text-amber-300">Enfoque: Factores que enlentecen la biología (insomnio, mucho estrés), red de apoyo y voluntad histórica. Clave para modular las tareas a dar.</p></>} 
+                                />
+                            </h3>
                         </div>
                     </summary>
                     <div className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 border-t border-amber-50">
@@ -913,7 +975,13 @@ export function Screen15_AnamnesisRemota({
                     <summary className="flex justify-between items-center bg-white p-4 cursor-pointer hover:bg-slate-50 transition-colors">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">📝</div>
-                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">6. Notas Clínicas Basales Relevantes</h3>
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest flex items-center">
+                                6. Notas Clínicas Basales Relevantes
+                                <Tooltip 
+                                    title="Qué registrar aquí" 
+                                    content={<><p className="mb-2">Impresión directiva del equipo sobre el terreno basal y personalidad de la paciente.</p><p className="text-slate-300">Ejemplo: "Paciente muy aprensivo al movimiento pesado, requiere mucha pedagogía antes de actuar".</p></>} 
+                                />
+                            </h3>
                         </div>
                     </summary>
                     <div className="p-5 sm:p-6 border-t border-slate-100">

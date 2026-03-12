@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         const normalizedPayload = normalizePayload({
             compactInterview: payload.compactInterview,
             compactPhysical: payload.compactPhysical,
-            remoteHistorySnapshot: payload.remoteHistorySnapshot,
+            p15_core: payload.p15_core,
             autoTrafficLight: payload.autoTrafficLight
         });
 

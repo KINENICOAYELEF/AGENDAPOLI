@@ -122,6 +122,85 @@ export interface RemoteHistory {
     // FASE 44: Consolidado string para IA P1
     basalSynthesis?: string;
 
+    // FASE 19: Contexto local estructurado P1.5
+    p15_context_structured?: {
+        condiciones_clinicas_relevantes: string[];
+        modificadores_clinicos: string[];
+        antecedentes_msk: {
+            lesiones_previas: string[];
+            cirugias_previas: string[];
+            tratamientos_previos_exitosos: string[];
+            tratamientos_mal_tolerados: string[];
+            secuelas_persistentes: string[];
+            recurrencias: string[];
+            region_historicamente_problematica: string[];
+            dominancia: string;
+            ortesis_plantillas: string[];
+            imagenes_previas_relevantes: string[];
+        };
+        deporte_actividad_basal: {
+            actividad_deporte_central: string;
+            categoria: string;
+            nivel_practica_actual: string;
+            frecuencia_semanal: string;
+            duracion_tipica: string;
+            experiencia_acumulada: string;
+            doble_carga_basal: string;
+            calendario_competitivo_objetivo: string;
+        };
+        contexto_ocupacional: {
+            ocupacion_principal: string;
+            jornada_formato: string;
+            demandas_fisicas_laborales: string[];
+            barreras_logisticas_adherencia: string[];
+            exposicion_trayectos_conduccion: string;
+            contexto_red_apoyo_laboral: string;
+        };
+        contexto_domiciliario: {
+            vive_con: string;
+            red_apoyo_tratamiento: string;
+            personas_a_cargo: string;
+            barreras_hogar_entorno: string[];
+            observacion_contexto_domiciliario: string;
+        };
+        biopsicosocial_habitos: {
+            calidad_sueno: string;
+            horas_promedio_sueno: string;
+            despertares_nocturnos: string;
+            sueno_reparador: string;
+            estres_basal: string;
+            fuente_principal_estres: string;
+            estado_animo_basal: string;
+            adherencia_historica: string;
+            red_apoyo_social_emocional: string;
+            tabaquismo: string;
+            alcohol: string;
+            cafeina: string;
+            patron_dieta_principal: string;
+            hobbies_bienestar: string[];
+            factores_protectores: string[];
+        };
+        factores_biologicos_relevantes: {
+            comorbilidades_relevantes: string[];
+            medicacion_relevante: string[];
+            alergias_relevantes: string[];
+            cirugias_medicas_relevantes: string[];
+            detalle_clinico_relevante: string;
+        };
+        notas_basales: string;
+    };
+
+    p15_context_flags?: {
+        factores_personales_positivos: string[];
+        factores_personales_negativos: string[];
+        facilitadores_ambientales: string[];
+        barreras_ambientales: string[];
+        modificadores_pronostico: string[];
+        modificadores_adherencia: string[];
+        factores_que_modulan_examen: string[];
+        factores_que_modulan_carga: string[];
+    };
+
     // Control
     lastUpdated?: string;
     updatedByClinician?: string;

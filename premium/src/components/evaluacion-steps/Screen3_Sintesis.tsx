@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
-import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI } from "@/lib/state-normalizer";
+import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI, buildCompactContextForAI } from "@/lib/state-normalizer";
 import { useAuth } from "@/context/AuthContext";
 
 export interface Screen3Props {
@@ -54,10 +54,11 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             const normalizedCase = normalizeEvaluationState(formData);
             const compactInterview = buildCompactInterviewForAI(normalizedCase, formData.interview);
             const compactPhysical = buildCompactPhysicalForAI(normalizedCase);
+            const p15_core = buildCompactContextForAI(formData.remoteHistorySnapshot);
 
             const payloadForAI = {
                 compactInterview,
-                remoteHistorySnapshot: formData.remoteHistorySnapshot || null,
+                p15_core,
                 compactPhysical,
                 autoTrafficLight: engine.safety.level
             };
