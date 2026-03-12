@@ -9,27 +9,61 @@ import { buildBasalSynthesis, buildP15Structured, buildP15Flags } from "@/utils/
 
 const Tooltip = ({ title, content }: { title: string, content: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <div className="relative group flex items-center">
+        <div className="relative flex items-center">
             <button 
                 type="button" 
-                onClick={() => setIsOpen(!isOpen)}
-                className={`ml-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors shadow-sm focus:outline-none ${isOpen ? 'bg-indigo-600 text-white border-transparent' : 'bg-slate-100 border border-slate-200 text-slate-500 hover:bg-indigo-100 hover:text-indigo-700 hover:border-indigo-200'}`}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(true); }}
+                className="ml-2 w-[22px] h-[22px] rounded-full flex items-center justify-center text-[11px] font-bold transition-all shadow-sm border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
+                title="Ver guía clínica"
             >
                 ?
             </button>
+            
             {isOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[280px] sm:w-[320px] bg-slate-800 text-slate-50 text-xs rounded-xl p-3 shadow-2xl border border-slate-700 z-[99999] animate-in fade-in zoom-in duration-200"
-                     style={{
-                         filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.3))'
-                     }}
+                <div 
+                    className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(false); }}
                 >
-                    <div className="flex justify-between items-start border-b border-slate-600 pb-1 mb-2">
-                        <h4 className="font-bold text-indigo-300">{title}</h4>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} className="text-slate-400 hover:text-white text-[10px] w-5 h-5 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded-full transition-colors">✕</button>
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 scroll-m-0 overflow-hidden flex flex-col max-h-[85vh] text-left cursor-default" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3 shrink-0">
+                            <div>
+                                <h3 className="font-black text-slate-800 text-xl tracking-tight flex items-center gap-2">💡 Guía Clínica Profesional</h3>
+                                <p className="text-xs text-slate-500 mt-1">Sugerencias basadas en práctica basada en evidencia.</p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(false); }} 
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold shrink-0 focus:outline-none"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div className="text-sm text-slate-600 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="p-3 bg-indigo-50/80 rounded-lg border border-indigo-100">
+                                <p className="font-bold text-indigo-900 flex items-center gap-2"><span className="text-lg">👀</span> {title}</p>
+                            </div>
+                            
+                            <div className="text-[13px] leading-relaxed text-slate-700 pl-1">
+                                {content}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end shrink-0">
+                            <button 
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(false); }}
+                                className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm focus:outline-none"
+                            >
+                                Entendido
+                            </button>
+                        </div>
                     </div>
-                    <div className="text-[11px] leading-relaxed text-slate-200 space-y-1">{content}</div>
-                    <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 border-4 border-transparent border-t-slate-800"></div>
                 </div>
             )}
         </div>
