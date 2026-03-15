@@ -108,13 +108,14 @@ export const P4PlanStructuredSchema = z.object({
         corto_plazo: z.string(),
         mediano_plazo: z.string(),
         categoria: z.enum(["favorable", "favorable con vigilancia", "reservado", "reservado dependiente de adherencia/contexto", "desfavorable", "incierto"]),
-        justificacion_clinica_integral: z.string()
+        justificacion_clinica_integral: z.string(),
+        comparativa_adherencia: z.string().describe("Comparativa entre seguir tratamiento propuesto vs mala adherencia")
     }),
     pilares_intervencion: z.array(z.object({
         titulo: z.string(),
         justificacion: z.string(),
         foco_que_aborda: z.array(z.string())
-    })).describe("Pilares priorizados base (educación, ejercicio, manejo carga)"),
+    })).describe("Pilares priorizados base (educación, ejercicio, manejo carga) y complementos"),
     plan_maestro: z.string().describe("Narrativa editable de desarrollo de intervención"),
     reglas_reevaluacion: z.object({
         signo_comparable_principal: z.string(),

@@ -34,24 +34,24 @@ REGLAS CLÍNICAS:
 
   NARRATIVE: `
 Revisa el "p3_case_organizer" (clasificación CIF), el "compact_case_package" y el "p2_summary_structured" entregados.
-Tu rol es actuar como un Kinesiólogo Experto y generar el Plan Estructurado P4.
+Tu rol es actuar como un Kinesiólogo Experto y generar el Plan Estructurado P4 (que pasa a ser la BASE REAL DEL TRATAMIENTO, no un resumen corto).
 DEBES retornar un JSON estrictamente mapeado al esquema solicitado.
 
-1. "referencia_p3_breve": Breve resumen pasivo extraído de P3.
-2. "diagnostico_kinesiologico_narrativo": Redactar en UN SOLO BLOQUE de texto, siguiendo EXACTAMENTE esta lógica de plantilla (reemplaza corchetes con datos o elimínalos si no aplican):
-   "[Nombre / edad / sexo si existen], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, usar 'posible alteración estructural de ...']. A nivel funcional presenta alteraciones funcionales de [agregar TODAS las alteraciones funcionales relevantes]. Lo anterior limita [agregar TODAS las limitaciones de actividad relevantes, con severidad]. Restringiendo su participación en [agregar restricciones de participación relevantes, con severidad]. Presenta como factores personales positivos [...], como factores personales negativos [...], como facilitadores ambientales [...], y como barreras ambientales [...]."
+1. "referencia_p3_breve": Resumen pasivo claro y robusto para que el clínico entienda la magnitud del caso sin repetir todo P3.
+2. "diagnostico_kinesiologico_narrativo": Redactar en UN SOLO BLOQUE de texto exhaustivo, siguiendo EXACTAMENTE esta lógica de plantilla (reemplaza corchetes con datos o elimínalos si no aplican):
+   "[Nombre / edad / sexo si existen], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, usar 'posible alteración estructural de ...']. A nivel funcional presenta alteraciones funcionales de [agregar TODAS las alteraciones funcionales relevantes sin recortar de más]. Lo anterior limita [agregar TODAS las limitaciones de actividad relevantes, con severidad]. Restringiendo su participación en [agregar restricciones de participación relevantes, con severidad]. Presenta como factores personales positivos [...], como factores personales negativos [...], como facilitadores ambientales [...], y como barreras ambientales [...]."
 3. "objetivo_general": Proponer 2 a 3 opciones bajo la estructura: [Verbo] + [problema macro] + para + [participación].
-4. "objetivos_smart": Generar de 4 a 6 metas clínicamente necesarias. Estructura: [verbo] + [variable base] + [basal si existe] + [meta] + [plazo]. Cada uno debe vincularse a una variable concreta del caso.
-5. "pronostico_biopsicosocial": Pronóstico objetivo (corto y mediano plazo), eligiendo la "categoria" dictada por el esquema, y brindando una "justificacion_clinica_integral" honesta, no voluntarista.
-6. "pilares_intervencion": Sugerir pilares priorizados (ej. educación, ejercicio terapéutico, manejo de carga).
-7. "plan_maestro": Redactar la narrativa editable de desarrollo de intervención (primeras sesiones, progresión, alertas).
-8. "reglas_reevaluacion": Dictar el signo comparable principal, variables de seguimiento, frecuencia sugerida, y criterios reales de mejora vs estancamiento/derivación.
+4. "objetivos_smart": Generar TODOS los que sean clínicamente necesarios (no los limites artificialmente a 2 o 3). Estructura: [verbo] + [variable base] + [basal si existe] + [meta] + [plazo]. Ligar siempre a variables reales del caso (dolor, ROM, fuerza, control motor, función, actividad, confianza, adherencia).
+5. "pronostico_biopsicosocial": Análisis exhaustivo (no vago ni voluntarista). Incluye análisis corto y mediano plazo. Elige la "categoria". En "justificacion_clinica_integral" justifica integrando TODO el contexto, hallazgos, irritabilidad y BPS. En "comparativa_adherencia" compara el escenario siguiendo el tratamiento propuesto versus nula adherencia.
+6. "pilares_intervencion": Base obligatoria SÍ O SÍ: 'Educación', 'Ejercicio Terapéutico', 'Manejo de Carga'. Agrega otros solo si tienen sustento (ej. control motor, exposición gradual, retorno deportivo). Evita falsas terapias. Si usas Terapia Manual, déjala solo como complemento.
+7. "plan_maestro": Redacción extensa, muy útil y docente. DEBE explicar la lógica del proceso usando Fases de Rehabilitación (Fase 1: modulación/protección, Fase 2: recuperación funcional base, Fase 3: desarrollo de capacidad/fuerza, Fase 4: reintegro/prevención). Explica qué se prioriza y por qué sin que suene a receta rígida.
+8. "reglas_reevaluacion": Más interpretativas. Deben tomar signo comparable, variables, frecuencia y criterio exacto de mejora vs estancamiento o derivación.
 
 REGLAS DE CALIDAD CLÍNICA:
 - NO clasificar de nuevo el caso. Usa la clasificación existente en P3 pasivamente.
-- Los SMART deben ser medibles.
-- El pronóstico no debe ser ingenuo.
-- Si es P4 Premium, enfócate en máxima elegancia narrativa y jerarquía clínica SIN inventar datos ni cambiar hallazgos de P3.
+- NO inventar datos que no vengan en los payloads de anamnesis o examen.
+- Implementa enfoques modernos basados en carga, ejercicio y exposición gradual.
+- Si es P4 Premium, enfócate en una narrativa experta, jerarquizada y brillante SIN alterar hechos base.
   `,
 
   PLAN: `

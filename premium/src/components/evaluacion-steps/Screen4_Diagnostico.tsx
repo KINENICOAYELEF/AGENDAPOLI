@@ -73,7 +73,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                 diagnostico_kinesiologico_narrativo: aiData.diagnostico_kinesiologico_narrativo || '',
                 objetivo_general: aiData.objetivo_general || { opciones_sugeridas: [], seleccionado: '' },
                 objetivos_smart: aiData.objetivos_smart || [],
-                pronostico_biopsicosocial: aiData.pronostico_biopsicosocial || { corto_plazo: '', mediano_plazo: '', categoria: '', justificacion_clinica_integral: '' },
+                pronostico_biopsicosocial: aiData.pronostico_biopsicosocial || { corto_plazo: '', mediano_plazo: '', categoria: '', justificacion_clinica_integral: '', comparativa_adherencia: '' },
                 pilares_intervencion: aiData.pilares_intervencion || [],
                 plan_maestro: aiData.plan_maestro || '',
                 reglas_reevaluacion: aiData.reglas_reevaluacion || { signo_comparable_principal: '', variables_seguimiento: [], frecuencia_sugerida: '', criterio_mejora_real: '', criterio_estancamiento_derivacion: '' },
@@ -180,7 +180,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">📜</span> B. Diagnóstico Kinesiológico Narrativo</h3>
                         <p className="text-xs text-slate-500 mb-3">Sigue estrictamente la plantilla lógica estructural solicitada, vinculando dimensiones CIF sin re-clasificar.</p>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[160px] text-sm text-slate-800 outline-none focus:border-emerald-400 focus:bg-white leading-relaxed disabled:opacity-75"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[220px] text-sm text-slate-800 outline-none focus:border-emerald-400 focus:bg-white leading-relaxed disabled:opacity-75"
                             placeholder="[Nombre], consulta por... Presenta alteraciones estructurales a nivel de... A nivel funcional presenta alteraciones de... Lo anterior limita... Restringiendo su participación en... Presenta como factores personales... ambientales..."
                             value={p4_plan_structured.diagnostico_kinesiologico_narrativo || formData.geminiDiagnostic?.narrativeDiagnosis || ''}
                             onChange={(e) => handleUpdateP4({ diagnostico_kinesiologico_narrativo: e.target.value })}
@@ -338,6 +338,12 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                 <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" placeholder="Ej: Basado en severidad actual, adherencia y barreras ambientales..." value={p4_plan_structured.pronostico_biopsicosocial?.justificacion_clinica_integral || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { justificacion_clinica_integral: e.target.value })} disabled={isClosed} />
                             </div>
                         </div>
+                        <div className="grid grid-cols-1 mt-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Comparativa c/ vs s/ Adherencia al Tratamiento</label>
+                                <textarea className="w-full bg-amber-50 border border-amber-200 rounded p-2 text-sm text-amber-900 placeholder:text-amber-700/50 min-h-[60px]" placeholder="Escenario favorable vs desfavorable si abandona..." value={p4_plan_structured.pronostico_biopsicosocial?.comparativa_adherencia || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { comparativa_adherencia: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
                     </div>
 
                     {/* BLOQUE F — PILARES DE INTERVENCIÓN */}
@@ -378,7 +384,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">🗺️</span> G. Plan Maestro (Hoja de Ruta)</h3>
                         <p className="text-xs text-slate-500 mb-3">Narrativa libre que guía las primeras sesiones, progresiones esperadas, criterios de ajuste y alertas.</p>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[140px] text-sm text-slate-800 outline-none focus:border-emerald-400 disabled:opacity-75"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[240px] text-sm text-slate-800 outline-none focus:border-emerald-400 disabled:opacity-75"
                             placeholder="Desarrolla el enfoque, sesiones sugeridas, focos de inicio de cuidado..."
                             value={p4_plan_structured.plan_maestro || ''}
                             onChange={(e) => handleUpdateP4({ plan_maestro: e.target.value })}
