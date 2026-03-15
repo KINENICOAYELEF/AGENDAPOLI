@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { EvaluacionInicial, AnamnesisProximaV4, FocoV4 } from '@/types/clinica';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import { useYear } from "@/context/YearContext";
@@ -220,9 +220,31 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         updateV4({ jsonExtractError: false } as any); // Limpiar error anterior
 
         try {
+            // FASE 24: Enriquecer payload con Expediente y P1.5 actualizados
+            let expedienteData = null;
+            if (formData.usuariaId) {
+                try {
+                    const userDocSnap = await getDoc(doc(db, 'usuarias', formData.usuariaId));
+                    if (userDocSnap.exists()) {
+                        const uData = userDocSnap.data();
+                        expedienteData = {
+                            nombre: uData.identity?.fullName,
+                            edad: uData.identity?.edad,
+                            sexo: uData.identity?.sexoRegistrado,
+                            ocupacion: uData.remoteHistory?.occupationalContext?.mainRole,
+                            p15_context_structured: uData.remoteHistory?.p15_context_structured,
+                            p15_context_flags: uData.remoteHistory?.p15_context_flags
+                        };
+                    }
+                } catch (e) {
+                    console.warn("No se pudo obtener datos extra del expediente para IA", e);
+                }
+            }
+
             const payload = {
                 interviewV4: interviewV4,
-                remoteHistorySnapshot: formData.remoteHistorySnapshot
+                remoteHistorySnapshot: formData.remoteHistorySnapshot,
+                expedienteData: expedienteData
             };
             const response = await fetch('/api/ai/p1-synthesis', {
                 method: 'POST',
@@ -507,45 +529,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     };
 
     // IsRiesgoAlto is parsed inside the components logic section
-    // --- COMPLETITUD (MP4) ---
-    const { reqSec1, reqSec4, reqSec5, reqSec9, reqSec10, reqSec13 } = React.useMemo(() => {
-        const r1: string[] = [];
-        if (!interviewV4.experienciaPersona.prioridadPrincipal) r1.push("Prioridad #1");
-
-        const r4: string[] = [];
-        if (focoPrincipal) {
-            if (!focoPrincipal.inicio || focoPrincipal.inicio === "NoDefinido") r4.push("Inicio");
-            if (!focoPrincipal.antiguedad) r4.push("Antigüedad");
-            if (!focoPrincipal.mecanismoTextoFinal) r4.push("Mecanismo Sugerido");
-        } else {
-            r4.push("Foco");
-        }
-
-        const r5: string[] = [];
-        if (focoPrincipal && focoPrincipal.dolorActual === null) r5.push("Dolor Actual");
-
-        const r9: string[] = [];
-        if (focoPrincipal) {
-            if (!focoPrincipal.signoComparable) r9.push("Gesto");
-            if (focoPrincipal.dolorEnSigno === null || focoPrincipal.dolorEnSigno === undefined) r9.push("Dolor Gesto");
-        }
-
-        const r10: string[] = [];
-        if (interviewV4.hayLimitacionFuncional) {
-            if (!interviewV4.psfsGlobal.some(p => p.actividad.trim() !== "" && p.score !== null)) r10.push("1 PSFS");
-        }
-
-        const r13: string[] = [];
-        if (!interviewV4.decisionEvalFisica) {
-            r13.push("Confirmación a P2");
-        } else if (interviewV4.decisionEvalFisica === "Sí" && !interviewV4.planEvaluacionFisica) {
-            r13.push("Plan Examen");
-        } else if (interviewV4.decisionEvalFisica === "No" && !interviewV4.razonNoEvalFisica) {
-            r13.push("Razón Derivación");
-        }
-
-        return { reqSec1: r1, reqSec4: r4, reqSec5: r5, reqSec9: r9, reqSec10: r10, reqSec13: r13 };
-    }, [interviewV4, focoPrincipal]);
+    // --- COMPLETITUD REMOVIDA (Módulo 4 y 6 Eliminados) ---
 
     // --- VALIDACIÓN DE CIERRE ESTRICTA (MP10) ---
     const { isValidForP2, validationErrors, hasRedFlags: localHasRedFlags, hayContradiccionSeguridad } = React.useMemo(() => {
@@ -556,49 +540,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
             errors.push("Prioridad #1: Es obligatorio definir la queja o prioridad del paciente hoy.");
         }
 
-        // 2 & 3. Datos Críticos del Foco Principal (Antigüedad)
+        // 2. Foco Estructurado Mínimo
         const fp = focoPrincipal;
-        if (fp) {
-            if (!fp.antiguedad || fp.antiguedad === "NoDefinido") errors.push("Foco Principal: Falta tiempo de evolución (antigüedad).");
-        } else {
+        if (!fp) {
             errors.push("Anamnesis: Se requiere al menos 1 foco clínico estructurado.");
         }
 
-        // 4. Anclas Mínimas
-        if (!focoPrincipal?.inicio || focoPrincipal.inicio === "NoDefinido") errors.push("Anclas: Seleccione Inicio (Súbito/Gradual).");
-        if (!focoPrincipal?.evolucion || focoPrincipal.evolucion === "NoDefinido") errors.push("Anclas: Seleccione Evolución global.");
-        if (!focoPrincipal?.actividadIndice?.trim()) errors.push("Anclas: Ingrese la Actividad índice principal.");
-
-        if (interviewV4.hayLimitacionFuncional) {
-            const hasValidPsfs = interviewV4.psfsGlobal.some(p => p.actividad && p.actividad.trim() !== "" && p.score !== null);
-            if (!hasValidPsfs) errors.push("Anclas: Ha indicado limitación funcional. Ingrese 1 actividad con texto y puntaje válido.");
-        } else {
-            if (interviewV4.capacidadPercibidaActividad === null || interviewV4.capacidadPercibidaActividad === undefined) {
-                errors.push("Anclas: Si no hay limitación, ingrese la Capacidad percibida (0-10).");
-            }
-        }
-
-        if (!interviewV4.contextosAnclas || interviewV4.contextosAnclas.length === 0) errors.push("Anclas: Seleccione al menos un Contexto.");
-        if (!interviewV4.objetivoPersona?.trim()) errors.push("Anclas: Ingrese el Objetivo de la persona usuaria.");
-        if (!interviewV4.plazoEsperado?.trim()) errors.push("Anclas: Ingrese el Plazo esperado.");
-
-        // Condicionales de Quejas (Fase 5)
-        const quejas = interviewV4.experienciaPersona.quejas || [];
-        const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
-
-        const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
-        if (hasPainOrTingle) {
-            if (focoPrincipal?.dolorActual === null || focoPrincipal?.dolorActual === undefined) errors.push("Anclas (Intensidad): Falta Dolor Actual.");
-            if (focoPrincipal?.dolorActividadIndice === null || focoPrincipal?.dolorActividadIndice === undefined) errors.push("Anclas (Intensidad): Falta Dolor en la Actividad Índice.");
-        }
-
-        const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
-        const isChronic = focoPrincipal?.antiguedad === '1-3 meses' || focoPrincipal?.antiguedad === '3-6 meses' || focoPrincipal?.antiguedad === '>6 meses';
-        if (hasPainOrStiff && isChronic) {
-            if (focoPrincipal?.patronTemporal.despiertaNoche === null || focoPrincipal?.patronTemporal.despiertaNoche === undefined) {
-                errors.push("Anclas: Indique confirmar si presenta Despertar Nocturno por el síntoma.");
-            }
-        }
+        // --- VALIDACIONES DE MÓDULO 6 ELIMINADAS --- 
+        // (La IA extrae automáticamente esta información)
 
         // 5. Seguridad Clínica Obligatoria
         if (!interviewV4.seguridad?.confirmado) {
@@ -1689,145 +1638,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
 
 
-                {/* 4. Chequeo de completitud de la entrevista */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 text-white font-bold text-[10px]">4</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Chequeo de completitud de la entrevista</h3>
-                        </div>
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-
-                                const list: Array<{ texto: string, link: string }> = [];
-
-                                // Helper: Verifica si existe texto bajo un título específico en el relato libre
-                                const relatoLines = (interviewV4.experienciaPersona.relatoLibre || "").split('\n');
-                                const hasTextInRelato = (titles: string[]) => {
-                                    const normalize = (t: string) => t.trim().toLowerCase();
-                                    const searchTerms = titles.map(normalize);
-
-                                    const index = relatoLines.findIndex(l => searchTerms.some(term => normalize(l).includes(term)));
-                                    if (index === -1) return false;
-
-                                    for (let i = index + 1; i < relatoLines.length; i++) {
-                                        const line = relatoLines[i].trim();
-                                        // Ignorar líneas vacías o guías (que empiezan con corchete)
-                                        if (line === "" || line.startsWith('[')) continue;
-
-                                        // Si detectamos otro título principal (no es guía y está en la lista de títulos conocidos), paramos de buscar
-                                        const knownTitles = [
-                                            "motivo de consulta", "objetivo y expectativa", "inicio y evolución", "antigüedad/inicio",
-                                            "localización y extensión", "irradiación y referencia", "carácter y naturaleza", "intensidad", "atenuantes y agravantes",
-                                            "comportamiento 24h", "severidad funcional", "irritabilidad", "historia del episodio",
-                                            "mecanismo e historia", "manejo previo", "seguridad clínica", "notas libres"
-                                        ];
-                                        const isAnotherTitle = knownTitles.some(t => normalize(line).includes(t) && !searchTerms.some(term => normalize(line).includes(term)));
-
-                                        if (isAnotherTitle) return false; // Empezó otra sección y no hubo texto antes
-                                        if (line.length > 2) return true; // Encontramos texto real
-                                    }
-                                    return false;
-                                };
-
-                                // Helper: Verifica si IA extrajo un dato
-                                const hasIA = (val: any) => {
-                                    const txt = getFieldText(val);
-                                    return txt !== "";
-                                };
-                                const aIA = interviewV4.analisisIA;
-
-                                // 1. Foco mínimo (Región + Lado + Queja Principal)
-                                const focoMinUI = !!(focoPrincipal?.region && focoPrincipal?.lado && interviewV4.experienciaPersona.quejas && interviewV4.experienciaPersona.quejas.length > 0);
-                                const focoMinRelato = hasTextInRelato(["Localización", "Motivo de consulta", "Extensión"]);
-                                if (!focoMinUI && !focoMinRelato && !hasIA(aIA?.ALICIA?.localizacion_extension)) {
-                                    list.push({ texto: "1. Foco mínimo (Región, Lado y Queja principal)", link: "section-relato" }); // Se ubica arriba
-                                }
-
-                                // 2. Motivo de consulta
-                                if (!hasTextInRelato(["Motivo de consulta"]) && !hasIA(aIA?.extraccion_general?.motivo_en_palabras)) {
-                                    list.push({ texto: "2. Motivo en palabras de la persona usuaria", link: "section-relato" });
-                                }
-
-                                // 3. Objetivo/Expectativa + Plazo
-                                if (!hasTextInRelato(["Objetivo y expectativa"]) && !hasIA(aIA?.extraccion_general?.objetivo_expectativa_plazo)) {
-                                    list.push({ texto: "3. Objetivo, expectativa y plazo", link: "section-relato" });
-                                }
-
-                                // 4. Inicio/Antigüedad + Evolución
-                                if (!hasTextInRelato(["Inicio y evolución", "Antigüedad/Inicio"]) && !hasIA(aIA?.ALICIA?.antiguedad_inicio)) {
-                                    list.push({ texto: "4. Inicio, antigüedad o evolución", link: "section-relato" });
-                                }
-
-                                // 5. Localización/Extensión (+ Irradiación)
-                                if (!hasTextInRelato(["Localización", "Extensión", "Irradiación"]) && !hasIA(aIA?.ALICIA?.localizacion_extension) && !hasIA(aIA?.ALICIA?.irradiacion_referencia) && !focoMinUI) {
-                                    list.push({ texto: "5. Localización y extensión", link: "section-relato" });
-                                }
-
-                                // 6. Intensidad y Variación 24h
-                                if (!hasTextInRelato(["Intensidad", "Comportamiento 24h"]) && !hasIA(aIA?.ALICIA?.intensidad?.actual) && !hasIA(aIA?.extraccion_general?.comportamiento_24h)) {
-                                    list.push({ texto: "6. Intensidad y comportamiento 24h", link: "section-relato" });
-                                }
-
-                                // 7. Atenuantes/Agravantes
-                                if (!hasTextInRelato(["Atenuantes", "Agravantes"]) && !hasIA(aIA?.ALICIA?.atenuantes) && !hasIA(aIA?.ALICIA?.agravantes)) {
-                                    list.push({ texto: "7. Atenuantes y Agravantes", link: "section-relato" });
-                                }
-
-                                // 8. Severidad Funcional
-                                if (!hasTextInRelato(["Severidad funcional"]) && !hasIA(aIA?.SINS?.severidad) && !hasIA(aIA?.extraccion_general?.limitaciones_funcionales)) {
-                                    list.push({ texto: "8. Severidad funcional (qué limita)", link: "section-relato" });
-                                }
-
-                                // 9. Irritabilidad
-                                const allowIrritabilityNulo = interviewV4.experienciaPersona.relatoLibre?.toLowerCase().includes("no aplica") && hasTextInRelato(["Irritabilidad"]);
-                                if (!allowIrritabilityNulo && !hasTextInRelato(["Irritabilidad"]) && !hasIA(aIA?.SINS?.irritabilidad?.facilidad_provocacion)) {
-                                    list.push({ texto: "9. Irritabilidad (o marcar 'No aplica' en relato)", link: "section-relato" });
-                                }
-
-                                // 10. Seguridad Clínica
-                                if (!hasTextInRelato(["Seguridad clínica"]) && !interviewV4.seguridad?.confirmado && !hasIA(aIA?.extraccion_general?.seguridad_mencionada_en_relato)) {
-                                    list.push({ texto: "10. Seguridad clínica", link: "section-seguridad" });
-                                }
-
-                                // Store output into state for render
-                                updateV4({ faltantesEstructuralesPanel: list } as any);
-                            }}
-                            className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition-colors font-bold text-xs py-2 px-4 rounded-lg shadow-sm flex items-center gap-2"
-                        >
-                            <span>🔍 Validar Completitud</span>
-                        </button>
-                    </div>
-
-                    {(interviewV4 as any).faltantesEstructuralesPanel && (
-                        <div className="mt-4 pt-3 border-t border-slate-200">
-                            {((interviewV4 as any).faltantesEstructuralesPanel as any[]).length === 0 ? (
-                                <div className="text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-xs font-medium flex items-center gap-2">
-                                    <span>✅</span> La entrevista parece estar completa o tiene datos en todas las áreas clave.
-                                </div>
-                            ) : (
-                                <ul className="space-y-2">
-                                    {((interviewV4 as any).faltantesEstructuralesPanel as any[]).map((f, i) => (
-                                        <li key={i} className="flex items-center justify-between text-xs bg-white border border-slate-100 p-2 rounded-lg shadow-sm">
-                                            <span className="text-rose-600 font-medium">⚠️ {f.texto}</span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    document.getElementById(f.link)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                    // highlight animation could be added here
-                                                }}
-                                                className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded transition-colors"
-                                            >
-                                                Ir a sección
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-                </div>
+                {/* 4. Chequeo de completitud eliminado (Fase 24 visual cleanup) */}
 
                 {/* 5. Procesar con IA (FASE 11: Unified P1 Refactor) */}
                 <div className="bg-purple-50 border border-purple-200 rounded-xl shadow-sm p-4">
@@ -2028,211 +1839,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     )}
                 </div>
 
-                {/* 6. Datos de Seguimiento (Opcional - Reemplaza Anclas Mínimas) */}
-                <details id="section-anclas" className="group bg-white border border-slate-200 rounded-xl shadow-sm [&_summary::-webkit-details-marker]:hidden">
-                    <summary className="flex items-center justify-between p-4 cursor-pointer select-none">
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center justify-center w-5 h-5 rounded-md bg-slate-800 text-white font-bold text-[10px]">6</span>
-                            <h3 className="font-bold text-slate-800 text-sm">Correcciones o ajustes (opcional)</h3>
-                        </div>
-                        <svg className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </summary>
-
-                    <div className="p-4 pt-0 border-t border-slate-100 flex flex-col gap-4 mt-2">
-                        {/* Row 1: Inicio, Antigüedad, Evolución */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Inicio</label>
-                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.inicio || "NoDefinido"} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, inicio: e.target.value as any } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="NoDefinido">Seleccione...</option>
-                                    <option value="Súbito">Súbito</option>
-                                    <option value="Gradual">Gradual</option>
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Antigüedad Foco</label>
-                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.antiguedad || ""} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, antiguedad: e.target.value } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="">Seleccione...</option>
-                                    <option value="<24hrs">{'< 24 horas'}</option>
-                                    <option value="1-7 dias">1 a 7 días</option>
-                                    <option value="1-4 semanas">1 a 4 semanas</option>
-                                    <option value="1-3 meses">1 a 3 meses</option>
-                                    <option value="3-6 meses">3 a 6 meses</option>
-                                    <option value=">6 meses">{'> 6 meses'}</option>
-                                </select>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-600">Evolución global</label>
-                                <select disabled={isClosed} className="w-full text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" value={focoPrincipal.evolucion || "NoDefinido"} onChange={e => {
-                                    const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, evolucion: e.target.value as any } : f);
-                                    updateV4({ focos: newFocos });
-                                }}>
-                                    <option value="NoDefinido">Seleccione...</option>
-                                    <option value="Mejorando">Mejorando</option>
-                                    <option value="Estable">Igual / Estable</option>
-                                    <option value="Empeorando">Empeorando</option>
-                                    <option value="Fluctuante">Fluctuante</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Row 2: Actividad Índice */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-slate-600">Actividad índice principal</label>
-                            <input type="text" disabled={isClosed} className="text-xs p-3 min-h-[44px] border border-slate-300 rounded-lg outline-none bg-slate-50" placeholder="Ej. Bajar escaleras, dormir de lado, lanzar balón..." value={focoPrincipal.actividadIndice || ""} onChange={e => {
-                                const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, actividadIndice: e.target.value } : f);
-                                updateV4({ focos: newFocos });
-                            }} />
-                        </div>
-
-                        {/* Lógica Condicional: Intensidad Actual y en Actividad si Duele/Hormiguea */}
-                        {(() => {
-                            const quejas = interviewV4.experienciaPersona.quejas || [];
-                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
-                            const hasPainOrTingle = quejas.includes('Dolor') || quejas.includes('Hormigueo/Adormecimiento') || quejaOtro.includes('dolor');
-                            if (!hasPainOrTingle) return null;
-                            return (
-                                <div className="grid grid-cols-2 gap-3 p-3 bg-red-50/50 border border-red-100 rounded-lg">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-red-800">Intensidad actual (0-10)</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-3 min-h-[44px] border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActual ?? ""} onChange={e => {
-                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActual: val } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} placeholder="EVA/ENA" />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-red-800">Intensidad en activ. índice</label>
-                                        <input type="number" min={0} max={10} disabled={isClosed} className="w-full text-center text-xs p-3 min-h-[44px] border border-red-200 rounded-lg outline-none bg-white font-bold text-slate-800" value={focoPrincipal.dolorActividadIndice ?? ""} onChange={e => {
-                                            const val = e.target.value !== "" ? Number(e.target.value) : null;
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, dolorActividadIndice: val } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} placeholder="EVA/ENA" />
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Lógica Condicional: Despertar Nocturno */}
-                        {(() => {
-                            const quejas = interviewV4.experienciaPersona.quejas || [];
-                            const quejaOtro = interviewV4.experienciaPersona.quejaOtro?.toLowerCase() || "";
-                            const hasPainOrStiff = quejas.includes('Dolor') || quejas.includes('Rigidez') || quejaOtro.includes('dolor');
-                            const isChronic = focoPrincipal.antiguedad === '1-3 meses' || focoPrincipal.antiguedad === '3-6 meses' || focoPrincipal.antiguedad === '>6 meses';
-                            if (!(hasPainOrStiff && isChronic)) return null;
-                            return (
-                                <div className="flex items-center flex-wrap gap-4 border border-orange-200 bg-orange-50/50 p-3 rounded-lg">
-                                    <label className="text-xs font-bold text-orange-900 flex-1 min-w-[200px]">¿Presenta despertar nocturno por el síntoma?</label>
-                                    <div className="flex flex-wrap gap-4">
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-4 py-3 min-h-[44px] rounded-lg border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600 w-4 h-4" checked={focoPrincipal.patronTemporal.despiertaNoche === true} onChange={() => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: true } } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} /> Sí</label>
-                                        <label className="flex items-center gap-1.5 text-xs font-bold bg-white px-4 py-3 min-h-[44px] rounded-lg border border-orange-200 cursor-pointer"><input type="radio" disabled={isClosed} className="accent-orange-600 w-4 h-4" checked={focoPrincipal.patronTemporal.despiertaNoche === false} onChange={() => {
-                                            const newFocos = interviewV4.focos.map(f => f.id === focoPrincipal.id ? { ...f, patronTemporal: { ...f.patronTemporal, despiertaNoche: false } } : f);
-                                            updateV4({ focos: newFocos });
-                                        }} /> No</label>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Row 3: Limitación Funcional */}
-                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                <label className="text-xs font-bold text-slate-800">¿Hay limitación funcional actual?</label>
-                                <div className="flex flex-wrap gap-3">
-                                    <label className={`flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-3 min-h-[44px] flex-1 sm:flex-none rounded-lg border cursor-pointer transition-colors ${interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: true })} /> Sí, limita</label>
-                                    <label className={`flex items-center justify-center gap-1.5 text-xs font-bold px-4 py-3 min-h-[44px] flex-1 sm:flex-none rounded-lg border cursor-pointer transition-colors ${!interviewV4.hayLimitacionFuncional ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}><input type="radio" disabled={isClosed} className="hidden" checked={!interviewV4.hayLimitacionFuncional} onChange={() => updateV4({ hayLimitacionFuncional: false })} /> No, sin límite</label>
-                                </div>
-                            </div>
-
-                            {interviewV4.hayLimitacionFuncional ? (
-                                <div className="p-3 bg-indigo-50/40 border border-indigo-100 rounded-lg flex flex-col gap-2">
-                                    <div className="flex justify-between items-center">
-                                        <label className="text-[11px] font-bold text-indigo-800">Actividades PSFS (0=Incapaz, 10=Normal)</label>
-                                        {interviewV4.psfsGlobal.length < 3 && (
-                                            <button disabled={isClosed} onClick={(e) => {
-                                                e.preventDefault();
-                                                updateV4({ psfsGlobal: [...interviewV4.psfsGlobal, { id: generateId(), actividad: "", score: null, focoAsociado: focoPrincipal.id }] });
-                                            }} className="text-[10px] bg-white border border-indigo-200 text-indigo-600 px-2 py-1 rounded shadow-sm font-bold hover:bg-indigo-50">+ Agregar</button>
-                                        )}
-                                    </div>
-                                    {interviewV4.psfsGlobal.map((psfs, index) => (
-                                        <div key={psfs.id} className="flex gap-2">
-                                            <input type="text" disabled={isClosed} className="flex-1 text-xs p-3 min-h-[44px] border border-indigo-200 rounded-lg outline-none bg-white font-medium" placeholder={`Actividad limitada #${index + 1}`} value={psfs.actividad} onChange={e => {
-                                                const newPsfs = [...interviewV4.psfsGlobal];
-                                                newPsfs[index].actividad = e.target.value;
-                                                updateV4({ psfsGlobal: newPsfs });
-                                            }} />
-                                            <input type="number" disabled={isClosed} min={0} max={10} className="w-16 text-center text-xs p-3 min-h-[44px] border border-indigo-200 rounded-lg outline-none bg-white font-bold" placeholder="0-10" value={psfs.score ?? ""} onChange={e => {
-                                                const newPsfs = [...interviewV4.psfsGlobal];
-                                                newPsfs[index].score = e.target.value !== "" ? Number(e.target.value) : null;
-                                                updateV4({ psfsGlobal: newPsfs });
-                                            }} />
-                                            {index > 0 && (
-                                                <button disabled={isClosed} onClick={(e) => {
-                                                    e.preventDefault();
-                                                    const newPsfs = [...interviewV4.psfsGlobal];
-                                                    newPsfs.splice(index, 1);
-                                                    updateV4({ psfsGlobal: newPsfs });
-                                                }} className="text-xs text-rose-500 hover:text-rose-700 px-1 font-bold">✕</button>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-3 bg-teal-50/40 border border-teal-100 rounded-lg flex flex-col gap-2">
-                                    <label className="text-[11px] font-bold text-teal-800">Capacidad percibida en actividad clave (0=Nula, 10=Óptima)</label>
-                                    <input type="number" disabled={isClosed} min={0} max={10} className="w-full text-center text-xs p-3 min-h-[44px] border border-teal-200 rounded-lg outline-none bg-white font-bold text-slate-800" placeholder="Ej. 8" value={interviewV4.capacidadPercibidaActividad ?? ""} onChange={e => {
-                                        updateV4({ capacidadPercibidaActividad: e.target.value !== "" ? Number(e.target.value) : null });
-                                    }} />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Row 4: Contexto de las anclas */}
-                        <div className="flex flex-col gap-1.5 border-t border-slate-100 pt-3">
-                            <label className="text-xs font-bold text-slate-800">Contexto principal afectado</label>
-                            <div className="flex flex-wrap gap-2">
-                                {['Vida diaria', 'Trabajo-Estudio', 'Deporte', 'Gimnasio'].map(ctx => {
-                                    const isSelected = interviewV4.contextosAnclas?.includes(ctx);
-                                    return (
-                                        <button key={ctx} disabled={isClosed} onClick={(e) => {
-                                            e.preventDefault();
-                                            let current = interviewV4.contextosAnclas || [];
-                                            const newCtx = isSelected ? current.filter(x => x !== ctx) : [...current, ctx];
-                                            updateV4({ contextosAnclas: newCtx });
-                                        }} className={`text-[11px] px-3 py-1.5 border rounded-lg transition-colors shadow-sm ${isSelected ? 'bg-slate-800 text-white border-slate-900 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                                            {ctx}
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Row 5: Objetivos */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                <label className="text-xs font-bold text-slate-800">Objetivo de la persona usuaria</label>
-                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. Poder volver a correr 10k" value={interviewV4.objetivoPersona || ""} onChange={e => updateV4({ objetivoPersona: e.target.value })} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-800">Plazo esperado</label>
-                                <input type="text" disabled={isClosed} className="text-xs p-2.5 border border-slate-300 rounded-lg outline-none bg-slate-50 font-medium text-slate-700" placeholder="Ej. 1 mes, para el verano..." value={interviewV4.plazoEsperado || ""} onChange={e => updateV4({ plazoEsperado: e.target.value })} />
-                            </div>
-                        </div>
-                    </div>
-
-                </details>
+                {/* 6. Datos de Seguimiento y Anclas eliminados (Fase 24 visual cleanup) */}
 
                 {/* 7. Confirmaciones críticas */}
                 {interviewV4.analisisIA && (

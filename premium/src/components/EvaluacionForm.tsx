@@ -370,7 +370,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
             // FASE 39: Automatización de Guardado Remoto Basal
             if (payload.remoteHistorySnapshot && usuariaId) {
-                const personaRef = doc(db, "programs", globalActiveYear, "personas", usuariaId);
+                const personaRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
                 await setDoc(personaRef, {
                     remoteHistory: {
                         ...(payload.remoteHistorySnapshot as any),

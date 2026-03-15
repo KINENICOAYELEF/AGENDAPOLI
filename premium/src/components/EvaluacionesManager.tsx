@@ -6,6 +6,7 @@ import { Evaluacion, Proceso } from "@/types/clinica";
 
 // Placeholder import for the Form we will build next
 import { EvaluacionForm } from "@/components/EvaluacionForm";
+import { ReadOnlyEvaluacion } from "./evaluacion-steps/ReadOnlyEvaluacion";
 
 interface EvaluacionesManagerProps {
     usuariaId: string;
@@ -17,7 +18,7 @@ interface EvaluacionesManagerProps {
 export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }: EvaluacionesManagerProps) {
     const { globalActiveYear } = useYear();
 
-    const [view, setView] = useState<'lista' | 'formulario'>('lista');
+    const [view, setView] = useState<'lista' | 'formulario' | 'lectura'>('lista');
     const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
     const [evaluacionType, setEvaluacionType] = useState<'INITIAL' | 'REEVALUATION'>('INITIAL');
 
@@ -82,6 +83,16 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
         );
     }
 
+    if (view === 'lectura' && selectedEvaluacion) {
+        return (
+            <ReadOnlyEvaluacion
+                evaluacion={selectedEvaluacion}
+                onClose={() => setView('lista')}
+                onEdit={() => { setView('formulario'); }}
+            />
+        );
+    }
+
     const hasInitial = evaluaciones.some(e => e.type === 'INITIAL');
 
     return (
@@ -123,7 +134,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                     {evaluaciones.map(ev => (
-                        <div key={ev.id} className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer" onClick={() => { setSelectedEvaluacion(ev); setEvaluacionType(ev.type); setView('formulario'); }}>
+                        <div key={ev.id} className="bg-white border text-sm border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer" onClick={() => { setSelectedEvaluacion(ev); setEvaluacionType(ev.type); setView('lectura'); }}>
                             <div className="flex items-center justify-between mb-3">
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide flex items-center gap-1.5
                                     ${ev.type === 'INITIAL' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}

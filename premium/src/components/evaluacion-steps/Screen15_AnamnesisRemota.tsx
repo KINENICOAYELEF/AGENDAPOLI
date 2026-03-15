@@ -93,22 +93,30 @@ const INITIAL_REMOTE_HISTORY: RemoteHistory = {
     lastUpdated: new Date().toISOString()
 };
 
-const ArrayField = ({ label, items, onChange, placeholder, disabled }: any) => (
-    <div>
-        <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider mb-1.5">{label}</label>
-        <input
-            type="text"
-            value={items?.map((i: any) => i.name || i.region).join(', ') || ''}
-            onChange={e => {
-                const arr = e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                onChange(arr.map(name => ({ name, region: name })));
-            }}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none bg-slate-50 disabled:opacity-60 disabled:bg-slate-100 transition-colors shadow-sm"
-        />
-    </div>
-);
+const ArrayField = ({ label, items, onChange, placeholder, disabled }: any) => {
+    const [localVal, setLocalVal] = useState(items?.map((i: any) => i.name || i.region).join(', ') || '');
+    
+    return (
+        <div>
+            <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider mb-1.5">{label}</label>
+            <input
+                type="text"
+                value={localVal}
+                onChange={e => {
+                    setLocalVal(e.target.value);
+                    const arr = e.target.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    onChange(arr.map(name => ({ name, region: name })));
+                }}
+                onBlur={() => {
+                    setLocalVal(items?.map((i: any) => i.name || i.region).join(', ') || '');
+                }}
+                placeholder={placeholder}
+                disabled={disabled}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none bg-slate-50 disabled:opacity-60 disabled:bg-slate-100 transition-colors shadow-sm"
+            />
+        </div>
+    );
+};
 const RadioGroup = ({ label, value, options, onChange, disabled }: any) => (
     <div className="space-y-2">
         <label className="block text-[10px] uppercase font-bold text-slate-600 tracking-wider">
@@ -331,7 +339,7 @@ export function Screen15_AnamnesisRemota({
 
         const fetchPerson = async () => {
             try {
-                const docRef = doc(db, "programs", globalActiveYear, "personas", usuariaId);
+                const docRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data() as PersonaUsuaria;
@@ -389,6 +397,29 @@ export function Screen15_AnamnesisRemota({
         const newHistory = { ...history, [category]: updatedCategory };
         handleChange(newHistory);
     };
+
+    // FASE 24: Sincronización en tiempo real de P1.5 al Expediente (usuarias)
+    useEffect(() => {
+        if (!usuariaId || !globalActiveYear || loading || isClosed) return;
+        
+        const saveTimer = setTimeout(async () => {
+            try {
+                const targetRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
+                await setDoc(targetRef, {
+                    remoteHistory: {
+                        ...(history as any),
+                        lastUpdated: new Date().toISOString(),
+                        updatedByClinician: user?.email || 'Desconocido'
+                    }
+                }, { merge: true });
+                console.log("P1.5 auto-synced to Expediente in real-time.");
+            } catch (error) {
+                console.error("Error auto-syncing P1.5 to usuarias:", error);
+            }
+        }, 3000); // 3 seconds debounce
+
+        return () => clearTimeout(saveTimer);
+    }, [history, usuariaId, globalActiveYear, loading, user?.email, isClosed]);
 
     if (loading) {
         return (

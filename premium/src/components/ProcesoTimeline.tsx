@@ -5,6 +5,7 @@ import { useYear } from "@/context/YearContext";
 import { Evaluacion, Evolucion, Proceso } from "@/types/clinica";
 import { EvaluacionForm } from "./EvaluacionForm";
 import { EvolucionForm } from "./EvolucionForm";
+import { ReadOnlyEvaluacion } from "./evaluacion-steps/ReadOnlyEvaluacion";
 import {
     PlusIcon,
     ArrowPathIcon,
@@ -34,7 +35,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [view, setView] = useState<'timeline' | 'formEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol'>('timeline');
+    const [view, setView] = useState<'timeline' | 'formEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol' | 'readEval'>('timeline');
     const [activeTab, setActiveTab] = useState<'timeline' | 'outcomes'>('timeline');
     const [selectedEval, setSelectedEval] = useState<Evaluacion | null>(null);
     const [selectedEvol, setSelectedEvol] = useState<Evolucion | null>(null);
@@ -84,6 +85,20 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
         setView('timeline');
         loadData();
     };
+
+    if (view === 'readEval' && selectedEval) {
+        return (
+            <div className="fixed inset-0 z-[9999] bg-white w-screen h-[100dvh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4">
+                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50">
+                    <ReadOnlyEvaluacion
+                        evaluacion={selectedEval}
+                        onClose={() => setView('timeline')}
+                        onEdit={() => setView('editEval')}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     if (view !== 'timeline') {
         const isEvalInitial = view === 'formEval' || (view === 'editEval' && selectedEval?.type === 'INITIAL');
@@ -212,7 +227,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                             onClick={() => {
                                                 if (isEval) {
                                                     setSelectedEval(item.data as Evaluacion);
-                                                    setView('editEval');
+                                                    setView('readEval');
                                                 } else {
                                                     setSelectedEvol(item.data as Evolucion);
                                                     setView('editEvol');

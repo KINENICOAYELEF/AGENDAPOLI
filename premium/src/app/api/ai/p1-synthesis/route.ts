@@ -18,7 +18,7 @@ NO DEBES:
 
 REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 1. HIPÓTESIS: 3 distintas (principal, asociada/funcional, diferencial menos probable). Títulos clínicos específicos (evita vaguedades). El fundamento debe aterrizar al mecanismo.
-2. PREGUNTAS FALTANTES: 3 a 5 preguntas concretas orientadas a afinar hipótesis, seguridad, pronóstico o examen físico. 'por_que_importa' debe explicar qué hipótesis ayuda a discriminar (ej: episodios de falla real vs miedo a la falla).
+2. PREGUNTAS FALTANTES: 3 a 5 preguntas concretas orientadas a afinar hipótesis, seguridad, pronóstico o examen físico. 'por_que_importa' debe explicar qué hipótesis ayuda a discriminar. IMPORTANTE: No sugieras aplicar cuestionarios que ya están respondidos en los antecedentes o relato (ej. no pidas PSFS o banderas psicosociales (BPS) si ya vienen incluidos en los datos provistos). Cero redundancias.
 3. RESUMEN PERSONA USUARIA: Llenar SIEMPRE 'lo_que_entendi', 'lo_que_te_preocupa' y 'lo_que_haremos_ahora'. Si el paciente no dice explícitamente lo que le preocupa, INFIÉRELO empáticamente basándote en la limitación o dolor. JAMÁS dejes campos vacíos en este resumen.
 4. RECOMENDACIONES P2: Tienes rol de Tutor Clínico Exhaustivo. Las recomendaciones para P2 deben ser altamente específicas y muy detalladas.
    - En 'objetivo' detalla exactamente qué estructuras o patrones evaluar.
@@ -58,7 +58,7 @@ ESTRUCTURA EXACTA JSON:
 `;
 
 // 2. FUNCIÓN PARA COMPACTAR EL PAYLOAD (Solo datos clínicos)
-function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any) {
+function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, expedienteData: any) {
     if (!interviewV4) return {};
     
     // Solo extraer lo estrictamente clinico
@@ -84,6 +84,16 @@ function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any) {
         mecanismoInicio: dolor.mecanismoInicio || "",
         contextoFuncional: dolor.contextoFuncional || "",
         seguridad: interviewV4.seguridad || {},
+        bps: interviewV4.bps || {},
+        psfs: interviewV4.psfsGlobal || [],
+        expediente: expedienteData ? {
+            nombre: expedienteData.nombre,
+            edad: expedienteData.edad,
+            sexo: expedienteData.sexo,
+            ocupacion: expedienteData.ocupacion,
+            contextoBasal: expedienteData.p15_context_structured || "Sin datos estructurados",
+            alertasBasales: expedienteData.p15_context_flags || []
+        } : "Sin datos de expediente provistos",
         banderasAmarillas: (interviewV4.banderasAmarillas || []).filter((b:any)=> b.aplica),
         // Si hay historia remota, traer lo mas corto posible
         antecedentesBasales: remoteHistorySnapshot ? 
@@ -198,7 +208,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Compactar el payload para no abrumar al modelo Lite
-        const compactPayload = buildCompactP1Payload(payload.interviewV4, payload.remoteHistorySnapshot);
+        const compactPayload = buildCompactP1Payload(payload.interviewV4, payload.remoteHistorySnapshot, payload.expedienteData);
         const jsonPayload = JSON.stringify(compactPayload);
 
         // 2. Sanitizar solo para el prompt (invisible para el usuario)
@@ -234,6 +244,23 @@ ${sanitizedPayload}
                 }
             }
         });
+
+        // FASE 24: Part 5 - P1 Fallbacks Resumen Usuario
+        // Si la IA generó 2 campos pero dejó 1 vacío, lo rellenamos localmente
+        if (result.data?.resumen_persona_usuaria) {
+            const summary = result.data.resumen_persona_usuaria;
+            const exp = compactPayload as any;
+            
+            if (!summary.lo_que_entendi || summary.lo_que_entendi.trim() === "") {
+                summary.lo_que_entendi = `Me comentas que consultas principalmente por ${exp.motivoConsultaPrincipal || exp.dolorPrincipal || 'tu dolor/molestia actual'}. Lo tendré muy en cuenta.`;
+            }
+            if (!summary.lo_que_te_preocupa || summary.lo_que_te_preocupa.trim() === "") {
+                summary.lo_que_te_preocupa = `Noto que esta situación está afectando tu bienestar. Abordaremos tus inquietudes paso a paso.`;
+            }
+            if (!summary.lo_que_haremos_ahora || summary.lo_que_haremos_ahora.trim() === "") {
+                summary.lo_que_haremos_ahora = `Vamos a realizar una evaluación física enfocada en entender mejor cómo responde tu cuerpo para construir un plan seguro y efectivo hacia tus metas.`;
+            }
+        }
 
         return NextResponse.json({
             success: true,

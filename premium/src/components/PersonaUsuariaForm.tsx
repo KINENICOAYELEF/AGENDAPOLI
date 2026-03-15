@@ -353,17 +353,90 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                     </div>
                 </div>
 
-                {/* --- C) RESUMEN BASAL CLÍNICO --- */}
-                {isEditMode && formData.remoteHistory?.basalSynthesis && (
-                    <div className="col-span-1 md:col-span-2 space-y-4 mt-2 bg-amber-50/50 p-4 rounded-xl border border-amber-200">
-                        <h3 className="text-sm font-bold text-amber-900 uppercase tracking-widest flex items-center gap-2">
-                            <span>📄</span> C) Resumen Basal Clínico (Auto-Sincronizado)
+                {/* --- C) EXPEDIENTE CLÍNICO (RESUMEN BASAL) --- */}
+                {isEditMode && formData.remoteHistory ? (
+                    <div className="col-span-1 md:col-span-2 space-y-4 mt-2 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+                        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                            <span className="bg-indigo-500 text-white p-1 rounded-md">📇</span> C) Expediente Clínico (Contexto Basal Actualizado)
                         </h3>
-                        <div className="text-xs text-amber-800 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap p-3 bg-white border border-amber-100 rounded-lg shadow-inner">
-                            {formData.remoteHistory.basalSynthesis}
+                        <div className="text-xs text-slate-300 leading-relaxed max-h-64 overflow-y-auto w-full pr-2 space-y-3 custom-scrollbar">
+                            {formData.remoteHistory.p15_context_structured ? (
+                                <div className="space-y-4">
+                                    {/* 1. Condiciones y MSK */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="font-semibold text-indigo-400 mb-2 border-b border-slate-700 pb-1">Condiciones Clínicas Relevantes</h4>
+                                            {formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes?.length > 0 ? (
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    {formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes.map((i: string, idx: number) => <li key={idx}>{i}</li>)}
+                                                </ul>
+                                            ) : <p className="text-slate-500 italic">No reporta condiciones médicas de relevancia.</p>}
+                                        </div>
+                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="font-semibold text-indigo-400 mb-2 border-b border-slate-700 pb-1">Antecedentes MSK / Lesiones Previas</h4>
+                                            {formData.remoteHistory.p15_context_structured.antecedentes_msk?.lesiones_previas?.length > 0 || formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas?.length > 0 ? (
+                                                <ul className="list-disc pl-4 space-y-1">
+                                                    {formData.remoteHistory.p15_context_structured.antecedentes_msk?.lesiones_previas?.map((i: string, idx: number) => <li key={`l-${idx}`}>{i}</li>)}
+                                                    {formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas?.map((i: string, idx: number) => <li key={`c-${idx}`}>Cx: {i}</li>)}
+                                                </ul>
+                                            ) : <p className="text-slate-500 italic">Sin antecedentes musculoesqueléticos relevantes.</p>}
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Actividad Fisica y Ocupacional */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="font-semibold text-emerald-400 mb-2 border-b border-slate-700 pb-1">Actividad / Deporte Basal</h4>
+                                            <p><span className="text-slate-400">Actividad Central:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.actividad_deporte_central || '-'}</p>
+                                            <p><span className="text-slate-400">Nivel/Frecuencia:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.nivel_practica_actual || '-'} ({formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.frecuencia_semanal || '-'})</p>
+                                        </div>
+                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="font-semibold text-amber-400 mb-2 border-b border-slate-700 pb-1">Contexto Ocupacional</h4>
+                                            <p><span className="text-slate-400">Rol principal:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.ocupacion_principal || '-'}</p>
+                                            {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.demandas_fisicas_laborales?.length > 0 && (
+                                                <p className="mt-1"><span className="text-slate-400">Demandas:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional.demandas_fisicas_laborales.join(', ')}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Flags y BPS */}
+                                    <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+                                        <h4 className="font-semibold text-rose-400 mb-2 border-b border-slate-700 pb-1">Contexto Biopsicosocial y Banderas</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <p><span className="text-slate-400">Estrés:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estres_basal || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.fuente_principal_estres || 'N/A'})</p>
+                                                <p><span className="text-slate-400">Sueño:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.calidad_sueno || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.horas_promedio_sueno || '-'} hrs)</p>
+                                            </div>
+                                            {formData.remoteHistory.p15_context_flags && (
+                                                <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+                                                    {formData.remoteHistory.p15_context_flags.factores_personales_positivos?.map((f: string, i: number) => <span key={`fp-${i}`} className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 text-[10px]">{f}</span>)}
+                                                    {formData.remoteHistory.p15_context_flags.factores_personales_negativos?.map((f: string, i: number) => <span key={`fn-${i}`} className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded border border-rose-800 text-[10px]">{f}</span>)}
+                                                    {formData.remoteHistory.p15_context_flags.barreras_ambientales?.map((f: string, i: number) => <span key={`ba-${i}`} className="bg-amber-900/50 text-amber-300 px-2 py-0.5 rounded border border-amber-800 text-[10px]">{f}</span>)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {formData.remoteHistory.p15_context_structured.notas_basales && (
+                                            <div className="mt-3 p-2 bg-slate-800 rounded border border-slate-600 text-slate-300 italic">
+                                                <span className="font-semibold text-slate-400 not-italic block mb-1">Notas libres:</span>
+                                                {formData.remoteHistory.p15_context_structured.notas_basales}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-slate-900/50 border border-slate-700 rounded-lg whitespace-pre-wrap">
+                                    {formData.remoteHistory.basalSynthesis || "Expediente basal extraído de versión antigua."}
+                                </div>
+                            )}
                         </div>
                     </div>
-                )}
+                ) : isEditMode ? (
+                    <div className="col-span-1 md:col-span-2 space-y-4 mt-2 bg-slate-100 p-4 rounded-xl border border-dashed border-slate-300 text-center">
+                        <p className="text-sm font-medium text-slate-500 flex items-center justify-center gap-2">
+                            <span>📇</span> Sin anamnesis remota (Expediente Clínico) registrada.
+                        </p>
+                    </div>
+                ) : null}
             </div>
 
             {/* SECCIÓN GESTIÓN DE PROCESOS CLÍNICOS (SOLO VISIBLE EN EDICIÓN/FICHA CLINICA YA CREADA) */}
