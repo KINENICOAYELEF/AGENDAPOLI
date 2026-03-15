@@ -30,9 +30,9 @@ export function buildP2SummaryStructured(examState: any): any {
             if (f.evalAct && f.resActIzq) desc += ` Act Izq [${f.resActIzq}]`;
             if (f.evalAct && f.resAct) desc += ` Act [${f.resAct}]`;
             
-            if (f.evalPas && f.resPasDer) desc += ` Pas Der [${f.resPasDer} tope: ${f.topeFinalDer}]`;
-            if (f.evalPas && f.resPasIzq) desc += ` Pas Izq [${f.resPasIzq} tope: ${f.topeFinalIzq}]`;
-            if (f.evalPas && f.resPas) desc += ` Pas [${f.resPas} tope: ${f.topeFinal}]`;
+            if (f.evalPas && f.resPasDer) desc += ` Pas Der [${f.resPasDer}${f.topeFinalDer ? ' tope: ' + f.topeFinalDer : ''}]`;
+            if (f.evalPas && f.resPasIzq) desc += ` Pas Izq [${f.resPasIzq}${f.topeFinalIzq ? ' tope: ' + f.topeFinalIzq : ''}]`;
+            if (f.evalPas && f.resPas) desc += ` Pas [${f.resPas}${f.topeFinal ? ' tope: ' + f.topeFinal : ''}]`;
 
             const chips = [];
             if (f.hallazgosCustom) chips.push(...f.hallazgosCustom);
@@ -73,11 +73,14 @@ export function buildP2SummaryStructured(examState: any): any {
         examState.palpacionConfig.filas.forEach((f: any) => {
             if (!f.estructura) return;
             let d = `${f.estructura} (${f.lado}): ${f.hallazgoPrincipal}`;
-            if (f.dolorEVA && f.dolorEVA > 0) d += ` EVA ${f.dolorEVA}/10`;
-            if (f.tiposDeDolor) d += ` [${typeof f.tiposDeDolor === 'string' ? f.tiposDeDolor : f.tiposDeDolor.join(', ')}]`;
-            if (f.comentario) d += ` - ${f.comentario}`;
+            if (f.dolor && f.dolor > 0) d += ` EVA ${f.dolor}/10`;
+            if (f.edema && f.edema !== 'Normal') d += ` Edema: ${f.edema}`;
+            if (f.temperatura && f.temperatura !== 'Normal') d += ` Temp: ${f.temperatura}`;
+            if (f.observacion) d += ` - ${f.observacion}`;
             palpe.push(d);
-            if (f.hallazgoPrincipal !== 'Normal') summary.signos_concordantes.push(`Palpación: ${d}`);
+            if (f.hallazgoPrincipal && !f.hallazgoPrincipal.toLowerCase().includes('normal') && !f.hallazgoPrincipal.toLowerCase().includes('sin hallazgos')) {
+                summary.signos_concordantes.push(`Palpación: ${d}`);
+            }
         });
         summary.irritabilidad_tisular = palpe.join('; ');
     }
@@ -163,7 +166,28 @@ export function buildP2SummaryStructured(examState: any): any {
         }
     }
 
+    const textBlobs: string[] = [];
+    if (hallazgosGeneral.length > 0) {
+        textBlobs.push("### Hallazgos Positivos Generales\n" + hallazgosGeneral.map(h => `- ${h}`).join('\n'));
+    }
+    if (summary.patron_movilidad) {
+        textBlobs.push(`### Patrón de Movilidad (ROM)\n${summary.patron_movilidad}`);
+    }
+    if (summary.patron_fuerza_control) {
+        textBlobs.push(`### Fuerza y Control Motor\n${summary.patron_fuerza_control}`);
+    }
+    if (summary.irritabilidad_tisular) {
+        textBlobs.push(`### Irritabilidad y Palpación\n${summary.irritabilidad_tisular}`);
+    }
+    if (summary.signos_concordantes.length > 0) {
+        textBlobs.push("### 🔥 Signos Concordantes (Dolor Principal)\n" + summary.signos_concordantes.map((s: string) => `- ${s}`).join('\n'));
+    }
+    if (summary.signos_discordantes.length > 0) {
+        textBlobs.push("### ❄️ Signos Discordantes (No reproducen síntoma)\n" + summary.signos_discordantes.map((s: string) => `- ${s}`).join('\n'));
+    }
+
     summary.resumen_hallazgos_positivos = hallazgosGeneral.join('\n');
+    summary.summary_text_structured = textBlobs.join('\n\n') || "Examen físico sin hallazgos registrados.";
 
     return summary;
 }

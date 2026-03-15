@@ -17,13 +17,19 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
     // 1. STATE NORMALIZATION
     const normalizedCase = normalizeEvaluationState(formData);
     
-    // Fallbacks para UI Legacy (Prioritizando IA P1)
+    // FASE 25: Fallbacks robustos para UI Legacy (Prioritizando IA P1 -> Raw -> Contexto)
+    const safeVal = (v: any) => (typeof v === 'string' && v.trim() !== "" && !v.toLowerCase().includes("no definid") && !v.toLowerCase().includes("no registrad") && v !== "-") ? v.trim() : null;
+    
     const p1AI = (formData.interview as any)?.p1_ai_structured || (formData.interview as any)?.v4?.p1_ai_structured;
-    const focoPrincipal = p1AI?.foco_principal?.region ? { ...normalizedCase.focoPrincipal, region: p1AI.foco_principal.region } : normalizedCase.focoPrincipal;
-    const lado = p1AI?.foco_principal?.lado || normalizedCase.ladoPrincipal;
-    const queja = p1AI?.foco_principal?.queja_prioritaria || normalizedCase.quejaPrioritaria;
-    const irritabilidad = p1AI?.sins?.irritabilidad_global?.split(' ')[0] || normalizedCase.irritabilidad; // ej "Alta (fácil de provocar)" -> "Alta"
-    const actividadIndiceP1 = p1AI?.foco_principal?.actividad_indice || normalizedCase.tareaIndice;
+    const p1RawFoco = (formData.interview as any)?.v4?.focos?.find((f:any)=>f.esPrincipal) || (formData.interview as any)?.v4?.focos?.[0] || {};
+    const expRole = (formData as any)?.remoteHistorySnapshot?.occupationalContext?.mainRole;
+
+    const focoRegion = safeVal(p1AI?.foco_principal?.region) || safeVal(p1RawFoco?.region) || safeVal(normalizedCase.focoPrincipal?.region) || "No calculada";
+    const focoLado = safeVal(p1AI?.foco_principal?.lado) || safeVal(p1RawFoco?.lado) || safeVal(normalizedCase.ladoPrincipal) || "";
+    const focoQueja = safeVal(p1AI?.foco_principal?.queja_prioritaria) || safeVal(p1RawFoco?.dolorPrincipal) || safeVal(normalizedCase.quejaPrioritaria) || "No calculada";
+    const irritabilidad = safeVal(p1AI?.sins?.irritabilidad_global?.split(' ')[0]) || safeVal(p1RawFoco?.irritabilidad) || safeVal(normalizedCase.irritabilidad) || "No calculada";
+    const actividadIndiceP1 = safeVal(p1AI?.foco_principal?.actividad_indice) || safeVal(p1RawFoco?.actividadIndice) || safeVal(normalizedCase.tareaIndice) || "";
+    
     const recomendaciones = p1AI?.recomendaciones_p2_por_modulo;
 
     const v4 = formData.interview?.v4;
@@ -215,23 +221,23 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Foco / Lado</p>
                         <p className="text-sm font-medium text-slate-700">
-                            {focoPrincipal ? `Foco ${Math.max(1, (v4?.focos?.findIndex(f => f?.id === (normalizedCase?.focoPrincipal as any)?.id || f?.id === (normalizedCase?.focoPrincipal as any)?.focoId) || 0) + 1)}` : <span className="text-slate-400 font-normal italic">No registrado</span>}
-                            {lado && lado !== "No definido" ? ` • ${lado}` : ''}
+                            {focoRegion !== "No calculada" ? `Foco: ${focoRegion}` : <span className="text-slate-400 font-normal italic">Foco no registrado</span>}
+                            {focoLado && focoLado !== "No definido" ? ` • ${focoLado}` : ''}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Queja / Dolor</p>
-                        <p className="text-sm font-medium text-slate-700" title={queja}>
-                            {queja !== "No definida" && queja !== "NoDefinido" ? queja : <span className="text-slate-400 font-normal italic">No registrado</span>}
+                        <p className="text-sm font-medium text-slate-700" title={focoQueja}>
+                            {focoQueja !== "No calculada" ? focoQueja : <span className="text-slate-400 font-normal italic">Queja no registrada</span>}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Irritabilidad</p>
                         <p className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                            {irritabilidad === "Alta" && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
-                            {irritabilidad === "Media" && <span className="w-2 h-2 rounded-full bg-yellow-500"></span>}
-                            {irritabilidad === "Baja" && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
-                            {irritabilidad !== "No definida" && irritabilidad !== "NoDefinido" ? irritabilidad : <span className="text-slate-400 font-normal italic">No registrado</span>}
+                            {irritabilidad?.includes("Alta") && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                            {irritabilidad?.includes("Media") && <span className="w-2 h-2 rounded-full bg-yellow-500"></span>}
+                            {irritabilidad?.includes("Baja") && <span className="w-2 h-2 rounded-full bg-emerald-500"></span>}
+                            {irritabilidad !== "No calculada" ? irritabilidad : <span className="text-slate-400 font-normal italic">No registrada</span>}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200">
@@ -252,7 +258,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             type="text"
                             className="w-full bg-indigo-50/50 border border-indigo-100 shadow-sm text-indigo-700 text-sm font-medium rounded-xl p-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:cursor-not-allowed"
                             placeholder="Ej. sentadilla, levantar brazo, cambio de dirección..."
-                            value={exam.signoComparable !== undefined ? exam.signoComparable : (actividadIndiceP1 || formData.interview?.v4?.focos?.find((f: any) => f.esPrincipal)?.signoComparable || '')}
+                            value={exam.signoComparable !== undefined ? exam.signoComparable : actividadIndiceP1}
                             onChange={(e) => handleUpdateExam('signoComparable', e.target.value)}
                             disabled={isClosed}
                         />
@@ -286,6 +292,37 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     </div>
                 )}
             </div>
+
+            {/* FASE 25: CONTEXTO P1.5 (Lectura Local Inteligente) */}
+            {((formData as any)?.p15_context_structured || ((formData as any)?.p15_context_flags && (formData as any)?.p15_context_flags.length > 0)) && (
+                <div className="bg-white rounded-2xl border border-teal-200 shadow-sm overflow-hidden flex flex-col mb-4">
+                    <div className="bg-teal-50 border-b border-teal-100 p-4 sm:p-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-teal-200 text-teal-800 flex items-center justify-center font-bold text-lg">📇</div>
+                        <div>
+                            <h3 className="text-sm font-bold text-teal-900 uppercase tracking-widest flex items-center">
+                                Contexto Basal (P1.5)
+                            </h3>
+                            <p className="text-xs text-teal-700 mt-1">Identifica moduladores del examen, pronóstico basal y adherencia.</p>
+                        </div>
+                    </div>
+                    <div className="p-4 sm:p-5 bg-white flex flex-col gap-4">
+                        {(formData as any)?.p15_context_flags?.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {(formData as any).p15_context_flags.map((flag: string, idx: number) => (
+                                    <span key={idx} className="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm">
+                                        ⚠️ {flag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        {(formData as any)?.p15_context_structured && (
+                            <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed p-3 bg-slate-50/50 rounded-lg border border-slate-100">
+                                {(formData as any).p15_context_structured}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* FASE 20: PANEL DE HIPÓTESIS Y ESTADO */}
             {hipotesisTracking.length > 0 && (
@@ -431,41 +468,18 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                         return (
                             <div className="grid grid-cols-1 bg-slate-50/50 p-4 rounded-xl border border-slate-100 gap-6">
-                                {/* 1. Observación general (Postura/Trofismo) */}
+                                {/* 1. Observación del Gesto Representativo */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">1. Postura y Trofismo</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Estado general, simetría muscular, alineación del segmento.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Asimetrías o atrofias relevantes.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">1. Gesto Índice / Marcha</label>
+                                        <p className="text-[11px] text-slate-500">¿Cómo ejecuta la tarea que le duele? (marcha o gesto libre).</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('posturaChips', ['Sin hallazgos', 'Asimetría evidente', 'Atrofia visible', 'Alineación alterada', 'Aumento de volumen aparente'])}
+                                        {renderChipGroup('marchaChips', ['Fluido / Normal', 'Marcha antálgica', 'Compensación evidente', 'Estrategia de protección', 'Facies de dolor'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detalles sobre postura, aumento de volumen aparente, asimetrías..."
-                                            value={exam.postureAlignment || ''}
-                                            onChange={(e) => handleUpdateExam('postureAlignment', e.target.value)}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-200"></div>
-
-                                {/* 2. Marcha */}
-                                <div className="flex flex-col md:flex-row gap-4 items-start">
-                                    <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">2. Marcha / Gesto habitual</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Fases de la marcha, cojera, uso de ayudas ortopédicas.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: "Normal" o patrón compensatorio.</p>
-                                    </div>
-                                    <div className="w-full md:w-2/3">
-                                        {renderChipGroup('marchaChips', ['Normal', 'Marcha antálgica', 'Cojera', 'Uso ayuda técnica', 'Compensación evidente'])}
-                                        <input
-                                            type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar marcha antálgica o alteraciones corporales..."
+                                            placeholder="Comentario sobre el gesto o marcha..."
                                             value={exam.gaitBasicGesture || ''}
                                             onChange={(e) => handleUpdateExam('gaitBasicGesture', e.target.value)}
                                             disabled={isClosed}
@@ -475,62 +489,20 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                 <div className="border-t border-slate-200"></div>
 
-                                {/* 3. Mov activo general */}
+                                {/* 2. Signos visuales estáticos / Edema */}
                                 <div className="flex flex-col md:flex-row gap-4 items-start">
                                     <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">3. Movilidad visual libre</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Calidad y confianza con la que mueve el segmento libremente.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Aprehensión o bloqueo funcional visible.</p>
+                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">2. Signos visuales estáticos</label>
+                                        <p className="text-[11px] text-slate-500">Observación visual aparente (alineación, atrofia, edema no tocado aún).</p>
                                     </div>
                                     <div className="w-full md:w-2/3">
-                                        {renderChipGroup('movVisualChips', ['Fluido', 'Rígido / Lento', 'Rango limitado', 'Movimiento temeroso', 'Compensa al elevar'])}
+                                        {renderChipGroup('posturaChips', ['Sin asimetrías', 'Postura alterada', 'Atrofia visible', 'Aumento de volumen (Edema)'])}
                                         <input
                                             type="text"
                                             className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Especificar aprehensión o bloqueos..."
-                                            value={exam.initialActiveMovement || ''}
-                                            onChange={(e) => handleUpdateExam('initialActiveMovement', e.target.value)}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-200"></div>
-
-                                {/* 4. Conducta Dolor */}
-                                <div className="flex flex-col md:flex-row gap-4 items-start">
-                                    <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">4. Conducta al síntoma</label>
-                                        <p className="text-[11px] text-slate-500">¿Qué mirar? Facies (gestos faciales) y reacción al llegar al rango doloroso.</p>
-                                        <p className="text-[11px] text-slate-500 italic">Qué registrar: Si lo tolera, si hay arco doloroso, o temor (kinesiofobia).</p>
-                                    </div>
-                                    <div className="w-full md:w-2/3">
-                                        {renderChipGroup('conductaSintomaChips', ['Tranquilo', 'Facies de dolor', 'Dolor al final del gesto', 'Arco doloroso', 'Estrategia de protección'])}
-                                        <input
-                                            type="text"
-                                            className="w-full mt-2 bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20"
-                                            placeholder="Detallar dónde duele o estrategias de protección..."
-                                            value={exam.symptomBehaviorMovement || ''}
-                                            onChange={(e) => handleUpdateExam('symptomBehaviorMovement', e.target.value)}
-                                            disabled={isClosed}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-200"></div>
-
-                                {/* Impresión General Opcional */}
-                                <div className="flex flex-col md:flex-row gap-4 items-start">
-                                    <div className="md:w-1/3">
-                                        <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">5. Impresión observacional inicial</label>
-                                        <p className="text-[11px] text-slate-500">Síntesis observacional corta antes de las pruebas analíticas.</p>
-                                    </div>
-                                    <div className="w-full md:w-2/3">
-                                        <textarea
-                                            className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 min-h-[60px] resize-y"
-                                            placeholder="Síntesis breve de lo observado..."
-                                            value={exam.observationGeneral || ''}
-                                            onChange={(e) => handleUpdateExam('observationGeneral', e.target.value)}
+                                            placeholder="Detalle de atrofia, edema aparente o asimetrías..."
+                                            value={exam.postureAlignment || ''}
+                                            onChange={(e) => handleUpdateExam('postureAlignment', e.target.value)}
                                             disabled={isClosed}
                                         />
                                     </div>
@@ -714,10 +686,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
                                         <select className="w-full text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.lado} onChange={(e) => handleFilaChange('lado', e.target.value)} disabled={isClosed}>
                                             <option value="">-- Lado --</option>
-                                            <option value="Derecho">Derecho</option>
-                                            <option value="Izquierdo">Izquierdo</option>
+                                            <option value="Derecho">Unilateral Derecho</option>
+                                            <option value="Izquierdo">Unilateral Izquierdo</option>
                                             <option value="Bilateral">Bilateral comparativo</option>
-                                            <option value="Axial">N/A (Axial/Central)</option>
+                                            <option value="Axial">Axial / Central</option>
                                         </select>
 
                                         <select className="w-full text-sm font-medium bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-2.5 outline-none focus:border-indigo-400 text-ellipsis" value={fila.movimiento} onChange={(e) => handleFilaChange('movimiento', e.target.value)} disabled={isClosed}>
@@ -1108,10 +1080,14 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                                     <option value="Kg">Kg</option><option value="N">N</option><option value="Lbs">Lbs</option>
                                                                 </select>
                                                             </div>
-                                                            {fila.diferenciaCalculada !== undefined && (
+                                                            {fila.diferenciaCalculada !== undefined ? (
                                                                 <div className="w-full flex items-center justify-between bg-emerald-50 px-2 py-1.5 rounded text-[11px] font-bold border border-emerald-200 text-emerald-800 mt-1 tracking-tight">
                                                                     <span>Déficit: {Math.abs(fila.diferenciaCalculada)}%</span>
                                                                     <span className="uppercase opacity-90">{fila.clasificacionAutomatica}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="w-full flex items-center justify-between bg-slate-50 px-2 py-1.5 rounded text-[11px] font-bold border border-slate-200 text-slate-500 mt-1 tracking-tight">
+                                                                    <span>Déficit: NA / no comparable</span>
                                                                 </div>
                                                             )}
 
@@ -1451,7 +1427,7 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                         <button
                             onClick={() => {
                                 const m = exam.palpacionConfig?.filas || [];
-                                handleUpdateExam('palpacionConfig', { filas: [...m, { id: Date.now().toString(), estructura: '', lado: lado !== 'No definido' ? lado : 'Derecho', hallazgoPrincipal: '', dolor: '', edema: 'Normal', temperatura: 'Normal', observacion: '' }] });
+                                handleUpdateExam('palpacionConfig', { filas: [...m, { id: Date.now().toString(), estructura: '', lado: focoLado !== 'No definido' ? focoLado : 'Derecho', hallazgoPrincipal: '', dolor: '', edema: 'Normal', temperatura: 'Normal', observacion: '' }] });
                             }}
                             className="text-sm font-bold text-amber-600 bg-white border border-amber-200 px-4 py-2 rounded shadow-sm hover:bg-amber-50 outline-none flex items-center gap-2 transition"
                             disabled={isClosed}
@@ -1555,9 +1531,9 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {[
                                     { id: 'miotomas', label: 'Miotomas' },
-                                    { id: 'sensibilidad', label: 'Sensibilidad sup. / Dermatomas' },
+                                    { id: 'sensibilidad', label: 'Sensibilidad sup. (L/R)' },
                                     { id: 'rot', label: 'Reflejos (ROT)' },
-                                    { id: 'neurodinamia', label: 'Neurodinamia' },
+                                    { id: 'neurodinamia', label: 'Neurodinamia (L/R)' },
                                     { id: 'pulsos', label: 'Pulsos / Perfusión' },
                                     { id: 'propiocepcion', label: 'Sensibilidad prof. / Propiocepción' },
                                     { id: 'coordinacion', label: 'Coordinación' },
@@ -1669,9 +1645,10 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                                         <option value="Control segmentario local">Control segmentario local</option>
                                                         <option value="Control lumbopélvico">Control lumbopélvico</option>
                                                         <option value="Control escapular">Control escapular</option>
-                                                        <option value="Balance / postura">Balance / postura</option>
+                                                        <option value="Balance">Balance</option>
                                                         <option value="Desaceleración / aterrizaje">Desaceleración / aterrizaje</option>
                                                         <option value="Control unipodal">Control unipodal</option>
+                                                        <option value="Gesto específico">Gesto específico</option>
                                                         <option value="Gesto deportivo">Gesto deportivo específico</option>
                                                         <option value="Otro">Otro...</option>
                                                     </select>
@@ -2198,15 +2175,15 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col gap-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                Tarea o Gesto Índice
+                                Tarea o Gesto Índice (Desde Módulo A)
                                 <button type="button" onClick={() => setOpenHelp('J')} className="text-[10px] w-6 h-6 shrink-0 rounded-full flex items-center justify-center border border-fuchsia-200 bg-white text-fuchsia-600 font-bold hover:bg-fuchsia-100 transition-colors" title="Ayuda clínica">?</button>
                             </label>
                             <input
                                 type="text"
-                                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-400/20 disabled:bg-slate-100 disabled:cursor-not-allowed font-medium"
-                                value={exam.retestConfig?.tareaIndice ?? exam.retestGesture ?? ''}
-                                onChange={(e) => handleUpdateExam('retestConfig', { ...exam.retestConfig, tareaIndice: e.target.value })}
-                                disabled={isClosed}
+                                className="w-full bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-xl p-3 outline-none cursor-not-allowed font-medium"
+                                value={actividadIndiceP1 || 'No definida en Panel A'}
+                                readOnly
+                                disabled
                             />
                         </div>
                         <div className="flex flex-col gap-1.5">
@@ -2468,6 +2445,13 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     alert('Faltan mínimos para sintetizar, pero tu examen no fue modificado. Registra al menos un hallazgo clínico útil (ROM, Palpación, etc).');
                                     setIsSynthesizing(false);
                                     return;
+                                }
+                                if (!actividadIndiceP1) {
+                                    const proceed = window.confirm('⚠ No tienes registrada una Tarea/Gesto Índice para comparar en el re-test.\n¿Deseas sintetizar los hallazgos de todos modos?');
+                                    if (!proceed) {
+                                        setIsSynthesizing(false);
+                                        return;
+                                    }
                                 }
 
                                 const p2_summary_structured = buildP2SummaryStructured(examCopy);
