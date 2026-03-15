@@ -88,6 +88,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
         return (
             <ReadOnlyEvaluacion
                 evaluacion={selectedEvaluacion}
+                usuariaName={usuariaName}
                 onClose={() => setView('lista')}
                 onEdit={() => { setView('formulario'); }}
             />
