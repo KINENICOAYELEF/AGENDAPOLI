@@ -202,7 +202,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <div className="flex-1">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
                                     <textarea 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[60px]"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[100px]"
                                         value={autoSynth.clasificacion_dolor?.fundamento_breve || ''}
                                         onChange={(e) => updateDeepObj('clasificacion_dolor', { fundamento_breve: e.target.value })}
                                         disabled={isClosed}
@@ -232,22 +232,25 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Sistema Principal</label>
-                                <select 
+                                <input 
+                                    type="text" 
+                                    list="sistema-options"
                                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
                                     value={autoSynth.sistema_y_estructuras?.sistema_principal || ''}
                                     onChange={(e) => updateDeepObj('sistema_y_estructuras', { sistema_principal: e.target.value })}
                                     disabled={isClosed}
-                                >
-                                    <option value="">Selecciona...</option>
-                                    <option value="Tejido contráctil">Tejido contráctil</option>
-                                    <option value="Articulación / cápsula">Articulación / cápsula</option>
-                                    <option value="Ligamento / estabilidad pasiva">Ligamento / estabilidad pasiva</option>
-                                    <option value="Sistema neural">Sistema neural</option>
-                                    <option value="Control motor / movimiento">Control motor / movimiento</option>
-                                    <option value="Carga ósea">Carga ósea</option>
-                                    <option value="Tejido conectivo / fascia">Tejido conectivo / fascia</option>
-                                    <option value="Mixto">Mixto</option>
-                                </select>
+                                    placeholder="Ej: Tejido contráctil / Mixto"
+                                />
+                                <datalist id="sistema-options">
+                                    <option value="Tejido contráctil" />
+                                    <option value="Articulación / cápsula" />
+                                    <option value="Ligamento / estabilidad pasiva" />
+                                    <option value="Sistema neural" />
+                                    <option value="Control motor / movimiento" />
+                                    <option value="Carga ósea" />
+                                    <option value="Tejido conectivo / fascia" />
+                                    <option value="Mixto" />
+                                </datalist>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Estructura Principal</label>

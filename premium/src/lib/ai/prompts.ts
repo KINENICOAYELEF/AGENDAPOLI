@@ -18,16 +18,18 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-Revisa la información integral clínica contenida EXCLUSIVAMENTE en el paquete de caso entregado.
+Revisa la información integral clínica contenida EXCLUSIVAMENTE en el paquete de caso entregado (P1 anamnesis, P1.5 contexto, P2 examen físico).
 NO REDACTES un diagnóstico narrativo final, ni un plan terapéutico, ni objetivos SMART.
-Tu objetivo ÚNICO es operar como un "Ordenador de Caso" que clasifica la data cruda en bloques estructurados bajo lógica CIF para preparar la etapa P4.
+Tu objetivo ÚNICO es operar como un "Ordenador de Caso" que clasifica la data cruda en bloques estructurados bajo lógica CIF para preparar la etapa P4, aportando RIQUEZA CLÍNICA y NO QUEDÁNDOTE CORTO.
 
 REGLAS CLÍNICAS:
-- NO sobreafirmar lo no confirmado. Si no alcanza la base, usa posible o probable.
-- Lista TODAS las disfunciones relevantes detectadas en el relato y examen, no solo una.
-- Organiza lógicamente en: estructura, función, actividad, participación, factores personales, ambiente.
-- Extrae alertas clínicas o incoherencias si las detectas.
-- NO te transformes en un diagnóstico narrativo final todavía.
+1. CLASIFICACIÓN DEL DOLOR: Define categoría y subtipo/apellido. Entrega una justificación ROBUSTA. Si el caso es mixto o dudoso, explicita qué componentes (mecánicos, psicosociales, irritabilidad) hacen pensar en eso. Integra naturaleza, comportamiento, after-effect, mecanismo y hallazgos P2.
+2. SISTEMA Y ESTRUCTURAS: Distingue claramente el sistema principal, la estructura principal y las secundarias. Si el caso justifica dos sistemas, menciónalos. NO sobreafirmes (si no estás seguro, usa "probable" o "posible"). Usa texto descriptivo, no te limites a categorías cerradas genéricas si el caso exige más matices.
+3. ALTERACIONES DETECTADAS: Captura TODAS las alteraciones estructurales y funcionales relevantes (dolor, ROM, fuerza, control motor, carga, inestabilidad, miedo al movimiento, déficit de balance, etc). No te quedes solo con 2 o 3 si el caso tiene más. Usa la severidad real.
+4. ACTIVIDAD Y PARTICIPACIÓN: Diferencia estrictamente las limitaciones de actividad directa (qué le cuesta hacer) vs restricciones de participación (en qué rol social/laboral/deportivo le impacta). Extrae esto del relato, PSFS, metas y contexto basal. Lista TODAS las aplicables, no lo dejes corto.
+5. FACTORES BIOPSICOSOCIALES: Captura ABSOLUTAMENTE TODO factor personal (+/-) y ambiental (facilitador/barrera) desde P1 y P1.5. Si detectas banderas (amarillas, azules, negras, naranjas, rosadas), tradúcelas a impacto clínico real en el texto (ej. "Miedo severo a la re-lesión interfiere con la carga").
+6. RECORDATORIOS Y COHERENCIA: Enseña a razonar clínica y objetivamente. Señala qué vigilar en tratamiento, qué falta evaluar no críticamente y destaca incoherencias clínicas REALES. No marques falsos positivos absurdos.
+- NO te transformes en un diagnóstico narrativo final todavía, mantén los bloques JSON limpios.
   `,
 
   NARRATIVE: `

@@ -284,7 +284,8 @@ export function buildCompactCasePackage(formData: any) {
         patron_movilidad: p2_struct.patron_movilidad || "",
         patron_fuerza_control: p2_struct.patron_fuerza_control || "",
         irritabilidad_tisular: p2_struct.irritabilidad_tisular || "",
-        hipotesis_tracking: formData.guidedExam?.hipotesis_tracking || []
+        hipotesis_tracking: formData.guidedExam?.hipotesis_tracking || [],
+        texto_sintesis_completa: p2_struct.summary_text_structured || ""
     };
 
     return {
