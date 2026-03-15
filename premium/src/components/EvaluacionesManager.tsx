@@ -12,10 +12,11 @@ interface EvaluacionesManagerProps {
     usuariaId: string;
     usuariaName: string;
     proceso: Proceso;
+    remoteHistorySnapshot?: any;
+    pacienteSnapshot?: any;
     onBack: () => void;
 }
-
-export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }: EvaluacionesManagerProps) {
+export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHistorySnapshot, pacienteSnapshot, onBack }: EvaluacionesManagerProps) {
     const { globalActiveYear } = useYear();
 
     const [view, setView] = useState<'lista' | 'formulario' | 'lectura'>('lista');
@@ -74,7 +75,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, onBack }:
                         usuariaId={usuariaId}
                         procesoId={proceso.id!}
                         type={evaluacionType}
-                        initialData={selectedEvaluacion}
+                        initialData={(selectedEvaluacion || (remoteHistorySnapshot || pacienteSnapshot ? { remoteHistorySnapshot, paciente: pacienteSnapshot } : null)) as any}
                         onClose={() => setView('lista')}
                         onSaveSuccess={handleFormSaved}
                     />

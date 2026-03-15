@@ -68,10 +68,13 @@ export function normalizeEvaluationState(payload: Partial<EvaluacionInicial>): N
     // 6. IDENTIFICACIÓN
     const pat = (payload as any).paciente || {};
     let identificacion = "Sin nombre cargado";
-    if (pat.nombres) {
-        identificacion = `${pat.nombres} ${pat.apellidos || ''}`.trim();
-        if (pat.edad || pat.sexoBiomecanico) {
-            identificacion += ` (${pat.edad ? pat.edad + ' años' : ''}${pat.edad && pat.sexoBiomecanico ? ', ' : ''}${pat.sexoBiomecanico || ''})`;
+    if (pat.fullName || pat.nombres) {
+        identificacion = pat.fullName || `${pat.nombres} ${pat.apellidos || ''}`.trim();
+        const age = pat.fechaNacimiento ? Math.floor((Date.now() - new Date(pat.fechaNacimiento).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : pat.edad;
+        const sex = pat.sexoRegistrado || pat.sexoBiomecanico;
+        
+        if (age || sex) {
+            identificacion += ` (${age ? age + ' años' : ''}${age && sex ? ', ' : ''}${sex || ''})`;
         }
     }
 
@@ -288,11 +291,20 @@ export function buildCompactCasePackage(formData: any) {
         texto_sintesis_completa: p2_struct.summary_text_structured || ""
     };
 
+    // Age calculation helper
+    const calculateAge = (dob: string) => {
+        if (!dob) return null;
+        const diff = Date.now() - new Date(dob).getTime();
+        return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    };
+
+    const age = pat.fechaNacimiento ? calculateAge(pat.fechaNacimiento) : pat.edad;
+
     return {
         demographics: {
-            nombre: pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido",
-            edad: pat.edad || "Desconocida",
-            sexo: pat.sexoBiomecanico || "Desconocido"
+            nombre: pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido"),
+            edad: age ? `${age} años` : "Desconocida",
+            sexo: pat.sexoRegistrado || pat.sexoBiomecanico || "Desconocido"
         },
         p1_core,
         p15_core,

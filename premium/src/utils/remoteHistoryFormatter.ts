@@ -1,4 +1,5 @@
 import { RemoteHistory } from '@/types/personaUsuaria';
+import { humanize } from './humanizer';
 
 export function buildBasalSynthesis(history: RemoteHistory): string {
     if (!history) return 'Sin antecedentes remotos basales registrados.';
@@ -160,32 +161,32 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
     // Deporte
     const act = history.baseActivity;
     if (act) {
-        if (act.primarySport) defaultVal.deporte_actividad_basal.actividad_deporte_central = act.primarySport;
-        if (act.level) defaultVal.deporte_actividad_basal.nivel_practica_actual = act.level;
+        if (act.primarySport) defaultVal.deporte_actividad_basal.actividad_deporte_central = humanize(act.primarySport);
+        if (act.level) defaultVal.deporte_actividad_basal.nivel_practica_actual = humanize(act.level);
         if (act.weeklyFrequency) defaultVal.deporte_actividad_basal.frecuencia_semanal = act.weeklyFrequency;
         if (act.typicalDuration) defaultVal.deporte_actividad_basal.duracion_tipica = act.typicalDuration;
-        if (act.doubleLoad) defaultVal.deporte_actividad_basal.doble_carga_basal = act.doubleLoad;
+        if (act.doubleLoad) defaultVal.deporte_actividad_basal.doble_carga_basal = humanize(act.doubleLoad);
     }
 
     // Ocupacional
     const occ = history.occupationalContext;
     if (occ) {
         if (occ.mainRole) defaultVal.contexto_ocupacional.ocupacion_principal = occ.mainRole;
-        if (occ.shifts) defaultVal.contexto_ocupacional.jornada_formato = occ.shifts;
-        if (occ.timeSitting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Sentado: ${occ.timeSitting}`);
-        if (occ.timeStanding) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`De pie: ${occ.timeStanding}`);
-        if (occ.weightLifting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Carga: ${occ.weightLifting}`);
-        if (occ.adherenceBarriers) defaultVal.contexto_ocupacional.barreras_logisticas_adherencia = [...occ.adherenceBarriers];
+        if (occ.shifts) defaultVal.contexto_ocupacional.jornada_formato = humanize(occ.shifts);
+        if (occ.timeSitting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Sentado: ${humanize(occ.timeSitting)}`);
+        if (occ.timeStanding) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`De pie: ${humanize(occ.timeStanding)}`);
+        if (occ.weightLifting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Carga: ${humanize(occ.weightLifting)}`);
+        if (occ.adherenceBarriers) defaultVal.contexto_ocupacional.barreras_logisticas_adherencia = occ.adherenceBarriers.map(b => humanize(b));
     }
 
     // BPS
     const bps = history.bpsContext;
     if (bps) {
-        if (bps.sleepQuality) defaultVal.biopsicosocial_habitos.calidad_sueno = bps.sleepQuality;
-        if (bps.stressLevel) defaultVal.biopsicosocial_habitos.estres_basal = bps.stressLevel;
-        if (bps.basalMood) defaultVal.biopsicosocial_habitos.estado_animo_basal = bps.basalMood;
-        if (bps.smoking) defaultVal.biopsicosocial_habitos.tabaquismo = bps.smoking;
-        if (bps.socialSupport) defaultVal.biopsicosocial_habitos.red_apoyo_social_emocional = bps.socialSupport;
+        if (bps.sleepQuality) defaultVal.biopsicosocial_habitos.calidad_sueno = humanize(bps.sleepQuality);
+        if (bps.stressLevel) defaultVal.biopsicosocial_habitos.estres_basal = humanize(bps.stressLevel);
+        if (bps.basalMood) defaultVal.biopsicosocial_habitos.estado_animo_basal = humanize(bps.basalMood);
+        if (bps.smoking) defaultVal.biopsicosocial_habitos.tabaquismo = humanize(bps.smoking);
+        if (bps.socialSupport) defaultVal.biopsicosocial_habitos.red_apoyo_social_emocional = humanize(bps.socialSupport);
         if (bps.protectiveFactors) defaultVal.biopsicosocial_habitos.factores_protectores = [bps.protectiveFactors];
     }
 

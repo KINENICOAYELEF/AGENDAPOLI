@@ -10,10 +10,11 @@ import { ProcesoTimeline } from "@/components/ProcesoTimeline";
 interface ProcesosManagerProps {
     personaUsuariaId: string;
     personaUsuariaName: string;
+    remoteHistorySnapshot?: any;
+    pacienteSnapshot?: any;
     onBack: () => void;
 }
-
-export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }: ProcesosManagerProps) {
+export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHistorySnapshot, pacienteSnapshot, onBack }: ProcesosManagerProps) {
     const { globalActiveYear } = useYear();
 
     // router interno de este panel
@@ -136,6 +137,8 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, onBack }
                     usuariaId={personaUsuariaId}
                     usuariaName={personaUsuariaName}
                     proceso={selectedProceso}
+                    remoteHistorySnapshot={remoteHistorySnapshot}
+                    pacienteSnapshot={pacienteSnapshot}
                     onBack={() => setView('lista')}
                 />
             </div>

@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { ProcesosManager } from "@/components/ProcesosManager";
+import { humanize } from "@/utils/humanizer";
 
 // Simple unificador de ID UUID/Timestamp para nuevas creaciones
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -156,6 +157,8 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
             <ProcesosManager
                 personaUsuariaId={initialData.id}
                 personaUsuariaName={formData.identity.fullName || ""}
+                remoteHistorySnapshot={formData.remoteHistory}
+                pacienteSnapshot={formData.identity}
                 onBack={() => setSubView('main')}
             />
         );
@@ -404,14 +407,14 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                                         <h4 className="font-semibold text-rose-400 mb-2 border-b border-slate-700 pb-1">Contexto Biopsicosocial y Banderas</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <p><span className="text-slate-400">Estrés:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estres_basal || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.fuente_principal_estres || 'N/A'})</p>
-                                                <p><span className="text-slate-400">Sueño:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.calidad_sueno || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.horas_promedio_sueno || '-'} hrs)</p>
+                                                <p><span className="text-slate-400">Estrés:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estres_basal) || '-'} ({humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.fuente_principal_estres) || 'N/A'})</p>
+                                                <p><span className="text-slate-400">Sueño:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.calidad_sueno) || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.horas_promedio_sueno || '-'} hrs)</p>
                                             </div>
                                             {formData.remoteHistory.p15_context_flags && (
                                                 <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
-                                                    {formData.remoteHistory.p15_context_flags.factores_personales_positivos?.map((f: string, i: number) => <span key={`fp-${i}`} className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 text-[10px]">{f}</span>)}
-                                                    {formData.remoteHistory.p15_context_flags.factores_personales_negativos?.map((f: string, i: number) => <span key={`fn-${i}`} className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded border border-rose-800 text-[10px]">{f}</span>)}
-                                                    {formData.remoteHistory.p15_context_flags.barreras_ambientales?.map((f: string, i: number) => <span key={`ba-${i}`} className="bg-amber-900/50 text-amber-300 px-2 py-0.5 rounded border border-amber-800 text-[10px]">{f}</span>)}
+                                                    {formData.remoteHistory.p15_context_flags.factores_personales_positivos?.map((f: string, i: number) => <span key={`fp-${i}`} className="bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 text-[10px]">{humanize(f)}</span>)}
+                                                    {formData.remoteHistory.p15_context_flags.factores_personales_negativos?.map((f: string, i: number) => <span key={`fn-${i}`} className="bg-rose-900/50 text-rose-300 px-2 py-0.5 rounded border border-rose-800 text-[10px]">{humanize(f)}</span>)}
+                                                    {formData.remoteHistory.p15_context_flags.barreras_ambientales?.map((f: string, i: number) => <span key={`ba-${i}`} className="bg-amber-900/50 text-amber-300 px-2 py-0.5 rounded border border-amber-800 text-[10px]">{humanize(f)}</span>)}
                                                 </div>
                                             )}
                                         </div>
