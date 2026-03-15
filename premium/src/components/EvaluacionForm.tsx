@@ -135,6 +135,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         }
     };
 
+    const [importKey, setImportKey] = useState(0);
+
     const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -151,6 +153,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 if (window.confirm("Cargar este archivo JSON reemplazará el estado actual de toda la evaluación en pantalla. ¿Deseas continuar?")) {
                     setFormData(parsed.payload);
+                    setImportKey(prev => prev + 1); // Force remount of current screen
                     setSaveFeedback({ message: "JSON cargado correctamente", type: 'success' });
                     setTimeout(() => setSaveFeedback(null), 3000);
                 }
@@ -246,6 +249,19 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         });
     };
 
+    // FASE 28: Global debounced auto-save para prevenir pérdida de datos en Refresh (P3, P4)
+    useEffect(() => {
+        if (!formData.id || !globalActiveYear || isClosed) return;
+        
+        // Evitamos guardar DRAFTS en carga inicial si no han pasado unos segundos 
+        // para dar tiempo a cargar el estado inicial.
+        const timer = setTimeout(() => {
+            handleSave(false, true).catch(err => console.error("Silent auto-save failed", err));
+        }, 5000);
+        
+        return () => clearTimeout(timer);
+    }, [formData, isClosed, globalActiveYear]);
+
     const getValidationContext = useMemo(() => {
         const missing: string[] = [];
         const warnings: string[] = [];
@@ -325,14 +341,14 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         }
     }, [formData, type]);
 
-    const handleSave = async (isClosing: boolean = false) => {
+    const handleSave = async (isClosing: boolean = false, isSilent: boolean = false) => {
         if (!globalActiveYear || !user) return;
 
         if (isClosing && !getValidationContext.allValid) {
             const warnMsg = (getValidationContext as any).warnings && (getValidationContext as any).warnings.length > 0 
-                ? `\\n\\n⚠️ ADVERTENCIAS:\\n - ${(getValidationContext as any).warnings.join('\\n - ')}` 
+                ? `\n\n⚠️ ADVERTENCIAS:\n - ${(getValidationContext as any).warnings.join('\n - ')}` 
                 : '';
-            alert("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\\n\\nFalta completar:\\n - " + getValidationContext.missing.join('\\n - ') + warnMsg + "\\n\\nNo puedes cerrar la evaluación hasta completarlos.");
+            alert("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\n\nFalta completar:\n - " + getValidationContext.missing.join('\n - ') + warnMsg + "\n\nNo puedes cerrar la evaluación hasta completarlos.");
             return;
         }
         if (isClosing && !window.confirm("¿Seguro que deseas Cerrar y Fijar esta evaluación? Generará el Set de Objetivos inmutable del Proceso.")) {
@@ -344,7 +360,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         }
 
         try {
-            setLoading(true);
+            if (!isSilent) setLoading(true);
             const targetId = isEditMode ? initialData!.id! : generateId();
 
             const payload: Evaluacion = {
@@ -545,25 +561,30 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 }
             }
 
-            setLoading(false);
-            setLoading(false);
-            setSaveFeedback({ message: isClosing ? "Evaluación guardada definitivamente" : "Borrador guardado correctamente", type: 'success' });
-            setTimeout(() => setSaveFeedback(null), 3000);
-
             if (isClosing) {
                 onClose(); // Cerrar overlay
             }
-        } catch (err) {
-            console.error("Error guardando:", err);
-            setSaveFeedback({ message: "Error al guardar. Revisa tu conexión.", type: 'error' });
-            setTimeout(() => setSaveFeedback(null), 4000);
-            setLoading(false);
+        } catch (error) {
+            console.error("Error guardando evaluación:", error);
+            if (!isSilent) {
+                setSaveFeedback({ message: 'Error al persistir', type: 'error' });
+                alert("Hubo un error al guardar la evaluación. Por favor revisa tu conexión.");
+            }
+        } finally {
+            if (!isSilent) {
+                setLoading(false);
+                setSaveFeedback({ message: isClosing ? 'Cerrada y Fijada' : 'Borrador persistido al 100%', type: 'success' });
+                setTimeout(() => setSaveFeedback(null), 3500);
+            } else {
+                setSaveFeedback({ message: 'Autoguardado', type: 'success' });
+                setTimeout(() => setSaveFeedback(null), 1500);
+            }
         }
     };
 
     const handleTabChange = (targetScreenId: number) => {
         if (!isClosed) {
-            handleSave(false).catch(e => console.error("Error auto-saving on tab change", e));
+            handleSave(false, true).catch(e => console.error("Error auto-saving on tab change", e));
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setScreen(targetScreenId);
@@ -723,7 +744,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 )}
 
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
-                <div className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
+                <div key={importKey} className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
 
                     {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
                         handleSave(false);
