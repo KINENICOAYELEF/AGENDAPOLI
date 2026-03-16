@@ -1704,9 +1704,17 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     {(!interviewV4.jsonExtractError && interviewV4.p1_ai_structured) && (
                         <div className="mt-4 flex flex-col gap-4 animate-in fade-in duration-300">
                             
-                            <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl shadow-sm text-xs flex items-center justify-center gap-2 font-medium">
-                                <span>ℹ️</span>
-                                <span><strong>Modo Hipótesis:</strong> Todo este bloque proviene del análisis estructurado de IA basado en el relato. Debes confirmarlo en P2/P3.</span>
+                            <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl shadow-sm text-xs flex flex-col gap-2 font-medium">
+                                <div className="flex items-center justify-center gap-2">
+                                    <span>ℹ️</span>
+                                    <span><strong>Modo Hipótesis:</strong> Todo este bloque proviene del análisis estructurado de IA basado en el relato. Debes confirmarlo en P2/P3.</span>
+                                </div>
+                                {interviewV4.p1_ai_structured.contexto_basal_usado && (
+                                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-blue-100 text-[10px] text-blue-700 animate-pulse">
+                                        <span>✨</span>
+                                        <span className="font-bold uppercase tracking-tight">Contexto basal integrado (P1.5 / Expediente utilizado)</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 1. Resúmenes Editables */}
@@ -1828,13 +1836,43 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Foco Examen Físico (Paso 2) Recomendado</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
                                         {Object.entries(interviewV4.p1_ai_structured.recomendaciones_p2_por_modulo || {}).map(([mod, data]: any) => (
-                                            <div key={mod} className="bg-white border border-teal-100 rounded p-2 flex flex-col justify-between max-h-[160px] overflow-y-auto">
-                                                <strong className="text-teal-900 mb-1 block capitalize tracking-wider">{mod.replace(/_/g, " ")}</strong>
-                                                <p className="text-teal-800 font-medium mb-1">{data.objetivo}</p>
-                                                {data.por_que_aporta_en_este_caso && <p className="text-teal-700 mb-1"><strong className="opacity-80">Por qué aporta:</strong> {data.por_que_aporta_en_este_caso}</p>}
-                                                {data.hallazgo_que_apoya_hipotesis_principal && <p className="text-emerald-700 mb-1 border-t border-emerald-50 pt-1"><strong className="opacity-80">Confirma H1 si:</strong> {data.hallazgo_que_apoya_hipotesis_principal}</p>}
-                                                {data.hallazgo_que_debilita_hipotesis_principal && <p className="text-rose-700"><strong className="opacity-80">Debilita H1 si:</strong> {data.hallazgo_que_debilita_hipotesis_principal}</p>}
-                                                {data.pruebas_o_tareas_sugeridas?.length > 0 && <span className="mt-1 bg-teal-50 text-teal-800 text-[9px] px-1.5 py-0.5 rounded border border-teal-100 w-fit">🎯 {data.pruebas_o_tareas_sugeridas.join(', ')}</span>}
+                                            <div key={mod} className="bg-white border border-teal-100 rounded p-3 flex flex-col gap-2 shadow-sm">
+                                                <div className="flex items-center justify-between border-b border-teal-50 pb-1.5 mb-1">
+                                                    <strong className="text-teal-900 capitalize tracking-wider">{mod.replace(/_/g, " ")}</strong>
+                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${data.prioridad === 'alta' ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'}`}>
+                                                        {data.prioridad}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex flex-col gap-1.5">
+                                                    <p className="text-teal-800 font-bold leading-tight">{data.objetivo}</p>
+                                                    
+                                                    {data.razonamiento_clinico && (
+                                                        <p className="text-slate-600 bg-slate-50 p-1.5 rounded italic">
+                                                            {data.razonamiento_clinico}
+                                                        </p>
+                                                    )}
+
+                                                    <div className="grid grid-cols-1 gap-1 pt-1 border-t border-teal-50">
+                                                        {data.hallazgo_esperado_si_hipotesis_gana_fuerza && (
+                                                        <p className="text-emerald-700"><strong className="block text-[8px] uppercase opacity-70">Si H1 Gana Fuerza:</strong> {data.hallazgo_esperado_si_hipotesis_gana_fuerza}</p>
+                                                        )}
+                                                        {data.hallazgo_esperado_si_hipotesis_pierde_fuerza && (
+                                                        <p className="text-rose-700"><strong className="block text-[8px] uppercase opacity-70">Si H1 Pierde Fuerza:</strong> {data.hallazgo_esperado_si_hipotesis_pierde_fuerza}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {(data.tareas_minimas_sugeridas?.length > 0 || data.pruebas_o_tareas_sugeridas?.length > 0) && (
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            {(data.tareas_minimas_sugeridas || []).map((t: string, i: number) => (
+                                                                <span key={i} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium">📋 {t}</span>
+                                                            ))}
+                                                            {data.pruebas_o_tareas_sugeridas.map((t: string, i: number) => (
+                                                                <span key={i} className="bg-teal-100 text-teal-800 text-[8px] px-1.5 py-0.5 rounded border border-teal-200 font-bold">🎯 {t}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

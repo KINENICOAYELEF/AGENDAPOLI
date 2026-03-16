@@ -232,12 +232,16 @@ export type MissingnessCheckType = z.infer<typeof MissingnessCheckSchema>;
 const P2ModuleRecommendationSchema = z.object({
     objetivo: z.string(),
     por_que_aporta_en_este_caso: z.string(),
+    razonamiento_clinico: z.string().optional().describe("Explicación pedagógica de por qué este módulo es clave en este caso"),
     que_descarta: z.string(),
     que_confirma: z.string(),
     hallazgo_que_apoya_hipotesis_principal: z.string().optional(),
     hallazgo_que_debilita_hipotesis_principal: z.string().optional(),
+    hallazgo_esperado_si_hipotesis_gana_fuerza: z.string().optional(),
+    hallazgo_esperado_si_hipotesis_pierde_fuerza: z.string().optional(),
     hallazgos_para_confirmar: z.string().optional(),
     hallazgos_para_descartar: z.string().optional(),
+    tareas_minimas_sugeridas: z.array(z.string()).optional().describe("Tareas o pruebas base para este módulo"),
     pruebas_o_tareas_sugeridas: z.array(z.string()),
     prioridad: z.string()
 });
@@ -245,6 +249,7 @@ const P2ModuleRecommendationSchema = z.object({
 // G) FASE 11 (Refactor Total P1)
 export const P1SynthesisSchema = z.object({
     resumen_clinico_editable: z.string(),
+    contexto_basal_usado: z.boolean().optional().describe("Indica si se usó información de P1.5/expediente"),
     resumen_persona_usuaria: z.object({
         lo_que_entendi: z.string(),
         lo_que_te_preocupa: z.string(),
