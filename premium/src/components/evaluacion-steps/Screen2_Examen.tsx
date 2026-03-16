@@ -2461,7 +2461,15 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
                                     }
                                 }
 
-                                const p2_summary_structured = buildP2SummaryStructured(examCopy);
+                                const contextP1 = {
+                                    foco: focoRegion,
+                                    lado: focoLado,
+                                    queja: focoQueja,
+                                    irritabilidad: irritabilidad,
+                                    signoComparable: actividadIndiceP1
+                                };
+
+                                const p2_summary_structured = buildP2SummaryStructured(examCopy, contextP1);
 
                                 // Actualizar SIN borrar lo existente, asegurando inmutabilidad en top-level
                                 updateFormData((prev) => {
