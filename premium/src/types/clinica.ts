@@ -360,6 +360,10 @@ export interface BaseEvaluacion {
     loadTrafficLight?: any;
     // FASE 37: Anamnesis Remota (P1.5)
     remoteHistorySnapshot?: any; // Snapshot inmutable del perfil permanente remoto al momento de la cita
+    
+    // FASE 32: Persistencia Total P3 y Compact Package
+    p3_case_organizer?: any;
+    compact_case_package?: any;
 }
 
 export interface AnamnesisProximaV3 {

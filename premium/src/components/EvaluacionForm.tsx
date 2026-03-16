@@ -348,8 +348,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const warnMsg = (getValidationContext as any).warnings && (getValidationContext as any).warnings.length > 0 
                 ? `\n\n⚠️ ADVERTENCIAS:\n - ${(getValidationContext as any).warnings.join('\n - ')}` 
                 : '';
-            alert("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\n\nFalta completar:\n - " + getValidationContext.missing.join('\n - ') + warnMsg + "\n\nNo puedes cerrar la evaluación hasta completarlos.");
-            return;
+            const confirmSave = window.confirm("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\n\nFalta completar:\n - " + getValidationContext.missing.join('\n - ') + warnMsg + "\n\n¿Deseas forzar el guardado definitivo de todas maneras?");
+            if (!confirmSave) return;
         }
         if (isClosing && !window.confirm("¿Seguro que deseas Cerrar y Fijar esta evaluación? Generará el Set de Objetivos inmutable del Proceso.")) {
             return;
@@ -361,7 +361,11 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
         try {
             if (!isSilent) setLoading(true);
-            const targetId = isEditMode ? initialData!.id! : generateId();
+            const targetId = formData.id || (isEditMode ? initialData!.id! : generateId());
+
+            if (!formData.id) {
+                updateFormData({ id: targetId });
+            }
 
             const payload: Evaluacion = {
                 ...formData as Evaluacion,
@@ -562,7 +566,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             }
 
             if (isClosing) {
-                onClose(); // Cerrar overlay
+                if (onSaveSuccess) onSaveSuccess(payload, !isEditMode && formData.id !== targetId); 
             }
         } catch (error) {
             console.error("Error guardando evaluación:", error);

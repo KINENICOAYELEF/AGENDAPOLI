@@ -65,8 +65,15 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
     const [isKeyboardOpen, setIsKeyboardOpen] = React.useState(false);
     const [isSynthesizing, setIsSynthesizing] = React.useState(false);
-    const [synthesisSuccess, setSynthesisSuccess] = React.useState(false);
-    const [localPreview, setLocalPreview] = React.useState<any>(null);
+    const [synthesisSuccess, setSynthesisSuccess] = React.useState(!!exam?.autoSynthesis);
+    const [localPreview, setLocalPreview] = React.useState<any>(exam?.autoSynthesis || null);
+
+    // FASE 32: Marcar como desactualizado si el usuario edita el examen después de sintetizar
+    React.useEffect(() => {
+        if (synthesisSuccess) {
+            setSynthesisSuccess(false);
+        }
+    }, [exam?.observacion, exam?.romAnaliticoConfig, exam?.fuerzaMlc, exam?.pruebasOrtopedicas, exam?.fuerzaMrc, exam?.palpacionConfig, exam?.controlMotorConfig, exam?.neurologico, exam?.retestConfig]);
 
     // FASE 20: Panel de Hipótesis y Estado
     const [hipotesisTracking, setHipotesisTracking] = React.useState<any[]>(() => {

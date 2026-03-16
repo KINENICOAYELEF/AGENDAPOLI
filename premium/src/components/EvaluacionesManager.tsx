@@ -59,11 +59,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
     }, [globalActiveYear, proceso.id]);
 
     const handleFormSaved = (saved: Evaluacion, isNew: boolean) => {
-        if (isNew) {
-            setEvaluaciones(prev => [saved, ...prev].sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime()));
-        } else {
-            setEvaluaciones(prev => prev.map(p => p.id === saved.id ? saved : p));
-        }
+        loadEvaluaciones();
         setView('lista');
     };
 
@@ -76,7 +72,10 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                         procesoId={proceso.id!}
                         type={evaluacionType}
                         initialData={(selectedEvaluacion || (remoteHistorySnapshot || pacienteSnapshot ? { remoteHistorySnapshot, paciente: pacienteSnapshot } : null)) as any}
-                        onClose={() => setView('lista')}
+                        onClose={() => { 
+                            setView('lista');
+                            loadEvaluaciones();
+                        }}
                         onSaveSuccess={handleFormSaved}
                     />
                 </div>
