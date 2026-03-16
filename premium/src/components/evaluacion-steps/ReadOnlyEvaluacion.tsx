@@ -110,10 +110,13 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                     </div>
                                 )}
                             </div>
+                        ) : ev.interview?.v4?.experienciaPersona?.relatoLibre || ev.interview?.v4?.anamnesisProxima?.motivoPrincipalConsulta ? (
+                            <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.interview.v4.experienciaPersona?.relatoLibre || ev.interview.v4.anamnesisProxima?.motivoPrincipalConsulta}</p>
+                            </div>
                         ) : (
-                            <div className="p-6 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                <p className="text-sm text-slate-500 italic mb-2">Resumen en texto clásico o no disponible.</p>
-                                <p className="text-sm text-slate-700 whitespace-pre-wrap">{ev.interview?.v4?.experienciaPersona?.relatoLibre || 'No hay relato ingresado'}</p>
+                            <div className="text-sm text-slate-500 italic flex items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                Sin antecedentes de anamnesis próximos registrados.
                             </div>
                         )}
                     </div>
@@ -157,9 +160,8 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 </p>
                             </div>
                         ) : (
-                            <div className="text-sm text-slate-500 italic flex items-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100 justify-center">
-                                <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z" /></svg>
-                                Examen físico no sintetizado aún. Cargar editor completo para ver módulos P2.
+                            <div className="text-sm text-slate-500 italic flex items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                Examen físico aún no sintetizado.
                             </div>
                         )}
                     </div>
@@ -254,12 +256,12 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                             </div>
                         ) : ev.geminiDiagnostic?.narrativeDiagnosis ? (
                             <div>
-                                <h4 className="text-xs uppercase text-slate-500 font-bold mb-2 tracking-wider">Diagnóstico Narrativo (Legacy)</h4>
+                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider border-b pb-2">Diagnóstico Narrativo (Legacy)</h4>
                                 <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap">{ev.geminiDiagnostic.narrativeDiagnosis}</p>
                             </div>
                         ) : (
                             <div className="text-sm text-slate-500 italic flex items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                No hay diagnóstico narrativo ni plan guardado.
+                                Diagnóstico y plan aún no sintetizados.
                             </div>
                         )}
                     </div>
