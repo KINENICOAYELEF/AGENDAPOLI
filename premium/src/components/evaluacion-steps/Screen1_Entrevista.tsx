@@ -1792,19 +1792,32 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 lg:col-span-2">
                                     <h4 className="text-xs font-bold text-indigo-800 mb-2">💡 Hipótesis Orientativas</h4>
                                     <div className="space-y-2">
-                                        {interviewV4.p1_ai_structured.hipotesis_orientativas?.map((h: any, i: number) => (
-                                            <div key={i} className="bg-white border border-indigo-50 p-2 rounded text-[11px] gap-1 flex flex-col">
-                                                <div className="flex justify-between">
-                                                    <strong className="text-indigo-900">{h.ranking}. {h.titulo}</strong>
-                                                    <span className="text-[9px] uppercase px-1 py-0.5 rounded bg-indigo-100 text-indigo-700">{h.probabilidad?.replace("_", " ")}</span>
+                                        {[0, 1, 2].map((idx) => {
+                                            const h = interviewV4.p1_ai_structured.hipotesis_orientativas?.[idx];
+                                            if (!h) return (
+                                                <div key={idx} className="bg-slate-50 border border-slate-100 p-2 rounded text-[11px] opacity-40 border-dashed">
+                                                    <span className="italic">Procesando hipótesis alternativa...</span>
                                                 </div>
-                                                <p className="text-indigo-700">{h.fundamento_breve}</p>
-                                                <div className="grid grid-cols-2 gap-2 mt-1 border-t border-indigo-50 pt-1">
-                                                    <p className="text-emerald-700"><strong className="block text-[9px] uppercase">A Confirmar:</strong>{h.que_hay_que_confirmar}</p>
-                                                    <p className="text-rose-700"><strong className="block text-[9px] uppercase">A Descartar:</strong>{h.que_hay_que_descartar}</p>
+                                            );
+                                            return (
+                                                <div key={idx} className="bg-white border border-indigo-50 p-2 rounded text-[11px] gap-1 flex flex-col">
+                                                    <div className="flex justify-between">
+                                                        <strong className="text-indigo-900">{idx + 1}. {h.titulo}</strong>
+                                                        <span className="text-[9px] uppercase px-1 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                                                            {h.probabilidad === 'mas_probable' ? 'Más probable' : 
+                                                             h.probabilidad === 'probable_alternativa' ? 'Probable alternativa' : 
+                                                             h.probabilidad === 'menos_probable' ? 'Menos probable' : 
+                                                             h.probabilidad?.replace("_", " ")}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-indigo-700">{h.fundamento_breve}</p>
+                                                    <div className="grid grid-cols-2 gap-2 mt-1 border-t border-indigo-50 pt-1">
+                                                        <p className="text-emerald-700"><strong className="block text-[8px] uppercase tracking-tighter opacity-70">A Confirmar:</strong>{h.que_hay_que_confirmar}</p>
+                                                        <p className="text-rose-700"><strong className="block text-[8px] uppercase tracking-tighter opacity-70">A Descartar:</strong>{h.que_hay_que_descartar}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -1908,20 +1921,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                     )}
 
                                                     <div className="flex flex-col gap-1.5 pt-1 border-t border-teal-50">
-                                                        <div className="flex flex-col gap-1">
-                                                            <strong className="text-[8px] uppercase opacity-70 font-black text-emerald-800">✅ Qué buscar (Hallazgo Confirmatorio):</strong>
-                                                            <p className="text-emerald-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_gana_fuerza || data.que_confirma}</p>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-[7px] uppercase font-bold text-emerald-800/60 tracking-wider">Esperado p/ Confirmar</span>
+                                                            <p className="text-emerald-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_gana_fuerza || data.que_confirma || data.hallazgos_para_confirmar}</p>
                                                         </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <strong className="text-[8px] uppercase opacity-70 font-black text-rose-800">❌ Qué debilita sospecha:</strong>
-                                                            <p className="text-rose-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_pierde_fuerza || data.que_descarta}</p>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Esperado p/ Debilitar</span>
+                                                            <p className="text-rose-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_pierde_fuerza || data.que_descarta || data.hallazgos_para_descartar}</p>
                                                         </div>
-                                                        {data.hallazgos_para_descartar && (
-                                                            <div className="flex flex-col gap-1">
-                                                                <strong className="text-[8px] uppercase opacity-70 font-black text-indigo-800">🔍 Ayuda a descartar/Diferencial:</strong>
-                                                                <p className="text-indigo-700 leading-tight">{data.hallazgos_para_descartar}</p>
-                                                            </div>
-                                                        )}
                                                     </div>
 
                                                     {(data.tareas_minimas_sugeridas?.length > 0 || data.pruebas_o_tareas_sugeridas?.length > 0) && (
@@ -1929,7 +1936,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                             {(data.tareas_minimas_sugeridas || []).map((t: string, i: number) => (
                                                                 <span key={i} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium">📋 {t}</span>
                                                             ))}
-                                                            {data.pruebas_o_tareas_sugeridas.map((t: string, i: number) => (
+                                                            {(data.pruebas_o_tareas_sugeridas || []).map((t: string, i: number) => (
                                                                 <span key={i} className="bg-teal-100 text-teal-800 text-[8px] px-1.5 py-0.5 rounded border border-teal-200 font-bold">🎯 {t}</span>
                                                             ))}
                                                         </div>
@@ -1940,187 +1947,70 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Raw JSON Debug View */}
-                            <details className="mt-2 bg-slate-900 rounded-xl shadow-inner border border-slate-700">
-                                <summary className="bg-slate-800 px-3 py-2 border-b border-slate-700 flex justify-between items-center cursor-pointer outline-none select-none text-[10px] font-mono text-slate-400 font-bold uppercase tracking-wider hover:bg-slate-700 transition-colors">
-                                    <span>Ver JSON Crudo (Developer)</span>
-                                </summary>
-                                <pre className="p-3 whitespace-pre-wrap font-mono text-[11px] text-blue-300 overflow-x-auto leading-relaxed max-h-96 overflow-y-auto">
-                                    {JSON.stringify(interviewV4.p1_ai_structured, null, 2)}
-                                </pre>
-                            </details>
                         </div>
                     )}
-                </div>
 
-                {/* 6. Datos de Seguimiento y Anclas eliminados (Fase 24 visual cleanup) */}
-
-                {/* 7. Confirmaciones críticas */}
-                {interviewV4.analisisIA && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 flex flex-col gap-4">
-                        <div className="flex items-center gap-2 mb-2 w-full">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-md bg-emerald-600 text-white font-bold text-xs">7</span>
-                            <h3 className="font-black text-slate-800 text-base">Confirmaciones críticas de IA</h3>
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                            {/* Factory for Confirmation Rows */}
-                            {(() => {
-                                const renderConfRow = (
-                                    keyID: 'irritabilidad_global' | 'naturaleza_sugerida' | 'hipotesis_orientativas',
-                                    title: string,
-                                    iaValue: string,
-                                    showIf: boolean = true
-                                ) => {
-                                    if (!showIf) return null;
-                                    const confState = interviewV4.confirmacionesCriticas?.[keyID] || { estado: 'Pendiente' };
-
-                                    return (
-                                        <div key={keyID} className={`p-3 rounded-lg border flex flex-col gap-2 transition-colors ${confState.estado === 'De acuerdo' ? 'bg-emerald-50 border-emerald-200' : confState.estado === 'Editado' ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>
-                                                    <span className="text-sm font-bold text-slate-800 break-words">{iaValue}</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
-                                                    <button
-                                                        disabled={isClosed}
-                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'De acuerdo' } } }); }}
-                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'De acuerdo' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
-                                                    >
-                                                        De acuerdo
-                                                    </button>
-                                                    <button
-                                                        disabled={isClosed}
-                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'Editado' } } }); }}
-                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'Editado' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
-                                                    >
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        disabled={isClosed}
-                                                        onClick={(e) => { e.preventDefault(); updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, estado: 'Pendiente' } } }); }}
-                                                        className={`text-[10px] font-bold px-3 py-1.5 rounded transition-all ${confState.estado === 'Pendiente' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}`}
-                                                    >
-                                                        Pendiente
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {confState.estado === 'Editado' && (
-                                                <div className="mt-2 pt-2 border-t border-blue-100/50 flex flex-col sm:flex-row gap-2">
-                                                    <input
-                                                        type="text"
-                                                        disabled={isClosed}
-                                                        placeholder="Nuevo valor..."
-                                                        value={confState.valorEditado || ""}
-                                                        onChange={(e) => updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, valorEditado: e.target.value } } })}
-                                                        className="flex-1 text-xs p-2 border border-blue-200 rounded outline-none focus:border-blue-500"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        disabled={isClosed}
-                                                        placeholder="Breve justificación (1 línea)..."
-                                                        value={confState.justificacion || ""}
-                                                        onChange={(e) => updateV4({ confirmacionesCriticas: { ...interviewV4.confirmacionesCriticas as any, [keyID]: { ...confState, justificacion: e.target.value } } })}
-                                                        className="flex-2 text-xs p-2 border border-blue-200 rounded outline-none focus:border-blue-500"
-                                                    />
-                                                </div>
+                    {/* 7. Alertas de Seguridad Criticas (Solo si existen) */}
+                    {hayContradiccionSeguridad && interviewV4.analisisIA && (
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl shadow-sm p-4 mt-4">
+                            <div className="flex items-start gap-3">
+                                <div className="text-xl mt-0.5">⚠️</div>
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-orange-900 text-xs mb-1">Alerta de Seguridad por Contradicción</h4>
+                                    <p className="text-[10px] text-orange-800 mb-3">
+                                        IA detectó información en el relato que contradice su checklist de seguridad:
+                                        <br />
+                                        <span className="italic">"{interviewV4.analisisIA.extraccion_general?.seguridad_mencionada_en_relato?.valor}"</span>
+                                    </p>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); document.getElementById("section-seguridad")?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
+                                            className="flex-1 bg-white border border-slate-300 text-slate-700 font-bold text-[10px] p-1.5 rounded shadow-sm hover:bg-slate-50 transition-colors"
+                                        >
+                                            ⬆️ Marcar en checklist
+                                        </button>
+                                        <div className="flex-2 flex flex-col relative w-full sm:w-2/3">
+                                            <input
+                                                type="text"
+                                                disabled={isClosed}
+                                                placeholder="Descartar (explicar breve)..."
+                                                className="w-full text-[10px] p-2 border border-orange-300 rounded outline-none focus:border-orange-500 bg-white"
+                                                value={interviewV4.seguridad?.resolucionContradiccionIA?.explicacionDescarte || ""}
+                                                onChange={e => {
+                                                    const text = e.target.value;
+                                                    updateV4({
+                                                        seguridad: {
+                                                            ...interviewV4.seguridad,
+                                                            resolucionContradiccionIA: { resuelto: text.trim().length > 3, explicacionDescarte: text }
+                                                        }
+                                                    });
+                                                }}
+                                            />
+                                            {interviewV4.seguridad?.resolucionContradiccionIA?.resuelto && (
+                                                <span className="absolute -top-1 -right-1 text-[8px] bg-emerald-100 text-emerald-800 border border-emerald-300 rounded px-1 font-bold shadow-sm">✅</span>
                                             )}
-                                        </div>
-                                    );
-                                };
-
-                                return (
-                                    <>
-                                        {/* 1. Irritabilidad Global */}
-                                        {renderConfRow(
-                                            'irritabilidad_global',
-                                            'SINS: Irritabilidad Global',
-                                            getFieldText(interviewV4.analisisIA?.SINS?.irritabilidad?.irritabilidad_global) || getFieldText(interviewV4.analisisIA?.SINS?.irritabilidad) || "Desconocida",
-                                            !!interviewV4.analisisIA?.SINS?.irritabilidad
-                                        )}
-
-                                        {/* 2. Naturaleza Sugerida */}
-                                        {renderConfRow(
-                                            'naturaleza_sugerida',
-                                            'SINS: Naturaleza Sugerida',
-                                            getFieldText(interviewV4.analisisIA?.SINS?.naturaleza_sugerida) || "Desconocida",
-                                            !!interviewV4.analisisIA?.SINS?.naturaleza_sugerida
-                                        )}
-
-                                        {/* 3. Hipotesis Orientativas */}
-                                        {renderConfRow(
-                                            'hipotesis_orientativas',
-                                            'Hipótesis Orientativas por Sistema',
-                                            `${interviewV4.analisisIA?.hipotesis_orientativas_por_sistema?.length || 0} hipótesis generadas`,
-                                            (interviewV4.analisisIA?.hipotesis_orientativas_por_sistema?.length || 0) > 0
-                                        )}
-                                    </>
-                                );
-                            })()}
-
-                            {/* FASE 11: Mover aquí la alerta de contradicción (obligatoria) si existe */}
-                            {hayContradiccionSeguridad && (
-                                <div className="p-3 bg-orange-50 border-2 border-orange-400 rounded-lg shadow-sm">
-                                    <div className="flex items-start gap-3">
-                                        <div className="text-xl mt-0.5">⚠️</div>
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-orange-900 text-xs mb-1">Alerta de Seguridad por Contradicción (Obligatoria)</h4>
-                                            <p className="text-[10px] text-orange-800 mb-2">
-                                                IA Extrajo: "{interviewV4.analisisIA.extraccion_general?.seguridad_mencionada_en_relato?.valor}"
-                                            </p>
-                                            <div className="flex flex-col sm:flex-row gap-2">
-                                                <button
-                                                    onClick={(e) => { e.preventDefault(); document.getElementById("section-seguridad")?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
-                                                    className="flex-1 bg-white border border-slate-300 text-slate-700 font-bold text-[10px] p-1.5 rounded shadow-sm hover:bg-slate-50 transition-colors"
-                                                >
-                                                    ⬆️ Marcar en checklist
-                                                </button>
-                                                <div className="flex-2 flex flex-col relative w-full sm:w-2/3">
-                                                    <input
-                                                        type="text"
-                                                        disabled={isClosed}
-                                                        placeholder="Descartar (explicar breve)..."
-                                                        className="w-full text-[10px] p-2 border border-orange-300 rounded outline-none focus:border-orange-500 bg-white"
-                                                        value={interviewV4.seguridad?.resolucionContradiccionIA?.explicacionDescarte || ""}
-                                                        onChange={e => {
-                                                            const text = e.target.value;
-                                                            updateV4({
-                                                                seguridad: {
-                                                                    ...interviewV4.seguridad,
-                                                                    resolucionContradiccionIA: { resuelto: text.trim().length > 3, explicacionDescarte: text }
-                                                                }
-                                                            });
-                                                        }}
-                                                    />
-                                                    {interviewV4.seguridad?.resolucionContradiccionIA?.resuelto && (
-                                                        <span className="absolute -top-1 -right-1 text-[8px] bg-emerald-100 text-emerald-800 border border-emerald-300 rounded px-1 font-bold shadow-sm">✅</span>
-                                                    )}
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
+                    )}
 
-                        <div className="mt-4 flex justify-center w-full">
-                            <button
-                                onClick={handleCloseAnamnesis}
-                                disabled={isClosed || !isValidForP2}
-                                className={`w-full max-w-md font-black px-6 py-4 rounded-xl transition-all shadow-md text-sm uppercase tracking-wider border ${!isValidForP2
-                                    ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-70'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 hover:shadow-lg hover:-translate-y-0.5'
-                                    }`}
-                            >
-                                {isClosed ? '✓ FINALIZADA' : 'Confirmar e Ir a Exámenes P2'}
-                            </button>
-                        </div>
+                    <div className="mt-6 flex justify-center w-full">
+                        <button
+                            onClick={handleCloseAnamnesis}
+                            disabled={isClosed || !isValidForP2}
+                            className={`w-full max-w-md font-black px-6 py-4 rounded-xl transition-all shadow-md text-sm uppercase tracking-wider border ${!isValidForP2
+                                ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed opacity-70'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 hover:shadow-lg hover:-translate-y-0.5'
+                                }`}
+                        >
+                            {isClosed ? '✓ FINALIZADA' : 'Confirmar e Ir a Exámenes P2'}
+                        </button>
                     </div>
-                )}
-            </div >
-        </div >
+                </div>
+            </div>
+        </div>
     );
 }
