@@ -8,39 +8,49 @@ export function buildP2SummaryStructured(examState: any, contextP1?: any): any {
         patron_movilidad: '',
         patron_fuerza_control: '',
         irritabilidad_tisular: '',
+        summary_text_short: '',
         summary_text_structured: ''
     };
 
     let allFindings: string[] = [];
 
-    // --- ENCABEZADO CLÍNICO (HEREDADO DE P1) ---
+    // --- A. ENCABEZADO CLÍNICO (HEREDADO DE P1) ---
+    const p1Info = [];
     if (contextP1) {
-        const p1Info = [];
         if (contextP1.foco) p1Info.push(`Foco: ${contextP1.foco}`);
         if (contextP1.lado) p1Info.push(`Lado: ${contextP1.lado}`);
+        if (contextP1.queja) p1Info.push(`Queja: ${contextP1.queja}`);
         if (contextP1.irritabilidad) p1Info.push(`Irritabilidad: ${contextP1.irritabilidad}`);
-        if (contextP1.signoComparable) p1Info.push(`Signo Comparable (P1): ${contextP1.signoComparable}`);
-        
-        if (p1Info.length > 0) {
-            allFindings.push(`[CONTEXTO P1] ${p1Info.join(' | ')}`);
-        }
+        if (contextP1.signoComparable) p1Info.push(`Tarea Índice/Signo Comparable: ${contextP1.signoComparable}`);
+    }
+    // También campos de P2 que son encabezado
+    if (examState.examModality) p1Info.push(`Modalidad: ${examState.examModality}`);
+    
+    if (p1Info.length > 0) {
+        allFindings.push(`### A. MARCO CLÍNICO\n- ${p1Info.join(' | ')}`);
     }
 
-    // --- B. OBSERVACIONAL ---
-    if (examState.observacion) {
-        const obs = [];
-        if (examState.observacion.postura) obs.push(`Postura: ${examState.observacion.postura}`);
-        if (examState.observacion.marcha) obs.push(`Marcha: ${examState.observacion.marcha}`);
-        if (examState.observacion.trofismo) obs.push(`Trofismo: ${examState.observacion.trofismo}`);
-        if (examState.observacion.actitudEvitativa) obs.push(`Actitud: ${examState.observacion.actitudEvitativa}`);
-        if (examState.observacion.comentario) obs.push(`Comentario: ${examState.observacion.comentario}`);
-        
-        if (obs.length > 0) {
-            allFindings.push(`### OBSERVACIÓN\n${obs.map(o => `- ${o}`).join('\n')}`);
-        }
+    // --- B. EVALUACIÓN OBSERVACIONAL ---
+    const obs = [];
+    if (examState.movimientoObservadoHoy) obs.push(`Gesto/Movimiento observado: ${examState.movimientoObservadoHoy}`);
+    if (examState.postureAlignment) obs.push(`Postura/Alineación: ${examState.postureAlignment}`);
+    if (examState.gaitBasicGesture) obs.push(`Marcha: ${examState.gaitBasicGesture}`);
+    
+    if (examState.observacionInicialConfig) {
+        const cfg = examState.observacionInicialConfig;
+        if (cfg.posturaChips?.length > 0) obs.push(`Hallazgos Postura: ${cfg.posturaChips.join(', ')}`);
+        if (cfg.marchaChips?.length > 0) obs.push(`Hallazgos Marcha: ${cfg.marchaChips.join(', ')}`);
+        if (cfg.movLibreChips?.length > 0) obs.push(`Hallazgos Mov. Libre: ${cfg.movLibreChips.join(', ')}`);
+    }
+    
+    // Legacy support or other detail fields
+    if (examState.observacion?.comentario) obs.push(`Comentario: ${examState.observacion.comentario}`);
+    
+    if (obs.length > 0) {
+        allFindings.push(`### B. OBSERVACIÓN\n${obs.map(o => `- ${o}`).join('\n')}`);
     }
 
-    // --- C. ROM ANALÍTICO (CORRECCIÓN BILATERAL) ---
+    // --- C. RANGO DE MOVIMIENTO (ROM) ---
     if (examState.romAnaliticoConfig?.filas?.length > 0) {
         let romEntries: string[] = [];
         examState.romAnaliticoConfig.filas.forEach((f: any) => {
@@ -50,159 +60,175 @@ export function buildP2SummaryStructured(examState: any, contextP1?: any): any {
                 const der = [];
                 if (f.evalAct && f.resActDer) der.push(`Act: ${f.resActDer}°`);
                 if (f.evalPas && f.resPasDer) der.push(`Pas: ${f.resPasDer}°${f.topeFinalDer ? ` [Tope: ${f.topeFinalDer}]` : ''}`);
-                if (f.hallazgosCustomDer?.length > 0) der.push(`Recorrido: ${f.hallazgosCustomDer.join(', ')}`);
+                if (f.evaDer) der.push(`EVA: ${f.evaDer}/10`);
+                if (f.hallazgosCustomDer?.length > 0) der.push(`${f.hallazgosCustomDer.join(', ')}`);
+                if (f.hallazgoDer) der.push(`Obs: ${f.hallazgoDer}`);
 
                 const izq = [];
                 if (f.evalAct && f.resActIzq) izq.push(`Act: ${f.resActIzq}°`);
                 if (f.evalPas && f.resPasIzq) izq.push(`Pas: ${f.resPasIzq}°${f.topeFinalIzq ? ` [Tope: ${f.topeFinalIzq}]` : ''}`);
-                if (f.hallazgosCustomIzq?.length > 0) izq.push(`Recorrido: ${f.hallazgosCustomIzq.join(', ')}`);
+                if (f.evaIzq) izq.push(`EVA: ${f.evaIzq}/10`);
+                if (f.hallazgosCustomIzq?.length > 0) izq.push(`${f.hallazgosCustomIzq.join(', ')}`);
+                if (f.hallazgoIzq) izq.push(`Obs: ${f.hallazgoIzq}`);
 
                 if (der.length > 0) desc += `\n  - DERECHO: ${der.join(' | ')}`;
-                if (izq.length > 0) desc += `\n  - IZQUIERDO: ${izq.length > 0 ? izq.join(' | ') : 'No evaluado'}`;
+                if (izq.length > 0) desc += `\n  - IZQUIERDO: ${izq.join(' | ')}`;
             } else {
                 const results = [];
                 if (f.evalAct && f.resAct) results.push(`Act: ${f.resAct}°`);
                 if (f.evalPas && f.resPas) results.push(`Pas: ${f.resPas}°${f.topeFinal ? ` [Tope: ${f.topeFinal}]` : ''}`);
-                if (f.hallazgosCustom?.length > 0) results.push(`Recorrido: ${f.hallazgosCustom.join(', ')}`);
+                if (f.eva) results.push(`EVA: ${f.eva}/10`);
+                if (f.hallazgosCustom?.length > 0) results.push(`${f.hallazgosCustom.join(', ')}`);
+                if (f.hallazgo) results.push(`Obs: ${f.hallazgo}`);
                 if (results.length > 0) desc += ` ${results.join(' | ')}`;
             }
 
-            if (f.hallazgo) desc += `\n  - Hallazgo: ${f.hallazgo}`;
             romEntries.push(desc);
 
-            // Identificar concordancia
+            // Concordancia
             const fullText = desc.toLowerCase();
-            if (fullText.includes('dolor') || fullText.includes('limit') || fullText.includes('reproduce')) {
-                summary.signos_concordantes.push(`${f.movimiento}: ${f.hallazgo || 'Hallazgo positivo'}`);
+            if (fullText.includes('dolor') || fullText.includes('limit') || fullText.includes('rígido') || (f.eva && parseInt(f.eva) > 3)) {
+                summary.signos_concordantes.push(`${f.movimiento}: ${desc}`);
             }
         });
         summary.patron_movilidad = romEntries.join('\n');
-        allFindings.push(`### RANGO DE MOVIMIENTO (ROM)\n${romEntries.join('\n')}`);
+        allFindings.push(`### C. RANGO DE MOVIMIENTO (ROM)\n${romEntries.join('\n')}`);
     }
 
-    // --- D. FUERZA Y CARGA ---
+    // --- D. FUERZA Y TOLERANCIA A CARGA ---
     const fuerzaItems: string[] = [];
-    
-    // MRC
-    if (examState.fuerzaMrc?.length > 0) {
-        examState.fuerzaMrc.forEach((f: any) => {
-            if (!f.grupo) return;
-            let d = `${f.grupo} (${f.lado || 'N/A'}): M${f.grado}/5`;
-            if (f.dolor) d += ` [Dolor EVA ${f.dolor}/10]`;
-            if (f.observacion) d += ` - Obs: ${f.observacion}`;
-            fuerzaItems.push(d);
+    if (examState.fuerzaCargaConfig?.filas?.length > 0) {
+        examState.fuerzaCargaConfig.filas.forEach((f: any) => {
+            if (!f.tipoEvaluacion && !f.region) return;
             
-            if (f.grado < 5 || (f.dolor && parseInt(f.dolor) > 3)) {
-                summary.signos_concordantes.push(`Fuerza MRC ${f.grupo}: ${d}`);
+            let d = `**${f.tipoEvaluacion || 'Evaluación'}** ${f.region ? `[${f.region}]` : ''} (${f.lado}): `;
+            
+            // Reconstruir resultado según tipo
+            if (f.tipoEvaluacion === 'Dinamometría (Fuerza)') {
+                d += `${f.dinamometriaDer || '?'}/${f.dinamometriaIzq || '?'} ${f.dinamometriaUnidad || 'Kg'}`;
+                if (f.diferenciaCalculada) d += ` [Dif: ${f.diferenciaCalculada}% - ${f.clasificacionAutomatica || ''}]`;
+            } else if (f.tipoEvaluacion === 'Isometría mantenida') {
+                d += `${f.isometriaSegundos || '?'} seg. (Detención: ${f.isometriaMotivo || 'N/A'})`;
+            } else if (f.tipoEvaluacion === 'Repeticiones submáximas') {
+                d += `${f.repeticionesN || '?'} reps. (Corte: ${f.repeticionesCorte || 'N/A'})`;
+            } else if (f.resultado) {
+                d += f.resultado;
             }
-        });
-    }
 
-    // Dinamometría / Isometría / Load (fuerzaMlc)
-    if (examState.fuerzaMlc?.filas?.length > 0) {
-        examState.fuerzaMlc.filas.forEach((f: any) => {
-            if (!f.test) return;
-            let d = `**${f.test}** (${f.lado}): `;
-            if (f.resultado_num) d += `${f.resultado_num} ${f.unidad || ''} `;
-            if (f.calidad) d += `[Calidad: ${f.calidad}] `;
-            if (f.dolor_mrc) d += `[EVA ${f.dolor_mrc}/10] `;
-            if (f.obs) d += `(${f.obs})`;
+            if (f.calidadEsfuerzo) d += ` | Calidad: ${f.calidadEsfuerzo}`;
+            if (f.dolorDurante) d += ` | Dolor durante: ${f.dolorDurante}`;
+            if (f.dolorPosterior) d += ` | Dolor posterior: ${f.dolorPosterior}`;
+            if (f.observacion) d += ` | Obs: ${f.observacion}`;
+
             fuerzaItems.push(d);
 
-            if (f.dolor_mrc > 3 || (f.calidad && f.calidad.toLowerCase().includes('pobre'))) {
-                summary.signos_concordantes.push(`Fuerza específica ${f.test}: ${d}`);
+            if (f.dolorDurante === 'Moderado' || f.dolorDurante === 'Alto' || (f.calidadEsfuerzo && f.calidadEsfuerzo !== 'Buena')) {
+                summary.signos_concordantes.push(`Déficit Fuerza/Carga: ${d}`);
             }
         });
     }
 
     if (fuerzaItems.length > 0) {
         summary.patron_fuerza_control = fuerzaItems.join('; ');
-        allFindings.push(`### FUERZA Y CARGA\n${fuerzaItems.map(i => `- ${i}`).join('\n')}`);
+        allFindings.push(`### D. FUERZA Y TOLERANCIA A CARGA\n${fuerzaItems.map(i => `- ${i}`).join('\n')}`);
     }
 
-    // --- E. PALPACIÓN E IRRITABILIDAD ---
+    // --- E. PALPACIÓN ---
     if (examState.palpacionConfig?.filas?.length > 0) {
         let palpe: string[] = [];
         examState.palpacionConfig.filas.forEach((f: any) => {
             if (!f.estructura) return;
-            let d = `${f.estructura} (${f.lado}): ${f.hallazgoPrincipal}`;
-            if (f.dolor && f.dolor > 0) d += ` [EVA ${f.dolor}/10]`;
+            let d = `${f.estructura} (${f.lado || 'N/A'}): ${f.hallazgoPrincipal || 'Relieve sensible'}`;
+            if (f.dolor && parseInt(f.dolor) > 0) d += ` [EVA ${f.dolor}/10]`;
             if (f.edema && f.edema !== 'Normal') d += ` | Edema: ${f.edema}`;
-            if (f.temperatura && f.temperatura !== 'Normal') d += ` | Temp: ${f.temperatura}`;
+            if (f.temperatura && f.temperatura !== 'Normal') d += ` | Temperatura: ${f.temperatura}`;
             if (f.observacion) d += ` | Obs: ${f.observacion}`;
             palpe.push(d);
             
-            if (f.dolor > 3 || (f.hallazgoPrincipal && !f.hallazgoPrincipal.toLowerCase().includes('normal'))) {
+            if (parseInt(f.dolor) > 3 || (f.hallazgoPrincipal && !f.hallazgoPrincipal.toLowerCase().includes('normal') && !f.hallazgoPrincipal.toLowerCase().includes('sin hallazgos'))) {
                 summary.signos_concordantes.push(`Palpación ${f.estructura}: ${d}`);
             }
         });
-        summary.irritabilidad_tisular = palpe.join('; ');
-        allFindings.push(`### PALPACIÓN E IRRITABILIDAD\n${palpe.map(p => `- ${p}`).join('\n')}`);
-    }
+        
+        if (examState.palpacionConfig.movilidadAccesoria) {
+            palpe.push(`Movilidad Accesoria/End-feel: ${examState.palpacionConfig.movilidadAccesoria}`);
+        }
+        if (examState.palpacionConfig.sintesisFinal) {
+            palpe.push(`SÍNTESIS PALPATORIA: ${examState.palpacionConfig.sintesisFinal}`);
+        }
 
-    // --- F. NEUROLÓGICO ---
-    if (examState.neurologico) {
-        const neuroFindings: string[] = [];
-        ['reflejos', 'sensibilidad', 'neurodinamia', 'fuerzaMiotomas'].forEach(tipo => {
-            if (examState.neurologico[tipo]?.length > 0) {
-                examState.neurologico[tipo].forEach((i: any) => {
-                    const root = i.raiz || i.dermatoma || i.nervio || i.miotoma || 'Neuro';
-                    const isNormal = i.estado === 'Normal' || i.estado === 'Normal (2+)';
-                    let d = `${tipo.toUpperCase()} ${root} (${i.lado || 'N/A'}): ${i.estado}`;
-                    if (i.comentario) d += ` - ${i.comentario}`;
-                    
-                    if (!isNormal) {
-                        neuroFindings.push(d);
-                        summary.signos_concordantes.push(d);
-                    } else if (i.comentario) {
-                        neuroFindings.push(d); // Incluir si tiene comentario aunque sea normal
-                    }
-                });
-            }
-        });
-        if (neuroFindings.length > 0) {
-            allFindings.push(`### EXAMEN NEUROLÓGICO\n${neuroFindings.map(n => `- ${n}`).join('\n')}`);
+        if (palpe.length > 0) {
+            summary.irritabilidad_tisular = palpe.join('; ');
+            allFindings.push(`### E. PALPACIÓN\n${palpe.map(p => `- ${p}`).join('\n')}`);
         }
     }
 
-    // --- G. CONTROL MOTOR Y TAREAS ---
+    // --- F. NEUROVASCULAR ---
+    if (examState.neuroVascularConfig) {
+        const neuroFindings: string[] = [];
+        const cfg = examState.neuroVascularConfig;
+
+        if (cfg.screening) neuroFindings.push(`Screening Global: ${cfg.screening}${cfg.screeningComentario ? ` (${cfg.screeningComentario})` : ''}`);
+
+        if (cfg.dominios) {
+            Object.entries(cfg.dominios).forEach(([key, val]: [string, any]) => {
+                if (val.resultado && val.resultado !== 'Normal' && val.resultado !== 'Pendiente') {
+                    let d = `**${key}**: ${val.resultado}`;
+                    if (val.detalle) d += ` - ${val.detalle}`;
+                    neuroFindings.push(d);
+                    summary.signos_concordantes.push(`Hallazgo Neuro: ${d}`);
+                }
+            });
+        }
+
+        if (neuroFindings.length > 0) {
+            allFindings.push(`### F. EXAMEN NEUROVASCULAR\n${neuroFindings.map(n => `- ${n}`).join('\n')}`);
+        }
+    }
+
+    // --- G. CONTROL MOTOR ---
     if (examState.controlMotorConfig?.filas?.length > 0) {
         const motorFindings: string[] = [];
         examState.controlMotorConfig.filas.forEach((f: any) => {
-            if (!f.tareaRegion) return;
-            let d = `**${f.tipoTarea}** - ${f.tareaRegion} (${f.ladoMotor || 'N/A'}): ${f.calidadEjecucion}`;
-            const chips = f.hallazgosChips ? (Array.isArray(f.hallazgosChips) ? f.hallazgosChips.join(', ') : f.hallazgosChips) : '';
-            if (chips) d += ` | Hallazgos: ${chips}`;
-            if (f.comentario) d += ` (${f.comentario})`;
+            if (!f.regionTarea) return;
+            let d = `**${f.tipoTarea || 'Tarea'}** en ${f.regionTarea}: ${f.calidad || 'No descrita'}`;
+            if (f.sintoma) d += ` | Síntoma: ${f.sintoma}`;
+            if (f.compensacion) d += ` | Compensaciones: ${f.compensacion}`;
+            if (f.observacion) d += ` | Obs: ${f.observacion}`;
             motorFindings.push(d);
             
-            if (f.calidadEjecucion !== 'Adecuada/Limpia') {
-                summary.signos_concordantes.push(`Control Motor (${f.tareaRegion}): ${d}`);
+            if (f.calidad && f.calidad.toLowerCase() !== 'adecuada' && f.calidad.toLowerCase() !== 'limpia') {
+                summary.signos_concordantes.push(`Control Motor (${f.regionTarea}): ${d}`);
             }
         });
         if (motorFindings.length > 0) {
-            allFindings.push(`### CONTROL MOTOR Y TAREAS\n${motorFindings.map(m => `- ${m}`).join('\n')}`);
+            allFindings.push(`### G. CONTROL MOTOR\n${motorFindings.map(m => `- ${m}`).join('\n')}`);
         }
     }
 
     // --- H. PRUEBAS ORTOPÉDICAS ---
-    if (examState.pruebasOrtopedicas?.length > 0) {
+    if (examState.ortopedicasConfig?.filas?.length > 0) {
         const orthoFindings: string[] = [];
-        examState.pruebasOrtopedicas.forEach((p: any) => {
-            if (!p.nombre) return;
-            let d = `**${p.nombre}** (${p.lado || 'N/A'}): ${p.resultado}`;
-            if (p.reproduce_sintoma) d += ' [⚠️ REPRODUCE SÍNTOMA]';
-            if (p.comentario) d += ` - ${p.comentario}`;
+        examState.ortopedicasConfig.filas.forEach((p: any) => {
+            if (!p.test_name) return;
+            let d = `**${p.test_name}** (${p.side || 'N/A'}): ${p.result}`;
+            if (p.symptom_relation && p.symptom_relation !== 'No reproduce') d += ` [⚠️ REPRODUCE: ${p.symptom_relation}]`;
+            if (p.comment) d += ` - ${p.comment}`;
             orthoFindings.push(d);
             
-            if (p.resultado === 'Positiva' || p.reproduce_sintoma) {
-                summary.signos_concordantes.push(`Test Ortopédico ${p.nombre}: ${p.resultado}${p.reproduce_sintoma ? ' (reproduce síntoma)' : ''}`);
-            } else if (p.resultado === 'Negativa') {
-                summary.signos_discordantes.push(`Test Ortopédico ${p.nombre}: Negativo`);
+            if (p.result === 'Positiva' || (p.symptom_relation && p.symptom_relation !== 'No reproduce')) {
+                summary.signos_concordantes.push(`Test Ortopédico ${p.test_name}: ${p.result} (${p.symptom_relation})`);
+            } else if (p.result === 'Negativa') {
+                summary.signos_discordantes.push(`Test Ortopédico ${p.test_name}: Negativo`);
             }
         });
+        
+        if (examState.ortopedicasConfig.sintesisFinal) {
+            orthoFindings.push(`SÍNTESIS ORTOPÉDICA: ${examState.ortopedicasConfig.sintesisFinal}`);
+        }
+
         if (orthoFindings.length > 0) {
-            allFindings.push(`### PRUEBAS ORTOPÉDICAS\n${orthoFindings.map(o => `- ${o}`).join('\n')}`);
+            allFindings.push(`### H. PRUEBAS ORTOPÉDICAS\n${orthoFindings.map(o => `- ${o}`).join('\n')}`);
         }
     }
 
@@ -211,43 +237,52 @@ export function buildP2SummaryStructured(examState: any, contextP1?: any): any {
         const funcFindings: string[] = [];
         examState.funcionalesConfig.filas.forEach((f: any) => {
             if (!f.test) return;
-            let d = `**${f.test}** (${f.lado}): ${f.resultado_num} ${f.unidad || ''}`;
+            let d = `**${f.test}** (${f.lado}): ${f.resultado || ''} ${f.unidad || ''}`;
             if (f.calidad) d += ` | Calidad: ${f.calidad}`;
-            if (f.obs) d += ` (${f.obs})`;
+            if (f.dolor) d += ` | EVA: ${f.dolor}/10`;
+            if (f.observacion) d += ` | Obs: ${f.observacion}`;
             funcFindings.push(d);
             
-            if (f.calidad && f.calidad.toLowerCase().includes('pobre')) {
-                summary.signos_concordantes.push(`Funcional ${f.test}: Calidad pobre`);
+            if ((f.dolor && parseInt(f.dolor) > 3) || (f.calidad && f.calidad.toLowerCase().includes('pobre'))) {
+                summary.signos_concordantes.push(`Funcional ${f.test}: ${d}`);
             }
         });
         if (funcFindings.length > 0) {
-            allFindings.push(`### PRUEBAS FUNCIONALES / PERFORMANCE\n${funcFindings.map(f => `- ${f}`).join('\n')}`);
+            allFindings.push(`### I. PRUEBAS FUNCIONALES / PERFORMANCE\n${funcFindings.map(f => `- ${f}`).join('\n')}`);
         }
     }
 
     // --- J. RE-TEST (SIGNO COMPARABLE) ---
-    if (examState.retestConfig?.estadoActual || examState.retestConfig?.resultadoPost) {
+    if (examState.retestConfig?.resultadoPost || examState.retestConfig?.intervencion) {
         const rc = examState.retestConfig;
         const signo = rc.signoPrueba || contextP1?.signoComparable || 'Signo comparable';
         const antes = rc.estadoActual || 'No registrado';
         const despues = rc.resultadoPost || 'Sin cambio registrado';
         
-        allFindings.push(`### RE-TEST\n- **${signo}**: ${antes} -> ${despues}`);
+        allFindings.push(`### J. RE-TEST\n- **Signo**: ${signo}\n- **Intervención**: ${rc.intervencion || 'N/A'}\n- **Cambio**: ${despues} (Línea base era: ${antes})`);
         
         if (rc.comentario) {
-            allFindings.push(`  - Comentario Re-test: ${rc.comentario}`);
+            allFindings.push(`  - Nota: ${rc.comentario}`);
         }
 
-        if (rc.estadoActual === 'Mejor') {
-            summary.signos_discordantes.push(`Re-test Exitoso: Mejoría en ${signo}`);
-        } else if (rc.estadoActual === 'Peor') {
-            summary.signos_concordantes.push(`Re-test Fallido: Empeoramiento en ${signo}`);
+        if (despues.toLowerCase().includes('mejor')) {
+            summary.signos_discordantes.push(`Re-test Positivo: Mejoría en ${signo}`);
+        } else if (despues.toLowerCase().includes('peor') || despues.toLowerCase().includes('aumenta')) {
+            summary.signos_concordantes.push(`Re-test Negativo: Empeoramiento en ${signo}`);
         }
     }
 
     // --- K. MEDIDAS COMPLEMENTARIAS ---
-    if (examState.complementary) {
-        allFindings.push(`### MEDIDAS COMPLEMENTARIAS\n- ${examState.complementary}`);
+    if (examState.medidasComplementariasConfig) {
+        const c = examState.medidasComplementariasConfig;
+        const m = [];
+        if (c.peso) m.push(`Peso: ${c.peso} Kg`);
+        if (c.imc) m.push(`IMC: ${c.imc}`);
+        if (examState.complementary) m.push(`Otras: ${examState.complementary}`);
+        
+        if (m.length > 0) {
+            allFindings.push(`### K. MEDIDAS COMPLEMENTARIAS\n${m.map(i => `- ${i}`).join('\n')}`);
+        }
     }
 
     // --- HIPÓTESIS TRACKING ---
@@ -264,16 +299,17 @@ export function buildP2SummaryStructured(examState: any, contextP1?: any): any {
     const textSections: string[] = [];
     
     if (summary.signos_concordantes.length > 0) {
-        textSections.push("### 🔥 SIGNOS CONCORDANTES (Hallazgos Positivos)\n" + summary.signos_concordantes.map((s: string) => `- ${s}`).join('\n'));
+        textSections.push("### 🔥 SIGNOS CONCORDANTES (Hallazgos Críticos)\n" + summary.signos_concordantes.map((s: string) => `- ${s}`).join('\n'));
     }
     
     if (summary.signos_discordantes.length > 0) {
-        textSections.push("### ❄️ SIGNOS DISCORDANTES (Descartan o Modifican)\n" + summary.signos_discordantes.map((s: string) => `- ${s}`).join('\n'));
+        textSections.push("### ❄️ SIGNOS DISCORDANTES (Modificadores/Alivio)\n" + summary.signos_discordantes.map((s: string) => `- ${s}`).join('\n'));
     }
 
     textSections.push(...allFindings);
 
     summary.resumen_hallazgos_positivos = summary.signos_concordantes.join('\n');
+    summary.summary_text_short = summary.signos_concordantes.slice(0, 3).join('; ') + (summary.signos_concordantes.length > 3 ? '...' : '');
     summary.summary_text_structured = textSections.join('\n\n') || "Examen físico sin hallazgos registrados.";
 
     return summary;
