@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { Cita, Turno, Feriado } from "@/types/clinica";
@@ -148,7 +149,7 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
             const docRef = doc(db, "programs", globalActiveYear, "citas", takeoverCitaId);
             const targetCita = citas.find(c => c.id === takeoverCitaId);
 
-            await updateDoc(docRef, {
+            const sanitizedUpdate = sanitizeForFirestoreDeep({
                 internoAtendioId: user.uid,
                 coverage: {
                     replacedInternId: targetCita?.internoPlanificadoId || null,
@@ -157,6 +158,8 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                 },
                 updatedAt: new Date().toISOString()
             });
+
+            await updateDoc(docRef, sanitizedUpdate);
 
             setTakeoverCitaId(null);
             fetchAgenda();
@@ -184,7 +187,8 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
             if (actionType === 'NO_SHOW') payload.noShowReason = actionReason;
             if (actionType === 'CANCEL') payload.cancelReason = actionReason;
 
-            await updateDoc(docRef, payload);
+            const sanitizedPayload = sanitizeForFirestoreDeep(payload);
+            await updateDoc(docRef, sanitizedPayload);
 
             setActionCitaId(null);
             setActionReason('');

@@ -337,7 +337,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     v4: v4Data
                 },
                 audit: {
-                    ...formData.audit,
+                    ...(formData.audit || {}),
                     lastEditedAt: new Date().toISOString()
                 }
             });

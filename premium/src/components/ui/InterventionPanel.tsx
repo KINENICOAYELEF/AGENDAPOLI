@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { InterventionRecord } from '../../types/clinica';
+import { resolveSafeCreatedAt } from '@/lib/firebase-utils';
 import { PlusIcon, TrashIcon, PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 const INTERVENTION_CATEGORIES = [
@@ -42,7 +43,7 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                 category: i.category || (INTERVENTION_CATEGORIES.includes(i.type as any) ? i.type : 'Otras'),
                 subType: i.subType || i.region || 'Especificar...',
                 dose: i.dose || i.doseValue ? `${i.doseValue || ''} ${i.doseUnit || ''}`.trim() : '',
-                intensity: ['Baja', 'Media', 'Alta'].includes(i.intensity) ? i.intensity : undefined,
+                intensity: ['Baja', 'Media', 'Alta'].includes(i.intensity) ? i.intensity : null,
                 notes: i.notes || i.note || '',
                 objectiveIds: i.objectiveIds || []
             }));
@@ -79,7 +80,7 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
         if (!draft) return;
 
         const draftToSave = { ...draft };
-        if (!draftToSave.createdAt) draftToSave.createdAt = new Date().toISOString();
+        draftToSave.createdAt = resolveSafeCreatedAt(draftToSave, null);
 
         // Verifica si ya existe (edición) o es nuevo
         const isEditing = currentList.some(r => r.id === draftToSave.id);

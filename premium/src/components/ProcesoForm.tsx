@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Proceso } from "@/types/clinica";
 import { useAuth } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
+import { collection, doc, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { sanitizeForFirestoreDeep, resolveSafeCreatedAt } from "@/lib/firebase-utils";
 import { ProcesosService } from "@/services/procesos";
 import { AgendaService } from "@/services/agenda";
 
@@ -90,9 +93,9 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
                 fechaAlta: formData.fechaAlta ? new Date(formData.fechaAlta as string).toISOString() : null,
 
                 // Tracing
-                createdByUid: isEditMode ? (initialData!.createdByUid) : user.uid,
-                createdByName: isEditMode ? (initialData!.createdByName) : (user.email || 'Desconocido'),
-                createdAt: isEditMode ? initialData!.createdAt : new Date().toISOString(),
+                createdByUid: isEditMode ? (initialData?.createdByUid || user.uid) : user.uid,
+                createdByName: isEditMode ? (initialData?.createdByName || user.email || 'Desconocido') : (user.email || 'Desconocido'),
+                createdAt: resolveSafeCreatedAt(initialData, null),
                 updatedAt: new Date().toISOString(),
 
                 // Agenda
@@ -103,7 +106,7 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
                 continuityInternIds: formData.continuityInternIds || []
             };
 
-            await ProcesosService.save(globalActiveYear, payload);
+            await ProcesosService.save(globalActiveYear, sanitizeForFirestoreDeep(payload));
 
             // FASE 2.3.0: Lifecycle Hooks de Agenda
             if (isEditMode && initialData) {

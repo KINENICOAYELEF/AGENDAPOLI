@@ -1,5 +1,6 @@
-import { collection, doc, writeBatch, getDocs, query, where, orderBy, limit, Timestamp, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sanitizeForFirestoreDeep } from '@/lib/firebase-utils';
 import { Proceso, Cita, Feriado } from '@/types/clinica';
 import { TurnosService } from '@/services/turnos';
 
@@ -130,7 +131,8 @@ export const AgendaService = {
             const batch = writeBatch(db);
             citasToCreate.forEach(cita => {
                 const docRef = doc(citasRef, cita.id);
-                batch.set(docRef, cita);
+                const sanitizedCita = sanitizeForFirestoreDeep(cita);
+                batch.set(docRef, sanitizedCita);
             });
             await batch.commit();
         }
@@ -194,10 +196,10 @@ export const AgendaService = {
         if (!snapshot.empty) {
             const batch = writeBatch(db);
             snapshot.docs.forEach(d => {
-                batch.update(d.ref, {
+                batch.update(d.ref, sanitizeForFirestoreDeep({
                     status: targetStatus,
                     updatedAt: new Date().toISOString()
-                });
+                }));
             });
             await batch.commit();
         }
@@ -208,12 +210,13 @@ export const AgendaService = {
      */
     async markCitaAsCompleted(year: string, citaId: string, evolucionId: string, authorUid: string): Promise<void> {
         const docRef = doc(db, 'programs', year, 'citas', citaId);
-        await updateDoc(docRef, {
+        const sanitizedUpdate = sanitizeForFirestoreDeep({
             status: 'COMPLETED',
             linkedEvolutionId: evolucionId,
             attendanceMarkedAt: new Date().toISOString(),
             attendanceMarkedBy: authorUid,
             updatedAt: new Date().toISOString()
         });
+        await updateDoc(docRef, sanitizedUpdate);
     }
 };

@@ -7,6 +7,7 @@ import { OutcomesService } from "@/services/outcomes";
 import { AgendaService } from "@/services/agenda";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
+import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
 import { Disclosure, Transition } from '@headlessui/react';
 import {
     ChevronUpIcon,
@@ -613,10 +614,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             name: name.trim().replace(/\s+/g, ' ').replace(/^-\s*|-$/g, ''), // Limpiar espacios y guiones sueltos
             sets: sets ? String(sets) : "",
             repsOrTime: reps ? String(reps) : "",
-            loadKg: loadKg !== undefined ? String(loadKg) : undefined,
-            rir: isRir && effort !== undefined ? String(effort) : undefined,
-            rpe: !isRir && effort !== undefined ? String(effort) : undefined,
-            rest: rest ? String(rest) : undefined,
+            loadKg: loadKg !== undefined ? String(loadKg) : null,
+            rir: isRir && effort !== undefined ? String(effort) : null,
+            rpe: !isRir && effort !== undefined ? String(effort) : null,
+            rest: rest ? String(rest) : null,
         };
 
         setFormData((prev: any) => ({
@@ -955,20 +956,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             setSaveStatus('saving');
             const targetId = formData.id || (isEditMode && initialData?.id ? initialData.id : generateId());
 
-            const currentAudit = formData.audit || {};
-            const finalAudit = {
-                ...currentAudit,
-                draftCreatedAt: currentAudit.draftCreatedAt || currentAudit.createdAt || new Date().toISOString(),
-                firstSavedAt: currentAudit.firstSavedAt || new Date().toISOString(), // FASE 2.1.23
-                createdAt: currentAudit.createdAt || new Date().toISOString(),
-                createdBy: currentAudit.createdBy || user.uid,
-                updatedAt: new Date().toISOString(),
-                lastEditedAt: new Date().toISOString(), // FASE 2.1.16
-                updatedBy: user.uid,
-                closedAt: willClose ? new Date().toISOString() : currentAudit.closedAt,
-                closedBy: willClose ? user.uid : currentAudit.closedBy,
-                lateReason: overrideReason || currentAudit.lateReason
-            };
+            const finalAudit = resolveSafeAudit(initialData?.audit, formData.audit, user.uid, willClose);
+            // Asegurar campos específicos de EvolucionForm
+            if (!finalAudit.draftCreatedAt) {
+                finalAudit.draftCreatedAt = (formData.audit as any)?.draftCreatedAt || finalAudit.createdAt;
+            }
+            if (!finalAudit.firstSavedAt) {
+                finalAudit.firstSavedAt = (formData.audit as any)?.firstSavedAt || new Date().toISOString();
+            }
+            if (overrideReason) finalAudit.lateReason = overrideReason;
 
             const payload: Partial<Evolucion> = {
                 id: targetId,
@@ -978,21 +974,21 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                 status: willClose ? 'CLOSED' : 'DRAFT',
                 sessionAt: formData.sessionAt!,
-                sessionAtChangeReason: formData.sessionAtChangeReason || undefined,
-                sessionAtHistory: formData.sessionAtHistory || undefined,
+                sessionAtChangeReason: formData.sessionAtChangeReason || null,
+                sessionAtHistory: formData.sessionAtHistory || null,
                 clinicianResponsible: user.uid,
 
                 sessionStatus: formData.sessionStatus || 'Realizada',
-                vitalSigns: formData.vitalSigns,
-                suspensionDetails: formData.suspensionDetails,
+                vitalSigns: formData.vitalSigns || null,
+                suspensionDetails: formData.suspensionDetails || null,
 
-                pain: formData.pain,
+                pain: formData.pain || null,
                 sessionGoal: formData.sessionGoal || '',
                 interventions: formData.interventions || [],
 
                 // Métrica Relevante 2.1.22
-                sessionNumber: formData.sessionNumber || undefined,
-                readiness: formData.readiness || undefined,
+                sessionNumber: formData.sessionNumber || null,
+                readiness: formData.readiness || null,
                 // Mapeo FASE 2.1.20
                 exerciseRx: {
                     effortMode: formData.perceptionMode || 'RIR',
@@ -1003,11 +999,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 educationNotes: formData.educationNotes || "",
 
                 // Mapeo Objetivos Activos (Fase 2.1.24)
-                objectiveSetVersionId: formData.objectiveSetVersionId || undefined,
+                objectiveSetVersionId: formData.objectiveSetVersionId || null,
                 objectiveWork: formData.objectiveWork || [],
                 selectedObjectiveIds: formData.selectedObjectiveIds || [],
                 selectedObjectivesSnapshot: formData.selectedObjectivesSnapshot || [],
-                objectiveSelectionReason: formData.objectiveSelectionReason || undefined,
+                objectiveSelectionReason: formData.objectiveSelectionReason || null,
                 objectivesWorked: formData.objectivesWorked, // Legacy
 
                 ...extraProps,

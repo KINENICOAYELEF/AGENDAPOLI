@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { PersonaUsuaria, RemoteHistory } from "@/types/personaUsuaria";
 
 // Componente helper para arrays simples
@@ -95,7 +96,8 @@ export function M3_PerfilPermanente({ usuariaId, isDrawerMode = false }: M3Props
                 lastUpdated: new Date().toISOString(),
                 updatedByClinician: user?.email || 'Desconocido'
             };
-            await setDoc(docRef, { remoteHistory: updatedHistory }, { merge: true });
+            const sanitizedUpdate = sanitizeForFirestoreDeep({ remoteHistory: updatedHistory });
+            await setDoc(docRef, sanitizedUpdate, { merge: true });
             setHistory(updatedHistory);
             alert("Perfil Permanente estructurado actualizado exitosamente.");
         } catch (error) {

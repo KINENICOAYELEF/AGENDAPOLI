@@ -1,6 +1,7 @@
 import React from 'react';
 import { Evaluacion } from '@/types/clinica';
 import { humanize } from '@/utils/humanizer';
+import { formatSafeDate } from '@/lib/firebase-utils';
 
 interface ReadOnlyEvaluacionProps {
     evaluacion: Evaluacion;
@@ -41,7 +42,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Evaluación Inicial</h2>
                                 <h3 className="text-lg font-medium text-slate-600 mt-1">{usuariaName || 'Sin Nombre'}</h3>
                                 <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-3 text-sm font-medium text-slate-500">
-                                    <span className="flex items-center gap-1.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> {new Date(ev.sessionAt).toLocaleDateString()}</span>
+                                    <span className="flex items-center gap-1.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> {formatSafeDate(ev)}</span>
                                     <span className="hidden md:inline">•</span>
                                     <span className="flex items-center gap-1.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> {ev.clinicianResponsible}</span>
                                 </div>

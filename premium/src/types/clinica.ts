@@ -1041,11 +1041,11 @@ export interface ExercisePrescription {
     equipment?: string[]; // Array de items (Banda, Mancuerna, etc.)
     sets: string;
     repsOrTime: string;
-    loadKg?: string;
-    rpe?: string; // Nuevo exclusivo
-    rir?: string; // Nuevo exclusivo
-    rpeOrRir?: string; // Legacy field
-    rest?: string;
+    loadKg?: string | null;
+    rpe?: string | null; // Nuevo exclusivo
+    rir?: string | null; // Nuevo exclusivo
+    rpeOrRir?: string | null; // Legacy field
+    rest?: string | null;
     frequency?: string;
 
     // Variables premium
@@ -1094,7 +1094,7 @@ export interface Evolucion {
     id?: string;
     usuariaId: string;
     casoId?: string | null;     // Legacy, equivalente a procesoId
-    procesoId?: string;         // FASE 2.2.4: Conexión explícita al Proceso
+    procesoId?: string | null;         // FASE 2.2.4: Conexión explícita al Proceso
     sesionId?: string | null;
     evaluationIndexId?: string; // FASE 2.2.4: Eval inicial vigente del proceso
     loadTrafficLightAtSession?: 'Verde' | 'Amarillo' | 'Rojo'; // FASE 2.2.4
@@ -1102,7 +1102,7 @@ export interface Evolucion {
 
     status: 'DRAFT' | 'CLOSED';
     sessionAt: string; // ISO string (Antes fechaHoraAtencion)
-    sessionAtChangeReason?: string; // FASE 2.1.23: Justificación de cambio de sessionAt
+    sessionAtChangeReason?: string | null; // FASE 2.1.23: Justificación de cambio de sessionAt
     sessionAtHistory?: Array<{
         before: string;
         after: string;
@@ -1110,7 +1110,7 @@ export interface Evolucion {
         changedAt: string;
         changedByUid: string;
         changedByName: string;
-    }>; // FASE 2.1.23: Trazabilidad de corrección de fecha/hora de atención
+    }> | null; // FASE 2.1.23: Trazabilidad de corrección de fecha/hora de atención
 
     clinicianResponsible: string; // Antes autorUid/autorName
 
@@ -1125,20 +1125,20 @@ export interface Evolucion {
         spO2?: number | '';
         acuteSymptoms?: string[];
         symptomNote?: string;
-    };
+    } | null;
 
     // Sub-bloque si la sesión fue Suspendida/Cancelada
     suspensionDetails?: {
         reason: string;
         action: string;
         note?: string;
-    };
+    } | null;
 
     pain: {
         evaStart: number | string;
         evaEnd: number | string;
-        contradictionReason?: string; // FASE 2.1.21: Justificación requerida si dolor aumenta y plan progresa.
-    };
+        contradictionReason?: string | null; // FASE 2.1.21: Justificación requerida si dolor aumenta y plan progresa.
+    } | null;
 
     sessionGoal: string; // Antes objetivoSesion
 
@@ -1146,17 +1146,17 @@ export interface Evolucion {
     perceptionMode?: 'RIR' | 'RPE'; // Modo perceptual del kinesiólogo
 
     // FASE 2.1.22 - Readiness y Wellness Check-In
-    sessionNumber?: number; // Contador correlativo (Sesión N/M)
+    sessionNumber?: number | null; // Contador correlativo (Sesión N/M)
     readiness?: {
         sleepQuality?: 'Pobre' | 'Normal' | 'Óptimo';
         stressLevel?: 'Alto' | 'Moderado' | 'Bajo';
         energy?: 'Baja' | 'Normal' | 'Alta';
         homeTasksCompleted?: 'No Aplica' | 'No' | 'Parcial' | 'Sí';
-    };
+    } | null;
     outcomesSnapshot?: { // Optativo, para cierres analíticos.
         groc?: number;
         sane?: number;
-    };
+    } | null;
 
     // Campos FASE 2.1.17 - Registro Clínico y Cierre
     handoffText?: string;
@@ -1174,11 +1174,11 @@ export interface Evolucion {
     nextPlan: string; // Antes planProximaSesion
 
     // FASE 2.1.18: Selección granular    // FASE 2.1.24: Objetivos del Proceso trabajados intra-sesión
-    objectiveSetVersionId?: string; // Heredada del Proceso Clínico
+    objectiveSetVersionId?: string | null; // Heredada del Proceso Clínico
     selectedObjectiveIds?: string[];
     selectedObjectivesSnapshot?: Array<{ id: string, label: string }>;
     objectiveWork?: Array<{ id: string, sessionStatus: 'trabajado' | 'avanzó' | 'sin cambio' | 'empeoró' }>;
-    objectiveSelectionReason?: string; // Para justificar dejar en 0 si había objetivos.
+    objectiveSelectionReason?: string | null; // Para justificar dejar en 0 si había objetivos.
 
     // Legacy FASE 2.1.4 (será reemplazado por objectiveWork en UI, mantenido por safety)
     objectivesWorked?: {

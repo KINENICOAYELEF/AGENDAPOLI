@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { Evaluacion, Proceso } from "@/types/clinica";
+import { formatSafeDate } from "@/lib/firebase-utils";
 
 // Placeholder import for the Form we will build next
 import { EvaluacionForm } from "@/components/EvaluacionForm";
@@ -145,7 +146,7 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
                                     {ev.status === 'DRAFT' && ' (Borrador)'}
                                 </span>
                                 <span className="text-xs text-slate-400 font-medium">
-                                    {new Date(ev.sessionAt).toLocaleDateString()}
+                                    {formatSafeDate(ev)}
                                 </span>
                             </div>
                             <div className="text-slate-700 mb-2">

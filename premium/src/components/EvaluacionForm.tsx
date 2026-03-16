@@ -6,7 +6,7 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { OutcomesService } from "@/services/outcomes";
 import { normalizeEvaluationState, buildCompactPhysicalForAI, buildCompactInterviewForAI } from "@/lib/state-normalizer";
-import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
+import { sanitizeForFirestoreDeep, resolveSafeAudit } from "@/lib/firebase-utils";
 
 // Nuevas 5 Pantallas Integrales
 import { Screen1_Entrevista } from "./evaluacion-steps/Screen1_Entrevista";
@@ -385,14 +385,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     ...(formData.timer || { totalSeconds: 0 } as any),
                     totalSeconds: secondsElapsed
                 },
-                audit: {
-                    ...(formData.audit || {}),
-                    createdAt: isEditMode ? formData.audit!.createdAt : (formData.audit?.createdAt || new Date().toISOString()),
-                    createdBy: isEditMode ? formData.audit!.createdBy : (formData.audit?.createdBy || user.uid),
-                    lastEditedAt: new Date().toISOString(),
-                    updatedBy: user.uid,
-                    ...(isClosing ? { closedAt: new Date().toISOString(), closedBy: user.uid } : {})
-                }
+                audit: resolveSafeAudit(initialData?.audit, formData.audit, user.uid, isClosing)
             };
             
             const sanitizedPayload = sanitizeForFirestoreDeep(payload);
@@ -419,29 +412,31 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const fd = payload as EvaluacionInicial;
                 const versionId = `v_${Date.now()}`;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
-                await setDoc(procesoRef, {
+                
+                // 1. Sincronizar estado del Proceso
+                const updatePayload = sanitizeForFirestoreDeep({
                     estado: 'ACTIVO',
                     activeEvaluationId: targetId,
                     activeEvaluationIndexId: targetId,
                     activeObjectiveSetVersionId: versionId,
                     diagnosisVigente: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                     flags: {
-                        redFlagsSummary: (fd as any).interview?.redFlagsAction || '',
-                        consideracionesClinicas: (fd as any).geminiDiagnostic?.clinicalConsiderations || []
+                        redFlagsSummary: fd.interview?.v4?.seguridad?.detalleBanderas || '',
+                        consideracionesClinicas: fd.p4_plan_structured?.pronostico_biopsicosocial?.justificacion_clinica_integral || []
                     },
                     loadManagementVigente: {
                         trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
                         rules: []
                     },
-                    caseSnapshot: { // M13 Snapshot equivalente mejorado
+                    caseSnapshot: { 
                         summary: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
                         trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
-                        psfsBaseline: (fd as any).interview?.psfs || [],
-                        topDeficits: fd.autoSynthesis?.alteraciones_detectadas?.functional?.map(a => a.texto) || (fd.autoSynthesis as any)?.alterations?.functional?.map((a: any) => a.name) || []
+                        psfsBaseline: (fd as any).interview?.v4?.psfsGlobal || [],
+                        topDeficits: fd.autoSynthesis?.alteraciones_detectadas?.functional?.map(a => a.texto) || []
                     },
                     activeObjectiveSet: {
                         versionId,
@@ -451,8 +446,13 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             label: o.texto || o.description || o.text || '',
                             status: o.status || 'activo'
                         })) || []
-                    }
-                }, { merge: true });
+                    },
+                    updatedAt: new Date().toISOString()
+                });
+                
+                await setDoc(procesoRef, sanitizeForFirestoreDeep(updatePayload), { merge: true });
+
+                // 2. Marcar la versión en la evaluación
                 const sanitizedVersion = sanitizeForFirestoreDeep({ activeObjectiveSetVersionId: versionId });
                 await setDoc(docRef, sanitizedVersion, { merge: true });
 
@@ -531,7 +531,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     };
                 }
 
-                await setDoc(procesoRef, updatePayload, { merge: true });
+                await setDoc(procesoRef, sanitizeForFirestoreDeep(updatePayload), { merge: true });
                 if (versionId) {
                     const sanitizedVersion = sanitizeForFirestoreDeep({ activeObjectiveSetVersionId: versionId });
                     await setDoc(docRef, sanitizedVersion, { merge: true });

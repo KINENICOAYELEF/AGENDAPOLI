@@ -1,5 +1,6 @@
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { sanitizeForFirestoreDeep } from '@/lib/firebase-utils';
 import { Turno } from '@/types/clinica';
 
 export const TurnosService = {
@@ -18,7 +19,8 @@ export const TurnosService = {
     async save(year: string, turno: Turno): Promise<void> {
         if (!turno.id) throw new Error("Turno must have an ID for saving");
         const docRef = doc(db, 'programs', year, 'turnos', turno.id);
-        await setDoc(docRef, turno, { merge: true });
+        const sanitized = sanitizeForFirestoreDeep(turno);
+        await setDoc(docRef, sanitized, { merge: true });
     },
 
     /**
