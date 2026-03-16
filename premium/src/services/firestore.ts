@@ -1,4 +1,5 @@
 import { getDoc, getDocs, setDoc, onSnapshot, DocumentReference, Query, QuerySnapshot, FirestoreError, DocumentData, SetOptions } from "firebase/firestore";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 
 // Tipo para el evento de telemetría interno
 export type TelemetryEvent = {
@@ -46,11 +47,13 @@ export const setDocCounted = async <T = DocumentData>(
         estimatedWrites: 1, // Ignoramos merge a efectos matemáticos básicos de Spark
     });
 
+    const sanitized = sanitizeForFirestoreDeep(data);
+
     if (options) {
-        return await setDoc(docRef, data, options);
+        return await setDoc(docRef, sanitized, options);
     } else {
         // TypeScript safety para el casting de setDoc sin options
-        return await setDoc(docRef, data as T);
+        return await setDoc(docRef, sanitized as T);
     }
 };
 

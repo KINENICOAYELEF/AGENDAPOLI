@@ -6,6 +6,7 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { OutcomesService } from "@/services/outcomes";
 import { normalizeEvaluationState, buildCompactPhysicalForAI, buildCompactInterviewForAI } from "@/lib/state-normalizer";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 
 // Nuevas 5 Pantallas Integrales
 import { Screen1_Entrevista } from "./evaluacion-steps/Screen1_Entrevista";
@@ -46,6 +47,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     // Save Feedback State
     const [saveFeedback, setSaveFeedback] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
+    const [lastSaveError, setLastSaveError] = useState<string | null>(null);
+    const isSavingRef = useRef(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -251,16 +254,21 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     // FASE 28: Global debounced auto-save para prevenir pérdida de datos en Refresh (P3, P4)
     useEffect(() => {
-        if (!formData.id || !globalActiveYear || isClosed) return;
+        if (!formData.id || !globalActiveYear || isClosed || isSavingRef.current) return;
         
-        // Evitamos guardar DRAFTS en carga inicial si no han pasado unos segundos 
-        // para dar tiempo a cargar el estado inicial.
+        // Si hubo un error crítico de guardado (como inconsistencia de tipos), detenemos el autoguardado 
+        // hasta que haya un cambio manual que resetee el error o se intente manual.
+        if (lastSaveError) return;
+
         const timer = setTimeout(() => {
-            handleSave(false, true).catch(err => console.error("Silent auto-save failed", err));
-        }, 5000);
+            handleSave(false, true).catch(err => {
+                console.error("Silent auto-save failed", err);
+                setLastSaveError(err.message || String(err));
+            });
+        }, 8000); // 8 segundos para evitar saturación
         
         return () => clearTimeout(timer);
-    }, [formData, isClosed, globalActiveYear]);
+    }, [formData, isClosed, globalActiveYear, lastSaveError]);
 
     const getValidationContext = useMemo(() => {
         const missing: string[] = [];
@@ -343,6 +351,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
     const handleSave = async (isClosing: boolean = false, isSilent: boolean = false) => {
         if (!globalActiveYear || !user) return;
+        if (isSavingRef.current) return; // Prevent concurrent saves
 
         if (isClosing && !getValidationContext.allValid) {
             const warnMsg = (getValidationContext as any).warnings && (getValidationContext as any).warnings.length > 0 
@@ -360,6 +369,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         }
 
         try {
+            isSavingRef.current = true;
             if (!isSilent) setLoading(true);
             const targetId = formData.id || (isEditMode ? initialData!.id! : generateId());
 
@@ -377,27 +387,32 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 },
                 audit: {
                     ...(formData.audit || {}),
-                    createdAt: isEditMode ? formData.audit!.createdAt : new Date().toISOString(),
-                    createdBy: isEditMode ? formData.audit!.createdBy : user.uid,
+                    createdAt: isEditMode ? formData.audit!.createdAt : (formData.audit?.createdAt || new Date().toISOString()),
+                    createdBy: isEditMode ? formData.audit!.createdBy : (formData.audit?.createdBy || user.uid),
                     lastEditedAt: new Date().toISOString(),
                     updatedBy: user.uid,
                     ...(isClosing ? { closedAt: new Date().toISOString(), closedBy: user.uid } : {})
                 }
             };
+            
+            const sanitizedPayload = sanitizeForFirestoreDeep(payload);
 
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
-            await setDoc(docRef, payload, { merge: true });
+            await setDoc(docRef, sanitizedPayload, { merge: true });
+
+            setLastSaveError(null); // Reset error on success
 
             // FASE 39: Automatización de Guardado Remoto Basal
             if (payload.remoteHistorySnapshot && usuariaId) {
                 const personaRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
-                await setDoc(personaRef, {
+                const sanitizedPersona = sanitizeForFirestoreDeep({
                     remoteHistory: {
                         ...(payload.remoteHistorySnapshot as any),
                         lastUpdated: new Date().toISOString(),
                         updatedByClinician: user.email || 'Desconocido'
                     }
-                }, { merge: true }).catch(err => console.error("Error auto-guardando anamnesis remota en persona:", err));
+                });
+                await setDoc(personaRef, sanitizedPersona, { merge: true }).catch(err => console.error("Error auto-guardando anamnesis remota en persona:", err));
             }
 
             if (isClosing && type === 'INITIAL') {
@@ -438,7 +453,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         })) || []
                     }
                 }, { merge: true });
-                await setDoc(docRef, { activeObjectiveSetVersionId: versionId }, { merge: true });
+                const sanitizedVersion = sanitizeForFirestoreDeep({ activeObjectiveSetVersionId: versionId });
+                await setDoc(docRef, sanitizedVersion, { merge: true });
 
                 // FASE 2.2.6: Despachar Outcomes iniciales (PSFS y SANE opcional)
                 if ((fd as any).interview?.psfs && (fd as any).interview.psfs.length > 0) {
@@ -517,7 +533,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 await setDoc(procesoRef, updatePayload, { merge: true });
                 if (versionId) {
-                    await setDoc(docRef, { activeObjectiveSetVersionId: versionId }, { merge: true });
+                    const sanitizedVersion = sanitizeForFirestoreDeep({ activeObjectiveSetVersionId: versionId });
+                    await setDoc(docRef, sanitizedVersion, { merge: true });
                 }
 
                 // FASE 2.2.6: Despachar Outcomes de Reevaluación (PSFS, SANE, GROC opcionales)
@@ -568,13 +585,15 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             if (isClosing) {
                 if (onSaveSuccess) onSaveSuccess(payload, !isEditMode && formData.id !== targetId); 
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error guardando evaluación:", error);
+            setLastSaveError(error.message || String(error));
             if (!isSilent) {
                 setSaveFeedback({ message: 'Error al persistir', type: 'error' });
-                alert("Hubo un error al guardar la evaluación. Por favor revisa tu conexión.");
+                alert(`Hubo un error al guardar la evaluación: ${error.message || "Revisa tu conexión"}`);
             }
         } finally {
+            isSavingRef.current = false;
             if (!isSilent) {
                 setLoading(false);
                 setSaveFeedback({ message: isClosing ? 'Cerrada y Fijada' : 'Borrador persistido al 100%', type: 'success' });

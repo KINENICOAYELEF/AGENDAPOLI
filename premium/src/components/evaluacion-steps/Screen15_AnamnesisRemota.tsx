@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { RemoteHistory, PersonaUsuaria } from "@/types/personaUsuaria";
@@ -405,16 +406,17 @@ export function Screen15_AnamnesisRemota({
         const saveTimer = setTimeout(async () => {
             try {
                 const targetRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
-                await setDoc(targetRef, {
+                const sanitizedUpdate = sanitizeForFirestoreDeep({
                     remoteHistory: {
                         ...(history as any),
                         lastUpdated: new Date().toISOString(),
                         updatedByClinician: user?.email || 'Desconocido'
                     }
-                }, { merge: true });
-                console.log("P1.5 auto-synced to Expediente in real-time.");
-            } catch (error) {
-                console.error("Error auto-syncing P1.5 to usuarias:", error);
+                });
+                await setDoc(targetRef, sanitizedUpdate, { merge: true });
+                console.log("P1.5 auto-synced to Expediente.");
+            } catch (err) {
+                console.error("Error auto-saving remote history:", err);
             }
         }, 3000); // 3 seconds debounce
 

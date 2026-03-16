@@ -4,6 +4,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import { useYear } from "@/context/YearContext";
+import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 
 
 export interface Screen1Props {
@@ -173,7 +174,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                 enSusPalabras: "",
                 esPrincipal: true
             }],
-            causaPercibida: undefined, causaPercibidaOtro: "", autoeficaciaRecuperacion: undefined,
+            causaPercibida: null, causaPercibidaOtro: "", autoeficaciaRecuperacion: null,
             estrategiasPrevias: [],
             expectativa: ""
         },
@@ -268,7 +269,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                 updateV4({
                     jsonExtractError: false,
-                    jsonExtractErrorMsg: undefined,
+                    jsonExtractErrorMsg: null,
                     p1_ai_structured: aiData,
                     focos: updatedFocos
                 } as any);
@@ -317,7 +318,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         setIsSavingDraft(true);
         try {
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", formData.id);
-            await setDoc(docRef, {
+            const sanitizedAutoSave = sanitizeForFirestoreDeep({
                 interview: {
                     ...formData.interview,
                     v4: v4Data
@@ -326,7 +327,8 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     ...formData.audit,
                     lastEditedAt: new Date().toISOString()
                 }
-            }, { merge: true });
+            });
+            await setDoc(docRef, sanitizedAutoSave, { merge: true });
 
             setLastSaved(new Date().toLocaleTimeString());
         } catch (err) {
