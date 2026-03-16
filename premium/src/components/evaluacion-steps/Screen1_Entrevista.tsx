@@ -1823,11 +1823,49 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                             )}
                                         </div>
                                     </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-emerald-800 mb-2 mt-2 pt-2 border-t border-amber-200">Factores Contextuales</h4>
-                                        <div className="text-[10px] space-y-2">
-                                            {interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas?.length > 0 && <p><strong className="text-rose-600 block">Rojas:</strong> {interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.join(", ")}</p>}
-                                            {interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas?.length > 0 && <p><strong className="text-amber-600 block">Amarillas:</strong> {interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_amarillas.join(", ")}</p>}
+                                    <div className="mt-4 pt-4 border-t border-amber-200">
+                                        <h4 className="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5">
+                                            <span>🌍</span> Mapa de Factores Contextuales (BPS)
+                                        </h4>
+                                        <div className="grid grid-cols-1 gap-2 text-[10px]">
+                                            <div className="bg-white border border-rose-100 rounded p-2 shadow-sm">
+                                                <strong className="text-rose-800 uppercase block mb-1 border-b border-rose-50 pb-0.5 font-bold">⚠️ Alertas / Riesgo</strong>
+                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas || []).length > 0 ? (
+                                                        interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.map((t: string, i: number) => (
+                                                            <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100 italic">● {t}</span>
+                                                        ))
+                                                    ) : <span className="text-slate-400 italic">Sin alertas reportadas.</span>}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="bg-white border border-amber-100 rounded p-2 shadow-sm">
+                                                <strong className="text-amber-800 uppercase block mb-1 border-b border-amber-50 pb-0.5 font-bold">👤 Factores Personales (+/-)</strong>
+                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
+                                                        <span key={i} className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">● {t}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-white border border-emerald-100 rounded p-2 shadow-sm">
+                                                    <strong className="text-emerald-800 uppercase block mb-1 border-b border-emerald-50 pb-0.5 font-bold">✅ Facilitadores</strong>
+                                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                                        {(interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || []).map((t: string, i: number) => (
+                                                            <span key={i} className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">{t}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white border border-slate-200 rounded p-2 shadow-sm">
+                                                    <strong className="text-slate-800 uppercase block mb-1 border-b border-slate-50 pb-0.5 font-bold">🚧 Barreras</strong>
+                                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                                        {(interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || []).map((t: string, i: number) => (
+                                                            <span key={i} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">{t}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1853,12 +1891,20 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                         </p>
                                                     )}
 
-                                                    <div className="grid grid-cols-1 gap-1 pt-1 border-t border-teal-50">
-                                                        {data.hallazgo_esperado_si_hipotesis_gana_fuerza && (
-                                                        <p className="text-emerald-700"><strong className="block text-[8px] uppercase opacity-70">Si H1 Gana Fuerza:</strong> {data.hallazgo_esperado_si_hipotesis_gana_fuerza}</p>
-                                                        )}
-                                                        {data.hallazgo_esperado_si_hipotesis_pierde_fuerza && (
-                                                        <p className="text-rose-700"><strong className="block text-[8px] uppercase opacity-70">Si H1 Pierde Fuerza:</strong> {data.hallazgo_esperado_si_hipotesis_pierde_fuerza}</p>
+                                                    <div className="flex flex-col gap-1.5 pt-1 border-t border-teal-50">
+                                                        <div className="flex flex-col gap-1">
+                                                            <strong className="text-[8px] uppercase opacity-70 font-black text-emerald-800">✅ Qué buscar (Hallazgo Confirmatorio):</strong>
+                                                            <p className="text-emerald-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_gana_fuerza || data.que_confirma}</p>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1">
+                                                            <strong className="text-[8px] uppercase opacity-70 font-black text-rose-800">❌ Qué debilita sospecha:</strong>
+                                                            <p className="text-rose-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_pierde_fuerza || data.que_descarta}</p>
+                                                        </div>
+                                                        {data.hallazgos_para_descartar && (
+                                                            <div className="flex flex-col gap-1">
+                                                                <strong className="text-[8px] uppercase opacity-70 font-black text-indigo-800">🔍 Ayuda a descartar/Diferencial:</strong>
+                                                                <p className="text-indigo-700 leading-tight">{data.hallazgos_para_descartar}</p>
+                                                            </div>
                                                         )}
                                                     </div>
 
