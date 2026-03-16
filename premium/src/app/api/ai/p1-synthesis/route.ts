@@ -31,7 +31,7 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
    - "pruebas_funcionales_reintegro": SOLO tareas de carga cruzada o rendimiento (ej. Sentadilla, Salto, Carrera).
    - "control_motor_sensoriomotor": SOLO tareas de control motor fino o disociación.
    - "palpacion" o "fuerza_tolerancia_carga": estructuras específicas a palpar o testeos de tolerancia isométrica/dinámica.
-5. LECTURA DE CONTEXTO OBLIGATORIA: Lee activamente y basa tu síntesis en el expediente, P1.5 (Anamnesis Remota), PSFS (si existe), banderas psicosociales (BPS), contexto basal, deportivo, laboral, facilitadores y barreras dados. Integra toda esa riqueza en el razonamiento de las hipótesis y recomendaciones P2.
+5. LECTURA DE CONTEXTO OBLIGATORIA: Lee activamente y basa tu síntesis en el expediente, P1.5 (Anamnesis Remota), PSFS (si existe), banderas psicosociales (BPS), contexto basal, deportivo, laboral, facilitadores y barreras dados. Integra toda esa riqueza en el razonamiento de las hipótesis y recomendaciones P2. USA EL SUEÑO, ESTRÉS, OCUPACIÓN, DEPORTE Y BARRERAS COMO MODULADORES CRÍTICOS DE IRRITABILIDAD, PRONÓSTICO Y DECISIONES DE EXAMEN FÍSICO.
 6. PRIORIDAD P2: 'alta' = discrimina conducta/hipótesis. 'media' = útil. 'baja' = solo si aparecen hallazgos extras. 
 7. PROFUNDIDAD CLÍNICA REQUERIDA: Para campos descriptivos de recomendaciones P2 usa lenguaje técnico minucioso. Para "pruebas_o_tareas_sugeridas", entrega opciones pertinentes al caso.
 8. PROHIBIDO USAR las siguientes palabras: "farmaco", "tens", "ultrasonido", "pastilla", "ibuprofeno", "paracetamol", "electroterapia". Usa "tratamiento conservador" si aplica.
@@ -62,7 +62,7 @@ ESTRUCTURA EXACTA JSON:
 `;
 
 // 2. FUNCIÓN PARA COMPACTAR EL PAYLOAD (Solo datos clínicos)
-function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, expedienteData: any) {
+function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, p1_context_for_ai: any) {
     if (!interviewV4) return {};
     
     // Solo extraer lo estrictamente clinico
@@ -90,17 +90,11 @@ function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, exp
         seguridad: interviewV4.seguridad || {},
         bps: interviewV4.bps || {},
         psfs: interviewV4.psfsGlobal || [],
-        expediente: expedienteData ? {
-            nombre: expedienteData.nombre,
-            edad: expedienteData.edad,
-            sexo: expedienteData.sexo,
-            ocupacion: expedienteData.ocupacion,
-            contextoBasalEstructurado: expedienteData.p15_context_structured || remoteHistorySnapshot?.p15_context_structured || "Sin datos estructurados profundos",
-            alertasBasales: expedienteData.p15_context_flags || remoteHistorySnapshot?.p15_context_flags || []
-        } : (remoteHistorySnapshot ? {
-            contextoBasalEstructurado: remoteHistorySnapshot.p15_context_structured || "Sin datos estructurados profundos",
-            alertasBasales: remoteHistorySnapshot.p15_context_flags || []
-        } : "Sin datos de expediente provistos"),
+        // Nueva estructura robusta Fase 36
+        expediente_basal: p1_context_for_ai || {
+            contexto_basal_estructurado: remoteHistorySnapshot?.p15_context_structured || "Sin datos estructuralizados",
+            alertas_basales: remoteHistorySnapshot?.p15_context_flags || []
+        },
         banderasAmarillas: (interviewV4.banderasAmarillas || []).filter((b:any)=> b.aplica)
     };
 
@@ -212,7 +206,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Compactar el payload para no abrumar al modelo Lite
-        const compactPayload = buildCompactP1Payload(payload.interviewV4, payload.remoteHistorySnapshot, payload.expedienteData);
+        const compactPayload = buildCompactP1Payload(payload.interviewV4, payload.remoteHistorySnapshot, payload.p1_context_for_ai);
         const jsonPayload = JSON.stringify(compactPayload);
 
         // 2. Sanitizar solo para el prompt (invisible para el usuario)

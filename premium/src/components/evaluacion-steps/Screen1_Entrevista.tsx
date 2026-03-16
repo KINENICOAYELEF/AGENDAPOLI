@@ -221,31 +221,44 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         updateV4({ jsonExtractError: false } as any); // Limpiar error anterior
 
         try {
-            // FASE 24: Enriquecer payload con Expediente y P1.5 actualizados
-            let expedienteData = null;
-            if (formData.usuariaId) {
-                try {
-                    const userDocSnap = await getDoc(doc(db, 'usuarias', formData.usuariaId));
-                    if (userDocSnap.exists()) {
-                        const uData = userDocSnap.data();
-                        expedienteData = {
-                            nombre: uData.identity?.fullName,
-                            edad: uData.identity?.edad,
-                            sexo: uData.identity?.sexoRegistrado,
-                            ocupacion: uData.remoteHistory?.occupationalContext?.mainRole,
-                            p15_context_structured: uData.remoteHistory?.p15_context_structured,
-                            p15_context_flags: uData.remoteHistory?.p15_context_flags
-                        };
-                    }
-                } catch (e) {
-                    console.warn("No se pudo obtener datos extra del expediente para IA", e);
-                }
-            }
+            // FASE 36: Enriquecer payload con Contexto Local Robustos (Sin getDoc inseguro)
+            const snap = formData.remoteHistorySnapshot || {};
+            
+            const p1_context_for_ai = {
+                // Identidad Básica (De existir en el snap o formData)
+                nombre: (snap as any)?.identity?.fullName || "Usuaria",
+                edad: (snap as any)?.identity?.edad || "No especificada",
+                sexo: (snap as any)?.identity?.sexoRegistrado || "No especificado",
+                
+                // Contexto Ocupacional y Deportivo (Moduladores de carga)
+                ocupacion: (snap as any)?.occupationalContext?.mainRole || "No especificada",
+                deporte_basal: (snap as any)?.sportsContext?.mainSport || "No especificado",
+                calidad_sueno: (snap as any)?.lifestyle?.sleepQuality || "No especificada",
+                estres_percibido: (snap as any)?.lifestyle?.stressLevel || "No especificado",
+                
+                // Antecedentes MSK y Alertas
+                antecedentes_msk_relevantes: (snap as any)?.medicalHistory?.previousInjuries || "No especificados",
+                red_flags_basales: (snap as any)?.p15_context_flags || [],
+                
+                // Factores Contextuales (BPS)
+                facilitadores: (snap as any)?.environmentalFactors?.facilitators || "No especificados",
+                barreras: (snap as any)?.environmentalFactors?.barriers || "No especificadas",
+                factores_personales: (snap as any)?.personalFactors?.positiveFactors || "No especificados",
+                
+                // Datos Estructurados de P1.5 (Si existen ya normalizados)
+                p15_context_structured: (snap as any)?.p15_context_structured || null,
+                p15_context_flags: (snap as any)?.p15_context_flags || []
+            };
+
+            console.log("🟦 [DEBUG IA P1] Usando contexto local/snapshot:", {
+                hasRemoteHistory: !!formData.remoteHistorySnapshot,
+                contextSources: ["interviewV4", "remoteHistorySnapshot"]
+            });
 
             const payload = {
                 interviewV4: interviewV4,
                 remoteHistorySnapshot: formData.remoteHistorySnapshot,
-                expedienteData: expedienteData
+                p1_context_for_ai: p1_context_for_ai
             };
             const response = await fetch('/api/ai/p1-synthesis', {
                 method: 'POST',
