@@ -18,15 +18,50 @@ export const codeToHumanMap: Record<string, string> = {
     "level_6": "Élite",
 
     // Occupations & Logistics (from checkboxes or enums)
-    "timeBarrier": "Barrera: Falta de tiempo",
-    "transportBarrier": "Barrera: Transporte difícil",
-    "gymAccess": "Barrera: Sin acceso a gimnasio",
-    "equipmentAccess": "Barrera: Sin equipamiento en casa",
+    "tiempo": "Barrera: Falta de tiempo",
+    "transporte": "Barrera: Transporte difícil u horarios",
+    "dinero": "Barrera: Factor económico",
+    "turnos": "Barrera: Turnos rotativos o extenuantes",
+    "distancia": "Barrera: Distancia / Lejanía",
+    "apoyo": "Barrera: Falta de red de apoyo",
+    "otra": "Otra barrera",
+    
+    // Matriz de Carga Laboral
+    "bajo": "Bajo / Nulo",
+    "medio": "Medio / Mixto",
+    "alto": "Alto / Prolongado",
+    "no": "No / Nada",
+    "ocasional": "Ocasional Liviano",
+    "frecuente_pesado": "Frecuente Pesado",
+    "ms_sup": "MMSS (Teclado/Fábrica)",
+    "ms_inf": "MMII",
 
-    "standing": "Bipedestación prolongada",
-    "sitting": "Sedente prolongado",
-    "lifting": "Levantamiento de cargas",
-    "repetitive": "Movimientos repetitivos",
+    // Turnos
+    "diurna_fija": "Diurna Fija",
+    "turnos_rotativos": "Turnos Rotativos (Día/Noche)",
+    "independiente": "Flexible / Freelance",
+
+    // Contexto Domiciliario
+    "escaleras": "Barrera entorno: Escaleras",
+    "traslado_largo": "Barrera entorno: Traslado largo",
+    "rural": "Barrera entorno: Zona rural/lejana",
+    "espacio": "Barrera entorno: Poco espacio en casa",
+    "sin_implementos": "Barrera entorno: Sin implementos",
+    
+    // Tabaquismo
+    "ex_fumador": "Ex Fumador",
+    "fuma_social": "Fuma Ocasional/Social",
+    "fuma_diario": "Fuma Diario",
+    "1_5": "1 a 5 diarios",
+    "6_10": "6 a 10 diarios",
+    "mas_10": "Más de 10 diarios",
+    "variable": "Variable",
+
+    // Animo y Soporte
+    "fluctuating": "Fluctuante",
+    "buena": "Buena / Habitual",
+    "intermitente": "Intermitente",
+    "baja": "Baja / Suele abandonar",
 
     // General fallback for booleans/raws if needed
     "true": "Sí",

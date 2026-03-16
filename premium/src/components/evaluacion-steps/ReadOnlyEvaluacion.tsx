@@ -126,15 +126,15 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         </h3>
                         {p15 ? (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <InfoCard label="Ocupación" value={humanize(p15.contexto_ocupacional?.ocupacion_principal)} sub={humanize(p15.contexto_ocupacional?.barreras_ocupacionales?.[0])} />
-                                <InfoCard label="Actividad/Deporte" value={humanize(p15.deporte_actividad_basal?.actividad_deporte_central)} sub={humanize(p15.deporte_actividad_basal?.nivel_competitivo)} />
-                                <InfoCard label="Calidad Sueño" value={humanize(p15_flags?.calidad_sueno)} />
-                                <InfoCard label="Estrés" value={humanize(p15_flags?.estres_psicologico)} />
+                                <InfoCard label="Ocupación" value={humanize(p15.contexto_ocupacional?.ocupacion_principal)} sub={humanize(p15.contexto_ocupacional?.barreras_logisticas_adherencia?.[0])} />
+                                <InfoCard label="Actividad/Deporte" value={humanize(p15.deporte_actividad_basal?.actividad_deporte_central)} sub={humanize(p15.deporte_actividad_basal?.nivel_practica_actual)} />
+                                <InfoCard label="Calidad Sueño" value={humanize(p15.biopsicosocial_habitos?.calidad_sueno)} />
+                                <InfoCard label="Estrés" value={humanize(p15.biopsicosocial_habitos?.estres_basal)} />
                                 {p15.antecedentes_msk?.lesiones_previas?.length > 0 && (
-                                     <InfoCard label="Lesiones Previas" value={p15.antecedentes_msk.lesiones_previas.join(', ')} />
+                                     <InfoCard label="Lesiones Previas" value={p15.antecedentes_msk.lesiones_previas.map(humanize).join(', ')} />
                                 )}
                                 {p15.antecedentes_msk?.cirugias_previas?.length > 0 && (
-                                     <InfoCard label="Cirugías" value={p15.antecedentes_msk.cirugias_previas.join(', ')} />
+                                     <InfoCard label="Cirugías" value={p15.antecedentes_msk.cirugias_previas.map(humanize).join(', ')} />
                                 )}
                             </div>
                         ) : (

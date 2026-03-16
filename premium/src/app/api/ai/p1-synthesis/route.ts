@@ -23,7 +23,7 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 4. RECOMENDACIONES PARA P2 (¡Crucial para docencia!):
    Para CADA módulo, no digas cosas genéricas como "evaluar ROM" o "evaluar fuerza".
    - En 'objetivo': Di exactamente QUÉ mirar realmente (ej. patrón específico, cadena, reclutamiento).
-   - En 'por_que_aporta_en_este_caso': Explica profundamente por qué este módulo importa en ESTE caso particular (integrando contexto), qué hipótesis específica ayuda a apoyar y cuál a debilitar (explícitamente).
+   - En 'por_que_aporta_en_este_caso': Explica profundamente por qué este módulo importa en ESTE caso particular (integrando contexto de P1.5 y Expediente), qué hipótesis específica ayuda a apoyar y cuál a debilitar (explícitamente).
    - En 'hallazgos_para_confirmar'/'hallazgos_para_descartar': Qué hallazgo puntual sería la clave clínica que esperas encontrar.
    - En PRUEBAS ORTOPÉDICAS: NO sugieras tests obsoletos o sin utilidad clínica actual fundamentada. Si la ortopedia NO ES lo más útil en este caso, indícalo claramente en el objetivo diciendo "En este caso, las pruebas ortopédicas clásicas son menos relevantes que la evaluación funcional de X...".
    IMPORTANTE: Asigna "pruebas_o_tareas_sugeridas" al módulo CORRECTO:
@@ -95,13 +95,13 @@ function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, exp
             edad: expedienteData.edad,
             sexo: expedienteData.sexo,
             ocupacion: expedienteData.ocupacion,
-            contextoBasal: expedienteData.p15_context_structured || "Sin datos estructurados",
-            alertasBasales: expedienteData.p15_context_flags || []
-        } : "Sin datos de expediente provistos",
-        banderasAmarillas: (interviewV4.banderasAmarillas || []).filter((b:any)=> b.aplica),
-        // Si hay historia remota, traer lo mas corto posible
-        antecedentesBasales: remoteHistorySnapshot ? 
-            "Existe historia remota previa cargada (ver resumen o contexto si aplica)" : "No"
+            contextoBasalEstructurado: expedienteData.p15_context_structured || remoteHistorySnapshot?.p15_context_structured || "Sin datos estructurados profundos",
+            alertasBasales: expedienteData.p15_context_flags || remoteHistorySnapshot?.p15_context_flags || []
+        } : (remoteHistorySnapshot ? {
+            contextoBasalEstructurado: remoteHistorySnapshot.p15_context_structured || "Sin datos estructurados profundos",
+            alertasBasales: remoteHistorySnapshot.p15_context_flags || []
+        } : "Sin datos de expediente provistos"),
+        banderasAmarillas: (interviewV4.banderasAmarillas || []).filter((b:any)=> b.aplica)
     };
 
     return compact;

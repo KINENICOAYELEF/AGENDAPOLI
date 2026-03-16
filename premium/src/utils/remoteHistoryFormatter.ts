@@ -230,8 +230,8 @@ export function buildP15Flags(history: RemoteHistory): NonNullable<RemoteHistory
     }
 
     if (history.occupationalContext?.adherenceBarriers && history.occupationalContext.adherenceBarriers.length > 0) {
-        flags.barreras_ambientales.push(...history.occupationalContext.adherenceBarriers);
-        flags.modificadores_adherencia.push(...history.occupationalContext.adherenceBarriers);
+        flags.barreras_ambientales.push(...history.occupationalContext.adherenceBarriers.map(b => humanize(b)));
+        flags.modificadores_adherencia.push(...history.occupationalContext.adherenceBarriers.map(b => humanize(b)));
     }
 
     return flags;
