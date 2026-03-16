@@ -296,7 +296,7 @@ export const P1SynthesisSchema = z.object({
         pregunta: z.string(),
         por_que_importa: z.string(),
         prioridad: z.string() // "alta"
-    })).min(3).max(6),
+    })).min(4).max(6),
     recomendaciones_p2_por_modulo: z.object({
         observacion_movimiento_inicial: P2ModuleRecommendationSchema,
         rango_movimiento_analitico: P2ModuleRecommendationSchema,
