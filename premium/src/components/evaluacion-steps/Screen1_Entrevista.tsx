@@ -1836,15 +1836,31 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                             <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100 italic">● {t}</span>
                                                         ))
                                                     ) : <span className="text-slate-400 italic">Sin alertas reportadas.</span>}
+                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
+                                                        <span key={i} className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 italic">● {t}</span>
+                                                    ))}
                                                 </div>
                                             </div>
                                             
                                             <div className="bg-white border border-amber-100 rounded p-2 shadow-sm">
-                                                <strong className="text-amber-800 uppercase block mb-1 border-b border-amber-50 pb-0.5 font-bold">👤 Factores Personales (+/-)</strong>
-                                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">● {t}</span>
-                                                    ))}
+                                                <strong className="text-amber-800 uppercase block mb-1 border-b border-amber-50 pb-0.5 font-bold">👤 Factores Personales</strong>
+                                                <div className="space-y-2 pt-1">
+                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || []).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            <span className="text-[8px] font-bold text-emerald-700 uppercase block w-full">Positivos (+)</span>
+                                                            {interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_positivos.map((t: string, i: number) => (
+                                                                <span key={i} className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">● {t}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || []).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            <span className="text-[8px] font-bold text-rose-700 uppercase block w-full">Barreras Internas (-)</span>
+                                                            {interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_negativos.map((t: string, i: number) => (
+                                                                <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">● {t}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 

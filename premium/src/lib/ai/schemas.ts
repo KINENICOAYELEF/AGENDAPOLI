@@ -310,6 +310,8 @@ export const P1SynthesisSchema = z.object({
     factores_contextuales_clave: z.object({
         banderas_rojas: z.array(z.string()),
         banderas_amarillas: z.array(z.string()),
+        factores_personales_positivos: z.array(z.string()).optional(),
+        factores_personales_negativos: z.array(z.string()).optional(),
         facilitadores: z.array(z.string()),
         barreras: z.array(z.string())
     })
