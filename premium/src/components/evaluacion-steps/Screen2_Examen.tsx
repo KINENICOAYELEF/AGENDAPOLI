@@ -2402,21 +2402,49 @@ export function Screen2_Examen({ formData, updateFormData, isClosed, onNext }: S
 
             {/* L. RESUMEN ESTRUCTURADO (PREVIEW) */}
             {localPreview && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl shadow-sm flex flex-col mt-6 p-4 sm:p-5 transition-all">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-xl shrink-0">✨</div>
-                        <div>
-                            <h3 className="font-bold text-emerald-900 text-lg">Resumen estructurado del examen físico</h3>
-                            <p className="text-xs text-emerald-700/80 mt-0.5">Síntesis generada correctamente. Los datos de tu examen físico permanecen intactos.</p>
+                <div className="bg-white border-2 border-indigo-100 rounded-2xl shadow-xl flex flex-col mt-8 overflow-hidden transition-all animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-indigo-600 p-4 sm:p-5 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shrink-0 shadow-inner">📋</div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-white text-xl tracking-tight">Ficha de Hallazgos Clínicos (P2)</h3>
+                            <p className="text-indigo-100 text-xs mt-0.5 font-medium">Síntesis local determinística • Autenticada para el plan de tratamiento</p>
                         </div>
                     </div>
-                    {localPreview.summary_text_short && (
-                        <div className="bg-white text-emerald-900 p-3 rounded-lg border border-emerald-100 mb-4 whitespace-pre-wrap text-xs font-medium shadow-sm">
-                            {localPreview.summary_text_short}
+                    
+                    <div className="p-4 sm:p-6 bg-slate-50/50">
+                        {localPreview.summary_text_short && (
+                            <div className="bg-indigo-50/50 text-indigo-900 p-4 rounded-xl border border-indigo-100/50 mb-6 text-sm font-semibold italic flex items-start gap-3">
+                                <span className="text-indigo-400 mt-1">✦</span>
+                                <p>{localPreview.summary_text_short}</p>
+                            </div>
+                        )}
+                        
+                        <div className="space-y-6">
+                            {(localPreview.p2_summary_rendered || localPreview.summary_text_structured || "").split('\n\n').map((section: string, idx: number) => {
+                                const lines = section.split('\n');
+                                const title = lines[0];
+                                const contentLines = lines.slice(1);
+                                
+                                return (
+                                    <div key={idx} className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 hover:shadow-md transition-shadow">
+                                        <h4 className="font-black text-xs uppercase tracking-widest text-indigo-600 mb-3 border-b border-indigo-50 pb-2">{title}</h4>
+                                        <div className="space-y-2">
+                                            {contentLines.map((line: string, lIdx: number) => (
+                                                <p key={lIdx} className="text-sm text-slate-700 leading-relaxed flex items-start gap-2">
+                                                    <span className="text-indigo-300 mt-1.5 flex-shrink-0">•</span>
+                                                    <span>{line.startsWith('• ') ? line.substring(2) : line}</span>
+                                                </p>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    )}
-                    <div className="bg-white border-emerald-100 border shadow-sm rounded-lg p-3 text-xs text-emerald-800 whitespace-pre-wrap font-mono h-[200px] overflow-y-auto custom-scrollbar">
-                        {localPreview.summary_text_structured}
+                        
+                        <div className="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                            <span>Sincronizado con Episodio Clínico</span>
+                            <span>ID de Síntesis: {Date.now().toString().slice(-6)}</span>
+                        </div>
                     </div>
                 </div>
             )}
