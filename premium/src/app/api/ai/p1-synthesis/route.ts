@@ -8,31 +8,35 @@ export const maxDuration = 60; // Evitar timeout en Vercel (Hobby 10s -> 60s si 
 // 1. SISTEMA PROMPT (Corto, claro y enfocado en JSON)
 const SYSTEM_PROMPT_P1_SYNTHESIS = `
 [RESTRICCIÓN ABSOLUTA Y OBLIGATORIA]
-Eres un asistente experto en kinesiología MSK y deportiva, actuando como Tutor Clínico Exhaustivo, Moderno y Pedagógico.
-Tu objetivo es guiar al estudiante eliminando cualquier ruido técnico innecesario y entregando razonamientos clínicos profundos y limpios.
+Eres un asistente experto en kinesiología MSK y deportiva, actuando como Tutor Clínico Exhaustivo, Moderno y Pedagógico de nivel avanzado.
+Tu objetivo es guiar al estudiante entregando razonamientos clínicos profundos, limpios y basados en evidencia moderna, integrando el contexto vital del paciente.
 
 NO DEBES:
 - Entregar diagnósticos médicos basados en imágenes (ej. "Ruptura de menisco"). Usa términos funcionales/clínicos.
-- Escribir texto de relleno o narrativo fuera del JSON.
-- **PROHIBIDO USAR JERGA TÉCNICA INTERNA EN LOS CAMPOS VISIBLES**: No uses "H1", "H2", "H3", "Gana fuerza", "Pierde fuerza", "Hipótesis alternativa", "✅", "❌", "🔍", "Qué buscar", "Confirmar", "Descartar" como encabezados dentro de los valores de texto. Entrega solo el contenido clínico puro y descriptivo.
-- **PROHIBIDO RECOMENDAR PRUEBAS OBSOLETAS**: Gillet, palpación de movilidad segmentaria vertebral sin test de provocación, o maniobras aisladas sin cluster. Prioriza enfoque moderno de carga, movimiento y función.
+- **PROHIBIDO USAR JERGA TÉCNICA INTERNA EN LOS CAMPOS VISIBLES**: No uses "H1", "H2", "H3", "Gana fuerza", "Pierde fuerza", "Hipótesis alternativa", "✅", "❌", "🔍", "Qué buscar", "Confirmar", "Descartar" como encabezados. Entrega solo contenido clínico puro.
+- **PROHIBIDO RECOMENDAR PRUEBAS OBSOLETAS O DE BAJO VALOR**: Gillet, standing flexion test, long sit test, palpación segmentaria vertebral sin provocación, o tests tradicionales aislados sin cluster/evidencia. Esto aplica a TODAS las regiones (hombro, rodilla, columna, etc.).
+- **NO REPETIR LO OBVIO**: No preguntes nada que ya esté claro en el relato o en los datos de P1.5/Expediente.
 
 REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
-1. **INTEGRACIÓN DE CONTEXTO (P1.5/EXPEDIENTE)**: Usa activamente sueño, estrés, ocupación, deporte y barreras para modular la irritabilidad y el SINS. Refleja la carga vital del paciente en el razonamiento. No digas "integro contexto", demuéstralo con el razonamiento.
-2. **HIPÓTESIS ORIENTATIVAS (REGLA DE 3)**: Debes generar OBLIGATORIAMENTE 3 hipótesis distintas, útiles y ordenadas por probabilidad: "mas_probable", "probable_alternativa", "menos_probable". No dejes huecos.
-3. **PREGUNTAS FALTANTES (REGLA DE 5-6)**: Genera entre 5 y 6 preguntas clave que CAMBIEN la conducta clínica. Evita lo obvio.
-4. **FACTORES CONTEXTUALES RICOS**: Identifica y separa claramente Factores Personales (+/-), Facilitadores y Barreras. Incluye sueño, estrés y carga si aportan.
-5. **RECOMENDACIONES PARA P2 (PROPORCIÓN Y DOCENCIA)**:
-   Cada módulo debe enseñar por qué importa. Sé exhaustivo si el caso lo amerite (sugiere 3-4 tareas/tests si es clave).
-   - "objetivo": Foco clínico preciso.
-   - "hallazgos_para_confirmar": Descripción del hallazgo clínico esperado que validaría la sospecha principal.
-   - "hallazgos_para_descartar": Hallazgo que obligaría a repensar el caso o descartar diferenciales.
-   - "razonamiento_clinico": Por qué este módulo es clave en este paciente específico considerando su contexto.
+1. **INTEGRACIÓN EXPLÍCITA DE P1.5 / EXPEDIENTE**: Debes leer y usar activamente condiciones clínicas, fármacos, antecedentes MSK, actividad física, carga laboral, sueño, estrés, red de apoyo y barreras logísticas. Estos datos DEBEN modular el resumen, el SINS, las hipótesis y la elección del examen físico.
+2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
+3. **RECOMENDACIONES DOCENTES P2 (CIENCIA Y RAZONAMIENTO)**: 
+   Cada módulo debe ser una micro-clase clínica. Sugiere entre 3 y 6 tareas/tests por módulo.
+   - "objetivo": El norte clínico del módulo.
+   - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular.
+   - "hallazgo_fortalece_hipotesis": Qué hallazgo específico en este módulo daría peso a la sospecha principal.
+   - "hallazgo_debilita_hipotesis": Qué hallazgo haría dudar de la sospecha principal.
+   - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
+   - "impacto_resultado_positivo": Cómo cambia el plan o la interpretación si el test/tarea sale positivo.
+   - "impacto_resultado_negativo": Cómo cambia si sale negativo.
+
+4. **HIPÓTESIS (REGLA DE 3)**: 3 hipótesis distintas, ricas y ordenadas (mas_probable, probable_alternativa, menos_probable). Usar términos clínicos correctos.
+5. **PREGUNTAS FALTANTES**: Máximo 5-6 preguntas no redundantes que realmente resuelvan dudas de seguridad, pronóstico o diferencial.
 
 ESTRUCTURA EXACTA JSON:
 {
   "resumen_clinico_editable": "string",
-  "contexto_basal_usado": boolean,
+  "contexto_basal_usado": true,
   "resumen_persona_usuaria": { "lo_que_entendi": "string", "lo_que_te_preocupa": "string", "lo_que_haremos_ahora": "string" },
   "alicia": { "agravantes": "string", "atenuantes": "string", "localizacion_extension": "string", "intensidad_actual": "string", "intensidad_mejor_24h": "string", "intensidad_peor_24h": "string", "caracter_naturaleza": "string", "irritabilidad_relato": "string", "antiguedad_inicio": "string", "historia_mecanismo": "string" },
   "sins": { "severidad": "string", "irritabilidad_global": "string", "naturaleza_sugerida": "string", "etapa": "string", "facilidad_provocacion": "string", "momento_aparicion": "string", "tiempo_a_calmarse": "string", "after_effect": "string" },
@@ -40,14 +44,17 @@ ESTRUCTURA EXACTA JSON:
   "hipotesis_orientativas": [ { "ranking": 1, "titulo": "string", "probabilidad": "mas_probable|probable_alternativa|menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" } ],
   "preguntas_faltantes": [ { "pregunta": "string", "por_que_importa": "string", "prioridad": "alta|media" } ],
   "recomendaciones_p2_por_modulo": {
-    "observacion_movimiento_inicial": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "rango_movimiento_analitico": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "fuerza_tolerancia_carga": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "palpacion": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "neuro_vascular_somatosensorial": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "control_motor_sensoriomotor": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "pruebas_ortopedicas_dirigidas": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" },
-    "pruebas_funcionales_reintegro": { "objetivo": "string", "razonamiento_clinico": "string", "que_descarta": "string", "que_confirma": "string", "hallazgo_esperado_si_hipotesis_gana_fuerza": "string", "hallazgo_esperado_si_hipotesis_pierde_fuerza": "string", "hallazgos_para_confirmar": "string", "hallazgos_para_descartar": "string", "tareas_minimas_sugeridas": ["string"], "pruebas_o_tareas_sugeridas": ["string"], "prioridad": "alta|media|baja" }
+    "ANY_MODULE_NAME": { 
+        "objetivo": "string", 
+        "razonamiento_clinico": "string", 
+        "hallazgo_fortalece_hipotesis": "string",
+        "hallazgo_debilita_hipotesis": "string",
+        "diferencial_que_descarta": "string",
+        "impacto_resultado_positivo": "string", 
+        "impacto_resultado_negativo": "string", 
+        "pruebas_o_tareas_sugeridas": ["string"], 
+        "prioridad": "alta|media|baja" 
+    }
   },
   "factores_contextuales_clave": { 
     "banderas_rojas": ["string"], 
@@ -89,7 +96,7 @@ function buildCompactP1Payload(interviewV4: any, remoteHistorySnapshot: any, p1_
         seguridad: interviewV4.seguridad || {},
         bps: interviewV4.bps || {},
         psfs: interviewV4.psfsGlobal || [],
-        // Nueva estructura robusta Fase 36 + Prompt 2.5
+        // Nueva estructura robusta Fase 36 + Prompt 2.8
         expediente_basal: {
             ...p1_context_for_ai,
             contexto_basal_estructurado: remoteHistorySnapshot?.p15_context_structured || "Sin datos estructuralizados",
@@ -124,19 +131,14 @@ function sanitizeClinicalTextForModel(text: string): string {
 function hydrateP2Module(mod: any) {
     return {
         objetivo: mod?.objetivo || "",
-        por_que_aporta_en_este_caso: mod?.por_que_aporta_en_este_caso || "",
-        razonamiento_clinico: mod?.razonamiento_clinico || mod?.por_que_aporta_en_este_caso || "",
-        que_descarta: mod?.que_descarta || "",
-        que_confirma: mod?.que_confirma || "",
-        hallazgo_que_apoya_hipotesis_principal: mod?.hallazgo_que_apoya_hipotesis_principal || "",
-        hallazgo_que_debilita_hipotesis_principal: mod?.hallazgo_que_debilita_hipotesis_principal || "",
-        hallazgo_esperado_si_hipotesis_gana_fuerza: mod?.hallazgo_esperado_si_hipotesis_gana_fuerza || mod?.hallazgos_para_confirmar || "",
-        hallazgo_esperado_si_hipotesis_pierde_fuerza: mod?.hallazgo_esperado_si_hipotesis_pierde_fuerza || mod?.hallazgos_para_descartar || "",
-        hallazgos_para_confirmar: mod?.hallazgos_para_confirmar || "",
-        hallazgos_para_descartar: mod?.hallazgos_para_descartar || "",
-        tareas_minimas_sugeridas: Array.isArray(mod?.tareas_minimas_sugeridas) ? mod.tareas_minimas_sugeridas : [],
+        razonamiento_clinico: mod?.razonamiento_clinico || "",
+        hallazgo_fortalece_hipotesis: mod?.hallazgo_fortalece_hipotesis || "",
+        hallazgo_debilita_hipotesis: mod?.hallazgo_debilita_hipotesis || "",
+        diferencial_que_descarta: mod?.diferencial_que_descarta || "",
+        impacto_resultado_positivo: mod?.impacto_resultado_positivo || "",
+        impacto_resultado_negativo: mod?.impacto_resultado_negativo || "",
         pruebas_o_tareas_sugeridas: Array.isArray(mod?.pruebas_o_tareas_sugeridas) ? mod.pruebas_o_tareas_sugeridas : [],
-        prioridad: mod?.prioridad || ""
+        prioridad: mod?.prioridad || "media"
     };
 }
 
@@ -196,6 +198,8 @@ function hydrateP1SynthesisDefaults(partial: any) {
         factores_contextuales_clave: {
             banderas_rojas: partial?.factores_contextuales_clave?.banderas_rojas || [],
             banderas_amarillas: partial?.factores_contextuales_clave?.banderas_amarillas || [],
+            factores_personales_positivos: partial?.factores_contextuales_clave?.factores_personales_positivos || [],
+            factores_personales_negativos: partial?.factores_contextuales_clave?.factores_personales_negativos || [],
             facilitadores: partial?.factores_contextuales_clave?.facilitadores || [],
             barreras: partial?.factores_contextuales_clave?.barreras || []
         }

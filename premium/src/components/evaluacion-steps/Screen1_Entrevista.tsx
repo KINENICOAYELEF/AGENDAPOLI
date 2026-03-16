@@ -1832,62 +1832,61 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 </div>
                                             ))}
                                             {(!interviewV4.p1_ai_structured.preguntas_faltantes || interviewV4.p1_ai_structured.preguntas_faltantes.length === 0) && (
-                                                <p className="text-xs text-amber-700 italic">No hay preguntas sugeridas.</p>
+                                                <p className="text-xs text-amber-700 italic text-center py-2">No hay preguntas sugeridas.</p>
                                             )}
                                         </div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-amber-200">
                                         <h4 className="text-xs font-bold text-slate-700 mb-3 flex items-center gap-1.5">
-                                            <span>🌍</span> Mapa de Factores Contextuales (BPS)
+                                            <span>🌍</span> Mapa Contextual BPS (5 Grupos)
                                         </h4>
                                         <div className="grid grid-cols-1 gap-2 text-[10px]">
                                             <div className="bg-white border border-rose-100 rounded p-2 shadow-sm">
-                                                <strong className="text-rose-800 uppercase block mb-1 border-b border-rose-50 pb-0.5 font-bold">⚠️ Alertas / Riesgo</strong>
+                                                <strong className="text-rose-800 uppercase block mb-1 border-b border-rose-50 pb-0.5 font-bold">⚠️ ALERTAS / RIESGO</strong>
                                                 <div className="flex flex-wrap gap-1.5 pt-1">
                                                     {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas || []).length > 0 ? (
                                                         interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.map((t: string, i: number) => (
                                                             <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100 italic">● {t}</span>
                                                         ))
-                                                    ) : <span className="text-slate-400 italic">Sin alertas reportadas.</span>}
+                                                    ) : <span className="text-slate-400 italic">Sin alertas médicas.</span>}
                                                     {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
                                                         <span key={i} className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100 italic">● {t}</span>
                                                     ))}
                                                 </div>
                                             </div>
                                             
-                                            <div className="bg-white border border-amber-100 rounded p-2 shadow-sm">
-                                                <strong className="text-amber-800 uppercase block mb-1 border-b border-amber-50 pb-0.5 font-bold">👤 Factores Personales</strong>
-                                                <div className="space-y-2 pt-1">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || []).length > 0 && (
-                                                        <div className="flex flex-wrap gap-1">
-                                                            <span className="text-[8px] font-bold text-emerald-700 uppercase block w-full">Positivos (+)</span>
-                                                            {interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_positivos.map((t: string, i: number) => (
-                                                                <span key={i} className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">● {t}</span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || []).length > 0 && (
-                                                        <div className="flex flex-wrap gap-1">
-                                                            <span className="text-[8px] font-bold text-rose-700 uppercase block w-full">Barreras Internas (-)</span>
-                                                            {interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_negativos.map((t: string, i: number) => (
-                                                                <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">● {t}</span>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-white border border-emerald-100 rounded p-2 shadow-sm">
+                                                    <strong className="text-emerald-800 uppercase block mb-1 border-b border-emerald-50 pb-0.5 font-bold text-[9px]">👤 FACTORES PERSONALES POSITIVOS (+)</strong>
+                                                    <div className="flex flex-wrap gap-1 pt-1">
+                                                        {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || []).map((t: string, i: number) => (
+                                                            <span key={i} className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">● {t}</span>
+                                                        ))}
+                                                        {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_positivos.length === 0) && <span className="text-slate-400 italic">Sin datos.</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white border border-rose-100 rounded p-2 shadow-sm">
+                                                    <strong className="text-rose-800 uppercase block mb-1 border-b border-rose-50 pb-0.5 font-bold text-[9px]">👤 FACTORES PERSONALES NEGATIVOS (-)</strong>
+                                                    <div className="flex flex-wrap gap-1 pt-1">
+                                                        {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || []).map((t: string, i: number) => (
+                                                            <span key={i} className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">● {t}</span>
+                                                        ))}
+                                                        {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_negativos.length === 0) && <span className="text-slate-400 italic">Sin datos.</span>}
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="bg-white border border-emerald-100 rounded p-2 shadow-sm">
-                                                    <strong className="text-emerald-800 uppercase block mb-1 border-b border-emerald-50 pb-0.5 font-bold">✅ Facilitadores</strong>
+                                                    <strong className="text-emerald-900 uppercase block mb-1 border-b border-emerald-50 pb-0.5 font-bold text-[9px]">✅ Facilitadores</strong>
                                                     <div className="flex flex-wrap gap-1.5 pt-1">
                                                         {(interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || []).map((t: string, i: number) => (
-                                                            <span key={i} className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">{t}</span>
+                                                            <span key={i} className="bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">{t}</span>
                                                         ))}
                                                     </div>
                                                 </div>
                                                 <div className="bg-white border border-slate-200 rounded p-2 shadow-sm">
-                                                    <strong className="text-slate-800 uppercase block mb-1 border-b border-slate-50 pb-0.5 font-bold">🚧 Barreras</strong>
+                                                    <strong className="text-slate-800 uppercase block mb-1 border-b border-slate-50 pb-0.5 font-bold text-[9px]">🚧 Barreras</strong>
                                                     <div className="flex flex-wrap gap-1.5 pt-1">
                                                         {(interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || []).map((t: string, i: number) => (
                                                             <span key={i} className="bg-slate-50 text-slate-600 px-1.5 py-0.5 rounded border border-slate-100">{t}</span>
@@ -1900,12 +1899,14 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 </div>
                                 
                                 <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-3 lg:col-span-3">
-                                    <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Foco Examen Físico (Paso 2) Recomendado</h4>
+                                    <h4 className="text-xs font-bold text-teal-800 mb-2">🩺 Recomendaciones Examen Físico P2 (Tutoría Clínica)</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[10px]">
                                         {Object.entries(interviewV4.p1_ai_structured.recomendaciones_p2_por_modulo || {}).map(([mod, data]: any) => (
                                             <div key={mod} className="bg-white border border-teal-100 rounded p-3 flex flex-col gap-2 shadow-sm">
                                                 <div className="flex items-center justify-between border-b border-teal-50 pb-1.5 mb-1">
-                                                    <strong className="text-teal-900 capitalize tracking-wider">{mod.replace(/_/g, " ")}</strong>
+                                                    <strong className="text-teal-900 capitalize tracking-wider flex items-center gap-1">
+                                                        <span>📍</span> {mod.replace(/_/g, " ")}
+                                                    </strong>
                                                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${data.prioridad === 'alta' ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'}`}>
                                                         {data.prioridad}
                                                     </span>
@@ -1915,30 +1916,62 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                     <p className="text-teal-800 font-bold leading-tight">{data.objetivo}</p>
                                                     
                                                     {data.razonamiento_clinico && (
-                                                        <p className="text-slate-600 bg-slate-50 p-1.5 rounded italic">
-                                                            {data.razonamiento_clinico}
-                                                        </p>
+                                                        <div className="text-slate-600 bg-slate-50 p-1.5 rounded text-[9px]">
+                                                            <strong className="block text-[7px] text-slate-400 uppercase mb-0.5">Fundamento Clínico:</strong>
+                                                            <p className="italic">{data.razonamiento_clinico}</p>
+                                                        </div>
                                                     )}
 
                                                     <div className="flex flex-col gap-1.5 pt-1 border-t border-teal-50">
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="text-[7px] uppercase font-bold text-emerald-800/60 tracking-wider">Esperado p/ Confirmar</span>
-                                                            <p className="text-emerald-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_gana_fuerza || data.que_confirma || data.hallazgos_para_confirmar}</p>
-                                                        </div>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Esperado p/ Debilitar</span>
-                                                            <p className="text-rose-700 leading-tight">{data.hallazgo_esperado_si_hipotesis_pierde_fuerza || data.que_descarta || data.hallazgos_para_descartar}</p>
-                                                        </div>
+                                                        {(data.hallazgo_fortalece_hipotesis || data.hallazgo_debilita_hipotesis) && (
+                                                            <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100/50 space-y-1.5">
+                                                                {data.hallazgo_fortalece_hipotesis && (
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Fortalece Sospecha:</span>
+                                                                        <p className="text-indigo-800 leading-tight italic font-medium">● {data.hallazgo_fortalece_hipotesis}</p>
+                                                                    </div>
+                                                                )}
+                                                                {data.hallazgo_debilita_hipotesis && (
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Debilita Sospecha:</span>
+                                                                        <p className="text-rose-800 leading-tight italic font-medium">○ {data.hallazgo_debilita_hipotesis}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {data.diferencial_que_descarta && (
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[7px] uppercase font-bold text-slate-500 tracking-wider">Ayuda a Descartar Diferencial:</span>
+                                                                <p className="text-slate-700 leading-tight">{data.diferencial_que_descarta}</p>
+                                                            </div>
+                                                        )}
+
+                                                        {data.impacto_resultado_positivo && (
+                                                            <div className="flex flex-col gap-0.5 bg-emerald-50/20 p-1.5 rounded border border-emerald-50/50">
+                                                                <span className="text-[7px] uppercase font-bold text-emerald-800/60 tracking-wider">Si Sale POSITIVO (+):</span>
+                                                                <p className="text-emerald-700 leading-tight">{data.impacto_resultado_positivo}</p>
+                                                            </div>
+                                                        )}
+                                                        {data.impacto_resultado_negativo && (
+                                                            <div className="flex flex-col gap-0.5 bg-rose-50/20 p-1.5 rounded border border-rose-50/50">
+                                                                <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Si Sale NEGATIVO (-):</span>
+                                                                <p className="text-rose-700 leading-tight">{data.impacto_resultado_negativo}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {(data.tareas_minimas_sugeridas?.length > 0 || data.pruebas_o_tareas_sugeridas?.length > 0) && (
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {(data.tareas_minimas_sugeridas || []).map((t: string, i: number) => (
-                                                                <span key={i} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium">📋 {t}</span>
-                                                            ))}
-                                                            {(data.pruebas_o_tareas_sugeridas || []).map((t: string, i: number) => (
-                                                                <span key={i} className="bg-teal-100 text-teal-800 text-[8px] px-1.5 py-0.5 rounded border border-teal-200 font-bold">🎯 {t}</span>
-                                                            ))}
+                                                        <div className="flex flex-col gap-1 mt-1 pt-1 border-t border-teal-50">
+                                                            <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-wider">Tests / Tareas Sugeridas:</span>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {(data.tareas_minimas_sugeridas || []).map((t: string, i: number) => (
+                                                                    <span key={i} className="bg-indigo-50 text-indigo-700 text-[8px] px-1.5 py-0.5 rounded border border-indigo-100 font-medium">{t}</span>
+                                                                ))}
+                                                                {(data.pruebas_o_tareas_sugeridas || []).map((t: string, i: number) => (
+                                                                    <span key={i} className="bg-teal-50 text-teal-800 text-[8px] px-1.5 py-0.5 rounded border border-teal-100 font-bold">{t}</span>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

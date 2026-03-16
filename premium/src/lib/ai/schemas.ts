@@ -230,20 +230,15 @@ export const MissingnessCheckSchema = z.object({
 export type MissingnessCheckType = z.infer<typeof MissingnessCheckSchema>;
 
 const P2ModuleRecommendationSchema = z.object({
-    objetivo: z.string(),
-    por_que_aporta_en_este_caso: z.string(),
-    razonamiento_clinico: z.string().optional().describe("Explicación pedagógica de por qué este módulo es clave en este caso"),
-    que_descarta: z.string(),
-    que_confirma: z.string(),
-    hallazgo_que_apoya_hipotesis_principal: z.string().optional(),
-    hallazgo_que_debilita_hipotesis_principal: z.string().optional(),
-    hallazgo_esperado_si_hipotesis_gana_fuerza: z.string().optional(),
-    hallazgo_esperado_si_hipotesis_pierde_fuerza: z.string().optional(),
-    hallazgos_para_confirmar: z.string().optional(),
-    hallazgos_para_descartar: z.string().optional(),
-    tareas_minimas_sugeridas: z.array(z.string()).optional().describe("Tareas o pruebas base para este módulo"),
-    pruebas_o_tareas_sugeridas: z.array(z.string()),
-    prioridad: z.string()
+    objetivo: z.string().describe("Objetivo clínico moderno"),
+    razonamiento_clinico: z.string().describe("Microjustificación clínica y docente"),
+    hallazgo_fortalece_hipotesis: z.string().describe("Qué hallazgo en este módulo fortalece la hipótesis principal"),
+    hallazgo_debilita_hipotesis: z.string().describe("Qué hallazgo en este módulo la debilita"),
+    diferencial_que_descarta: z.string().describe("Qué diferencial ayuda a descartar este módulo"),
+    impacto_resultado_positivo: z.string().describe("Qué cambia en la interpretación clínica si sale positivo"),
+    impacto_resultado_negativo: z.string().describe("Qué cambia en la interpretación clínica si sale negativo"),
+    pruebas_o_tareas_sugeridas: z.array(z.string()).describe("Sugerir entre 3 y 6 tareas/tests útiles"),
+    prioridad: z.enum(["alta", "media", "baja"])
 });
 
 // G) FASE 11 (Refactor Total P1)
