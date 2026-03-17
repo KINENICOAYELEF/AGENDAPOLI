@@ -21,16 +21,18 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 1. **INTEGRACIÓN EXPLÍCITA DE P1.5 / EXPEDIENTE**: Debes leer y usar activamente condiciones clínicas, fármacos, antecedentes MSK, actividad física, carga laboral, sueño, estrés, red de apoyo y barreras logísticas. Estos datos DEBEN modular el resumen, el SINS, las hipótesis y la elección del examen físico.
 2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
 3. **RECOMENDACIONES DOCENTES P2 (CIENCIA Y RAZONAMIENTO)**: 
-   Cada módulo debe ser una micro-clase clínica. Sugiere entre 3 y 6 tareas/tests por módulo.
-   - "objetivo": El norte clínico del módulo.
-   - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular.
-   - "hallazgo_fortalece_hipotesis": Qué hallazgo específico en este módulo daría peso a la sospecha principal.
-   - "hallazgo_debilita_hipotesis": Qué hallazgo haría dudar de la sospecha principal.
+   Cada módulo debe ser una micro-clase clínica. Sugiere entre 3 y 6 tareas/tests específicos y modernos por módulo.
+   - "objetivo": El norte clínico del módulo (ej: "Aclarar patrón mecánico de carga en tendón vs bursa").
+   - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular (ej: "Dado que el dolor es intermitente y post-carga, este módulo descartará sensibilización periférica").
+   - "hallazgo_fortalece_hipotesis": Qué hallazgo específico daría peso a la sospecha principal.
+   - "hallazgo_debilita_hipotesis": Qué hallazgo obligaría a pensar en otras hipótesis.
    - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
-   - "impacto_resultado_positivo": Cómo cambia el plan o la interpretación si el test/tarea sale positivo.
-   - "impacto_resultado_negativo": Cómo cambia si sale negativo.
+   - "impacto_resultado_positivo/negativo": Cómo cambia el razonamiento clínico según el resultado.
 
-4. **HIPÓTESIS (REGLA DE 3)**: 3 hipótesis distintas, ricas y ordenadas (mas_probable, probable_alternativa, menos_probable). Usar términos clínicos correctos.
+4. **HIPÓTESIS (REGLA DE 3 + DIFERENCIALES)**: 
+   - 3 hipótesis principales limpias y ricas (mas_probable, probable_alternativa, menos_probable).
+   - Identifica claramente diferenciales breves para el bloque de "Otras hipótesis".
+
 5. **PREGUNTAS FALTANTES**: Máximo 5-6 preguntas no redundantes que realmente resuelvan dudas de seguridad, pronóstico o diferencial.
 
 ESTRUCTURA EXACTA JSON:
@@ -42,6 +44,7 @@ ESTRUCTURA EXACTA JSON:
   "sins": { "severidad": "string", "irritabilidad_global": "string", "naturaleza_sugerida": "string", "etapa": "string", "facilidad_provocacion": "string", "momento_aparicion": "string", "tiempo_a_calmarse": "string", "after_effect": "string" },
   "foco_principal": { "region": "string", "lado": "string", "queja_prioritaria": "string", "actividad_indice": "string", "semaforo_carga_sugerido": "string" },
   "hipotesis_orientativas": [ { "ranking": 1, "titulo": "string", "probabilidad": "mas_probable|probable_alternativa|menos_probable", "fundamento_breve": "string", "que_hay_que_descartar": "string", "que_hay_que_confirmar": "string" } ],
+  "diferenciales_breves": ["string"],
   "preguntas_faltantes": [ { "pregunta": "string", "por_que_importa": "string", "prioridad": "alta|media" } ],
   "recomendaciones_p2_por_modulo": {
     "ANY_MODULE_NAME": { 
@@ -184,6 +187,7 @@ function hydrateP1SynthesisDefaults(partial: any) {
         hipotesis_orientativas: Array.isArray(partial?.hipotesis_orientativas) ? 
             [...partial.hipotesis_orientativas, { ranking: 3, titulo: "", probabilidad: "menos_probable", fundamento_breve: "", que_hay_que_descartar: "", que_hay_que_confirmar: "" }].slice(0, 3) 
             : [],
+        diferenciales_breves: Array.isArray(partial?.diferenciales_breves) ? partial.diferenciales_breves : [],
         preguntas_faltantes: Array.isArray(partial?.preguntas_faltantes) ? partial.preguntas_faltantes.slice(0, 6) : [],
         recomendaciones_p2_por_modulo: {
             observacion_movimiento_inicial: hydrateP2Module(partial?.recomendaciones_p2_por_modulo?.observacion_movimiento_inicial),
