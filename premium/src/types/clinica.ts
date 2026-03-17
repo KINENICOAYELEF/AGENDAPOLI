@@ -913,6 +913,12 @@ export interface EvaluacionInicial extends BaseEvaluacion {
     // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor / IA Ordenador)
     autoSynthesis?: {
         snapshot_clinico?: {
+            nombre?: string;
+            edad?: string;
+            sexo?: string;
+            foco_y_lado?: string;
+            deporte_basal?: string;
+            comorbilidades?: string;
             foco_principal: string;
             lado_principal: string;
             irritabilidad_sugerida: string;
@@ -981,6 +987,16 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             complementary_measures: string[];
             summary_text_short: string;
             summary_text_structured: string;
+        };
+        // This block seems to be an AI configuration, not part of physicalSynthesis or snapshot_clinico
+        // Placing it here as a new optional field based on the provided edit, assuming it's a new AI config object.
+        aiConfig?: {
+            systemInstruction?: string; // SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
+            userPrompt?: string;
+            inputHash?: string;
+            action?: 'P3_SYNTHESIS'; // Changed from aiAction to action as per instruction
+            promptVersion?: string; // 'v3.1.4',
+            temperature?: number; // 0.2,
         };
     };
 

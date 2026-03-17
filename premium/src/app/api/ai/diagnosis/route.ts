@@ -39,7 +39,18 @@ export async function POST(req: Request) {
         const inputHash = await generateSHA256(`diagnosis:${normalizedPayload}`);
 
         const expectedJsonExample = `{
-  "snapshot_clinico": { "foco_principal": "", "lado": "", "irritabilidad_sugerida": "", "tolerancia_carga": { "nivel": "", "explicacion": "" }, "tarea_indice": "", "alertas_clinicas": [] },
+      "snapshot_clinico": { 
+        "nombre": "Juan Pérez", 
+        "edad": "45 años", 
+        "sexo": "Masculino", 
+        "foco_y_lado": "Rodilla Derecha", 
+        "deporte_basal": "Running 3v/sem", 
+        "comorbilidades": "HTA controlada",
+        "irritabilidad_sugerida": "Media",
+        "tolerancia_carga": { "nivel": "Baja", "explicacion": "Dolor > 4/10 al bajar escaleras o trotar > 2km." },
+        "tarea_indice": "Bajar escaleras",
+        "alertas_clinicas": ["Dolor nocturno leve"]
+      },
   "clasificacion_dolor": { "opciones_categoria": [], "categoria_seleccionada": "", "opciones_subtipo_apellido": [], "subtipos_seleccionados": [], "subtipo_manual": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { "sistemas_principales": [], "estructuras_principales": [], "estructuras_secundarias": [], "descripcion_libre": "" },
   "alteraciones_detectadas": { 
@@ -67,10 +78,10 @@ ${normalizedPayload}
         const result = await executeAIAction({
             screen: 'P3',
             action: 'P3_SYNTHESIS',
-            systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.DIAGNOSIS,
+            systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.1.3',
+            promptVersion: 'v3.1.4',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
