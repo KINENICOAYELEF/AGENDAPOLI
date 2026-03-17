@@ -326,10 +326,12 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 <div className="flex-1">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
                                     <textarea 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[100px]"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[160px]"
                                         value={autoSynth.clasificacion_dolor?.fundamento_breve || ''}
                                         onChange={(e) => updateDeepObj('clasificacion_dolor', { fundamento_breve: e.target.value })}
                                         disabled={isClosed}
+                                        rows={8}
+                                        placeholder="Describa el razonamiento clínico del dolor..."
                                     />
                                 </div>
                                 <div className="w-1/4">
@@ -656,12 +658,13 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <div className="absolute -top-3 left-6 px-3 py-1 bg-sky-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
                             Facilitadores 🌱
                         </div>
-                        <div className="bg-sky-50/20 rounded-3xl p-6 pt-8 border border-sky-100/50 hover:bg-sky-50/40 transition-all min-h-[180px] shadow-sm">
+                        <div className="bg-sky-50/20 rounded-3xl p-6 pt-8 border border-sky-100/50 hover:bg-sky-50/40 transition-all min-h-[220px] shadow-sm">
                             <textarea 
-                                className="w-full bg-transparent border-none text-xs font-medium text-sky-900 leading-relaxed min-h-[120px] focus:ring-0 outline-none placeholder:text-sky-200 resize-none selection:bg-sky-200" 
+                                className="w-full bg-transparent border-none text-sm font-bold text-sky-900 leading-relaxed min-h-[160px] focus:ring-0 outline-none placeholder:text-sky-200 resize-none selection:bg-sky-200" 
                                 value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} 
                                 onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} 
                                 disabled={isClosed} 
+                                rows={7}
                                 placeholder="Acceso a gimnasio, familia colaboradora..." 
                             />
                         </div>
@@ -672,12 +675,13 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <div className="absolute -top-3 left-6 px-3 py-1 bg-amber-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
                             Barreras 🚧
                         </div>
-                        <div className="bg-amber-50/20 rounded-3xl p-6 pt-8 border border-amber-100/50 hover:bg-amber-50/40 transition-all min-h-[180px] shadow-sm">
+                        <div className="bg-amber-50/20 rounded-3xl p-6 pt-8 border border-amber-100/50 hover:bg-amber-50/40 transition-all min-h-[220px] shadow-sm">
                             <textarea 
-                                className="w-full bg-transparent border-none text-xs font-medium text-amber-900 leading-relaxed min-h-[120px] focus:ring-0 outline-none placeholder:text-amber-200 resize-none selection:bg-amber-200" 
+                                className="w-full bg-transparent border-none text-sm font-bold text-amber-900 leading-relaxed min-h-[160px] focus:ring-0 outline-none placeholder:text-amber-200 resize-none selection:bg-amber-200" 
                                 value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} 
                                 onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} 
                                 disabled={isClosed} 
+                                rows={7}
                                 placeholder="Exigencias laborales altas, distancias largas..." 
                             />
                         </div>

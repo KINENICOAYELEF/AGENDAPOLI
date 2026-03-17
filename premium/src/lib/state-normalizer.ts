@@ -252,6 +252,12 @@ export function buildCompactCasePackage(formData: any) {
         motivo_consulta_breve: p1_struct.motivo_consulta_breve || "",
         objetivo_expectativa_breve: p1_struct.objetivo_expectativa_breve || "",
         resumen_clinico_breve: p1_struct.resumen_clinico_breve || "",
+        // FASE 61: Enriquecimiento para inferencia profunda
+        perspectiva_persona: {
+            entendido: p1_raw.analisisIA?.resumen_persona_usuaria?.lo_que_entiendi || "",
+            preocupacion: p1_raw.analisisIA?.resumen_persona_usuaria?.lo_que_te_preocupa || "",
+            causa_percibida: p1_raw.analisisIA?.extraccion_general?.capacidad_percibida?.evidencia_textual || ""
+        },
         alicia_core: p1_struct.alicia_core || {},
         sins_core: p1_struct.sins_core || {},
         foco_principal: p1_struct.foco_principal || {},
@@ -259,8 +265,8 @@ export function buildCompactCasePackage(formData: any) {
         factores_contextuales: p1_struct.factores_contextuales || {
             banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: []
         },
-        bps_scores: p1_raw.bps || {}, // Incluye dolor, sueño, estres, miedos, etc.
-        psfs_global: p1_raw.psfsGlobal || [] // Incluye expectativas y tareas de paciente
+        bps_scores: p1_raw.bps || {},
+        psfs_global: p1_raw.psfsGlobal || []
     };
 
     const p15_core = {
@@ -270,11 +276,13 @@ export function buildCompactCasePackage(formData: any) {
             ...(p15_struct.antecedentes_msk?.cirugias_previas || []),
             ...(p15_struct.factores_biologicos_relevantes?.comorbilidades_relevantes || [])
         ],
+        // FASE 61: Detalle de historial para inferencia estructural/funcional (ej: HTA)
+        detalles_historia: p15_struct.factores_biologicos_relevantes?.observaciones_adicionales || "",
         deporte_contexto_breve: p15_struct.deporte_actividad_basal?.actividad_deporte_central || "",
         ocupacion_contexto_breve: p15_struct.contexto_ocupacional?.ocupacion_principal || "",
         hogar_contexto_breve: p15_struct.contexto_domiciliario?.vive_con || "",
         factores_personales_positivos: p15_flags.factores_personales_positivos || [],
-        factores_personales_negativos: p15_flags.factores_personales_negativos || [],
+        factors_personales_negativos: p15_flags.factores_personales_negativos || [],
         facilitadores: p15_flags.facilitadores_ambientales || [],
         barreras: p15_flags.barreras_ambientales || []
     };
@@ -291,20 +299,24 @@ export function buildCompactCasePackage(formData: any) {
         texto_sintesis_completa: p2_struct.summary_text_structured || ""
     };
 
-    // Age calculation helper
     const calculateAge = (dob: string) => {
         if (!dob) return null;
         const diff = Date.now() - new Date(dob).getTime();
         return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
     };
 
-    const age = pat.fechaNacimiento ? calculateAge(pat.fechaNacimiento) : pat.edad;
+    const patAge = pat.fechaNacimiento ? calculateAge(pat.fechaNacimiento) : (pat.edad || null);
+    const snapAge = (formData.remoteHistorySnapshot as any)?.identity?.dob ? calculateAge((formData.remoteHistorySnapshot as any).identity.dob) : ((formData.remoteHistorySnapshot as any)?.identity?.edad || null);
+    const finalAge = patAge || snapAge;
+
+    const finalName = pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : null) || (formData.remoteHistorySnapshot as any)?.identity?.fullName || "Desconocido";
+    const finalSex = pat.sexoRegistrado || pat.sexoBiomecanico || (formData.remoteHistorySnapshot as any)?.identity?.sexoRegistrado || (formData.remoteHistorySnapshot as any)?.identity?.sexoBiomecanico || "Desconocido";
 
     return {
         demographics: {
-            nombre: pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : "Desconocido"),
-            edad: age ? `${age} años` : "Desconocida",
-            sexo: pat.sexoRegistrado || pat.sexoBiomecanico || "Desconocido"
+            nombre: finalName,
+            edad: finalAge ? `${finalAge} años` : "Desconocida",
+            sexo: finalSex
         },
         p1_core,
         p15_core,

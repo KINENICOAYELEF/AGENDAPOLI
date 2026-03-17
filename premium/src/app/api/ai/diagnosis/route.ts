@@ -52,18 +52,21 @@ export async function POST(req: Request) {
         "alertas_clinicas": ["Dolor nocturno leve"]
       },
   "clasificacion_dolor": { "opciones_categoria": [], "categoria_seleccionada": "", "opciones_subtipo_apellido": [], "subtipos_seleccionados": [], "subtipo_manual": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
-  "sistema_y_estructuras": { "sistemas_principales": [], "estructuras_principales": [], "estructuras_secundarias": [], "descripcion_libre": "" },
-  "alteraciones_detectadas": { 
-    "estructurales": [{ 
-       "estructura_involucrada": "", 
-       "alteracion_sospecha": "", 
-       "certeza": "casi_confirmada|probable|posible|no_concluyente", 
-       "fundamento_clinico": "" 
-    }], 
-    "functional": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }] 
+  "sistema_y_estructuras": { 
+    "sistemas_principales": ["Músculo-Esquelético", "Cardiovascular (por HTA)"], 
+    "estructuras_principales": ["Tendón Rotuliano", "Articulación Femorotibial"], 
+    "estructuras_secundarias": ["Retináculo lateral", "Vasculatura periférica"], 
+    "descripcion_libre": "Presentación compatible con tendinopatía, modulada por factores vasculares sistémicos." 
   },
-  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }] },
-  "factores_biopsicosociales": { "factores_personales_positivos": [], "factores_personales_negativos": [], "facilitadores_ambientales": [], "barreras_ambientales": [] },
+  "alteraciones_detectadas": { 
+    "estructurales": [
+      { "estructura_involucrada": "Tendón Rotuliano", "alteracion_sospecha": "Tendinosis (Reportado en P1)", "certeza": "probable", "fundamento_clinico": "Reporte de imagen previa mas dolor localizado." },
+      { "estructura_involucrada": "Sistema Cardiovascular", "alteracion_sospecha": "Disfunción endotelial leve", "certeza": "posible", "fundamento_clinico": "Antecedente crónico de HTA." }
+    ], 
+    "functional": [{ "texto": "Disminución de tolerancia a la carga excéntrica", "severidad": "moderada" }] 
+  },
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Dificultad para bajar escaleras", "severidad": "moderada" }], "restricciones_participacion": [{ "texto": "Entrenamiento de running", "severidad": "leve" }] },
+  "factores_biopsicosociales": { "factores_personales_positivos": ["Alta motivación"], "factores_personales_negativos": ["Estrés laboral"], "facilitadores_ambientales": ["Gimnasio cerca"], "barreras_ambientales": ["Falta de tiempo"] },
   "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
 }`;
 
@@ -81,7 +84,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.1.4',
+            promptVersion: 'v3.1.6',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
