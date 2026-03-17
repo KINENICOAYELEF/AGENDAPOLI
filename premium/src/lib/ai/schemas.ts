@@ -49,9 +49,10 @@ export const DiagnosisSchema = z.object({
         nivel_confianza: z.string()
     }),
     sistema_y_estructuras: z.object({
-        sistema_principal: z.string(),
-        estructura_principal: z.string(),
-        estructuras_secundarias: z.array(z.string())
+        sistemas_principales: z.array(z.string()),
+        estructuras_principales: z.array(z.string()),
+        estructuras_secundarias: z.array(z.string()),
+        descripcion_libre: z.string().optional()
     }),
     alteraciones_detectadas: z.object({
         estructurales: z.array(z.object({

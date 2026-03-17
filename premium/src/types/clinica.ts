@@ -912,7 +912,14 @@ export interface EvaluacionInicial extends BaseEvaluacion {
 
     // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor / IA Ordenador)
     autoSynthesis?: {
-        snapshot_clinico?: string;
+        snapshot_clinico?: {
+            foco_principal: string;
+            lado_principal: string;
+            irritabilidad_sugerida: string;
+            semaforo_carga: 'Verde' | 'Amarillo' | 'Rojo' | string;
+            tarea_indice: string;
+            alertas_clinicas: string[];
+        };
         clasificacion_dolor?: {
             categoria_principal: 'Aparente nociceptivo' | 'Aparente neuropático' | 'Aparente nociplástico' | 'Mixto' | 'No concluyente' | string;
             subtipo_apellido: string;
@@ -920,9 +927,10 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };
         sistema_y_estructuras?: {
-            sistema_principal: 'Tejido contráctil' | 'Articulación / cápsula' | 'Ligamento / estabilidad pasiva' | 'Sistema neural' | 'Control motor / movimiento' | 'Carga ósea' | 'Tejido conectivo / fascia' | 'Mixto' | string;
-            estructura_principal: string;
+            sistemas_principales: string[];
+            estructuras_principales: string[];
             estructuras_secundarias: string[];
+            descripcion_libre?: string;
         };
         alteraciones_detectadas?: {
             estructurales: Array<{ texto: string; certeza: 'casi_confirmada' | 'probable' | 'posible' | 'no_concluyente' | string; fundamento_breve: string }>;
