@@ -25,7 +25,7 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
    DEBES usar exactamente estas llaves en el JSON para cada módulo:
     - observacion_movimiento_inicial: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global. DEBERÍAS conectar con el deporte/trabajo del paciente. Recomienda mirar: postura espontánea, marcha (si aplica), gestos temidos/agravantes y estrategias antálgicas.
     - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia. Explica el puente entre el relato y la restricción física.
-    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda. **OBLIGATORIO incluir sugerencias analíticas (MMT/Dinamometría)** y grupos musculares específicos según la región, además de tareas funcionales o submáximas. Explica cuándo usar fuerza manual vs instrumentos y cómo interpretar si la carga mejora vs empeora el síntoma (load tolerance).
+    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda. **OBLIGATORIO incluir sugerencias analíticas (MMT/Dinamometría) para TODOS los grupos musculares relevantes de la región**, además de tareas funcionales o submáximas. Explica cuándo usar fuerza manual vs instrumentos y cómo interpretar si la carga mejora vs empeora el síntoma (load tolerance).
     - palpacion: Solo si aporta provocación de síntoma concordante o exclusión de tejido. Debe abarcar todas las hipótesis plausibles, sugerir qué tejidos o zonas palpar (diana, referido, sensibilidad periférica) y explicar explícitamente qué aporta esa palpación al descarte diferencial.
     - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción (dermatomas/miotomas) y vascularización si hay sospecha de compromiso distal o síntomas atípicos.
     - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas (gesto deportivo/laboral).
@@ -38,8 +38,8 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
     - hallazgo_fortalece_hipotesis: QUÉ CONFIRMARÍA.
     - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS / HALLAZGO NEGATIVO.
     - diferencial_que_descarta: Qué otras hipótesis plausibles ayuda a descartar o priorizar.
-    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS con una frase breve de su utilidad clínica individual). No uses comodines.
-    - mini_perla_docente: MINI PERLA DOCENTE (Insight clínico de alto impacto). OBLIGATORIO.
+    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (5 a 8 ejemplos CONCRETOS y MODERNOS). **CADA ITEM debe incluir una frase breve de su "PARA QUÉ" o "POR QUÉ" específico** (ej: "Test de Hoover: para descartar magnificación de síntomas"). No uses comodines.
+    - consejo_docente: CONSEJO (Insight clínico de alto impacto, basado en evidencia pero con tono pedagógico/sugerente, no dogmático). OBLIGATORIO.
 
 4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 
    - 3 hipótesis principales (mas_probable, probable_alternativa, menos_probable). Cada una con un título clínico claro y fundamento docente.
@@ -154,7 +154,7 @@ function hydrateP2Module(mod: any) {
         impacto_resultado_positivo: mod?.impacto_resultado_positivo || "",
         impacto_resultado_negativo: mod?.impacto_resultado_negativo || "",
         pruebas_o_tareas_sugeridas: Array.isArray(mod?.pruebas_o_tareas_sugeridas) ? mod.pruebas_o_tareas_sugeridas : [],
-        mini_perla_docente: mod?.mini_perla_docente || "",
+        consejo_docente: mod?.consejo_docente || mod?.mini_perla_docente || "",
         prioridad: mod?.prioridad || "media"
     };
 }

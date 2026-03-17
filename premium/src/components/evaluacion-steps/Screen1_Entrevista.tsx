@@ -2022,10 +2022,10 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100 border-dashed">
-                                                        <span className="text-[7px] uppercase font-black text-indigo-400 tracking-tighter block mb-1 underline decoration-indigo-200 underline-offset-2">MINI PERLA DOCENTE:</span>
+                                                    <div className="mt-2 text-indigo-900 font-bold bg-indigo-50 p-2 rounded-lg border border-indigo-100 border-dashed">
+                                                        <span className="text-[7px] uppercase font-black text-indigo-400 tracking-tighter block mb-1 underline decoration-indigo-200 underline-offset-2">CONSEJO:</span>
                                                         <p className="text-indigo-900 text-[10px] font-medium leading-tight">
-                                                            {data.mini_perla_docente || "La concordancia mecánica entre el relato y el test físico es la clave del éxito terapéutico."}
+                                                            {data.consejo_docente || data.mini_perla_docente || "La concordancia mecánica entre el relato y el test físico es la clave del éxito terapéutico."}
                                                         </p>
                                                     </div>
                                                 </div>
