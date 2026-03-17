@@ -916,11 +916,9 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             nombre?: string;
             edad?: string;
             sexo?: string;
-            foco_y_lado?: string;
+            foco_y_lado: string;
             deporte_basal?: string;
             comorbilidades?: string;
-            foco_principal: string;
-            lado_principal: string;
             irritabilidad_sugerida: string;
             tolerancia_carga: {
                 nivel: string;

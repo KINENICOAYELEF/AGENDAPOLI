@@ -35,8 +35,12 @@ export const EvalMinimoSchema = z.object({
 // Esquema B) diagnosis (Case Organizer P3)
 export const DiagnosisSchema = z.object({
     snapshot_clinico: z.object({
-        foco_principal: z.string(),
-        lado: z.string(),
+        nombre: z.string().optional(),
+        edad: z.string().optional(),
+        sexo: z.string().optional(),
+        foco_y_lado: z.string(),
+        deporte_basal: z.string().optional(),
+        comorbilidades: z.string().optional(),
         irritabilidad_sugerida: z.string(),
         tolerancia_carga: z.object({
             nivel: z.string().describe("Texto descriptivo del nivel de tolerancia"),
