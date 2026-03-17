@@ -1836,12 +1836,16 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                     <span>🎯</span> Puntos clave a aclarar en P2
                                                 </h5>
                                                 <div className="flex flex-col gap-1">
-                                                    {(interviewV4.p1_ai_structured.puntos_clave_p2 || []).map((p: string, i: number) => (
-                                                        <div key={i} className="flex items-start gap-1.5 text-[9px] text-slate-700 leading-tight">
-                                                            <span className="text-emerald-500 font-bold">•</span>
-                                                            {p}
-                                                        </div>
-                                                    ))}
+                                                    {(interviewV4.p1_ai_structured.puntos_clave_p2 || []).length > 0 ? (
+                                                        (interviewV4.p1_ai_structured.puntos_clave_p2 || []).map((p: string, i: number) => (
+                                                            <div key={i} className="flex items-start gap-1.5 text-[9px] text-slate-700 leading-tight">
+                                                                <span className="text-emerald-500 font-bold">•</span>
+                                                                {p}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-[9px] text-slate-400 italic">Aclarar irritabilidad, patrón de carga y concordancia mecánica.</div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1944,13 +1948,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 <div className="px-3 pb-3 flex flex-col gap-3">
                                                     <div>
                                                         <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">Qué mirar:</span>
-                                                        <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo || "Aclarar irritabilidad y patrón de carga"}</p>
+                                                        <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo || "Aclarar patrón mecánico/tisular"}</p>
                                                     </div>
 
-                                                    <div>
-                                                        <span className="text-[7px] uppercase font-bold text-slate-400 block tracking-widest mb-1">Por qué importa en este caso:</span>
-                                                        <p className="text-slate-600 text-[10px] italic leading-snug bg-slate-50 p-2 rounded-md border border-slate-100">
-                                                            {data.razonamiento_clinico || "Permite diferenciar el origen mecánico de la queja y acotar el pronóstico de carga inicial."}
+                                                    <div className="bg-slate-50 p-2 rounded-md border border-slate-100 flex flex-col gap-1">
+                                                        <span className="text-[7px] uppercase font-bold text-slate-400 block tracking-widest mb-0.5">Por qué importa / Razón docente:</span>
+                                                        <p className="text-slate-600 text-[10px] italic leading-snug">
+                                                            {data.razonamiento_clinico || "Identifica la relación entre carga y síntoma para acotar el diagnóstico kinesiológico."}
                                                         </p>
                                                     </div>
 

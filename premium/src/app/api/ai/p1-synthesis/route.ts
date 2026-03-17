@@ -22,9 +22,9 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
 3. **RECOMENDACIONES DOCENTES P2 (CIENCIA Y RAZONAMIENTO)**: 
    Cada módulo debe ser una micro-clase clínica. Sugiere entre 3 y 6 tareas/tests específicos y modernos por módulo.
-   - "objetivo": El norte clínico del módulo (ej: "Aclarar patrón mecánico de carga en tendón vs bursa").
-   - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular (ej: "Dado que el dolor es intermitente y post-carga, este módulo descartará sensibilización periférica").
-   - "hallazgo_fortalece_hipotesis": Qué hallazgo específico daría peso a la sospecha principal.
+    - "objetivo": El norte clínico del módulo (ej: "Aclarar patrón mecánico de carga en tendón vs bursa").
+    - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular. Debe aterrizar qué dominio clínico aclara (ej. somatosensorial, motor, tisular) y qué patrón funcional o tisular busca identificar. (ej: "Dado que el dolor es intermitente y post-carga, este módulo descartará sensibilización periférica y patrón de sobreuse").
+    - "hallazgo_fortalece_hipotesis": Qué hallazgo específico daría peso a la sospecha principal.
    - "hallazgo_debilita_hipotesis": Qué hallazgo obligaría a pensar en otras hipótesis.
    - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
    - "impacto_resultado_positivo/negativo": Cómo cambia el razonamiento clínico según el resultado.
@@ -33,6 +33,7 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 4. **HIPÓTESIS (REGLA DE 3 + DIFERENCIALES)**: 
    - 3 hipótesis principales limpias y ricas (mas_probable, probable_alternativa, menos_probable).
    - Identifica claramente diferenciales breves para el bloque de "Otras hipótesis".
+   - **Puntos clave P2**: Genera 2 a 4 bullets cortos sobre qué aclarar específicamente durante el examen físico (objetivos tácticos).
 
 5. **PREGUNTAS FALTANTES (MALA CALIDAD / BAJO NÚMERO)**: Mínimo 4 y máximo 6 preguntas no redundantes. No repitas lo que ya está en el expediente basal.
 
