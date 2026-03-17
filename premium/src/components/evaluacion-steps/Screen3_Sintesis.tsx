@@ -496,25 +496,39 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     </div>
 
                     {/* BLOQUE H — RECORDATORIOS CLÍNICOS */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-7 shadow-sm">
-                        <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><span className="text-lg">💡</span> H. Recordatorios y Coherencia</h3>
-                        <p className="text-[10px] text-indigo-700/80 mb-3">Puntos a vigilar sugeridos por la IA.</p>
+                    <div className="bg-indigo-50/30 border border-indigo-100 rounded-xl p-7 shadow-sm">
+                        <h3 className="font-bold text-indigo-900 mb-6 flex items-center gap-3">
+                            <span className="text-xl bg-indigo-100 p-2 rounded-lg text-indigo-600">💡</span> 
+                            <div>
+                                <span className="block">H. Recordatorios y Coherencia</span>
+                                <span className="text-[10px] font-medium text-indigo-700/80 uppercase tracking-widest">Puntos a vigilar sugeridos para el clínico</span>
+                            </div>
+                        </h3>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Recordatorios</label>
-                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.recordatorios_clinicos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { recordatorios_clinicos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            <div className="bg-white/60 rounded-xl p-4 border border-indigo-100/50 shadow-sm">
+                                <label className="text-[10px] font-black text-indigo-800 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                                    <span className="text-xs">📋</span> Recordatorios
+                                </label>
+                                <textarea className="w-full bg-white/80 border border-indigo-200/30 rounded-lg p-3 text-xs min-h-[80px] outline-none focus:ring-2 focus:ring-indigo-100 transition-all" value={(autoSynth.recordatorios_y_coherencia?.recordatorios_clinicos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { recordatorios_clinicos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Notas clínicas..." />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Vigilar en tto</label>
-                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.cosas_a_vigilar_en_tratamiento || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { cosas_a_vigilar_en_tratamiento: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            <div className="bg-white/60 rounded-xl p-4 border border-indigo-100/50 shadow-sm">
+                                <label className="text-[10px] font-black text-indigo-800 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                                    <span className="text-xs">👁️</span> Vigilar en tto
+                                </label>
+                                <textarea className="w-full bg-white/80 border border-indigo-200/30 rounded-lg p-3 text-xs min-h-[80px] outline-none focus:ring-2 focus:ring-indigo-100 transition-all" value={(autoSynth.recordatorios_y_coherencia?.cosas_a_vigilar_en_tratamiento || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { cosas_a_vigilar_en_tratamiento: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Signos de progresión/estancamiento..." />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-indigo-800 uppercase block mb-1">Faltantes no críticos</label>
-                                <textarea className="w-full bg-white border border-indigo-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.faltantes_no_criticos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { faltantes_no_criticos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            <div className="bg-white/60 rounded-xl p-4 border border-indigo-100/50 shadow-sm">
+                                <label className="text-[10px] font-black text-indigo-800 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                                    <span className="text-xs">❓</span> Faltantes no críticos
+                                </label>
+                                <textarea className="w-full bg-white/80 border border-indigo-200/30 rounded-lg p-3 text-xs min-h-[80px] outline-none focus:ring-2 focus:ring-indigo-100 transition-all" value={(autoSynth.recordatorios_y_coherencia?.faltantes_no_criticos || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { faltantes_no_criticos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Datos no hallados..." />
                             </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-rose-800 uppercase block mb-1">Incoherencias</label>
-                                <textarea className="w-full bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs h-[60px]" value={(autoSynth.recordatorios_y_coherencia?.incoherencias_detectadas || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { incoherencias_detectadas: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            <div className="bg-rose-50/50 rounded-xl p-4 border border-rose-100 shadow-sm">
+                                <label className="text-[10px] font-black text-rose-800 uppercase tracking-widest block mb-2 flex items-center gap-2">
+                                    <span className="text-xs">🔎</span> Incoherencias
+                                </label>
+                                <textarea className="w-full bg-white border border-rose-200/50 rounded-lg p-3 text-xs min-h-[80px] outline-none focus:ring-2 focus:ring-rose-200 transition-all" value={(autoSynth.recordatorios_y_coherencia?.incoherencias_detectadas || []).join('\n')} onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { incoherencias_detectadas: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Discordancias halladas..." />
                             </div>
                         </div>
                     </div>
