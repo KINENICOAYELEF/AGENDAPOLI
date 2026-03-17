@@ -1699,8 +1699,9 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Salida Estructurada FASE 11 */}
+                {/* Salida Estructurada FASE 11 */}
                     {(!interviewV4.jsonExtractError && interviewV4.p1_ai_structured) && (
                         <div className="mt-4 flex flex-col gap-4 animate-in fade-in duration-300">
                             
@@ -1860,86 +1861,92 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 </div>
 
                                 <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3 flex flex-col gap-3">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes Clave</h4>
-                                        <div className="space-y-2">
-                                            {interviewV4.p1_ai_structured.preguntas_faltantes?.map((p: any, i: number) => (
-                                                <div key={i} className="bg-white border border-amber-50 rounded p-2">
-                                                    <p className="text-[11px] text-amber-900 font-medium">{p.pregunta}</p>
-                                                    <p className="text-[9px] text-amber-700 border-t border-amber-50 mt-1 pt-1 opacity-80">{p.por_que_importa}</p>
-                                                </div>
-                                            ))}
-                                            {(!interviewV4.p1_ai_structured.preguntas_faltantes || interviewV4.p1_ai_structured.preguntas_faltantes.length === 0) && (
-                                                <p className="text-xs text-amber-700 italic text-center py-2">No hay preguntas sugeridas.</p>
-                                            )}
-                                        </div>
+                                    <h4 className="text-xs font-bold text-amber-800 mb-2">❓ Preguntas Faltantes Clave</h4>
+                                    <div className="space-y-2">
+                                        {interviewV4.p1_ai_structured.preguntas_faltantes?.map((p: any, i: number) => (
+                                            <div key={i} className="bg-white border border-amber-50 rounded p-2">
+                                                <p className="text-[11px] text-amber-900 font-medium">{p.pregunta}</p>
+                                                <p className="text-[9px] text-amber-700 border-t border-amber-50 mt-1 pt-1 opacity-80">{p.por_que_importa}</p>
+                                            </div>
+                                        ))}
+                                        {(!interviewV4.p1_ai_structured.preguntas_faltantes || interviewV4.p1_ai_structured.preguntas_faltantes.length === 0) && (
+                                            <p className="text-xs text-amber-700 italic text-center py-2">No hay preguntas sugeridas.</p>
+                                        )}
                                     </div>
-                                    <div className="mt-4 pt-5 border-t border-amber-200">
-                                        <h4 className="text-[11px] font-black text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-tighter decoration-amber-500 underline underline-offset-4">
-                                            <span>🌍</span> Mapa Contextual BPS (5 Grupos Clave)
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px]">
-                                            {/* Fila 1: Alertas y Personales + */}
-                                            <div className="bg-white border-2 border-rose-100 rounded-2xl p-4 shadow-sm h-full flex flex-col">
-                                                <strong className="text-rose-800 uppercase block mb-2 border-b-2 border-rose-50 pb-1.5 font-black text-[11px] tracking-tight">⚠️ ALERTAS MSK / RIESGO MÉDICO</strong>
-                                                <div className="flex flex-wrap gap-2 pt-1 flex-1 items-start content-start">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas || []).length > 0 ? (
-                                                        interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.map((t: string, i: number) => (
-                                                            <span key={i} className="bg-rose-50 text-rose-700 px-2 py-1 rounded-xl border border-rose-100 text-[10px] font-medium shadow-sm italic">● {t}</span>
-                                                        ))
-                                                    ) : <span className="text-slate-400 italic font-medium">Sin alertas médicas relevantes.</span>}
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-amber-50 text-amber-700 px-2 py-1 rounded-xl border border-amber-100 text-[10px] font-medium shadow-sm italic">● {t}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                </div>
 
-                                            <div className="bg-white border-2 border-emerald-100 rounded-2xl p-4 shadow-sm h-full flex flex-col">
-                                                <strong className="text-emerald-800 uppercase block mb-2 border-b-2 border-emerald-50 pb-1.5 font-black text-[11px] tracking-tight text-right">👤 FACTORES PERSONALES POSITIVOS (+)</strong>
-                                                <div className="flex flex-wrap gap-2 pt-1 justify-end flex-1 items-start content-start">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-emerald-50 text-emerald-800 px-2 py-1 rounded-xl border border-emerald-200 text-[10px] font-bold shadow-sm">✓ {t}</span>
-                                                    ))}
-                                                    {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_positivos.length === 0) && <span className="text-slate-400 italic font-medium">Sin factores positivos registrados.</span>}
-                                                </div>
+                                {/* 🌍 Mapa Contextual BPS (5 Grupos Clave) - Full Width optimized for Desktop 2.9.3 */}
+                                <div className="bg-white/50 border-2 border-slate-200 rounded-3xl p-6 lg:col-span-3 shadow-inner mt-4">
+                                    <h4 className="text-[12px] font-black text-slate-800 mb-6 flex items-center justify-center gap-3 uppercase tracking-[0.2em] decoration-indigo-400 underline underline-offset-[12px]">
+                                        <span>🌍</span> Mapa Contextual BPS (Factores Biopsicosociales)
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-[10px]">
+                                        {/* 1. Alertas */}
+                                        <div className="bg-white border-2 border-rose-100 rounded-2xl p-4 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
+                                            <strong className="text-rose-800 uppercase block mb-3 border-b-2 border-rose-50 pb-2 font-black text-[11px] tracking-tight">⚠️ ALERTAS / RIESGO</strong>
+                                            <div className="flex flex-col gap-2 pt-1 flex-1">
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_rojas || []).length > 0 ? (
+                                                    interviewV4.p1_ai_structured.factores_contextuales_clave.banderas_rojas.map((t: string, i: number) => (
+                                                        <span key={i} className="bg-rose-50 text-rose-700 px-2 py-1.5 rounded-xl border border-rose-100 text-[10px] font-bold shadow-sm italic leading-tight">● {t}</span>
+                                                    ))
+                                                ) : <span className="text-slate-400 italic font-medium px-1">Sin alertas relevantes.</span>}
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.banderas_amarillas || []).map((t: string, i: number) => (
+                                                    <span key={i} className="bg-amber-50 text-amber-700 px-2 py-1.5 rounded-xl border border-amber-100 text-[10px] font-bold shadow-sm italic leading-tight">● {t}</span>
+                                                ))}
                                             </div>
+                                        </div>
 
-                                            {/* Fila 2: Personales - y Facilitadores */}
-                                            <div className="bg-white border-2 border-rose-100 rounded-2xl p-4 shadow-sm h-full flex flex-col">
-                                                <strong className="text-rose-900 uppercase block mb-2 border-b-2 border-rose-50 pb-1.5 font-black text-[11px] tracking-tight">👤 FACTORES PERSONALES NEGATIVOS / LIMITANTES (-)</strong>
-                                                <div className="flex flex-wrap gap-2 pt-1 flex-1 items-start content-start">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-rose-50/50 text-rose-800 px-2 py-1 rounded-xl border border-rose-100 text-[10px] font-medium shadow-sm">● {t}</span>
-                                                    ))}
-                                                    {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_negativos.length === 0) && <span className="text-slate-400 italic font-medium">Sin factores limitantes.</span>}
-                                                </div>
+                                        {/* 2. Personales + */}
+                                        <div className="bg-white border-2 border-emerald-100 rounded-2xl p-4 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
+                                            <strong className="text-emerald-800 uppercase block mb-3 border-b-2 border-emerald-50 pb-2 font-black text-[11px] tracking-tight">👤 PERSONALES (+)</strong>
+                                            <div className="flex flex-col gap-2 pt-1 flex-1">
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || []).map((t: string, i: number) => (
+                                                    <span key={i} className="bg-emerald-50 text-emerald-800 px-2.5 py-2 rounded-xl border border-emerald-200 text-[10px] font-black shadow-sm flex items-center gap-2">
+                                                        <span className="text-emerald-500">✓</span> {t}
+                                                    </span>
+                                                ))}
+                                                {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_positivos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_positivos.length === 0) && <span className="text-slate-400 italic font-medium px-1">Sin factores positivos.</span>}
                                             </div>
+                                        </div>
 
-                                            <div className="bg-white border-2 border-teal-100 rounded-2xl p-4 shadow-sm h-full flex flex-col">
-                                                <strong className="text-teal-900 uppercase block mb-2 border-b-2 border-teal-50 pb-1.5 font-black text-[11px] tracking-tight text-right">✅ FACILITADORES DEL ENTORNO</strong>
-                                                <div className="flex flex-wrap gap-2 pt-1 justify-end flex-1 items-start content-start">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-teal-50 text-teal-800 px-2.5 py-1.5 rounded-xl border-2 border-teal-100 text-[10px] font-black shadow-sm uppercase tracking-tighter">{t}</span>
-                                                    ))}
-                                                    {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || interviewV4.p1_ai_structured.factores_contextuales_clave.facilitadores.length === 0) && <span className="text-slate-400 italic font-medium">Sin facilitadores externos.</span>}
-                                                </div>
+                                        {/* 3. Personales - */}
+                                        <div className="bg-white border-2 border-orange-100 rounded-2xl p-4 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
+                                            <strong className="text-orange-900 uppercase block mb-3 border-b-2 border-orange-50 pb-2 font-black text-[11px] tracking-tight">👤 PERSONALES (-)</strong>
+                                            <div className="flex flex-col gap-2 pt-1 flex-1">
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || []).map((t: string, i: number) => (
+                                                    <span key={i} className="bg-orange-50/50 text-orange-800 px-2.5 py-2 rounded-xl border border-orange-100 text-[10px] font-bold shadow-sm leading-tight flex items-start gap-2">
+                                                        <span className="text-orange-400 mt-0.5">●</span> {t}
+                                                    </span>
+                                                ))}
+                                                {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.factores_personales_negativos || interviewV4.p1_ai_structured.factores_contextuales_clave.factores_personales_negativos.length === 0) && <span className="text-slate-400 italic font-medium px-1">Sin factores limitantes.</span>}
                                             </div>
+                                        </div>
 
-                                            {/* Fila 3 (Sola abajo): Barreras */}
-                                            <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 shadow-inner md:col-span-2">
-                                                <strong className="text-slate-700 uppercase block mb-3 border-b-2 border-slate-200 pb-1.5 font-black text-[11px] tracking-widest text-center">🚧 BARRERAS LOGÍSTICAS O SOCIALES</strong>
-                                                <div className="flex flex-wrap gap-3 pt-1 justify-center">
-                                                    {(interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || []).map((t: string, i: number) => (
-                                                        <span key={i} className="bg-white text-slate-700 px-4 py-1.5 rounded-full border border-slate-300 text-[10px] font-bold shadow-md tracking-tight">{t}</span>
-                                                    ))}
-                                                    {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || interviewV4.p1_ai_structured.factores_contextuales_clave.barreras.length === 0) && <span className="text-slate-400 italic font-medium">No se identifican barreras críticas.</span>}
-                                                </div>
+                                        {/* 4. Facilitadores */}
+                                        <div className="bg-white border-2 border-teal-100 rounded-2xl p-4 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
+                                            <strong className="text-teal-900 uppercase block mb-3 border-b-2 border-teal-50 pb-2 font-black text-[11px] tracking-tight">✅ FACILITADORES</strong>
+                                            <div className="flex flex-col gap-2 pt-1 flex-1">
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || []).map((t: string, i: number) => (
+                                                    <span key={i} className="bg-teal-50 text-teal-800 px-3 py-2 rounded-xl border-2 border-teal-100 text-[10px] font-black shadow-sm uppercase tracking-tighter text-center">{t}</span>
+                                                ))}
+                                                {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.facilitadores || interviewV4.p1_ai_structured.factores_contextuales_clave.facilitadores.length === 0) && <span className="text-slate-400 italic font-medium px-1">Sin facilitadores.</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 5. Barreras */}
+                                        <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm h-full flex flex-col transition-all hover:shadow-md">
+                                            <strong className="text-slate-700 uppercase block mb-3 border-b-2 border-slate-100 pb-2 font-black text-[11px] tracking-tight">🚧 BARRERAS</strong>
+                                            <div className="flex flex-col gap-2 pt-1 flex-1">
+                                                {(interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || []).map((t: string, i: number) => (
+                                                    <span key={i} className="bg-slate-50 text-slate-700 px-3 py-2 rounded-xl border border-slate-300 text-[10px] font-bold shadow-sm tracking-tight text-center leading-tight">{t}</span>
+                                                ))}
+                                                {(!interviewV4.p1_ai_structured.factores_contextuales_clave?.barreras || interviewV4.p1_ai_structured.factores_contextuales_clave.barreras.length === 0) && <span className="text-slate-400 italic font-medium px-1">Sin barreras críticas.</span>}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-4 lg:col-span-3">
+
+                                <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-4 lg:col-span-3 mt-4">
                                     <h4 className="text-xs font-bold text-teal-800 mb-3 flex items-center gap-2">
                                         <span>🩺</span> Recomendaciones Examen Físico P2 (Tutoría Clínica)
                                     </h4>
@@ -2088,7 +2095,6 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         >
                             {isClosed ? '✓ ANAMNESIS FINALIZADA' : 'Confirmar e Ir a Exámenes P2'}
                         </button>
-                    </div>
                 </div>
             </div>
         </div>
