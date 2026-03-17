@@ -23,28 +23,28 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 3. **RECOMENDACIONES DOCENTES P2 (DIFERENCIACIÓN TOTAL POR MÓDULO)**: 
    Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. **PROHIBIDO texto clonado o genérico**. 
    DEBES usar exactamente estas llaves en el JSON para cada módulo:
-    - observacion_movimiento_inicial: Conecta con anamnesis, deporte y trabajo. Evalúa postura espontánea, transferencias, marcha, gesto temido/agravante, estrategia antálgica y control global.
-    - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia.
-    - fuerza_tolerancia_carga: Evalúa grupos musculares específicos analíticamente (según región) y funcionalmente. Sugiere uso de fuerza manual, dinamometría, isometría o tareas submáximas. Interpreta si la carga mejora vs empeora el síntoma.
-    - palpacion: Zona y tejido diana según hipótesis plausible. Distingue dolor local, referido, sensibilidad periférica o irritabilidad local. No es el eje diagnóstico principal.
-    - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción y vascularización si hay sospecha de compromiso distal.
-    - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas.
-    - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte.
-    - pruebas_funcionales_reintegro: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales.
+    - observacion_movimiento_inicial: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global. DEBERÍAS conectar con el deporte/trabajo del paciente. Recomienda mirar: postura espontánea, marcha (si aplica), gestos temidos/agravantes y estrategias antálgicas.
+    - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia. Explica el puente entre el relato y la restricción física.
+    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda. Debe sugerir: qué músculos o grupos evaluar analíticamente (según la región), cuándo usar fuerza manual vs dinamometría/isometría, y cómo interpretar si la carga mejora vs empeora el síntoma (load tolerance).
+    - palpacion: Solo si aporta provocación de síntoma concordante. Debe abarcar las hipótesis plausibles, sugerir qué tejidos o zonas palpar y ayudar a distinguir entre dolor local, referido o sensibilidad periférica/tejido diana.
+    - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción (dermatomas/miotomas) y vascularización si hay sospecha de compromiso distal o síntomas atípicos.
+    - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas (gesto deportivo/laboral).
+    - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte. Explica brevemente para qué sirve cada ejemplo sugerido.
+    - pruebas_funcionales_reintegro: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales que sean significativos para el paciente.
 
     Estructura Visible Obligatoria por cada objeto de módulo:
     - objetivo: QUÉ MIRAR (Específico: región, queja, irritabilidad).
-    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación profunda: para qué sirve, qué información agrega y qué hipótesis modula).
+    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación docente de por qué importa en ESTE caso particular y para qué sirve la información que agrega).
     - hallazgo_fortalece_hipotesis: QUÉ CONFIRMARÍA.
     - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
     - diferencial_que_descarta: Qué otra hipótesis ayuda a descartar.
-    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). Agrega una frase ultra-breve indicando el propósito clínico de cada ejemplo.
+    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS con una frase breve de su utilidad). No uses comodines.
     - mini_perla_docente: MINI PERLA DOCENTE (Insight clínico de alto impacto). OBLIGATORIO.
 
 4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 
-   - 3 hipótesis principales (mas_probable, probable_alternativa, menos_probable).
+   - 3 hipótesis principales (mas_probable, probable_alternativa, menos_probable). Cada una con un título clínico claro y fundamento docente.
    - Identifica claramente diferenciales breves.
-   - **Puntos clave P2**: 2 a 4 bullets tácticos sobre qué aclarar específicamente.
+   - **Puntos clave P2**: 2 a 4 bullets tácticos sobre qué aclarar específicamente en la evaluación física.
 
 5. **PREGUNTAS FALTANTES**: Obligatorio entre 4 y 6 preguntas de alto impacto que cambien el razonamiento.
 
