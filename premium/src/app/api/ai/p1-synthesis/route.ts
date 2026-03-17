@@ -23,10 +23,10 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 3. **RECOMENDACIONES DOCENTES P2 (DIFERENCIACIÓN TOTAL POR MÓDULO)**: 
    Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. **PROHIBIDO texto clonado o genérico**. 
    DEBES usar exactamente estas llaves en el JSON para cada módulo:
-    - observacion_movimiento_inicial: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global.
+    - observacion_movimiento_inicial: Conecta con anamnesis, deporte y trabajo. Evalúa postura espontánea, transferencias, marcha, gesto temido/agravante, estrategia antálgica y control global.
     - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia.
-    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda, respuesta a carga isométrica/isotónica, y fatiga.
-    - palpacion: Solo si aporta provocación de síntoma concordante. Nunca "palpar por palpar".
+    - fuerza_tolerancia_carga: Evalúa grupos musculares específicos analíticamente (según región) y funcionalmente. Sugiere uso de fuerza manual, dinamometría, isometría o tareas submáximas. Interpreta si la carga mejora vs empeora el síntoma.
+    - palpacion: Zona y tejido diana según hipótesis plausible. Distingue dolor local, referido, sensibilidad periférica o irritabilidad local. No es el eje diagnóstico principal.
     - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción y vascularización si hay sospecha de compromiso distal.
     - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas.
     - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte.
@@ -34,11 +34,11 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 
     Estructura Visible Obligatoria por cada objeto de módulo:
     - objetivo: QUÉ MIRAR (Específico: región, queja, irritabilidad).
-    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación docente de por qué importa en ESTE caso particular).
+    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación profunda: para qué sirve, qué información agrega y qué hipótesis modula).
     - hallazgo_fortalece_hipotesis: QUÉ CONFIRMARÍA.
     - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
     - diferencial_que_descarta: Qué otra hipótesis ayuda a descartar.
-    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). No uses comodines.
+    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). Agrega una frase ultra-breve indicando el propósito clínico de cada ejemplo.
     - mini_perla_docente: MINI PERLA DOCENTE (Insight clínico de alto impacto). OBLIGATORIO.
 
 4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
         const sanitizedPayload = sanitizeClinicalTextForModel(jsonPayload);
         
         // 3. Generar hash de caché
-        const inputHash = await generateSHA256(`p1-synthesis:v2.9.2_MEGA_FINAL:${sanitizedPayload}`);
+        const inputHash = await generateSHA256(`p1-synthesis:v2.9.3_FINAL:${sanitizedPayload}`);
 
         const userPrompt = `
 Genera la síntesis de P1 estructurada en json según las reglas. Responde de forma clínica, precisa y compacta.
