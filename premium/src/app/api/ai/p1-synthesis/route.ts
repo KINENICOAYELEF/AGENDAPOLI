@@ -20,25 +20,33 @@ NO DEBES:
 REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 1. **INTEGRACIÓN EXPLÍCITA DE P1.5 / EXPEDIENTE**: Debes leer y usar activamente condiciones clínicas, fármacos, antecedentes MSK, actividad física, carga laboral, sueño, estrés, red de apoyo y barreras logísticas. Estos datos DEBEN modular el resumen, el SINS, las hipótesis y la elección del examen físico.
 2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
-3. **RECOMENDACIONES DOCENTES P2 (CIENCIA Y RAZONAMIENTO)**: 
-   Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. NO REPETIR CONTENIDO ENTRE MÓDULOS.
-   Cada módulo debe responder a una pregunta clínica distinta usando el contexto basal y P1.5.
-   Sugiere entre 3 y 6 tareas/tests específicos y modernos por módulo.
-    - "objetivo": El norte clínico del módulo (ej: "Aclarar patrón mecánico de carga en tendón vs bursa").
-    - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular. Debe aterrizar qué dominio clínico aclara (ej. somatosensorial, motor, tisular) y qué patrón funcional o tisular busca identificar. (ej: "Dado que el dolor es intermitente y post-carga, este módulo descartará sensibilización periférica y patrón de sobreuse").
-    - "hallazgo_fortalece_hipotesis": Qué hallazgo específico daría peso a la sospecha principal.
-   - "hallazgo_debilita_hipotesis": Qué hallazgo obligaría a pensar en otras hipótesis.
-   - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
-   - "impacto_resultado_positivo/negativo": Cómo cambia el razonamiento clínico según el resultado.
-   - "mini_perla_docente": Una micro-perla clínica breve o dato docente de alto valor sobre este módulo en este caso. (OBLIGATORIO)
-   - **OBLIGATORIO**: Todos los campos de texto deben estar llenos con contenido pedagógico real. PROHIBIDO dejar campos vacíos o con placeholders. Si un módulo es relevante, debe tener sustancia docente.
+3. **RECOMENDACIONES DOCENTES P2 (DIFERENCIACIÓN TOTAL POR MÓDULO)**: 
+   Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. **PROHIBIDO texto clonado o genérico**. 
+   Cada módulo debe responder a una pregunta clínica distinta e independiente:
+    - **Observación Movimiento Inicial**: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global.
+    - **ROM Analítico**: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia.
+    - **Fuerza / Tolerancia a Carga**: Evalúa capacidad vs demanda, respuesta a carga isométrica/isotónica, y fatiga.
+    - **Palpación**: Solo si aporta provocación de síntoma concordante. Nunca "palpar por palpar".
+    - **Neuro Vascular**: Evalúa mecanosensibilidad neural, conducción y vascularización si hay sospecha de compromiso distal.
+    - **Control Motor**: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas.
+    - **Pruebas Ortopédicas**: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte.
+    - **Pruebas Funcionales**: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales.
 
-4. **HIPÓTESIS (REGLA DE 3 + DIFERENCIALES)**: 
-   - 3 hipótesis principales limpias y ricas (mas_probable, probable_alternativa, menos_probable).
-   - Identifica claramente diferenciales breves para el bloque de "Otras hipótesis".
-   - **Puntos clave P2**: Genera 2 a 4 bullets cortos sobre qué aclarar específicamente durante el examen físico (objetivos tácticos).
+    Estructura Visible Obligatoria por Módulo:
+    - "objetivo": QUÉ MIRAR (Específico: región, queja, irritabilidad).
+    - "razonamiento_clinico": POR QUÉ IMPORTA / RAZÓN DOCENTE (Explica qué información agrega y qué hipótesis fortalece/debilita).
+    - "hallazgo_fortalece_hipotesis": QUÉ CONFIRMARÍA.
+    - "hallazgo_debilita_hipotesis": QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
+    - "diferencial_que_descarta": Qué otra hipótesis ayuda a descartar.
+    - "pruebas_o_tareas_sugeridas": EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). No uses comodines.
+    - "mini_perla_docente": MINI PERLA DOCENTE (Insight clínico de alto impacto).
 
-5. **PREGUNTAS FALTANTES**: Mínimo 4 y máximo 6 preguntas no redundantes. No repitas lo que ya está en el expediente basal. Deben ser preguntas de alto impacto que cambien el razonamiento.
+4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 
+   - 3 hipótesis principales (mas_probable, probable_alternativa, menos_probable).
+   - Identifica claramente diferenciales breves.
+   - **Puntos clave P2**: 2 a 4 bullets tácticos sobre qué aclarar específicamente.
+
+5. **PREGUNTAS FALTANTES**: 4 a 6 preguntas de alto impacto que cambien el razonamiento.
 
 ESTRUCTURA EXACTA JSON:
 {
@@ -236,7 +244,7 @@ export async function POST(req: Request) {
         const sanitizedPayload = sanitizeClinicalTextForModel(jsonPayload);
         
         // 3. Generar hash de caché
-        const inputHash = await generateSHA256(`p1-synthesis:v2.9.2:${sanitizedPayload}`);
+        const inputHash = await generateSHA256(`p1-synthesis:v2.9.2_final:${sanitizedPayload}`);
 
         const userPrompt = `
 Genera la síntesis de P1 estructurada en json según las reglas. Responde de forma clínica, precisa y compacta.
