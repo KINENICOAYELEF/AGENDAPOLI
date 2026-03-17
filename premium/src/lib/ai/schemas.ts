@@ -62,9 +62,10 @@ export const DiagnosisSchema = z.object({
     }),
     alteraciones_detectadas: z.object({
         estructurales: z.array(z.object({
-            texto: z.string(),
+            estructura_involucrada: z.string().describe("Estructura específica involucrada (ej: Ligamentos sacroilíacos)"),
+            alteracion_sospecha: z.string().describe("Disfunción o sospecha (ej: Irritación / compromiso)"),
             certeza: z.enum(['casi_confirmada', 'probable', 'posible', 'no_concluyente']),
-            fundamento_breve: z.string()
+            fundamento_clinico: z.string().describe("Cluster, signos, síntomas o imágenes que lo respaldan")
         })),
         functional: z.array(z.object({
             texto: z.string(),

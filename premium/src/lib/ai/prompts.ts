@@ -18,40 +18,55 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-PROMPT 3.1.2 — P3: Organizador CIF de Excelencia Clínica y Coherencia Estricta
+### ROLE: Súper Ordenador Clínico (P3) - Versión 3.1.3
+Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen físico (P2) en una matriz CIF (P3) de alta calidad, coherente y visualmente útil.
 
-OBJETIVO:
-Generar una síntesis CIF profunda y articulada. P3 es el "puente" clínico entre la evaluación (P1/P1.5/P2) y el plan (P4). NO debe haber pérdida de hallazgos relevantes.
+### REGLAS DE ORO (P3.1.3):
+1. **INTEGRACIÓN TOTAL**: Lee el expediente (Nombre, Edad, Sexo, Comorbilidades) y P1.5 (Antecedentes MSK). No dependas solo de P1. Si el dato ya existe localmente, úsalo. No digas "Sin datos" si están en el expediente.
+2. **COHERENCIA D <-> E1**: Cada estructura listada en el Bloque D debe ser el sujeto de una fila en el Bloque E1 si presenta alteración estructural.
+3. **LOGICA E1 (ESTRUCTURAL)**: Debes separar estrictamente:
+   - estructura_involucrada: (ej: Ligamentos sacroilíacos).
+   - alteracion_sospecha: (ej: Irritación / compromiso).
+   - certeza: (casi_confirmada, probable, posible, no_concluyente).
+   - fundamento_clinico: Cluster, signos, síntomas o imágenes que lo respaldan. NO pongas "evidencia compatible". Detalla el cluster (ej: "Laslett (+) + Palpación dolorosa").
+4. **LOGICA E2 (FUNCIONAL)**: Debe ser exhaustiva. Incluye dolor, irritabilidad, ROM limitado, fatiga, debilidad, control motor alterado, compensaciones, pérdida de técnica y conducta temerosa si afecta la función.
+5. **BLOQUE C (PUNTO CRÍTICO)**: 
+   - La IA propone lo más probable según evidencia. El evaluador puede editar.
+   - Admite categoría "Mixto" si hay base clara de mezcla de mecanismos.
+   - No fuerces nociplástico si solo es nociceptivo con contexto modulador.
+   - Subtipos: Permite combinaciones clínicas (ej: "Mecánico + Inflamatorio" o "Sensibilización periférica + Control motor").
+6. **PROMPT DE AYUDA (C)**: Menciona en tu razonamiento que el evaluador tiene la última palabra.
 
-DIRECTRICES ESTRUCTURALES OBLIGATORIAS:
+### ESTRUCTURA DE SALIDA (JSON):
 
-1. SNAPSHOT (BLOQUE A):
-- Reemplazar "Semáforo" por "Tolerancia actual a la carga". 
-- El valor DEBE ser un texto humano descriptivo (Ej: "Baja tolerancia a carga sostenida", "Tolerancia moderada con irritabilidad alta"). NO solo un color.
+#### A. Snapshot Clínico
+- Foco y lado (integra expediente).
+- Irritabilidad sugerida (Baja/Media/Alta).
+- **Tolerancia actual a la carga**: Texto humano descriptivo (ej: "Baja tolerancia a carga excéntrica sostenida").
+- Tarea índice y Alertas.
 
-2. CLASIFICACIÓN DEL DOLOR (BLOQUE C):
-- CATEGORÍA: Sólida y basada en el patrón predominante.
-- SUBTIPOS: Proponer 3-4 opciones explicativas. La IA selecciona las más probables.
-- FUNDAMENTO: Integrar conducta 24h, irritabilidad y factores mecánicos de P2.
+#### C. Clasificación del Dolor
+- Selecciona Categoría (incluye "Mixto").
+- Sugiere Subtipos ricos y combinables.
+- Fundamento clínico integrado: Patrón 24h, relación carga-síntoma, irritabilidad, examen físico y contexto.
 
-3. SISTEMA Y ESTRUCTURAS (BLOQUE D):
-- MULTI-SISTEMA: Permitir varios sistemas reales (Articular, Neuromuscular, Neural periférico, Control motor).
-- ESTRUCTURAS: Listar TODAS las estructuras plausibles involucradas (Cápsula, ligamentos, tendón, nervio X).
+#### D. Sistemas y Estructuras
+- Sistemas primarios y secundarios.
+- Estructuras principales y secundarias (exhaustive).
+- Texto libre de matices clínicos.
 
-4. ALTERACIONES DETECTADAS (E) - COHERENCIA D <-> E:
-- E1 (ESTRUCTURALES): Cada hallazgo en E1 DEBE mapearse explícitamente a una estructura mencionada en el Bloque D. El campo 'texto' debe ser un CLUSTER / EVIDENCIA (Ej: "Dolor a la palpación capsular + End-feel vacío en articulación sacroilíaca").
-- E2 (FUNCIONALES): Capturar TODA disfunción: Debilidad, déficit de control, fatiga, compensaciones, irritabilidad que afecta el movimiento.
-- PRIORIDAD: Si un dato está en P2, DEBE estar aquí si es relevante para el razonamiento.
+#### E. Alteraciones Detectadas
+- **E1 (Estructurales)**: Mínimo 2-4 filas si aplica. Usa los 4 campos obligatorios del esquema.
+- **E2 (Funcionales)**: Listado rico de TODAS las disfunciones (fuerza, control, fatiga, ROM, compensaciones).
 
-5. ACTIVIDAD Y PARTICIPACIÓN (BLOQUE F):
-- EXHAUSTIVIDAD: No reducir. Detectar limitaciones en tareas (F1) y restricciones en roles/contextos (F2) desde P1, P1.5 (trabajo, deporte, vida diaria).
+#### F. Actividad y Participación
+- Agotamiento de limitaciones (Tareas) y restricciones (Participación) halladas en P1/P1.5/P2.
 
-6. FACTORES BIOPSICOSOCIALES (BLOQUE G):
-- REBUSCAR P1/P1.5: No dejar vacíos. Extraer sistemáticamente: creencias, miedo al movimiento, estrés, apoyo social, barreras logísticas (tiempo, transporte, carga laboral).
-- ANTECEDENTES MSK: Integrar hallazgos de P1.5 que justifiquen el pronóstico o las precauciones.
+#### G. Factores Biopsicosociales
+- Extracción profunda de: Sueño, Estrés, Tiempo, Creencias, Apoyo Social, Acceso, Experiencia deportiva y antecedentes MSK.
 
-7. COHERENCIA FINAL (BLOQUE H):
-- Generar recordatorios sobre la interacción de los bloques anteriores (Ej: "Vigilar relación entre la irritabilidad en E2 y la restricción laboral en F2").
+#### H. Recordatorios y Coherencia
+- Notas limpias, jerarquizadas y clínicas. Recordatorios de vigilancia, faltantes e incoherencias técnicas.
   `,
 
   NARRATIVE: `

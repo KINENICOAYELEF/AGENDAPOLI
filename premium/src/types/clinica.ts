@@ -939,7 +939,12 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             descripcion_libre?: string;
         };
         alteraciones_detectadas?: {
-            estructurales: Array<{ texto: string; certeza: 'casi_confirmada' | 'probable' | 'posible' | 'no_concluyente' | string; fundamento_breve: string }>;
+            estructurales: Array<{ 
+                estructura_involucrada: string; 
+                alteracion_sospecha: string; 
+                certeza: 'casi_confirmada' | 'probable' | 'posible' | 'no_concluyente' | string; 
+                fundamento_clinico: string; 
+            }>;
             functional: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
         };
         actividad_y_participacion?: {
