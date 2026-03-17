@@ -1919,7 +1919,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                 
                                 <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-4 lg:col-span-3">
                                     <h4 className="text-xs font-bold text-teal-800 mb-3 flex items-center gap-2">
-                                        <span></span> Recomendaciones Examen Físico P2 (Tutoría Clínica)
+                                        <span>🩺</span> Recomendaciones Examen Físico P2 (Tutoría Clínica)
                                     </h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-[10px]">
                                         {Object.entries(interviewV4.p1_ai_structured.recomendaciones_p2_por_modulo || {}).map(([mod, data]: any) => (
@@ -1935,7 +1935,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                                                 <div className="px-3 pb-3 flex flex-col gap-3">
                                                     <div>
-                                                        <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">Qué mirar / Objetivo:</span>
+                                                        <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">Qué mirar:</span>
                                                         <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo}</p>
                                                     </div>
 
@@ -1951,7 +1951,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                             <div className="bg-indigo-50/50 p-2 rounded-md border border-indigo-100/50 space-y-2">
                                                                 {data.hallazgo_fortalece_hipotesis && (
                                                                     <div className="flex flex-col gap-0.5">
-                                                                        <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Qué Confirmaría Sospecha:</span>
+                                                                        <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Qué confirmaría:</span>
                                                                         <p className="text-indigo-800 leading-tight font-medium">● {data.hallazgo_fortalece_hipotesis}</p>
                                                                     </div>
                                                                 )}
@@ -1989,7 +1989,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                                                     {(data.pruebas_o_tareas_sugeridas?.length > 0) && (
                                                         <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-teal-50">
-                                                            <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">Ejemplos de Tareas/Tests:</span>
+                                                            <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">Ejemplos de tareas/tests:</span>
                                                             <div className="flex flex-col gap-1">
                                                                 {data.pruebas_o_tareas_sugeridas.map((t: string, i: number) => (
                                                                     <div key={i} className="flex items-start gap-1.5 bg-teal-50/50 p-1 rounded-md text-teal-800 border border-teal-100/50 font-medium leading-tight">
