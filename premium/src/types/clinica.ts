@@ -916,7 +916,10 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             foco_principal: string;
             lado_principal: string;
             irritabilidad_sugerida: string;
-            semaforo_carga: 'Verde' | 'Amarillo' | 'Rojo' | string;
+            tolerancia_carga: {
+                nivel: string;
+                explicacion: string;
+            };
             tarea_indice: string;
             alertas_clinicas: string[];
         };

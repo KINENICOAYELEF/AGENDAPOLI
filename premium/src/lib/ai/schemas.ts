@@ -38,7 +38,10 @@ export const DiagnosisSchema = z.object({
         foco_principal: z.string(),
         lado: z.string(),
         irritabilidad_sugerida: z.string(),
-        semaforo_carga: z.string(),
+        tolerancia_carga: z.object({
+            nivel: z.string().describe("Texto descriptivo del nivel de tolerancia"),
+            explicacion: z.string().describe("Justificación clínica de la tolerancia")
+        }),
         tarea_indice: z.string(),
         alertas_clinicas: z.array(z.string())
     }),

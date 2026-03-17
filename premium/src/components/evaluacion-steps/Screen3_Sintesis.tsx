@@ -130,21 +130,24 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             {/* BLOQUE A — RESUMEN AUTOMÁTICO DEL CASO (Solo lectura) */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm text-sm">
                 <h3 className="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2 flex justify-between items-center">
-                    <span>A. Snapshot Clínico Normalizado (P1 y P2)</span>
-                    {autoSynth.snapshot_clinico?.semaforo_carga && (
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-black text-white ${
-                            autoSynth.snapshot_clinico.semaforo_carga === 'Rojo' ? 'bg-rose-500' : 
-                            autoSynth.snapshot_clinico.semaforo_carga === 'Amarillo' ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`}>
-                            IA: {autoSynth.snapshot_clinico.semaforo_carga}
+                    <span>A. Snapshot Clínico Normalizado (P1, P1.5 y P2)</span>
+                    {autoSynth.snapshot_clinico?.tolerancia_carga?.nivel && (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-black bg-indigo-600 text-white shadow-sm">
+                            Propuesta IA
                         </span>
                     )}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Identificación</span><span className="font-bold text-slate-800">{normalizedCase.identificacion}</span></div>
+                    <div className="md:col-span-1"><span className="text-xs text-slate-500 block">Identificación</span><span className="font-bold text-slate-800">{normalizedCase.identificacion}</span></div>
                     <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Motivo / Foco Principal</span><span className="font-medium text-slate-800">{autoSynth.snapshot_clinico?.foco_principal || (normalizedCase.focoPrincipal ? `${normalizedCase.focoPrincipal.region || 'S/N'} (${normalizedCase.ladoPrincipal})` : 'No definido')}</span></div>
-                    <div><span className="text-xs text-slate-500 block">Irritabilidad Sugerida</span><span className="font-medium text-slate-800">{autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad}</span></div>
-                    <div><span className="text-xs text-slate-500 block">Semáforo de Carga</span><span className={`font-bold ${engine.safety.level === 'Rojo' ? 'text-rose-600' : engine.safety.level === 'Amarillo' ? 'text-amber-600' : 'text-emerald-600'}`}>{engine.safety.level}</span></div>
+                    <div><span className="text-xs text-slate-500 block">Irritabilidad</span><span className="font-medium text-slate-800">{autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad}</span></div>
+                    <div className="md:col-span-2 bg-white/60 p-2 rounded border border-slate-200">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Tolerancia Funcional a Carga</span>
+                        <div className="font-bold text-slate-900 leading-tight">{autoSynth.snapshot_clinico?.tolerancia_carga?.nivel || 'Carga no evaluada'}</div>
+                        {autoSynth.snapshot_clinico?.tolerancia_carga?.explicacion && (
+                            <div className="text-[10px] text-slate-600 mt-1 italic leading-snug">{autoSynth.snapshot_clinico.tolerancia_carga.explicacion}</div>
+                        )}
+                    </div>
                     <div className="md:col-span-2"><span className="text-xs text-slate-500 block">Tarea Índice</span><span className="font-medium text-slate-800">{autoSynth.snapshot_clinico?.tarea_indice || normalizedCase.tareaIndice || 'No definida'}</span></div>
                 </div>
                 {(autoSynth.snapshot_clinico?.alertas_clinicas?.length ?? 0) > 0 && (
