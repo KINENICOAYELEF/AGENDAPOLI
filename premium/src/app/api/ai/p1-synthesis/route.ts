@@ -25,20 +25,20 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
    DEBES usar exactamente estas llaves en el JSON para cada módulo:
     - observacion_movimiento_inicial: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global. DEBERÍAS conectar con el deporte/trabajo del paciente. Recomienda mirar: postura espontánea, marcha (si aplica), gestos temidos/agravantes y estrategias antálgicas.
     - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia. Explica el puente entre el relato y la restricción física.
-    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda. Debe sugerir: qué músculos o grupos evaluar analíticamente (según la región), cuándo usar fuerza manual vs dinamometría/isometría, y cómo interpretar si la carga mejora vs empeora el síntoma (load tolerance).
-    - palpacion: Solo si aporta provocación de síntoma concordante. Debe abarcar las hipótesis plausibles, sugerir qué tejidos o zonas palpar y ayudar a distinguir entre dolor local, referido o sensibilidad periférica/tejido diana.
+    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda. **OBLIGATORIO incluir sugerencias analíticas (MMT/Dinamometría)** y grupos musculares específicos según la región, además de tareas funcionales o submáximas. Explica cuándo usar fuerza manual vs instrumentos y cómo interpretar si la carga mejora vs empeora el síntoma (load tolerance).
+    - palpacion: Solo si aporta provocación de síntoma concordante o exclusión de tejido. Debe abarcar todas las hipótesis plausibles, sugerir qué tejidos o zonas palpar (diana, referido, sensibilidad periférica) y explicar explícitamente qué aporta esa palpación al descarte diferencial.
     - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción (dermatomas/miotomas) y vascularización si hay sospecha de compromiso distal o síntomas atípicos.
     - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas (gesto deportivo/laboral).
-    - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte. Explica brevemente para qué sirve cada ejemplo sugerido.
-    - pruebas_funcionales_reintegro: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales que sean significativos para el paciente.
+    - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte. **DEBEN ser dirigidas a más de una hipótesis plausible** para ayudar al descarte diferencial. Explica brevemente el "para qué" pedagógico de cada ejemplo sugerido.
+    - pruebas_funcionales_reintegro: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales que sean significativos para el paciente (ej. split en yoga, peso muerto, gesto técnico específico).
 
     Estructura Visible Obligatoria por cada objeto de módulo:
     - objetivo: QUÉ MIRAR (Específico: región, queja, irritabilidad).
-    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación docente de por qué importa en ESTE caso particular y para qué sirve la información que agrega).
+    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación profunda de por qué importa en ESTE caso particular, qué "vacío de información" llena y para qué sirve la información que agrega).
     - hallazgo_fortalece_hipotesis: QUÉ CONFIRMARÍA.
-    - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
-    - diferencial_que_descarta: Qué otra hipótesis ayuda a descartar.
-    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS con una frase breve de su utilidad). No uses comodines.
+    - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS / HALLAZGO NEGATIVO.
+    - diferencial_que_descarta: Qué otras hipótesis plausibles ayuda a descartar o priorizar.
+    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS con una frase breve de su utilidad clínica individual). No uses comodines.
     - mini_perla_docente: MINI PERLA DOCENTE (Insight clínico de alto impacto). OBLIGATORIO.
 
 4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 

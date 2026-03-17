@@ -2084,7 +2084,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                     )}
 
-                    <div className="mt-12 mb-24 flex justify-center w-full px-4">
+                    <div className="mt-20 mb-32 flex justify-center w-full px-4 relative z-[60]">
                         <button
                             onClick={handleCloseAnamnesis}
                             disabled={isClosed || !isValidForP2}
