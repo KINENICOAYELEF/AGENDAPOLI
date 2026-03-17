@@ -46,8 +46,10 @@ export const DiagnosisSchema = z.object({
         alertas_clinicas: z.array(z.string())
     }),
     clasificacion_dolor: z.object({
-        categoria_principal: z.string(),
-        subtipo_apellido: z.string(),
+        opciones_categoria: z.array(z.string()).describe("Opciones sugeridas de categoría (ej: Aparente nociceptivo, Mixto)"),
+        categoria_seleccionada: z.string(),
+        opciones_subtipo_apellido: z.array(z.string()).describe("Opciones ricas de subtipo (ej: Mecánico, Inflamatorio, Sensibilización)"),
+        subtipo_seleccionado: z.string(),
         fundamento_breve: z.string(),
         nivel_confianza: z.string()
     }),

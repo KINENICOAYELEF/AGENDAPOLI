@@ -924,8 +924,10 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             alertas_clinicas: string[];
         };
         clasificacion_dolor?: {
-            categoria_principal: 'Aparente nociceptivo' | 'Aparente neuropático' | 'Aparente nociplástico' | 'Mixto' | 'No concluyente' | string;
-            subtipo_apellido: string;
+            opciones_categoria: string[];
+            categoria_seleccionada: string;
+            opciones_subtipo_apellido: string[];
+            subtipo_seleccionado: string;
             fundamento_breve: string;
             nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };

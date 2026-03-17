@@ -18,19 +18,42 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-Revisa la información integral clínica contenida EXCLUSIVAMENTE en el paquete de caso entregado (P1 anamnesis, P1.5 contexto, P2 examen físico).
-Tu objetivo ÚNICO es operar como un "Ordenador de Caso CIF" completo, automático y clínicamente útil. NO redactes diagnóstico final ni plan todavía.
+### REGLA MAYOR: ORGANIZADOR CIF EXHAUSTIVO Y DE ELECCIÓN (PROMPT 3.2)
+Eres un experto en razonamiento clínico kinesiología. Tu misión es transformar TODO el caso en una matriz CIF completa.
 
-INSTRUCCIONES OBLIGATORIAS (PROMPT 3):
-1. AUTOCOMPLETAR TODO: Si hay base suficiente en los datos (ej. P1.5 Red de apoyo), autocompleta el campo en el JSON. No dejes "Selecciona..." ni vacíos si existe información. Dejar editable.
-2. CLASIFICACIÓN DEL DOLOR ROBUSTA: Genera categoría principal (Nociceptivo, Neuropático, Nociplástico, Mixto), SUBTIPO/APELLIDO (ej: "de predominio isquémico", "por sensibilización central") y un FUNDAMENTO breve pero profundo integrando Alicia y hallazgos P2. Define nivel de confianza (Alta/Media/Baja).
-3. SISTEMA Y ESTRUCTURAS: Identifica uno o MÁS sistemas principales (ej: Articular y Neural) y una o MÁS estructuras principales. Lista múltiples estructuras secundarias. Si el caso es complejo, usa el campo de descripción libre para matizar.
-4. ALTERACIONES DETECTADAS (CAPTURA TOTAL): No resumas a 2 o 3. Captura TODO: dolor, rigidez, ROM, fuerza (analítica y funcional), capacidad, control motor, hallazgos de palpación (concordancia), neuro, ortopédicas y tolerancia a la carga. Si está en P2 summary o en el relato de P1, DEBE estar aquí.
-5. ACTIVIDAD Y PARTICIPACIÓN: Captura limitaciones en trabajo, deporte (específico), yoga, sedestación, marcha, transferencias y tareas significativas del paciente (extraídas de PSFS y metas). Diferencia entre limitación (capacidad física) y restricción (rol social).
-6. FACTORES BPS: Extrae factores personales (+/-) y ambientales (facilitadores/barreras) de P1, P1.5 (Expediente/Contexto) y P2. No dejes estos bloques vacíos si hay datos de sueño, estrés, carga laboral o red de apoyo.
-7. SNAPSHOT CLÍNICO: Define Foco, Lado, Irritabilidad, Semáforo (Verde/Amarillo/Rojo), Tarea Índice y Alertas Clínicas (Red flags o precauciones).
-8. INTEGRACIÓN REAL: Cruza p1_ai_structured, p15_context_structured, p15_context_flags y p2_summary_structured. La coherencia es clave.
-- NO te transformes en un diagnóstico narrativo final todavía, mantén los bloques JSON limpios.
+DEBES ANALIZAR Y APROVECHAR TODO LO SIGUIENTE SIN EXCEPCIÓN:
+- DATOS DEMOGRÁFICOS (Expediente): Nombre, Edad, Sexo. La edad influye en regeneración y pronóstico.
+- ANAMNESIS P1.5 (Historia Clínica): Comorbilidades, cirugías previas, patologías antiguas, factores BPS basales.
+- P1 (Entrevista) y P2 (Examen Físico Real).
+- SI UN DATO EXISTE, ÚSALO. No ignores patologías previas de P1.5.
+
+INSTRUCCIONES OBLIGATORIAS:
+
+1. SNAPSHOT CLÍNICO (Bloque A):
+   - Foco, Lado, Irritabilidad y Tarea Índice.
+   - TOLERANCIA ACTUAL A CARGA: Texto humano claro (ej: "Baja tolerancia a cargas asimétricas").
+
+2. CLASIFICACIÓN DEL DOLOR (Bloque C):
+   - DEBES PROPORCIONAR OPCIONES para que el usuario elija.
+   - "opciones_categoria": Lista de 1 a 3 categorías probables (ej: ["Aparente nociceptivo", "Mixto"]).
+   - "categoria_seleccionada": La más probable por defecto.
+   - "opciones_subtipo_apellido": Lista de 2 a 4 apellidos ricos y explicativos (ej: ["Mecánico por sobrecarga", "Inflamatorio/Irritativo", "Sensibilización periférica"]). NO listas desplegables genéricas, sino opciones ricas en texto.
+   - "subtipo_seleccionado": El más probable por defecto.
+   - FUNDAMENTO: Integra TODO (Demográficos, P1.5, P1, P2, comportamiento 24h, irritabilidad).
+
+3. SISTEMA Y ESTRUCTURAS (Bloque D):
+   - EXHAUSTIVIDAD TOTAL. Incluye todos los sistemas y estructuras involucrados. No reduzcas si hay sospecha fundada en P2 de varios (ej: Articular + Miofascial + Neural).
+
+4. ALTERACIONES DETECTADAS (Bloque E):
+   - CAPTURA MASIVA. Si está en P2 y es relevante, debe estar aquí. Estructurales y Funcionales.
+
+5. ACTIVIDAD Y PARTICIPACIÓN (Bloque F):
+   - EXHAUSTIVIDAD TOTAL. Diferencia bien Limitaciones (tareas/acciones) de Restricciones (rol social, trabajo, deporte, vida diaria). Toma metas y PSFS de P1/P1.5.
+
+6. FACTORES BIOPSICOSOCIALES (Bloque G):
+   - EXHAUSTIVIDAD TOTAL. Usa P1.5 y P1 para llenar positivos, negativos, facilitadores y barreras.
+
+REGLA FINAL: Autocompleta TODO lo que tenga base suficiente. Ofrece opciones claras en el Bloque C para que el usuario decida.
   `,
 
   NARRATIVE: `

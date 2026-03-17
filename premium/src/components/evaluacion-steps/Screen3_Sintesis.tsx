@@ -190,31 +190,62 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔥</span> C. Clasificación del Dolor</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Categoría Principal</label>
-                                <select 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.clasificacion_dolor?.categoria_principal || ''}
-                                    onChange={(e) => updateDeepObj('clasificacion_dolor', { categoria_principal: e.target.value })}
-                                    disabled={isClosed}
-                                >
-                                    <option value="">Selecciona...</option>
-                                    <option value="Aparente nociceptivo">Aparente nociceptivo</option>
-                                    <option value="Aparente neuropático">Aparente neuropático</option>
-                                    <option value="Aparente nociplástico">Aparente nociplástico</option>
-                                    <option value="Mixto">Mixto</option>
-                                    <option value="No concluyente">No concluyente</option>
-                                </select>
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2 flex items-center justify-between">
+                                    Categoría Principal (Elige una)
+                                    <span className="text-[10px] bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded border border-sky-100 font-normal normal-case">Usa datos de P1.5 y Perfil</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {autoSynth.clasificacion_dolor?.opciones_categoria && autoSynth.clasificacion_dolor.opciones_categoria.length > 0 ? (
+                                        autoSynth.clasificacion_dolor.opciones_categoria.map((cat: string) => (
+                                            <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => updateDeepObj('clasificacion_dolor', { categoria_seleccionada: cat })}
+                                                disabled={isClosed}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-sm ${
+                                                    autoSynth.clasificacion_dolor?.categoria_seleccionada === cat 
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white ring-2 ring-indigo-200' 
+                                                    : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:bg-indigo-50/30'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <span className="text-xs italic text-slate-400">Genera con IA para ver opciones</span>
+                                    )}
+                                </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Subtipo / Apellido</label>
-                                <input 
-                                    type="text" 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={autoSynth.clasificacion_dolor?.subtipo_apellido || ''}
-                                    onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_apellido: e.target.value })}
-                                    disabled={isClosed}
-                                    placeholder="Ej: de origen inflamatorio"
-                                />
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Subtipo / Apellido Sugerido (Elige uno)</label>
+                                <div className="flex flex-col gap-2">
+                                    {autoSynth.clasificacion_dolor?.opciones_subtipo_apellido && autoSynth.clasificacion_dolor.opciones_subtipo_apellido.length > 0 ? (
+                                        autoSynth.clasificacion_dolor.opciones_subtipo_apellido.map((sub: string) => (
+                                            <button
+                                                key={sub}
+                                                type="button"
+                                                onClick={() => updateDeepObj('clasificacion_dolor', { subtipo_seleccionado: sub })}
+                                                disabled={isClosed}
+                                                className={`px-3 py-2 rounded-lg text-xs text-left transition-all border shadow-sm ${
+                                                    autoSynth.clasificacion_dolor?.subtipo_seleccionado === sub 
+                                                    ? 'bg-purple-600 border-purple-600 text-white ring-2 ring-purple-200' 
+                                                    : 'bg-white border-slate-200 text-slate-600 hover:border-purple-400 hover:bg-purple-50/30'
+                                                }`}
+                                            >
+                                                {sub}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                                            value={autoSynth.clasificacion_dolor?.subtipo_seleccionado || ''}
+                                            onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_seleccionado: e.target.value })}
+                                            placeholder="Ej: de origen inflamatorio"
+                                            disabled={isClosed}
+                                        />
+                                    )}
+                                </div>
                             </div>
                             <div className="md:col-span-2 flex gap-4">
                                 <div className="flex-1">

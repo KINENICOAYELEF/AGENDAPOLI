@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
         const expectedJsonExample = `{
   "snapshot_clinico": { "foco_principal": "", "lado": "", "irritabilidad_sugerida": "", "tolerancia_carga": { "nivel": "", "explicacion": "" }, "tarea_indice": "", "alertas_clinicas": [] },
-  "clasificacion_dolor": { "categoria_principal": "Aparente nociceptivo|Aparente neuropático|Aparente nociplástico|Mixto|No concluyente", "subtipo_apellido": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
+  "clasificacion_dolor": { "opciones_categoria": [], "categoria_seleccionada": "", "opciones_subtipo_apellido": [], "subtipo_seleccionado": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { "sistemas_principales": [], "estructuras_principales": [], "estructuras_secundarias": [], "descripcion_libre": "" },
   "alteraciones_detectadas": { "estructurales": [{ "texto": "", "certeza": "casi_confirmada|probable|posible|no_concluyente", "fundamento_breve": "" }], "functional": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
   "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|moderada|severa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
