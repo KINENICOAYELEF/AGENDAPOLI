@@ -360,19 +360,28 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E1. Estructurales</label>
                             <div className="space-y-2">
                                 {(autoSynth.alteraciones_detectadas?.estructurales || []).map((alt: any, idx: number) => (
-                                    <div key={idx} className="flex gap-2 items-start">
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.texto} onChange={(e) => {
-                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
-                                        }} disabled={isClosed} />
-                                        <select className="w-1/4 bg-slate-50 border rounded p-2 text-sm" value={alt.certeza} onChange={(e) => {
-                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].certeza = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
-                                        }} disabled={isClosed}>
-                                            <option value="posible">Posible</option><option value="probable">Probable</option><option value="casi_confirmada">Casi confirmada</option><option value="no_concluyente">No concluyente</option>
-                                        </select>
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.fundamento_breve} onChange={(e) => {
-                                            const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].fundamento_breve = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
-                                        }} disabled={isClosed} placeholder="Fundamento..." />
-                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { estructurales: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                    <div key={idx} className="flex gap-2 items-start bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                        <div className="flex-1 flex flex-col gap-1">
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Cluster / Evidencia / Estructura involucrada</label>
+                                            <input type="text" className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-sm" value={alt.texto} onChange={(e) => {
+                                                const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
+                                            }} disabled={isClosed} placeholder="Ej: Palpación (+) ligamento sacrotuberoso + Dolor concordante" />
+                                        </div>
+                                        <div className="w-1/4 flex flex-col gap-1">
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Nivel de Certeza</label>
+                                            <select className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-sm" value={alt.certeza} onChange={(e) => {
+                                                const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].certeza = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
+                                            }} disabled={isClosed}>
+                                                <option value="posible">Posible</option><option value="probable">Probable</option><option value="casi_confirmada">Confirmada</option><option value="no_concluyente">No concluyente</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1 flex flex-col gap-1">
+                                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Fundamento Clínico / Hallazgo P2</label>
+                                            <input type="text" className="w-full bg-white border border-slate-200 rounded px-2 py-1.5 text-sm" value={alt.fundamento_breve} onChange={(e) => {
+                                                const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy[idx].fundamento_breve = e.target.value; updateDeepObj('alteraciones_detectadas', { estructurales: copy });
+                                            }} disabled={isClosed} placeholder="Hallazgo en P2 o Imágenes..." />
+                                        </div>
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { estructurales: copy }); }} className="mt-6 p-1 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
                                 ))}
                                 {!isClosed && <button onClick={() => updateDeepObj('alteraciones_detectadas', { estructurales: [...(autoSynth.alteraciones_detectadas?.estructurales || []), { texto: '', certeza: 'posible', fundamento_breve: '' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Estructural</button>}
@@ -383,16 +392,18 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E2. Funcionales</label>
                             <div className="space-y-2">
                                 {(autoSynth.alteraciones_detectadas?.functional || []).map((alt: any, idx: number) => (
-                                    <div key={idx} className="flex gap-2 items-center">
-                                        <input type="text" className="flex-1 bg-slate-50 border rounded p-2 text-sm" value={alt.texto} onChange={(e) => {
-                                            const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
-                                        }} disabled={isClosed} />
-                                        <select className="w-1/3 bg-slate-50 border rounded p-2 text-sm" value={alt.severidad} onChange={(e) => {
+                                    <div key={idx} className="flex gap-2 items-center bg-indigo-50/30 p-2 rounded-lg border border-indigo-100/50">
+                                        <div className="flex-1">
+                                            <input type="text" className="w-full bg-white border border-indigo-200/50 rounded px-2 py-1.5 text-sm" value={alt.texto} onChange={(e) => {
+                                                const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
+                                            }} disabled={isClosed} placeholder="Ej: Control motor lumbopélvico deficiente..." />
+                                        </div>
+                                        <select className="w-1/3 bg-white border border-indigo-200/50 rounded px-2 py-1.5 text-sm" value={alt.severidad} onChange={(e) => {
                                             const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].severidad = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
                                         }} disabled={isClosed}>
-                                            <option value="leve">Leve</option><option value="moderada">Moderada</option><option value="severa">Severa</option>
+                                            <option value="leve">Severidad: Leve</option><option value="moderada">Severidad: Moderada</option><option value="severa">Severidad: Severa</option>
                                         </select>
-                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { functional: copy }); }} className="p-2 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
+                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { functional: copy }); }} className="p-1 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
                                 ))}
                                 {!isClosed && <button onClick={() => updateDeepObj('alteraciones_detectadas', { functional: [...(autoSynth.alteraciones_detectadas?.functional || []), { texto: '', severidad: 'moderada' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Funcional</button>}
@@ -443,29 +454,43 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     </div>
 
                     {/* BLOQUE G — FACTORES BPS */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🧠</span> G. Factores Biopsicosociales</h3>
+                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-6 border-b pb-3 flex items-center gap-3">
+                            <span className="text-xl bg-indigo-100 p-2 rounded-lg text-indigo-600">🧠</span> 
+                            <div>
+                                <span className="block">G. Factores Biopsicosociales</span>
+                                <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Contexto, Entorno y Creencias (P1/P1.5)</span>
+                            </div>
+                        </h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             {/* Personales (+) */}
-                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-2">Personales Positivos (+)</label>
-                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            <div className="bg-emerald-50/30 rounded-2xl p-5 border border-emerald-100 hover:shadow-md transition-shadow">
+                                <label className="text-[11px] font-black text-emerald-700 uppercase tracking-widest block mb-3 flex items-center gap-2">
+                                    <span className="bg-emerald-100 p-1.5 rounded-md">⭐</span> Personales Positivos (+)
+                                </label>
+                                <textarea className="w-full bg-white border border-emerald-200/50 rounded-xl p-3 text-xs min-h-[120px] shadow-inner focus:ring-2 focus:ring-emerald-200 outline-none transition-all" value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Conocimiento del cuerpo, motivación, resiliencia..." />
                             </div>
                             {/* Personales (-) */}
-                            <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
-                                <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-2">Personales Negativos (-)</label>
-                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            <div className="bg-rose-50/30 rounded-2xl p-5 border border-rose-100 hover:shadow-md transition-shadow">
+                                <label className="text-[11px] font-black text-rose-700 uppercase tracking-widest block mb-3 flex items-center gap-2">
+                                    <span className="bg-rose-100 p-1.5 rounded-md">⚠️</span> Personales Negativos (-)
+                                </label>
+                                <textarea className="w-full bg-white border border-rose-200/50 rounded-xl p-3 text-xs min-h-[120px] shadow-inner focus:ring-2 focus:ring-rose-200 outline-none transition-all" value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Estrés, mala calidad de sueño, miedo al movimiento..." />
                             </div>
                             {/* Ambientales (F) */}
-                            <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
-                                <label className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block mb-2">Facilitadores Ambientales</label>
-                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            <div className="bg-sky-50/30 rounded-2xl p-5 border border-sky-100 hover:shadow-md transition-shadow">
+                                <label className="text-[11px] font-black text-sky-700 uppercase tracking-widest block mb-3 flex items-center gap-2">
+                                    <span className="bg-sky-100 p-1.5 rounded-md">🌱</span> Facilitadores Ambientales
+                                </label>
+                                <textarea className="w-full bg-white border border-sky-200/50 rounded-xl p-3 text-xs min-h-[120px] shadow-inner focus:ring-2 focus:ring-sky-200 outline-none transition-all" value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Red de apoyo, acceso a gimnasio, tiempo disponible..." />
                             </div>
                             {/* Ambientales (B) */}
-                            <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                                <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-2">Barreras Ambientales</label>
-                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                            <div className="bg-amber-50/30 rounded-2xl p-5 border border-amber-100 hover:shadow-md transition-shadow">
+                                <label className="text-[11px] font-black text-amber-700 uppercase tracking-widest block mb-3 flex items-center gap-2">
+                                    <span className="bg-amber-100 p-1.5 rounded-md">🚧</span> Barreras Ambientales
+                                </label>
+                                <textarea className="w-full bg-white border border-amber-200/50 rounded-xl p-3 text-xs min-h-[120px] shadow-inner focus:ring-2 focus:ring-amber-200 outline-none transition-all" value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Carga laboral, transporte, falta de tiempo, equipamiento escaso..." />
                             </div>
                         </div>
                     </div>

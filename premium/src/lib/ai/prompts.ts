@@ -18,37 +18,40 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-PROMPT 3.1.1 — P3: Organizador CIF Exhaustivo, Flexible y Coherente
+PROMPT 3.1.2 — P3: Organizador CIF de Excelencia Clínica y Coherencia Estricta
 
 OBJETIVO:
-Generar una síntesis CIF completa que integre Demografía, Antecedentes MSK (P1.5), Entrevista (P1) y Examen Físico (P2).
+Generar una síntesis CIF profunda y articulada. P3 es el "puente" clínico entre la evaluación (P1/P1.5/P2) y el plan (P4). NO debe haber pérdida de hallazgos relevantes.
 
-DIRECTRICES OBLIGATORIAS:
+DIRECTRICES ESTRUCTURALES OBLIGATORIAS:
 
-1. CLASIFICACIÓN DEL DOLOR (BLOQUE C):
-- CATEGORÍA: Proponer una categoría clara. Si el caso es complejo, permitir "Mixto" con un fundamento robusto (patrón, conducta 24h, relación carga-síntoma).
-- SUBTIPOS/APELLIDOS: Proponer 3-4 opciones ricas. La IA debe seleccionar los subtipos más probables en 'subtipos_seleccionados' (PUEDE SER MÁS DE UNO).
-- SUBTIPO MANUAL: Si el caso requiere un apellido muy específico no listado, sugerirlo como valor inicial en 'subtipo_manual'.
+1. SNAPSHOT (BLOQUE A):
+- Reemplazar "Semáforo" por "Tolerancia actual a la carga". 
+- El valor DEBE ser un texto humano descriptivo (Ej: "Baja tolerancia a carga sostenida", "Tolerancia moderada con irritabilidad alta"). NO solo un color.
 
-2. SISTEMA Y ESTRUCTURAS (BLOQUE D):
-- NO reducir. Si hay 2 sistemas relevantes (ej: Articular y Neural), incluirlos ambos en 'sistemas_principales'.
-- Incluir articulaciones, ligamentos, cápsula, musculatura y control motor según corresponda.
+2. CLASIFICACIÓN DEL DOLOR (BLOQUE C):
+- CATEGORÍA: Sólida y basada en el patrón predominante.
+- SUBTIPOS: Proponer 3-4 opciones explicativas. La IA selecciona las más probables.
+- FUNDAMENTO: Integrar conducta 24h, irritabilidad y factores mecánicos de P2.
 
-3. COHERENCIA ESTRUCTURAL VS FUNCIONAL (BLOQUE E):
-- E1 (ESTRUCTURAL): Solo tejido/zona con sospecha estructural (sensibilidad ligamentosa, hipomovilidad articular, hallazgo palpación).
-- E2 (FUNCIONAL): Todas las DISFUNCIONES (Dolor, Irritabilidad, Limitación ROM, Debilidad, Fatiga, Pérdida Control Motor, Estrategias compensatorias).
-- SI UNA ESTRUCTURA APARECE EN 'D', DEBE TENER UN CORRELATO EN 'E1' SI HAY BASE CLÍNICA.
+3. SISTEMA Y ESTRUCTURAS (BLOQUE D):
+- MULTI-SISTEMA: Permitir varios sistemas reales (Articular, Neuromuscular, Neural periférico, Control motor).
+- ESTRUCTURAS: Listar TODAS las estructuras plausibles involucradas (Cápsula, ligamentos, tendón, nervio X).
 
-4. ACTIVIDAD Y PARTICIPACIÓN (BLOQUE F):
-- EXHAUSTIVIDAD TOTAL. Incluir todas las tareas limitadas (actividad) y roles restringidos (trabajo, deporte, ocio, roles sociales).
+4. ALTERACIONES DETECTADAS (E) - COHERENCIA D <-> E:
+- E1 (ESTRUCTURALES): Cada hallazgo en E1 DEBE mapearse explícitamente a una estructura mencionada en el Bloque D. El campo 'texto' debe ser un CLUSTER / EVIDENCIA (Ej: "Dolor a la palpación capsular + End-feel vacío en articulación sacroilíaca").
+- E2 (FUNCIONALES): Capturar TODA disfunción: Debilidad, déficit de control, fatiga, compensaciones, irritabilidad que afecta el movimiento.
+- PRIORIDAD: Si un dato está en P2, DEBE estar aquí si es relevante para el razonamiento.
 
-5. FACTORES BIOPSICOSOCIALES (BLOQUE G):
-- Capturar Facilitadores y Barreras ambientales.
-- Capturar Factores Personales (creencias, sueño, estrés, experiencia previa).
-- INTEGRAR ANTECEDENTES MSK: Incluir historia previa de lesiones en 'antecedentes_msk_relevantes' si impactan el razonamiento actual.
+5. ACTIVIDAD Y PARTICIPACIÓN (BLOQUE F):
+- EXHAUSTIVIDAD: No reducir. Detectar limitaciones en tareas (F1) y restricciones en roles/contextos (F2) desde P1, P1.5 (trabajo, deporte, vida diaria).
 
-6. DATOS BASE (EXPEDIENTE):
-- Usar Nombre, Edad, Sexo y Comorbilidades del perfil si están disponibles en el compact_case_package.
+6. FACTORES BIOPSICOSOCIALES (BLOQUE G):
+- REBUSCAR P1/P1.5: No dejar vacíos. Extraer sistemáticamente: creencias, miedo al movimiento, estrés, apoyo social, barreras logísticas (tiempo, transporte, carga laboral).
+- ANTECEDENTES MSK: Integrar hallazgos de P1.5 que justifiquen el pronóstico o las precauciones.
+
+7. COHERENCIA FINAL (BLOQUE H):
+- Generar recordatorios sobre la interacción de los bloques anteriores (Ej: "Vigilar relación entre la irritabilidad en E2 y la restricción laboral en F2").
   `,
 
   NARRATIVE: `
