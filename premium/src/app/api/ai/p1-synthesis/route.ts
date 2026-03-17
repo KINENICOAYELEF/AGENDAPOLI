@@ -22,31 +22,33 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
 3. **RECOMENDACIONES DOCENTES P2 (DIFERENCIACIÓN TOTAL POR MÓDULO)**: 
    Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. **PROHIBIDO texto clonado o genérico**. 
-   Cada módulo debe responder a una pregunta clínica distinta e independiente:
-    - **Observación Movimiento Inicial**: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global.
-    - **ROM Analítico**: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia.
-    - **Fuerza / Tolerancia a Carga**: Evalúa capacidad vs demanda, respuesta a carga isométrica/isotónica, y fatiga.
-    - **Palpación**: Solo si aporta provocación de síntoma concordante. Nunca "palpar por palpar".
-    - **Neuro Vascular**: Evalúa mecanosensibilidad neural, conducción y vascularización si hay sospecha de compromiso distal.
-    - **Control Motor**: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas.
-    - **Pruebas Ortopédicas**: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte.
-    - **Pruebas Funcionales**: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales.
+   DEBES usar exactamente estas llaves en el JSON para cada módulo:
+    - observacion_movimiento_inicial: Enfócate en transferencias, descarga de peso, gestos defensivos y tarea índice global.
+    - rango_movimiento_analitico: Diferencia patrones capsulares, top-feel (sensación terminal), y relación síntoma-resistencia.
+    - fuerza_tolerancia_carga: Evalúa capacidad vs demanda, respuesta a carga isométrica/isotónica, y fatiga.
+    - palpacion: Solo si aporta provocación de síntoma concordante. Nunca "palpar por palpar".
+    - neuro_vascular_somatosensorial: Evalúa mecanosensibilidad neural, conducción y vascularización si hay sospecha de compromiso distal.
+    - control_motor_sensoriomotor: Evalúa disociación analítica, anticipación y calidad de movimiento en tareas específicas.
+    - pruebas_ortopedicas_dirigidas: Solo clusters con alto valor (+LR) o tests de alta sensibilidad para descarte.
+    - pruebas_funcionales_reintegro: Tareas de reintegro deportivo/laboral, salto, carrera, o gestos técnicos reales.
 
-    Estructura Visible Obligatoria por Módulo:
-    - "objetivo": QUÉ MIRAR (Específico: región, queja, irritabilidad).
-    - "razonamiento_clinico": POR QUÉ IMPORTA / RAZÓN DOCENTE (Explica qué información agrega y qué hipótesis fortalece/debilita).
-    - "hallazgo_fortalece_hipotesis": QUÉ CONFIRMARÍA.
-    - "hallazgo_debilita_hipotesis": QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
-    - "diferencial_que_descarta": Qué otra hipótesis ayuda a descartar.
-    - "pruebas_o_tareas_sugeridas": EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). No uses comodines.
-    - "mini_perla_docente": MINI PERLA DOCENTE (Insight clínico de alto impacto).
+    Estructura Visible Obligatoria por cada objeto de módulo:
+    - objetivo: QUÉ MIRAR (Específico: región, queja, irritabilidad).
+    - razonamiento_clinico: POR QUÉ IMPORTA / RAZÓN DOCENTE (Microjustificación docente de por qué importa en ESTE caso particular).
+    - hallazgo_fortalece_hipotesis: QUÉ CONFIRMARÍA.
+    - hallazgo_debilita_hipotesis: QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS.
+    - diferencial_que_descarta: Qué otra hipótesis ayuda a descartar.
+    - pruebas_o_tareas_sugeridas: EJEMPLOS DE TAREAS / TESTS / MANIOBRAS (3 a 6 ejemplos CONCRETOS y MODERNOS). No uses comodines.
+    - mini_perla_docente: MINI PERLA DOCENTE (Insight clínico de alto impacto). OBLIGATORIO.
 
 4. **HIPÓTESIS (JERARQUÍA LIMPIA)**: 
    - 3 hipótesis principales (mas_probable, probable_alternativa, menos_probable).
    - Identifica claramente diferenciales breves.
    - **Puntos clave P2**: 2 a 4 bullets tácticos sobre qué aclarar específicamente.
 
-5. **PREGUNTAS FALTANTES**: 4 a 6 preguntas de alto impacto que cambien el razonamiento.
+5. **PREGUNTAS FALTANTES**: Obligatorio entre 4 y 6 preguntas de alto impacto que cambien el razonamiento.
+
+6. **INTEGRACIÓN P1.5 / EXPEDIENTE**: Si existen datos de sueño, estrés, carga, barreras sociales o miedo al movimiento, DEBEN influir en el resumen, en el SINS y en la elección de recomendaciones P2.
 
 ESTRUCTURA EXACTA JSON:
 {
@@ -60,18 +62,14 @@ ESTRUCTURA EXACTA JSON:
   "diferenciales_breves": ["string"],
   "preguntas_faltantes": [ { "pregunta": "string", "por_que_importa": "string", "prioridad": "alta|media" } ],
   "recomendaciones_p2_por_modulo": {
-    "ANY_MODULE_NAME": { 
-        "objetivo": "string", 
-        "razonamiento_clinico": "string", 
-        "hallazgo_fortalece_hipotesis": "string",
-        "hallazgo_debilita_hipotesis": "string",
-        "diferencial_que_descarta": "string",
-        "impacto_resultado_positivo": "string", 
-        "impacto_resultado_negativo": "string", 
-        "pruebas_o_tareas_sugeridas": ["string"], 
-        "mini_perla_docente": "string",
-        "prioridad": "alta|media|baja" 
-    }
+    "observacion_movimiento_inicial": { "objetivo": "...", "razonamiento_clinico": "...", "hallazgo_fortalece_hipotesis": "...", "hallazgo_debilita_hipotesis": "...", "diferencial_que_descarta": "...", "impacto_resultado_positivo": "...", "impacto_resultado_negativo": "...", "pruebas_o_tareas_sugeridas": ["..."], "mini_perla_docente": "...", "prioridad": "..." },
+    "rango_movimiento_analitico": { ... },
+    "fuerza_tolerancia_carga": { ... },
+    "palpacion": { ... },
+    "neuro_vascular_somatosensorial": { ... },
+    "control_motor_sensoriomotor": { ... },
+    "pruebas_ortopedicas_dirigidas": { ... },
+    "pruebas_funcionales_reintegro": { ... }
   },
   "puntos_clave_p2": ["string"],
   "factores_contextuales_clave": { 
@@ -244,7 +242,7 @@ export async function POST(req: Request) {
         const sanitizedPayload = sanitizeClinicalTextForModel(jsonPayload);
         
         // 3. Generar hash de caché
-        const inputHash = await generateSHA256(`p1-synthesis:v2.9.2_final:${sanitizedPayload}`);
+        const inputHash = await generateSHA256(`p1-synthesis:v2.9.2_MEGA_FINAL:${sanitizedPayload}`);
 
         const userPrompt = `
 Genera la síntesis de P1 estructurada en json según las reglas. Responde de forma clínica, precisa y compacta.
