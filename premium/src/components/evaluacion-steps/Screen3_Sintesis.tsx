@@ -527,7 +527,11 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                         <select className="w-1/3 bg-white border border-indigo-200/50 rounded px-2 py-1.5 text-sm" value={alt.severidad} onChange={(e) => {
                                             const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].severidad = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
                                         }} disabled={isClosed}>
-                                            <option value="leve">Severidad: Leve</option><option value="moderada">Severidad: Moderada</option><option value="severa">Severidad: Severa</option>
+                                            <option value="leve">Leve</option>
+                                            <option value="ligera">Ligera</option>
+                                            <option value="moderada">Moderada</option>
+                                            <option value="severa">Severa</option>
+                                            <option value="completa">Completa</option>
                                         </select>
                                         {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { functional: copy }); }} className="p-1 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
@@ -552,7 +556,13 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                             }} disabled={isClosed} />
                                             <select className="w-[100px] bg-slate-50 border rounded px-1 py-1.5 text-[11px]" value={lim.severidad} onChange={(e) => {
                                                 const copy = [...(autoSynth.actividad_y_participacion?.limitaciones_directas || [])]; copy[idx].severidad = e.target.value; updateDeepObj('actividad_y_participacion', { limitaciones_directas: copy });
-                                            }} disabled={isClosed}><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="severa">Severa</option></select>
+                                            }} disabled={isClosed}>
+                                                <option value="leve">Leve</option>
+                                                <option value="ligera">Ligera</option>
+                                                <option value="moderada">Moderada</option>
+                                                <option value="severa">Severa</option>
+                                                <option value="completa">Completa</option>
+                                            </select>
                                             {!isClosed && <button onClick={() => { const copy = [...(autoSynth.actividad_y_participacion?.limitaciones_directas || [])]; copy.splice(idx, 1); updateDeepObj('actividad_y_participacion', { limitaciones_directas: copy }); }} className="px-1 text-rose-500">✕</button>}
                                         </div>
                                     ))}
@@ -572,6 +582,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                 copy[idx].severidad = e.target.value;
                                                 updateDeepObj('actividad_y_participacion', { restricciones_participacion: copy });
                                             }} disabled={isClosed}>
+                                                <option value="leve">Leve</option>
                                                 <option value="ligera">Ligera</option>
                                                 <option value="moderada">Moderada</option>
                                                 <option value="severa">Severa</option>

@@ -60,9 +60,9 @@ export async function POST(req: Request) {
        "certeza": "casi_confirmada|probable|posible|no_concluyente", 
        "fundamento_clinico": "" 
     }], 
-    "functional": [{ "texto": "", "severidad": "leve|moderada|severa" }] 
+    "functional": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }] 
   },
-  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|moderada|severa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }] },
   "factores_biopsicosociales": { "factores_personales_positivos": [], "factores_personales_negativos": [], "facilitadores_ambientales": [], "barreras_ambientales": [] },
   "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
 }`;

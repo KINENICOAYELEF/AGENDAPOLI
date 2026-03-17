@@ -30,9 +30,10 @@ Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen 
    - alteracion_sospecha: (ej: Irritación mecánica / compromiso capsular).
    - certeza: (casi_confirmada, probable, posible, no_concluyente).
    - fundamento_clinico: Cluster, signos o síntomas específicos (ej: "Cluster Laslett (+) + Palpación dolorosa").
-5. **LOGICA E2 (FUNCIONAL)**: Debe ser exhaustiva. Incluye: dolor, irritabilidad, ROM limitado, fatiga, debilidad, control motor alterado, compensaciones, pérdida de técnica, conducta temerosa, inestabilidad aparente.
-6. **LENGUAJE HUMANO G (BPS)**: JAMÁS uses claves técnicas o internas del sistema (ej: no digas "diurna_fija", di "Disponibilidad principalmente diurna"). Traduce cada factor a una frase legible, digna y humana. Separa claramente Factores Personales (+/-) de Ambientales (Facilitadores/Barreras).
-7. **AUTOPRECISIÓN**: Si hay evidencia de diagnóstico médico previo en el expediente (p15_core), menciónalo como fundamento en E1 pero mantén la sospecha funcional propia.
+5. **LOGICA E2 (FUNCIONAL)**: Exhaustiva. Usa siempre 'severidad': (leve, ligera, moderada, severa, completa).
+6. **LOGICA F (CIF)**: Diferencia Tareas de Participación. Usa siempre 'severidad': (leve, ligera, moderada, severa, completa).
+7. **LENGUAJE HUMANO G (BPS)**: JAMÁS uses claves técnicas o internas del sistema (ej: no digas "diurna_fija", di "Disponibilidad principalmente diurna"). Traduce cada factor a una frase legible, digna y humana. Separa claramente Factores Personales (+/-) de Ambientales (Facilitadores/Barreras).
+8. **AUTOPRECISIÓN**: Si hay evidencia de diagnóstico médico previo en el expediente (p15_core), menciónalo como fundamento en E1 pero mantén la sospecha funcional propia.
 
 ### ESTRUCTURA DE SALIDA (JSON):
 
@@ -54,9 +55,12 @@ Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen 
 #### E. Alteraciones Detectadas
 - **E1 (Estructurales)**: Mínimo 2-4 filas si hay sospechas. Usa los 4 campos obligatorios.
 - **E2 (Funcionales)**: Listado completo de TODAS las disfunciones halladas en P2.
+  "functional": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }]
+},
 
 #### F. Actividad y Participación
 - Diferencia Tareas (Limitaciones) de Roles Sociales/Hobbies (Restricciones). Basado en PSFS y relato.
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|ligera|moderada|severa|completa" }] },
 
 #### G. Factores Biopsicosociales
 - Traducir CADA factor a texto humano. Integrar sueño, estrés, redes de apoyo y barreras laborales.
@@ -85,7 +89,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado.
 
 1. "referencia_p3_breve": Resumen pasivo claro y robusto para que el clínico entienda la magnitud del caso sin repetir todo P3.
 2. "diagnostico_kinesiologico_narrativo": Redactar en UN SOLO BLOQUE de texto exhaustivo, siguiendo EXACTAMENTE esta lógica de plantilla (reemplaza corchetes con datos o elimínalos si no aplican):
-   "[Nombre / edad / sexo si existen], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, usar 'posible alteración estructural de ...']. A nivel funcional presenta alteraciones funcionales de [agregar TODAS las alteraciones funcionales relevantes sin recortar de más]. Lo anterior limita [agregar TODAS las limitaciones de actividad relevantes, con severidad]. Restringiendo su participación en [agregar restricciones de participación relevantes, con severidad]. Presenta como factores personales positivos [...], como factores personales negativos [...], como facilitadores ambientales [...], y como barreras ambientales [...]."
+   "[Nombre / edad / sexo si existen], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, usar 'posible alteración estructural de ...']. A nivel funcional presenta alteraciones funcionales de [agregar TODAS las alteraciones funcionales relevantes, con severidad]. Lo anterior limita [agregar TODAS las limitaciones de actividad relevantes, con severidad]. Restringiendo su participación en [agregar restricciones de participación relevantes, con severidad]. Presenta como factores personales positivos [...], como factores personales negativos [...], como facilitadores ambientales [...], y como barreras ambientales [...]."
 3. "objetivo_general": Proponer 2 a 3 opciones bajo la estructura: [Verbo] + [problema macro] + para + [participación].
 4. "objetivos_smart": Generar TODOS los que sean clínicamente necesarios (no los limites artificialmente a 2 o 3). Estructura: [verbo] + [variable base] + [basal si existe] + [meta] + [plazo]. Ligar siempre a variables reales del caso (dolor, ROM, fuerza, control motor, función, actividad, confianza, adherencia).
 5. "pronostico_biopsicosocial": Análisis exhaustivo (no vago ni voluntarista). Incluye análisis corto y mediano plazo. Elige la "categoria". En "justificacion_clinica_integral" justifica integrando TODO el contexto, hallazgos, irritabilidad y BPS. En "comparativa_adherencia" compara el escenario siguiendo el tratamiento propuesto versus nula adherencia.

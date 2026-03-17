@@ -73,17 +73,17 @@ export const DiagnosisSchema = z.object({
         })),
         functional: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'moderada', 'severa'])
+            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
         }))
     }),
     actividad_y_participacion: z.object({
         limitaciones_directas: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'moderada', 'severa'])
+            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
         })),
         restricciones_participacion: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'moderada', 'severa'])
+            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
         }))
     }),
     factores_biopsicosociales: z.object({
