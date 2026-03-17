@@ -178,8 +178,8 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 {/* Pain Classification */}
                                 <div className="bg-teal-50 p-5 rounded-xl border border-teal-100">
                                     <h4 className="text-[11px] uppercase text-teal-800 font-bold mb-1 tracking-wider">Diagnóstico Terapéutico</h4>
-                                    <div className="text-lg font-bold text-teal-900">{p3.clasificacion_dolor.categoria_principal}</div>
-                                    <div className="text-sm font-semibold text-teal-700 mt-1">{p3.clasificacion_dolor.subtipo_apellido}</div>
+                                    <div className="text-lg font-bold text-teal-900">{p3.clasificacion_dolor.categoria_seleccionada}</div>
+                                    <div className="text-sm font-semibold text-teal-700 mt-1">{p3.clasificacion_dolor.subtipo_seleccionado}</div>
                                     <p className="text-sm text-teal-800/80 mt-2 font-medium leading-relaxed">{p3.clasificacion_dolor.fundamento_breve}</p>
                                 </div>
 
@@ -187,8 +187,8 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                           <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Sistema y Estructuras</h4>
-                                          <p className="text-base text-slate-800 font-bold">{p3.sistema_y_estructuras?.sistema_principal}</p>
-                                          <p className="text-sm text-slate-700 font-medium">{p3.sistema_y_estructuras?.estructura_principal}</p>
+                                          <p className="text-base text-slate-800 font-bold">{p3.sistema_y_estructuras?.sistemas_principales?.join(', ')}</p>
+                                          <p className="text-sm text-slate-700 font-medium">{p3.sistema_y_estructuras?.estructuras_principales?.join(', ')}</p>
                                           {p3.sistema_y_estructuras?.estructuras_secundarias?.length > 0 && (
                                             <p className="text-xs text-slate-500 mt-2"><span className="font-semibold">Secundarias:</span> {p3.sistema_y_estructuras.estructuras_secundarias.join(', ')}</p>
                                           )}
