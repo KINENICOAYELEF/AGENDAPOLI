@@ -238,6 +238,7 @@ const P2ModuleRecommendationSchema = z.object({
     impacto_resultado_positivo: z.string().describe("Qué cambia en la interpretación clínica si sale positivo"),
     impacto_resultado_negativo: z.string().describe("Qué cambia en la interpretación clínica si sale negativo"),
     pruebas_o_tareas_sugeridas: z.array(z.string()).describe("Sugerir entre 3 y 6 tareas/tests útiles"),
+    mini_perla_docente: z.string().optional().describe("Una micro-perla clínica o docente específica para este módulo"),
     prioridad: z.enum(["alta", "media", "baja"])
 });
 

@@ -14,20 +14,23 @@ Tu objetivo es guiar al estudiante entregando razonamientos clínicos profundos,
 NO DEBES:
 - Entregar diagnósticos médicos basados en imágenes (ej. "Ruptura de menisco"). Usa términos funcionales/clínicos.
 - **PROHIBIDO USAR JERGA TÉCNICA INTERNA EN LOS CAMPOS VISIBLES**: No uses "H1", "H2", "H3", "Gana fuerza", "Pierde fuerza", "Hipótesis alternativa", "✅", "❌", "🔍", "Qué buscar", "Confirmar", "Descartar" como encabezados. Entrega solo contenido clínico puro.
-- **PROHIBIDO RECOMENDAR PRUEBAS OBSOLETAS O DE BAJO VALOR**: Gillet, standing flexion test, long sit test, palpación segmentaria vertebral sin provocación, o tests tradicionales aislados sin cluster/evidencia. Esto aplica a TODAS las regiones (hombro, rodilla, columna, etc.).
+- **PROHIBIDO RECOMENDAR PRUEBAS OBSOLETAS O DÉBILES COMO RECOMENDACIÓN CENTRAL**: Gillet, standing flexion test, long sit test, palpación segmentaria vertebral sin provocación, o tests tradicionales aislados sin cluster/evidencia. Esto aplica a TODAS las regiones (hombro, rodilla, columna, etc.).
 - **NO REPETIR LO OBVIO**: No preguntes nada que ya esté claro en el relato o en los datos de P1.5/Expediente.
 
 REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
 1. **INTEGRACIÓN EXPLÍCITA DE P1.5 / EXPEDIENTE**: Debes leer y usar activamente condiciones clínicas, fármacos, antecedentes MSK, actividad física, carga laboral, sueño, estrés, red de apoyo y barreras logísticas. Estos datos DEBEN modular el resumen, el SINS, las hipótesis y la elección del examen físico.
 2. **5 GRUPOS CONTEXTUALES (BPS)**: Separa estrictamente en: "Alertas/Riesgo", "Factores Personales Positivos", "Factores Personales Negativos", "Facilitadores" y "Barreras". Incluye sueño, estrés, carga y adherencia histórica donde corresponda.
 3. **RECOMENDACIONES DOCENTES P2 (CIENCIA Y RAZONAMIENTO)**: 
-   Cada módulo debe ser una micro-clase clínica. Sugiere entre 3 y 6 tareas/tests específicos y modernos por módulo.
+   Cada módulo debe ser una micro-clase clínica ÚNICA y ESPECÍFICA. NO REPETIR CONTENIDO ENTRE MÓDULOS.
+   Cada módulo debe responder a una pregunta clínica distinta usando el contexto basal y P1.5.
+   Sugiere entre 3 y 6 tareas/tests específicos y modernos por módulo.
     - "objetivo": El norte clínico del módulo (ej: "Aclarar patrón mecánico de carga en tendón vs bursa").
     - "razonamiento_clinico": Microjustificación docente de por qué importa en ESTE caso particular. Debe aterrizar qué dominio clínico aclara (ej. somatosensorial, motor, tisular) y qué patrón funcional o tisular busca identificar. (ej: "Dado que el dolor es intermitente y post-carga, este módulo descartará sensibilización periférica y patrón de sobreuse").
     - "hallazgo_fortalece_hipotesis": Qué hallazgo específico daría peso a la sospecha principal.
    - "hallazgo_debilita_hipotesis": Qué hallazgo obligaría a pensar en otras hipótesis.
    - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
    - "impacto_resultado_positivo/negativo": Cómo cambia el razonamiento clínico según el resultado.
+   - "mini_perla_docente": Una micro-perla clínica breve o dato docente de alto valor sobre este módulo en este caso. (OBLIGATORIO)
    - **OBLIGATORIO**: Todos los campos de texto deben estar llenos con contenido pedagógico real. PROHIBIDO dejar campos vacíos o con placeholders. Si un módulo es relevante, debe tener sustancia docente.
 
 4. **HIPÓTESIS (REGLA DE 3 + DIFERENCIALES)**: 
@@ -35,7 +38,7 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
    - Identifica claramente diferenciales breves para el bloque de "Otras hipótesis".
    - **Puntos clave P2**: Genera 2 a 4 bullets cortos sobre qué aclarar específicamente durante el examen físico (objetivos tácticos).
 
-5. **PREGUNTAS FALTANTES (MALA CALIDAD / BAJO NÚMERO)**: Mínimo 4 y máximo 6 preguntas no redundantes. No repitas lo que ya está en el expediente basal.
+5. **PREGUNTAS FALTANTES**: Mínimo 4 y máximo 6 preguntas no redundantes. No repitas lo que ya está en el expediente basal. Deben ser preguntas de alto impacto que cambien el razonamiento.
 
 ESTRUCTURA EXACTA JSON:
 {
@@ -58,6 +61,7 @@ ESTRUCTURA EXACTA JSON:
         "impacto_resultado_positivo": "string", 
         "impacto_resultado_negativo": "string", 
         "pruebas_o_tareas_sugeridas": ["string"], 
+        "mini_perla_docente": "string",
         "prioridad": "alta|media|baja" 
     }
   },
@@ -144,6 +148,7 @@ function hydrateP2Module(mod: any) {
         impacto_resultado_positivo: mod?.impacto_resultado_positivo || "",
         impacto_resultado_negativo: mod?.impacto_resultado_negativo || "",
         pruebas_o_tareas_sugeridas: Array.isArray(mod?.pruebas_o_tareas_sugeridas) ? mod.pruebas_o_tareas_sugeridas : [],
+        mini_perla_docente: mod?.mini_perla_docente || "",
         prioridad: mod?.prioridad || "media"
     };
 }

@@ -1947,12 +1947,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                                                 <div className="px-3 pb-3 flex flex-col gap-3">
                                                     <div>
-                                                        <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">Qué mirar:</span>
+                                                        <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">QUÉ MIRAR:</span>
                                                         <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo || "Aclarar patrón mecánico/tisular"}</p>
                                                     </div>
 
                                                     <div className="bg-slate-50 p-2 rounded-md border border-slate-100 flex flex-col gap-1">
-                                                        <span className="text-[7px] uppercase font-bold text-slate-400 block tracking-widest mb-0.5">Por qué importa / Razón docente:</span>
+                                                        <span className="text-[7px] uppercase font-bold text-slate-400 block tracking-widest mb-0.5">POR QUÉ IMPORTA / RAZÓN DOCENTE:</span>
                                                         <p className="text-slate-600 text-[10px] italic leading-snug">
                                                             {data.razonamiento_clinico || "Identifica la relación entre carga y síntoma para acotar el diagnóstico kinesiológico."}
                                                         </p>
@@ -1961,11 +1961,11 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                     <div className="flex flex-col gap-2 pt-1 border-t border-teal-50">
                                                         <div className="bg-indigo-50/50 p-2 rounded-md border border-indigo-100/50 space-y-2">
                                                             <div className="flex flex-col gap-0.5">
-                                                                <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Qué confirmaría:</span>
+                                                                <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">QUÉ CONFIRMARÍA:</span>
                                                                 <p className="text-indigo-800 leading-tight font-medium">● {data.hallazgo_fortalece_hipotesis || "Provocación clara de queja primaria con carga específica"}</p>
                                                             </div>
                                                             <div className="flex flex-col gap-0.5">
-                                                                <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Qué haría pensar en otra hipótesis:</span>
+                                                                <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">QUÉ HARÍA PENSAR EN OTRA HIPÓTESIS:</span>
                                                                 <p className="text-rose-800 leading-tight font-medium">○ {data.hallazgo_debilita_hipotesis || "Ausencia de síntomas ante provocación máxima o presencia de signos neurológicos no reportados"}</p>
                                                             </div>
                                                         </div>
@@ -1994,7 +1994,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                     </div>
 
                                                     <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-teal-50">
-                                                        <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">Ejemplos de tareas/tests:</span>
+                                                        <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">EJEMPLOS DE TAREAS / TESTS / MANIOBRAS:</span>
                                                         <div className="flex flex-col gap-1">
                                                             {(data.pruebas_o_tareas_sugeridas?.length > 0 ? data.pruebas_o_tareas_sugeridas : ["Evaluación funcional dirigida", "Test de provocación específico"]).map((t: string, i: number) => (
                                                                 <div key={i} className="flex items-start gap-1.5 bg-teal-50/50 p-1 rounded-md text-teal-800 border border-teal-100/50 font-medium leading-tight text-[9px]">
@@ -2003,6 +2003,13 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                    </div>
+
+                                                    <div className="mt-2 p-2 bg-indigo-50 rounded-lg border border-indigo-100 border-dashed">
+                                                        <span className="text-[7px] uppercase font-black text-indigo-400 tracking-tighter block mb-1 underline decoration-indigo-200 underline-offset-2">MINI PERLA DOCENTE:</span>
+                                                        <p className="text-indigo-900 text-[10px] font-medium leading-tight">
+                                                            {data.mini_perla_docente || "La concordancia mecánica entre el relato y el test físico es la clave del éxito terapéutico."}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
