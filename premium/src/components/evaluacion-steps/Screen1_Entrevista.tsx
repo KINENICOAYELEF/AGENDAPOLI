@@ -1790,54 +1790,62 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             {/* Hipótesis, Módulo P2, Contexto */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                                 <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 lg:col-span-2">
-                                    <h4 className="text-xs font-bold text-indigo-800 mb-3 flex items-center gap-2">
-                                        <span>💡</span> 3 Hipótesis Clínicas Principales
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        {[0, 1, 2].map((idx) => {
-                                            const h = interviewV4.p1_ai_structured.hipotesis_orientativas?.[idx];
-                                            if (!h) return (
-                                                <div key={idx} className="bg-slate-50 border border-slate-100 p-3 rounded-lg text-[10px] opacity-40 border-dashed min-h-[60px] flex items-center justify-center">
-                                                    <span className="italic">Pendiente...</span>
-                                                </div>
-                                            );
-                                            return (
-                                                <div key={idx} className="bg-white border border-indigo-100 p-3 rounded-lg shadow-sm flex flex-col gap-1.5 relative overflow-hidden">
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                                                    <div className="flex justify-between items-start">
-                                                        <strong className="text-indigo-900 text-[11px] leading-tight flex-1">{idx + 1}. {h.titulo}</strong>
-                                                        <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded-full font-bold ${
-                                                            h.probabilidad === 'mas_probable' ? 'bg-indigo-100 text-indigo-700' : 
-                                                            h.probabilidad === 'probable_alternativa' ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-400'
-                                                        }`}>
-                                                            {h.probabilidad === 'mas_probable' ? 'Alta' : 
-                                                             h.probabilidad === 'probable_alternativa' ? 'Media' : 'Baja'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-indigo-700 text-[10px] italic leading-tight">"{h.fundamento_breve}"</p>
-                                                    <div className="mt-1 pt-1 border-t border-indigo-50 grid grid-cols-1 gap-1">
-                                                        {h.que_hay_que_confirmar && <div className="text-[9px] text-emerald-700 font-medium leading-tight">● Confirmar: {h.que_hay_que_confirmar}</div>}
-                                                        {h.que_hay_que_descartar && <div className="text-[9px] text-rose-700 font-medium leading-tight">◌ Descartar: {h.que_hay_que_descartar}</div>}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {(interviewV4.p1_ai_structured.diferenciales_breves || []).length > 0 && (
-                                        <div className="mt-4 pt-3 border-t border-indigo-100">
-                                            <h5 className="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-2 flex items-center gap-1.5">
-                                                <span>🔍</span> Otras Hipótesis a Considerar
-                                            </h5>
-                                            <div className="flex flex-wrap gap-2">
-                                                {interviewV4.p1_ai_structured.diferenciales_breves.map((d: string, i: number) => (
-                                                    <div key={i} className="bg-indigo-50/50 text-indigo-900 text-[10px] px-3 py-1 rounded-full border border-indigo-100/50">
-                                                        {d}
-                                                    </div>
-                                                ))}
+                                    <div className="flex flex-col gap-4">
+                                        {/* A) 3 Hipótesis Clínicas Principales */}
+                                        <div>
+                                            <h4 className="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-3 flex items-center gap-1.5">
+                                                <span>💡</span> 3 Hipótesis Clínicas Principales
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                {[0, 1, 2].map((idx) => {
+                                                    const h = interviewV4.p1_ai_structured.hipotesis_orientativas?.[idx];
+                                                    if (!h) return (
+                                                        <div key={idx} className="bg-slate-50 border border-slate-100 p-2 rounded-lg text-[9px] opacity-40 border-dashed min-h-[50px] flex items-center justify-center">
+                                                            <span className="italic">Pendiente...</span>
+                                                        </div>
+                                                    );
+                                                    return (
+                                                        <div key={idx} className="bg-white border border-indigo-100 p-2.5 rounded-lg shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                                                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                                                            <strong className="text-indigo-900 text-[10px] leading-tight">Principal {idx + 1}: {h.titulo}</strong>
+                                                            <p className="text-indigo-700 text-[9px] italic leading-snug line-clamp-2">"{h.fundamento_breve}"</p>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-indigo-100/50">
+                                            {/* B) Otras hipótesis a considerar */}
+                                            <div>
+                                                <h5 className="text-[10px] uppercase font-black text-indigo-400 tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <span>🔍</span> Otras Hipótesis a Considerar
+                                                </h5>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {(interviewV4.p1_ai_structured.diferenciales_breves || []).map((d: string, i: number) => (
+                                                        <span key={i} className="bg-indigo-100/30 text-indigo-800 text-[9px] px-2 py-0.5 rounded-full border border-indigo-100/50">
+                                                            {d}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* C) Puntos clave a aclarar en P2 */}
+                                            <div>
+                                                <h5 className="text-[10px] uppercase font-black text-emerald-500 tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <span>🎯</span> Puntos clave a aclarar en P2
+                                                </h5>
+                                                <div className="flex flex-col gap-1">
+                                                    {(interviewV4.p1_ai_structured.puntos_clave_p2 || []).map((p: string, i: number) => (
+                                                        <div key={i} className="flex items-start gap-1.5 text-[9px] text-slate-700 leading-tight">
+                                                            <span className="text-emerald-500 font-bold">•</span>
+                                                            {p}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3 flex flex-col gap-3">
@@ -1936,33 +1944,27 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                 <div className="px-3 pb-3 flex flex-col gap-3">
                                                     <div>
                                                         <span className="text-[7px] uppercase font-bold text-teal-600/60 tracking-widest block mb-0.5">Qué mirar:</span>
-                                                        <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo}</p>
+                                                        <p className="text-teal-900 font-bold leading-snug text-[11px]">{data.objetivo || "Aclarar irritabilidad y patrón de carga"}</p>
                                                     </div>
 
-                                                    {data.razonamiento_clinico && (
-                                                        <div className="text-slate-600 bg-slate-50 p-2 rounded-md text-[10px] border border-slate-100 italic leading-snug">
-                                                            <span className="not-italic font-bold text-slate-400 block text-[7px] uppercase tracking-widest mb-1">Por qué importa:</span>
-                                                            {data.razonamiento_clinico}
-                                                        </div>
-                                                    )}
+                                                    <div>
+                                                        <span className="text-[7px] uppercase font-bold text-slate-400 block tracking-widest mb-1">Por qué importa en este caso:</span>
+                                                        <p className="text-slate-600 text-[10px] italic leading-snug bg-slate-50 p-2 rounded-md border border-slate-100">
+                                                            {data.razonamiento_clinico || "Permite diferenciar el origen mecánico de la queja y acotar el pronóstico de carga inicial."}
+                                                        </p>
+                                                    </div>
 
                                                     <div className="flex flex-col gap-2 pt-1 border-t border-teal-50">
-                                                        {(data.hallazgo_fortalece_hipotesis || data.hallazgo_debilita_hipotesis) && (
-                                                            <div className="bg-indigo-50/50 p-2 rounded-md border border-indigo-100/50 space-y-2">
-                                                                {data.hallazgo_fortalece_hipotesis && (
-                                                                    <div className="flex flex-col gap-0.5">
-                                                                        <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Qué confirmaría:</span>
-                                                                        <p className="text-indigo-800 leading-tight font-medium">● {data.hallazgo_fortalece_hipotesis}</p>
-                                                                    </div>
-                                                                )}
-                                                                {data.hallazgo_debilita_hipotesis && (
-                                                                    <div className="flex flex-col gap-0.5">
-                                                                        <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Qué haría pensar otra cosa:</span>
-                                                                        <p className="text-rose-800 leading-tight font-medium">○ {data.hallazgo_debilita_hipotesis}</p>
-                                                                    </div>
-                                                                )}
+                                                        <div className="bg-indigo-50/50 p-2 rounded-md border border-indigo-100/50 space-y-2">
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[7px] uppercase font-bold text-indigo-800/60 tracking-wider">Qué confirmaría:</span>
+                                                                <p className="text-indigo-800 leading-tight font-medium">● {data.hallazgo_fortalece_hipotesis || "Provocación clara de queja primaria con carga específica"}</p>
                                                             </div>
-                                                        )}
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="text-[7px] uppercase font-bold text-rose-800/60 tracking-wider">Qué haría pensar en otra hipótesis:</span>
+                                                                <p className="text-rose-800 leading-tight font-medium">○ {data.hallazgo_debilita_hipotesis || "Ausencia de síntomas ante provocación máxima o presencia de signos neurológicos no reportados"}</p>
+                                                            </div>
+                                                        </div>
 
                                                         {data.diferencial_que_descarta && (
                                                             <div className="flex flex-col gap-0.5">
@@ -1987,19 +1989,17 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                                                         </div>
                                                     </div>
 
-                                                    {(data.pruebas_o_tareas_sugeridas?.length > 0) && (
-                                                        <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-teal-50">
-                                                            <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">Ejemplos de tareas/tests:</span>
-                                                            <div className="flex flex-col gap-1">
-                                                                {data.pruebas_o_tareas_sugeridas.map((t: string, i: number) => (
-                                                                    <div key={i} className="flex items-start gap-1.5 bg-teal-50/50 p-1 rounded-md text-teal-800 border border-teal-100/50 font-medium leading-tight">
-                                                                        <span className="text-teal-400">•</span>
-                                                                        {t}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
+                                                    <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-teal-50">
+                                                        <span className="text-[7px] uppercase font-bold text-teal-800/60 tracking-widest">Ejemplos de tareas/tests:</span>
+                                                        <div className="flex flex-col gap-1">
+                                                            {(data.pruebas_o_tareas_sugeridas?.length > 0 ? data.pruebas_o_tareas_sugeridas : ["Evaluación funcional dirigida", "Test de provocación específico"]).map((t: string, i: number) => (
+                                                                <div key={i} className="flex items-start gap-1.5 bg-teal-50/50 p-1 rounded-md text-teal-800 border border-teal-100/50 font-medium leading-tight text-[9px]">
+                                                                    <span className="text-teal-400">•</span>
+                                                                    {t}
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

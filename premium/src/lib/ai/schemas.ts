@@ -302,6 +302,8 @@ export const P1SynthesisSchema = z.object({
         pruebas_ortopedicas_dirigidas: P2ModuleRecommendationSchema,
         pruebas_funcionales_reintegro: P2ModuleRecommendationSchema
     }),
+    diferenciales_breves: z.array(z.string()).optional().describe("Otras hipótesis a considerar"),
+    puntos_clave_p2: z.array(z.string()).optional().describe("Puntos clave a aclarar en P2"),
     factores_contextuales_clave: z.object({
         banderas_rojas: z.array(z.string()),
         banderas_amarillas: z.array(z.string()),

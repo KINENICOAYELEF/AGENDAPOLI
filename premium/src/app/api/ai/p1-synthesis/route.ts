@@ -28,12 +28,13 @@ REGLAS DE CALIDAD CLÍNICA (OBLIGATORIAS):
    - "hallazgo_debilita_hipotesis": Qué hallazgo obligaría a pensar en otras hipótesis.
    - "diferencial_que_descarta": Qué otra posible causa ayuda a descartar este módulo.
    - "impacto_resultado_positivo/negativo": Cómo cambia el razonamiento clínico según el resultado.
+   - **OBLIGATORIO**: Todos los campos de texto deben estar llenos con contenido pedagógico real. PROHIBIDO dejar campos vacíos o con placeholders. Si un módulo es relevante, debe tener sustancia docente.
 
 4. **HIPÓTESIS (REGLA DE 3 + DIFERENCIALES)**: 
    - 3 hipótesis principales limpias y ricas (mas_probable, probable_alternativa, menos_probable).
    - Identifica claramente diferenciales breves para el bloque de "Otras hipótesis".
 
-5. **PREGUNTAS FALTANTES**: Máximo 5-6 preguntas no redundantes que realmente resuelvan dudas de seguridad, pronóstico o diferencial.
+5. **PREGUNTAS FALTANTES (MALA CALIDAD / BAJO NÚMERO)**: Mínimo 4 y máximo 6 preguntas no redundantes. No repitas lo que ya está en el expediente basal.
 
 ESTRUCTURA EXACTA JSON:
 {
@@ -59,6 +60,7 @@ ESTRUCTURA EXACTA JSON:
         "prioridad": "alta|media|baja" 
     }
   },
+  "puntos_clave_p2": ["string"],
   "factores_contextuales_clave": { 
     "banderas_rojas": ["string"], 
     "banderas_amarillas": ["string"], 
@@ -188,6 +190,7 @@ function hydrateP1SynthesisDefaults(partial: any) {
             [...partial.hipotesis_orientativas, { ranking: 3, titulo: "", probabilidad: "menos_probable", fundamento_breve: "", que_hay_que_descartar: "", que_hay_que_confirmar: "" }].slice(0, 3) 
             : [],
         diferenciales_breves: Array.isArray(partial?.diferenciales_breves) ? partial.diferenciales_breves : [],
+        puntos_clave_p2: Array.isArray(partial?.puntos_clave_p2) ? partial.puntos_clave_p2 : [],
         preguntas_faltantes: Array.isArray(partial?.preguntas_faltantes) ? partial.preguntas_faltantes.slice(0, 6) : [],
         recomendaciones_p2_por_modulo: {
             observacion_movimiento_inicial: hydrateP2Module(partial?.recomendaciones_p2_por_modulo?.observacion_movimiento_inicial),
