@@ -927,7 +927,8 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             opciones_categoria: string[];
             categoria_seleccionada: string;
             opciones_subtipo_apellido: string[];
-            subtipo_seleccionado: string;
+            subtipos_seleccionados: string[];
+            subtipo_manual?: string;
             fundamento_breve: string;
             nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };

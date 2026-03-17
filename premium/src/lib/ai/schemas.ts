@@ -49,7 +49,8 @@ export const DiagnosisSchema = z.object({
         opciones_categoria: z.array(z.string()).describe("Opciones sugeridas de categoría (ej: Aparente nociceptivo, Mixto)"),
         categoria_seleccionada: z.string(),
         opciones_subtipo_apellido: z.array(z.string()).describe("Opciones ricas de subtipo (ej: Mecánico, Inflamatorio, Sensibilización)"),
-        subtipo_seleccionado: z.string(),
+        subtipos_seleccionados: z.array(z.string()).describe("Subtipos elegidos por la IA o el usuario"),
+        subtipo_manual: z.string().optional().describe("Texto manual si el usuario escribe su propio subtipo"),
         fundamento_breve: z.string(),
         nivel_confianza: z.string()
     }),

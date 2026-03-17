@@ -179,8 +179,19 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 <div className="bg-teal-50 p-5 rounded-xl border border-teal-100">
                                     <h4 className="text-[11px] uppercase text-teal-800 font-bold mb-1 tracking-wider">Diagnóstico Terapéutico</h4>
                                     <div className="text-lg font-bold text-teal-900">{p3.clasificacion_dolor.categoria_seleccionada}</div>
-                                    <div className="text-sm font-semibold text-teal-700 mt-1">{p3.clasificacion_dolor.subtipo_seleccionado}</div>
-                                    <p className="text-sm text-teal-800/80 mt-2 font-medium leading-relaxed">{p3.clasificacion_dolor.fundamento_breve}</p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {(p3.clasificacion_dolor.subtipos_seleccionados || (p3.clasificacion_dolor.subtipo_seleccionado ? [p3.clasificacion_dolor.subtipo_seleccionado] : [])).map((s: string, idx: number) => (
+                                            <span key={idx} className="bg-teal-600 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                                {s}
+                                            </span>
+                                        ))}
+                                        {p3.clasificacion_dolor.subtipo_manual && (
+                                            <span className="bg-white border border-teal-200 text-teal-700 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shadow-sm italic">
+                                                {p3.clasificacion_dolor.subtipo_manual}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm text-teal-800/80 mt-3 font-medium leading-relaxed">{p3.clasificacion_dolor.fundamento_breve}</p>
                                 </div>
 
                                 {/* Sistema y Estructuras */}

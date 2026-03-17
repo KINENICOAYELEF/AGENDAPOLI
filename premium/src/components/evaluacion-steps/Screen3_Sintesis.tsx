@@ -186,7 +186,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                 <div className="flex flex-col gap-6 animate-in fade-in duration-700">
                     
                     {/* BLOQUE C — CLASIFICACIÓN CLÍNICA SUGERIDA */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔥</span> C. Clasificación del Dolor</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -217,34 +217,51 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 </div>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Subtipo / Apellido Sugerido (Elige uno)</label>
-                                <div className="flex flex-col gap-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2 flex items-center justify-between">
+                                    Subtipo / Apellido Sugerido (Multiselección)
+                                    <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100 font-normal normal-case">Puedes elegir varios</span>
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-3">
                                     {autoSynth.clasificacion_dolor?.opciones_subtipo_apellido && autoSynth.clasificacion_dolor.opciones_subtipo_apellido.length > 0 ? (
-                                        autoSynth.clasificacion_dolor.opciones_subtipo_apellido.map((sub: string) => (
-                                            <button
-                                                key={sub}
-                                                type="button"
-                                                onClick={() => updateDeepObj('clasificacion_dolor', { subtipo_seleccionado: sub })}
-                                                disabled={isClosed}
-                                                className={`px-3 py-2 rounded-lg text-xs text-left transition-all border shadow-sm ${
-                                                    autoSynth.clasificacion_dolor?.subtipo_seleccionado === sub 
-                                                    ? 'bg-purple-600 border-purple-600 text-white ring-2 ring-purple-200' 
-                                                    : 'bg-white border-slate-200 text-slate-600 hover:border-purple-400 hover:bg-purple-50/30'
-                                                }`}
-                                            >
-                                                {sub}
-                                            </button>
-                                        ))
+                                        autoSynth.clasificacion_dolor.opciones_subtipo_apellido.map((sub: string) => {
+                                            const selectedSubtypes = autoSynth.clasificacion_dolor?.subtipos_seleccionados || [];
+                                            const isSelected = selectedSubtypes.includes(sub);
+                                            
+                                            return (
+                                                <button
+                                                    key={sub}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newSelected = isSelected 
+                                                            ? selectedSubtypes.filter((s: string) => s !== sub)
+                                                            : [...selectedSubtypes, sub];
+                                                        updateDeepObj('clasificacion_dolor', { subtipos_seleccionados: newSelected });
+                                                    }}
+                                                    disabled={isClosed}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border shadow-sm ${
+                                                        isSelected 
+                                                        ? 'bg-purple-600 border-purple-600 text-white ring-2 ring-purple-200' 
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-purple-400 hover:bg-purple-50/30'
+                                                    }`}
+                                                >
+                                                    {sub}
+                                                </button>
+                                            );
+                                        })
                                     ) : (
-                                        <input 
-                                            type="text" 
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
-                                            value={autoSynth.clasificacion_dolor?.subtipo_seleccionado || ''}
-                                            onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_seleccionado: e.target.value })}
-                                            placeholder="Ej: de origen inflamatorio"
-                                            disabled={isClosed}
-                                        />
+                                        <span className="text-xs italic text-slate-400">Genera con IA para ver opciones</span>
                                     )}
+                                </div>
+                                <div className="mt-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Especificación Manual / Otro</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition-all"
+                                        value={autoSynth.clasificacion_dolor?.subtipo_manual || ''}
+                                        onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_manual: e.target.value })}
+                                        placeholder="Ej: de origen inflamatorio, persistente..."
+                                        disabled={isClosed}
+                                    />
                                 </div>
                             </div>
                             <div className="md:col-span-2 flex gap-4">
@@ -276,7 +293,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     </div>
 
                     {/* BLOQUE D — SISTEMA / ESTRUCTURA */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🦴</span> D. Sistema y Estructuras</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -336,7 +353,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     </div>
 
                     {/* BLOQUE E — ALTERACIONES */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">⚙️</span> E. Alteraciones Detectadas</h3>
                         
                         <div className="mb-6">
@@ -384,7 +401,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     </div>
 
                     {/* BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🏃‍♀️</span> F. Actividad y Participación</h3>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -433,28 +450,28 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             {/* Personales (+) */}
                             <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                                 <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-2">Personales Positivos (+)</label>
-                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-emerald-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Personales (-) */}
                             <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
                                 <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-2">Personales Negativos (-)</label>
-                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-rose-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Ambientales (F) */}
                             <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
                                 <label className="text-[10px] font-bold text-sky-800 uppercase tracking-wider block mb-2">Facilitadores Ambientales</label>
-                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-sky-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                             {/* Ambientales (B) */}
                             <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
                                 <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-2">Barreras Ambientales</label>
-                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs h-[60px]" value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
+                                <textarea className="w-full bg-white border border-amber-200 rounded p-2 text-xs min-h-[100px]" value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} disabled={isClosed} placeholder="Listado (enter)..." />
                             </div>
                         </div>
                     </div>
 
                     {/* BLOQUE H — RECORDATORIOS CLÍNICOS */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-7 shadow-sm">
                         <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2"><span className="text-lg">💡</span> H. Recordatorios y Coherencia</h3>
                         <p className="text-[10px] text-indigo-700/80 mb-3">Puntos a vigilar sugeridos por la IA.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

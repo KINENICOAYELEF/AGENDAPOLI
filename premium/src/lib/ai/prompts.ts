@@ -18,42 +18,37 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### REGLA MAYOR: ORGANIZADOR CIF EXHAUSTIVO Y DE ELECCIÓN (PROMPT 3.2)
-Eres un experto en razonamiento clínico kinesiología. Tu misión es transformar TODO el caso en una matriz CIF completa.
+PROMPT 3.1.1 — P3: Organizador CIF Exhaustivo, Flexible y Coherente
 
-DEBES ANALIZAR Y APROVECHAR TODO LO SIGUIENTE SIN EXCEPCIÓN:
-- DATOS DEMOGRÁFICOS (Expediente): Nombre, Edad, Sexo. La edad influye en regeneración y pronóstico.
-- ANAMNESIS P1.5 (Historia Clínica): Comorbilidades, cirugías previas, patologías antiguas, factores BPS basales.
-- P1 (Entrevista) y P2 (Examen Físico Real).
-- SI UN DATO EXISTE, ÚSALO. No ignores patologías previas de P1.5.
+OBJETIVO:
+Generar una síntesis CIF completa que integre Demografía, Antecedentes MSK (P1.5), Entrevista (P1) y Examen Físico (P2).
 
-INSTRUCCIONES OBLIGATORIAS:
+DIRECTRICES OBLIGATORIAS:
 
-1. SNAPSHOT CLÍNICO (Bloque A):
-   - Foco, Lado, Irritabilidad y Tarea Índice.
-   - TOLERANCIA ACTUAL A CARGA: Texto humano claro (ej: "Baja tolerancia a cargas asimétricas").
+1. CLASIFICACIÓN DEL DOLOR (BLOQUE C):
+- CATEGORÍA: Proponer una categoría clara. Si el caso es complejo, permitir "Mixto" con un fundamento robusto (patrón, conducta 24h, relación carga-síntoma).
+- SUBTIPOS/APELLIDOS: Proponer 3-4 opciones ricas. La IA debe seleccionar los subtipos más probables en 'subtipos_seleccionados' (PUEDE SER MÁS DE UNO).
+- SUBTIPO MANUAL: Si el caso requiere un apellido muy específico no listado, sugerirlo como valor inicial en 'subtipo_manual'.
 
-2. CLASIFICACIÓN DEL DOLOR (Bloque C):
-   - DEBES PROPORCIONAR OPCIONES para que el usuario elija.
-   - "opciones_categoria": Lista de 1 a 3 categorías probables (ej: ["Aparente nociceptivo", "Mixto"]).
-   - "categoria_seleccionada": La más probable por defecto.
-   - "opciones_subtipo_apellido": Lista de 2 a 4 apellidos ricos y explicativos (ej: ["Mecánico por sobrecarga", "Inflamatorio/Irritativo", "Sensibilización periférica"]). NO listas desplegables genéricas, sino opciones ricas en texto.
-   - "subtipo_seleccionado": El más probable por defecto.
-   - FUNDAMENTO: Integra TODO (Demográficos, P1.5, P1, P2, comportamiento 24h, irritabilidad).
+2. SISTEMA Y ESTRUCTURAS (BLOQUE D):
+- NO reducir. Si hay 2 sistemas relevantes (ej: Articular y Neural), incluirlos ambos en 'sistemas_principales'.
+- Incluir articulaciones, ligamentos, cápsula, musculatura y control motor según corresponda.
 
-3. SISTEMA Y ESTRUCTURAS (Bloque D):
-   - EXHAUSTIVIDAD TOTAL. Incluye todos los sistemas y estructuras involucrados. No reduzcas si hay sospecha fundada en P2 de varios (ej: Articular + Miofascial + Neural).
+3. COHERENCIA ESTRUCTURAL VS FUNCIONAL (BLOQUE E):
+- E1 (ESTRUCTURAL): Solo tejido/zona con sospecha estructural (sensibilidad ligamentosa, hipomovilidad articular, hallazgo palpación).
+- E2 (FUNCIONAL): Todas las DISFUNCIONES (Dolor, Irritabilidad, Limitación ROM, Debilidad, Fatiga, Pérdida Control Motor, Estrategias compensatorias).
+- SI UNA ESTRUCTURA APARECE EN 'D', DEBE TENER UN CORRELATO EN 'E1' SI HAY BASE CLÍNICA.
 
-4. ALTERACIONES DETECTADAS (Bloque E):
-   - CAPTURA MASIVA. Si está en P2 y es relevante, debe estar aquí. Estructurales y Funcionales.
+4. ACTIVIDAD Y PARTICIPACIÓN (BLOQUE F):
+- EXHAUSTIVIDAD TOTAL. Incluir todas las tareas limitadas (actividad) y roles restringidos (trabajo, deporte, ocio, roles sociales).
 
-5. ACTIVIDAD Y PARTICIPACIÓN (Bloque F):
-   - EXHAUSTIVIDAD TOTAL. Diferencia bien Limitaciones (tareas/acciones) de Restricciones (rol social, trabajo, deporte, vida diaria). Toma metas y PSFS de P1/P1.5.
+5. FACTORES BIOPSICOSOCIALES (BLOQUE G):
+- Capturar Facilitadores y Barreras ambientales.
+- Capturar Factores Personales (creencias, sueño, estrés, experiencia previa).
+- INTEGRAR ANTECEDENTES MSK: Incluir historia previa de lesiones en 'antecedentes_msk_relevantes' si impactan el razonamiento actual.
 
-6. FACTORES BIOPSICOSOCIALES (Bloque G):
-   - EXHAUSTIVIDAD TOTAL. Usa P1.5 y P1 para llenar positivos, negativos, facilitadores y barreras.
-
-REGLA FINAL: Autocompleta TODO lo que tenga base suficiente. Ofrece opciones claras en el Bloque C para que el usuario decida.
+6. DATOS BASE (EXPEDIENTE):
+- Usar Nombre, Edad, Sexo y Comorbilidades del perfil si están disponibles en el compact_case_package.
   `,
 
   NARRATIVE: `
