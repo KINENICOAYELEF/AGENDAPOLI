@@ -42,9 +42,17 @@ export async function POST(req: Request) {
   "snapshot_clinico": { "foco_principal": "", "lado": "", "irritabilidad_sugerida": "", "tolerancia_carga": { "nivel": "", "explicacion": "" }, "tarea_indice": "", "alertas_clinicas": [] },
   "clasificacion_dolor": { "opciones_categoria": [], "categoria_seleccionada": "", "opciones_subtipo_apellido": [], "subtipos_seleccionados": [], "subtipo_manual": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { "sistemas_principales": [], "estructuras_principales": [], "estructuras_secundarias": [], "descripcion_libre": "" },
-  "alteraciones_detectadas": { "estructurales": [{ "texto": "", "certeza": "casi_confirmada|probable|posible|no_concluyente", "fundamento_breve": "" }], "functional": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
+  "alteraciones_detectadas": { 
+    "estructurales": [{ 
+       "estructura_involucrada": "", 
+       "alteracion_sospecha": "", 
+       "certeza": "casi_confirmada|probable|posible|no_concluyente", 
+       "fundamento_clinico": "" 
+    }], 
+    "functional": [{ "texto": "", "severidad": "leve|moderada|severa" }] 
+  },
   "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "", "severidad": "leve|moderada|severa" }], "restricciones_participacion": [{ "texto": "", "severidad": "leve|moderada|severa" }] },
-  "factores_biopsicosociales": { "factores_personales_positivos": [], "factores_personales_negativos": [], "facilitadores_ambientales": [], "barreras_ambientales": [], "antecedentes_msk_relevantes": [] },
+  "factores_biopsicosociales": { "factores_personales_positivos": [], "factores_personales_negativos": [], "facilitadores_ambientales": [], "barreras_ambientales": [] },
   "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
 }`;
 
@@ -62,7 +70,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v2.1',
+            promptVersion: 'v3.1.3',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
