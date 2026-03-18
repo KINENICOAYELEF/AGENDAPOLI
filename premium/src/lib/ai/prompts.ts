@@ -34,7 +34,7 @@ Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen 
 3. **LENGUAJE HUMANO (SIN CÓDIGOS)**: Prohibido usar "amateur_competitivo_6", "med_flag_1", etc. Traduce todo a frases clínicas dignas y legibles.
 4. **INFERENCIA TRANSVERSAL**: Mantén la lógica de P3.1.6 (inferir alteraciones de todo el expediente).
 5. **COHERENCIA D/E1**: Rigurosidad máxima en mapeo de sistemas y estructuras.
-6. **FORMATO ESTRICTO DE ARRAYS (TÉCNICO)**: TODOS los campos definidos como listas (comorbilidades, medicamentos, antecedentes_msk, alertas_clinicas, factores_personales_*, facilitadores_*, barreras_*) deben ser **Arrays de JSON** `["item1", "item2"]`. PROHIBIDO usar strings simples o "item1, item2".
+6. **FORMATO ESTRICTO DE ARRAYS (TÉCNICO)**: TODOS los campos definidos como listas (comorbilidades, medicamentos, antecedentes_msk, alertas_clinicas, factores_personales_*, facilitadores_*, barreras_*) deben ser **Arrays de JSON** \`["item1", "item2"]\`. PROHIBIDO usar strings simples o "item1, item2".
 
 ### ESTRUCTURA DE SALIDA (JSON):
 
