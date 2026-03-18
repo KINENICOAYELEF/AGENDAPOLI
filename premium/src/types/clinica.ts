@@ -944,12 +944,14 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             alertas_clinicas: string[];
         };
         clasificacion_dolor?: {
-            opciones_categoria: string[];
-            categoria_seleccionada: string;
-            opciones_subtipo_apellido: string[];
-            subtipos_seleccionados: string[];
+            categoria: 'nociceptivo' | 'neuropático' | 'nociplástico' | 'mixto' | 'no_concluyente' | string;
+            subtipos: string[];
             subtipo_manual?: string;
-            fundamento_breve: string;
+            fundamento: {
+                apoyo: string[];
+                duda_mezcla: string[];
+                conclusion: string;
+            };
             nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };
         sistema_y_estructuras?: {

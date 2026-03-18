@@ -331,48 +331,49 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
             {(autoSynth.clasificacion_dolor || autoSynth.sistema_y_estructuras || autoSynth.alteraciones_detectadas) && (
                 <div className="flex flex-col gap-6 animate-in fade-in duration-700">
                     
-                    {/* BLOQUE C — CLASIFICACIÓN CLÍNICA SUGERIDA */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
+                    {/* BLOQUE C — CLASIFICACIÓN CLÍNICA SUGERIDA (P3.1.9) */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm border-t-4 border-t-indigo-500">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-6">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                            <h3 className="font-black text-slate-800 flex items-center gap-2">
                                 <span className="text-xl bg-indigo-100 p-2 rounded-lg text-indigo-600">⚡</span> 
                                 C. Clasificación del Dolor
                             </h3>
-                            <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-[10px] text-indigo-700 max-w-sm">
-                                <strong>💡 Ayuda:</strong> IA sugiere las opciones más probables según P1, P1.5, P2 y expediente. Puedes editar, agregar o corregir manualmente.
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-2.5 text-[10px] text-indigo-700 max-w-sm leading-relaxed">
+                                <strong>💡 Ayuda:</strong> La IA marca la opción más probable según integración de anamnesis, contexto basal y examen físico. <strong>Puedes editarla.</strong>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Categoría Principal Sugerida</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {(autoSynth.clasificacion_dolor?.opciones_categoria || ['Aparente Nociceptivo', 'Aparente Neuropático', 'Aparentemente Nociplástico', 'Mixto']).map((cat: string) => (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            {/* C1. Categoría Principal */}
+                            <div className="lg:col-span-5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">C1. Categoría Principal Sugerida</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {['nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'].map((cat: any) => (
                                         <button
                                             key={cat}
                                             type="button"
-                                            onClick={() => updateDeepObj('clasificacion_dolor', { categoria_seleccionada: cat })}
+                                            onClick={() => updateDeepObj('clasificacion_dolor', { categoria: cat })}
                                             disabled={isClosed}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border shadow-sm ${
-                                                autoSynth.clasificacion_dolor?.categoria_seleccionada === cat 
-                                                ? 'bg-indigo-600 border-indigo-600 text-white ring-2 ring-indigo-200' 
+                                            className={`px-3 py-2.5 rounded-xl text-xs font-black transition-all border shadow-sm text-left flex items-center justify-between group ${
+                                                autoSynth.clasificacion_dolor?.categoria === cat 
+                                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo-200' 
                                                 : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:bg-indigo-50/30'
                                             }`}
                                         >
-                                            {cat}
+                                            <span className="capitalize">{cat.replace('_', ' ')}</span>
+                                            {autoSynth.clasificacion_dolor?.categoria === cat && <span className="text-white/80">✓</span>}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2 flex items-center justify-between">
-                                    Subtipo / Apellido Sugerido (Multiselección)
-                                    <span className="text-[10px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-100 font-normal normal-case">Puedes elegir varios</span>
-                                </label>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {autoSynth.clasificacion_dolor?.opciones_subtipo_apellido && autoSynth.clasificacion_dolor.opciones_subtipo_apellido.length > 0 ? (
-                                        autoSynth.clasificacion_dolor.opciones_subtipo_apellido.map((sub: string) => {
-                                            const selectedSubtypes = autoSynth.clasificacion_dolor?.subtipos_seleccionados || [];
+                                <div className="mt-6">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 flex items-center justify-between">
+                                        C2. Subtipos / Apellidos
+                                        <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100 font-bold normal-case text-[9px]">Multiselección</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {/* Opciones ricas precargadas si la IA no ha generado nada o para complementar */}
+                                        {['Mecánico', 'Isquémico', 'Inflamatorio', 'Sensibilización', 'Radicular', 'Atrapamiento', 'Proyectado', 'Autonómico'].map((sub: string) => {
+                                            const selectedSubtypes = autoSynth.clasificacion_dolor?.subtipos || [];
                                             const isSelected = selectedSubtypes.includes(sub);
                                             
                                             return (
@@ -383,56 +384,98 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                         const newSelected = isSelected 
                                                             ? selectedSubtypes.filter((s: string) => s !== sub)
                                                             : [...selectedSubtypes, sub];
-                                                        updateDeepObj('clasificacion_dolor', { subtipos_seleccionados: newSelected });
+                                                        updateDeepObj('clasificacion_dolor', { subtipos: newSelected });
                                                     }}
                                                     disabled={isClosed}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border shadow-sm ${
+                                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
                                                         isSelected 
-                                                        ? 'bg-purple-600 border-purple-600 text-white ring-2 ring-purple-200' 
-                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-purple-400 hover:bg-purple-50/30'
+                                                        ? 'bg-purple-600 border-purple-600 text-white shadow-sm' 
+                                                        : 'bg-white border-slate-200 text-slate-500 hover:border-purple-300 hover:bg-purple-50/50'
                                                     }`}
                                                 >
                                                     {sub}
                                                 </button>
                                             );
-                                        })
-                                    ) : (
-                                        <span className="text-xs italic text-slate-400">Genera con IA para ver opciones</span>
-                                    )}
-                                </div>
-                                <div className="mt-2">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Especificación Manual / Otro</label>
+                                        })}
+                                    </div>
                                     <input 
                                         type="text" 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs focus:ring-4 focus:ring-purple-100 focus:border-purple-400 outline-none transition-all font-medium"
                                         value={autoSynth.clasificacion_dolor?.subtipo_manual || ''}
                                         onChange={(e) => updateDeepObj('clasificacion_dolor', { subtipo_manual: e.target.value })}
-                                        placeholder="Ej: de origen inflamatorio, persistente..."
+                                        placeholder="Especificación manual / Otro..."
                                         disabled={isClosed}
                                     />
                                 </div>
                             </div>
-                            <div className="md:col-span-2 flex gap-4">
-                                <div className="flex-1">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Fundamento</label>
-                                    <textarea 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 min-h-[160px]"
-                                        value={autoSynth.clasificacion_dolor?.fundamento_breve || ''}
-                                        onChange={(e) => updateDeepObj('clasificacion_dolor', { fundamento_breve: e.target.value })}
-                                        disabled={isClosed}
-                                        rows={8}
-                                        placeholder="Describa el razonamiento clínico del dolor..."
-                                    />
+
+                            {/* C3. Fundamento Estructurado */}
+                            <div className="lg:col-span-7 flex flex-col gap-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0">C3. Fundamento Cínico Integrado (Editable)</label>
+                                
+                                <div className="space-y-4">
+                                    {/* Hallazgos que apoyan */}
+                                    <div className="relative">
+                                        <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tight">Hallazgos que apoyan hipótesis</span>
+                                        </div>
+                                        <textarea 
+                                            className="w-full bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4 pt-8 text-xs font-semibold text-emerald-900 leading-relaxed min-h-[90px] focus:ring-4 focus:ring-emerald-100 focus:border-emerald-300 outline-none transition-all resize-none"
+                                            value={(autoSynth.clasificacion_dolor?.fundamento?.apoyo || []).join('\n')}
+                                            onChange={(e) => updateDeepObj('clasificacion_dolor', { 
+                                                fundamento: { ...(autoSynth.clasificacion_dolor?.fundamento || {}), apoyo: e.target.value.split('\n') } 
+                                            })}
+                                            disabled={isClosed}
+                                            rows={3}
+                                            placeholder="Enumere hallazgos de P1, P1.5 y P2 que apoyan la categoría..."
+                                        />
+                                    </div>
+
+                                    {/* Hallazgos que hacen dudar */}
+                                    <div className="relative">
+                                        <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            <span className="text-[9px] font-black text-amber-600 uppercase tracking-tight">Hallazgos que hacen dudar / mezcla</span>
+                                        </div>
+                                        <textarea 
+                                            className="w-full bg-amber-50/30 border border-amber-100 rounded-2xl p-4 pt-8 text-xs font-semibold text-amber-900 leading-relaxed min-h-[90px] focus:ring-4 focus:ring-amber-100 focus:border-amber-300 outline-none transition-all resize-none"
+                                            value={(autoSynth.clasificacion_dolor?.fundamento?.duda_mezcla || []).join('\n')}
+                                            onChange={(e) => updateDeepObj('clasificacion_dolor', { 
+                                                fundamento: { ...(autoSynth.clasificacion_dolor?.fundamento || {}), duda_mezcla: e.target.value.split('\n') } 
+                                            })}
+                                            disabled={isClosed}
+                                            rows={3}
+                                            placeholder="Detalle elementos que obligan a cautela o sugieren mezcla de mecanismos..."
+                                        />
+                                    </div>
+
+                                    {/* Conclusión */}
+                                    <div className="relative">
+                                        <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-tight">Conclusión Clínica Integrada</span>
+                                        </div>
+                                        <textarea 
+                                            className="w-full bg-indigo-50/30 border border-indigo-100 rounded-2xl p-4 pt-8 text-sm font-bold text-indigo-900 leading-relaxed min-h-[110px] focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300 outline-none transition-all resize-none shadow-inner"
+                                            value={autoSynth.clasificacion_dolor?.fundamento?.conclusion || ''}
+                                            onChange={(e) => updateDeepObj('clasificacion_dolor', { 
+                                                fundamento: { ...(autoSynth.clasificacion_dolor?.fundamento || {}), conclusion: e.target.value } 
+                                            })}
+                                            disabled={isClosed}
+                                            rows={4}
+                                            placeholder="Redacte la síntesis final del razonamiento del dolor..."
+                                        />
+                                    </div>
                                 </div>
-                                <div className="w-1/4">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Confianza</label>
+                                <div className="flex items-center justify-end gap-3 mt-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confianza Clínica:</label>
                                     <select 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
+                                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-indigo-100 outline-none cursor-pointer"
                                         value={autoSynth.clasificacion_dolor?.nivel_confianza || ''}
                                         onChange={(e) => updateDeepObj('clasificacion_dolor', { nivel_confianza: e.target.value })}
                                         disabled={isClosed}
                                     >
-                                        <option value="">...</option>
                                         <option value="Alta">Alta</option>
                                         <option value="Media">Media</option>
                                         <option value="Baja">Baja</option>

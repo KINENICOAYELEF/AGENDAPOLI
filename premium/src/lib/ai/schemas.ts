@@ -66,13 +66,18 @@ export const DiagnosisSchema = z.object({
         alertas_clinicas: z.array(z.string())
     }),
     clasificacion_dolor: z.object({
-        opciones_categoria: z.array(z.string()).describe("Opciones sugeridas de categoría (ej: Aparente nociceptivo, Mixto)"),
-        categoria_seleccionada: z.string(),
-        opciones_subtipo_apellido: z.array(z.string()).describe("Opciones ricas de subtipo (ej: Mecánico, Inflamatorio, Sensibilización)"),
-        subtipos_seleccionados: z.array(z.string()).describe("Subtipos elegidos por la IA o el usuario"),
-        subtipo_manual: z.string().nullish().describe("Texto manual si el usuario escribe su propio subtipo"),
-        fundamento_breve: z.string(),
-        nivel_confianza: z.string()
+        // C1. Categoría principal (Selección única)
+        categoria: z.enum(['nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente']).describe("Categoría principal del dolor"),
+        // C2. Subtipos / Apellidos (Multiselección)
+        subtipos: z.array(z.string()).describe("Subtipos o apellidos sugeridos (multiselección)"),
+        subtipo_manual: z.string().nullish().describe("Texto manual para 'otro' subtipo"),
+        // C3. Fundamento clínico estructurado
+        fundamento: z.object({
+            apoyo: z.array(z.string()).describe("Hallazgos de P1/P1.5/P2/Expediente que apoyan la hipótesis principal"),
+            duda_mezcla: z.array(z.string()).describe("Hallazgos que hacen dudar o sugieren mezcla de mecanismos / cautela"),
+            conclusion: z.string().describe("Conclusión clínica integrada del caso")
+        }),
+        nivel_confianza: z.string().describe("Nivel de confianza clínica (Alta, Media, Baja)")
     }),
     sistema_y_estructuras: z.object({
         sistemas_principales: z.array(z.string()),
