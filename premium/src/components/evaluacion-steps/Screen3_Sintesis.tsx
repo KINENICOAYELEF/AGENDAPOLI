@@ -538,118 +538,164 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             </div>
 
                             {/* D2. ESTRUCTURAS */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {/* Principales */}
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Principales
-                                    </label>
-                                    <div className="bg-indigo-50/30 border border-indigo-100 rounded-2xl p-5 min-h-[120px] flex flex-col">
-                                        <div className="flex flex-wrap gap-2 flex-1">
-                                            {(autoSynth.sistema_y_estructuras?.estructuras?.principales || []).map((item: string, idx: number) => (
-                                                <div key={idx} className="bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-800 shadow-sm flex items-center gap-2">
-                                                    {item}
-                                                    {!isClosed && <button onClick={() => {
-                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
-                                                        const nextE = { ...baseE, principales: (baseE.principales || []).filter((_: any, i: number) => i !== idx) };
-                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
-                                                    }} className="hover:text-rose-500">✕</button>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {!isClosed && (
-                                            <input 
-                                                className="bg-transparent border-b border-indigo-200 text-[10px] py-1 outline-none w-full mt-4"
-                                                placeholder="+ Añadir principal..."
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
-                                                        if (val) {
-                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.principales || [];
-                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), principales: [...current, val] } });
-                                                            (e.currentTarget as HTMLInputElement).value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Secundarias */}
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span> Secundarias / Sospecha
-                                    </label>
-                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 min-h-[120px] flex flex-col">
-                                        <div className="flex flex-wrap gap-2 flex-1">
-                                            {(autoSynth.sistema_y_estructuras?.estructuras?.secundarias || []).map((item: string, idx: number) => (
-                                                <div key={idx} className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 shadow-sm flex items-center gap-2">
-                                                    {item}
-                                                    {!isClosed && <button onClick={() => {
-                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
-                                                        const nextE = { ...baseE, secundarias: (baseE.secundarias || []).filter((_: any, i: number) => i !== idx) };
-                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
-                                                    }} className="hover:text-rose-500">✕</button>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {!isClosed && (
-                                            <input 
-                                                className="bg-transparent border-b border-slate-200 text-[10px] py-1 outline-none w-full mt-4"
-                                                placeholder="+ Añadir secundaria..."
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
-                                                        if (val) {
-                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.secundarias || [];
-                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), secundarias: [...current, val] } });
-                                                            (e.currentTarget as HTMLInputElement).value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Asociadas */}
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span> Asociadas / Moduladoras
-                                    </label>
-                                    <div className="bg-amber-50/30 border border-amber-100 rounded-2xl p-5 min-h-[120px] flex flex-col">
-                                        <div className="flex flex-wrap gap-2 flex-1">
-                                            {(autoSynth.sistema_y_estructuras?.estructuras?.asociadas_moduladoras || []).map((item: string, idx: number) => (
-                                                <div key={idx} className="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-amber-800 shadow-sm flex items-center gap-2">
-                                                    {item}
-                                                    {!isClosed && <button onClick={() => {
-                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
-                                                        const nextE = { ...baseE, asociadas_moduladoras: (baseE.asociadas_moduladoras || []).filter((_: any, i: number) => i !== idx) };
-                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
-                                                    }} className="hover:text-rose-500">✕</button>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {!isClosed && (
-                                            <input 
-                                                className="bg-transparent border-b border-amber-200 text-[10px] py-1 outline-none w-full mt-4"
-                                                placeholder="+ Añadir asociada..."
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
-                                                        if (val) {
-                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.asociadas_moduladoras || [];
-                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), asociadas_moduladoras: [...current, val] } });
-                                                            (e.currentTarget as HTMLInputElement).value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                             {/* D2. ESTRUCTURAS */}
+                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                 {/* Principales */}
+                                 <div className="space-y-3">
+                                     <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                         <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Principales
+                                     </label>
+                                     <div className="bg-indigo-50/30 border border-indigo-100 rounded-2xl p-4 min-h-[160px] flex flex-col gap-3">
+                                         <div className="space-y-3 flex-1">
+                                             {(autoSynth.sistema_y_estructuras?.estructuras?.principales || []).map((item: any, idx: number) => (
+                                                 <div key={idx} className="bg-white border border-indigo-100 rounded-xl p-3 shadow-sm hover:border-indigo-300 transition-all flex flex-col gap-1.5 relative group">
+                                                     <div className="flex items-center justify-between">
+                                                         <span className="text-[11px] font-black text-indigo-900 leading-tight pr-5">{item.nombre}</span>
+                                                         {!isClosed && <button onClick={() => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextE = { ...baseE, principales: (baseE.principales || []).filter((_: any, i: number) => i !== idx) };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                         }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
+                                                     </div>
+                                                     <textarea 
+                                                         className="text-[10px] text-indigo-700/70 bg-indigo-50/50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-indigo-800 transition-all"
+                                                         placeholder="Argumento clínico..."
+                                                         value={item.argumento || ''}
+                                                         onChange={(e) => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextP = [...(baseE.principales || [])];
+                                                             nextP[idx] = { ...nextP[idx], argumento: e.target.value };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, principales: nextP } });
+                                                         }}
+                                                         disabled={isClosed}
+                                                     />
+                                                 </div>
+                                             ))}
+                                         </div>
+                                         {!isClosed && (
+                                             <input 
+                                                 className="bg-transparent border-b border-indigo-200 text-[10px] py-1 outline-none w-full mt-2"
+                                                 placeholder="+ Añadir principal..."
+                                                 onKeyDown={(e) => {
+                                                     if (e.key === 'Enter') {
+                                                         const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                         if (val) {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const current = baseE.principales || [];
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, principales: [...current, { nombre: val, argumento: '' }] } });
+                                                             (e.currentTarget as HTMLInputElement).value = '';
+                                                         }
+                                                     }
+                                                 }}
+                                             />
+                                         )}
+                                     </div>
+                                 </div>
+ 
+                                 {/* Secundarias */}
+                                 <div className="space-y-3">
+                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                         <span className="w-2 h-2 rounded-full bg-slate-500"></span> Secundarias / Sospecha
+                                     </label>
+                                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 min-h-[160px] flex flex-col gap-3">
+                                         <div className="space-y-3 flex-1">
+                                             {(autoSynth.sistema_y_estructuras?.estructuras?.secundarias || []).map((item: any, idx: number) => (
+                                                 <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-slate-300 transition-all flex flex-col gap-1.5 relative group">
+                                                     <div className="flex items-center justify-between">
+                                                         <span className="text-[11px] font-black text-slate-800 leading-tight pr-5">{item.nombre}</span>
+                                                         {!isClosed && <button onClick={() => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextE = { ...baseE, secundarias: (baseE.secundarias || []).filter((_: any, i: number) => i !== idx) };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                         }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
+                                                     </div>
+                                                     <textarea 
+                                                         className="text-[10px] text-slate-600/70 bg-slate-50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-slate-800 transition-all"
+                                                         placeholder="Argumento clínico..."
+                                                         value={item.argumento || ''}
+                                                         onChange={(e) => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextS = [...(baseE.secundarias || [])];
+                                                             nextS[idx] = { ...nextS[idx], argumento: e.target.value };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, secundarias: nextS } });
+                                                         }}
+                                                         disabled={isClosed}
+                                                     />
+                                                 </div>
+                                             ))}
+                                         </div>
+                                         {!isClosed && (
+                                             <input 
+                                                 className="bg-transparent border-b border-slate-200 text-[10px] py-1 outline-none w-full mt-2"
+                                                 placeholder="+ Añadir secundaria..."
+                                                 onKeyDown={(e) => {
+                                                     if (e.key === 'Enter') {
+                                                         const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                         if (val) {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const current = baseE.secundarias || [];
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, secundarias: [...current, { nombre: val, argumento: '' }] } });
+                                                             (e.currentTarget as HTMLInputElement).value = '';
+                                                         }
+                                                     }
+                                                 }}
+                                             />
+                                         )}
+                                     </div>
+                                 </div>
+ 
+                                 {/* Asociadas */}
+                                 <div className="space-y-3">
+                                     <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                         <span className="w-2 h-2 rounded-full bg-amber-500"></span> Asociadas / Moduladoras
+                                     </label>
+                                     <div className="bg-amber-50/30 border border-amber-100 rounded-2xl p-4 min-h-[160px] flex flex-col gap-3">
+                                         <div className="space-y-3 flex-1">
+                                             {(autoSynth.sistema_y_estructuras?.estructuras?.asociadas_moduladoras || []).map((item: any, idx: number) => (
+                                                 <div key={idx} className="bg-white border border-amber-100 rounded-xl p-3 shadow-sm hover:border-amber-300 transition-all flex flex-col gap-1.5 relative group">
+                                                     <div className="flex items-center justify-between">
+                                                         <span className="text-[11px] font-black text-amber-900 leading-tight pr-5">{item.nombre}</span>
+                                                         {!isClosed && <button onClick={() => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextE = { ...baseE, asociadas_moduladoras: (baseE.asociadas_moduladoras || []).filter((_: any, i: number) => i !== idx) };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                         }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
+                                                     </div>
+                                                     <textarea 
+                                                         className="text-[10px] text-amber-700/70 bg-amber-50/50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-amber-800 transition-all"
+                                                         placeholder="Argumento clínico..."
+                                                         value={item.argumento || ''}
+                                                         onChange={(e) => {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const nextA = [...(baseE.asociadas_moduladoras || [])];
+                                                             nextA[idx] = { ...nextA[idx], argumento: e.target.value };
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, asociadas_moduladoras: nextA } });
+                                                         }}
+                                                         disabled={isClosed}
+                                                     />
+                                                 </div>
+                                             ))}
+                                         </div>
+                                         {!isClosed && (
+                                             <input 
+                                                 className="bg-transparent border-b border-amber-200 text-[10px] py-1 outline-none w-full mt-2"
+                                                 placeholder="+ Añadir asociada..."
+                                                 onKeyDown={(e) => {
+                                                     if (e.key === 'Enter') {
+                                                         const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                         if (val) {
+                                                             const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                             const current = baseE.asociadas_moduladoras || [];
+                                                             updateDeepObj('sistema_y_estructuras', { estructuras: { ...baseE, asociadas_moduladoras: [...current, { nombre: val, argumento: '' }] } });
+                                                             (e.currentTarget as HTMLInputElement).value = '';
+                                                         }
+                                                     }
+                                                 }}
+                                             />
+                                         )}
+                                     </div>
+                                 </div>
+                             </div>
 
                             {/* Resumen P4 */}
                             <div className="relative mt-4">

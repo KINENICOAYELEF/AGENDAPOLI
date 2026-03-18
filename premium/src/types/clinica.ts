@@ -957,9 +957,9 @@ export interface EvaluacionInicial extends BaseEvaluacion {
         sistema_y_estructuras?: {
             sistemas_involucrados: string[]; // D1
             estructuras: {
-                principales: string[]; // D2
-                secundarias: string[];
-                asociadas_moduladoras: string[];
+                principales: Array<{ nombre: string; argumento: string }>; // D2
+                secundarias: Array<{ nombre: string; argumento: string }>;
+                asociadas_moduladoras: Array<{ nombre: string; argumento: string }>;
             };
             estructuras_mas_afectan: string;
         };

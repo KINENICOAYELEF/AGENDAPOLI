@@ -61,29 +61,28 @@ export async function POST(req: Request) {
   },
   "clasificacion_dolor": { "categoria": "nociceptivo|neuropático|nociplástico|mixto|no_concluyente", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": [], "duda_mezcla": [], "conclusion": "" }, "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { 
-    "sistemas_involucrados": ["musculoesquelético articular", "neural periférico"], 
+    "sistemas_involucrados": ["musculoesquelético articular"], 
     "estructuras": {
-        "principales": ["Ligamentos sacroilíacos"],
-        "secundarias": ["Cápsula articular", "Musculatura glútea"],
-        "asociadas_moduladoras": ["Segmentos L4-L5", "Piso pélvico"]
+        "principales": [{ "nombre": "Articulación Sacroilíaca", "argumento": "Reproducción de síntomas en test de Laslett y reporte de dolor profundo en P1." }],
+        "secundarias": [{ "nombre": "Ligamentos Sacroilíacos", "argumento": "Sensibilidad exquisita a la palpación profunda en examen físico P2." }],
+        "asociadas_moduladoras": [{ "nombre": "Segmentos L4-L5", "argumento": "Antecedente de discopatía en expediente que podría modular el síntoma referido." }]
     },
-    "estructuras_mas_afectan": "Compromiso principal del complejo ligamentoso sacroilíaco con modulación lumbopélvica." 
+    "estructuras_mas_afectan": "Disfunción de carga e irritabilidad ligamentosa sacroilíaca con influencia lumbar." 
   },
   "alteraciones_detectadas": { 
     "estructurales": [
-      { "estructura_involucrada": "Tendón Rotuliano", "alteracion_sospecha": "Tendinosis (Reportado en P1)", "certeza": "probable", "fundamento_clinico": "Reporte de imagen previa mas dolor localizado." },
-      { "estructura_involucrada": "Sistema Cardiovascular", "alteracion_sospecha": "Disfunción endotelial leve", "certeza": "posible", "fundamento_clinico": "Antecedente crónico de HTA." }
+      { "estructura_involucrada": "Ligamentos Sacroilíacos", "alteracion_sospecha": "Disfunción mecánica", "certeza": "probable", "fundamento_clinico": "Palpación dolorosa y tests de provocación positivos." }
     ], 
-    "functional": [{ "texto": "Disminución de tolerancia a la carga excéntrica", "severidad": "moderada" }] 
+    "functional": [{ "texto": "Limitación en la carga de peso monodal", "severidad": "moderada" }] 
   },
-  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Dificultad para bajar escaleras", "severidad": "moderada" }], "restricciones_participacion": [{ "texto": "Entrenamiento de running", "severidad": "leve" }] },
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Caminar tramos largos", "severidad": "moderada" }], "restricciones_participacion": [{ "texto": "Vida laboral", "severidad": "leve" }] },
   "factores_biopsicosociales": { 
-    "factores_personales_positivos": ["Alta motivación", "Red de apoyo"], 
-    "factores_personales_negativos": ["Estrés laboral", "Falta de sueño"], 
-    "facilitadores_ambientales": ["Gimnasio cerca"], 
-    "barreras_ambientales": ["Falta de tiempo", "Clima extremo"] 
+    "factores_personales_positivos": [], 
+    "factores_personales_negativos": [], 
+    "facilitadores_ambientales": [], 
+    "barreras_ambientales": [] 
   },
-  "recordatorios_y_coherencia": { "recordatorios_clinicos": ["Vigilar fatiga"], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
+  "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
 } `;
 
         const userPrompt = `
@@ -100,7 +99,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.2.0',
+            promptVersion: 'v3.2.1',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });

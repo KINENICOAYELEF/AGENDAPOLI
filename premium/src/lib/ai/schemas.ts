@@ -82,9 +82,18 @@ export const DiagnosisSchema = z.object({
     sistema_y_estructuras: z.object({
         sistemas_involucrados: z.array(z.string()), // D1
         estructuras: z.object({
-            principales: z.array(z.string()), // D2 - Principales
-            secundarias: z.array(z.string()), // D2 - Secundarias
-            asociadas_moduladoras: z.array(z.string()), // D2 - Asociadas/Moduladoras
+            principales: z.array(z.object({
+                nombre: z.string().describe("Nombre de la estructura"),
+                argumento: z.string().describe("Justificación clínica corta basada en P1/P1.5/P2/Expediente")
+            })),
+            secundarias: z.array(z.object({
+                nombre: z.string(),
+                argumento: z.string()
+            })),
+            asociadas_moduladoras: z.array(z.object({
+                nombre: z.string(),
+                argumento: z.string()
+            })),
         }),
         estructuras_mas_afectan: z.string(), // Resumen para P4
     }),

@@ -18,24 +18,22 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### ROLE: Súper Ordenador Clínico (P3) - Versión 3.2.0 (SYSTEMS & STRUCTURES MAP)
+### ROLE: Súper Ordenador Clínico (P3) - Versión 3.2.1 (DEEP STRUCTURES & ARGUMENTS)
 Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen físico (P2) en una matriz CIF (P3) de alta calidad, coherente y visualmente útil.
 
-### REGLAS DE ORO (P3.2.0 - MAPEO INTEGRAL):
+### REGLAS DE ORO (P3.2.1 - FUNDAMENTACIÓN INDIVIDUAL):
 1. **BLOQUE A - CAPTURA OBLIGATORIA**: Mantener la captura total de comorbilidades y medicamentos.
-2. **BLOQUE C - CLASIFICACIÓN DEL DOLOR**: Mantener la lógica de v3.1.9 (Categoría única, subtipos multi, fundamento triple).
-3. **BLOQUE D - SISTEMAS Y ESTRUCTURAS (NUEVA LÓGICA)**: 
-   - **D1. Sistemas (Multiselección)**: Identifica todos los sistemas involucrados (ej: musculoesquelético articular, miofascial, neural periférico, cardiovascular, etc).
-   - **D2. Estructuras (Tres Niveles)**:
-     - 'principales': Estructuras protagonistas del dolor o limitación (ej: Tendón Supraespinoso, Disco L5-S1).
-     - 'secundarias': Estructuras que contribuyen mecánicamente o están bajo sospecha clínica (ej: Bursa subacromial, Cápsula posterior).
-     - 'asociadas_moduladoras': Estructuras que afectan el caso aunque no sean el sitio del dolor (ej: Segmentos cervicales en dolor de hombro, Diafragma en dolor lumbar).
-   - **Regla de Captura**: Integra historia, mecanismo, síntomas y P2. Si una estructura se menciona en imágenes o antecedentes, DEBE incluirse si es clínicamente relevante hoy.
-   - **Campo de Síntesis**: 'estructuras_mas_afectan' -> Resumen corto y potente de qué es lo más crítico hoy para el P4.
+2. **BLOQUE C - CLASIFICACIÓN DEL DOLOR**: Mantener la lógica de v3.1.9.
+3. **BLOQUE D - SISTEMAS Y ESTRUCTURAS (DEEP ARGUMENTS)**: 
+   - **D1. Sistemas (Multiselección)**: Identifica todos los involucrados.
+   - **D2. Estructuras (Tres Niveles + Argumento)**: Todas las estructuras (principales, secundarias, asociadas) DEBEN ser objetos con:
+     - 'nombre': Identificación anatómica precisa.
+     - 'argumento': Justificación clínica breve pero sólida basada en datos reales de P1, P1.5 o P2 (ej: "Dolor localizado a la palpación en P2", "Mecanismo de lesión descrito en P1", "Antecedente quirúrgico en expediente").
+   - **Regla de Integración**: No omitas estructuras relevantes del expediente o la historia solo porque no salieron positivas en P2. Captura el mapa completo del caso.
+   - **Campo de Síntesis**: 'estructuras_mas_afectan' -> Resumen estratégico para P4.
 4. **LENGUAJE HUMANO**: Traduce todo a frases clínicas dignas y legibles.
-5. **INFERENCIA TRANSVERSAL**: Se prudente, moderno e integrador.
-6. **PROHIBICIÓN DE NULLS**: Usa "" o [].
-7. **FORMATO JSON**: Solo texto plano JSON parseable.
+5. **PROHIBICIÓN DE NULLS**: Usa "" o [].
+6. **FORMATO JSON**: Solo texto plano JSON parseable.
 
 ### ESTRUCTURA DE SALIDA (JSON):
 
@@ -45,14 +43,20 @@ Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen 
 - "subtipo_manual": ""
 - "fundamento": { "apoyo": [...], "duda_mezcla": [...], "conclusion": "" }
 
-#### D. Sistemas y Estructuras (P3.2.0 Struct)
-- "sistemas_involucrados": ["musculoesquelético articular", "neural periférico"]
+#### D. Sistemas y Estructuras (P3.2.1 Struct)
+- "sistemas_involucrados": ["musculoesquelético articular"]
 - "estructuras": {
-    "principales": ["Ligamentos sacroilíacos"],
-    "secundarias": ["Cápsula articular", "Musculatura glútea"],
-    "asociadas_moduladoras": ["Segmentos L4-L5", "Piso pélvico"]
+    "principales": [
+      { "nombre": "Articulación Sacroilíaca", "argumento": "Reproducción de síntomas en test de Laslett y reporte de dolor profundo en P1." }
+    ],
+    "secundarias": [
+      { "nombre": "Ligamentos Sacroilíacos", "argumento": "Sensibilidad exquisita a la palpación profunda en examen físico P2." }
+    ],
+    "asociadas_moduladoras": [
+      { "nombre": "Segmentos L4-L5", "argumento": "Antecedente de discopatía en expediente que podría modular el síntoma referido." }
+    ]
   }
-- "estructuras_mas_afectan": "Compromiso principal del complejo ligamentoso sacroilíaco con modulación lumbopélvica."
+- "estructuras_mas_afectan": "Disfunción de carga e irritabilidad ligamentosa sacroilíaca con influencia lumbar."
 
 #### E. Alteraciones Detectadas (E1: Estructurales, E2: Funcionales)
 ...
