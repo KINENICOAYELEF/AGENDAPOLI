@@ -913,12 +913,28 @@ export interface EvaluacionInicial extends BaseEvaluacion {
     // PANTALLA 3: SINTESIS Y CLASIFICACION (Motor / IA Ordenador)
     autoSynthesis?: {
         snapshot_clinico?: {
-            nombre?: string;
-            edad?: string;
-            sexo?: string;
+            // A1. Identificación clínica relevante
+            identificacion: {
+                nombre: string;
+                edad: string;
+                sexo: string;
+            };
+            // A2. Contexto basal que modifica el caso
+            contexto_basal: {
+                ocupacion: string;
+                deporte_actividad: string;
+                demanda_fisica: string;
+                ayudas_tecnicas?: string;
+            };
+            // A3. Factores clínicos relevantes para el episodio
+            factores_relevantes: {
+                comorbilidades: string[];
+                medicamentos: string[];
+                antecedentes_msk: string[];
+                observaciones_seguridad: string[];
+            };
+            // Datos de proceso P3
             foco_y_lado: string;
-            deporte_basal?: string;
-            comorbilidades?: string;
             irritabilidad_sugerida: string;
             tolerancia_carga: {
                 nivel: string;
