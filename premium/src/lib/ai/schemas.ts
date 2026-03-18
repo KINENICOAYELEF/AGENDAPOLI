@@ -84,22 +84,22 @@ export const DiagnosisSchema = z.object({
         estructurales: z.array(z.object({
             estructura_involucrada: z.string().describe("Estructura específica involucrada (ej: Ligamentos sacroilíacos)"),
             alteracion_sospecha: z.string().describe("Disfunción o sospecha (ej: Irritación / compromiso)"),
-            certeza: z.enum(['casi_confirmada', 'probable', 'posible', 'no_concluyente']),
+            certeza: z.string().describe("Certeza: casi_confirmada | probable | posible | no_concluyente"),
             fundamento_clinico: z.string().describe("Cluster, signos, síntomas o imágenes que lo respaldan")
         })),
         functional: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
+            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
         }))
     }),
     actividad_y_participacion: z.object({
         limitaciones_directas: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
+            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
         })),
         restricciones_participacion: z.array(z.object({
             texto: z.string(),
-            severidad: z.enum(['leve', 'ligera', 'moderada', 'severa', 'completa'])
+            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
         }))
     }),
     factores_biopsicosociales: z.object({
