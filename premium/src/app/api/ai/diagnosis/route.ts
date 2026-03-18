@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     "tarea_indice": "Bajar escaleras",
     "alertas_clinicas": ["Dolor nocturno leve"]
   },
-  "clasificacion_dolor": { "opciones_categoria": [], "categoria_seleccionada": "", "opciones_subtipo_apellido": [], "subtipos_seleccionados": [], "subtipo_manual": "", "fundamento_breve": "", "nivel_confianza": "Alta|Media|Baja" },
+  "clasificacion_dolor": { "categoria": "nociceptivo|neuropático|nociplástico|mixto|no_concluyente", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": [], "duda_mezcla": [], "conclusion": "" }, "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { 
     "sistemas_principales": ["Músculo-Esquelético", "Cardiovascular (por HTA)"], 
     "estructuras_principales": ["Tendón Rotuliano", "Articulación Femorotibial"], 
@@ -97,7 +97,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.1.8',
+            promptVersion: 'v3.1.9',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
