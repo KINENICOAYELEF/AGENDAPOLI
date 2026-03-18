@@ -27,9 +27,10 @@ Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen 
    - *Hipotiroidismo/HTA*: INCLUIR si afecta fatiga, esfuerzo o respuesta cardiovascular.
    - *Medicamentos*: INCLUIR si modulan dolor, somnolencia, fatiga o equilibrio.
    - *Antecedentes MSK*: INCLUIR si cambian la hipótesis o el pronóstico.
-2. **BLOQUE A - FUSIÓN Y CAPTURA TOTAL**: Lee en orden: expediente.identificación -> expediente.contexto basal -> p15_context_structured -> p1_ai_structured -> p2_summary_structured.
-   - **CAPTURA OBLIGATORIA**: Debes capturar Nombre, Edad y Sexo del expediente si están presentes. NO inventes "No consignado" si el dato existe en el payload inicial.
-   - **ROLES PROFESIONALES**: Si la persona tiene múltiples roles (ej: "Kinesióloga e Instructora de Yoga"), lístalos TODOS en ocupación. No resumas.
+2. **BLOQUE A - FUSIÓN Y CAPTURA TOTAL (REGLA DE ORO)**: 
+   - **DATOS DE IDENTIDAD**: Debes extraer Nombre, Edad y Sexo EXCLUSIVAMENTE del objeto "demographics" enviado en el payload. NO busques en otros textos si ahí están definidos. Si dice "Fernanda", pon "Fernanda". No inventes "No especificado".
+   - **ROLES PROFESIONALES**: Si la persona tiene múltiples roles (ej: "Kinesióloga e Instructora de Yoga"), lístalos TODOS en ocupación. Es CRÍTICO para la demanda física. No resumas a un solo rol.
+   - **FUSIÓN**: Lee en orden: demographics -> p15_core -> p1_core -> p2_core.
 3. **LENGUAJE HUMANO (SIN CÓDIGOS)**: Prohibido usar "amateur_competitivo_6", "med_flag_1", etc. Traduce todo a frases clínicas dignas y legibles.
 4. **INFERENCIA TRANSVERSAL**: Mantén la lógica de P3.1.6 (inferir alteraciones de todo el expediente).
 5. **COHERENCIA D/E1**: Rigurosidad máxima en mapeo de sistemas y estructuras.
