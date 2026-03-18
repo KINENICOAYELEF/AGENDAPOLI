@@ -334,6 +334,42 @@ export function Screen15_AnamnesisRemota({
 
     const [history, setHistory] = useState<RemoteHistory>(deepMergeWithInitial(formData.remoteHistorySnapshot as any));
 
+    // FASE 63 Fix A: Cargar identidad del paciente SIEMPRE, independientemente del snapshot
+    useEffect(() => {
+        if (!globalActiveYear || !usuariaId) return;
+        const fetchIdentity = async () => {
+            try {
+                const docRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as PersonaUsuaria;
+                    const identity = data.identity || ({} as any);
+                    if (identity.fullName || identity.fechaNacimiento || identity.sexoRegistrado) {
+                        const identity_paciente = {
+                            fullName: identity.fullName || '',
+                            fechaNacimiento: identity.fechaNacimiento || '',
+                            edad: identity.edad || null,
+                            sexoRegistrado: identity.sexoRegistrado || ''
+                        };
+                        // Inject identity_paciente into current snapshot without triggering full rebuild
+                        updateFormData({ 
+                            remoteHistorySnapshot: { 
+                                ...(formData.remoteHistorySnapshot as any),
+                                identity_paciente 
+                            } 
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn("[Screen15] No se pudo cargar identidad del paciente:", err);
+            }
+        };
+        fetchIdentity();
+    // We intentionally use [] to run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [globalActiveYear, usuariaId]);
+
+    // Carga del historial remoto (solo si no está guardado ya en el snapshot)
     useEffect(() => {
         if (formData.remoteHistorySnapshot) return;
         if (!globalActiveYear || !usuariaId) return;

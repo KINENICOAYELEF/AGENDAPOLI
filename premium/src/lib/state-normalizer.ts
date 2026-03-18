@@ -1,5 +1,8 @@
 import { EvaluacionInicial } from "@/types/clinica";
 import { buildP2SummaryStructured } from "@/utils/synthesis/builder";
+// FASE 63 Fix B: import formatters to rebuild p15 fresh (never use stale cached version)
+import { buildP15Structured, buildP15Flags } from "@/utils/remoteHistoryFormatter";
+
 export interface NormalizedCase {
     identificacion: string;
     focoPrincipal: any | null; // Tipado crudo por ahora, KineFocusArea ideal
@@ -240,8 +243,15 @@ export function buildCompactPhysicalForAI(normalized: NormalizedCase) {
 export function buildCompactCasePackage(formData: any) {
     const pat = formData.paciente || {};
     const p1_struct = formData.interview?.v4?.p1_ai_structured || {};
-    const p15_struct = formData.remoteHistorySnapshot?.p15_context_structured || {};
-    const p15_flags = formData.remoteHistorySnapshot?.p15_context_flags || {};
+    // FASE 63 Fix B: SIEMPRE reconstruir p15_context_structured desde los datos crudos
+    // NO usar la caché guardada en Firestore (puede estar desactualizada)
+    const remoteRaw = formData.remoteHistorySnapshot;
+    const p15_struct = remoteRaw 
+        ? buildP15Structured(remoteRaw as any)
+        : (formData.remoteHistorySnapshot?.p15_context_structured || {});
+    const p15_flags = remoteRaw
+        ? buildP15Flags(remoteRaw as any)
+        : (formData.remoteHistorySnapshot?.p15_context_flags || {});
     const p1_raw = formData.interview?.v4 || {};
     
     // Auto calculate if the user skipped the P2 synthesis button
