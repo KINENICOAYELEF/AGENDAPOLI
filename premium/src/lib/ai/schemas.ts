@@ -46,7 +46,7 @@ export const DiagnosisSchema = z.object({
             ocupacion: z.string(),
             deporte_actividad: z.string(),
             demanda_fisica: z.string(),
-            ayudas_tecnicas: z.string().optional(),
+            ayudas_tecnicas: z.string().nullish(),
         }),
         // A3. Factores clínicos relevantes para el episodio
         factores_relevantes: z.object({
@@ -70,7 +70,7 @@ export const DiagnosisSchema = z.object({
         categoria_seleccionada: z.string(),
         opciones_subtipo_apellido: z.array(z.string()).describe("Opciones ricas de subtipo (ej: Mecánico, Inflamatorio, Sensibilización)"),
         subtipos_seleccionados: z.array(z.string()).describe("Subtipos elegidos por la IA o el usuario"),
-        subtipo_manual: z.string().optional().describe("Texto manual si el usuario escribe su propio subtipo"),
+        subtipo_manual: z.string().nullish().describe("Texto manual si el usuario escribe su propio subtipo"),
         fundamento_breve: z.string(),
         nivel_confianza: z.string()
     }),
@@ -78,7 +78,7 @@ export const DiagnosisSchema = z.object({
         sistemas_principales: z.array(z.string()),
         estructuras_principales: z.array(z.string()),
         estructuras_secundarias: z.array(z.string()),
-        descripcion_libre: z.string().optional()
+        descripcion_libre: z.string().nullish()
     }),
     alteraciones_detectadas: z.object({
         estructurales: z.array(z.object({

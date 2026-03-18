@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       "ocupacion": "Administrativo o Estudiante (Sedentario)", 
       "deporte_actividad": "Running 3v/sem (Amateur)", 
       "demanda_fisica": "Baja en oficina, Alta en cerro", 
-      "ayudas_tecnicas": "Plantillas ortopédicas"
+      "ayudas_tecnicas": ""
     },
     "factores_relevantes": { 
       "comorbilidades": ["HTA controlada"], 
