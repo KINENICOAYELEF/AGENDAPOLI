@@ -135,71 +135,161 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                     <h3 className="font-black text-slate-800 flex items-center gap-2">
                         <span className="text-xl">📋</span> A. Snapshot Clínico del Proceso
                     </h3>
-                    {autoSynth.snapshot_clinico?.tolerancia_carga?.nivel && (
-                        <span className="px-3 py-1 rounded-full text-[10px] uppercase font-black bg-indigo-600 text-white shadow-sm tracking-widest">
-                            Sintetizado por IA v3.1.4
-                        </span>
-                    )}
+                    <span className="px-3 py-1 rounded-full text-[10px] uppercase font-black bg-indigo-600 text-white shadow-sm tracking-widest">
+                        Sintetizado por IA v3.1.7
+                    </span>
                 </div>
                 
-                <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        {/* Identificación Real */}
-                        <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50">
-                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-1">Persona Usuaria</span>
-                            <div className="font-bold text-slate-900 text-lg leading-tight">
-                                {autoSynth.snapshot_clinico?.nombre || persona?.fullName || (persona?.nombres ? `${persona.nombres} ${persona.apellidos || ''}`.trim() : 'Nombre no disponible')}
-                            </div>
-                            <div className="text-xs text-slate-500 mt-1 font-medium">
-                                {autoSynth.snapshot_clinico?.edad || (persona?.fechaNacimiento ? `${new Date().getFullYear() - new Date(persona.fechaNacimiento).getFullYear()} años` : (persona?.edad ? `${persona.edad} años` : 'Edad N/A'))} • {autoSynth.snapshot_clinico?.sexo || persona?.sexoRegistrado || persona?.sexo || 'Sexo N/A'}
+                <div className="p-7">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* A1. Identificación clínica relevante */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> A1. Identificación
+                            </h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Nombre Completo</label>
+                                    <input 
+                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-slate-900 transition-all p-0"
+                                        value={autoSynth.snapshot_clinico?.identificacion?.nombre || persona?.fullName || (persona?.nombres ? `${persona.nombres} ${persona.apellidos || ''}`.trim() : 'No consignado')}
+                                        onChange={(e) => updateDeepObj('snapshot_clinico', { 
+                                            identificacion: { ...(autoSynth.snapshot_clinico?.identificacion || {}), nombre: e.target.value } 
+                                        })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Edad</label>
+                                        <input 
+                                            className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-slate-800 transition-all p-0"
+                                            value={autoSynth.snapshot_clinico?.identificacion?.edad || (persona?.fechaNacimiento ? `${new Date().getFullYear() - new Date(persona.fechaNacimiento).getFullYear()} años` : (persona?.edad ? `${persona.edad} años` : 'No consignado'))}
+                                            onChange={(e) => updateDeepObj('snapshot_clinico', { 
+                                                identificacion: { ...(autoSynth.snapshot_clinico?.identificacion || {}), edad: e.target.value } 
+                                            })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Sexo</label>
+                                        <input 
+                                            className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-slate-800 transition-all p-0"
+                                            value={autoSynth.snapshot_clinico?.identificacion?.sexo || persona?.sexoRegistrado || persona?.sexo || 'No consignado'}
+                                            onChange={(e) => updateDeepObj('snapshot_clinico', { 
+                                                identificacion: { ...(autoSynth.snapshot_clinico?.identificacion || {}), sexo: e.target.value } 
+                                            })}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Motivo y Foco */}
-                        <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                            <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Foco / Lado</span>
-                                <div className="font-bold text-slate-800">
-                                    {autoSynth.snapshot_clinico?.foco_y_lado || (normalizedCase.focoPrincipal ? `${normalizedCase.focoPrincipal.region || 'S/N'} (${normalizedCase.ladoPrincipal})` : 'No definido')}
+                        {/* A2. Contexto basal que modifica el caso */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> A2. Contexto Basal
+                            </h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Ocupación / Demanda Laboral</label>
+                                    <textarea 
+                                        rows={1}
+                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-slate-800 transition-all p-0 resize-none text-xs"
+                                        value={autoSynth.snapshot_clinico?.contexto_basal?.ocupacion || 'No consignado'}
+                                        onChange={(e) => updateDeepObj('snapshot_clinico', { 
+                                            contexto_basal: { ...(autoSynth.snapshot_clinico?.contexto_basal || {}), ocupacion: e.target.value } 
+                                        })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Deporte / Actividad Principal</label>
+                                    <textarea 
+                                        rows={1}
+                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-slate-800 transition-all p-0 resize-none text-xs"
+                                        value={autoSynth.snapshot_clinico?.contexto_basal?.deporte_actividad || anamnesisV4?.contextoDeportivo?.deportePrincipal || 'No consignado'}
+                                        onChange={(e) => updateDeepObj('snapshot_clinico', { 
+                                            contexto_basal: { ...(autoSynth.snapshot_clinico?.contexto_basal || {}), deporte_actividad: e.target.value } 
+                                        })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Demanda Física / Ayudas Técnicas</label>
+                                    <div className="text-xs font-bold text-slate-700 leading-tight">
+                                        {autoSynth.snapshot_clinico?.contexto_basal?.demanda_fisica || 'No consignado'}
+                                        {autoSynth.snapshot_clinico?.contexto_basal?.ayudas_tecnicas && autoSynth.snapshot_clinico.contexto_basal.ayudas_tecnicas !== 'No consignado' && (
+                                            <span className="text-indigo-600"> • {autoSynth.snapshot_clinico.contexto_basal.ayudas_tecnicas}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Irritabilidad</span>
-                                <div className="flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${
-                                        (autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad) === 'Alta' ? 'bg-rose-500 animate-pulse' : 
-                                        (autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad) === 'Media' ? 'bg-amber-500' : 'bg-emerald-500'
-                                    }`} />
-                                    <span className="font-bold text-slate-800">{autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad}</span>
+                        </div>
+
+                        {/* A3. Factores clínicos relevantes para el episodio */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> A3. Factores Clínicos Relevantes
+                            </h4>
+                            <div className="space-y-3">
+                                <div className="flex flex-wrap gap-1">
+                                    <span className="text-[9px] font-black text-rose-500 uppercase">Comorbilidades:</span>
+                                    <span className="text-[11px] font-bold text-slate-700">
+                                        {(autoSynth.snapshot_clinico?.factores_relevantes?.comorbilidades || []).join(', ') || 'Sin hallazgos modulantes'}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                    <span className="text-[9px] font-black text-amber-500 uppercase">Medicamentos:</span>
+                                    <span className="text-[11px] font-bold text-slate-700">
+                                        {(autoSynth.snapshot_clinico?.factores_relevantes?.medicamentos || []).join(', ') || 'No consignado'}
+                                    </span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase">Antecedentes MSK:</span>
+                                    <span className="text-[11px] font-bold text-slate-700">
+                                        {(autoSynth.snapshot_clinico?.factores_relevantes?.antecedentes_msk || []).join(', ') || 'No consignado'}
+                                    </span>
+                                </div>
+                                <div className="mt-2 bg-white/50 border border-slate-200 rounded-lg p-2">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Seguridad / Pronóstico</span>
+                                    <p className="text-[11px] font-medium text-slate-600 leading-tight italic">
+                                        {(autoSynth.snapshot_clinico?.factores_relevantes?.observaciones_seguridad || []).join(' | ') || 'Sin observaciones críticas'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Deporte / Actividad</span>
-                            <span className="text-xs font-bold text-slate-700">{autoSynth.snapshot_clinico?.deporte_basal || anamnesisV4?.contextoDeportivo?.deportePrincipal || 'No especificado'}</span>
+                    {/* Zona de Proceso P3 (Foco, Irritabilidad, Tolerancia) */}
+                    <div className="mt-6 flex flex-col md:flex-row gap-4 border-t pt-6 border-slate-100">
+                        <div className="flex-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Foco / Lado del Proceso</label>
+                            <div className="font-bold text-slate-800 text-sm">
+                                {autoSynth.snapshot_clinico?.foco_y_lado || (normalizedCase.focoPrincipal ? `${normalizedCase.focoPrincipal.region || 'S/N'} (${normalizedCase.ladoPrincipal})` : 'No definido')}
+                            </div>
                         </div>
-                        <div className="bg-rose-50/30 p-3 rounded-xl border border-rose-100/30 md:col-span-2">
-                            <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest block mb-1">Comorbilidades / Alertas Médicas</span>
-                            <span className="text-xs font-bold text-rose-700 leading-tight">
-                                {autoSynth.snapshot_clinico?.comorbilidades || persona?.diagnosticosMedicos?.join(', ') || 'Sin comorbilidades registradas'}
-                            </span>
+                        <div className="w-px bg-slate-100 hidden md:block"></div>
+                        <div className="flex-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Irritabilidad Sugerida</label>
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${
+                                    (autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad) === 'Alta' ? 'bg-rose-500 animate-pulse' : 
+                                    (autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad) === 'Media' ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`} />
+                                <span className="font-bold text-slate-800 text-sm">{autoSynth.snapshot_clinico?.irritabilidad_sugerida || normalizedCase.irritabilidad}</span>
+                            </div>
                         </div>
-                        <div className="bg-indigo-600 p-3 rounded-xl shadow-lg shadow-indigo-100 flex flex-col justify-center">
-                            <span className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest block mb-1 text-center">Tolerancia Carga</span>
-                            <div className="font-black text-white text-center text-sm">{autoSynth.snapshot_clinico?.tolerancia_carga?.nivel || 'N/A'}</div>
+                        <div className="w-px bg-slate-100 hidden md:block"></div>
+                        <div className="flex-1 px-4 py-2 bg-indigo-600 rounded-xl shadow-md flex items-center justify-between gap-4">
+                            <div>
+                                <span className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest block">Tolerancia Carga</span>
+                                <div className="font-black text-white text-base leading-none">{autoSynth.snapshot_clinico?.tolerancia_carga?.nivel || 'N/A'}</div>
+                            </div>
+                            <div className="text-[10px] text-indigo-50/90 leading-tight italic border-l border-indigo-400/50 pl-3 flex-1">
+                                {autoSynth.snapshot_clinico?.tolerancia_carga?.explicacion || 'Sin detalles'}
+                            </div>
                         </div>
                     </div>
-
-                    {autoSynth.snapshot_clinico?.tolerancia_carga?.explicacion && (
-                        <div className="mt-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-xs text-indigo-800 italic leading-relaxed">
-                            <strong>Nota de Tolerancia:</strong> {autoSynth.snapshot_clinico.tolerancia_carga.explicacion}
-                        </div>
-                    )}
                 </div>
 
+                {/* ALERTAS Y NOTAS */}
                 {(autoSynth.snapshot_clinico?.alertas_clinicas?.length ?? 0) > 0 && (
                     <div className="bg-amber-50 px-6 py-3 border-t border-amber-100 flex items-center gap-3">
                         <span className="text-lg">⚠️</span>
