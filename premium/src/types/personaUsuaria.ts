@@ -205,6 +205,14 @@ export interface RemoteHistory {
     lastUpdated?: string;
     updatedByClinician?: string;
 
+    // FASE 63: Datos de identidad del paciente copiados del doc principal de la persona
+    identity_paciente?: {
+        fullName: string;
+        fechaNacimiento: string;
+        edad?: number | null;
+        sexoRegistrado: string;
+    };
+
     // Legacy Support
     comorbidities?: any;
 }

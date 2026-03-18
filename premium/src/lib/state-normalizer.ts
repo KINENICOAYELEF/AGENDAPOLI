@@ -272,13 +272,23 @@ export function buildCompactCasePackage(formData: any) {
 
     const p15_core = {
         modificadores_clinicos: p15_struct.modificadores_clinicos || [],
+        // FASE 63 Bug #7: incluir medicamentos y alergias en el payload de la IA
         antecedentes_relevantes: [
             ...(p15_struct.antecedentes_msk?.lesiones_previas || []),
             ...(p15_struct.antecedentes_msk?.cirugias_previas || []),
+            ...(p15_struct.antecedentes_msk?.secuelas_persistentes || []),
             ...(p15_struct.factores_biologicos_relevantes?.comorbilidades_relevantes || [])
         ],
-        // FASE 61: Detalle de historial para inferencia estructural/funcional (ej: HTA)
-        detalles_historia: p15_struct.factores_biologicos_relevantes?.observaciones_adicionales || "",
+        // Medicamentos y alergias como campos separados para que la IA los clasifique correctamente
+        medicamentos: p15_struct.factores_biologicos_relevantes?.medicacion_relevante || [],
+        alergias: p15_struct.factores_biologicos_relevantes?.alergias_relevantes || [],
+        antecedentes_msk_detalle: {
+            region_problematica: p15_struct.antecedentes_msk?.region_historicamente_problematica || [],
+            recurrencias: p15_struct.antecedentes_msk?.recurrencias || [],
+            secuelas: p15_struct.antecedentes_msk?.secuelas_persistentes || [],
+            imagenes_previas: p15_struct.antecedentes_msk?.imagenes_previas_relevantes || []
+        },
+        detalles_historia: p15_struct.factores_biologicos_relevantes?.detalle_clinico_relevante || "",
         deporte_contexto_breve: p15_struct.deporte_actividad_basal?.actividad_deporte_central || "",
         ocupacion_contexto_breve: p15_struct.contexto_ocupacional?.ocupacion_principal || "",
         hogar_contexto_breve: p15_struct.contexto_domiciliario?.vive_con || "",
@@ -286,7 +296,7 @@ export function buildCompactCasePackage(formData: any) {
         factores_personales_negativos: p15_flags.factores_personales_negativos || [],
         facilitadores: p15_flags.facilitadores_ambientales || [],
         barreras: p15_flags.barreras_ambientales || [],
-        observaciones_p15_raw: formData.remoteHistorySnapshot?.p15_context_flags?.observaciones_adicionales || ""
+        observaciones_p15_raw: formData.remoteHistorySnapshot?.permanentNotes || ""
     };
 
     const p2_core = {
@@ -307,12 +317,14 @@ export function buildCompactCasePackage(formData: any) {
         return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
     };
 
+    // FASE 63 Bug #1 (bridge): usar identity_paciente que Screen15 ahora copia desde Firestore
+    const identPac = (formData.remoteHistorySnapshot as any)?.identity_paciente || {};
     const patAge = pat.fechaNacimiento ? calculateAge(pat.fechaNacimiento) : (pat.edad || null);
-    const snapAge = (formData.remoteHistorySnapshot as any)?.identity?.dob ? calculateAge((formData.remoteHistorySnapshot as any).identity.dob) : ((formData.remoteHistorySnapshot as any)?.identity?.edad || null);
+    const snapAge = identPac.fechaNacimiento ? calculateAge(identPac.fechaNacimiento) : (identPac.edad || null);
     const finalAge = patAge || snapAge;
 
-    const finalName = pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : null) || (formData.remoteHistorySnapshot as any)?.identity?.fullName || "Desconocido";
-    const finalSex = pat.sexoRegistrado || pat.sexoBiomecanico || (formData.remoteHistorySnapshot as any)?.identity?.sexoRegistrado || (formData.remoteHistorySnapshot as any)?.identity?.sexoBiomecanico || "Desconocido";
+    const finalName = pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : null) || identPac.fullName || "Desconocido";
+    const finalSex = pat.sexoRegistrado || pat.sexoBiomecanico || identPac.sexoRegistrado || "Desconocido";
 
     return {
         demographics: {

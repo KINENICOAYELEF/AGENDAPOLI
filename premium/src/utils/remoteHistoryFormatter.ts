@@ -14,8 +14,10 @@ export function buildBasalSynthesis(history: RemoteHistory): string {
         const diagnoses = med.diagnoses?.map(d => d.name).join(', ') || 'Normal';
         const surgeries = med.surgeries?.map(s => s.name).join(', ') || 'Ninguna';
         const meds = med.medications?.map(m => m.name).join(', ') || 'Sin información o no relevantes';
+        // FASE 63: Incluir condiciones clínicas relevantes del selector
+        const condiciones = med.condicionesClinicasRelevantes?.map(c => (c as any).nombre || c.name || '').filter(Boolean).join(', ') || '';
 
-        sections.push(`[HISTORIAL MÉDICO] Modificadores Clínicos: ${modifiers}. Consideraciones: ${considers}. Diagnósticos: ${diagnoses}. Cirugías: ${surgeries}. Medicamentos: ${meds}.`);
+        sections.push(`[HISTORIAL MÉDICO] Modificadores Clínicos: ${modifiers}. Consideraciones: ${considers}. Diagnósticos: ${diagnoses}${condiciones ? '. Condiciones Clínicas: ' + condiciones : ''}. Cirugías: ${surgeries}. Medicamentos: ${meds}.`);
     }
 
     // 2. Antecedentes MSK previos
@@ -25,8 +27,10 @@ export function buildBasalSynthesis(history: RemoteHistory): string {
         const recurrences = msk.recurrences || 'No reportadas';
         const uselessTr = msk.uselessTreatments || 'No reportado';
         const usefulTr = msk.usefulTreatments || 'No reportado';
+        const injuries = msk.relevantInjuries?.map(i => i.notes ? `${i.region}: ${i.notes}` : i.region).join(', ') || '';
+        const surgeries = msk.mskSurgeries?.map(s => s.name).join(', ') || '';
 
-        sections.push(`[MSK PREVIO] Región Histórica: ${problemRegion}. Recurrencias: ${recurrences}. Tratamientos Previos Exitosos: ${usefulTr}. Tratamientos Inútiles/Mal Tolerados: ${uselessTr}.`);
+        sections.push(`[MSK PREVIO] Región Histórica: ${problemRegion}. Recurrencias: ${recurrences}.${injuries ? ' Lesiones previas: ' + injuries + '.' : ''}${surgeries ? ' Cirugías MSK: ' + surgeries + '.' : ''} Tratamientos Exitosos: ${usefulTr}. Tratamientos Inútiles: ${uselessTr}.`);
     }
 
     // 3. Deporte y Carga Basal
@@ -35,8 +39,9 @@ export function buildBasalSynthesis(history: RemoteHistory): string {
         const sport = act.primarySport || 'Sedentario';
         const level = act.level || 'N/A';
         const load = act.doubleLoad || 'Sin doble carga física descrita';
+        const rol = act.rolDeportivo ? ` (Rol: ${act.rolDeportivo})` : '';
 
-        sections.push(`[CARGA BASAL/DEPORTE] Deporte Principal: ${sport} (Nivel: ${level}). Frecuencia/Duración: ${act.weeklyFrequency || '-'} / ${act.typicalDuration || '-'}. Doble Carga Física: ${load}.`);
+        sections.push(`[CARGA BASAL/DEPORTE] Deporte Principal: ${sport}${rol} (Nivel: ${level}). Frecuencia/Duración: ${act.weeklyFrequency || '-'} / ${act.typicalDuration || '-'}. Doble Carga Física: ${load}.`);
     }
 
     // 4. Contexto Ocupacional
@@ -139,33 +144,105 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
 
     if (!history) return defaultVal;
 
-    // Poblar condiciones medicas
+    // Poblar condiciones médicas base (campos heredados)
     const med = history.medicalHistory;
     if (med) {
         if (med.criticalModifiers) defaultVal.modificadores_clinicos = [...med.criticalModifiers];
-        if (med.diagnoses) defaultVal.factores_biologicos_relevantes.comorbilidades_relevantes = med.diagnoses.map((d:any) => d.name);
-        if (med.medications) defaultVal.factores_biologicos_relevantes.medicacion_relevante = med.medications.map((m:any) => m.name);
-        if (med.surgeries) defaultVal.factores_biologicos_relevantes.cirugias_medicas_relevantes = med.surgeries.map((s:any) => s.name);
+        if (med.diagnoses) defaultVal.factores_biologicos_relevantes.comorbilidades_relevantes = med.diagnoses.map((d: any) => d.name);
+        if (med.medications) defaultVal.factores_biologicos_relevantes.medicacion_relevante = med.medications.map((m: any) => m.name);
+        if (med.surgeries) defaultVal.factores_biologicos_relevantes.cirugias_medicas_relevantes = med.surgeries.map((s: any) => s.name);
         if (med.clinicalConsiderations) defaultVal.factores_biologicos_relevantes.detalle_clinico_relevante = med.clinicalConsiderations;
+
+        // FASE 63 Bug #2: Condiciones clínicas del selector UI (condicionesClinicasRelevantes)
+        if (med.condicionesClinicasRelevantes && med.condicionesClinicasRelevantes.length > 0) {
+            med.condicionesClinicasRelevantes.forEach((c: any) => {
+                const name = c.name || (c as any).nombre || '';
+                if (!name) return;
+                const label = c.estado ? `${name} (${c.estado})` : name;
+                defaultVal.factores_biologicos_relevantes.comorbilidades_relevantes.push(label);
+                // Bug #2b: Medicamentos asociados a las condiciones
+                if (c.tratamientoActual && c.tratamientoDetalle && c.tratamientoDetalle.trim()) {
+                    defaultVal.factores_biologicos_relevantes.medicacion_relevante.push(c.tratamientoDetalle.trim());
+                }
+                // Observacion adicional como detalle clínico
+                if (c.observacionBreve && c.observacionBreve.trim()) {
+                    const obs = defaultVal.factores_biologicos_relevantes.detalle_clinico_relevante;
+                    defaultVal.factores_biologicos_relevantes.detalle_clinico_relevante = obs
+                        ? `${obs}. ${c.observacionBreve.trim()}`
+                        : c.observacionBreve.trim();
+                }
+            });
+        }
+
+        // FASE 63 Bug #4: Alergias
+        if (med.allergies && med.allergies.length > 0) {
+            defaultVal.factores_biologicos_relevantes.alergias_relevantes = med.allergies.map((a: any) => a.name || String(a)).filter(Boolean);
+        }
     }
 
-    // Poblar msk
+    // FASE 63 Bug #5: Factores biológicos (embarazo, menopausia, etc.)
+    const bio = history.biologicalFactors;
+    if (bio) {
+        const bioFlags: string[] = [];
+        if (bio.embarazoActual) bioFlags.push('Embarazo actual');
+        if (bio.postpartoReciente) bioFlags.push('Postparto reciente');
+        if (bio.lactancia) bioFlags.push('Lactancia activa');
+        if (bio.perimenopausiaMenopausia) bioFlags.push('Perimenopausia / Menopausia');
+        if (bio.alteracionesMenstruales) bioFlags.push('Alteraciones menstruales');
+        if (bio.antecedentePelvico) bioFlags.push('Antecedente pélvico relevante');
+        if (bio.observacion && bio.observacion.trim()) bioFlags.push(bio.observacion.trim());
+        if (bioFlags.length > 0) {
+            defaultVal.factores_biologicos_relevantes.comorbilidades_relevantes.push(...bioFlags);
+        }
+    }
+
+    // Poblar MSK
     const msk = history.mskHistory;
     if (msk) {
         if (msk.historicalProblemRegion) defaultVal.antecedentes_msk.region_historicamente_problematica = [msk.historicalProblemRegion];
         if (msk.recurrences) defaultVal.antecedentes_msk.recurrencias = [msk.recurrences];
         if (msk.usefulTreatments) defaultVal.antecedentes_msk.tratamientos_previos_exitosos = [msk.usefulTreatments];
         if (msk.uselessTreatments) defaultVal.antecedentes_msk.tratamientos_mal_tolerados = [msk.uselessTreatments];
+
+        // FASE 63 Bug #3: Lesiones previas, cirugías MSK, secuelas e imágenes
+        if (msk.relevantInjuries && msk.relevantInjuries.length > 0) {
+            defaultVal.antecedentes_msk.lesiones_previas = msk.relevantInjuries.map((i: any) =>
+                i.notes ? `${i.region}: ${i.notes}` : i.region
+            );
+        }
+        if (msk.mskSurgeries && msk.mskSurgeries.length > 0) {
+            defaultVal.antecedentes_msk.cirugias_previas = msk.mskSurgeries.map((s: any) => s.name);
+        }
+        if (msk.persistentSequelae && msk.persistentSequelae.trim()) {
+            defaultVal.antecedentes_msk.secuelas_persistentes = [msk.persistentSequelae.trim()];
+        }
+        if (msk.previousImaging && msk.previousImaging.trim()) {
+            defaultVal.antecedentes_msk.imagenes_previas_relevantes = [msk.previousImaging.trim()];
+        }
+        if (msk.dominancia) defaultVal.antecedentes_msk.dominancia = humanize(msk.dominancia);
+        if (msk.usoOrtesis && msk.usoOrtesis.trim()) {
+            defaultVal.antecedentes_msk.ortesis_plantillas = [msk.usoOrtesis.trim()];
+        }
     }
 
     // Deporte
     const act = history.baseActivity;
     if (act) {
         if (act.primarySport) defaultVal.deporte_actividad_basal.actividad_deporte_central = humanize(act.primarySport);
+        // FASE 63 Bug #6: rolDeportivo (ej: "Instructora de Yoga")
+        if (act.rolDeportivo && act.rolDeportivo.trim()) {
+            const actual = defaultVal.deporte_actividad_basal.actividad_deporte_central;
+            defaultVal.deporte_actividad_basal.actividad_deporte_central = actual
+                ? `${actual} · Rol: ${act.rolDeportivo.trim()}`
+                : act.rolDeportivo.trim();
+        }
+        if (act.categoria) defaultVal.deporte_actividad_basal.categoria = humanize(act.categoria);
         if (act.level) defaultVal.deporte_actividad_basal.nivel_practica_actual = humanize(act.level);
         if (act.weeklyFrequency) defaultVal.deporte_actividad_basal.frecuencia_semanal = act.weeklyFrequency;
         if (act.typicalDuration) defaultVal.deporte_actividad_basal.duracion_tipica = act.typicalDuration;
+        if (act.yearsExperience) defaultVal.deporte_actividad_basal.experiencia_acumulada = act.yearsExperience;
         if (act.doubleLoad) defaultVal.deporte_actividad_basal.doble_carga_basal = humanize(act.doubleLoad);
+        if (act.competitiveCalendar) defaultVal.deporte_actividad_basal.calendario_competitivo_objetivo = act.competitiveCalendar;
     }
 
     // Ocupacional
@@ -176,7 +253,21 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
         if (occ.timeSitting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Sentado: ${humanize(occ.timeSitting)}`);
         if (occ.timeStanding) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`De pie: ${humanize(occ.timeStanding)}`);
         if (occ.weightLifting) defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Carga: ${humanize(occ.weightLifting)}`);
+        if (occ.repetitiveMovements && occ.repetitiveMovements.trim()) {
+            defaultVal.contexto_ocupacional.demandas_fisicas_laborales.push(`Mov. repetitivos: ${occ.repetitiveMovements}`);
+        }
+        if (occ.driving && occ.driving.trim()) {
+            defaultVal.contexto_ocupacional.exposicion_trayectos_conduccion = occ.driving;
+        }
         if (occ.adherenceBarriers) defaultVal.contexto_ocupacional.barreras_logisticas_adherencia = occ.adherenceBarriers.map(b => humanize(b));
+        if (occ.contextoDomiciliario) {
+            const dom = occ.contextoDomiciliario;
+            if (dom.viveCon) defaultVal.contexto_domiciliario.vive_con = humanize(dom.viveCon);
+            if (dom.redApoyo) defaultVal.contexto_domiciliario.red_apoyo_tratamiento = humanize(dom.redApoyo);
+            if (dom.personasACargo) defaultVal.contexto_domiciliario.personas_a_cargo = humanize(dom.personasACargo);
+            if (dom.barrerasEntorno) defaultVal.contexto_domiciliario.barreras_hogar_entorno = dom.barrerasEntorno;
+            if (dom.observacion) defaultVal.contexto_domiciliario.observacion_contexto_domiciliario = dom.observacion;
+        }
     }
 
     // BPS
@@ -188,6 +279,18 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
         if (bps.smoking) defaultVal.biopsicosocial_habitos.tabaquismo = humanize(bps.smoking);
         if (bps.socialSupport) defaultVal.biopsicosocial_habitos.red_apoyo_social_emocional = humanize(bps.socialSupport);
         if (bps.protectiveFactors) defaultVal.biopsicosocial_habitos.factores_protectores = [bps.protectiveFactors];
+        if (bps.sueno) {
+            if (bps.sueno.horasPromedio) defaultVal.biopsicosocial_habitos.horas_promedio_sueno = bps.sueno.horasPromedio;
+            if (bps.sueno.despertares) defaultVal.biopsicosocial_habitos.despertares_nocturnos = humanize(bps.sueno.despertares);
+            if (bps.sueno.reparador) defaultVal.biopsicosocial_habitos.sueno_reparador = humanize(bps.sueno.reparador);
+        }
+        if (bps.estres?.fuentePrincipal) defaultVal.biopsicosocial_habitos.fuente_principal_estres = humanize(bps.estres.fuentePrincipal);
+        if (bps.habitos) {
+            if (bps.habitos.alcohol) defaultVal.biopsicosocial_habitos.alcohol = bps.habitos.alcohol;
+            if (bps.habitos.cafeina) defaultVal.biopsicosocial_habitos.cafeina = bps.habitos.cafeina;
+            if (bps.habitos.dieta) defaultVal.biopsicosocial_habitos.patron_dieta_principal = bps.habitos.dieta;
+        }
+        if (bps.actividadesSignificativas) defaultVal.biopsicosocial_habitos.hobbies_bienestar = [bps.actividadesSignificativas];
     }
 
     return defaultVal;

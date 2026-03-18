@@ -344,12 +344,21 @@ export function Screen15_AnamnesisRemota({
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data() as PersonaUsuaria;
+                    // FASE 63 Bug #1: Capturar identidad del paciente para la IA
+                    const identity = data.identity || ({} as any);
+                    const identity_paciente = {
+                        fullName: identity.fullName || '',
+                        fechaNacimiento: identity.fechaNacimiento || '',
+                        edad: identity.edad || null,
+                        sexoRegistrado: identity.sexoRegistrado || ''
+                    };
                     if (data.remoteHistory) {
                         const mergedHistory = deepMergeWithInitial(data.remoteHistory as any);
                         const struct = buildP15Structured(mergedHistory);
                         const flags = buildP15Flags(mergedHistory);
                         const historyConSintesis: RemoteHistory = { 
                             ...mergedHistory, 
+                            identity_paciente,
                             basalSynthesis: buildBasalSynthesis(mergedHistory),
                             p15_context_structured: struct,
                             p15_context_flags: flags
@@ -361,6 +370,7 @@ export function Screen15_AnamnesisRemota({
                         const flags = buildP15Flags(history);
                         const baseConSintesis: RemoteHistory = { 
                             ...history, 
+                            identity_paciente,
                             basalSynthesis: buildBasalSynthesis(history),
                             p15_context_structured: struct,
                             p15_context_flags: flags
