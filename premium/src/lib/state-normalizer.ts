@@ -266,7 +266,8 @@ export function buildCompactCasePackage(formData: any) {
             banderas_rojas: [], banderas_amarillas: [], facilitadores: [], barreras: []
         },
         bps_scores: p1_raw.bps || {},
-        psfs_global: p1_raw.psfsGlobal || []
+        psfs_global: p1_raw.psfsGlobal || [],
+        relato_completo_p1: p1_raw.experienciaPersona?.relatoLibre || ""
     };
 
     const p15_core = {
@@ -282,9 +283,10 @@ export function buildCompactCasePackage(formData: any) {
         ocupacion_contexto_breve: p15_struct.contexto_ocupacional?.ocupacion_principal || "",
         hogar_contexto_breve: p15_struct.contexto_domiciliario?.vive_con || "",
         factores_personales_positivos: p15_flags.factores_personales_positivos || [],
-        factors_personales_negativos: p15_flags.factores_personales_negativos || [],
+        factores_personales_negativos: p15_flags.factores_personales_negativos || [],
         facilitadores: p15_flags.facilitadores_ambientales || [],
-        barreras: p15_flags.barreras_ambientales || []
+        barreras: p15_flags.barreras_ambientales || [],
+        observaciones_p15_raw: formData.remoteHistorySnapshot?.p15_context_flags?.observaciones_adicionales || ""
     };
 
     const p2_core = {

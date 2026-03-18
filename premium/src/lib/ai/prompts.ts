@@ -22,14 +22,14 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
 Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen físico (P2) en una matriz CIF (P3) de alta calidad, coherente y visualmente útil. 
 
 ### REGLAS DE ORO (P3.1.7 P3-A):
-1. **BLOQUE A - RELEVANCIA CLÍNICA (ESTRICTO)**: No muestres todo. Muestra SOLO lo que "modula" el caso actual, el pronóstico, la conducta o la seguridad.
+1. **BLOQUE A - RELEVANCIA CLÍNICA (REGLA ACTUALIZADA)**: 
+   - **A3 (FACTORES RELEVANTES)**: DEBES incluir TODAS las comorbilidades crónicas (ej: HTA, Hipotiroidismo, Diabetes, Dislipidemia) y medicamentos activos reportados en el expediente (p15_core) o anamnesis (p1_core). 
+   - **MOTIVACIÓN**: En kinesiología, estas condiciones NUNCA son ruido; modulan el metabolismo, la recuperación tisular y la respuesta al ejercicio. 
    - *Alergia estacional*: OMITIR si no afecta el caso.
-   - *Hipotiroidismo/HTA*: INCLUIR si afecta fatiga, esfuerzo o respuesta cardiovascular.
-   - *Medicamentos*: INCLUIR si modulan dolor, somnolencia, fatiga o equilibrio.
-   - *Antecedentes MSK*: INCLUIR si cambian la hipótesis o el pronóstico.
+   - *Antecedentes MSK*: INCLUIR si son del mismo segmento, limitan el pronóstico o cambian la conducta.
 2. **BLOQUE A - FUSIÓN Y CAPTURA TOTAL (REGLA DE ORO)**: 
-   - **DATOS DE IDENTIDAD**: Debes extraer Nombre, Edad y Sexo EXCLUSIVAMENTE del objeto "demographics" enviado en el payload. NO busques en otros textos si ahí están definidos. Si dice "Fernanda", pon "Fernanda". No inventes "No especificado".
-   - **ROLES PROFESIONALES**: Si la persona tiene múltiples roles (ej: "Kinesióloga e Instructora de Yoga"), lístalos TODOS en ocupación. Es CRÍTICO para la demanda física. No resumas a un solo rol.
+   - **DATOS DE IDENTIDAD**: Debes extraer Nombre, Edad y Sexo EXCLUSIVAMENTE del objeto "demographics" enviado en el payload.
+   - **ROLES PROFESIONALES**: Si la persona tiene múltiples roles (ej: "Kinesióloga e Instructora de Yoga"), lístalos TODOS en ocupación.
    - **FUSIÓN**: Lee en orden: demographics -> p15_core -> p1_core -> p2_core.
 3. **LENGUAJE HUMANO (SIN CÓDIGOS)**: Prohibido usar "amateur_competitivo_6", "med_flag_1", etc. Traduce todo a frases clínicas dignas y legibles.
 4. **INFERENCIA TRANSVERSAL**: Mantén la lógica de P3.1.6 (inferir alteraciones de todo el expediente).
