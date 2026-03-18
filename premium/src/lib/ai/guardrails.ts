@@ -1,9 +1,4 @@
 const BANNED_TERMS = [
-    "fármaco",
-    "farmaco",
-    "medicamento",
-    "medicacion",
-    "medicación",
     "punción seca",
     "puncion seca",
     "dry needling",
@@ -14,11 +9,7 @@ const BANNED_TERMS = [
     "emg",
     "tens",
     "corrientes interferenciales",
-    "ultrasonido terapeutico",
-    "medicamentos",
-    "paracetamol",
-    "ibuprofeno",
-    "aintiinflamatorio"
+    "ultrasonido terapeutico"
 ];
 
 const MEDICAL_DIAGNOSES: string[] = [
