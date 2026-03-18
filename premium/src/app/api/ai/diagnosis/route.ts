@@ -97,7 +97,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.1.7',
+            promptVersion: 'v3.1.8',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
