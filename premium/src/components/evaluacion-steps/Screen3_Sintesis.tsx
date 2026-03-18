@@ -230,19 +230,19 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex flex-wrap gap-1">
-                                    <span className="text-[9px] font-black text-rose-500 uppercase">Comorbilidades:</span>
+                                    <span className="text-[9px] font-black text-rose-500 uppercase">Comorbilidades <span className="text-[8px] text-rose-300 font-normal normal-case">(Relevancia Clínica)</span>:</span>
                                     <span className="text-[11px] font-bold text-slate-700">
                                         {(autoSynth.snapshot_clinico?.factores_relevantes?.comorbilidades || []).join(', ') || 'Sin hallazgos modulantes'}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-1">
-                                    <span className="text-[9px] font-black text-amber-500 uppercase">Medicamentos:</span>
+                                    <span className="text-[9px] font-black text-amber-500 uppercase">Medicamentos <span className="text-[8px] text-amber-300 font-normal normal-case">(Relevancia Clínica)</span>:</span>
                                     <span className="text-[11px] font-bold text-slate-700">
                                         {(autoSynth.snapshot_clinico?.factores_relevantes?.medicamentos || []).join(', ') || 'No consignado'}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-1">
-                                    <span className="text-[9px] font-black text-indigo-400 uppercase">Antecedentes MSK:</span>
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase">Antecedentes MSK <span className="text-[8px] text-indigo-300 font-normal normal-case">(Relevancia Clínica)</span>:</span>
                                     <span className="text-[11px] font-bold text-slate-700">
                                         {(autoSynth.snapshot_clinico?.factores_relevantes?.antecedentes_msk || []).join(', ') || 'No consignado'}
                                     </span>
