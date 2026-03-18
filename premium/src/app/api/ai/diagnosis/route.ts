@@ -61,10 +61,13 @@ export async function POST(req: Request) {
   },
   "clasificacion_dolor": { "categoria": "nociceptivo|neuropático|nociplástico|mixto|no_concluyente", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": [], "duda_mezcla": [], "conclusion": "" }, "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { 
-    "sistemas_principales": ["Músculo-Esquelético", "Cardiovascular (por HTA)"], 
-    "estructuras_principales": ["Tendón Rotuliano", "Articulación Femorotibial"], 
-    "estructuras_secundarias": ["Retináculo lateral", "Vasculatura periférica"], 
-    "descripcion_libre": "Presentación compatible con tendinopatía, modulada por factores vasculares sistémicos." 
+    "sistemas_involucrados": ["musculoesquelético articular", "neural periférico"], 
+    "estructuras": {
+        "principales": ["Ligamentos sacroilíacos"],
+        "secundarias": ["Cápsula articular", "Musculatura glútea"],
+        "asociadas_moduladoras": ["Segmentos L4-L5", "Piso pélvico"]
+    },
+    "estructuras_mas_afectan": "Compromiso principal del complejo ligamentoso sacroilíaco con modulación lumbopélvica." 
   },
   "alteraciones_detectadas": { 
     "estructurales": [
@@ -97,7 +100,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.1.9',
+            promptVersion: 'v3.2.0',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });

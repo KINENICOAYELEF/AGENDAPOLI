@@ -80,10 +80,13 @@ export const DiagnosisSchema = z.object({
         nivel_confianza: z.string().describe("Nivel de confianza clínica (Alta, Media, Baja)")
     }),
     sistema_y_estructuras: z.object({
-        sistemas_principales: z.array(z.string()),
-        estructuras_principales: z.array(z.string()),
-        estructuras_secundarias: z.array(z.string()),
-        descripcion_libre: z.string().nullish()
+        sistemas_involucrados: z.array(z.string()), // D1
+        estructuras: z.object({
+            principales: z.array(z.string()), // D2 - Principales
+            secundarias: z.array(z.string()), // D2 - Secundarias
+            asociadas_moduladoras: z.array(z.string()), // D2 - Asociadas/Moduladoras
+        }),
+        estructuras_mas_afectan: z.string(), // Resumen para P4
     }),
     alteraciones_detectadas: z.object({
         estructurales: z.array(z.object({

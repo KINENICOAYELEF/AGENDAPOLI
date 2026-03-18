@@ -169,7 +169,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             {p4_plan_structured.referencia_p3_breve 
                                 ? p4_plan_structured.referencia_p3_breve
                                 : formData.autoSynthesis?.clasificacion_dolor 
-                                    ? `${formData.autoSynthesis.clasificacion_dolor.categoria} - ${[...(formData.autoSynthesis.clasificacion_dolor.subtipos || []), formData.autoSynthesis.clasificacion_dolor.subtipo_manual].filter(Boolean).join(', ')}\n${formData.autoSynthesis.clasificacion_dolor.fundamento?.conclusion || ''}`
+                                    ? `${formData.autoSynthesis.clasificacion_dolor.categoria} - ${[...(formData.autoSynthesis.clasificacion_dolor.subtipos || []), formData.autoSynthesis.clasificacion_dolor.subtipo_manual].filter(Boolean).join(', ')}\n${formData.autoSynthesis.clasificacion_dolor.fundamento?.conclusion || ''}\n\nMAPA ESTRUCTURAL:\n${formData.autoSynthesis.sistema_y_estructuras?.estructuras_mas_afectan || ''}`
                                     : (formData.clinicalSynthesis || 'Sin referencia P3 sintetizada.')
                             }
                         </div>

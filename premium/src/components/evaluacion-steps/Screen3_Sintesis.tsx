@@ -485,61 +485,184 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         </div>
                     </div>
 
-                    {/* BLOQUE D — SISTEMA / ESTRUCTURA */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-7 shadow-sm">
-                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🦴</span> D. Sistema y Estructuras</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Sistemas Principales (sep. por coma)</label>
-                                <input 
-                                    type="text" 
-                                    list="sistema-options"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={Array.isArray(autoSynth.sistema_y_estructuras?.sistemas_principales) ? autoSynth.sistema_y_estructuras.sistemas_principales.join(', ') : ''}
-                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { sistemas_principales: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                                    disabled={isClosed}
-                                    placeholder="Ej: Articular, Neural..."
-                                />
-                                <datalist id="sistema-options">
-                                    <option value="Articular" />
-                                    <option value="Neural" />
-                                    <option value="Tejido contráctil" />
-                                    <option value="Estabilidad pasiva" />
-                                    <option value="Control motor" />
-                                    <option value="Carga ósea" />
-                                    <option value="Mixto" />
-                                </datalist>
+                    {/* BLOQUE D — SISTEMAS Y ESTRUCTURAS (P3.2.0) */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm border-t-4 border-t-blue-500">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-6">
+                            <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                <span className="text-xl bg-blue-100 p-2 rounded-lg text-blue-600">🦴</span> 
+                                D. Sistemas y Estructuras Involucradas
+                            </h3>
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 text-[10px] text-blue-700 max-w-sm leading-relaxed">
+                                <strong>D1 + D2:</strong> Mapa de sistemas afectados y segmentación de estructuras según su relevancia en el caso.
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Estructuras Principales (sep. por coma)</label>
-                                <input 
-                                    type="text" 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={Array.isArray(autoSynth.sistema_y_estructuras?.estructuras_principales) ? autoSynth.sistema_y_estructuras.estructuras_principales.join(', ') : ''}
-                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_principales: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                                    disabled={isClosed}
-                                    placeholder="Ej: LCA, Menisco medial..."
-                                />
+                        </div>
+
+                        <div className="space-y-8">
+                            {/* D1. SISTEMAS */}
+                            <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">D1. Sistemas Corporales Involucrados</label>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {(autoSynth.sistema_y_estructuras?.sistemas_involucrados || []).map((sistema: string, idx: number) => (
+                                        <div key={idx} className="bg-white border border-slate-200 rounded-full px-3 py-1.5 text-xs font-bold text-slate-700 flex items-center gap-2 shadow-sm group hover:border-blue-300 transition-all">
+                                            {sistema}
+                                            {!isClosed && (
+                                                <button 
+                                                    onClick={() => {
+                                                    const currentS = autoSynth.sistema_y_estructuras?.sistemas_involucrados || [];
+                                                    const next = currentS.filter((_: any, i: number) => i !== idx);
+                                                    updateDeepObj('sistema_y_estructuras', { sistemas_involucrados: next });
+                                                    }}
+                                                    className="text-slate-300 hover:text-rose-500 transition-colors"
+                                                >✕</button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {!isClosed && (
+                                        <input 
+                                            type="text"
+                                            placeholder="+ Agregar sistema..."
+                                            className="bg-transparent border-b border-dashed border-slate-300 px-2 py-1 text-xs outline-none focus:border-blue-500 min-w-[150px] ml-1"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                    if (val) {
+                                                        const next = [...(autoSynth.sistema_y_estructuras?.sistemas_involucrados || []), val];
+                                                        updateDeepObj('sistema_y_estructuras', { sistemas_involucrados: next });
+                                                        (e.currentTarget as HTMLInputElement).value = '';
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    )}
+                                </div>
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Estructuras Secundarias (sep. por coma)</label>
-                                <input 
-                                    type="text" 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75"
-                                    value={Array.isArray(autoSynth.sistema_y_estructuras?.estructuras_secundarias) ? autoSynth.sistema_y_estructuras.estructuras_secundarias.join(', ') : ''}
-                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_secundarias: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                                    disabled={isClosed}
-                                    placeholder="Ej: Bursa, Tendón..."
-                                />
+
+                            {/* D2. ESTRUCTURAS */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Principales */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Principales
+                                    </label>
+                                    <div className="bg-indigo-50/30 border border-indigo-100 rounded-2xl p-5 min-h-[120px] flex flex-col">
+                                        <div className="flex flex-wrap gap-2 flex-1">
+                                            {(autoSynth.sistema_y_estructuras?.estructuras?.principales || []).map((item: string, idx: number) => (
+                                                <div key={idx} className="bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-800 shadow-sm flex items-center gap-2">
+                                                    {item}
+                                                    {!isClosed && <button onClick={() => {
+                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                        const nextE = { ...baseE, principales: (baseE.principales || []).filter((_: any, i: number) => i !== idx) };
+                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                    }} className="hover:text-rose-500">✕</button>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!isClosed && (
+                                            <input 
+                                                className="bg-transparent border-b border-indigo-200 text-[10px] py-1 outline-none w-full mt-4"
+                                                placeholder="+ Añadir principal..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                        if (val) {
+                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.principales || [];
+                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), principales: [...current, val] } });
+                                                            (e.currentTarget as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Secundarias */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span> Secundarias / Sospecha
+                                    </label>
+                                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 min-h-[120px] flex flex-col">
+                                        <div className="flex flex-wrap gap-2 flex-1">
+                                            {(autoSynth.sistema_y_estructuras?.estructuras?.secundarias || []).map((item: string, idx: number) => (
+                                                <div key={idx} className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 shadow-sm flex items-center gap-2">
+                                                    {item}
+                                                    {!isClosed && <button onClick={() => {
+                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                        const nextE = { ...baseE, secundarias: (baseE.secundarias || []).filter((_: any, i: number) => i !== idx) };
+                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                    }} className="hover:text-rose-500">✕</button>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!isClosed && (
+                                            <input 
+                                                className="bg-transparent border-b border-slate-200 text-[10px] py-1 outline-none w-full mt-4"
+                                                placeholder="+ Añadir secundaria..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                        if (val) {
+                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.secundarias || [];
+                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), secundarias: [...current, val] } });
+                                                            (e.currentTarget as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Asociadas */}
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span> Asociadas / Moduladoras
+                                    </label>
+                                    <div className="bg-amber-50/30 border border-amber-100 rounded-2xl p-5 min-h-[120px] flex flex-col">
+                                        <div className="flex flex-wrap gap-2 flex-1">
+                                            {(autoSynth.sistema_y_estructuras?.estructuras?.asociadas_moduladoras || []).map((item: string, idx: number) => (
+                                                <div key={idx} className="bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-amber-800 shadow-sm flex items-center gap-2">
+                                                    {item}
+                                                    {!isClosed && <button onClick={() => {
+                                                        const baseE = autoSynth.sistema_y_estructuras?.estructuras || { principales: [], secundarias: [], asociadas_moduladoras: [] };
+                                                        const nextE = { ...baseE, asociadas_moduladoras: (baseE.asociadas_moduladoras || []).filter((_: any, i: number) => i !== idx) };
+                                                        updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
+                                                    }} className="hover:text-rose-500">✕</button>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!isClosed && (
+                                            <input 
+                                                className="bg-transparent border-b border-amber-200 text-[10px] py-1 outline-none w-full mt-4"
+                                                placeholder="+ Añadir asociada..."
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const val = (e.currentTarget as HTMLInputElement).value.trim();
+                                                        if (val) {
+                                                            const current = autoSynth.sistema_y_estructuras?.estructuras?.asociadas_moduladoras || [];
+                                                            updateDeepObj('sistema_y_estructuras', { estructuras: { ...(autoSynth.sistema_y_estructuras?.estructuras || {}), asociadas_moduladoras: [...current, val] } });
+                                                            (e.currentTarget as HTMLInputElement).value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Descripción / Matices Libres</label>
+
+                            {/* Resumen P4 */}
+                            <div className="relative mt-4">
+                                <div className="absolute top-3 left-3 flex items-center gap-1.5 pointer-events-none">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Estructuras que más afectan el caso hoy</span>
+                                </div>
                                 <textarea 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm disabled:opacity-75 h-20"
-                                    value={autoSynth.sistema_y_estructuras?.descripcion_libre || ''}
-                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { descripcion_libre: e.target.value })}
+                                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-4 pt-8 text-sm font-bold text-blue-900 leading-relaxed min-h-[100px] focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all resize-none shadow-sm"
+                                    value={autoSynth.sistema_y_estructuras?.estructuras_mas_afectan || ''}
+                                    onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_mas_afectan: e.target.value })}
                                     disabled={isClosed}
-                                    placeholder="Agregar matices sobre la interacción de sistemas si es necesario..."
+                                    placeholder="Escriba aquí la síntesis de estructuras clave para la planificación..."
                                 />
                             </div>
                         </div>

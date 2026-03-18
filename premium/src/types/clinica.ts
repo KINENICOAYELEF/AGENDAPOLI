@@ -955,10 +955,13 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             nivel_confianza?: 'Alta' | 'Media' | 'Baja' | string;
         };
         sistema_y_estructuras?: {
-            sistemas_principales: string[];
-            estructuras_principales: string[];
-            estructuras_secundarias: string[];
-            descripcion_libre?: string;
+            sistemas_involucrados: string[]; // D1
+            estructuras: {
+                principales: string[]; // D2
+                secundarias: string[];
+                asociadas_moduladoras: string[];
+            };
+            estructuras_mas_afectan: string;
         };
         alteraciones_detectadas?: {
             estructurales: Array<{ 
