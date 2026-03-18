@@ -74,9 +74,14 @@ export async function POST(req: Request) {
     "functional": [{ "texto": "Disminución de tolerancia a la carga excéntrica", "severidad": "moderada" }] 
   },
   "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Dificultad para bajar escaleras", "severidad": "moderada" }], "restricciones_participacion": [{ "texto": "Entrenamiento de running", "severidad": "leve" }] },
-  "factores_biopsicosociales": { "factores_personales_positivos": ["Alta motivación"], "factores_personales_negativos": ["Estrés laboral"], "facilitadores_ambientales": ["Gimnasio cerca"], "barreras_ambientales": ["Falta de tiempo"] },
-  "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
-}`;
+  "factores_biopsicosociales": { 
+    "factores_personales_positivos": ["Alta motivación", "Red de apoyo"], 
+    "factores_personales_negativos": ["Estrés laboral", "Falta de sueño"], 
+    "facilitadores_ambientales": ["Gimnasio cerca"], 
+    "barreras_ambientales": ["Falta de tiempo", "Clima extremo"] 
+  },
+  "recordatorios_y_coherencia": { "recordatorios_clinicos": ["Vigilar fatiga"], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
+} `;
 
         const userPrompt = `
 Genera el output requerido usando EXCLUSIVAMENTE formato JSON parseable y cumpliendo estrictamente con la siguiente estructura y tipos exactos:
