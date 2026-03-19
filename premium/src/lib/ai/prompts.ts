@@ -18,43 +18,48 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.4
+### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.7.0 (OVER-CAPTURE MÁXIMA)
 
-REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente.
+REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente. EL EVALUADOR SIEMPRE PUEDE BORRAR LO QUE SOBRE, PERO NO INVENTAR LO QUE FALTA.
 
-### REGLA #1 — TAXONOMÍA DE HALLAZGOS (E):
-**E1 — Checklist Estructural (genera AL MENOS 3 ítems estructurales):**
-- Nervio periférico (si neurología +), Músculo (desgarro, contractura, atrofia), Hueso (fractura, edema, osteofito), Cardiovascular (HTA, IC, aterosclerosis), Respiratorio (asma, EPOC, disnea), Endocrino/Metabólico (Diabetes, Tiroides, obesidad), Piel/Fascia/Cicatrices (adherencias, fibrosis).
+### REGLA #1 — BLOQUE D: SISTEMAS Y ESTRUCTURAS (OVER-CAPTURE):
+- **Principales**: Genera AL MENOS 2 estructuras principales con argumento clínico extenso (2-3 oraciones cruzando P1+P2).
+- **Secundarias**: Genera AL MENOS 2-3 estructuras secundarias con argumento que correlacione hallazgos de P1/P1.5 con P2.
+- **Moduladoras**: Genera AL MENOS 3-4 estructuras asociadas/moduladoras. Incluye TODA comorbilidad (HTA, diabetes, tiroides), toda cicatriz, toda estructura neurológica cercana. Cada argumento DEBE ser un párrafo que explique POR QUÉ modula el caso (edad, sexo, medicamentos, mecanismo).
+- **Argumento extenso**: Cada argumento debe tener 2-3 oraciones mínimo, cruzando datos de AL MENOS 2 fuentes (ej: "detectado en P2 + correlacionado con P1.5").
 
-**E2 — Checklist Funcional (genera AL MENOS 5 ítems funcionales):**
-- Dolor (CADA zona = 1 ítem), Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción/Estabilidad, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiopulmonar.
+### REGLA #2 — BLOQUE E: ALTERACIONES (ATOMIZACIÓN + MÍNIMOS):
+**E1 — Checklist Estructural (AL MENOS 3 ítems):**
+- Nervio periférico, Músculo, Hueso, Cardiovascular, Respiratorio, Endocrino/Metabólico, Piel/Fascia/Cicatrices.
 
-### REGLA #2 — MÍNIMOS OBLIGATORIOS Y ATOMIZACIÓN:
-- NUNCA generes menos de 3 (E1) + 5 (E2) ítems. Si el caso es complejo, genera TODOS los que apliquen sin límite.
-- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
+**E2 — Checklist Funcional (AL MENOS 5 ítems, idealmente 10+):**
+- Dolor (CADA zona = 1 ítem), Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiopulmonar.
+- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems en E2.
 
-### REGLA #3 — INFERENCIA CLÍNICA CONTEXTUAL (BPS):
-1. **Más allá de lo Literal**: Infiere barreras o facilitadores de las actividades y ocupación (ej. sedentarismo laboral = Barrera G4).
-2. **Ponderación Contextual**: Considera Edad y Sexo para ajustar expectativas biológicas (G5) y riesgo (G2).
-3. **Integración F1 -> F2**: Conecta hallazgos estructurales con limitaciones de actividad (F1) e impacto en participación (F2).
+### REGLA #3 — BLOQUE F: ACTIVIDAD Y PARTICIPACIÓN (INFERENCIA OBLIGATORIA):
+- **F1 (Limitaciones)**: Genera AL MENOS 5 limitaciones de actividad. NO solo las que el paciente dice literalmente. INFIERE: si tiene debilidad de glúteo (P2) + sube escaleras (P1) → limitación en escaleras. Si tiene dolor sentado (P2) + trabaja en oficina (P1) → limitación en sedestación.
+- **F2 (Restricciones)**: Genera AL MENOS 5 restricciones de participación. INFIERE roles afectados: trabajo, deporte, vida social, recreación, autocuidado, vida sexual, rol familiar, transporte. Si duele correr → afecta deporte. Si duele sentarse → afecta trabajo.
+- **Detalle**: Cada ítem DEBE tener el campo 'detalle' explicando la biomecánica o la lógica clínica de la limitación/restricción, indicando de qué fuente se infirió (P1, P1.5 o P2).
 
-### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN:
-- F1 (Limitaciones): Caminar, subir escaleras, sentarse, levantarse, agacharse, correr, yoga, carga, manejar, dormir en posición. Use 'detalle' para explicar la biomecánica o síntoma de P1/P2.
-- F2 (Restricciones): Trabajo, deporte, vida social, recreación, autocuidado, vida sexual, rol familiar. Use 'detalle' para explicar el impacto inferido en el rol.
-
-### BLOQUE G — MATRIZ BIOPSICOSOCIAL INTEGRAL:
-- G1-G4: Factores Personales y Ambientales (+/-).
-- G5: Moduladores Clínicos (Medicamentos como estatinas/levotiroxina, tabaquismo, nutrición, cronicidad, fallos terapéuticos previos).
-- G6: Observaciones Integradas BPS: Síntesis narrativa experta que conecte E, F y G con lógica clínica.
+### REGLA #4 — BLOQUE G: FACTORES BPS (CONTEXTUALIZACIÓN OBLIGATORIA):
+- Genera AL MENOS 4 ítems por CADA categoría (positivos, negativos, facilitadores, barreras, moduladores).
+- **NO SEAS LITERAL**: Infiere factores que el paciente no dice explícitamente pero que se deducen del contexto:
+  - EDAD: Un paciente de 50+ tiene declive hormonal, sarcopenia incipiente, cambios degenerativos esperables.
+  - SEXO: Mujer post-parto tiene laxitud ligamentosa residual; hombre adulto joven tiene pico de masa muscular.
+  - OCUPACIÓN: Trabajo sedentario = barrera por desacondicionamiento; trabajo manual pesado = barrera por sobrecarga.
+  - DEPORTE: Si practicaba deporte, su abandono es factor negativo (estrés+aislamiento); si tiene acceso a gimnasio es facilitador.
+  - SUEÑO/ESTRÉS: Si reporta mal sueño, conéctalo con sensitización central y reducción del umbral de dolor.
+- **G5 (Moduladores clínicos)**: Cada medicamento, cada comorbilidad, la cronicidad del cuadro, antecedentes especiales.
+- **G6 (Síntesis narrativa)**: Texto de 3-5 oraciones conectando E, F y G con lógica clínica experta. Debe mencionar edad, sexo, ocupación, y proyectar el pronóstico.
 
 ### REGLA FINAL — VERIFICACIÓN ANTI-OMISIÓN: 
 Antes de responder, verifica:
-✓ ¿Capturé TODOS los focos de DOLOR?
-✓ ¿Capturé la IRRITABILIDAD y TOLERANCIA A LA CARGA?
-✓ ¿Capturé DEBILIDADES y ROM limitados detectados en P2?
-✓ ¿Capturé FACTORES PSICOSOCIALES (Sueño, estrés, miedo) de P1/P1.5?
+✓ ¿Bloque D tiene ≥2 principales, ≥2 secundarias, ≥3 moduladoras con argumentos extensos?
+✓ ¿Bloque E tiene ≥3 estructurales y ≥5 funcionales con fundamentos de P1/P2?
+✓ ¿Bloque F tiene ≥5 limitaciones y ≥5 restricciones con detalle e inferencia?
+✓ ¿Bloque G tiene ≥4 ítems por categoría con contextualización de edad/sexo/ocupación?
 ✓ ¿Capturé COMORBILIDADES como alteraciones estructurales sistémicas (HTA, Diabetes)?
-✓ ¿He inferido impactos razonables en la participación social/laboral?
+✓ ¿He inferido impactos razonables en la participación social/laboral/familiar?
 
 ### REGLAS TÉCNICAS:
 - **FORMATO JSON PURO**. **IDIOMA**: Español clínico técnico.

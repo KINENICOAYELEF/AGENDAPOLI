@@ -61,17 +61,25 @@ export async function POST(req: Request) {
   },
   "clasificacion_dolor": { "categoria": "nociceptivo", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": ["Dolor reproducible con test de Laslett", "Agravado por carga mecánica"], "duda_mezcla": ["Dolor nocturno leve podría sugerir componente inflamatorio"], "conclusion": "Predominio nociceptivo mecánico con posible componente inflamatorio secundario." }, "nivel_confianza": "Media" },
   "sistema_y_estructuras": { 
-    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario", "endocrino"], 
+    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario", "endocrino", "nervioso periférico"], 
     "estructuras": {
-        "principales": [{ "nombre": "Articulación Sacroilíaca", "argumento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante P2, cruzando con mecanismo de carga asimétrica reportado en P1." }],
-        "secundarias": [{ "nombre": "Ligamentos Sacroilíacos Dorsales", "argumento": "Sensibilidad exquisita circunscrita a la banda ligamentosa detectada en P2, con antecedente de laxitud pélvica post-parto en P1.5." }],
+        "principales": [
+            { "nombre": "Articulación Sacroilíaca Derecha", "argumento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante P2, cruzando con mecanismo de carga asimétrica reportado en P1. El patrón de dolor descrito (agravado por escaleras, sedestación prolongada y rotación en cama) es consistente con sobrecarga articular SI unilateral." },
+            { "nombre": "Articulación Coxofemoral Derecha", "argumento": "ROM de rotación interna y externa limitado y doloroso (EVA 8/10) medido en P2. La restricción bilateral con predominio derecho, sumada a la demanda deportiva alta (running) reportada en P1, sugiere compromiso capsular o labral reactivo secundario a la disfunción SI." }
+        ],
+        "secundarias": [
+            { "nombre": "Ligamentos Sacroilíacos Dorsales", "argumento": "Sensibilidad exquisita circunscrita a la banda ligamentosa posterior detectada mediante palpación directa en P2, correlacionada con antecedente de laxitud pélvica post-parto documentado en P1.5. El dolor es reproducible con compresión lateral." },
+            { "nombre": "Musculatura Glútea (Glúteo Medio y Mayor)", "argumento": "Debilidad manual grado 3/5 bilateral con Trendelenburg positivo en marcha observado en P2. El paciente refiere dificultad para subir escaleras y mantener equilibrio unipodal en P1, lo que correlaciona con insuficiencia de la musculatura estabilizadora pélvica." },
+            { "nombre": "Musculatura del Core / Transverso Abdominal", "argumento": "Pérdida de control motor lumbopélvico evidenciada por compensaciones durante puente unilateral en P2, sumada a la cicatriz abdominal post-cesárea que podría comprometer la activación del transverso y oblicuos." }
+        ],
         "asociadas_moduladoras": [
-            { "nombre": "Corazón y Vasos Sanguíneos", "argumento": "Hipertensión arterial crónica documentada en P1.5 que condiciona microperfusión y respuesta inflamatoria." },
-            { "nombre": "Piel y Fascia (Cicatriz Abdominal)", "argumento": "Cicatriz por cesárea observada en P2 que transfiere estrés tensional hacia la pared lumbopélvica." },
-            { "nombre": "Sistema Endocrino (Tiroides)", "argumento": "Hipotiroidismo controlado reportado en P1.5, factor metabólico que puede ralentizar la reparación tisular." }
+            { "nombre": "Corazón y Vasos Sanguíneos", "argumento": "Hipertensión arterial crónica documentada en P1.5 con uso de Losartán 50mg, que condiciona la microperfusión tisular periarticular y limita la respuesta inflamatoria reparativa. A los 45 años con HTA, el umbral cardiovascular al esfuerzo está reducido." },
+            { "nombre": "Piel y Fascia (Cicatriz Abdominal Post-Cesárea)", "argumento": "Cicatriz por cesárea visible y palpable en inspección estática de P2, con restricción de deslizamiento fascial percibido a la palpación. Transfiere estrés tensional hacia la pared lumbopélvica anterior, potencialmente limitando la activación del core profundo." },
+            { "nombre": "Sistema Endocrino (Tiroides)", "argumento": "Hipotiroidismo controlado con Levotiroxina 50mcg reportado en P1.5. Factor metabólico que puede ralentizar la reparación del colágeno y la síntesis proteica muscular, afectando los tiempos de recuperación tisular esperados." },
+            { "nombre": "Nervios Periféricos Lumbosacros", "argumento": "Aunque no hay signos neurológicos francos en P2, la proximidad anatómica del plexo lumbosacro a la articulación SI y la presencia de dolor nocturno leve reportado en P1 justifican su inclusión como estructura moduladora a vigilar." }
         ]
     },
-    "estructuras_mas_afectan": "Disfunción mecánica sacroilíaca modulada por incompetencia del control motor lumbopélvico, ambiente protrombótico y tensión fascial abdominal." 
+    "estructuras_mas_afectan": "Disfunción mecánica sacroilíaca derecha con compromiso capsular coxofemoral secundario, modulada por incompetencia del control motor lumbopélvico (glúteos + core debilitados), ambiente metabólico adverso (HTA + hipotiroidismo) y restricción fascial abdominal post-quirúrgica." 
   },
   "alteraciones_detectadas": { 
     "estructurales": [
@@ -195,31 +203,67 @@ export async function POST(req: Request) {
   },
   "actividad_y_participacion": {
     "limitaciones_directas": [
-      { "texto": "Bajar escaleras sin apoyo", "severidad": "moderada", "detalle": "Dolor punzante que obliga a usar pasamanos." },
-      { "texto": "Permanecer sentado > 30 min", "severidad": "moderada", "detalle": "Aparición de rigidez y dolor sordo lumbopélvico." },
-      { "texto": "Correr a velocidades > 9 km/h", "severidad": "severa", "detalle": "Impotencia funcional por dolor en cara lateral de cadera." },
-      { "texto": "Dormir sobre el lado derecho", "severidad": "leve", "detalle": "Despertar nocturno por compresión de la zona dolorosa." },
-      { "texto": "Realizar estocadas profundas", "severidad": "completa", "detalle": "Evitación total por dolor insoportable 9/10." }
+      { "texto": "Bajar escaleras sin apoyo", "severidad": "moderada", "detalle": "Dolor punzante en SI derecha que obliga a usar pasamanos; la carga excéntrica en escalones agrava la cizalla articular." },
+      { "texto": "Permanecer sentado > 30 min", "severidad": "moderada", "detalle": "Aparición de rigidez y dolor sordo lumbopélvico por carga estática prolongada sobre la articulación SI." },
+      { "texto": "Correr a velocidades > 9 km/h", "severidad": "severa", "detalle": "Impotencia funcional por dolor en cara lateral de cadera; la carga repetitiva de impacto supera el umbral de tolerancia tisular." },
+      { "texto": "Dormir sobre el lado derecho", "severidad": "leve", "detalle": "Despertar nocturno por compresión directa de la zona dolorosa contra el colchón; usa almohada entre piernas como compensación." },
+      { "texto": "Realizar estocadas o sentadillas profundas", "severidad": "completa", "detalle": "Evitación total por dolor insoportable 9/10; la flexión profunda de cadera + carga axial reproduce el patrón de dolor principal." }
     ],
     "restricciones_participacion": [
-      { "texto": "Desempeño Laboral Efectivo", "severidad": "moderada", "detalle": "Necesidad de pausas constantes; pérdida de foco por dolor." },
-      { "texto": "Entrenamiento de Running (Grupo)", "severidad": "severa", "detalle": "Abandono temporal de la actividad que era su principal hobby." },
-      { "texto": "Cuidado de hijos pequeños", "severidad": "moderada", "detalle": "Dificultad para cargarlos o jugar en el suelo con ellos." },
-      { "texto": "Vida Sexual activa", "severidad": "leve", "detalle": "Limitación por dolor/miedo en ciertas posiciones de carga." }
+      { "texto": "Desempeño Laboral Efectivo (Oficina)", "severidad": "moderada", "detalle": "Necesidad de pausas constantes no programadas cada 20 min; pérdida de concentración por dolor lumbar en sedestación prolongada. Inferido de ocupación sedentaria en P1 + dolor sentado en P2." },
+      { "texto": "Entrenamiento de Running (Grupo)", "severidad": "severa", "detalle": "Abandono temporal de la actividad deportiva principal; aislamiento del grupo social deportivo. Paciente reporta que era su principal herramienta de manejo de estrés." },
+      { "texto": "Cuidado de hijos pequeños", "severidad": "moderada", "detalle": "Dificultad para cargarlos, agacharse al suelo o jugar en posiciones bajas. Inferido de rol parental en P1.5 + limitaciones de carga y flexión en P2." },
+      { "texto": "Vida Sexual activa", "severidad": "leve", "detalle": "Limitación por dolor en posiciones de carga pélvica y miedo al movimiento. Inferido de kinesiofobia reportada en P1 + dolor en rotación de cadera en P2." },
+      { "texto": "Participación Social y Recreativa", "severidad": "moderada", "detalle": "Evitación de salidas que impliquen caminatas largas, estar de pie en eventos o actividades al aire libre. Inferido de baja tolerancia a la carga en P2 + perfil deportivo previo en P1." }
     ]
   },
   "factores_biopsicosociales": { 
-    "factores_personales_positivos": ["Alta motivación intrínseca", "Buena adherencia a planes previos", "Resiliencia"], 
-    "factores_personales_negativos": ["Estrés laboral crónico", "Mala calidad de sueño (interrumpido)", "Miedo a la cirugía"], 
-    "facilitadores_ambientales": ["Red de apoyo familiar fuerte", "Acceso a gimnasio cerca de casa", "Seguro médico de cobertura total"], 
-    "barreras_ambientales": ["Trabajo 100% sedentario", "Entorno laboral estresante", "Falta de ergonómica en casa"],
-    "factores_clinicos_moduladores": ["Diabetes tipo 2 (afecta colágeno)", "Uso de estatinas (mialgias?)", "Cronicidad (> 6 meses)"],
-    "observaciones_bps_integradas": "Paciente con perfil atlético pero atrapado en un ciclo de sedentarismo laboral y desregulación metabólica (Diabetes). La lesión biológica (SI) está cronificada por el ambiente pro-inflamatorio y el estrés, aunque su motivación es el motor principal de recuperación."
+    "factores_personales_positivos": [
+      "Alta motivación intrínseca para rehabilitarse (reportado en P1)", 
+      "Experiencia deportiva previa que facilita adherencia al ejercicio terapéutico", 
+      "Buena capacidad de comunicación y comprensión de instrucciones (observado en entrevista)", 
+      "Resiliencia demostrada: mantiene actividad laboral a pesar del dolor crónico"
+    ], 
+    "factores_personales_negativos": [
+      "Estrés laboral crónico alto que potencia sensibilización central y reduce umbral de dolor", 
+      "Mala calidad de sueño interrumpido por dolor nocturno (reportado en P1, correlaciona con irritabilidad alta)", 
+      "Tendencia a kinesiofobia leve: evita actividades deportivas por temor a empeorar (inferido de P1)", 
+      "Edad 45 años: inicio de declive hormonal que puede afectar recuperación del colágeno y masa muscular",
+      "Sexo femenino + post-parto: laxitud ligamentosa residual pélvica documentada en P1.5"
+    ], 
+    "facilitadores_ambientales": [
+      "Red de apoyo familiar fuerte (pareja activa en cuidado de hijos, reportado en P1.5)", 
+      "Acceso a gimnasio cerca de casa (facilita adherencia a programa de ejercicio)", 
+      "Seguro médico con cobertura de kinesiología (elimina barrera económica)", 
+      "Jornada laboral con flexibilidad horaria parcial (permite asistir a sesiones)"
+    ], 
+    "barreras_ambientales": [
+      "Trabajo 100% sedentario en oficina sin estación de pie (agrava síntomas por sedestación prolongada)", 
+      "Entorno laboral con alta exigencia cognitiva y plazos (potencia estrés → dolor)", 
+      "Domicilio con escaleras obligatorias sin ascensor (provocación diaria del dolor)", 
+      "Falta de mobiliario ergonómico en casa y oficina (sillas sin soporte lumbar)",
+      "Distancia al centro de salud > 30 min (puede afectar frecuencia de asistencia)"
+    ],
+    "factores_clinicos_moduladores": [
+      "Hipotiroidismo controlado con Levotiroxina (ralentiza metabolismo del colágeno y velocidad de reparación tisular)", 
+      "HTA crónica con Losartán 50mg (condiciona microperfusión, limita intensidad de ejercicio cardiovascular)", 
+      "Cronicidad del cuadro > 6 meses (riesgo de sensibilización central y patrones motores compensatorios establecidos)", 
+      "Antecedente de laxitud pélvica post-parto (P1.5) que predispone a recurrencia de disfunción SI"
+    ],
+    "observaciones_bps_integradas": "Paciente de 45 años con perfil atlético (running amateur) atrapada en un ciclo de sedentarismo laboral forzado y desregulación metabólica (hipotiroidismo + HTA). La lesión biológica (disfunción SI crónica) está cronificada por el ambiente pro-inflamatorio sistémico, el estrés laboral sostenido y la laxitud residual post-parto. Sin embargo, su alta motivación intrínseca, experiencia deportiva previa y red de apoyo familiar sólida constituyen un motor potente de recuperación. El pronóstico depende críticamente de la gestión del estrés laboral y la progresión gradual de carga respetando la irritabilidad alta."
   },
   "recordatorios_y_coherencia": { 
-    "recordatorios_clinicos": ["Vigilar glucemia post-ejercicio", "Evaluar calzado deportivo"], 
-    "cosas_a_vigilar_en_tratamiento": ["Signos de alarma neurológica distal", "Aumento de irritabilidad"], 
-    "faltantes_no_criticos": ["Falta test neurodinámico formal"], 
+    "recordatorios_clinicos": [
+      "Vigilar presión arterial durante ejercicio de alta intensidad por HTA", 
+      "Monitorear niveles de TSH si recuperación tisular es más lenta de lo esperado",
+      "Evaluar calzado deportivo antes de reintegro a running"
+    ], 
+    "cosas_a_vigilar_en_tratamiento": [
+      "Dolor nocturno: si aumenta en frecuencia o intensidad, considerar derivación para descartar patología inflamatoria sistémica", 
+      "After-effect post-sesión: no debe superar 2h; si supera, reducir carga 30%",
+      "Signos neurológicos: vigilar aparición de parestesias o debilidad distal"
+    ], 
+    "faltantes_no_criticos": ["Falta test neurodinámico formal (slump/SLR)", "No se documentó evaluación de piso pélvico post-parto"], 
     "incoherencias_detectadas": [] 
   }
 } `;
@@ -238,7 +282,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.6.4',
+            promptVersion: 'v3.7.0',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
