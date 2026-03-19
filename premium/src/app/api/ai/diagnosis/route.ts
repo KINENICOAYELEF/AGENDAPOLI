@@ -42,35 +42,36 @@ export async function POST(req: Request) {
   "snapshot_clinico": { 
     "identificacion": { "nombre": "Juan Pérez", "edad": "45 años", "sexo": "Masculino" },
     "contexto_basal": { 
-      "ocupacion": "Administrativo o Estudiante (Sedentario)", 
+      "ocupacion": "Administrativo (Sedentario)", 
       "deporte_actividad": "Running 3v/sem (Amateur)", 
       "demanda_fisica": "Baja en oficina, Alta en cerro", 
       "ayudas_tecnicas": ""
     },
     "factores_relevantes": { 
-      "comorbilidades": ["HTA controlada"], 
-      "medicamentos": ["Losartán 50mg"], 
-      "antecedentes_msk": ["Fractura de peroné hace 10 años"], 
+      "comorbilidades": ["HTA controlada", "Hipotiroidismo"], 
+      "medicamentos": ["Losartán 50mg", "Levotiroxina 50mcg"], 
+      "antecedentes_msk": ["Fractura de peroné hace 10 años", "Esguince tobillo recurrente"], 
       "observaciones_seguridad": ["Fatiga cardiovascular moderada al esfuerzo"] 
     },
-    "foco_y_lado": "Rodilla Derecha", 
-    "irritabilidad_sugerida": "Media",
-    "tolerancia_carga": { "nivel": "Baja", "explicacion": "Dolor > 4/10 al trotar > 2km." },
+    "foco_y_lado": "Sacroilíaca y Cadera Derecha", 
+    "irritabilidad_sugerida": "Alta",
+    "tolerancia_carga": { "nivel": "Baja", "explicacion": "Dolor > 4/10 al trotar > 2km. Escaleras provocan 7/10." },
     "tarea_indice": "Bajar escaleras",
     "alertas_clinicas": ["Dolor nocturno leve"]
   },
-  "clasificacion_dolor": { "categoria": "nociceptivo|neuropático|nociplástico|mixto|no_concluyente", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": [], "duda_mezcla": [], "conclusion": "" }, "nivel_confianza": "Alta|Media|Baja" },
+  "clasificacion_dolor": { "categoria": "nociceptivo", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": ["Dolor reproducible con test de Laslett", "Agravado por carga mecánica"], "duda_mezcla": ["Dolor nocturno leve podría sugerir componente inflamatorio"], "conclusion": "Predominio nociceptivo mecánico con posible componente inflamatorio secundario." }, "nivel_confianza": "Media" },
   "sistema_y_estructuras": { 
-    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario"], 
+    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario", "endocrino"], 
     "estructuras": {
-        "principales": [{ "nombre": "Articulación Sacroilíaca", "argumento": "Existe una reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante la examinación física de P2. Esto cruza perfectamente con la anamnesis en P1, donde el paciente describe un dolor profundo glúteo de carácter mecánico y tirante, originado inicialmente al levantar carga pesada asimétrica." }],
-        "secundarias": [{ "nombre": "Ligamentos Sacroilíacos Dorsales", "argumento": "A la palpación directa en la consulta (P2) se detectó sensibilidad exquisita circunscrita a la banda ligamentosa. Además, en la historia clínica P1.5 existe el antecedente de laxitud pélvica post-parto que mantiene un ambiente de inestabilidad basal, lo cual cuadra con la respuesta biológica reactiva actual ante los tests de cizalla." }],
+        "principales": [{ "nombre": "Articulación Sacroilíaca", "argumento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante P2, cruzando con mecanismo de carga asimétrica reportado en P1." }],
+        "secundarias": [{ "nombre": "Ligamentos Sacroilíacos Dorsales", "argumento": "Sensibilidad exquisita circunscrita a la banda ligamentosa detectada en P2, con antecedente de laxitud pélvica post-parto en P1.5." }],
         "asociadas_moduladoras": [
-            { "nombre": "Corazón y Vasos Sanguíneos", "argumento": "El paciente documenta hipertensión arterial crónica en sus antecedentes clínicos base, lo que exige registrar una afección sistémica que impacta negativamente sobre la microperfusión, la respuesta inflamatoria y la sensibilidad central ante el dolor persistente sacroilíaco expresado en P1, actuando como limitante de reparación histológica autónoma." },
-            { "nombre": "Piel y Fascia (Cicatriz Abdominal)", "argumento": "En la historia y examen físico (P2) se reporta y observa una cicatriz por cesárea en la cavidad abdominal baja, tejido que transfiere estrés tensional hacia la pared lumbopélvica alterando el juego articular de la pelvis durante la marcha y provocando sobrecarga secundaria hacia posterior, modulando el cuadro base." }
+            { "nombre": "Corazón y Vasos Sanguíneos", "argumento": "Hipertensión arterial crónica documentada en P1.5 que condiciona microperfusión y respuesta inflamatoria." },
+            { "nombre": "Piel y Fascia (Cicatriz Abdominal)", "argumento": "Cicatriz por cesárea observada en P2 que transfiere estrés tensional hacia la pared lumbopélvica." },
+            { "nombre": "Sistema Endocrino (Tiroides)", "argumento": "Hipotiroidismo controlado reportado en P1.5, factor metabólico que puede ralentizar la reparación tisular." }
         ]
     },
-    "estructuras_mas_afectan": "Disfunción mecánica y cizalla de la articulación sacroilíaca severamente modulada por incompetencia del control motor lumbopélvico, ambiente protrombótico subyacente y tensión fascial abdominal." 
+    "estructuras_mas_afectan": "Disfunción mecánica sacroilíaca modulada por incompetencia del control motor lumbopélvico, ambiente protrombótico y tensión fascial abdominal." 
   },
   "alteraciones_detectadas": { 
     "estructurales": [
@@ -78,40 +79,128 @@ export async function POST(req: Request) {
         "estructura": "Articulación Sacroilíaca Derecha", 
         "alteracion": "Disfunción mecánica por inestabilidad / Cizalla reactiva", 
         "certeza": "Probable", 
-        "fundamento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante P2, coincidiendo con el mecanismo de carga asimétrica reportado en P1.",
+        "fundamento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar cluster de Laslett en P2, coincidiendo con mecanismo de carga asimétrica reportado en P1.",
+        "impacto_caso": "Mucho"
+      },
+      {
+        "estructura": "Ligamentos Sacroilíacos Dorsales",
+        "alteracion": "Irritación tisular reactiva / posible esguince crónico",
+        "certeza": "Posible",
+        "fundamento": "Sensibilidad exquisita a palpación directa en P2 + antecedente de laxitud post-parto en P1.5.",
+        "impacto_caso": "Mucho"
+      },
+      {
+        "estructura": "Musculatura Glútea (Glúteo Medio/Mayor)",
+        "alteracion": "Atrofia / hipotrofia funcional por desuso antálgico",
+        "certeza": "Posible",
+        "fundamento": "Debilidad manual grado 3/5 con compensaciones observadas en P2.",
         "impacto_caso": "Mucho"
       },
       {
         "estructura": "Sistema Cardiovascular / Arterias",
         "alteracion": "Hipertensión Arterial Sistémica (HTA)",
         "certeza": "Casi confirmada",
-        "fundamento": "Antecedente médico directo en P1.5 (Anamnesis Remota) con uso de Losartán, lo que condiciona la microperfusión tisular y la respuesta inflamatoria persistente.",
+        "fundamento": "Antecedente médico directo en P1.5 con uso crónico de Losartán. Condiciona microperfusión tisular y tolerancia al esfuerzo.",
+        "impacto_caso": "Poco"
+      },
+      {
+        "estructura": "Sistema Endocrino / Tiroides",
+        "alteracion": "Hipotiroidismo (Antecedente)",
+        "certeza": "Casi confirmada",
+        "fundamento": "Reportado en P1.5 como diagnóstico médico basal con Levotiroxina. Puede ralentizar la reparación tisular.",
+        "impacto_caso": "Poco"
+      },
+      {
+        "estructura": "Piel / Fascia Abdominal",
+        "alteracion": "Tejido cicatricial post-cesárea con adherencias",
+        "certeza": "Posible",
+        "fundamento": "Cicatriz visible y palpable en inspección estática P2. Potencial restricción fascial lumbopélvica.",
         "impacto_caso": "Poco"
       }
     ], 
     "funcionales": [
       { 
-        "funcion_disfuncion": "Limitación severa en transferencia de carga monodal", 
+        "funcion_disfuncion": "Dolor sacroilíaco bilateral", 
         "severidad": "Severa",
-        "fundamento": "Incapacidad de realizar apoyo unipodal sin dolor exacerbado observada en P2.",
+        "fundamento": "EVA 8/10 actual, 6/10 habitual reportado en P1. Dolor reproducible con maniobras de cizalla en P2.",
+        "dominio_sugerido": "Dolor"
+      },
+      { 
+        "funcion_disfuncion": "Irritabilidad mecánica alta", 
+        "severidad": "Severa",
+        "fundamento": "Dolor tarda >2h en calmar tras provocación mínima (subir escaleras) reportado en P1. After-effect prolongado.",
+        "dominio_sugerido": "Dolor"
+      },
+      {
+        "funcion_disfuncion": "Baja tolerancia a la carga acumulada",
+        "severidad": "Moderada",
+        "fundamento": "No tolera >2km de trote ni escaleras sin exacerbación (>4/10). Reportado en P1 y corroborado en P2.",
         "dominio_sugerido": "Carga"
+      },
+      {
+        "funcion_disfuncion": "Debilidad de glúteo medio bilateral",
+        "severidad": "Moderada",
+        "fundamento": "Manual grado 3/5 con compensaciones en Trendelenburg positivo observado en P2.",
+        "dominio_sugerido": "Fuerza"
+      },
+      {
+        "funcion_disfuncion": "Baja resistencia isométrica de cadena posterior",
+        "severidad": "Moderada",
+        "fundamento": "Fatiga prematura y pérdida de técnica antes de 10 repeticiones en puente unilateral en P2.",
+        "dominio_sugerido": "Fuerza"
       },
       {
         "funcion_disfuncion": "Déficit de control motor lumbopélvico",
         "severidad": "Moderada",
-        "fundamento": "Compensación con rigidez costal durante tarea índice de flexión frontal en P2.",
+        "fundamento": "Compensación con rigidez y pérdida de disociación lumbopélvica durante tareas de control motor en P2.",
         "dominio_sugerido": "Control motor"
+      },
+      {
+        "funcion_disfuncion": "Compensaciones lumbopélvicas en puente unilateral",
+        "severidad": "Leve",
+        "fundamento": "Rotación pélvica excesiva y reclutamiento dominante de isquiotibiales observado en P2.",
+        "dominio_sugerido": "Control motor"
+      },
+      {
+        "funcion_disfuncion": "Limitación de ROM en rotación interna/externa de cadera",
+        "severidad": "Moderada",
+        "fundamento": "ROM activo/pasivo incompleto y doloroso (EVA 8/10) en P2.",
+        "dominio_sugerido": "Movilidad"
+      },
+      {
+        "funcion_disfuncion": "Hipomovilidad sacra / restricción de nutación",
+        "severidad": "Moderada",
+        "fundamento": "Evaluación de movilidad accesoria en P2 muestra restricción significativa del juego articular.",
+        "dominio_sugerido": "Movilidad"
+      },
+      {
+        "funcion_disfuncion": "Mala calidad de sueño",
+        "severidad": "Moderada",
+        "fundamento": "Reportado en factores personales negativos de P1. Dolor nocturno leve interfiere con el descanso.",
+        "dominio_sugerido": "Psicosocial"
+      },
+      {
+        "funcion_disfuncion": "Kinesiofobia / Miedo al movimiento",
+        "severidad": "Leve",
+        "fundamento": "Evitación de actividades deportivas por temor a empeorar, reportado en P1.",
+        "dominio_sugerido": "Psicosocial"
+      },
+      {
+        "funcion_disfuncion": "Regulación metabólica alterada por hipotiroidismo",
+        "severidad": "Leve",
+        "fundamento": "Antecedente de hipotiroidismo en P1.5. Puede afectar tasa de reparación tisular y niveles de energía.",
+        "dominio_sugerido": "Metabólico"
       }
     ] 
   },
-  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Subir y bajar escaleras pesadas", "severidad": "alta" }], "restricciones_participacion": [{ "texto": "Running amateur", "severidad": "moderada" }] },
+  "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Subir y bajar escaleras", "severidad": "severa" }, { "texto": "Trotar más de 2km", "severidad": "severa" }, { "texto": "Permanecer sentado >30min", "severidad": "moderada" }], "restricciones_participacion": [{ "texto": "Running amateur suspendido", "severidad": "severa" }, { "texto": "Actividades recreativas familiares limitadas", "severidad": "moderada" }] },
   "factores_biopsicosociales": { 
-    "factores_personales_positivos": [], 
-    "factores_personales_negativos": [], 
-    "facilitadores_ambientales": [], 
-    "barreras_ambientales": [] 
+    "factores_personales_positivos": ["Motivación alta para rehabilitación", "Experiencia deportiva previa"], 
+    "factores_personales_negativos": ["Mala calidad de sueño", "Tendencia leve a evitación por miedo"], 
+    "facilitadores_ambientales": ["Acceso a gimnasio", "Red de apoyo familiar sólida"], 
+    "barreras_ambientales": ["Trabajo sedentario prolongado", "Escaleras obligatorias en domicilio"] 
   },
-  "recordatorios_y_coherencia": { "recordatorios_clinicos": [], "cosas_a_vigilar_en_tratamiento": [], "faltantes_no_criticos": [], "incoherencias_detectadas": [] }
+  "recordatorios_y_coherencia": { "recordatorios_clinicos": ["Monitorear presión arterial durante ejercicio por HTA"], "cosas_a_vigilar_en_tratamiento": ["Dolor nocturno: si aumenta, derivar", "After-effect post-sesión: no debe superar 2h"], "faltantes_no_criticos": ["Falta evaluación formal de balance unipodal"], "incoherencias_detectadas": [] }
 } `;
 
         const userPrompt = `
@@ -128,7 +217,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.3.3',
+            promptVersion: 'v3.4.0',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
