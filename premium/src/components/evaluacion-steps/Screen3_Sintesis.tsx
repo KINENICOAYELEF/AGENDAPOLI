@@ -704,7 +704,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                     <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Estructuras que más afectan el caso hoy</span>
                                 </div>
                                 <textarea 
-                                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-4 pt-8 text-sm font-bold text-blue-900 leading-relaxed min-h-[100px] focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all resize-none shadow-sm"
+                                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-4 pt-8 text-sm font-bold text-blue-900 leading-relaxed min-h-[100px] focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all resize-y overflow-y-auto shadow-sm"
                                     value={autoSynth.sistema_y_estructuras?.estructuras_mas_afectan || ''}
                                     onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_mas_afectan: e.target.value })}
                                     disabled={isClosed}
