@@ -98,15 +98,20 @@ export const DiagnosisSchema = z.object({
         estructuras_mas_afectan: z.string(), // Resumen para P4
     }),
     alteraciones_detectadas: z.object({
+        // E1 - Alteraciones Estructurales (Anatómicas/Tisulares)
         estructurales: z.array(z.object({
-            estructura_involucrada: z.string().describe("Estructura específica involucrada (ej: Ligamentos sacroilíacos)"),
-            alteracion_sospecha: z.string().describe("Disfunción o sospecha (ej: Irritación / compromiso)"),
-            certeza: z.string().describe("Certeza: casi_confirmada | probable | posible | no_concluyente"),
-            fundamento_clinico: z.string().describe("Cluster, signos, síntomas o imágenes que lo respaldan")
+            estructura: z.string().describe("Estructura específica (ej: Ligamento Cruzado Anterior)"),
+            alteracion: z.string().describe("Alteración anatómica (ej: Desgarro parcial, Engrosamiento, Edema)"),
+            certeza: z.string().describe("Certeza: 'Casi confirmada' | 'Probable' | 'Posible' | 'No concluyente'"),
+            fundamento: z.string().describe("Cluster clínico, mecanismo o hallazgo de imagen que lo avala"),
+            impacto_caso: z.string().describe("Impacto en el caso actual: 'Mucho' | 'Poco'")
         })),
-        functional: z.array(z.object({
-            texto: z.string(),
-            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
+        // E2 - Alteraciones Funcionales (Disfunciones/Desempeño)
+        funcionales: z.array(z.object({
+            funcion_disfuncion: z.string().describe("Disfunción operativa (ej: Déficit de fuerza, Irritabilidad, Dolor, Miedo)"),
+            severidad: z.string().describe("Severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa'"),
+            fundamento: z.string().describe("Hallazgo en P1/P2 que justifica la severidad"),
+            dominio_sugerido: z.string().describe("Dominio: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor'")
         }))
     }),
     actividad_y_participacion: z.object({

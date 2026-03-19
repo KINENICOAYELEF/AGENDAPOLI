@@ -724,8 +724,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">⚙️</span> E. Alteraciones Detectadas</h3>
                         
                         <div className="mb-6">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E1. Estructurales</label>
-                            <div className="space-y-3">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">E1. Alteraciones Estructurales (Anatomía / Tejido)</label>
+                            <div className="space-y-4">
                                 {(autoSynth.alteraciones_detectadas?.estructurales || []).map((alt: any, idx: number) => (
                                     <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-3 relative group">
                                         {!isClosed && (
@@ -740,35 +740,35 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                 ✕
                                             </button>
                                         )}
-                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                            <div className="md:col-span-3 flex flex-col gap-1">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                            <div className="md:col-span-4 flex flex-col gap-1">
                                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">1. Estructura</label>
                                                 <input 
                                                     type="text" 
-                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
-                                                    value={alt.estructura_involucrada || ''} 
+                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-semibold" 
+                                                    value={alt.estructura || ''} 
                                                     onChange={(e) => {
                                                         const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])];
-                                                        copy[idx].estructura_involucrada = e.target.value;
+                                                        copy[idx].estructura = e.target.value;
                                                         updateDeepObj('alteraciones_detectadas', { estructurales: copy });
                                                     }} 
                                                     disabled={isClosed} 
-                                                    placeholder="Ej: Lig. Sacroilíaco" 
+                                                    placeholder="Ej: Tendón Supraespinoso" 
                                                 />
                                             </div>
-                                            <div className="md:col-span-3 flex flex-col gap-1">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">2. Alteración / Sospecha</label>
+                                            <div className="md:col-span-4 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">2. Alteración Anatómica</label>
                                                 <input 
                                                     type="text" 
                                                     className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
-                                                    value={alt.alteracion_sospecha || ''} 
+                                                    value={alt.alteracion || ''} 
                                                     onChange={(e) => {
                                                         const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])];
-                                                        copy[idx].alteracion_sospecha = e.target.value;
+                                                        copy[idx].alteracion = e.target.value;
                                                         updateDeepObj('alteraciones_detectadas', { estructurales: copy });
                                                     }} 
                                                     disabled={isClosed} 
-                                                    placeholder="Ej: Irritación mecánica" 
+                                                    placeholder="Ej: Desgarro intrasustancia" 
                                                 />
                                             </div>
                                             <div className="md:col-span-2 flex flex-col gap-1">
@@ -783,25 +783,41 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                     }} 
                                                     disabled={isClosed}
                                                 >
-                                                    <option value="posible">Posible</option>
-                                                    <option value="probable">Probable</option>
-                                                    <option value="casi_confirmada">Casi Confirmada</option>
-                                                    <option value="no_concluyente">No concluyente</option>
+                                                    <option value="Posible">Posible</option>
+                                                    <option value="Probable">Probable</option>
+                                                    <option value="Casi confirmada">Casi confirmada</option>
+                                                    <option value="No concluyente">No concluyente</option>
                                                 </select>
                                             </div>
-                                            <div className="md:col-span-4 flex flex-col gap-1">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">4. Fundamento Clínico (Cluster/P2)</label>
-                                                <input 
-                                                    type="text" 
-                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
-                                                    value={alt.fundamento_clinico || ''} 
+                                            <div className="md:col-span-2 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">4. Impacto</label>
+                                                <select 
+                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
+                                                    value={alt.impacto_caso} 
                                                     onChange={(e) => {
                                                         const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])];
-                                                        copy[idx].fundamento_clinico = e.target.value;
+                                                        copy[idx].impacto_caso = e.target.value;
+                                                        updateDeepObj('alteraciones_detectadas', { estructurales: copy });
+                                                    }} 
+                                                    disabled={isClosed}
+                                                >
+                                                    <option value="Mucho">Mucho</option>
+                                                    <option value="Poco">Poco</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-12 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">5. Fundamento (Cluster / Imagen / Mecanismo)</label>
+                                                <TextareaAutosize 
+                                                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all resize-none overflow-hidden" 
+                                                    value={alt.fundamento || ''} 
+                                                    onChange={(e) => {
+                                                        const copy = [...(autoSynth.alteraciones_detectadas?.estructurales || [])];
+                                                        copy[idx].fundamento = e.target.value;
                                                         updateDeepObj('alteraciones_detectadas', { estructurales: copy });
                                                     }} 
                                                     disabled={isClosed} 
-                                                    placeholder="Ej: Cluster Laslett (+) + Palpación (+)" 
+                                                    minRows={1}
+                                                    placeholder="Justificación clínica..." 
                                                 />
                                             </div>
                                         </div>
@@ -812,40 +828,119 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                         onClick={() => updateDeepObj('alteraciones_detectadas', { 
                                             estructurales: [
                                                 ...(autoSynth.alteraciones_detectadas?.estructurales || []), 
-                                                { estructura_involucrada: '', alteracion_sospecha: '', certeza: 'posible', fundamento_clinico: '' }
+                                                { estructura: '', alteracion: '', certeza: 'Posible', fundamento: '', impacto_caso: 'Mucho' }
                                             ] 
                                         })} 
-                                        className="w-full py-2 border-2 border-dashed border-slate-100 rounded-xl text-xs text-indigo-500 font-bold hover:bg-indigo-50 hover:border-indigo-100 transition-all flex items-center justify-center gap-2"
+                                        className="w-full py-2 border-2 border-dashed border-indigo-100 rounded-xl text-xs text-indigo-500 font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <span className="text-lg">+</span> Agregar Alteración Estructural
+                                        <span className="text-lg">+</span> Agregar Alteración Estructural (E1)
                                     </button>
                                 )}
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">E2. Funcionales</label>
-                            <div className="space-y-2">
-                                {(autoSynth.alteraciones_detectadas?.functional || []).map((alt: any, idx: number) => (
-                                    <div key={idx} className="flex gap-2 items-center bg-indigo-50/30 p-2 rounded-lg border border-indigo-100/50">
-                                        <div className="flex-1">
-                                            <input type="text" className="w-full bg-white border border-indigo-200/50 rounded px-2 py-1.5 text-sm" value={alt.texto} onChange={(e) => {
-                                                const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].texto = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
-                                            }} disabled={isClosed} placeholder="Ej: Control motor lumbopélvico deficiente..." />
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">E2. Alteraciones Funcionales (Disfunción / Desempeño)</label>
+                            <div className="space-y-4">
+                                {(autoSynth.alteraciones_detectadas?.funcionales || []).map((alt: any, idx: number) => (
+                                    <div key={idx} className="bg-indigo-50/20 p-4 rounded-xl border border-indigo-100/50 flex flex-col gap-3 relative group">
+                                        {!isClosed && (
+                                            <button 
+                                                onClick={() => {
+                                                    const copy = [...(autoSynth.alteraciones_detectadas?.funcionales || [])];
+                                                    copy.splice(idx, 1);
+                                                    updateDeepObj('alteraciones_detectadas', { funcionales: copy });
+                                                }}
+                                                className="absolute -top-2 -right-2 bg-white text-rose-500 hover:bg-rose-500 hover:text-white border border-slate-200 rounded-full w-6 h-6 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 font-medium">
+                                            <div className="md:col-span-5 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">1. Función / Disfunción</label>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full bg-white border border-indigo-100 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-semibold" 
+                                                    value={alt.funcion_disfuncion || ''} 
+                                                    onChange={(e) => {
+                                                        const copy = [...(autoSynth.alteraciones_detectadas?.funcionales || [])];
+                                                        copy[idx].funcion_disfuncion = e.target.value;
+                                                        updateDeepObj('alteraciones_detectadas', { funcionales: copy });
+                                                    }} 
+                                                    disabled={isClosed} 
+                                                    placeholder="Ej: Déficit fuerza abductores cadera" 
+                                                />
+                                            </div>
+                                            <div className="md:col-span-3 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">2. Dominio Sugerido</label>
+                                                <select 
+                                                    className="w-full bg-white border border-indigo-100 rounded-lg px-2 py-1.5 text-[11px] focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
+                                                    value={alt.dominio_sugerido} 
+                                                    onChange={(e) => {
+                                                        const copy = [...(autoSynth.alteraciones_detectadas?.funcionales || [])];
+                                                        copy[idx].dominio_sugerido = e.target.value;
+                                                        updateDeepObj('alteraciones_detectadas', { funcionales: copy });
+                                                    }} 
+                                                    disabled={isClosed}
+                                                >
+                                                    <option value="Dolor">Dolor</option>
+                                                    <option value="Movilidad">Movilidad</option>
+                                                    <option value="Fuerza">Fuerza</option>
+                                                    <option value="Control motor">Control motor</option>
+                                                    <option value="Carga">Carga</option>
+                                                    <option value="Sensorimotor">Sensorimotor</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-4 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">3. Severidad</label>
+                                                <select 
+                                                    className="w-full bg-white border border-indigo-100 rounded-lg px-2 py-1.5 text-[11px] focus:ring-2 focus:ring-indigo-100 outline-none transition-all" 
+                                                    value={alt.severidad} 
+                                                    onChange={(e) => {
+                                                        const copy = [...(autoSynth.alteraciones_detectadas?.funcionales || [])];
+                                                        copy[idx].severidad = e.target.value;
+                                                        updateDeepObj('alteraciones_detectadas', { funcionales: copy });
+                                                    }} 
+                                                    disabled={isClosed} 
+                                                >
+                                                    <option value="Leve">Leve</option>
+                                                    <option value="Moderada">Moderada</option>
+                                                    <option value="Severa">Severa</option>
+                                                    <option value="Completa">Completa</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-12 flex flex-col gap-1">
+                                                <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">4. Fundamento / Justificación</label>
+                                                <TextareaAutosize 
+                                                    className="w-full bg-white border border-indigo-100 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-100 outline-none transition-all resize-none overflow-hidden" 
+                                                    value={alt.fundamento || ''} 
+                                                    onChange={(e) => {
+                                                        const copy = [...(autoSynth.alteraciones_detectadas?.funcionales || [])];
+                                                        copy[idx].fundamento = e.target.value;
+                                                        updateDeepObj('alteraciones_detectadas', { funcionales: copy });
+                                                    }} 
+                                                    disabled={isClosed} 
+                                                    minRows={1}
+                                                    placeholder="Breve fundamento clínico..." 
+                                                />
+                                            </div>
                                         </div>
-                                        <select className="w-1/3 bg-white border border-indigo-200/50 rounded px-2 py-1.5 text-sm" value={alt.severidad} onChange={(e) => {
-                                            const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy[idx].severidad = e.target.value; updateDeepObj('alteraciones_detectadas', { functional: copy });
-                                        }} disabled={isClosed}>
-                                            <option value="leve">Leve</option>
-                                            <option value="ligera">Ligera</option>
-                                            <option value="moderada">Moderada</option>
-                                            <option value="severa">Severa</option>
-                                            <option value="completa">Completa</option>
-                                        </select>
-                                        {!isClosed && <button onClick={() => { const copy = [...(autoSynth.alteraciones_detectadas?.functional || [])]; copy.splice(idx, 1); updateDeepObj('alteraciones_detectadas', { functional: copy }); }} className="p-1 text-rose-500 hover:bg-rose-50 rounded">✕</button>}
                                     </div>
                                 ))}
-                                {!isClosed && <button onClick={() => updateDeepObj('alteraciones_detectadas', { functional: [...(autoSynth.alteraciones_detectadas?.functional || []), { texto: '', severidad: 'moderada' }] })} className="text-xs text-indigo-600 font-bold p-1">+ Agregar Alteración Funcional</button>}
+                                {!isClosed && (
+                                    <button 
+                                        onClick={() => updateDeepObj('alteraciones_detectadas', { 
+                                            funcionales: [
+                                                ...(autoSynth.alteraciones_detectadas?.funcionales || []), 
+                                                { funcion_disfuncion: '', severidad: 'Moderada', fundamento: '', dominio_sugerido: 'Carga' }
+                                            ] 
+                                        })} 
+                                        className="w-full py-2 border-2 border-dashed border-indigo-100 rounded-xl text-xs text-indigo-500 font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <span className="text-lg">+</span> Agregar Alteración Funcional (E2)
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

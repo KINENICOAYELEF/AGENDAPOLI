@@ -964,13 +964,21 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             estructuras_mas_afectan: string;
         };
         alteraciones_detectadas?: {
+            // E1 - Alteraciones Estructurales (Anatómicas/Tisulares)
             estructurales: Array<{ 
-                estructura_involucrada: string; 
-                alteracion_sospecha: string; 
-                certeza: 'casi_confirmada' | 'probable' | 'posible' | 'no_concluyente' | string; 
-                fundamento_clinico: string; 
+                estructura: string; 
+                alteracion: string; 
+                certeza: 'Casi confirmada' | 'Probable' | 'Posible' | 'No concluyente' | string; 
+                fundamento: string; 
+                impacto_caso: 'Mucho' | 'Poco' | string;
             }>;
-            functional: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
+            // E2 - Alteraciones Funcionales (Disfunciones/Desempeño)
+            funcionales: Array<{ 
+                funcion_disfuncion: string; 
+                severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa' | string;
+                fundamento: string;
+                dominio_sugerido: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | string;
+            }>;
         };
         actividad_y_participacion?: {
             limitaciones_directas: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
