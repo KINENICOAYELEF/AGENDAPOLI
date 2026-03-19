@@ -3,6 +3,7 @@ import { EvaluacionInicial } from "@/types/clinica";
 import { computeIrritability, autoSynthesizeFindings, computeSafety } from "@/lib/auto-engine";
 import { normalizeEvaluationState, buildCompactInterviewForAI, buildCompactPhysicalForAI, buildCompactContextForAI, buildCompactCasePackage } from "@/lib/state-normalizer";
 import { useAuth } from "@/context/AuthContext";
+import TextareaAutosize from 'react-textarea-autosize';
 
 export interface Screen3Props {
     formData: Partial<EvaluacionInicial>;
@@ -557,8 +558,9 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                              updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
-                                                     <textarea 
-                                                         className="text-[10px] text-indigo-700/70 bg-indigo-50/50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-indigo-800 transition-all"
+                                                     <TextareaAutosize 
+                                                         minRows={2}
+                                                         className="text-[10px] text-indigo-700/70 bg-indigo-50/50 border-none outline-none rounded p-1.5 resize-none w-full focus:bg-white focus:text-indigo-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {
@@ -609,8 +611,9 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                              updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
-                                                     <textarea 
-                                                         className="text-[10px] text-slate-600/70 bg-slate-50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-slate-800 transition-all"
+                                                     <TextareaAutosize 
+                                                         minRows={2}
+                                                         className="text-[10px] text-slate-600/70 bg-slate-50 border-none outline-none rounded p-1.5 resize-none w-full focus:bg-white focus:text-slate-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {
@@ -661,8 +664,9 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                              updateDeepObj('sistema_y_estructuras', { estructuras: nextE });
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
-                                                     <textarea 
-                                                         className="text-[10px] text-amber-700/70 bg-amber-50/50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-amber-800 transition-all"
+                                                     <TextareaAutosize 
+                                                         minRows={2}
+                                                         className="text-[10px] text-amber-700/70 bg-amber-50/50 border-none outline-none rounded p-1.5 resize-none w-full focus:bg-white focus:text-amber-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {
@@ -703,8 +707,9 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                     <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Estructuras que más afectan el caso hoy</span>
                                 </div>
-                                <textarea 
-                                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-4 pt-8 text-sm font-bold text-blue-900 leading-relaxed min-h-[100px] focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all resize-y overflow-y-auto shadow-sm"
+                                <TextareaAutosize 
+                                    minRows={3}
+                                    className="w-full bg-blue-50/50 border border-blue-100 rounded-2xl p-4 pt-8 text-sm font-bold text-blue-900 leading-relaxed focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all resize-none shadow-sm"
                                     value={autoSynth.sistema_y_estructuras?.estructuras_mas_afectan || ''}
                                     onChange={(e) => updateDeepObj('sistema_y_estructuras', { estructuras_mas_afectan: e.target.value })}
                                     disabled={isClosed}
