@@ -74,9 +74,35 @@ export async function POST(req: Request) {
   },
   "alteraciones_detectadas": { 
     "estructurales": [
-      { "estructura_involucrada": "Articulación Sacroilíaca", "alteracion_sospecha": "Disfunción mecánica por inestabilidad", "certeza": "probable", "fundamento_clinico": "Palpación dolorosa ligamentosa y déficit glúteo comprobado que aumentan estrés." }
+      { 
+        "estructura": "Articulación Sacroilíaca Derecha", 
+        "alteracion": "Disfunción mecánica por inestabilidad / Cizalla reactiva", 
+        "certeza": "Probable", 
+        "fundamento": "Reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante P2, coincidiendo con el mecanismo de carga asimétrica reportado en P1.",
+        "impacto_caso": "Mucho"
+      },
+      {
+        "estructura": "Sistema Cardiovascular / Arterias",
+        "alteracion": "Hipertensión Arterial Sistémica (HTA)",
+        "certeza": "Casi confirmada",
+        "fundamento": "Antecedente médico directo en P1.5 (Anamnesis Remota) con uso de Losartán, lo que condiciona la microperfusión tisular y la respuesta inflamatoria persistente.",
+        "impacto_caso": "Poco"
+      }
     ], 
-    "functional": [{ "texto": "Limitación severa en transferencia de carga monodal", "severidad": "alta" }] 
+    "funcionales": [
+      { 
+        "funcion_disfuncion": "Limitación severa en transferencia de carga monodal", 
+        "severidad": "Severa",
+        "fundamento": "Incapacidad de realizar apoyo unipodal sin dolor exacerbado observada en P2.",
+        "dominio_sugerido": "Carga"
+      },
+      {
+        "funcion_disfuncion": "Déficit de control motor lumbopélvico",
+        "severidad": "Moderada",
+        "fundamento": "Compensación con rigidez costal durante tarea índice de flexión frontal en P2.",
+        "dominio_sugerido": "Control motor"
+      }
+    ] 
   },
   "actividad_y_participacion": { "limitaciones_directas": [{ "texto": "Subir y bajar escaleras pesadas", "severidad": "alta" }], "restricciones_participacion": [{ "texto": "Running amateur", "severidad": "moderada" }] },
   "factores_biopsicosociales": { 
@@ -102,7 +128,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.2.5',
+            promptVersion: 'v3.3.3',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });

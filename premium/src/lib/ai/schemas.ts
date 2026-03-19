@@ -111,7 +111,7 @@ export const DiagnosisSchema = z.object({
             funcion_disfuncion: z.string().describe("Disfunción operativa (ej: Déficit de fuerza, Irritabilidad, Dolor, Miedo)"),
             severidad: z.string().describe("Severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa'"),
             fundamento: z.string().describe("Hallazgo en P1/P2 que justifica la severidad"),
-            dominio_sugerido: z.enum(['Dolor', 'Movilidad', 'Fuerza', 'Control motor', 'Carga', 'Sensorimotor', 'Metabólico', 'Ventilatorio', 'Cardiovascular', 'Neurológico', 'Tegumentario', 'Psicosocial'])
+            dominio_sugerido: z.string().describe("Dominio: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'")
         }))
     }),
     actividad_y_participacion: z.object({
