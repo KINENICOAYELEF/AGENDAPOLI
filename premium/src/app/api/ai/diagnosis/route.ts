@@ -185,34 +185,47 @@ export async function POST(req: Request) {
         "fundamento": "Evitación de actividades deportivas por temor a empeorar, reportado en P1.",
         "dominio_sugerido": "Psicosocial"
       },
-      {
-        "funcion_disfuncion": "Regulación metabólica alterada por hipotiroidismo",
-        "severidad": "Leve",
-        "fundamento": "Antecedente de hipotiroidismo en P1.5. Puede afectar tasa de reparación.",
-        "dominio_sugerido": "Metabólico"
-      }
+      { "funcion_disfuncion": "Dolor en región glútea derecha", "severidad": "Moderada", "fundamento": "EVA 6/10 durante examen físico P2", "dominio_sugerido": "Dolor" },
+      { "funcion_disfuncion": "Irritabilidad mecánica baja", "severidad": "Leve", "fundamento": "Dolor calma rápidamente (<15 min) tras cese de actividad", "dominio_sugerido": "Dolor" },
+      { "funcion_disfuncion": "Baja tolerancia a la carga (Sentadilla)", "severidad": "Severa", "fundamento": "Impotencia funcional tras 3 repeticiones en P2", "dominio_sugerido": "Carga" },
+      { "funcion_disfuncion": "Debilidad de Glúteo Medio (Abducción)", "severidad": "Moderada", "fundamento": "Fuerza grado 3/5 contra gravedad en P2", "dominio_sugerido": "Fuerza" },
+      { "funcion_disfuncion": "Déficit de balance monopodal derecho", "severidad": "Moderada", "fundamento": "Pérdida de equilibrio antes de 5 segundos en P2", "dominio_sugerido": "Control motor" },
+      { "funcion_disfuncion": "Compensación de tronco (Trendelenburg)", "severidad": "Moderada", "fundamento": "Caída de pelvis contralateral durante la marcha en P2", "dominio_sugerido": "Control motor" },
+      { "funcion_disfuncion": "Limitación de ROM Rotación Interna de Cadera", "severidad": "Moderada", "fundamento": "Restricción de 15 grados respecto al lado sano en P2", "dominio_sugerido": "Movilidad" },
+      { "funcion_disfuncion": "Hipomovilidad articular lumbopélvica", "severidad": "Leve", "fundamento": "Restricción en movimientos accesorios sacros en P2", "dominio_sugerido": "Movilidad" },
+      { "funcion_disfuncion": "Fatiga cardiopulmonar precoz", "severidad": "Leve", "fundamento": "Disnea grado 2 en escala de Borg ante esfuerzo mínimo", "dominio_sugerido": "Cardiovascular" },
+      { "funcion_disfuncion": "Miedo al movimiento en escaleras", "severidad": "Leve", "fundamento": "Conducta evitativa observada durante evaluación funcional", "dominio_sugerido": "Psicosocial" }
     ] 
   },
   "actividad_y_participacion": {
     "limitaciones_directas": [
-      { "texto": "Estar sentado > 20 min", "severidad": "moderada", "detalle": "Provoca dolor lumbar irradiado; requiere cambios de postura frecuentes." },
-      { "texto": "Caminar en terreno irregular", "severidad": "leve", "detalle": "Inestabilidad percibida y fatiga rápida en tríceps sural." },
-      { "texto": "Subir escaleras (> 2 pisos)", "severidad": "moderada", "detalle": "Requiere apoyo constante en pasamanos por falta de fuerza excéntrica." }
+      { "texto": "Bajar escaleras sin apoyo", "severidad": "moderada", "detalle": "Dolor punzante que obliga a usar pasamanos." },
+      { "texto": "Permanecer sentado > 30 min", "severidad": "moderada", "detalle": "Aparición de rigidez y dolor sordo lumbopélvico." },
+      { "texto": "Correr a velocidades > 9 km/h", "severidad": "severa", "detalle": "Impotencia funcional por dolor en cara lateral de cadera." },
+      { "texto": "Dormir sobre el lado derecho", "severidad": "leve", "detalle": "Despertar nocturno por compresión de la zona dolorosa." },
+      { "texto": "Realizar estocadas profundas", "severidad": "completa", "detalle": "Evitación total por dolor insoportable 9/10." }
     ],
     "restricciones_participacion": [
-      { "texto": "Desempeño Laboral (Oficina)", "severidad": "moderada", "detalle": "Productividad disminuida por dolor al estar sentado." },
-      { "texto": "Práctica Deportiva (Crossfit)", "severidad": "severa", "detalle": "Incapacidad de participar en entrenamientos grupales." }
+      { "texto": "Desempeño Laboral Efectivo", "severidad": "moderada", "detalle": "Necesidad de pausas constantes; pérdida de foco por dolor." },
+      { "texto": "Entrenamiento de Running (Grupo)", "severidad": "severa", "detalle": "Abandono temporal de la actividad que era su principal hobby." },
+      { "texto": "Cuidado de hijos pequeños", "severidad": "moderada", "detalle": "Dificultad para cargarlos o jugar en el suelo con ellos." },
+      { "texto": "Vida Sexual activa", "severidad": "leve", "detalle": "Limitación por dolor/miedo en ciertas posiciones de carga." }
     ]
   },
   "factores_biopsicosociales": { 
-    "factores_personales_positivos": ["Motivación alta para rehabilitación (G1)", "Experiencia deportiva previa (G1)", "Autoeficacia percibida alta (G1)"], 
-    "factores_personales_negativos": ["Mala calidad de sueño (G2)", "Tendencia leve a evitación por miedo (G2)", "Hipotiroidismo de base (G2)", "Nivel de estrés laboral elevado (G2)"], 
-    "facilitadores_ambientales": ["Acceso a gimnasio de alta calidad (G3)", "Red de apoyo familiar sólida y colaboradora (G3)", "Lugar de trabajo permite pausas ergonómicas (G3)"], 
-    "barreras_ambientales": ["Trabajo sedentario prolongado (>8h) (G4)", "Escaleras obligatorias en domicilio sin ascensor (G4)", "Tiempo limitado por cuidado de hijos (G4)"],
-    "factores_clinicos_moduladores": ["Uso de levotiroxina crónica (G5)", "Antecedente de 3 fallos en kinesiología previa (G5)", "Fumador social (G5)"],
-    "observaciones_bps_integradas": "Paciente con perfil atlético y motivado (G1), pero con barreras ambientales críticas como el sedentarismo laboral (G4) y factores metabólicos (G2/G5) que podrían ralentizar la velocidad de reparación tisular."
+    "factores_personales_positivos": ["Alta motivación intrínseca", "Buena adherencia a planes previos", "Resiliencia"], 
+    "factores_personales_negativos": ["Estrés laboral crónico", "Mala calidad de sueño (interrumpido)", "Miedo a la cirugía"], 
+    "facilitadores_ambientales": ["Red de apoyo familiar fuerte", "Acceso a gimnasio cerca de casa", "Seguro médico de cobertura total"], 
+    "barreras_ambientales": ["Trabajo 100% sedentario", "Entorno laboral estresante", "Falta de ergonómica en casa"],
+    "factores_clinicos_moduladores": ["Diabetes tipo 2 (afecta colágeno)", "Uso de estatinas (mialgias?)", "Cronicidad (> 6 meses)"],
+    "observaciones_bps_integradas": "Paciente con perfil atlético pero atrapado en un ciclo de sedentarismo laboral y desregulación metabólica (Diabetes). La lesión biológica (SI) está cronificada por el ambiente pro-inflamatorio y el estrés, aunque su motivación es el motor principal de recuperación."
   },
-  "recordatorios_y_coherencia": { "recordatorios_clinicos": ["Monitorear presión arterial durante ejercicio por HTA"], "cosas_a_vigilar_en_tratamiento": ["Dolor nocturno: si aumenta, derivar", "After-effect post-sesión: no debe superar 2h"], "faltantes_no_criticos": ["Falta evaluación formal de balance unipodal"], "incoherencias_detectadas": [] }
+  "recordatorios_y_coherencia": { 
+    "recordatorios_clinicos": ["Vigilar glucemia post-ejercicio", "Evaluar calzado deportivo"], 
+    "cosas_a_vigilar_en_treatment": ["Signos de alarma neurológica distal", "Aumento de irritabilidad"], 
+    "faltantes_no_criticos": ["Falta test neurodinámico formal"], 
+    "incoherencias_detectadas": [] 
+  }
 } `;
 
         const userPrompt = `
@@ -229,7 +242,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.6.3',
+            promptVersion: 'v3.6.4',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
