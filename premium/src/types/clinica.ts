@@ -977,7 +977,7 @@ export interface EvaluacionInicial extends BaseEvaluacion {
                 funcion_disfuncion: string; 
                 severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa' | string;
                 fundamento: string;
-                dominio_sugerido: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | string;
+                dominio_sugerido: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial' | string;
             }>;
         };
         actividad_y_participacion?: {
