@@ -17,6 +17,18 @@ Prioriza la "Evaluación Mínima Sugerida" que sea segura ("stop_rules"), espec�
 Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
+  DIAGNOSIS: `
+Actúa como un Kinesiólogo experto. Tu tarea es generar la síntesis clínica P3 (Clasificación CIF + Biopsicosocial) a partir de los datos de P1, P1.5 y P2 entregados en el compact case package.
+
+### BLOQUE F — REGLAS DE ORO (CAPTURA TOTAL e INFERENCIA):
+F1 = LIMITACIONES DE ACTIVIDAD (Tareas concretas: caminar, agacharse, subir escaleras, yoga, sentarse, etc.)
+F2 = RESTRICCIONES DE PARTICIPACIÓN (Roles/Contextos: trabajo, deporte, vida social, recreación, vida sexual, etc.)
+
+1. CAPTURA TOTAL: Identifica TODA mención a dificultades en tareas o roles. Si el paciente dice "me cuesta dormir" => eso es F1 (actividad). Si dice "no puedo trabajar" => eso es F2 (participación).
+2. INFERENCIA CLÍNICA RAZONABLE: Si existe una disfunción clara en P2 (ej: debilidad severa cuádriceps) y una demanda en P1 (ej: trabaja subiendo escaleras), INFIERE la limitación en F1 y la restricción en F2 aunque el paciente no lo haya verbalizado explícitamente.
+3. DETALLE: Explica brevemente la razón clínica de la limitación/restricción en el campo "detalle".
+
+### E1 — ESTRUCTURAS (Checklist de sistemas):
 - Nervio periférico (si neurología positiva)
 - Músculo (si desgarro, contractura, atrofia)
 - Hueso (si fractura, osteofito, edema óseo)
@@ -26,7 +38,7 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
 - Piel / Fascia / Cicatrices (si cicatriz quirúrgica, adherencias)
 - Cualquier otro sistema afectado por antecedentes remotos (P1.5)
 
-**E2 — Checklist Funcional (genera 1 ítem por cada hallazgo que aplique):**
+### E2 — Checklist Funcional (genera 1 ítem por cada hallazgo que aplique):
 - Dolor (CADA zona de dolor = 1 ítem separado)
 - Irritabilidad mecánica (si after-effect >1h o provocación fácil)
 - Debilidad muscular (CADA grupo muscular débil = 1 ítem)
@@ -46,34 +58,13 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
 - Déficit de potencia o explosividad (en deportistas)
 - Oportunidades de optimización (en casos de rendimiento sin dolor)
 
-### REGLA #2 — MÍNIMOS OBLIGATORIOS:
-- E1: Genera AL MENOS 3 ítems estructurales. Si el caso tiene comorbilidades, serán más.
-- E2: Genera AL MENOS 5 ítems funcionales. Si el caso es complejo, genera TODOS los que apliquen SIN LÍMITE.
-- NUNCA generes menos de 3+5. Si crees que solo hay 1 hallazgo, probablemente estás omitiendo datos.
+### REGLA DE ORO DE CAPTURA:
+Genera AL MENOS 3 ítems estructurales (E1) y 5 ítems funcionales (E2). Si el caso es complejo, genera TODOS los que apliquen SIN LÍMITE. Prefiere sobre-capturar a omitir.
 
-### REGLA #3 — ATOMIZACIÓN (1 Prueba → N Hallazgos):
-Si una prueba de P2 revela múltiples fallas, NO las agrupes. Genéralas como ítems independientes.
-Ejemplo: "Puente unilateral alterado" → 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
-
-### REGLA #4 — DOMINIOS SUGERIDOS (E2):
-Elige con precisión: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'.
-
-### REGLA #5 — VERIFICACIÓN FINAL ANTI-OMISIÓN:
-Antes de enviar el JSON, verifica:
-✓ ¿Capturé el DOLOR del paciente? (Si tiene dolor, DEBE haber al menos 1 ítem de Dolor en E2)
-✓ ¿Capturé la IRRITABILIDAD? (Si se reportó, DEBE estar en E2)
-✓ ¿Capturé la TOLERANCIA A LA CARGA? (Si es baja, DEBE estar en E2)
-✓ ¿Capturé DEBILIDADES musculares? (Si hay pruebas de fuerza alteradas, DEBEN estar)
-✓ ¿Capturé ROM limitados? (Si hay mediciones de rango, DEBEN estar)
-✓ ¿Capturé factores PSICOSOCIALES? (Sueño, miedo, estrés si fueron reportados)
-✓ ¿Capturé COMORBILIDADES como alteraciones sistémicas? (HTA→Cardiovascular, Diabetes→Metabólico)
-Si algo falta y hay datos en el payload, AGRÉGALO antes de responder.
-
-### REGLAS TÉCNICAS:
-- **FORMATO JSON PURO**: Sin markdown.
-- **IDIOMA**: Español técnico clínico.
-- **SOBRE-CAPTURA**: Prefiere redundancia a omisión. El usuario puede borrar lo que sobre.
+### FORMATO TÉCNICO:
+Retorna un JSON plano y parseable.
   `,
+
 
   P3_BPS_DICTIONARY: `
 Utiliza este diccionario para traducir claves técnicas a lenguaje humano en el Bloque G:
