@@ -16,76 +16,44 @@ Analiza la siguiente Entrevista Clínica estructurada. Devuelve un JSON con suge
 Prioriza la "Evaluación Mínima Sugerida" que sea segura ("stop_rules"), específica a los focos de dolor y la irritabilidad.
 Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
-
   DIAGNOSIS: `
-### ROLE: Súper Ordenador Clínico (P3) - Versión 3.4.0 (CAPTURA TOTAL CON CHECKLIST OBLIGATORIO)
-Tu objetivo es realizar la síntesis CIF más EXHAUSTIVA posible. Actúas como un Kinesiólogo Integral (pediatría a geriatría, sedentario a deportista de élite). Tu mandato es: NO PERDER ABSOLUTAMENTE NADA.
+### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.0
 
-### REGLA #1 — CHECKLIST DE CAPTURA OBLIGATORIA PARA BLOQUE E:
-Antes de generar el JSON, RECORRE mentalmente esta lista. Si el dato existe en P1, P1.5 o P2, GENERA el ítem correspondiente.
+REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente.
 
-**E1 — Checklist Estructural (genera 1 ítem por cada categoría que aplique):**
-- Articulación principal afectada (MSK)
-- Ligamentos / cápsula articular
-- Tendones / entesis
-- Disco intervertebral / columna
-- Nervio periférico (si neurología positiva)
-- Músculo (si desgarro, contractura, atrofia)
-- Hueso (si fractura, osteofito, edema óseo)
-- Sistema Cardiovascular (si HTA, IC, ateroesclerosis)
-- Sistema Respiratorio (si asma, EPOC, disnea)
-- Sistema Endocrino/Metabólico (si diabetes, tiroides, obesidad)
-- Piel / Fascia / Cicatrices (si cicatriz quirúrgica, adherencias)
-- Cualquier otro sistema afectado por antecedentes remotos (P1.5)
+### BLOQUE E — ESTRUCTURA Y FUNCIÓN:
+(Mantener reglas previas de atomización y sobre-captura...)
 
-**E2 — Checklist Funcional (genera 1 ítem por cada hallazgo que aplique):**
-- Dolor (CADA zona de dolor = 1 ítem separado)
-- Irritabilidad mecánica (si after-effect >1h o provocación fácil)
-- Debilidad muscular (CADA grupo muscular débil = 1 ítem)
-- Baja resistencia / fatiga prematura (si falla en pruebas de resistencia)
-- Déficit de control motor (si compensaciones o pérdida de disociación)
-- Compensaciones patológicas (si patrón motor alterado)
-- Limitación de ROM (CADA articulación restringida = 1 ítem)
-- Hipermovilidad / inestabilidad (si laxitud o sensación de inseguridad)
-- Baja tolerancia a la carga (si dolor con actividad funcional específica)
-- Mecanosensibilidad neural (si test neurodinámico positivo)
-- Déficit de balance / propiocepción / estabilidad (si falla en equilibrio)
-- Kinesiofobia / Miedo al movimiento (si evita actividades por miedo)
-- Catastrofización / Estrés alto (si reportado en factores BPS)
-- Mala calidad de sueño (si reportado en factores BPS)
-- Edema / Inflamación (si observado o reportado)
-- Fatiga cardiopulmonar / Disnea (si antecedente cardio o pulmonar)
-- Déficit de potencia o explosividad (en deportistas)
-- Oportunidades de optimización (en casos de rendimiento sin dolor)
+### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN (v3.5.x):
+(Mantener reglas de inferencia clínica e impacto...)
 
-### REGLA #2 — MÍNIMOS OBLIGATORIOS:
-- E1: Genera AL MENOS 3 ítems estructurales. Si el caso tiene comorbilidades, serán más.
-- E2: Genera AL MENOS 5 ítems funcionales. Si el caso es complejo, genera TODOS los que apliquen SIN LÍMITE.
-- NUNCA generes menos de 3+5. Si crees que solo hay 1 hallazgo, probablemente estás omitiendo datos.
+### BLOQUE G — MATRIZ BIOPSICOSOCIAL INTEGRAL:
+G debe ser una matriz de 6 áreas que capture todo el contexto de la persona.
 
-### REGLA #3 — ATOMIZACIÓN (1 Prueba → N Hallazgos):
-Si una prueba de P2 revela múltiples fallas, NO las agrupes. Genéralas como ítems independientes.
-Ejemplo: "Puente unilateral alterado" → 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
+**G1 — Factores Personales Positivos (Facilitadores internos):**
+- Motivación, buena adherencia previa, experiencia deportiva, optimismo, autoeficacia alta, resiliencia.
 
-### REGLA #4 — DOMINIOS SUGERIDOS (E2):
-Elige con precisión: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'.
+**G2 — Factores Personales Negativos (Barreras internas):**
+- Kinesiofobia, catastrofización, estrés alto, mala calidad de sueño, ansiedad, depresión, creencias limitantes sobre el dolor.
+- COMORBILIDADES: Hipotiroidismo, Diabetes, HTA (cuando afectan el ánimo o energía), etc.
 
-### REGLA #5 — VERIFICACIÓN FINAL ANTI-OMISIÓN:
-Antes de enviar el JSON, verifica:
-✓ ¿Capturé el DOLOR del paciente? (Si tiene dolor, DEBE haber al menos 1 ítem de Dolor en E2)
-✓ ¿Capturé la IRRITABILIDAD? (Si se reportó, DEBE estar en E2)
-✓ ¿Capturé la TOLERANCIA A LA CARGA? (Si es baja, DEBE estar en E2)
-✓ ¿Capturé DEBILIDADES musculares? (Si hay pruebas de fuerza alteradas, DEBEN estar)
-✓ ¿Capturé ROM limitados? (Si hay mediciones de rango, DEBEN estar)
-✓ ¿Capturé factores PSICOSOCIALES? (Sueño, miedo, estrés si fueron reportados)
-✓ ¿Capturé COMORBILIDADES como alteraciones sistémicas? (HTA→Cardiovascular, Diabetes→Metabólico)
-Si algo falta y hay datos en el payload, AGRÉGALO antes de responder.
+**G3 — Facilitadores Ambientales (Apoyo externo):**
+- Red de apoyo social/familiar, acceso a gimnasio, seguro de salud, flexibilidad laboral para terapias, ergonomía favorable.
+
+**G4 — Barreras Ambientales (Obstáculos externos):**
+- Trabajo físicamente demandante o muy sedentario, escaleras en el hogar, falta de tiempo, barreras económicas, falta de transporte, ambiente estresante.
+
+**G5 — Factores Clínicos/Moduladores (Pronóstico y Adherencia):**
+- Medicamentos que afectan el rendimiento (sedantes, estatinas), tabaquismo, nutrición deficiente, tiempo de evolución crónico, fallos en tratamientos previos.
+
+**G6 — Observaciones Integradas BPS:**
+- Una síntesis narrativa humana que conecte los puntos. Ej: "Aunque el paciente tiene gran motivación (G1), su jornada laboral de 12h (G4) y su hipotiroidismo (G2) sugieren que la recuperación será más lenta y requiere dosis de carga muy precisas (G5)".
 
 ### REGLAS TÉCNICAS:
-- **FORMATO JSON PURO**: Sin markdown.
-- **IDIOMA**: Español técnico clínico.
-- **SOBRE-CAPTURA**: Prefiere redundancia a omisión. El usuario puede borrar lo que sobre.
-  `,
+- IDIOMA: Español clínico.
+- FORMATO: JSON PURO.
+- SOBRE-CAPTURA: Si hay duda, INCLÚYELO.
+`,
 
   P3_BPS_DICTIONARY: `
 Utiliza este diccionario para traducir claves técnicas a lenguaje humano en el Bloque G:

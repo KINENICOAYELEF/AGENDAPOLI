@@ -117,18 +117,22 @@ export const DiagnosisSchema = z.object({
     actividad_y_participacion: z.object({
         limitaciones_directas: z.array(z.object({
             texto: z.string(),
-            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
+            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa"),
+            detalle: z.string().optional()
         })),
         restricciones_participacion: z.array(z.object({
             texto: z.string(),
-            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa")
+            severidad: z.string().describe("Severidad: leve | ligera | moderada | severa | completa"),
+            detalle: z.string().optional()
         }))
     }),
     factores_biopsicosociales: z.object({
         factores_personales_positivos: z.array(z.string()),
         factores_personales_negativos: z.array(z.string()),
         facilitadores_ambientales: z.array(z.string()),
-        barreras_ambientales: z.array(z.string())
+        barreras_ambientales: z.array(z.string()),
+        factores_clinicos_moduladores: z.array(z.string()),
+        observaciones_bps_integradas: z.string()
     }),
     recordatorios_y_coherencia: z.object({
         recordatorios_clinicos: z.array(z.string()),

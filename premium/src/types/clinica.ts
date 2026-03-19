@@ -981,14 +981,16 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             }>;
         };
         actividad_y_participacion?: {
-            limitaciones_directas: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
-            restricciones_participacion: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string }>;
+            limitaciones_directas: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string; detalle?: string }>;
+            restricciones_participacion: Array<{ texto: string; severidad: 'leve' | 'moderada' | 'severa' | string; detalle?: string }>;
         };
         factores_biopsicosociales?: {
             factores_personales_positivos: string[];
             factores_personales_negativos: string[];
             facilitadores_ambientales: string[];
             barreras_ambientales: string[];
+            factores_clinicos_moduladores: string[];
+            observaciones_bps_integradas: string;
         };
         recordatorios_y_coherencia?: {
             recordatorios_clinicos?: string[];
