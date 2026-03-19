@@ -558,7 +558,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
                                                      <textarea 
-                                                         className="text-[10px] text-indigo-700/70 bg-indigo-50/50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-indigo-800 transition-all"
+                                                         className="text-[10px] text-indigo-700/70 bg-indigo-50/50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-indigo-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {
@@ -610,7 +610,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
                                                      <textarea 
-                                                         className="text-[10px] text-slate-600/70 bg-slate-50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-slate-800 transition-all"
+                                                         className="text-[10px] text-slate-600/70 bg-slate-50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-slate-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {
@@ -662,7 +662,7 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                                          }} className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 transition-colors">✕</button>}
                                                      </div>
                                                      <textarea 
-                                                         className="text-[10px] text-amber-700/70 bg-amber-50/50 border-none outline-none rounded p-1.5 resize-none h-12 block w-full focus:bg-white focus:text-amber-800 transition-all"
+                                                         className="text-[10px] text-amber-700/70 bg-amber-50/50 border-none outline-none rounded p-1.5 min-h-[80px] resize-y overflow-y-auto block w-full focus:bg-white focus:text-amber-800 transition-all"
                                                          placeholder="Argumento clínico..."
                                                          value={item.argumento || ''}
                                                          onChange={(e) => {

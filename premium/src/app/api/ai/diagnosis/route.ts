@@ -61,13 +61,16 @@ export async function POST(req: Request) {
   },
   "clasificacion_dolor": { "categoria": "nociceptivo|neuropático|nociplástico|mixto|no_concluyente", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": [], "duda_mezcla": [], "conclusion": "" }, "nivel_confianza": "Alta|Media|Baja" },
   "sistema_y_estructuras": { 
-    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular"], 
+    "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario"], 
     "estructuras": {
         "principales": [{ "nombre": "Articulación Sacroilíaca", "argumento": "Existe una reproducción fidedigna del dolor principal (>7/10) al aplicar el cluster de provocación ortopédica de Laslett durante la examinación física de P2. Esto cruza perfectamente con la anamnesis en P1, donde el paciente describe un dolor profundo glúteo de carácter mecánico y tirante, originado inicialmente al levantar carga pesada asimétrica." }],
         "secundarias": [{ "nombre": "Ligamentos Sacroilíacos Dorsales", "argumento": "A la palpación directa en la consulta (P2) se detectó sensibilidad exquisita circunscrita a la banda ligamentosa. Además, en la historia clínica P1.5 existe el antecedente de laxitud pélvica post-parto que mantiene un ambiente de inestabilidad basal, lo cual cuadra con la respuesta biológica reactiva actual ante los tests de cizalla." }],
-        "asociadas_moduladoras": [{ "nombre": "Musculatura Glútea Mayor y Media", "argumento": "Durante la evaluación de control motor y marcha en P2, se observó claramente una caída pélvica unilateral (signo de Trendelenburg). Esta debilidad y retraso en la activación glútea está forzando a la articulación sacroilíaca a asumir cargas de estrés cizallante indebidas, perpetuando el cuadro mecánico descrito en P1. Adicionalmente, se nota inhibición por dolor referida en test de puente." }]
+        "asociadas_moduladoras": [
+            { "nombre": "Corazón y Vasos Sanguíneos", "argumento": "El paciente documenta hipertensión arterial crónica en sus antecedentes clínicos base, lo que exige registrar una afección sistémica que impacta negativamente sobre la microperfusión, la respuesta inflamatoria y la sensibilidad central ante el dolor persistente sacroilíaco expresado en P1, actuando como limitante de reparación histológica autónoma." },
+            { "nombre": "Piel y Fascia (Cicatriz Abdominal)", "argumento": "En la historia y examen físico (P2) se reporta y observa una cicatriz por cesárea en la cavidad abdominal baja, tejido que transfiere estrés tensional hacia la pared lumbopélvica alterando el juego articular de la pelvis durante la marcha y provocando sobrecarga secundaria hacia posterior, modulando el cuadro base." }
+        ]
     },
-    "estructuras_mas_afectan": "Disfunción mecánica y cizalla de la articulación sacroilíaca severamente modulada por incompetencia del control motor lumbopélvico." 
+    "estructuras_mas_afectan": "Disfunción mecánica y cizalla de la articulación sacroilíaca severamente modulada por incompetencia del control motor lumbopélvico, ambiente protrombótico subyacente y tensión fascial abdominal." 
   },
   "alteraciones_detectadas": { 
     "estructurales": [
@@ -99,7 +102,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.2.4',
+            promptVersion: 'v3.2.5',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
