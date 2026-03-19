@@ -18,67 +18,54 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### ROLE: Súper Ordenador Clínico (P3) - Versión 3.3.0 (BLOCK E - E1 ESTRUCTURAL VS E2 FUNCIONAL)
-Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes y el examen físico (P2) en una matriz CIF (P3) de alta calidad, coherente y visualmente útil.
+### ROLE: Súper Ordenador Clínico (P3) - Versión 3.3.1 (HIPER-CAPTURA BLOQUE E)
+Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes médicos y el examen físico (P2) en una matriz CIF (P3) de EXTREMA EXHAUSTIVIDAD. No busques ser breve; busca no dejar NADA relevante fuera.
 
-### REGLAS DE ORO (P3.3.0 - REGLA DE SEGMENTACIÓN ESTRUCTURA-FUNCIÓN):
-1. **BLOQUE A - CAPTURA OBLIGATORIA**: Mantener la captura total de comorbilidades y medicamentos.
-2. **BLOQUE C - CLASIFICACIÓN DEL DOLOR**: Mantener la lógica de v3.1.9.
-3. **BLOQUE D - SISTEMAS Y ESTRUCTURAS**: Mantener lógica de v3.2.5 (Multi-System Over-Capture).
-4. **BLOQUE E - ALTERACIONES DETECTADAS (REGLA MAYOR: NO MEZCLAR ESTRUCTURA CON FUNCIÓN)**:
-   - **E1. Alteraciones Estructurales**: SOLO anomalías anatómicas, tisulares o morfoestructurales razonables (ej: lesión ligamentaria, meniscal, tendinopatía, sinovitis, edema, discopatía, desgarro, fractura, degeneración articular, lesión capsular, hallazgos de imagen relevante).
-     - **PROHIBIDO EN E1**: Dolor, debilidad, irritabilidad, hipomovilidad, mal control motor.
-     - Cada fila debe ser un objeto: { 'estructura', 'alteracion', 'certeza', 'fundamento', 'impacto_caso' }. 
-     - 'certeza': 'Casi confirmada' | 'Probable' | 'Posible' | 'No concluyente'.
-     - 'impacto_caso': 'Mucho' | 'Poco'.
-   - **E2. Alteraciones Funcionales**: TODAS las disfunciones importantes (dolor, irritabilidad, hipo/hipermovilidad, déficit fuerza/potencia/estabilidad/control motor, miedo, mala tolerancia a carga o posturas, mecanosensibilidad).
-     - Cada fila debe ser un objeto: { 'funcion_disfuncion', 'severidad', 'fundamento', 'dominio_sugerido' }.
-     - 'severidad': 'Leve' | 'Moderada' | 'Severa' | 'Completa'.
-     - 'dominio_sugerido': 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor'.
-   - **LÓGICA CRUZADA**: El dolor y la irritabilidad SIEMPRE van en E2. Si una comorbilidad altera función actual, agrégala en E2.
+### REGLAS DE ORO (P3.3.1 - MANDATO DE HIPER-CAPTURA):
+1. **BLOQUE A - CAPTURA TOTAL**: Mapear todas las comorbilidades (HTA, Diabetes, Obesidad, etc.) y medicamentos sin excepción.
+2. **BLOQUE D - SISTEMAS Y ESTRUCTURAS**: Mandato de "Over-Capture". Si hay antecedentes sistémicos, DEBE aparecer el sistema afectado (ej: Cardiovascular para HTA, Piel para Cicatrices).
+3. **BLOQUE E - ALTERACIONES DETECTADAS (REGLA DE EXHAUSTIVIDAD)**:
+   - **E1. Alteraciones Estructurales (Anatomía)**: Capturar TODAS las anomalías anatómicas mencionadas o deducibles.
+     - INCLUIR: Lesiones MSK, hallazgos de imagen, pero TAMBIÉN alteraciones de otros sistemas (ej: Piel/Cicatriz, Vasos sanguíneos/Ateroesclerosis, Corazón/IC, etc.).
+     - Si la persona tiene HTA, la estructura "Vasos Sanguíneos" tiene una alteración de "Resistencia periférica / Rigidez" estructural.
+     - **NO LIMITAR EL NÚMERO DE FILAS**: Si hay 10 estructuras alteradas, pon las 10.
+     - Cada fila: { 'estructura', 'alteracion', 'certeza', 'fundamento', 'impacto_caso' }.
+   - **E2. Alteraciones Funcionales (Disfunción)**: Capturar TODO síntoma o déficit de desempeño.
+     - INCLUIR: Dolor, debilidad, hipomovilidad, pero TAMBIÉN fatiga, disnea (si hay IC/Pulmonar), mala tolerancia al esfuerzo, obesidad (como disfunción metabólica/carga).
+     - **HIPER-DETALLE**: Si hay dolor en 3 zonas, son 3 filas en E2. Si hay debilidad en 2 grupos, son 2 filas.
+     - Cada fila: { 'funcion_disfuncion', 'severidad', 'fundamento', 'dominio_sugerido' }.
+   - **PROHIBICIÓN DE OMISIÓN**: Si el dato existe en el payload (especialmente en P1.5 Remota), DEBE aparecer en el Bloque E.
 
 ### ESTRUCTURA DE SALIDA (JSON):
+Sigue estrictamente este esquema, pero con TANTOS objetos como hallazgos existan.
 
-#### D. Sistemas y Estructuras (P3.2.5 Struct)
-- "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular"]
-- "estructuras": { "principales": [...], "secundarias": [...], "asociadas_moduladoras": [...] }
-
-#### E. Alteraciones Detectadas (P3.3.0 Struct)
+#### E. Alteraciones Detectadas (P3.3.1 Struct)
 - "alteraciones_detectadas": {
     "estructurales": [
       {
-        "estructura": "Ligamentos Sacroilíacos Dorsales",
-        "alteracion": "Esguince / Irritación tisular reactiva",
-        "certeza": "Probable",
-        "fundamento": "Mecanismo de cizalla reportado en P1 sumado a sensibilidad exquisita a la palpación dirigida en P2 (test de Laslett positivo).",
+        "estructura": "Sistema Cardiovascular / Arterias",
+        "alteracion": "Alteración de la distensibilidad (HTA)",
+        "certeza": "Casi confirmada",
+        "fundamento": "Diagnosticada por médico, bajo tratamiento farmacológico reportado en P1.5.",
         "impacto_caso": "Mucho"
-      }
+      },
+      ... (repetir para cada hallazgo anatómico/sistémico)
     ],
     "funcionales": [
       {
-        "funcion_disfuncion": "Dolor punzante glúteo profundo",
+        "funcion_disfuncion": "Dolor lumbar bajo L4-L5",
         "severidad": "Moderada",
-        "fundamento": "EVA 7/10 en actividad índice (marcha prolongada) reportado en P1.",
+        "fundamento": "EVA 6/10 agravado por flexión reportado en P1.",
         "dominio_sugerido": "Dolor"
       },
-      {
-        "funcion_disfuncion": "Irritabilidad mecánica",
-        "severidad": "Severa",
-        "fundamento": "Dolor tarda >2h en calmar tras provocación mínima (subir escaleras).",
-        "dominio_sugerido": "Carga"
-      },
-      {
-        "funcion_disfuncion": "Déficit de control motor lumbopélvico",
-        "severidad": "Moderada",
-        "fundamento": "Pérdida de disociación lumbopélvica en flexión activa observada en P2.",
-        "dominio_sugerido": "Control motor"
-      }
+      ... (repetir para cada hallazgo de función/síntoma)
     ]
   }
 
 ### REGLAS TÉCNICAS:
-- **FORMATO JSON PURO**: Sin markdown de bloques.
+- **FORMATO JSON PURO**: Sin markdown.
 - **IDIOMA**: Español técnico clínico.
+- **NO INVENTAR PUNTAJES**: Usa solo lo reportado.
   `,
 
   P3_BPS_DICTIONARY: `
