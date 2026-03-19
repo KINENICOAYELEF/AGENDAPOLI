@@ -195,23 +195,33 @@ export async function POST(req: Request) {
   },
   "actividad_y_participacion": {
     "limitaciones_directas": [
-      { "texto": "Estar sentado > 20 min", "severidad": "moderada", "detalle": "Provoca dolor lumbar irradiado; requiere cambios de postura frecuentes." },
-      { "texto": "Subir escaleras (> 2 pisos)", "severidad": "moderada", "detalle": "Requiere apoyo constante en pasamanos por falta de fuerza excéntrica." },
-      { "texto": "Hacer running (Tolerancia)", "severidad": "moderada", "detalle": "Solo tolera 10 min antes de aparición de impotencia funcional." }
+      { "texto": "Bajar escaleras sin apoyo", "severidad": "moderada", "detalle": "Dolor punzante que obliga a usar pasamanos." },
+      { "texto": "Permanecer sentado > 30 min", "severidad": "moderada", "detalle": "Aparición de rigidez y dolor sordo lumbopélvico." },
+      { "texto": "Correr a velocidades > 9 km/h", "severidad": "severa", "detalle": "Impotencia funcional por dolor en cara lateral de cadera." },
+      { "texto": "Dormir sobre el lado derecho", "severidad": "leve", "detalle": "Despertar nocturno por compresión de la zona dolorosa." },
+      { "texto": "Realizar estocadas profundas", "severidad": "completa", "detalle": "Evitación total por dolor insoportable 9/10." }
     ],
     "restricciones_participacion": [
-      { "texto": "Desempeño Laboral (Oficina)", "severidad": "moderada", "detalle": "Productividad disminuida por dolor al estar sentado; requiere pausas no programadas cada 15 min." },
-      { "texto": "Práctica Deportiva (Fútbol)", "severidad": "severa", "detalle": "Incapacidad de participar en entrenamientos grupales; aislamiento del grupo social deportivo." },
-      { "texto": "Vida Sexual", "severidad": "leve", "detalle": "Limitación en ciertas posiciones por dolor/miedo al movimiento (Kinesiofobia)." }
+      { "texto": "Desempeño Laboral Efectivo", "severidad": "moderada", "detalle": "Necesidad de pausas constantes; pérdida de foco por dolor." },
+      { "texto": "Entrenamiento de Running (Grupo)", "severidad": "severa", "detalle": "Abandono temporal de la actividad que era su principal hobby." },
+      { "texto": "Cuidado de hijos pequeños", "severidad": "moderada", "detalle": "Dificultad para cargarlos o jugar en el suelo con ellos." },
+      { "texto": "Vida Sexual activa", "severidad": "leve", "detalle": "Limitación por dolor/miedo en ciertas posiciones de carga." }
     ]
   },
   "factores_biopsicosociales": { 
-    "factores_personales_positivos": ["Motivación alta para rehabilitación", "Experiencia deportiva previa"], 
-    "factores_personales_negativos": ["Mala calidad de sueño", "Tendencia leve a evitación por miedo"], 
-    "facilitadores_ambientales": ["Acceso a gimnasio", "Red de apoyo familiar sólida"], 
-    "barreras_ambientales": ["Trabajo sedentario prolongado", "Escaleras obligatorias en domicilio"] 
+    "factores_personales_positivos": ["Alta motivación intrínseca", "Buena adherencia a planes previos", "Resiliencia"], 
+    "factores_personales_negativos": ["Estrés laboral crónico", "Mala calidad de sueño (interrumpido)", "Miedo a la cirugía"], 
+    "facilitadores_ambientales": ["Red de apoyo familiar fuerte", "Acceso a gimnasio cerca de casa", "Seguro médico de cobertura total"], 
+    "barreras_ambientales": ["Trabajo 100% sedentario", "Entorno laboral estresante", "Falta de ergonómica en casa"],
+    "factores_clinicos_moduladores": ["Diabetes tipo 2 (afecta colágeno)", "Uso de estatinas (mialgias?)", "Cronicidad (> 6 meses)"],
+    "observaciones_bps_integradas": "Paciente con perfil atlético pero atrapado en un ciclo de sedentarismo laboral y desregulación metabólica (Diabetes). La lesión biológica (SI) está cronificada por el ambiente pro-inflamatorio y el estrés, aunque su motivación es el motor principal de recuperación."
   },
-  "recordatorios_y_coherencia": { "recordatorios_clinicos": ["Monitorear presión arterial durante ejercicio por HTA"], "cosas_a_vigilar_en_tratamiento": ["Dolor nocturno: si aumenta, derivar", "After-effect post-sesión: no debe superar 2h"], "faltantes_no_criticos": ["Falta evaluación formal de balance unipodal"], "incoherencias_detectadas": [] }
+  "recordatorios_y_coherencia": { 
+    "recordatorios_clinicos": ["Vigilar glucemia post-ejercicio", "Evaluar calzado deportivo"], 
+    "cosas_a_vigilar_en_tratamiento": ["Signos de alarma neurológica distal", "Aumento de irritabilidad"], 
+    "faltantes_no_criticos": ["Falta test neurodinámico formal"], 
+    "incoherencias_detectadas": [] 
+  }
 } `;
 
         const userPrompt = `

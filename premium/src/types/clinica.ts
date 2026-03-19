@@ -989,6 +989,8 @@ export interface EvaluacionInicial extends BaseEvaluacion {
             factores_personales_negativos: string[];
             facilitadores_ambientales: string[];
             barreras_ambientales: string[];
+            factores_clinicos_moduladores?: string[];
+            observaciones_bps_integradas?: string;
         };
         recordatorios_y_coherencia?: {
             recordatorios_clinicos?: string[];

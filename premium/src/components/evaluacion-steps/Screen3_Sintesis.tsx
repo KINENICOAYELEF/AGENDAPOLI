@@ -1192,6 +1192,36 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 placeholder="Exigencias laborales altas, distancias largas..." 
                             />
                         </div>
+                        {/* Moduladores Clínicos */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-black text-amber-600 tracking-widest flex items-center gap-2">
+                                <span className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 text-xs">💊</span>
+                                Moduladores Clínicos (G5)
+                            </label>
+                            <textarea 
+                                className="w-full text-[12px] leading-relaxed text-slate-700 bg-white border border-amber-200 rounded-2xl px-5 py-4 resize-y focus:ring-2 focus:ring-amber-400/40 transition-all placeholder:text-slate-300"
+                                value={(autoSynth.factores_biopsicosociales?.factores_clinicos_moduladores || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_clinicos_moduladores: e.target.value.split('\n') })} 
+                                disabled={isClosed} 
+                                rows={4}
+                                placeholder="Diabetes tipo 2, Uso de estatinas, Cronicidad..." 
+                            />
+                        </div>
+                        {/* Observaciones BPS Integradas */}
+                        <div className="col-span-full space-y-2">
+                            <label className="text-[10px] uppercase font-black text-indigo-600 tracking-widest flex items-center gap-2">
+                                <span className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 text-xs">🔗</span>
+                                Síntesis Narrativa BPS Integrada (G6)
+                            </label>
+                            <textarea 
+                                className="w-full text-[12px] leading-relaxed text-slate-700 bg-white border border-indigo-200 rounded-2xl px-5 py-4 resize-y focus:ring-2 focus:ring-indigo-400/40 transition-all placeholder:text-slate-300"
+                                value={autoSynth.factores_biopsicosociales?.observaciones_bps_integradas || ''} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { observaciones_bps_integradas: e.target.value })} 
+                                disabled={isClosed} 
+                                rows={5}
+                                placeholder="Narrativa experta conectando E, F y G con lógica clínica..." 
+                            />
+                        </div>
                     </div>
                 </div>
 
