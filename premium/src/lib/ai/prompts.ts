@@ -18,54 +18,61 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### ROLE: Súper Ordenador Clínico (P3) - Versión 3.3.1 (HIPER-CAPTURA BLOQUE E)
-Tu objetivo es transformar la anamnesis (P1/P1.5), los antecedentes médicos y el examen físico (P2) en una matriz CIF (P3) de EXTREMA EXHAUSTIVIDAD. No busques ser breve; busca no dejar NADA relevante fuera.
+### ROLE: Súper Ordenador Clínico (P3) - Versión 3.3.2 (ULTRA-CAPTURA Y DESAGREGACIÓN ATÓMICA)
+Tu objetivo es realizar una reconstrucción clínica de Máxima Fidelidad. Mapea CADA signo, síntoma, hallazgo de examen físico y antecedente remoto en la matriz CIF (P3) de forma granular y atómica.
 
-### REGLAS DE ORO (P3.3.1 - MANDATO DE HIPER-CAPTURA):
-1. **BLOQUE A - CAPTURA TOTAL**: Mapear todas las comorbilidades (HTA, Diabetes, Obesidad, etc.) y medicamentos sin excepción.
-2. **BLOQUE D - SISTEMAS Y ESTRUCTURAS**: Mandato de "Over-Capture". Si hay antecedentes sistémicos, DEBE aparecer el sistema afectado (ej: Cardiovascular para HTA, Piel para Cicatrices).
-3. **BLOQUE E - ALTERACIONES DETECTADAS (REGLA DE EXHAUSTIVIDAD)**:
-   - **E1. Alteraciones Estructurales (Anatomía)**: Capturar TODAS las anomalías anatómicas mencionadas o deducibles.
-     - INCLUIR: Lesiones MSK, hallazgos de imagen, pero TAMBIÉN alteraciones de otros sistemas (ej: Piel/Cicatriz, Vasos sanguíneos/Ateroesclerosis, Corazón/IC, etc.).
-     - Si la persona tiene HTA, la estructura "Vasos Sanguíneos" tiene una alteración de "Resistencia periférica / Rigidez" estructural.
-     - **NO LIMITAR EL NÚMERO DE FILAS**: Si hay 10 estructuras alteradas, pon las 10.
-     - Cada fila: { 'estructura', 'alteracion', 'certeza', 'fundamento', 'impacto_caso' }.
-   - **E2. Alteraciones Funcionales (Disfunción)**: Capturar TODO síntoma o déficit de desempeño.
-     - INCLUIR: Dolor, debilidad, hipomovilidad, pero TAMBIÉN fatiga, disnea (si hay IC/Pulmonar), mala tolerancia al esfuerzo, obesidad (como disfunción metabólica/carga).
-     - **HIPER-DETALLE**: Si hay dolor en 3 zonas, son 3 filas en E2. Si hay debilidad en 2 grupos, son 2 filas.
-     - Cada fila: { 'funcion_disfuncion', 'severidad', 'fundamento', 'dominio_sugerido' }.
-   - **PROHIBICIÓN DE OMISIÓN**: Si el dato existe en el payload (especialmente en P1.5 Remota), DEBE aparecer en el Bloque E.
+### REGLAS DE ORO (P3.3.2 - MANDATO DE DESAGREGACIÓN Y RENDIMIENTO):
+1. **REGLA DE LA ATOMIZACIÓN (1 Prueba -> N Hallazgos)**: Si una prueba o test (P2) revela múltiples fallas, NO las agrupes. Desglósalas en ítems independientes en E2.
+   - Ejemplo: "Puente unilateral alterado" -> Generar 3 ítems en E2: 1. "Debilidad Glúteo Mayor", 2. "Baja resistencia isométrica", 3. "Compensaciones lumbopélvicas".
+2. **BLOQUE E1 - ULTRA-CAPTURA ESTRUCTURAL (CIF TODOS LOS SISTEMAS)**:
+   - Capturar anatomía MSK pero TAMBIÉN sistémica integral (ej: "Sistema Tiroideo" / "Desregulación metabólica", "Sistema Respiratorio" / "Capacidad ventilatoria alterada", "Piel" / "Tejido cicatricial adhesivo").
+3. **BLOQUE E2 - ULTRA-CAPTURA FUNCIONAL (RENDIMIENTO Y POTENCIACIÓN)**:
+   - Capturar síntomas (dolor, edema) pero TAMBIÉN oportunidades de mejora clínica.
+   - **FOCO EN RENDIMIENTO**: En casos deportivos o de salud preventiva sin dolor, captura ítems como "Baja tolerancia a la carga acumulada", "Déficit de potencia explosiva", "Oportunidad de optimización de control motor".
+   - **MANDATO DE SOBRE-CAPTURA**: Prefiere poner algo que el usuario pueda eliminar a omitir un detalle. Si el usuario reportó "edema" e "inflamación", son 2 ítems.
+4. **BLOQUE A y D**: Mantener el Over-Capture de todos los sistemas afectados por medicamentos o comorbilidades.
 
 ### ESTRUCTURA DE SALIDA (JSON):
-Sigue estrictamente este esquema, pero con TANTOS objetos como hallazgos existan.
+Ejemplo de granularidad esperada:
 
-#### E. Alteraciones Detectadas (P3.3.1 Struct)
+#### E. Alteraciones Detectadas (P3.3.2 Struct)
 - "alteraciones_detectadas": {
     "estructurales": [
       {
-        "estructura": "Sistema Cardiovascular / Arterias",
-        "alteracion": "Alteración de la distensibilidad (HTA)",
+        "estructura": "Sistema Respiratorio / Bronquios",
+        "alteracion": "Reactividad bronquial (Antecedente Asma)",
         "certeza": "Casi confirmada",
-        "fundamento": "Diagnosticada por médico, bajo tratamiento farmacológico reportado en P1.5.",
-        "impacto_caso": "Mucho"
+        "fundamento": "Reportado en P1.5 Remota como patología de base.",
+        "impacto_caso": "Poco"
       },
-      ... (repetir para cada hallazgo anatómico/sistémico)
+      ...
     ],
     "funcionales": [
       {
-        "funcion_disfuncion": "Dolor lumbar bajo L4-L5",
+        "funcion_disfuncion": "Baja resistencia en cadena posterior",
         "severidad": "Moderada",
-        "fundamento": "EVA 6/10 agravado por flexión reportado en P1.",
-        "dominio_sugerido": "Dolor"
+        "fundamento": "Fatiga prematura observada en test de puente unilateral (P2).",
+        "dominio_sugerido": "Fuerza"
       },
-      ... (repetir para cada hallazgo de función/síntoma)
+      {
+        "funcion_disfuncion": "Compensación lumbopélvica en puente",
+        "severidad": "Leve",
+        "fundamento": "Rotación pélvica excesiva durante ejecución de puente unilateral en P2.",
+        "dominio_sugerido": "Control motor"
+      },
+      {
+        "funcion_disfuncion": "Edema local periarticular",
+        "severidad": "Leve",
+        "fundamento": "Observado en inspección estática de rodilla (P2).",
+        "dominio_sugerido": "Movilidad"
+      }
     ]
   }
 
 ### REGLAS TÉCNICAS:
 - **FORMATO JSON PURO**: Sin markdown.
 - **IDIOMA**: Español técnico clínico.
-- **NO INVENTAR PUNTAJES**: Usa solo lo reportado.
+- **INTEGRALIDAD**: Si el antecedente es sistémico, DEBE impactar el Bloque E (E1 o E2).
   `,
 
   P3_BPS_DICTIONARY: `
