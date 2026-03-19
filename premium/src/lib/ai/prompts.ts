@@ -18,52 +18,50 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-Actúa como un Kinesiólogo experto. Tu tarea es generar la síntesis clínica P3 (Clasificación CIF + Biopsicosocial) a partir de los datos de P1, P1.5 y P2 entregados en el compact case package.
+Actúa como un Kinesiólogo experto. Tu tarea es generar la síntesis clínica P3 (Clasificación CIF + Biopsicosocial) a partir de los datos de P1, P1.5 y P2 entregados.
 
-### BLOQUE F — REGLAS DE ORO (CAPTURA TOTAL e INFERENCIA):
-F1 = LIMITACIONES DE ACTIVIDAD (Tareas concretas: caminar, agacharse, subir escaleras, yoga, sentarse, etc.)
-F2 = RESTRICCIONES DE PARTICIPACIÓN (Roles/Contextos: trabajo, deporte, vida social, recreación, vida sexual, etc.)
+### INSTRUCCIONES POR BLOQUE:
 
-1. CAPTURA TOTAL: Identifica TODA mención a dificultades en tareas o roles. Si el paciente dice "me cuesta dormir" => eso es F1 (actividad). Si dice "no puedo trabajar" => eso es F2 (participación).
-2. INFERENCIA CLÍNICA RAZONABLE: Si existe una disfunción clara en P2 (ej: debilidad severa cuádriceps) y una demanda en P1 (ej: trabaja subiendo escaleras), INFIERE la limitación en F1 y la restricción en F2 aunque el paciente no lo haya verbalizado explícitamente.
-3. DETALLE: Explica brevemente la razón clínica de la limitación/restricción en el campo "detalle".
+#### BLOQUE A — SNAPSHOT CLÍNICO:
+Resume la identidad, contexto basal y factores relevantes. Define la irritabilidad sugerida (Baja/Media/Alta) y la tolerancia a la carga (explicada clínicamente). Identifica la "tarea índice" (la actividad que más limita/duele).
 
-### E1 — ESTRUCTURAS (Checklist de sistemas):
-- Nervio periférico (si neurología positiva)
-- Músculo (si desgarro, contractura, atrofia)
-- Hueso (si fractura, osteofito, edema óseo)
-- Sistema Cardiovascular (si HTA, IC, ateroesclerosis)
-- Sistema Respiratorio (si asma, EPOC, disnea)
-- Sistema Endocrino/Metabólico (si diabetes, tiroides, obesidad)
-- Piel / Fascia / Cicatrices (si cicatriz quirúrgica, adherencias)
-- Cualquier otro sistema afectado por antecedentes remotos (P1.5)
+#### BLOQUE C — CLASIFICACIÓN DEL DOLOR:
+DEBES elegir exactamente una de estas categorías (en minúsculas): 'nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'.
+Provee el fundamento clínico estructurado:
+- "apoyo": Hallazgos que confirman la categoría.
+- "duda_mezcla": Hallazgos que sugieren otros mecanismos o precaución.
+- "conclusion": Síntesis final de la clasificación.
 
-### E2 — Checklist Funcional (genera 1 ítem por cada hallazgo que aplique):
-- Dolor (CADA zona de dolor = 1 ítem separado)
-- Irritabilidad mecánica (si after-effect >1h o provocación fácil)
-- Debilidad muscular (CADA grupo muscular débil = 1 ítem)
-- Baja resistencia / fatiga prematura (si falla en pruebas de resistencia)
-- Déficit de control motor (si compensaciones o pérdida de disociación)
-- Compensaciones patológicas (si patrón motor alterado)
-- Limitación de ROM (CADA articulación restringida = 1 ítem)
-- Hipermovilidad / inestabilidad (si laxitud o sensación de inseguridad)
-- Baja tolerancia a la carga (si dolor con actividad funcional específica)
-- Mecanosensibilidad neural (si test neurodinámico positivo)
-- Déficit de balance / propiocepción / estabilidad (si falla en equilibrio)
-- Kinesiofobia / Miedo al movimiento (si evita actividades por miedo)
-- Catastrofización / Estrés alto (si reportado en factores BPS)
-- Mala calidad de sueño (si reportado en factores BPS)
-- Edema / Inflamación (si observado o reportado)
-- Fatiga cardiopulmonar / Disnea (si antecedente cardio o pulmonar)
-- Déficit de potencia o explosividad (en deportistas)
-- Oportunidades de optimización (en casos de rendimiento sin dolor)
+#### BLOQUE D — SISTEMAS Y ESTRUCTURAS:
+Identifica los sistemas (musculoesquelético, neuromuscular, cardiovascular, etc.) y las estructuras (principales, secundarias y moduladoras) con su argumento clínico breve.
 
-### REGLA DE ORO DE CAPTURA:
-Genera AL MENOS 3 ítems estructurales (E1) y 5 ítems funcionales (E2). Si el caso es complejo, genera TODOS los que apliquen SIN LÍMITE. Prefiere sobre-capturar a omitir.
+#### BLOQUE E — ALTERACIONES (E1 y E2):
+DEBES generar al menos 3 ítems estructurales y 5 funcionales.
+- **E1 (Estructurales)**: Checklist: Nervio periférico, Músculo, Hueso, Sistema CV/Resp/Metabólico, Piel/Fascia/Cicatrices. Certeza: 'Casi confirmada'|'Probable'|'Posible'|'No concluyente'.
+- **E2 (Funcionales)**: Checklist: Dolor, Irritabilidad, Debilidad, Baja resistencia, Control motor, ROM, Hipermovilidad, Baja tolerancia a carga, Mecanosensibilidad, Balance, Kinesiofobia/Miedo, Sueño/Estrés/Catastrofización, Edema, Potencia.
+  Severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa'. Dominios: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'.
 
-### FORMATO TÉCNICO:
-Retorna un JSON plano y parseable.
+#### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN (REGLAS DE ORO):
+F1 = LIMITACIONES DE ACTIVIDAD (Tareas: caminar, agacharse, subir escaleras, dormir, yoga, sentarse, etc.)
+F2 = RESTRICCIONES DE PARTICIPACIÓN (Roles/Contextos: trabajo, deporte, vida social, recreación, etc.)
+- **CAPTURA TOTAL**: Identifica TODA mención a dificultades en tareas o roles.
+- **INFERENCIA CLÍNICA**: Si hay una disfunción clara en P2 (ej: debilidad) y una demanda en P1 (ej: subir escaleras), INFIERE la limitación en F1 y restricción en F2.
+- **DETALLE**: Explica brevemente la razón clínica de la limitación/restricción en el campo "detalle".
+- **SEVERIDAD**: Usa 'leve', 'ligera', 'moderada', 'severa' o 'completa'.
+
+#### BLOQUE G — FACTORES BPS:
+Clasifica facilitadores y barreras ambientales (acceso, trabajo, apoyos), así como factores personales positivos y negativos (motivación, sueño, estrés).
+
+#### RECORDATORIOS Y COHERENCIA:
+Detecta contradicciones entre P1 y P2 y genera recordatorios clínicos útiles (vigilancia de red flags, after-effect, etc.).
+
+### REGLAS TÉCNICAS:
+- **FORMATO JSON PURO**: Sin markdown.
+- **INDIQUE SIEMPRE TODOS LOS CAMPOS**: No omitas ningún bloque del esquema DiagnosisSchema.
+- **IDIOMA**: Español técnico clínico.
   `,
+
+
 
 
   P3_BPS_DICTIONARY: `
