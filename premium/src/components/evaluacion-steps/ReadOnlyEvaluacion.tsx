@@ -205,13 +205,22 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                           )}
                                      </div>
                                      
-                                     {/* Alteraciones Funcionales */}
-                                     {p3.alteraciones_detectadas?.functional?.length > 0 && (
+                                     {/* Alteraciones Funcionales (E2) */}
+                                     {p3.alteraciones_detectadas?.funcionales?.length > 0 && (
                                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Detectadas Principales</h4>
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Funcionales (E2)</h4>
                                               <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
-                                                  {p3.alteraciones_detectadas.functional.slice(0,3).map((f:any, i:number) => <li key={`f-${i}`}>{f.texto}</li>)}
-                                                  {p3.alteraciones_detectadas.estructurales?.slice(0,2).map((f:any, i:number) => <li key={`e-${i}`}>{f.texto}</li>)}
+                                                  {p3.alteraciones_detectadas.funcionales.slice(0,3).map((f:any, i:number) => <li key={`f-${i}`}>{f.funcion_disfuncion}</li>)}
+                                              </ul>
+                                         </div>
+                                     )}
+
+                                     {/* Alteraciones Estructurales (E1) */}
+                                     {p3.alteraciones_detectadas?.estructurales?.length > 0 && (
+                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Estructurales (E1)</h4>
+                                              <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
+                                                  {p3.alteraciones_detectadas.estructurales.slice(0,3).map((e:any, i:number) => <li key={`e-${i}`}>{e.alteracion} ({e.estructura})</li>)}
                                               </ul>
                                          </div>
                                      )}

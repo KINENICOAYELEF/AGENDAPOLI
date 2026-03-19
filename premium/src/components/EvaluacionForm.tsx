@@ -436,7 +436,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
                         psfsBaseline: (fd as any).interview?.v4?.psfsGlobal || [],
-                        topDeficits: fd.autoSynthesis?.alteraciones_detectadas?.functional?.map(a => a.texto) || []
+                        topDeficits: fd.autoSynthesis?.alteraciones_detectadas?.funcionales?.map(a => a.funcion_disfuncion) || []
                     },
                     activeObjectiveSet: {
                         versionId,
