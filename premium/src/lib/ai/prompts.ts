@@ -18,47 +18,48 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-Actúa como un Kinesiólogo experto. Tu tarea es generar la síntesis clínica P3 (Clasificación CIF + Biopsicosocial) a partir de los datos de P1, P1.5 y P2 entregados.
+### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.4
 
-### INSTRUCCIONES POR BLOQUE:
+REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente.
 
-#### BLOQUE A — SNAPSHOT CLÍNICO:
-Resume la identidad, contexto basal y factores relevantes. Define la irritabilidad sugerida (Baja/Media/Alta) y la tolerancia a la carga (explicada clínicamente). Identifica la "tarea índice" (la actividad que más limita/duele).
+### REGLA #1 — TAXONOMÍA DE HALLAZGOS (E):
+**E1 — Checklist Estructural (genera AL MENOS 3 ítems estructurales):**
+- Nervio periférico (si neurología +), Músculo (desgarro, contractura, atrofia), Hueso (fractura, edema, osteofito), Cardiovascular (HTA, IC, aterosclerosis), Respiratorio (asma, EPOC, disnea), Endocrino/Metabólico (Diabetes, Tiroides, obesidad), Piel/Fascia/Cicatrices (adherencias, fibrosis).
 
-#### BLOQUE C — CLASIFICACIÓN DEL DOLOR:
-DEBES elegir exactamente una de estas categorías (en minúsculas): 'nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'.
-Provee el fundamento clínico estructurado:
-- "apoyo": Hallazgos que confirman la categoría.
-- "duda_mezcla": Hallazgos que sugieren otros mecanismos o precaución.
-- "conclusion": Síntesis final de la clasificación.
+**E2 — Checklist Funcional (genera AL MENOS 5 ítems funcionales):**
+- Dolor (CADA zona = 1 ítem), Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción/Estabilidad, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiopulmonar.
 
-#### BLOQUE D — SISTEMAS Y ESTRUCTURAS:
-Identifica los sistemas (musculoesquelético, neuromuscular, cardiovascular, etc.) y las estructuras (principales, secundarias y moduladoras) con su argumento clínico breve.
+### REGLA #2 — MÍNIMOS OBLIGATORIOS Y ATOMIZACIÓN:
+- NUNCA generes menos de 3 (E1) + 5 (E2) ítems. Si el caso es complejo, genera TODOS los que apliquen sin límite.
+- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
 
-#### BLOQUE E — ALTERACIONES (E1 y E2):
-DEBES generar al menos 3 ítems estructurales y 5 funcionales.
-- **E1 (Estructurales)**: Checklist: Nervio periférico, Músculo, Hueso, Sistema CV/Resp/Metabólico, Piel/Fascia/Cicatrices. Certeza: 'Casi confirmada'|'Probable'|'Posible'|'No concluyente'.
-- **E2 (Funcionales)**: Checklist: Dolor, Irritabilidad, Debilidad, Baja resistencia, Control motor, ROM, Hipermovilidad, Baja tolerancia a carga, Mecanosensibilidad, Balance, Kinesiofobia/Miedo, Sueño/Estrés/Catastrofización, Edema, Potencia.
-  Severidad: 'Leve' | 'Moderada' | 'Severa' | 'Completa'. Dominios: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'.
+### REGLA #3 — INFERENCIA CLÍNICA CONTEXTUAL (BPS):
+1. **Más allá de lo Literal**: Infiere barreras o facilitadores de las actividades y ocupación (ej. sedentarismo laboral = Barrera G4).
+2. **Ponderación Contextual**: Considera Edad y Sexo para ajustar expectativas biológicas (G5) y riesgo (G2).
+3. **Integración F1 -> F2**: Conecta hallazgos estructurales con limitaciones de actividad (F1) e impacto en participación (F2).
 
-#### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN (REGLAS DE ORO):
-F1 = LIMITACIONES DE ACTIVIDAD (Tareas: caminar, agacharse, subir escaleras, dormir, yoga, sentarse, etc.)
-F2 = RESTRICCIONES DE PARTICIPACIÓN (Roles/Contextos: trabajo, deporte, vida social, recreación, etc.)
-- **CAPTURA TOTAL**: Identifica TODA mención a dificultades en tareas o roles.
-- **INFERENCIA CLÍNICA**: Si hay una disfunción clara en P2 (ej: debilidad) y una demanda en P1 (ej: subir escaleras), INFIERE la limitación en F1 y restricción en F2.
-- **DETALLE**: Explica brevemente la razón clínica de la limitación/restricción en el campo "detalle".
-- **SEVERIDAD**: Usa 'leve', 'ligera', 'moderada', 'severa' o 'completa'.
+### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN:
+- F1 (Limitaciones): Caminar, subir escaleras, sentarse, levantarse, agacharse, correr, yoga, carga, manejar, dormir en posición. Use 'detalle' para explicar la biomecánica o síntoma de P1/P2.
+- F2 (Restricciones): Trabajo, deporte, vida social, recreación, autocuidado, vida sexual, rol familiar. Use 'detalle' para explicar el impacto inferido en el rol.
 
-#### BLOQUE G — FACTORES BPS:
-Clasifica facilitadores y barreras ambientales (acceso, trabajo, apoyos), así como factores personales positivos y negativos (motivación, sueño, estrés).
+### BLOQUE G — MATRIZ BIOPSICOSOCIAL INTEGRAL:
+- G1-G4: Factores Personales y Ambientales (+/-).
+- G5: Moduladores Clínicos (Medicamentos como estatinas/levotiroxina, tabaquismo, nutrición, cronicidad, fallos terapéuticos previos).
+- G6: Observaciones Integradas BPS: Síntesis narrativa experta que conecte E, F y G con lógica clínica.
 
-#### RECORDATORIOS Y COHERENCIA:
-Detecta contradicciones entre P1 y P2 y genera recordatorios clínicos útiles (vigilancia de red flags, after-effect, etc.).
+### REGLA FINAL — VERIFICACIÓN ANTI-OMISIÓN: 
+Antes de responder, verifica:
+✓ ¿Capturé TODOS los focos de DOLOR?
+✓ ¿Capturé la IRRITABILIDAD y TOLERANCIA A LA CARGA?
+✓ ¿Capturé DEBILIDADES y ROM limitados detectados en P2?
+✓ ¿Capturé FACTORES PSICOSOCIALES (Sueño, estrés, miedo) de P1/P1.5?
+✓ ¿Capturé COMORBILIDADES como alteraciones estructurales sistémicas (HTA, Diabetes)?
+✓ ¿He inferido impactos razonables en la participación social/laboral?
 
 ### REGLAS TÉCNICAS:
-- **FORMATO JSON PURO**: Sin markdown.
-- **INDIQUE SIEMPRE TODOS LOS CAMPOS**: No omitas ningún bloque del esquema DiagnosisSchema.
-- **IDIOMA**: Español técnico clínico.
+- **FORMATO JSON PURO**. **IDIOMA**: Español clínico técnico.
+- **ENUM DOLOR**: Usa exactamente uno de ['nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'] (minúsculas).
+- **DATOS FALTANTES**: Arrays vacíos [], NUNCA omitas campos obligatorios.
   `,
 
 
