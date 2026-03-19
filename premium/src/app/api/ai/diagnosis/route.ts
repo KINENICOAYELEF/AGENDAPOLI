@@ -188,39 +188,22 @@ export async function POST(req: Request) {
       {
         "funcion_disfuncion": "Regulación metabólica alterada por hipotiroidismo",
         "severidad": "Leve",
-        "fundamento": "Antecedente de hipotiroidismo en P1.5. Puede afectar tasa de reparación tisular y niveles de energía.",
+        "fundamento": "Antecedente de hipotiroidismo en P1.5. Puede afectar tasa de reparación.",
         "dominio_sugerido": "Metabólico"
       }
     ] 
   },
   "actividad_y_participacion": {
-            // F1: Limitaciones de Actividad (Tareas motoras de P1 y P1.5)
-            // CAPTURA TODO: Dormir, Caminar, Sentarse, Escaleras, Deporte, Yoga, Sexo, etc.
-            "limitaciones_actividad": [
-                { "actividad": "Estar sentado > 20 min", "severidad": "Moderada", "detalle": "Provoca dolor lumbar irradiado; requiere cambios de postura frecuentes." },
-                { "actividad": "Caminar en terreno irregular", "severidad": "Leve", "detalle": "Inestabilidad percibida y fatiga rápida en tríceps sural." },
-                { "actividad": "Sentadilla profunda (Gimnasio)", "severidad": "Severa", "detalle": "Dolor punzante en cara anterior de rodilla al inicio del ascenso." },
-                { "actividad": "Dormir decúbito lateral izquierdo", "severidad": "Leve", "detalle": "Despierta por dolor sordo; usa almohada entre piernas como compensación." },
-                { "actividad": "Subir escaleras (> 2 pisos)", "severidad": "Moderada", "detalle": "Requiere apoyo constante en pasamanos por falta de fuerza excéntrica." },
-                { "actividad": "Mantener equilibrio monopodal", "severidad": "Moderada", "detalle": "Oscilaciones marcadas; miedo a la caída reportado en P1.5." },
-                { "actividad": "Cargar objetos > 5kg", "severidad": "Completa", "detalle": "Evitación total por miedo a reagravación del síntoma lumbar." },
-                { "actividad": "Hacer running (Tolerancia)", "severidad": "Moderada", "detalle": "Solo tolera 10 min antes de aparición de impotencia funcional." },
-                { "actividad": "Manejar automóvil", "severidad": "Leve", "detalle": "Molestia al presionar embrague en trayectos largos." },
-                { "actividad": "Agacharse a recoger objetos", "severidad": "Moderada", "detalle": "Realiza compensación con flexión de cadera marcada para evitar tronco." }
-            ],
-            // F2: Restricciones de Participación (Roles en P1.5 y Contexto P2)
-            // INFIERE: Si duele sentado, afecta TRABAJO. Si duele correr, afecta DEPORTE.
-            "restricciones_participacion": [
-                { "rol_contexto": "Desempeño Laboral (Oficina)", "severidad": "Moderada", "detalle": "Productividad disminuida por dolor al estar sentado; requiere pausas no programadas cada 15 min." },
-                { "rol_contexto": "Práctica Deportiva (Crossfit/Fútbol)", "severidad": "Severa", "detalle": "Incapacidad de participar en entrenamientos grupales; aislamiento del grupo social deportivo." },
-                { "rol_contexto": "Vida Doméstica (Aseo/Cunas)", "severidad": "Moderada", "detalle": "Dificultad para levantar a su hijo o realizar limpieza profunda del hogar." },
-                { "rol_contexto": "Traslado en transporte público", "severidad": "Leve", "detalle": "Inseguridad al viajar de pie; preferencia por horarios de baja afluencia." },
-                { "rol_contexto": "Recreación / Vida Social", "severidad": "Moderada", "detalle": "Evita salidas que impliquen caminatas largas u organizar eventos de pie." },
-                { "rol_contexto": "Vida Sexual", "severidad": "Leve", "detalle": "Limitación en ciertas posiciones por dolor/miedo al movimiento (Kinesiofobia)." },
-                { "rol_contexto": "Autocuidado (Vestido/Calzado)", "severidad": "Moderada", "detalle": "Requiere ayuda o silla para ponerse calcetines/zapatos." },
-                { "rol_contexto": "Rol Familiar (Cuidado dependiente)", "severidad": "Leve", "detalle": "Menor paciencia/energía por dolor crónico mantenido." }
-            ]
-        },
+    "limitaciones_directas": [
+      { "texto": "Estar sentado > 20 min", "severidad": "moderada", "detalle": "Provoca dolor lumbar irradiado; requiere cambios de postura frecuentes." },
+      { "texto": "Caminar en terreno irregular", "severidad": "leve", "detalle": "Inestabilidad percibida y fatiga rápida en tríceps sural." },
+      { "texto": "Subir escaleras (> 2 pisos)", "severidad": "moderada", "detalle": "Requiere apoyo constante en pasamanos por falta de fuerza excéntrica." }
+    ],
+    "restricciones_participacion": [
+      { "texto": "Desempeño Laboral (Oficina)", "severidad": "moderada", "detalle": "Productividad disminuida por dolor al estar sentado." },
+      { "texto": "Práctica Deportiva (Crossfit)", "severidad": "severa", "detalle": "Incapacidad de participar en entrenamientos grupales." }
+    ]
+  },
   "factores_biopsicosociales": { 
     "factores_personales_positivos": ["Motivación alta para rehabilitación (G1)", "Experiencia deportiva previa (G1)", "Autoeficacia percibida alta (G1)"], 
     "factores_personales_negativos": ["Mala calidad de sueño (G2)", "Tendencia leve a evitación por miedo (G2)", "Hipotiroidismo de base (G2)", "Nivel de estrés laboral elevado (G2)"], 
@@ -246,7 +229,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.6.2',
+            promptVersion: 'v3.6.3',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
