@@ -336,6 +336,24 @@ export function buildCompactCasePackage(formData: any) {
     const finalName = pat.fullName || (pat.nombres ? `${pat.nombres} ${pat.apellidos || ''}`.trim() : null) || identPac.fullName || "Desconocido";
     const finalSex = pat.sexoRegistrado || pat.sexoBiomecanico || identPac.sexoRegistrado || "Desconocido";
 
+    // FASE 65.2: Inyectar RAW DUMPS para que Gemini lea absolutamente TODO (tags, texto, etc.)
+    const cleanP2 = { ...(formData.guidedExam || {}) };
+    delete cleanP2.bodyChartImages; // Purga de seguridad base64
+    
+    // Filtro de claves que puedan ser Base64 u omitibles (fotos, canvas)
+    const p1_raw_focos = (p1_raw.focos || []).map((f: any) => {
+        const clon = { ...f };
+        delete clon.bodyChart;
+        return clon;
+    });
+
+    const raw_dumps = {
+        p1_raw_focos,
+        p1_experiencia_persona: p1_raw.experienciaPersona || {},
+        p15_notas_permanentes: formData.remoteHistorySnapshot?.permanentNotes || "",
+        p2_raw_exam: cleanP2
+    };
+
     return {
         demographics: {
             nombre: finalName,
@@ -344,6 +362,7 @@ export function buildCompactCasePackage(formData: any) {
         },
         p1_core,
         p15_core,
-        p2_core
+        p2_core,
+        raw_dumps
     };
 }
