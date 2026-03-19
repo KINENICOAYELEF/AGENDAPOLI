@@ -222,7 +222,7 @@ export async function POST(req: Request) {
   },
   "recordatorios_y_coherencia": { 
     "recordatorios_clinicos": ["Vigilar glucemia post-ejercicio", "Evaluar calzado deportivo"], 
-    "cosas_a_vigilar_en_treatment": ["Signos de alarma neurológica distal", "Aumento de irritabilidad"], 
+    "cosas_a_vigilar_en_tratamiento": ["Signos de alarma neurológica distal", "Aumento de irritabilidad"], 
     "faltantes_no_criticos": ["Falta test neurodinámico formal"], 
     "incoherencias_detectadas": [] 
   }
@@ -242,7 +242,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.6.4',
+            promptVersion: 'v3.6.5',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
