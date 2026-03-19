@@ -1110,117 +1110,93 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         </div>
                     </div>
 
-            {/* BLOQUE G — MATRIZ BIOPSICOSOCIAL INTEGRAL */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm overflow-hidden group/bps">
+            {/* BLOQUE G — FACTORES BIOMÉDICOS Y PSICOSOCIALES (BPS) */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-7 shadow-sm overflow-hidden group/bps">
                 <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-5">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 transform group-hover/bps:rotate-2 transition-transform">
-                            <span className="text-3xl text-white">🧠</span>
+                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 transform group-hover/bps:rotate-3 transition-transform">
+                            <span className="text-2xl text-white">🧠</span>
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">G. Matriz Biopsicosocial Integral</h3>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Contexto, Entorno, Moduladores y Síntesis BPS</p>
+                            <h3 className="text-xl font-black text-slate-800 tracking-tight">G. Factores Biopsicosociales</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Contexto, Entorno y Creencias Traducidos</p>
                         </div>
                     </div>
-                    <div className="bg-indigo-50 text-indigo-700 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest border border-indigo-100">
-                        IA v3.6.0 | Enfoque Integral
+                    <div className="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                        IA v3.1.4 | Lenguaje Humano
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    {/* G1. FACTORES PERSONALES POSITIVOS */}
-                    <div className="bg-emerald-50/30 rounded-2xl border border-emerald-100/50 p-5 hover:bg-emerald-50/50 transition-all flex flex-col gap-3 relative group/item">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">✨</span>
-                            <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">G1. Personales Positivos</label>
+                        
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                    {/* Personales (+) */}
+                    <div className="relative">
+                        <div className="absolute -top-3 left-6 px-3 py-1 bg-emerald-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
+                            Fortalezas (+)
                         </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-emerald-100 rounded-xl px-3 py-2.5 text-xs font-medium text-emerald-900 focus:bg-white focus:ring-4 focus:ring-emerald-100 outline-none transition-all resize-none min-h-[100px]" 
-                            value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} 
-                            disabled={isClosed} 
-                            placeholder="Motivación, autoeficacia, resiliencia..." 
-                        />
+                        <div className="bg-emerald-50/20 rounded-3xl p-6 pt-8 border border-emerald-100/50 hover:bg-emerald-50/40 transition-all min-h-[180px] shadow-sm">
+                            <textarea 
+                                className="w-full bg-transparent border-none text-xs font-medium text-emerald-900 leading-relaxed min-h-[120px] focus:ring-0 outline-none placeholder:text-emerald-200 resize-none selection:bg-emerald-200" 
+                                value={(autoSynth.factores_biopsicosociales?.factores_personales_positivos || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_positivos: e.target.value.split('\n') })} 
+                                disabled={isClosed} 
+                                placeholder="Motivación alta, adherencia previa, apoyo social fuerte..." 
+                            />
+                        </div>
                     </div>
 
-                    {/* G2. FACTORES PERSONALES NEGATIVOS */}
-                    <div className="bg-rose-50/30 rounded-2xl border border-rose-100/50 p-5 hover:bg-rose-50/50 transition-all flex flex-col gap-3 relative">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">⚠️</span>
-                            <label className="text-[10px] font-black text-rose-600 uppercase tracking-widest">G2. Personales Negativos</label>
+                    {/* Personales (-) */}
+                    <div className="relative">
+                        <div className="absolute -top-3 left-6 px-3 py-1 bg-rose-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
+                            Desafíos (-)
                         </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-rose-100 rounded-xl px-3 py-2.5 text-xs font-medium text-rose-900 focus:bg-white focus:ring-4 focus:ring-rose-100 outline-none transition-all resize-none min-h-[100px]" 
-                            value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} 
-                            disabled={isClosed} 
-                            placeholder="Kinesiofobia, estrés, catastrofización..." 
-                        />
+                        <div className="bg-rose-50/20 rounded-3xl p-6 pt-8 border border-rose-100/50 hover:bg-rose-50/40 transition-all min-h-[180px] shadow-sm">
+                            <textarea 
+                                className="w-full bg-transparent border-none text-xs font-medium text-rose-900 leading-relaxed min-h-[120px] focus:ring-0 outline-none placeholder:text-rose-200 resize-none selection:bg-rose-200" 
+                                value={(autoSynth.factores_biopsicosociales?.factores_personales_negativos || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_personales_negativos: e.target.value.split('\n') })} 
+                                disabled={isClosed} 
+                                placeholder="Miedo al movimiento, catastrofización, tiempo limitado..." 
+                            />
+                        </div>
                     </div>
 
-                    {/* G3. FACILITADORES AMBIENTALES */}
-                    <div className="bg-sky-50/30 rounded-2xl border border-sky-100/50 p-5 hover:bg-sky-50/50 transition-all flex flex-col gap-3 relative">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">🌱</span>
-                            <label className="text-[10px] font-black text-sky-600 uppercase tracking-widest">G3. Facilitadores Ambientales</label>
+                    {/* Ambientales (F) */}
+                    <div className="relative">
+                        <div className="absolute -top-3 left-6 px-3 py-1 bg-sky-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
+                            Facilitadores 🌱
                         </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-sky-100 rounded-xl px-3 py-2.5 text-xs font-medium text-sky-900 focus:bg-white focus:ring-4 focus:ring-sky-100 outline-none transition-all resize-none min-h-[100px]" 
-                            value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} 
-                            disabled={isClosed} 
-                            placeholder="Acceso a gimnasio, apoyo familiar..." 
-                        />
+                        <div className="bg-sky-50/20 rounded-3xl p-6 pt-8 border border-sky-100/50 hover:bg-sky-50/40 transition-all min-h-[220px] shadow-sm">
+                            <textarea 
+                                className="w-full bg-transparent border-none text-sm font-bold text-sky-900 leading-relaxed min-h-[160px] focus:ring-0 outline-none placeholder:text-sky-200 resize-none selection:bg-sky-200" 
+                                value={(autoSynth.factores_biopsicosociales?.facilitadores_ambientales || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { facilitadores_ambientales: e.target.value.split('\n') })} 
+                                disabled={isClosed} 
+                                rows={7}
+                                placeholder="Acceso a gimnasio, familia colaboradora..." 
+                            />
+                        </div>
                     </div>
 
-                    {/* G4. BARRERAS AMBIENTALES */}
-                    <div className="bg-amber-50/30 rounded-2xl border border-amber-100/50 p-5 hover:bg-amber-50/50 transition-all flex flex-col gap-3 relative">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">🚧</span>
-                            <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest">G4. Barreras Ambientales</label>
+                    {/* Ambientales (B) */}
+                    <div className="relative">
+                        <div className="absolute -top-3 left-6 px-3 py-1 bg-amber-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm z-10 transition-transform group-hover/bps:-translate-y-1">
+                            Barreras 🚧
                         </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-amber-100 rounded-xl px-3 py-2.5 text-xs font-medium text-amber-900 focus:bg-white focus:ring-4 focus:ring-amber-100 outline-none transition-all resize-none min-h-[100px]" 
-                            value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} 
-                            disabled={isClosed} 
-                            placeholder="Sedentarismo, escaleras, falta de tiempo..." 
-                        />
-                    </div>
-
-                    {/* G5. FACTORES CLÍNICOS / MODULADORES */}
-                    <div className="bg-violet-50/30 rounded-2xl border border-violet-100/50 p-5 hover:bg-violet-50/50 transition-all flex flex-col gap-3 relative">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">💊</span>
-                            <label className="text-[10px] font-black text-violet-600 uppercase tracking-widest">G5. Moduladores y Pronóstico</label>
+                        <div className="bg-amber-50/20 rounded-3xl p-6 pt-8 border border-amber-100/50 hover:bg-amber-50/40 transition-all min-h-[220px] shadow-sm">
+                            <textarea 
+                                className="w-full bg-transparent border-none text-sm font-bold text-amber-900 leading-relaxed min-h-[160px] focus:ring-0 outline-none placeholder:text-amber-200 resize-none selection:bg-amber-200" 
+                                value={(autoSynth.factores_biopsicosociales?.barreras_ambientales || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('factores_biopsicosociales', { barreras_ambientales: e.target.value.split('\n') })} 
+                                disabled={isClosed} 
+                                rows={7}
+                                placeholder="Exigencias laborales altas, distancias largas..." 
+                            />
                         </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-violet-100 rounded-xl px-3 py-2.5 text-xs font-medium text-violet-900 focus:bg-white focus:ring-4 focus:ring-violet-100 outline-none transition-all resize-none min-h-[100px]" 
-                            value={(autoSynth.factores_biopsicosociales?.factores_clinicos_moduladores || []).join('\n')} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { factores_clinicos_moduladores: e.target.value.split('\n') })} 
-                            disabled={isClosed} 
-                            placeholder="Medicamentos, tabaquismo, cronicidad..." 
-                        />
-                    </div>
-
-                    {/* G6. OBSERVACIONES INTEGRADAS BPS */}
-                    <div className="bg-slate-50/40 rounded-2xl border border-slate-200 p-5 hover:bg-slate-50/60 transition-all flex flex-col gap-3 relative md:col-span-2 lg:col-span-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-lg">📋</span>
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">G6. Síntesis BPS Integrada</label>
-                        </div>
-                        <TextareaAutosize 
-                            className="w-full bg-white/60 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-800 focus:bg-white focus:ring-4 focus:ring-slate-100 outline-none transition-all resize-none min-h-[100px] italic shadow-inner" 
-                            value={autoSynth.factores_biopsicosociales?.observaciones_bps_integradas || ''} 
-                            onChange={(e) => updateDeepObj('factores_biopsicosociales', { observaciones_bps_integradas: e.target.value })} 
-                            disabled={isClosed} 
-                            placeholder="Resumen humano de cómo los factores anteriores interactúan..." 
-                        />
                     </div>
                 </div>
 
                 {/* Sub-indicadores rápidos */}
-                <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5 flex flex-wrap gap-4 items-center justify-between shadow-inner">
+                <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 flex flex-wrap gap-4 items-center justify-between">
                     {[
                         { icon: "⏰", label: "Disponibilidad", value: anamnesisV4?.contextoLaboral?.barrerasDetalles?.includes('tiempo') ? 'Limitada' : 'Adecuada' },
                         { icon: "😴", label: "Sueño", value: anamnesisV4?.bps?.sueno === 0 ? 'Bueno' : anamnesisV4?.bps?.sueno === 1 ? 'Regular' : 'Alterado' },
@@ -1228,8 +1204,8 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                         { icon: "🛡️", label: "Confianza", value: anamnesisV4?.bps?.confianzaBaja === 0 ? 'Alta' : anamnesisV4?.bps?.confianzaBaja === 1 ? 'Media' : 'Baja' },
                         { icon: "🔍", label: "Causa Percibida", value: anamnesisV4?.experienciaPersona?.causaPercibida || 'No reportada' }
                     ].map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-3 bg-white/80 px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm hover:translate-y-[-1px] transition-transform flex-1 min-w-[150px]">
-                            <span className="text-lg shrink-0">{item.icon}</span>
+                        <div key={idx} className="flex items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm hover:translate-y-[-2px] transition-transform flex-1 min-w-[160px]">
+                            <span className="text-xl shrink-0">{item.icon}</span>
                             <div className="min-w-0">
                                 <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-0.5">{item.label}</p>
                                 <p className="text-[11px] font-bold text-slate-700 truncate">{item.value}</p>

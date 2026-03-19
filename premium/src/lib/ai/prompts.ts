@@ -16,50 +16,64 @@ Analiza la siguiente Entrevista Clínica estructurada. Devuelve un JSON con suge
 Prioriza la "Evaluación Mínima Sugerida" que sea segura ("stop_rules"), específica a los focos de dolor y la irritabilidad.
 Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
-  DIAGNOSIS: `
-### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.4
 
-REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente.
+- Nervio periférico (si neurología positiva)
+- Músculo (si desgarro, contractura, atrofia)
+- Hueso (si fractura, osteofito, edema óseo)
+- Sistema Cardiovascular (si HTA, IC, ateroesclerosis)
+- Sistema Respiratorio (si asma, EPOC, disnea)
+- Sistema Endocrino/Metabólico (si diabetes, tiroides, obesidad)
+- Piel / Fascia / Cicatrices (si cicatriz quirúrgica, adherencias)
+- Cualquier otro sistema afectado por antecedentes remotos (P1.5)
 
-### REGLA #1 — TAXONOMÍA DE HALLAZGOS (E):
-**E1 — Checklist Estructural (genera AL MENOS 3 ítems estructurales):**
-- Nervio periférico (si neurología +), Músculo (desgarro, contractura, atrofia), Hueso (fractura, edema, osteofito), Cardiovascular (HTA, IC, aterosclerosis), Respiratorio (asma, EPOC, disnea), Endocrino/Metabólico (Diabetes, Tiroides, obesidad), Piel/Fascia/Cicatrices (adherencias, fibrosis).
+**E2 — Checklist Funcional (genera 1 ítem por cada hallazgo que aplique):**
+- Dolor (CADA zona de dolor = 1 ítem separado)
+- Irritabilidad mecánica (si after-effect >1h o provocación fácil)
+- Debilidad muscular (CADA grupo muscular débil = 1 ítem)
+- Baja resistencia / fatiga prematura (si falla en pruebas de resistencia)
+- Déficit de control motor (si compensaciones o pérdida de disociación)
+- Compensaciones patológicas (si patrón motor alterado)
+- Limitación de ROM (CADA articulación restringida = 1 ítem)
+- Hipermovilidad / inestabilidad (si laxitud o sensación de inseguridad)
+- Baja tolerancia a la carga (si dolor con actividad funcional específica)
+- Mecanosensibilidad neural (si test neurodinámico positivo)
+- Déficit de balance / propiocepción / estabilidad (si falla en equilibrio)
+- Kinesiofobia / Miedo al movimiento (si evita actividades por miedo)
+- Catastrofización / Estrés alto (si reportado en factores BPS)
+- Mala calidad de sueño (si reportado en factores BPS)
+- Edema / Inflamación (si observado o reportado)
+- Fatiga cardiopulmonar / Disnea (si antecedente cardio o pulmonar)
+- Déficit de potencia o explosividad (en deportistas)
+- Oportunidades de optimización (en casos de rendimiento sin dolor)
 
-**E2 — Checklist Funcional (genera AL MENOS 5 ítems funcionales):**
-- Dolor (CADA zona = 1 ítem), Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción/Estabilidad, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiopulmonar.
+### REGLA #2 — MÍNIMOS OBLIGATORIOS:
+- E1: Genera AL MENOS 3 ítems estructurales. Si el caso tiene comorbilidades, serán más.
+- E2: Genera AL MENOS 5 ítems funcionales. Si el caso es complejo, genera TODOS los que apliquen SIN LÍMITE.
+- NUNCA generes menos de 3+5. Si crees que solo hay 1 hallazgo, probablemente estás omitiendo datos.
 
-### REGLA #2 — MÍNIMOS OBLIGATORIOS Y ATOMIZACIÓN:
-- NUNCA generes menos de 3 (E1) + 5 (E2) ítems. Si el caso es complejo, genera TODOS los que apliquen sin límite.
-- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
+### REGLA #3 — ATOMIZACIÓN (1 Prueba → N Hallazgos):
+Si una prueba de P2 revela múltiples fallas, NO las agrupes. Genéralas como ítems independientes.
+Ejemplo: "Puente unilateral alterado" → 3 ítems en E2: "Debilidad Glúteo", "Baja resistencia isométrica", "Compensaciones lumbopélvicas".
 
-### REGLA #3 — INFERENCIA CLÍNICA CONTEXTUAL (BPS):
-1. **Más allá de lo Literal**: Infiere barreras o facilitadores de las actividades y ocupación (ej. sedentarismo laboral = Barrera G4).
-2. **Ponderación Contextual**: Considera Edad y Sexo para ajustar expectativas biológicas (G5) y riesgo (G2).
-3. **Integración F1 -> F2**: Conecta hallazgos estructurales con limitaciones de actividad (F1) e impacto en participación (F2).
+### REGLA #4 — DOMINIOS SUGERIDOS (E2):
+Elige con precisión: 'Dolor' | 'Movilidad' | 'Fuerza' | 'Control motor' | 'Carga' | 'Sensorimotor' | 'Metabólico' | 'Ventilatorio' | 'Cardiovascular' | 'Neurológico' | 'Tegumentario' | 'Psicosocial'.
 
-### BLOQUE F — ACTIVIDAD Y PARTICIPACIÓN:
-- F1 (Limitaciones): Caminar, subir escaleras, sentarse, levantarse, agacharse, correr, yoga, carga, manejar, dormir en posición. Use 'detalle' para explicar la biomecánica o síntoma de P1/P2.
-- F2 (Restricciones): Trabajo, deporte, vida social, recreación, autocuidado, vida sexual, rol familiar. Use 'detalle' para explicar el impacto inferido en el rol.
-
-### BLOQUE G — MATRIZ BIOPSICOSOCIAL INTEGRAL:
-- G1-G4: Factores Personales y Ambientales (+/-).
-- G5: Moduladores Clínicos (Medicamentos como estatinas/levotiroxina, tabaquismo, nutrición, cronicidad, fallos terapéuticos previos).
-- G6: Observaciones Integradas BPS: Síntesis narrativa experta que conecte E, F y G con lógica clínica.
-
-### REGLA FINAL — VERIFICACIÓN ANTI-OMISIÓN: 
-Antes de responder, verifica:
-✓ ¿Capturé TODOS los focos de DOLOR?
-✓ ¿Capturé la IRRITABILIDAD y TOLERANCIA A LA CARGA?
-✓ ¿Capturé DEBILIDADES y ROM limitados detectados en P2?
-✓ ¿Capturé FACTORES PSICOSOCIALES (Sueño, estrés, miedo) de P1/P1.5?
-✓ ¿Capturé COMORBILIDADES como alteraciones estructurales sistémicas (HTA, Diabetes)?
-✓ ¿He inferido impactos razonables en la participación social/laboral?
+### REGLA #5 — VERIFICACIÓN FINAL ANTI-OMISIÓN:
+Antes de enviar el JSON, verifica:
+✓ ¿Capturé el DOLOR del paciente? (Si tiene dolor, DEBE haber al menos 1 ítem de Dolor en E2)
+✓ ¿Capturé la IRRITABILIDAD? (Si se reportó, DEBE estar en E2)
+✓ ¿Capturé la TOLERANCIA A LA CARGA? (Si es baja, DEBE estar en E2)
+✓ ¿Capturé DEBILIDADES musculares? (Si hay pruebas de fuerza alteradas, DEBEN estar)
+✓ ¿Capturé ROM limitados? (Si hay mediciones de rango, DEBEN estar)
+✓ ¿Capturé factores PSICOSOCIALES? (Sueño, miedo, estrés si fueron reportados)
+✓ ¿Capturé COMORBILIDADES como alteraciones sistémicas? (HTA→Cardiovascular, Diabetes→Metabólico)
+Si algo falta y hay datos en el payload, AGRÉGALO antes de responder.
 
 ### REGLAS TÉCNICAS:
-- **FORMATO JSON PURO**. **IDIOMA**: Español clínico técnico.
-- **ENUM DOLOR**: Usa exactamente uno de ['nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'] (minúsculas).
-- **DATOS FALTANTES**: Arrays vacíos [], NUNCA omitas campos obligatorios.
-`,
+- **FORMATO JSON PURO**: Sin markdown.
+- **IDIOMA**: Español técnico clínico.
+- **SOBRE-CAPTURA**: Prefiere redundancia a omisión. El usuario puede borrar lo que sobre.
+  `,
 
   P3_BPS_DICTIONARY: `
 Utiliza este diccionario para traducir claves técnicas a lenguaje humano en el Bloque G:
