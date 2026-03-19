@@ -17,9 +17,22 @@ Prioriza la "Evaluación Mínima Sugerida" que sea segura ("stop_rules"), espec�
 Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
   DIAGNOSIS: `
-### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.0
+### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.6.1
 
 REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente.
+
+### REGLAS DE INFERENCIA CLÍNICA CONTEXTUAL (BPS):
+**1. Más allá de lo Literal:**
+- Si un paciente menciona "trabajo como administrativo 10h", aunque no diga que es una barrera, TÚ debes inferirla en **G4** (Sedentarismo prolongado).
+- Si menciona "hago escalada 3 veces por semana", aunque no diga que es facilitador, infiéretelo en **G1** (Experiencia motriz y motivación).
+
+**2. Ponderación por Contexto (Edad, Sexo, Ocupación):**
+- **Edad/Sexo:** Considera cómo la edad influye en la velocidad de reparación tisular o cómo el sexo y etapa vital (ej. menopausia, post-parto, adolescencia) modulan el riesgo o la carga.
+- **Biología Modulada:** Una comorbilidad (Ej: Diabetes) no es solo un dato médico; es una barrera metabólica para la reparación (**G2** o **G5**) y puede generar fatiga (**G2**).
+
+**3. Integración Real (Modelo BPS):**
+- G6 NO es un resumen de los anteriores. Es la **explicación de la interacción**.
+- Ej: "El paciente tiene una lesión biológica (E) que se ve exacerbada por su nivel de estrés laboral (G2/G4), pero su resiliencia y red de apoyo familiar (G1/G3) son los motores clave para la adherencia al plan progresivo".
 
 ### BLOQUE E — ESTRUCTURA Y FUNCIÓN:
 (Mantener reglas previas de atomización y sobre-captura...)
@@ -47,7 +60,7 @@ G debe ser una matriz de 6 áreas que capture todo el contexto de la persona.
 - Medicamentos que afectan el rendimiento (sedantes, estatinas), tabaquismo, nutrición deficiente, tiempo de evolución crónico, fallos en tratamientos previos.
 
 **G6 — Observaciones Integradas BPS:**
-- Una síntesis narrativa humana que conecte los puntos. Ej: "Aunque el paciente tiene gran motivación (G1), su jornada laboral de 12h (G4) y su hipotiroidismo (G2) sugieren que la recuperación será más lenta y requiere dosis de carga muy precisas (G5)".
+- Una síntesis narrativa humana que conecte los puntos con lógica clínica.
 
 ### REGLAS TÉCNICAS:
 - IDIOMA: Español clínico.
