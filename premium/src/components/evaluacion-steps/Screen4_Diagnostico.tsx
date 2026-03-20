@@ -35,7 +35,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         });
     };
 
-    const handleGenerateAi = async (actionType: 'P4_BASE' | 'P4_PREMIUM' = 'P4_BASE') => {
+    const handleGenerateAi = async () => {
         if (isClosed) return;
         setIsGenerating(true);
         setAiError(null);
@@ -47,14 +47,14 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                 p3_case_organizer: autoSynth,
                 compact_case_package: formData.aiOutputs?.p3_compact_package_last_input ? JSON.parse(formData.aiOutputs.p3_compact_package_last_input) : null,
                 p2_summary_structured: (formData.guidedExam as any)?.autoSynthesis || null,
-                aiAction: actionType
+                aiAction: 'P4_BASE'
             };
 
             const stringifiedPayloadForAI = JSON.stringify(payloadForAI);
             
             // FRONTEND CACHE GUARD FOR P4
-            if (formData.aiOutputs?.p4_last_input === stringifiedPayloadForAI && p4_plan_structured.diagnostico_kinesiologico_narrativo && p4_plan_structured.ia_metadata?.draft_mode === actionType && !aiError) {
-                alert(`Resultado recuperado de cache: No hubo cambios en inputs para regenerar el borrador (${actionType}).`);
+            if (formData.aiOutputs?.p4_last_input === stringifiedPayloadForAI && p4_plan_structured.diagnostico_kinesiologico_narrativo && p4_plan_structured.ia_metadata?.draft_mode === 'P4_BASE' && !aiError) {
+                alert(`Resultado recuperado de cache: No hubo cambios en inputs para regenerar el borrador.`);
                 setIsGenerating(false);
                 return;
             }
@@ -123,7 +123,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     <h3 className="font-bold text-emerald-900 mb-1">A. Modo de Trabajo</h3>
                     <p className="text-xs text-emerald-800">Puedes usar la propuesta de IA como base o completar esta etapa manualmente basándote en P3 de forma pasiva.</p>
                 </div>
-                <div className="flex gap-3 flex-col sm:flex-row w-full md:w-auto">
+                    <div className="flex gap-3 flex-col sm:flex-row w-full md:w-auto">
                     <button 
                         onClick={enableManualMode} 
                         disabled={isClosed || isGenerating} 
@@ -133,21 +133,12 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     </button>
                     <div className="flex flex-col gap-2 w-full md:w-auto">
                         <button 
-                            onClick={() => handleGenerateAi('P4_BASE')} 
+                            onClick={() => handleGenerateAi()} 
                             disabled={isClosed || isGenerating} 
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Generar borrador base con IA</>}
+                            {isGenerating ? <><span className="animate-spin text-lg">⚙️</span> Procesando...</> : <><span className="text-lg">✨</span> Generar Plan con IA</>}
                         </button>
-                        {modeSelected && (
-                             <button 
-                                onClick={() => handleGenerateAi('P4_PREMIUM')} 
-                                disabled={isClosed || isGenerating} 
-                                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[12px] px-4 py-2 rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                             >
-                                 🚀 Refinar redacción premium (Opcional)
-                             </button>
-                        )}
                         <span className="text-[10px] text-emerald-800 text-center font-medium opacity-80">Respeta la clasificación P3 sin alterar resultados clínicos.</span>
                     </div>
                 </div>
