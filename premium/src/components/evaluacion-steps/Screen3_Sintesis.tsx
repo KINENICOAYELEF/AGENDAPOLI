@@ -1352,6 +1352,28 @@ export function Screen3_Sintesis({ formData, updateFormData, isClosed }: Screen3
                                 placeholder="Reportar si hallazgos de P2 contradicen relato de P1..."
                             />
                         </div>
+                        
+                        <div className="bg-rose-50/30 rounded-3xl p-6 border border-rose-200 relative">
+                            <span className="absolute -top-3 left-6 px-3 py-1 bg-rose-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm">A Vigilar en Tratamiento</span>
+                            <textarea 
+                                className="w-full bg-transparent text-xs font-semibold text-rose-900 min-h-[80px] outline-none leading-relaxed resize-none" 
+                                value={(autoSynth.recordatorios_y_coherencia?.cosas_a_vigilar_en_tratamiento || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { cosas_a_vigilar_en_tratamiento: e.target.value.split('\n').filter(Boolean) })} 
+                                disabled={isClosed} 
+                                placeholder="Aspectos a vigilar (ej. signos de alarma, picos de irritabilidad)..."
+                            />
+                        </div>
+
+                        <div className="bg-blue-50/40 rounded-3xl p-6 border border-blue-200 relative">
+                            <span className="absolute -top-3 left-6 px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase rounded-lg shadow-sm">Faltantes No Críticos</span>
+                            <textarea 
+                                className="w-full bg-transparent text-xs font-semibold text-blue-900 min-h-[80px] outline-none leading-relaxed resize-none" 
+                                value={(autoSynth.recordatorios_y_coherencia?.faltantes_no_criticos || []).join('\n')} 
+                                onChange={(e) => updateDeepObj('recordatorios_y_coherencia', { faltantes_no_criticos: e.target.value.split('\n').filter(Boolean) })} 
+                                disabled={isClosed} 
+                                placeholder="Pruebas u observaciones que faltaron pero no impiden el inicio del tratamiento..."
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

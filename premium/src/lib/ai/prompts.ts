@@ -22,19 +22,29 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
 
 REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente. EL EVALUADOR SIEMPRE PUEDE BORRAR LO QUE SOBRE, PERO NO INVENTAR LO QUE FALTA.
 
-### REGLA #1 — BLOQUE D: SISTEMAS Y ESTRUCTURAS (OVER-CAPTURE):
+### REGLA #1 — BLOQUE C: CLASIFICACIÓN DEL DOLOR (ESTABILIDAD OBLIGATORIA):
+- **Clasificación**: Determina el mecanismo dominante PRIMERO según relato y mecanismo de lesión en P1, luego confirma con test de provocación en P2.
+- **Fundamento ESTRUCTURADO**:
+  - \`apoyo\`: Genera AL MENOS 4 hallazgos. Cada uno en 1 oración citando MÍNIMO una fuente (ej: "Confirmado por dolor a compresión en P2").
+  - \`duda_mezcla\`: Genera AL MENOS 2 hallazgos discordantes o que sugieran cautela (ej: "Dolor nocturno reportado en P1.5 sugiere...").
+  - \`conclusion\`: Párrafo de 2-3 oraciones integrando mecanismo principal, modulación y nivel de certeza.
+- **Subtipos**: Siempre genera AL MENOS 2 subtipos (ej: Mecánico + Inflamatorio).
+
+### REGLA #2 — BLOQUE D: SISTEMAS Y ESTRUCTURAS (OVER-CAPTURE):
 - **Principales**: Genera AL MENOS 2 estructuras principales con argumento clínico extenso (2-3 oraciones cruzando P1+P2).
 - **Secundarias**: Genera AL MENOS 2-3 estructuras secundarias con argumento que correlacione hallazgos de P1/P1.5 con P2.
 - **Moduladoras**: Genera AL MENOS 3-4 estructuras asociadas/moduladoras. Incluye TODA comorbilidad (HTA, diabetes, tiroides), toda cicatriz, toda estructura neurológica cercana. Cada argumento DEBE ser un párrafo que explique POR QUÉ modula el caso (edad, sexo, medicamentos, mecanismo).
 - **Argumento extenso**: Cada argumento debe tener 2-3 oraciones mínimo, cruzando datos de AL MENOS 2 fuentes (ej: "detectado en P2 + correlacionado con P1.5").
 
-### REGLA #2 — BLOQUE E: ALTERACIONES (ATOMIZACIÓN + MÍNIMOS):
-**E1 — Checklist Estructural (AL MENOS 3 ítems):**
+### REGLA #3 — BLOQUE E: ALTERACIONES (ATOMIZACIÓN + OVER-CAPTURE MASIVA):
+**E1 — Checklist Estructural (AL MENOS 5 ítems):**
 - Nervio periférico, Músculo, Hueso, Cardiovascular, Respiratorio, Endocrino/Metabólico, Piel/Fascia/Cicatrices.
+- Cada fundamento debe tener 2 oraciones, citando P1/P1.5 y confirmando en P2.
 
-**E2 — Checklist Funcional (AL MENOS 5 ítems, idealmente 10+):**
-- Dolor (CADA zona = 1 ítem), Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiopulmonar.
-- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems en E2.
+**E2 — Checklist Funcional (AL MENOS 12 ítems):**
+- DEBES cubrir todos estos dominios si aplican: Dolor, Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiovascular, Sensorimotor, Tegumentario.
+- CRUCE DE FUENTES OBLIGATORIO: Cada fundamento DEBE cruzar P1 ↔ P2 o P1.5 ↔ P2. (ej: "Reportado en P1 como fatiga rápida, corroborado en P2 al fallar test al 5to repetición").
+- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems separados en E2.
 
 ### REGLA #3 — BLOQUE F: ACTIVIDAD Y PARTICIPACIÓN (INFERENCIA OBLIGATORIA):
 - **F1 (Limitaciones)**: Genera AL MENOS 5 limitaciones de actividad. NO solo las que el paciente dice literalmente. INFIERE: si tiene debilidad de glúteo (P2) + sube escaleras (P1) → limitación en escaleras. Si tiene dolor sentado (P2) + trabaja en oficina (P1) → limitación en sedestación.
@@ -54,8 +64,9 @@ REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma 
 
 ### REGLA FINAL — VERIFICACIÓN ANTI-OMISIÓN: 
 Antes de responder, verifica:
+✓ ¿Bloque C tiene ≥4 apoyos, ≥2 dudas y conclusión larga?
 ✓ ¿Bloque D tiene ≥2 principales, ≥2 secundarias, ≥3 moduladoras con argumentos extensos?
-✓ ¿Bloque E tiene ≥3 estructurales y ≥5 funcionales con fundamentos de P1/P2?
+✓ ¿Bloque E tiene ≥5 estructurales y ≥12 funcionales con cruce explícito de P1/P2?
 ✓ ¿Bloque F tiene ≥5 limitaciones y ≥5 restricciones con detalle e inferencia?
 ✓ ¿Bloque G tiene ≥4 ítems por categoría con contextualización de edad/sexo/ocupación?
 ✓ ¿Capturé COMORBILIDADES como alteraciones estructurales sistémicas (HTA, Diabetes)?

@@ -59,7 +59,25 @@ export async function POST(req: Request) {
     "tarea_indice": "Bajar escaleras",
     "alertas_clinicas": ["Dolor nocturno leve"]
   },
-  "clasificacion_dolor": { "categoria": "nociceptivo", "subtipos": ["Mecánico", "Inflamatorio"], "subtipo_manual": "", "fundamento": { "apoyo": ["Dolor reproducible con test de Laslett", "Agravado por carga mecánica"], "duda_mezcla": ["Dolor nocturno leve podría sugerir componente inflamatorio"], "conclusion": "Predominio nociceptivo mecánico con posible componente inflamatorio secundario." }, "nivel_confianza": "Media" },
+  "clasificacion_dolor": { 
+    "categoria": "nociceptivo", 
+    "subtipos": ["Mecánico", "Isquémico/Inflamatorio"], 
+    "subtipo_manual": "", 
+    "fundamento": { 
+      "apoyo": [
+        "Mecanismo de carga dependiente reportado en P1 (agravado por sedestación prolongada y trote).", 
+        "Reproducción fidedigna (>7/10) al aplicar cluster de compresión ortopédica directa en P2.",
+        "Ausencia de signos radiculares o alteraciones de la sensibilidad periférica en P2.",
+        "Relato histórico en P1.5 de episodios autolimitados consistentes con sobrecarga tisular."
+      ], 
+      "duda_mezcla": [
+        "Dolor nocturno leve que interrumpe el sueño inicial reportado en P1 sugiere un componente inflamatorio activo residual.",
+        "El componente de hiperalgesia secundaria perilesional observado en P2 indica sensibilización periférica en curso."
+      ], 
+      "conclusion": "Cuadro dominado por un mecanismo nociceptivo mecánico claro, impulsado por sobrecarga articular y tendinosa. Existe un subtipo inflamatorio/isquémico secundario que explica la irritabilidad sostenida post-ejercicio y el dolor nocturno." 
+    }, 
+    "nivel_confianza": "Alta" 
+  },
   "sistema_y_estructuras": { 
     "sistemas_involucrados": ["musculoesquelético articular", "neuromuscular", "cardiovascular", "tegumentario", "endocrino", "nervioso periférico"], 
     "estructuras": {
@@ -94,110 +112,116 @@ export async function POST(req: Request) {
         "estructura": "Ligamentos Sacroilíacos Dorsales",
         "alteracion": "Irritación tisular reactiva / posible esguince crónico",
         "certeza": "Posible",
-        "fundamento": "Sensibilidad exquisita a palpación directa en P2 + antecedente de laxitud post-parto en P1.5.",
+        "fundamento": "Sensibilidad exquisita a palpación en P2. Historial de dolor pélvico persistente reportado en P1 apoya daño colagenoso.",
         "impacto_caso": "Mucho"
       },
       {
-        "estructura": "Musculatura Glútea (Glúteo Medio/Mayor)",
-        "alteracion": "Atrofia / hipotrofia funcional por desuso antálgico",
+        "estructura": "Músculo Glúteo Medio",
+        "alteracion": "Atrofia selectiva / Hipotrofia por desuso",
         "certeza": "Posible",
-        "fundamento": "Debilidad manual grado 3/5 con compensaciones observadas en P2.",
+        "fundamento": "Palpación en P2 revela menor volumen en lado derecho. Correlaciona con evitación selectiva de apoyo de extremidad inferior reportado en P1.",
         "impacto_caso": "Mucho"
       },
       {
         "estructura": "Sistema Cardiovascular / Arterias",
-        "alteracion": "Hipertensión Arterial Sistémica (HTA)",
+        "alteracion": "Hipertensión Arterial Sistémica periférica",
         "certeza": "Casi confirmada",
-        "fundamento": "Antecedente médico directo en P1.5 con uso crónico de Losartán. Condiciona microperfusión tisular y tolerancia al esfuerzo.",
+        "fundamento": "Antecedente médico directo en P1.5. Observación de fatiga rápida y disnea leve durante pruebas submáximas en P2.",
         "impacto_caso": "Poco"
       },
       {
         "estructura": "Sistema Endocrino / Tiroides",
-        "alteracion": "Hipotiroidismo (Antecedente)",
+        "alteracion": "Hipotiroidismo subclínico / metabólicamente ralentizado",
         "certeza": "Casi confirmada",
-        "fundamento": "Reportado en P1.5 como diagnóstico médico basal con Levotiroxina. Puede ralentizar la reparación tisular.",
+        "fundamento": "Reportado en P1.5 con terapia de reemplazo. Explica parcialmente la pobre respuesta regenerativa y cronicidad del tejido.",
         "impacto_caso": "Poco"
       },
       {
-        "estructura": "Piel / Fascia Abdominal",
-        "alteracion": "Tejido cicatricial post-cesárea con adherencias",
-        "certeza": "Posible",
-        "fundamento": "Cicatriz visible y palpable en inspección estática P2. Potencial restricción fascial lumbopélvica.",
-        "impacto_caso": "Poco"
+        "estructura": "Piel / Fascia Lumbopélvica Anterior",
+        "alteracion": "Fibrosis y densificación fascial post-quirúrgica",
+        "certeza": "Probable",
+        "fundamento": "Cicatriz por cesárea en P1.5, con severa restricción de deslizamiento tisular inferior confirmada a la palpación en P2.",
+        "impacto_caso": "Mucho"
       }
     ], 
     "funcionales": [
       { 
-        "funcion_disfuncion": "Dolor sacroilíaco bilateral", 
+        "funcion_disfuncion": "Dolor somático profundo en zona sacroilíaca", 
         "severidad": "Severa",
-        "fundamento": "EVA 8/10 actual, 6/10 habitual reportado en P1. Dolor reproducible con maniobras de cizalla en P2.",
+        "fundamento": "La paciente indica EVA 8/10 en historia P1 al correr, correlacionado en P2 al reproducir 8/10 en test de Thrust.",
         "dominio_sugerido": "Dolor"
       },
       { 
-        "funcion_disfuncion": "Irritabilidad mecánica alta", 
+        "funcion_disfuncion": "Irritabilidad mecánica patológica (After-effect >2h)", 
         "severidad": "Severa",
-        "fundamento": "Dolor tarda >2h en calmar tras provocación mínima (subir escaleras) reportado en P1. After-effect prolongado.",
+        "fundamento": "Reportado en P1 que tras subir pendientes, la zona palpita todo el día. Limitó la cantidad de pruebas toleradas en P2.",
         "dominio_sugerido": "Dolor"
       },
       {
-        "funcion_disfuncion": "Baja tolerancia a la carga acumulada",
+        "funcion_disfuncion": "Baja tolerancia a la carga axial acumulada",
         "severidad": "Moderada",
-        "fundamento": "No tolera >2km de trote ni escaleras sin exacerbación (>4/10). Reportado en P1 y corroborado en P2.",
+        "fundamento": "Incapacidad para mantenerse de pie por >20 mins en P1. Claudicación precoz en marcha en banda en P2.",
         "dominio_sugerido": "Carga"
       },
       {
-        "funcion_disfuncion": "Debilidad de glúteo medio bilateral",
+        "funcion_disfuncion": "Debilidad de abductores de cadera derecha",
         "severidad": "Moderada",
-        "fundamento": "Manual grado 3/5 con compensaciones en Trendelenburg positivo observado en P2.",
+        "fundamento": "Queja de inestabilidad al bajar escalones en P1. Confirmado muscularmente con MMT 3/5 doloroso en P2.",
         "dominio_sugerido": "Fuerza"
       },
       {
-        "funcion_disfuncion": "Baja resistencia isométrica de cadena posterior",
+        "funcion_disfuncion": "Menor resistencia a la fatiga en cadena posterior",
         "severidad": "Moderada",
-        "fundamento": "Fatiga prematura y pérdida de técnica antes de 10 repeticiones en puente unilateral en P2.",
+        "fundamento": "Sentimiento de pesadez lumbar reportado en P1 a media tarde. Fallo técnico precoz en puente isométrico a los 15s en P2.",
         "dominio_sugerido": "Fuerza"
       },
       {
-        "funcion_disfuncion": "Déficit de control motor lumbopélvico",
+        "funcion_disfuncion": "Déficit de disociación lumbopélvica",
         "severidad": "Moderada",
-        "fundamento": "Compensación con rigidez y pérdida de disociación lumbopélvica durante tareas de control motor en P2.",
+        "fundamento": "Movimiento en bloque reportado al intentar agacharse P1. Retroversión forzada compensatoria objetivada en Bird-Dog en P2.",
         "dominio_sugerido": "Control motor"
       },
       {
-        "funcion_disfuncion": "Compensaciones lumbopélvicas en puente unilateral",
-        "severidad": "Leve",
-        "fundamento": "Rotación pélvica excesiva y reclutamiento dominante de isquiotibiales observado en P2.",
+        "funcion_disfuncion": "Dominancia Isquiosural sobre Glúteo Mayor",
+        "severidad": "Moderada",
+        "fundamento": "Calambres isquiotibiales frecuentes en P1. Activación isquiotibial temprana palpada durante extensión de cadera en P2.",
         "dominio_sugerido": "Control motor"
       },
       {
-        "funcion_disfuncion": "Limitación de ROM en rotación interna/externa de cadera",
+        "funcion_disfuncion": "Hipomovilidad capsular coxofemoral posterior",
         "severidad": "Moderada",
-        "fundamento": "ROM activo/pasivo incompleto y doloroso (EVA 8/10) en P2.",
+        "fundamento": "Imposibilidad para cruzar la pierna sentado en P1. Tope firme y doloroso en rotación interna pasiva (<15°) en P2.",
         "dominio_sugerido": "Movilidad"
       },
       {
-        "funcion_disfuncion": "Hipomovilidad sacra / restricción de nutación",
+        "funcion_disfuncion": "Restricción de movilidad accesoria sacrococcígea",
         "severidad": "Moderada",
-        "fundamento": "Evaluación de movilidad accesoria en P2 muestra restricción significativa del juego articular.",
+        "fundamento": "Dolor sentado duro P1. P2 revela ausencia de juego articular posteroanterior en base sacra.",
         "dominio_sugerido": "Movilidad"
       },
       {
-        "funcion_disfuncion": "Mala calidad de sueño",
+        "funcion_disfuncion": "Perturbación del equilibrio unipodal (Balance)",
         "severidad": "Moderada",
-        "fundamento": "Reportado en factores personales negativos de P1. Dolor nocturno leve interfiere con el descanso.",
+        "fundamento": "Caídas menores relatadas en P1.5. Estrategia de tobillo ineficiente y uso extensivo de brazos en Single Leg Stance en P2.",
+        "dominio_sugerido": "Sensorimotor"
+      },
+      {
+        "funcion_disfuncion": "Kinesiofobia hacia la asimetría de carga",
+        "severidad": "Leve",
+        "fundamento": "Lenguaje temeroso al describir escaleras en P1 ('siento que se me sale el hueso'). Tensión defensiva muscular activa en P2.",
         "dominio_sugerido": "Psicosocial"
       },
       {
-        "funcion_disfuncion": "Kinesiofobia / Miedo al movimiento",
+        "funcion_disfuncion": "Desacondicionamiento aeróbico leve (HTA relacionada)",
         "severidad": "Leve",
-        "fundamento": "Evitación de actividades deportivas por temor a empeorar, reportado en P1.",
-        "dominio_sugerido": "Psicosocial"
+        "fundamento": "Pérdida de actividad cardiovascular por suspender running en P1. Respuesta de FC desproporcionada al esfuerzo ligero en P2.",
+        "dominio_sugerido": "Cardiovascular"
       },
       {
-        "funcion_disfuncion": "Regulación metabólica alterada por hipotiroidismo",
-        "severidad": "Leve",
-        "fundamento": "Antecedente de hipotiroidismo en P1.5. Puede afectar tasa de reparación tisular y niveles de energía.",
-        "dominio_sugerido": "Metabólico"
+        "funcion_disfuncion": "Atrapamiento fascial tegumentario infraumbilical",
+        "severidad": "Moderada",
+        "fundamento": "Sensación de tirón profundo P1. Retracción evidente del tejido celular subcutáneo en test de pliegue rodado abdominal P2.",
+        "dominio_sugerido": "Tegumentario"
       }
     ] 
   },
@@ -282,7 +306,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.7.0',
+            promptVersion: 'v3.8.0',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
