@@ -50,9 +50,9 @@ export async function POST(req: Request) {
   "referencia_p3_breve": "...",
   "diagnostico_kinesiologico_narrativo": "... (MÍNIMO 8-10 LÍNEAS) ...",
   "razonamiento_diagnostico": "... (explicación docente) ...",
-  "objetivo_general": { "opciones_sugeridas": ["Opción funcional...", "Opción participación...", "Opción integral BPS..."], "seleccionado": "..." },
+  "objetivo_general": { "problema_principal_caso": "... (2-3 líneas del problema central) ...", "opciones_sugeridas": ["Opción funcional...", "Opción participación...", "Opción integral BPS...", "Opción rendimiento deportivo..."], "seleccionado": "..." },
   "objetivos_smart": [
-    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "Alta/Media/Baja", "cluster": "Dolor/ROM/Fuerza/Control Motor/Tolerancia/Psicosocial" }
+    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "Alta/Media/Baja", "cluster": "Dolor/ROM/Fuerza/Control Motor/Tolerancia/Psicosocial/Rendimiento" }
   ],
   "pronostico_biopsicosocial": {
     "corto_plazo": "... (MÍNIMO 3-4 LÍNEAS) ...",
@@ -67,20 +67,22 @@ export async function POST(req: Request) {
     "impacto_biologico": "... (MÍNIMO 3-4 LÍNEAS) ..."
   },
   "pilares_intervencion": [
-    { "titulo": "Educación", "prioridad": 1, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["paso1", "paso2", "paso3", "paso4"], "ejemplos_ejercicios": ["ej1", "ej2"], "foco_que_aborda": ["..."] },
-    { "titulo": "Ejercicio Terapéutico", "prioridad": 2, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] },
-    { "titulo": "Manejo de Carga", "prioridad": 3, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] },
-    { "titulo": "Control Motor", "prioridad": 4, "rol_clinico": "Adjunto/Complementario", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] }
+    { "titulo": "Educación", "prioridad": 1, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["paso1", "paso2", "paso3", "paso4"], "ejemplos_ejercicios": ["ej1", "ej2"], "foco_que_aborda": ["..."] }
   ],
   "plan_maestro": [
-    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["int1","int2","int3","int4","int5"], "progresiones": ["prog1","prog2","prog3"], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["err1","err2"], "perla_docente": "...", "sesiones_tipo": [{"titulo": "Sesión tipo A: ...", "duracion": "~60 min", "estructura": ["Calentamiento (5-10 min): ...", "Bloque principal (35-40 min): ...", "Cool-down (10-15 min): ..."]}, {"titulo": "Sesión tipo B: ...", "duracion": "~60 min", "estructura": ["..."]}] },
-    { "fase": 2, "nombre": "Fase 2: Recuperación", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
-    { "fase": 3, "nombre": "Fase 3: Fortalecimiento", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
-    { "fase": 4, "nombre": "Fase 4: Reintegro", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] }
+    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["int1","int2","int3","int4","int5"], "intervenciones_complementarias": ["Movilización articular grade I-II de la articulación afectada", "Educación en neurociencia del dolor: metáfora del sistema de alarma"], "tips_dosificacion": ["RPE 3-4 para ejercicios activos", "RIR 4-5 en isométricos submáximos", "Tempo: 5s excéntrico, 5s isométrico, 2s concéntrico", "Frecuencia: 3-4 sesiones/semana"], "progresiones": ["prog1","prog2","prog3"], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["err1","err2"], "perla_docente": "...", "sesiones_tipo": [{"titulo": "Sesión tipo A: ...", "duracion": "~60 min", "estructura": ["Calentamiento (5-10 min): ...", "Bloque principal (35-40 min): ...", "Cool-down (10-15 min): ..."]}, {"titulo": "Sesión tipo B: ...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 2, "nombre": "Fase 2: Recuperación", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "intervenciones_complementarias": ["..."], "tips_dosificacion": ["RPE 5-6 en fortalecimiento", "RIR 3-4", "TUT 30-45s por set"], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 3, "nombre": "Fase 3: Fortalecimiento", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "intervenciones_complementarias": ["..."], "tips_dosificacion": ["RPE 7-8", "RIR 1-2", "Tempo explosivo concéntrico"], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 4, "nombre": "Fase 4: Reintegro", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "intervenciones_complementarias": ["..."], "tips_dosificacion": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] }
   ],
   "reglas_reevaluacion": {
     "signo_comparable_principal": "...",
-    "razon_signo_comparable": "... (por qué ese signo) ...",
+    "signos_comparables": [
+      {"evaluacion": "Test de Faber", "tipo": "Test especial", "justificacion": "Reproduce la queja y es sensible a cambios articulares"},
+      {"evaluacion": "Rotación interna activa en decúbito", "tipo": "ROM funcional", "justificacion": "Variable crítica limitada al inicio"},
+      {"evaluacion": "Sentadilla unipodal", "tipo": "Test funcional", "justificacion": "Integra fuerza, control motor y confianza en carga"}
+    ],
+    "razon_signo_comparable": "... (por qué estas evaluaciones guía) ...",
     "variables_seguimiento": ["...","..."],
     "instrumentos_sugeridos": ["PSFS","SANE","GROC","EVA"],
     "frecuencia_sugerida": "...",
@@ -93,6 +95,15 @@ export async function POST(req: Request) {
       {"momento": "Semana 8-10", "evaluaciones_incluidas": ["..."], "evaluaciones_excluidas": "...", "razon": "..."},
       {"momento": "Alta/Cierre", "evaluaciones_incluidas": ["..."], "evaluaciones_excluidas": null, "razon": "..."}
     ]
+  },
+  "banco_recursos": {
+    "ejercicios_clave": [
+      {"nombre_es": "Puente glúteo unilateral", "nombre_en": "Single leg glute bridge", "fase_recomendada": "Fase 2-3", "objetivo": "Fuerza glúteo medio"},
+      {"nombre_es": "Sentadilla búlgara", "nombre_en": "Bulgarian split squat", "fase_recomendada": "Fase 3-4", "objetivo": "Fuerza unilateral de MMII"},
+      {"nombre_es": "Bird-dog", "nombre_en": "Bird-dog exercise", "fase_recomendada": "Fase 1-2", "objetivo": "Control motor y estabilidad lumbopélvica"}
+    ],
+    "busquedas_sugeridas": ["sacroiliac joint physiotherapy exercises", "hip abductor strengthening rehab", "graded motor imagery chronic pain"],
+    "referencias_bibliograficas": ["Vleeming, A. et al. (2012). The sacroiliac joint: an overview of its anatomy, function and potential clinical implications.", "Barton, C.J. et al. (2019). Running retraining to treat lower limb injuries."]
   }
 }`;
 

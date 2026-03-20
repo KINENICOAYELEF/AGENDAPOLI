@@ -109,33 +109,35 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
 3. "razonamiento_diagnostico": Explicación docente de 4-6 líneas sobre CÓMO se construyó el diagnóstico: qué hallazgos pesan más, por qué ciertas estructuras son prioritarias, cómo los factores BPS modifican la estrategia.
 
 ═══ REGLA 2 — OBJETIVO GENERAL (AMPLIO, NO ESPECÍFICO) ═══
-4. "objetivo_general": Proponer 3 a 5 opciones AMPLIAS y GENERALES. PROHIBIDO que suenen a objetivos específicos/SMART.
+4. "objetivo_general":
+   - "problema_principal_caso": En 2-3 líneas, describir cuál es el PROBLEMA CENTRAL que debe resolverse en este caso. Qué está fallando, por qué duele, qué limita al paciente y cuál es la prioridad terapéutica.
+   - Proponer 3 a 5 opciones AMPLIAS y GENERALES. PROHIBIDO que suenen a objetivos específicos/SMART.
    ESTRUCTURA OBLIGATORIA: [Verbo amplio] + [capacidad/función macro] + para + [participación general].
    Las opciones deben tener ENFOQUES DISTINTOS entre sí (no sinónimos):
    - Enfoque funcional amplio: "Restaurar la capacidad funcional del complejo [región] para permitir la participación en actividades de la vida diaria y recreativas sin limitación."
    - Enfoque de reintegro: "Reintegrar de forma segura y progresiva a [actividad/deporte/trabajo] mediante la recuperación integral de las capacidades físicas comprometidas."
    - Enfoque integral BPS: "Optimizar la condición física, funcional y psicosocial del paciente para alcanzar su máximo potencial de recuperación y autonomía."
    - Enfoque preventivo: "Recuperar y fortalecer [región/sistema] para prevenir recurrencias y promover la autoeficacia en el manejo a largo plazo."
+   - Enfoque rendimiento/deportivo (si aplica): "Restaurar y potenciar las capacidades físico-deportivas comprometidas para un retorno seguro al rendimiento competitivo/recreativo."
    PROHIBIDO: objetivos que mencionen variables específicas (dolor, ROM, fuerza) → eso va en SMART.
    Seleccionar la opción más completa e integradora.
 
 ═══ REGLA 3 — OBJETIVOS SMART EXHAUSTIVOS Y GRANULARES ═══
 5. "objetivos_smart": REGLA ESTRICTA DE COBERTURA Y GRANULARIDAD.
-   COBERTURA: Generar SMARTs que cubran:
-   - CADA disfunción funcional (E2 de P3) modificable por kinesiología
-   - CADA limitación de actividad (F1 de P3) medible
-   - CADA factor negativo modificable (G de P3) trabajable (kinesiofobia, sueño, desacondicionamiento)
+   COBERTURA OBLIGATORIA — BARRE EXPLÍCITAMENTE:
+   - CADA disfunción estructural de E1 de P3 que genere un déficit funcional trabajable
+   - CADA disfunción funcional de E2 de P3 (dolor, ROM, fuerza, control motor, resistencia, coordinación, equilibrio, propiocepción)
+   - CADA limitación de actividad de F1 de P3 que sea medible
+   - CADA factor personal/ambiental negativo MODIFICABLE de G de P3 (kinesiofobia, calidad de sueño, desacondicionamiento, creencias limitantes, sedentarismo, baja autoeficacia)
+   - Incluir objetivos de RENDIMIENTO DEPORTIVO si el paciente es deportista (potencia, velocidad, agilidad, resistencia cardiorrespiratoria, gesto deportivo específico)
    
    REGLA DE GRANULARIDAD ESTRICTA: 1 VARIABLE = 1 SMART INDEPENDIENTE.
-   - Si una disfunción tiene dolor + déficit de ROM → generar 2 SMARTs separados (uno para dolor, otro para ROM)
-   - Si tiene dolor + déficit fuerza + déficit control motor → generar 3 SMARTs separados
+   - Dolor + déficit ROM = 2 SMARTs separados
+   - Dolor + déficit fuerza + déficit control motor = 3 SMARTs separados
    - NUNCA combinar dos variables distintas en un solo texto SMART
-   - Ejemplo INCORRECTO: "Disminuir dolor y aumentar ROM de rotación interna" → son 2 objetivos mezclados
-   - Ejemplo CORRECTO: SMART 1 "Disminuir dolor en zona X de 7/10 a <3/10 en movimientos de rotación..." + SMART 2 "Aumentar ROM activo de rotación interna de 20° a 40°..."
-   
-   NO te limites a 3-5. Si el caso tiene 8 disfunciones con múltiples variables, genera 12+ SMARTs.
+   CUENTA EXPLÍCITA: Si P3 lista 10 alteraciones/limitaciones/factores, genera MÍNIMO 10 SMARTs.
    Estructura: [verbo] + [UNA variable] + de [basal] a [meta] + en [plazo].
-   En "cluster": "Dolor", "ROM", "Fuerza", "Control Motor", "Tolerancia", "Psicosocial", "Rendimiento" u otro.
+   En "cluster": "Dolor", "ROM", "Fuerza", "Control Motor", "Tolerancia", "Psicosocial", "Rendimiento", "Resistencia", "Equilibrio" u otro.
    En "prioridad": Alta (dolor agudo, seguridad, inflamación), Media (fuerza, ROM, control motor), Baja (rendimiento avanzado).
 
 ═══ REGLA 4 — PRONÓSTICO BPS PROFUNDO ═══
@@ -152,51 +154,68 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
 
 ═══ REGLA 5 — PILARES DE INTERVENCIÓN AMPLIADOS ═══
 7. "pilares_intervencion": Generar MÍNIMO 4-5 PILARES. Trinidad obligatoria: Educación, Ejercicio Terapéutico, Manejo de Carga.
-   Complementos según el caso: Control Motor, Exposición Gradual al Movimiento, Retorno Deportivo/Laboral, Modulación del Dolor, Terapia Manual (solo como adjunto).
+   Complementos según el caso: Control Motor, Exposición Gradual al Movimiento, Retorno Deportivo/Laboral, Modulación del Dolor, Terapia Manual (solo como adjunto), Readaptación Deportiva (si aplica).
    Para CADA pilar:
    - "prioridad": Jerarquía numérica (1 es máxima).
    - "rol_clinico": "Pilar Central" para la trinidad, "Adjunto/Complementario" para el resto.
    - "justificacion": Mínimo 2-3 líneas explicando POR QUÉ entra en este caso específico.
-   - "objetivos_operacionales": MÍNIMO 4 pasos concretos y específicos que el kinesiólogo hará en box (ej: "Prescribir isométricos de aductores 5x45s al 70% CVM", "Enseñar semáforo de dolor", "Progresión de sentadilla goblet con RPE 5-6").
+   - "objetivos_operacionales": MÍNIMO 4 pasos concretos y específicos que el kinesiólogo hará en box.
    - "ejemplos_ejercicios": 3-5 ejercicios concretos con dosis/parámetros cuando aplique.
    - "foco_que_aborda": A qué disfunciones/limitaciones de P3 responde.
 
-═══ REGLA 6 — PLAN MAESTRO POR FASES (ULTRA DOCENTE) ═══
+═══ REGLA 6 — PLAN MAESTRO POR FASES (ULTRA DOCENTE + PERFORMANCE) ═══
 8. "plan_maestro": ESTRICTAMENTE 4 fases. Para CADA FASE generar contenido EXTENSO y DOCENTE:
-   - "objetivo_fisiologico": Meta biológica/tisular de la fase (ej: "Reducir sensibilización periférica, modular respuesta inflamatoria, proteger tejido en reparación").
-   - "intervenciones": MÍNIMO 5-6 intervenciones ESPECÍFICAS con parámetros cuando sea posible.
+   - "objetivo_fisiologico": Meta biológica/tisular de la fase.
+   - "intervenciones": MÍNIMO 5-6 intervenciones ESPECÍFICAS con parámetros.
+   - "intervenciones_complementarias": 2-4 intervenciones SECUNDARIAS que apoyen la terapia de ejercicio principal. Según el caso:
+     * Terapia manual: movilización articular, MWM (Mulligan), técnicas miofasciales, movilización neurodinámica
+     * Estrategias cognitivo-conductuales: exposición gradual al movimiento, imaginería motora, educación en neurociencia del dolor
+     * Modalidades complementarias: crioterapia, termoterapia, TENS (si aplica)
+     * Estrategias deportivas (si aplica): pliometría progresiva, entrenamiento reactivo, agilidad, cambios de dirección, return to sport protocols
+     REGLA: Solo incluir lo que tenga SENTIDO CLÍNICO para el caso. Si no aporta, no agregarlo.
+   - "tips_dosificacion": 3-5 tips MODERNOS de dosificación para esta fase:
+     * RPE (Rating of Perceived Exertion): cómo usarlo (ej: "Mantener RPE 4-5 en fase 1, progresar a RPE 7-8 en fase 3")
+     * RIR (Reps in Reserve): ej: "RIR 3-4 en fase 2, progresar a RIR 1-2 en fase 3"
+     * Tempo: ej: "Fase excéntrica controlada 3-4 seg, concéntrica explosiva en fase 3-4"
+     * TUT (Time Under Tension / Tiempo Bajo Tensión): ej: "30-45 seg por set para hipertrofia funcional"
+     * Volumen semanal y frecuencia de entrenamiento recomendada
+     PROHIBIDO dejar dosificación como "3x15 convencional". Debe ser clínicamente justificado con variables modernas.
    - "progresiones": MÍNIMO 3-4 criterios de progresión de carga/volumen.
-   - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES para pasar a la siguiente fase.
-   - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma para retroceder.
+   - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES.
+   - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma.
    - "errores_frecuentes": 2-3 errores que un kinesiólogo novato cometería en esta fase.
-   - "perla_docente": 2-3 líneas con un dato BASADO EN EVIDENCIA útil para enseñanza clínica (ej: "La evidencia actual sugiere que los isométricos producen hipoalgesia local de hasta 45 min post-ejercicio (Rio et al., 2015)").
-   - "sesiones_tipo": Proponer 2 SESIONES TIPO de ~60 minutos por cada fase. Cada sesión debe:
-     * Tener un título descriptivo (ej: "Sesión tipo A: Modulación + Control Motor Básico")
-     * Duración: "~60 min"
-     * Estructura en bloques: calentamiento (5-10 min), bloque principal (35-40 min), cool-down (10-15 min)
-     * Usar TIPOS de ejercicio genéricos, NO nombres literales (los nombres específicos ya están en intervenciones)
-     * Ej: "Ejercicio de fortalecimiento excéntrico de cadena posterior 3x10 al RPE 5-6" en vez de "Nordic curl"
-     * Cada bloque debe listar: tipo de ejercicio + dosificación (series x reps/tiempo, RPE, descanso)
-     * Las 2 sesiones deben cubrir distintos objetivos del caso real (no repetir lo mismo)
+   - "perla_docente": 2-3 líneas con un dato BASADO EN EVIDENCIA útil para enseñanza clínica (citar autor y año).
+   - "sesiones_tipo": 2 SESIONES TIPO de ~60 min por fase, con estructura calentamiento → bloque principal → cool-down, tipos de ejercicio con dosificación (series x reps, RPE, RIR, descanso).
 
-═══ REGLA 7 — REEVALUACIÓN EXPANDIDA CON TIMELINE ═══
+═══ REGLA 7 — REEVALUACIÓN EXPANDIDA CON MULTI-SIGNOS ═══
 9. "reglas_reevaluacion":
-   - "signo_comparable_principal": El test/signo que mejor reproduce la queja del paciente.
-   - "razon_signo_comparable": 2-3 líneas explicando POR QUÉ ese signo y no otro (valor docente).
-   - "instrumentos_sugeridos": Array con escalas/tests a usar (PSFS, SANE, GROC, EVA, dinamometría, goniometría, etc.).
-   - "alertas_derivacion": 3-4 alertas específicas del caso (ej: "Dolor nocturno persistente >4 semanas sin mejoría con manejo de carga").
-   - "criterio_mejora_real" y "criterio_estancamiento_derivacion": Mínimo 2-3 líneas cada uno, con criterios medibles.
-   - "plan_reevaluacion_temporal": Array de 3-4 MOMENTOS CLAVE de reevaluación. Para CADA momento:
-     * "momento": Cuándo (ej: "Sesiones 1-3", "Semana 4", "Semana 8-10", "Alta/Cierre")
-     * "evaluaciones_incluidas": Qué evaluaciones/tests aplicar en ese momento y por qué son relevantes ahí
-     * "evaluaciones_excluidas": Qué evaluaciones NO conviene aún y por qué (ej: "No evaluar fuerza máxima en fase 1 porque el tejido aún está en reparación y la carga máxima podría ser irritativa")
-     * "razon": Justificación clínica breve de por qué se eligieron esas evaluaciones para ese momento
+   - "signos_comparables": Array de 3-5 evaluaciones guía (NO solo un signo). Para cada una:
+     * "evaluacion": Nombre del test, movimiento funcional o provocación
+     * "tipo": "Test especial", "ROM funcional", "Provocación", "Test funcional", "Fuerza"
+     * "justificacion": Por qué ESTE test/movimiento sirve como guía de progreso en ESTE caso
+   - "signo_comparable_principal": Cuál de los anteriores es EL MÁS representativo de la queja.
+   - "razon_signo_comparable": 2-3 líneas explicando la selección de evaluaciones guía.
+   - "instrumentos_sugeridos": Escalas/tests a usar.
+   - "alertas_derivacion": 3-4 alertas específicas del caso.
+   - "criterio_mejora_real" y "criterio_estancamiento_derivacion": Mínimo 2-3 líneas cada uno.
+   - "plan_reevaluacion_temporal": Array de 3-4 MOMENTOS CLAVE de reevaluación.
+
+═══ REGLA 8 — BANCO DE RECURSOS (DOCENTE/ESTUDIANTE) ═══
+10. "banco_recursos": Generar un banco práctico para que el estudiante o evaluador pueda buscar y profundizar:
+   - "ejercicios_clave": Array de 8-15 ejercicios del caso. Para CADA ejercicio:
+     * "nombre_es": Nombre en español (ej: "Puente glúteo unilateral")
+     * "nombre_en": Nombre en inglés para buscar en YouTube/internet (ej: "Single leg glute bridge")
+     * "fase_recomendada": En qué fase usarlo (ej: "Fase 2-3")
+     * "objetivo": Qué trabaja (ej: "Fuerza de glúteo medio y estabilidad pélvica")
+   - "busquedas_sugeridas": 4-6 términos de búsqueda en INGLÉS para profundizar en YouTube/PubMed/Scholar (ej: "sacroiliac joint mobilization physiotherapy", "hip abductor strengthening exercises rehab", "graded motor imagery chronic pain")
+   - "referencias_bibliograficas": 3-6 referencias REALES y relevantes en formato APA abreviado. Incluir autores y año. Priorizar: guías de práctica clínica, revisiones sistemáticas, artículos seminales del tema.
 
 ═══ REGLAS GENERALES DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan datos, asume escenarios clínicamente probables basados en P3.
 - NO resumas cuando el prompt dice "extenso". Cada campo marcado como "MÍNIMO X líneas" DEBE cumplirlo.
 - Barre EXHAUSTIVAMENTE las listas E1, E2, F1, F2 y G de P3 para no dejar ningún problema sin plan.
 - Redacción clínica clara, útil y con valor docente.
+- En contextos deportivos/performance: incluir terminología y estrategias de readaptación deportiva actualizadas.
   `,
 
   PLAN: `

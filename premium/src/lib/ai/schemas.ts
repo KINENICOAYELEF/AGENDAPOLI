@@ -148,6 +148,7 @@ export const P4PlanStructuredSchema = z.object({
     diagnostico_kinesiologico_narrativo: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3. Mínimo 8 líneas."),
     razonamiento_diagnostico: z.string().optional().describe("Explicación docente de cómo se construyó el diagnóstico: qué pesa más y por qué"),
     objetivo_general: z.object({
+        problema_principal_caso: z.string().optional().describe("2-3 líneas identificando el problema central que hay que resolver en este caso"),
         opciones_sugeridas: z.array(z.string()).describe("3 a 5 opciones de objetivo general con distintos enfoques"),
         seleccionado: z.string()
     }),
@@ -194,6 +195,8 @@ export const P4PlanStructuredSchema = z.object({
         criterios_regresion: z.string(),
         errores_frecuentes: z.array(z.string()).optional().describe("Errores comunes que el kinesiólogo debe evitar en esta fase"),
         perla_docente: z.string().optional().describe("Dato basado en evidencia útil para enseñanza clínica"),
+        intervenciones_complementarias: z.array(z.string()).optional().describe("Terapias complementarias: movilización articular, MWM, terapia manual, exposición gradual, neurociencia del dolor, imaginería motora"),
+        tips_dosificacion: z.array(z.string()).optional().describe("Tips para dosificar en esta fase: RPE, RIR, tempo, % 1RM, TUT, velocidad concéntrica"),
         sesiones_tipo: z.array(z.object({
             titulo: z.string().describe("Ej: Sesión tipo A: Modulación + Control Motor"),
             duracion: z.string().describe("Ej: ~60 min"),
@@ -201,8 +204,13 @@ export const P4PlanStructuredSchema = z.object({
         })).optional().describe("2 sesiones tipo de ~60 min que cubran objetivos reales del caso")
     })).describe("4 fases de rehabilitación ultra-detalladas y docentes"),
     reglas_reevaluacion: z.object({
-        signo_comparable_principal: z.string(),
-        razon_signo_comparable: z.string().optional().describe("Por qué se eligió este signo y no otro"),
+        signo_comparable_principal: z.string().optional().describe("Signo comparable principal (legacy, preferir signos_comparables)"),
+        signos_comparables: z.array(z.object({
+            evaluacion: z.string().describe("Nombre del test, movimiento o provocación"),
+            tipo: z.string().describe("Test especial, ROM funcional, provocación, test funcional, etc."),
+            justificacion: z.string().describe("Por qué sirve como guía de progreso")
+        })).optional().describe("Evaluaciones guía: tests, movimientos y provocaciones que monitorean progreso"),
+        razon_signo_comparable: z.string().optional().describe("Por qué se eligieron estos signos"),
         variables_seguimiento: z.array(z.string()),
         instrumentos_sugeridos: z.array(z.string()).optional().describe("Escalas/tests: PSFS, SANE, GROC, dinamometría, etc."),
         frecuencia_sugerida: z.string(),
@@ -216,6 +224,16 @@ export const P4PlanStructuredSchema = z.object({
             razon: z.string().describe("Justificación clínica de esta selección")
         })).optional().describe("Timeline de qué evaluar en cada momento y qué postergar")
     }),
+    banco_recursos: z.object({
+        ejercicios_clave: z.array(z.object({
+            nombre_es: z.string().describe("Nombre en español"),
+            nombre_en: z.string().describe("Nombre en inglés para buscar en YouTube/internet"),
+            fase_recomendada: z.string().describe("En qué fase usar: Fase 1, 2, 3 o 4"),
+            objetivo: z.string().describe("Qué trabaja: fuerza, ROM, control motor, etc.")
+        })).describe("8-15 ejercicios clave del caso con nombre EN+ES para buscar"),
+        busquedas_sugeridas: z.array(z.string()).optional().describe("Términos de búsqueda sugeridos para profundizar (ej: 'sacroiliac joint mobilization physiotherapy')"),
+        referencias_bibliograficas: z.array(z.string()).optional().describe("3-6 referencias relevantes en formato APA abreviado")
+    }).optional().describe("Banco de recursos para el estudiante/evaluador"),
     ia_metadata: z.object({
         model_used: z.string(),
         fallback_used: z.boolean(),
