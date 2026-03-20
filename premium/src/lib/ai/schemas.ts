@@ -193,7 +193,12 @@ export const P4PlanStructuredSchema = z.object({
         criterios_avance: z.string(),
         criterios_regresion: z.string(),
         errores_frecuentes: z.array(z.string()).optional().describe("Errores comunes que el kinesiólogo debe evitar en esta fase"),
-        perla_docente: z.string().optional().describe("Dato basado en evidencia útil para enseñanza clínica")
+        perla_docente: z.string().optional().describe("Dato basado en evidencia útil para enseñanza clínica"),
+        sesiones_tipo: z.array(z.object({
+            titulo: z.string().describe("Ej: Sesión tipo A: Modulación + Control Motor"),
+            duracion: z.string().describe("Ej: ~60 min"),
+            estructura: z.array(z.string()).describe("Bloques de la sesión: calentamiento, bloque principal, cool-down, con tipos de ejercicio y dosificación")
+        })).optional().describe("2 sesiones tipo de ~60 min que cubran objetivos reales del caso")
     })).describe("4 fases de rehabilitación ultra-detalladas y docentes"),
     reglas_reevaluacion: z.object({
         signo_comparable_principal: z.string(),
@@ -203,7 +208,13 @@ export const P4PlanStructuredSchema = z.object({
         frecuencia_sugerida: z.string(),
         criterio_mejora_real: z.string(),
         criterio_estancamiento_derivacion: z.string(),
-        alertas_derivacion: z.array(z.string()).optional().describe("Red flags específicos del caso que ameritan derivación")
+        alertas_derivacion: z.array(z.string()).optional().describe("Red flags específicos del caso que ameritan derivación"),
+        plan_reevaluacion_temporal: z.array(z.object({
+            momento: z.string().describe("Ej: Sesiones 1-3, Semana 4, Semana 8-10, Alta"),
+            evaluaciones_incluidas: z.array(z.string()).describe("Qué evaluaciones aplicar en este momento"),
+            evaluaciones_excluidas: z.string().optional().describe("Qué NO evaluar aún y por qué"),
+            razon: z.string().describe("Justificación clínica de esta selección")
+        })).optional().describe("Timeline de qué evaluar en cada momento y qué postergar")
     }),
     ia_metadata: z.object({
         model_used: z.string(),

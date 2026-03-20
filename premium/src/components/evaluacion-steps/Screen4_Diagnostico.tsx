@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { EvaluacionInicial } from "@/types/clinica";
 import { useAuth } from "@/context/AuthContext";
 
@@ -22,6 +22,25 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
     );
 
     const autoSynth = formData.autoSynthesis || {};
+
+    // Auto-resize helper for textareas
+    const autoResize = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+        const el = e.currentTarget;
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }, []);
+
+    // Auto-resize all textareas when AI content loads
+    useEffect(() => {
+        if (p4_plan_structured.diagnostico_kinesiologico_narrativo) {
+            setTimeout(() => {
+                document.querySelectorAll<HTMLTextAreaElement>('[data-autoresize]').forEach(el => {
+                    el.style.height = 'auto';
+                    el.style.height = el.scrollHeight + 'px';
+                });
+            }, 100);
+        }
+    }, [p4_plan_structured]);
 
     const handleUpdateP4 = (patch: any) => {
         updateFormData(prev => ({
@@ -171,17 +190,21 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <h3 className="font-bold text-slate-800 mb-2 border-b pb-2 flex items-center gap-2"><span className="text-lg">📜</span> B. Diagnóstico Kinesiológico Narrativo</h3>
                         <p className="text-xs text-slate-500 mb-3">Sigue estrictamente la plantilla lógica estructural solicitada, vinculando dimensiones CIF sin re-clasificar.</p>
                         <textarea
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[220px] text-sm text-slate-800 outline-none focus:border-emerald-400 focus:bg-white leading-relaxed disabled:opacity-75"
+                            data-autoresize
+                            onInput={autoResize}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 min-h-[120px] text-sm text-slate-800 outline-none focus:border-emerald-400 focus:bg-white leading-relaxed disabled:opacity-75"
                             placeholder="[Nombre], consulta por... Presenta alteraciones estructurales a nivel de... A nivel funcional presenta alteraciones de... Lo anterior limita... Restringiendo su participación en... Presenta como factores personales... ambientales..."
                             value={p4_plan_structured.diagnostico_kinesiologico_narrativo || formData.geminiDiagnostic?.narrativeDiagnosis || ''}
                             onChange={(e) => handleUpdateP4({ diagnostico_kinesiologico_narrativo: e.target.value })}
                             disabled={isClosed}
                         />
                         {p4_plan_structured.razonamiento_diagnostico && (
-                            <details className="mt-3">
+                            <details className="mt-3" open>
                                 <summary className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-800 select-none">🎓 Razonamiento Diagnóstico (Capa Docente)</summary>
                                 <textarea
-                                    className="w-full mt-2 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-900 outline-none min-h-[80px] leading-relaxed disabled:opacity-75"
+                                    data-autoresize
+                                    onInput={autoResize}
+                                    className="w-full mt-2 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-900 outline-none min-h-[60px] leading-relaxed disabled:opacity-75"
                                     value={p4_plan_structured.razonamiento_diagnostico || ''}
                                     onChange={(e) => handleUpdateP4({ razonamiento_diagnostico: e.target.value })}
                                     disabled={isClosed}
@@ -317,66 +340,72 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                         <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔮</span> E. Pronóstico Biopsicosocial</h3>
                         
+                        {/* Análisis temporal */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Pronóstico a Corto Plazo</label>
-                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.corto_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { corto_plazo: e.target.value })} disabled={isClosed} />
+                                <label className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block mb-1">📅 Corto Plazo (0-4 sem)</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-blue-50/50 border border-blue-200 rounded p-2 text-xs min-h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.corto_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { corto_plazo: e.target.value })} disabled={isClosed} />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Pronóstico a Mediano Plazo</label>
-                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.mediano_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { mediano_plazo: e.target.value })} disabled={isClosed} />
+                                <label className="text-[10px] font-bold text-violet-600 uppercase tracking-wider block mb-1">📅 Mediano Plazo (4-12 sem)</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-violet-50/50 border border-violet-200 rounded p-2 text-xs min-h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.mediano_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { mediano_plazo: e.target.value })} disabled={isClosed} />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Pronóstico a Largo Plazo</label>
-                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.largo_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { largo_plazo: e.target.value })} disabled={isClosed} />
+                                <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">📅 Largo Plazo (&gt;12 sem)</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-indigo-50/50 border border-indigo-200 rounded p-2 text-xs min-h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.largo_plazo || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { largo_plazo: e.target.value })} disabled={isClosed} />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div className="md:col-span-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Categoría Principal</label>
-                                <select className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" value={p4_plan_structured.pronostico_biopsicosocial?.categoria || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { categoria: e.target.value })} disabled={isClosed}>
-                                    <option value="">Selecciona...</option>
-                                    <option value="favorable">Favorable</option>
-                                    <option value="favorable con vigilancia">Favorable con vigilancia</option>
-                                    <option value="reservado">Reservado</option>
-                                    <option value="reservado dependiente de adherencia/contexto">Reservado dependiente</option>
-                                    <option value="desfavorable">Desfavorable</option>
-                                    <option value="incierto">Incierto</option>
-                                </select>
+                        {/* Factores */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">✅ Factores a Favor</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 text-xs text-emerald-900 outline-none min-h-[40px] resize-none" value={(p4_plan_structured.pronostico_biopsicosocial?.factores_a_favor || []).join('\n')} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { factores_a_favor: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Un factor por línea..." />
                             </div>
-                            <div className="md:col-span-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Justificación Clínica Integral</label>
-                                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" placeholder="Ej: Basado en severidad actual, adherencia y barreras ambientales..." value={p4_plan_structured.pronostico_biopsicosocial?.justificacion_clinica_integral || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { justificacion_clinica_integral: e.target.value })} disabled={isClosed} />
+                            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                                <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">⚠️ Factores en Contra</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 text-xs text-rose-900 outline-none min-h-[40px] resize-none" value={(p4_plan_structured.pronostico_biopsicosocial?.factores_en_contra || []).join('\n')} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { factores_en_contra: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="Un factor por línea..." />
                             </div>
                         </div>
 
+                        {/* Historia natural e impacto */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Factores a Favor (Separados por coma)</label>
-                                <input type="text" className="w-full bg-emerald-50 border border-emerald-200 rounded p-2 text-xs" value={(p4_plan_structured.pronostico_biopsicosocial?.factores_a_favor || []).join(', ')} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { factores_a_favor: e.target.value.split(',').map((x: string) => x.trim()).filter(Boolean) })} disabled={isClosed} />
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">📉 Historia Natural (Sin Tratamiento)</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs min-h-[50px]" value={p4_plan_structured.pronostico_biopsicosocial?.historia_natural || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { historia_natural: e.target.value })} disabled={isClosed} />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">Factores en Contra (Separados por coma)</label>
-                                <input type="text" className="w-full bg-rose-50 border border-rose-200 rounded p-2 text-xs" value={(p4_plan_structured.pronostico_biopsicosocial?.factores_en_contra || []).join(', ')} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { factores_en_contra: e.target.value.split(',').map((x: string) => x.trim()).filter(Boolean) })} disabled={isClosed} />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Historia Natural (Evolución sin Tratamiento)</label>
-                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.historia_natural || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { historia_natural: e.target.value })} disabled={isClosed} />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Impacto Biológico (Edad, Sexo, Salud Gral)</label>
-                                <textarea className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs h-[60px]" value={p4_plan_structured.pronostico_biopsicosocial?.impacto_biologico || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { impacto_biologico: e.target.value })} disabled={isClosed} />
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">🧬 Impacto Biológico (Edad, Sexo, Salud)</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs min-h-[50px]" value={p4_plan_structured.pronostico_biopsicosocial?.impacto_biologico || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { impacto_biologico: e.target.value })} disabled={isClosed} />
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 mt-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Comparativa c/ vs s/ Adherencia al Tratamiento</label>
-                                <textarea className="w-full bg-amber-50 border border-amber-200 rounded p-2 text-sm text-amber-900 placeholder:text-amber-700/50 min-h-[60px]" placeholder="Escenario favorable vs desfavorable si abandona..." value={p4_plan_structured.pronostico_biopsicosocial?.comparativa_adherencia || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { comparativa_adherencia: e.target.value })} disabled={isClosed} />
+                        {/* Comparativa adherencia */}
+                        <div className="mb-4">
+                            <label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block mb-1">⚖️ Comparativa: Alta Adherencia vs Abandono Precoz</label>
+                            <textarea data-autoresize onInput={autoResize} className="w-full bg-amber-50 border border-amber-200 rounded p-2 text-sm text-amber-900 min-h-[50px]" placeholder="Escenario favorable vs desfavorable si abandona..." value={p4_plan_structured.pronostico_biopsicosocial?.comparativa_adherencia || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { comparativa_adherencia: e.target.value })} disabled={isClosed} />
+                        </div>
+
+                        {/* CONCLUSIÓN — al final */}
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-xl p-4 mt-2">
+                            <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2">📊 Conclusión Pronóstica</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block mb-1">Categoría</label>
+                                    <select className="w-full bg-white border border-slate-300 rounded p-2 text-sm font-bold" value={p4_plan_structured.pronostico_biopsicosocial?.categoria || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { categoria: e.target.value })} disabled={isClosed}>
+                                        <option value="">Selecciona...</option>
+                                        <option value="favorable">✅ Favorable</option>
+                                        <option value="favorable con vigilancia">🟡 Favorable con vigilancia</option>
+                                        <option value="reservado">🟠 Reservado</option>
+                                        <option value="reservado dependiente de adherencia/contexto">🟠 Reservado dependiente</option>
+                                        <option value="desfavorable">🔴 Desfavorable</option>
+                                        <option value="incierto">⚪ Incierto</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block mb-1">Justificación Clínica Integral</label>
+                                    <textarea data-autoresize onInput={autoResize} className="w-full bg-white border border-slate-300 rounded p-2 text-xs min-h-[60px]" placeholder="Síntesis integradora de todo lo analizado arriba..." value={p4_plan_structured.pronostico_biopsicosocial?.justificacion_clinica_integral || ''} onChange={(e) => updateDeepObj('pronostico_biopsicosocial', { justificacion_clinica_integral: e.target.value })} disabled={isClosed} />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -459,30 +488,49 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                             </div>
                                             <div className="md:col-span-2">
                                                 <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Intervenciones (Separadas por renglón)</label>
-                                                <textarea className="w-full bg-emerald-50/30 border border-emerald-100 rounded p-2 text-xs min-h-[60px]" value={(faseObj.intervenciones || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].intervenciones = e.target.value.split('\n'); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                <textarea data-autoresize onInput={autoResize} className="w-full bg-emerald-50/30 border border-emerald-100 rounded p-2 text-xs min-h-[50px]" value={(faseObj.intervenciones || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].intervenciones = e.target.value.split('\n'); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
                                             <div className="md:col-span-2">
                                                 <label className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block mb-1">Progresiones y Carga (Separadas por renglón)</label>
-                                                <textarea className="w-full bg-purple-50/30 border border-purple-100 rounded p-2 text-xs min-h-[60px]" value={(faseObj.progresiones || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].progresiones = e.target.value.split('\n'); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                <textarea data-autoresize onInput={autoResize} className="w-full bg-purple-50/30 border border-purple-100 rounded p-2 text-xs min-h-[50px]" value={(faseObj.progresiones || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].progresiones = e.target.value.split('\n'); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
                                             <div className="bg-emerald-50 border border-emerald-200 rounded p-2">
                                                 <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Para Avanzar de Fase</label>
-                                                <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-emerald-900 min-h-[40px] resize-none" value={faseObj.criterios_avance || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_avance = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-emerald-900 min-h-[36px] resize-none" value={faseObj.criterios_avance || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_avance = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
                                             <div className="bg-rose-50 border border-rose-200 rounded p-2">
                                                 <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">Regresión de Fase</label>
-                                                <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[40px] resize-none" value={faseObj.criterios_regresion || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_regresion = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[36px] resize-none" value={faseObj.criterios_regresion || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_regresion = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
                                             {(faseObj.errores_frecuentes || []).length > 0 && (
                                                 <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded p-2">
                                                     <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-1">⚠️ Errores Frecuentes del Kinesiólogo Novato</label>
-                                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-amber-900 min-h-[40px] resize-none" value={(faseObj.errores_frecuentes || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].errores_frecuentes = e.target.value.split('\n').filter(Boolean); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                    <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-amber-900 min-h-[36px] resize-none" value={(faseObj.errores_frecuentes || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].errores_frecuentes = e.target.value.split('\n').filter(Boolean); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                                 </div>
                                             )}
                                             {faseObj.perla_docente && (
                                                 <div className="md:col-span-2 bg-indigo-50 border border-indigo-200 rounded p-2">
                                                     <label className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block mb-1">🎓 Perla Docente (Basada en Evidencia)</label>
-                                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-indigo-900 min-h-[40px] resize-none leading-relaxed" value={faseObj.perla_docente || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].perla_docente = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                    <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-indigo-900 min-h-[36px] resize-none leading-relaxed" value={faseObj.perla_docente || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].perla_docente = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                </div>
+                                            )}
+                                            {/* SESIONES TIPO */}
+                                            {(faseObj.sesiones_tipo || []).length > 0 && (
+                                                <div className="md:col-span-2">
+                                                    <details open>
+                                                        <summary className="cursor-pointer text-[10px] font-bold text-teal-700 uppercase tracking-wider select-none mb-2 hover:text-teal-900">📋 Sesiones Tipo Propuestas ({(faseObj.sesiones_tipo || []).length})</summary>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {(faseObj.sesiones_tipo || []).map((sesion: any, sIdx: number) => (
+                                                                <div key={sIdx} className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <span className="bg-teal-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">{sesion.duracion}</span>
+                                                                        <input type="text" className="flex-1 bg-transparent text-xs font-bold text-teal-900 border-none outline-none" value={sesion.titulo || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].sesiones_tipo[sIdx].titulo = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                                    </div>
+                                                                    <textarea data-autoresize onInput={autoResize} className="w-full bg-white/60 border border-teal-100 rounded p-2 text-[11px] text-teal-900 min-h-[50px] leading-relaxed" value={(sesion.estructura || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].sesiones_tipo[sIdx].estructura = e.target.value.split('\n'); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} placeholder="Calentamiento (5-10 min): ...&#10;Bloque principal (35-40 min): ...&#10;Cool-down (10-15 min): ..." />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </details>
                                                 </div>
                                             )}
                                         </div>
@@ -492,48 +540,97 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         )}
                     </div>
 
-                    {/* BLOQUE H — REGLAS DE REEVALUACIÓN */}
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 shadow-sm">
-                        <h3 className="font-bold text-emerald-900 mb-4 border-b border-emerald-200 pb-2 flex items-center gap-2"><span className="text-lg">🔄</span> H. Reglas de Reevaluación y Seguimiento</h3>
+                    {/* BLOQUE H — REGLAS DE REEVALUACIÓN (REDISEÑADO) */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><span className="text-lg">🔄</span> H. Reglas de Reevaluación y Seguimiento</h3>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Signo Comparable Principal</label>
-                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={p4_plan_structured.reglas_reevaluacion?.signo_comparable_principal || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { signo_comparable_principal: e.target.value })} disabled={isClosed} />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">🎓 Por Qué Este Signo</label>
-                                <input type="text" className="w-full bg-indigo-50 border border-indigo-200 rounded p-2 text-xs text-indigo-900" value={p4_plan_structured.reglas_reevaluacion?.razon_signo_comparable || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { razon_signo_comparable: e.target.value })} disabled={isClosed} placeholder="Se eligió porque reproduce la queja principal y es sensible al cambio..." />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Variables de Seguimiento (coma)</label>
-                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={(p4_plan_structured.reglas_reevaluacion?.variables_seguimiento || []).join(', ')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { variables_seguimiento: e.target.value.split(',').map((v: string) => v.trim()).filter(Boolean) })} disabled={isClosed} />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-1">📋 Instrumentos Sugeridos (coma)</label>
-                                <input type="text" className="w-full bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-900" value={(p4_plan_structured.reglas_reevaluacion?.instrumentos_sugeridos || []).join(', ')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { instrumentos_sugeridos: e.target.value.split(',').map((v: string) => v.trim()).filter(Boolean) })} disabled={isClosed} placeholder="PSFS, SANE, GROC, EVA..." />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Frecuencia Sugerida</label>
-                                <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" placeholder="Ej: Todas las sesiones / Quincenal" value={p4_plan_structured.reglas_reevaluacion?.frecuencia_sugerida || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { frecuencia_sugerida: e.target.value })} disabled={isClosed} />
-                            </div>
-                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white p-3 rounded-lg border border-emerald-100">
-                                    <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Criterio de Mejora Real</label>
-                                    <textarea className="w-full border-none outline-none text-xs h-[60px] resize-none" placeholder="Ej: Aumento >20% en dinamometría sin irritación..." value={p4_plan_structured.reglas_reevaluacion?.criterio_mejora_real || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_mejora_real: e.target.value })} disabled={isClosed} />
+                        {/* Signo comparable + razón */}
+                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">🎯 Signo Comparable Principal</label>
+                                    <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm font-bold" value={p4_plan_structured.reglas_reevaluacion?.signo_comparable_principal || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { signo_comparable_principal: e.target.value })} disabled={isClosed} />
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border border-emerald-100">
-                                    <label className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">Criterio de Estancamiento / Derivación</label>
-                                    <textarea className="w-full border-none outline-none text-xs h-[60px] resize-none" placeholder="Ej: Mismo dolor a las 4 semanas, derivar..." value={p4_plan_structured.reglas_reevaluacion?.criterio_estancamiento_derivacion || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_estancamiento_derivacion: e.target.value })} disabled={isClosed} />
+                                <div>
+                                    <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">🎓 Por Qué Este Signo</label>
+                                    <textarea data-autoresize onInput={autoResize} className="w-full bg-indigo-50 border border-indigo-200 rounded p-2 text-xs text-indigo-900 min-h-[40px]" value={p4_plan_structured.reglas_reevaluacion?.razon_signo_comparable || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { razon_signo_comparable: e.target.value })} disabled={isClosed} placeholder="Se eligió porque reproduce la queja principal y es sensible al cambio..." />
                                 </div>
                             </div>
-                            {(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).length > 0 && (
-                                <div className="md:col-span-2 bg-rose-50 border border-rose-200 rounded-lg p-3">
-                                    <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">🚨 Alertas de Derivación Específicas del Caso</label>
-                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[50px] resize-none" value={(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).join('\n')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { alertas_derivacion: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
-                                </div>
-                            )}
                         </div>
+
+                        {/* Instrumentos + Variables + Frecuencia */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-1">📋 Instrumentos Sugeridos</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-900 min-h-[40px]" value={(p4_plan_structured.reglas_reevaluacion?.instrumentos_sugeridos || []).join('\n')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { instrumentos_sugeridos: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} placeholder="PSFS&#10;SANE&#10;GROC&#10;EVA" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1">📊 Variables de Seguimiento</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs min-h-[40px]" value={(p4_plan_structured.reglas_reevaluacion?.variables_seguimiento || []).join('\n')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { variables_seguimiento: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1">⏱️ Frecuencia Sugerida</label>
+                                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm" placeholder="Ej: Cada sesión / Quincenal" value={p4_plan_structured.reglas_reevaluacion?.frecuencia_sugerida || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { frecuencia_sugerida: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
+
+                        {/* Criterios de mejora vs estancamiento */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">✅ Criterio de Mejora Real</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-emerald-900 min-h-[40px] resize-none" placeholder="Ej: Aumento >20% en dinamometría sin irritación..." value={p4_plan_structured.reglas_reevaluacion?.criterio_mejora_real || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_mejora_real: e.target.value })} disabled={isClosed} />
+                            </div>
+                            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                                <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">🛑 Criterio Estancamiento / Derivación</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[40px] resize-none" placeholder="Ej: Mismo dolor a las 4 semanas, derivar..." value={p4_plan_structured.reglas_reevaluacion?.criterio_estancamiento_derivacion || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_estancamiento_derivacion: e.target.value })} disabled={isClosed} />
+                            </div>
+                        </div>
+
+                        {/* Alertas de derivación */}
+                        {(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).length > 0 && (
+                            <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 mb-4">
+                                <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">🚨 Alertas de Derivación</label>
+                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[40px] resize-none" value={(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).join('\n')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { alertas_derivacion: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                        )}
+
+                        {/* TIMELINE DE REEVALUACIÓN */}
+                        {(p4_plan_structured.reglas_reevaluacion?.plan_reevaluacion_temporal || []).length > 0 && (
+                            <div className="mt-4">
+                                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">📅 Plan de Reevaluación Temporal</h4>
+                                <div className="relative">
+                                    {/* Timeline line */}
+                                    <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-400 via-violet-400 to-emerald-400 rounded-full hidden md:block" />
+                                    <div className="space-y-3">
+                                        {(p4_plan_structured.reglas_reevaluacion?.plan_reevaluacion_temporal || []).map((momento: any, mIdx: number) => (
+                                            <div key={mIdx} className="relative md:pl-10">
+                                                {/* Timeline dot */}
+                                                <div className="absolute left-2.5 top-3 w-3 h-3 rounded-full bg-white border-2 border-violet-500 shadow-sm hidden md:block" />
+                                                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="bg-violet-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full">{momento.momento}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-emerald-700 uppercase block mb-0.5">✅ Evaluaciones a Incluir</label>
+                                                            <textarea data-autoresize onInput={autoResize} className="w-full bg-emerald-50/50 border border-emerald-100 rounded p-1.5 text-[11px] text-emerald-900 min-h-[30px]" value={(momento.evaluaciones_incluidas || []).join('\n')} onChange={(e) => { const copy = [...(p4_plan_structured.reglas_reevaluacion?.plan_reevaluacion_temporal || [])]; copy[mIdx].evaluaciones_incluidas = e.target.value.split('\n').filter(Boolean); updateDeepObj('reglas_reevaluacion', { plan_reevaluacion_temporal: copy }); }} disabled={isClosed} />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[9px] font-bold text-amber-700 uppercase block mb-0.5">⏳ No Evaluar Aún</label>
+                                                            <textarea data-autoresize onInput={autoResize} className="w-full bg-amber-50/50 border border-amber-100 rounded p-1.5 text-[11px] text-amber-900 min-h-[30px]" value={momento.evaluaciones_excluidas || ''} onChange={(e) => { const copy = [...(p4_plan_structured.reglas_reevaluacion?.plan_reevaluacion_temporal || [])]; copy[mIdx].evaluaciones_excluidas = e.target.value; updateDeepObj('reglas_reevaluacion', { plan_reevaluacion_temporal: copy }); }} disabled={isClosed} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1.5">
+                                                        <label className="text-[9px] font-bold text-slate-500 uppercase block mb-0.5">Justificación</label>
+                                                        <textarea data-autoresize onInput={autoResize} className="w-full bg-white border border-slate-100 rounded p-1.5 text-[11px] text-slate-700 min-h-[24px]" value={momento.razon || ''} onChange={(e) => { const copy = [...(p4_plan_structured.reglas_reevaluacion?.plan_reevaluacion_temporal || [])]; copy[mIdx].razon = e.target.value; updateDeepObj('reglas_reevaluacion', { plan_reevaluacion_temporal: copy }); }} disabled={isClosed} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

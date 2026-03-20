@@ -73,10 +73,10 @@ export async function POST(req: Request) {
     { "titulo": "Control Motor", "prioridad": 4, "rol_clinico": "Adjunto/Complementario", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] }
   ],
   "plan_maestro": [
-    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["int1","int2","int3","int4","int5"], "progresiones": ["prog1","prog2","prog3"], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["err1","err2"], "perla_docente": "..." },
-    { "fase": 2, "nombre": "Fase 2: Recuperación", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." },
-    { "fase": 3, "nombre": "Fase 3: Fortalecimiento", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." },
-    { "fase": 4, "nombre": "Fase 4: Reintegro", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." }
+    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["int1","int2","int3","int4","int5"], "progresiones": ["prog1","prog2","prog3"], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["err1","err2"], "perla_docente": "...", "sesiones_tipo": [{"titulo": "Sesión tipo A: ...", "duracion": "~60 min", "estructura": ["Calentamiento (5-10 min): ...", "Bloque principal (35-40 min): ...", "Cool-down (10-15 min): ..."]}, {"titulo": "Sesión tipo B: ...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 2, "nombre": "Fase 2: Recuperación", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 3, "nombre": "Fase 3: Fortalecimiento", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] },
+    { "fase": 4, "nombre": "Fase 4: Reintegro", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "...", "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}, {"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] }
   ],
   "reglas_reevaluacion": {
     "signo_comparable_principal": "...",
@@ -86,7 +86,13 @@ export async function POST(req: Request) {
     "frecuencia_sugerida": "...",
     "criterio_mejora_real": "... (MÍNIMO 2-3 LÍNEAS) ...",
     "criterio_estancamiento_derivacion": "... (MÍNIMO 2-3 LÍNEAS) ...",
-    "alertas_derivacion": ["alerta1","alerta2","alerta3"]
+    "alertas_derivacion": ["alerta1","alerta2","alerta3"],
+    "plan_reevaluacion_temporal": [
+      {"momento": "Sesiones 1-3", "evaluaciones_incluidas": ["EVA","signo comparable"], "evaluaciones_excluidas": "Fuerza máxima (tejido en reparación)", "razon": "..."},
+      {"momento": "Semana 4", "evaluaciones_incluidas": ["PSFS","ROM","fuerza submáxima"], "evaluaciones_excluidas": "Tests de rendimiento deportivo", "razon": "..."},
+      {"momento": "Semana 8-10", "evaluaciones_incluidas": ["..."], "evaluaciones_excluidas": "...", "razon": "..."},
+      {"momento": "Alta/Cierre", "evaluaciones_incluidas": ["..."], "evaluaciones_excluidas": null, "razon": "..."}
+    ]
   }
 }`;
 
