@@ -161,16 +161,33 @@ export const P4PlanStructuredSchema = z.object({
     pronostico_biopsicosocial: z.object({
         corto_plazo: z.string(),
         mediano_plazo: z.string(),
+        largo_plazo: z.string(),
         categoria: z.enum(["favorable", "favorable con vigilancia", "reservado", "reservado dependiente de adherencia/contexto", "desfavorable", "incierto"]),
         justificacion_clinica_integral: z.string(),
-        comparativa_adherencia: z.string().describe("Comparativa entre seguir tratamiento propuesto vs mala adherencia")
+        factores_a_favor: z.array(z.string()).describe("Lista de todo lo que juega a favor"),
+        factores_en_contra: z.array(z.string()).describe("Lista de todo en contra"),
+        comparativa_adherencia: z.string().describe("Comparativa entre seguir tratamiento propuesto vs mala adherencia"),
+        historia_natural: z.string().describe("Qué pasaría si NO se trata (evolución esperada)"),
+        impacto_biologico: z.string().describe("Cómo afectan edad, sexo, ocupación y biología del caso")
     }),
     pilares_intervencion: z.array(z.object({
         titulo: z.string(),
+        prioridad: z.number().describe("Prioridad 1 es la más alta"),
         justificacion: z.string(),
+        objetivos_operacionales: z.array(z.string()).describe("Cómo lo hará en concreto para cumplir metas SMART"),
         foco_que_aborda: z.array(z.string())
     })).describe("Pilares priorizados base (educación, ejercicio, manejo carga) y complementos"),
-    plan_maestro: z.string().describe("Narrativa editable de desarrollo de intervención"),
+    plan_maestro: z.array(z.object({
+        fase: z.number().describe("Fase 1 a 4 típicas de rehabilitación"),
+        nombre: z.string(),
+        foco_principal: z.string(),
+        duracion_estimada: z.string(),
+        criterios_entrada: z.string(),
+        intervenciones: z.array(z.string()),
+        progresiones: z.array(z.string()),
+        criterios_avance: z.string(),
+        criterios_regresion: z.string()
+    })).describe("Narrativa estructurada de desarrollo de intervención por Fases"),
     reglas_reevaluacion: z.object({
         signo_comparable_principal: z.string(),
         variables_seguimiento: z.array(z.string()),

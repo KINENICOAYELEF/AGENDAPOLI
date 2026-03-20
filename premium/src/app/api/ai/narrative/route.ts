@@ -51,18 +51,27 @@ export async function POST(req: Request) {
   "diagnostico_kinesiologico_narrativo": "...",
   "objetivo_general": { "opciones_sugeridas": ["...", "..."], "seleccionado": "..." },
   "objetivos_smart": [
-    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "..." }
+    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "Alta/Media/Baja" }
   ],
   "pronostico_biopsicosocial": {
     "corto_plazo": "...",
     "mediano_plazo": "...",
+    "largo_plazo": "...",
     "categoria": "favorable",
-    "justificacion_clinica_integral": "..."
+    "justificacion_clinica_integral": "...",
+    "factores_a_favor": ["...", "..."],
+    "factores_en_contra": ["...", "..."],
+    "comparativa_adherencia": "...",
+    "historia_natural": "...",
+    "impacto_biologico": "..."
   },
   "pilares_intervencion": [
-    { "titulo": "...", "justificacion": "...", "foco_que_aborda": ["..."] }
+    { "titulo": "...", "prioridad": 1, "justificacion": "...", "objetivos_operacionales": ["...", "..."], "foco_que_aborda": ["..."] }
   ],
-  "plan_maestro": "...",
+  "plan_maestro": [
+    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "..." },
+    { "fase": 2, "nombre": "Fase 2:...", "foco_principal": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "..." }
+  ],
   "reglas_reevaluacion": {
     "signo_comparable_principal": "...",
     "variables_seguimiento": ["..."],
@@ -86,10 +95,10 @@ ${normalizedPayload}
         const result = await executeAIAction({
             screen: 'P4',
             action: requestedAction,
-            systemInstruction: SYSTEM_PROMPT_BASE + "\\n\\n" + PROMPTS.NARRATIVE,
+            systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.NARRATIVE,
             userPrompt,
             inputHash,
-            promptVersion: 'v2.0_p4_refactor',
+            promptVersion: 'v4.0_p4',
             temperature: modelTemp,
             validator: (data) => P4PlanStructuredSchema.parse(data)
         });
