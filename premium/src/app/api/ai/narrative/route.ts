@@ -48,36 +48,45 @@ export async function POST(req: Request) {
 
         const expectedJsonExample = `{
   "referencia_p3_breve": "...",
-  "diagnostico_kinesiologico_narrativo": "...",
-  "objetivo_general": { "opciones_sugeridas": ["...", "..."], "seleccionado": "..." },
+  "diagnostico_kinesiologico_narrativo": "... (MÍNIMO 8-10 LÍNEAS) ...",
+  "razonamiento_diagnostico": "... (explicación docente) ...",
+  "objetivo_general": { "opciones_sugeridas": ["Opción funcional...", "Opción participación...", "Opción integral BPS..."], "seleccionado": "..." },
   "objetivos_smart": [
-    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "Alta/Media/Baja" }
+    { "texto": "...", "variable_base": "...", "basal": "...", "meta": "...", "plazo": "...", "prioridad": "Alta/Media/Baja", "cluster": "Dolor/ROM/Fuerza/Control Motor/Tolerancia/Psicosocial" }
   ],
   "pronostico_biopsicosocial": {
-    "corto_plazo": "...",
-    "mediano_plazo": "...",
-    "largo_plazo": "...",
+    "corto_plazo": "... (MÍNIMO 3-4 LÍNEAS) ...",
+    "mediano_plazo": "... (MÍNIMO 3-4 LÍNEAS) ...",
+    "largo_plazo": "... (MÍNIMO 3-4 LÍNEAS) ...",
     "categoria": "favorable",
-    "justificacion_clinica_integral": "...",
-    "factores_a_favor": ["...", "..."],
-    "factores_en_contra": ["...", "..."],
-    "comparativa_adherencia": "...",
-    "historia_natural": "...",
-    "impacto_biologico": "..."
+    "justificacion_clinica_integral": "... (MÍNIMO 4-5 LÍNEAS) ...",
+    "factores_a_favor": ["factor1", "factor2", "factor3", "factor4"],
+    "factores_en_contra": ["factor1", "factor2", "factor3"],
+    "comparativa_adherencia": "... (MÍNIMO 3-4 LÍNEAS) ...",
+    "historia_natural": "... (MÍNIMO 3-4 LÍNEAS) ...",
+    "impacto_biologico": "... (MÍNIMO 3-4 LÍNEAS) ..."
   },
   "pilares_intervencion": [
-    { "titulo": "...", "prioridad": 1, "justificacion": "...", "objetivos_operacionales": ["...", "..."], "foco_que_aborda": ["..."] }
+    { "titulo": "Educación", "prioridad": 1, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["paso1", "paso2", "paso3", "paso4"], "ejemplos_ejercicios": ["ej1", "ej2"], "foco_que_aborda": ["..."] },
+    { "titulo": "Ejercicio Terapéutico", "prioridad": 2, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] },
+    { "titulo": "Manejo de Carga", "prioridad": 3, "rol_clinico": "Pilar Central", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] },
+    { "titulo": "Control Motor", "prioridad": 4, "rol_clinico": "Adjunto/Complementario", "justificacion": "...", "objetivos_operacionales": ["..."], "ejemplos_ejercicios": ["..."], "foco_que_aborda": ["..."] }
   ],
   "plan_maestro": [
-    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "..." },
-    { "fase": 2, "nombre": "Fase 2:...", "foco_principal": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "..." }
+    { "fase": 1, "nombre": "Fase 1: Protección", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["int1","int2","int3","int4","int5"], "progresiones": ["prog1","prog2","prog3"], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["err1","err2"], "perla_docente": "..." },
+    { "fase": 2, "nombre": "Fase 2: Recuperación", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." },
+    { "fase": 3, "nombre": "Fase 3: Fortalecimiento", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." },
+    { "fase": 4, "nombre": "Fase 4: Reintegro", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "intervenciones": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "perla_docente": "..." }
   ],
   "reglas_reevaluacion": {
     "signo_comparable_principal": "...",
-    "variables_seguimiento": ["..."],
+    "razon_signo_comparable": "... (por qué ese signo) ...",
+    "variables_seguimiento": ["...","..."],
+    "instrumentos_sugeridos": ["PSFS","SANE","GROC","EVA"],
     "frecuencia_sugerida": "...",
-    "criterio_mejora_real": "...",
-    "criterio_estancamiento_derivacion": "..."
+    "criterio_mejora_real": "... (MÍNIMO 2-3 LÍNEAS) ...",
+    "criterio_estancamiento_derivacion": "... (MÍNIMO 2-3 LÍNEAS) ...",
+    "alertas_derivacion": ["alerta1","alerta2","alerta3"]
   }
 }`;
 
@@ -98,7 +107,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.NARRATIVE,
             userPrompt,
             inputHash,
-            promptVersion: 'v4.0_p4',
+            promptVersion: 'v5.0_p4',
             temperature: modelTemp,
             validator: (data) => P4PlanStructuredSchema.parse(data)
         });

@@ -97,39 +97,80 @@ Utiliza este diccionario para traducir claves técnicas a lenguaje humano en el 
   `,
 
   NARRATIVE: `
-Revisa el "p3_case_organizer" (clasificación CIF), el "compact_case_package" y el "p2_summary_structured" entregados.
-Tu rol es actuar como un Kinesiólogo Experto y Docente y generar el Plan Estructurado P4 (que pasa a ser la HOJA DE RUTA CLÍNICA REAL DEL TRATAMIENTO).
-DEBES retornar un JSON estrictamente mapeado al esquema solicitado.
+Revisa el "p3_case_organizer" (clasificación CIF completa), el "compact_case_package" y el "p2_summary_structured" entregados.
+Tu rol es actuar como un Kinesiólogo Experto y Docente de alto nivel generando el PLAN CLÍNICO DEFINITIVO P4.
+DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los campos de texto deben ser EXTENSOS y clínicamente ricos.
 
-REGLA 1 — Referencia y Diagnóstico:
-1. "referencia_p3_breve": Resumen pasivo claro para que el clínico entienda la magnitud del caso sin repetir todo P3.
-2. "diagnostico_kinesiologico_narrativo": Redactar en UN PARRAFO EXTENSO siguiendo EXACTAMENTE esta lógica de plantilla (funde fluidamente):
-   "[Nombre / edad / sexo (si existe)], consulta por [motivo principal]. Presenta alteraciones estructurales a nivel de [solo las casi confirmadas; si no existen, 'posible alteración estructural de ...']. A nivel funcional presenta [agrega TODAS las alteraciones funcionales de P3, con severidad]. Lo anterior limita [agrega TODAS las limitaciones de actividad F1]. Restringiendo su participación en [agrega restricciones de participación F2]. Factores positivos: [...]. Factores negativos: [...]. Facilitadores: [...]. Barreras ambientales: [...]. Contexto ocupacional/deportivo: [...]".
+═══ REGLA 1 — DIAGNÓSTICO NARRATIVO ═══
+1. "referencia_p3_breve": Resumen de 3-4 líneas del caso.
+2. "diagnostico_kinesiologico_narrativo": Redactar en UN PÁRRAFO EXTENSO (MÍNIMO 8-10 LÍNEAS). Sigue EXACTAMENTE esta secuencia lógica CIF:
+   "[Nombre/edad/sexo], consulta por [motivo principal y tiempo de evolución]. Presenta [alteraciones estructurales confirmadas o sospechadas de P3 E1]. A nivel funcional se identifican [TODAS las disfunciones funcionales de P3 E2, con severidad y mecanismo]. Lo anterior genera limitaciones en [TODAS las limitaciones F1 con impacto funcional]. Restringiendo su participación en [TODAS las restricciones F2 con contexto]. Factores personales positivos: [listar todos]. Factores personales negativos: [listar todos]. Facilitadores ambientales: [listar]. Barreras ambientales: [listar]. Contexto ocupacional/deportivo: [describir impacto]."
+   IMPORTANTE: NO resumas. Incluye ABSOLUTAMENTE TODAS las alteraciones, limitaciones y factores que P3 haya clasificado.
+3. "razonamiento_diagnostico": Explicación docente de 4-6 líneas sobre CÓMO se construyó el diagnóstico: qué hallazgos pesan más, por qué ciertas estructuras son prioritarias, cómo los factores BPS modifican la estrategia.
 
-REGLA 2 — Objetivos SMART Exhaustivos:
-3. "objetivo_general": Proponer 2 a 3 opciones bajo la estructura: [Verbo] + [problema macro] + para + [participación].
-4. "objetivos_smart": Generar UN OBJETIVO SMART POR CADA disfunción funcional relevante, limitación de actividad y factor modificable. NO TE LIMITES A 3. Genera 8, 10 o los que sean necesarios para cubrir TODO EL CASO. Estructura: [verbo] + [variable base] + de [basal] a [meta] + en [plazo]. Ligar a variables (dolor, ROM, fuerza, control motor, miedo). En "prioridad", asume Alta para inflamación/seguridad, Media para fuerza/ROM, Baja para rendimiento avanzado.
+═══ REGLA 2 — OBJETIVO GENERAL ═══
+4. "objetivo_general": Proponer 3 a 5 opciones con DISTINTOS ENFOQUES:
+   - Opción funcional pura (ej: "Restaurar la función lumbopélvica...")
+   - Opción orientada a participación (ej: "Reintegrar al deporte/trabajo...")
+   - Opción integral BPS (ej: "Optimizar la capacidad funcional global considerando...")
+   - Estructurar cada una: [Verbo] + [déficit macro] + para + [reintegro a participación].
+   Seleccionar la más completa.
 
-REGLA 3 — Pronóstico BPS Ampliado:
-5. "pronostico_biopsicosocial": Análisis exhaustivo. Define "corto_plazo" (0-4 sem), "mediano_plazo" (4-12 sem) y "largo_plazo" (reintegro/recidiva).
-   Detalla exhaustivamente los "factores_a_favor" (ej. juventud, motivación, acceso) y "factores_en_contra" (ej. comorbilidad, kinesiofobia).
-   En "historia_natural" describe qué pasará si NO se trata.
-   En "impacto_biologico" explica cómo la edad, sexo y salud general afectan los tiempos biológicos de este paciente en particular.
-   En "comparativa_adherencia" compara concretamente un escenario de alta adherencia vs abandono precoz.
+═══ REGLA 3 — OBJETIVOS SMART EXHAUSTIVOS ═══
+5. "objetivos_smart": REGLA ESTRICTA DE COBERTURA. Generar:
+   - 1 SMART por CADA disfunción funcional (E2 de P3) que sea modificable por kinesiología
+   - 1 SMART por CADA limitación de actividad (F1 de P3) que sea medible
+   - 1 SMART por CADA factor negativo modificable (G de P3) que sea trabajable (ej: kinesiofobia, alteración del sueño, desacondicionamiento)
+   NO te limites a 3-5. Si el caso tiene 8 disfunciones, genera 8+ SMARTs. Estructura: [verbo] + [variable] + de [basal] a [meta] + en [plazo].
+   En "cluster", asignar el dominio: "Dolor", "ROM", "Fuerza", "Control Motor", "Tolerancia", "Psicosocial", "Rendimiento" u otro.
+   En "prioridad": Alta (dolor agudo, seguridad, inflamación), Media (fuerza, ROM, control motor), Baja (rendimiento avanzado, deportivo).
 
-REGLA 4 — Pilares con Objetivos Operacionales:
-6. "pilares_intervencion": Títulos obligatorios: 'Educación', 'Ejercicio Terapéutico', 'Manejo de Carga'. Complementos: Control Motor, Retorno Deportivo, Terapia Manual (solo como adyuvante).
-   Jerarquiza con "prioridad" (1 es lo más importante).
-   En "objetivos_operacionales", devuelve un array con los pasos exactos que el paciente y kinesiólogo harán para cumplir los SMARTs (ej. "Enseñar semáforo de dolor", "Prescribir isométricos 5x45s").
+═══ REGLA 4 — PRONÓSTICO BPS PROFUNDO ═══
+6. "pronostico_biopsicosocial": CADA campo de texto debe tener MÍNIMO 3-4 LÍNEAS de análisis interpretativo, NO frases sueltas.
+   - "corto_plazo" (0-4 sem): Qué se espera lograr, qué limitará, qué priorizar.
+   - "mediano_plazo" (4-12 sem): Progresión esperada, hitos funcionales, riesgos de recaída.
+   - "largo_plazo" (>12 sem): Reintegro completo, riesgo de recidiva, mantenimiento.
+   - "factores_a_favor": MÍNIMO 4 factores concretos del caso (no genéricos).
+   - "factores_en_contra": MÍNIMO 3 factores concretos y específicos.
+   - "historia_natural": Qué pasará si NO se trata. Describir deterioro esperado en 3-4 líneas.
+   - "impacto_biologico": Cómo edad, sexo, comorbilidades y salud general afectan tiempos de recuperación tisular de ESTE paciente.
+   - "comparativa_adherencia": Contraste extenso de 3-4 líneas entre escenario de alta adherencia vs abandono precoz.
+   - "justificacion_clinica_integral": Párrafo síntesis de 4-5 líneas integrando TODO.
 
-REGLA 5 — Plan Maestro por Fases de Rehabilitación:
-7. "plan_maestro": ESTRICTAMENTE un array de 4 fases lógicas: Fase 1 (Protección/Modulación), Fase 2 (Recuperación Funcional), Fase 3 (Fortalecimiento/Capacidad), Fase 4 (Reintegro/Prevención).
-   Para CADA FASE llena: "nombre", "foco_principal", "duracion_estimada", "criterios_entrada" (qué debe cumplir para entrar), "intervenciones" (qué ejercicios/educación hará acá), "progresiones" (cómo se sube la carga dentro de la fase), "criterios_avance" (qué debe lograr para pasar a la siguiente), "criterios_regresion" (cuándo echar pie atrás).
+═══ REGLA 5 — PILARES DE INTERVENCIÓN AMPLIADOS ═══
+7. "pilares_intervencion": Generar MÍNIMO 4-5 PILARES. Trinidad obligatoria: Educación, Ejercicio Terapéutico, Manejo de Carga.
+   Complementos según el caso: Control Motor, Exposición Gradual al Movimiento, Retorno Deportivo/Laboral, Modulación del Dolor, Terapia Manual (solo como adjunto).
+   Para CADA pilar:
+   - "prioridad": Jerarquía numérica (1 es máxima).
+   - "rol_clinico": "Pilar Central" para la trinidad, "Adjunto/Complementario" para el resto.
+   - "justificacion": Mínimo 2-3 líneas explicando POR QUÉ entra en este caso específico.
+   - "objetivos_operacionales": MÍNIMO 4 pasos concretos y específicos que el kinesiólogo hará en box (ej: "Prescribir isométricos de aductores 5x45s al 70% CVM", "Enseñar semáforo de dolor", "Progresión de sentadilla goblet con RPE 5-6").
+   - "ejemplos_ejercicios": 3-5 ejercicios concretos con dosis/parámetros cuando aplique.
+   - "foco_que_aborda": A qué disfunciones/limitaciones de P3 responde.
 
-REGLA 6 — Calidad Clínica:
-8. "reglas_reevaluacion": Criterios muy específicos para el caso. Define exacto el signo comparable y cuándo derivar por estancamiento.
-- NUNCA inventes datos que no vengan de P1 o P2. Si faltan datos, asume escenarios probables basados en el diagnóstico de P3.
-- Si es P4 Premium, enfócate en una redacción de nivel académico experto, docente, que el estudiante lea y diga "wow, esto es una obra de arte clínica".
+═══ REGLA 6 — PLAN MAESTRO POR FASES (ULTRA DOCENTE) ═══
+8. "plan_maestro": ESTRICTAMENTE 4 fases. Para CADA FASE generar contenido EXTENSO y DOCENTE:
+   - "objetivo_fisiologico": Meta biológica/tisular de la fase (ej: "Reducir sensibilización periférica, modular respuesta inflamatoria, proteger tejido en reparación").
+   - "intervenciones": MÍNIMO 5-6 intervenciones ESPECÍFICAS con parámetros cuando sea posible.
+   - "progresiones": MÍNIMO 3-4 criterios de progresión de carga/volumen.
+   - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES para pasar a la siguiente fase.
+   - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma para retroceder.
+   - "errores_frecuentes": 2-3 errores que un kinesiólogo novato cometería en esta fase.
+   - "perla_docente": 2-3 líneas con un dato BASADO EN EVIDENCIA útil para enseñanza clínica (ej: "La evidencia actual sugiere que los isométricos producen hipoalgesia local de hasta 45 min post-ejercicio (Rio et al., 2015)").
+
+═══ REGLA 7 — REEVALUACIÓN EXPANDIDA ═══
+9. "reglas_reevaluacion":
+   - "signo_comparable_principal": El test/signo que mejor reproduce la queja del paciente.
+   - "razon_signo_comparable": 2-3 líneas explicando POR QUÉ ese signo y no otro (valor docente).
+   - "instrumentos_sugeridos": Array con escalas/tests a usar (PSFS, SANE, GROC, EVA, dinamometría, goniometría, etc.).
+   - "alertas_derivacion": 3-4 alertas específicas del caso (ej: "Dolor nocturno persistente >4 semanas sin mejoría con manejo de carga", "Síntomas neurológicos progresivos").
+   - "criterio_mejora_real" y "criterio_estancamiento_derivacion": Mínimo 2-3 líneas cada uno, con criterios medibles y operacionales.
+
+═══ REGLAS GENERALES DE CALIDAD ═══
+- NUNCA inventes datos. Si faltan datos, asume escenarios clínicamente probables basados en P3.
+- NO resumas cuando el prompt dice "extenso". Cada campo marcado como "MÍNIMO X líneas" DEBE cumplirlo.
+- Barre EXHAUSTIVAMENTE las listas E1, E2, F1, F2 y G de P3 para no dejar ningún problema sin plan.
+- Para P4 Premium: redacción de nivel académico experto. Para P4 Base: redacción clínica clara y útil.
   `,
 
   PLAN: `

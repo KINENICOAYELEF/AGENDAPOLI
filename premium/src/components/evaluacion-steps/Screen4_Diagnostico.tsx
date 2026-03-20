@@ -186,6 +186,18 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             onChange={(e) => handleUpdateP4({ diagnostico_kinesiologico_narrativo: e.target.value })}
                             disabled={isClosed}
                         />
+                        {p4_plan_structured.razonamiento_diagnostico && (
+                            <details className="mt-3">
+                                <summary className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-800 select-none">🎓 Razonamiento Diagnóstico (Capa Docente)</summary>
+                                <textarea
+                                    className="w-full mt-2 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-900 outline-none min-h-[80px] leading-relaxed disabled:opacity-75"
+                                    value={p4_plan_structured.razonamiento_diagnostico || ''}
+                                    onChange={(e) => handleUpdateP4({ razonamiento_diagnostico: e.target.value })}
+                                    disabled={isClosed}
+                                    placeholder="Cómo se construyó este diagnóstico: qué pesa más y por qué..."
+                                />
+                            </details>
+                        )}
                     </div>
 
                     {/* BLOQUE C — OBJETIVO GENERAL */}
@@ -250,15 +262,20 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                         </div>
                                     )}
                                     
-                                    <div className="md:col-span-2 pr-6">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Descripción SMART {idx + 1}</label>
-                                        <textarea
-                                            className="w-full bg-white border border-slate-200 rounded p-2 text-sm disabled:opacity-75 resize-none h-16"
-                                            value={goal.texto}
-                                            onChange={(e) => { const copy = [...(p4_plan_structured.objetivos_smart || [])]; copy[idx].texto = e.target.value; handleUpdateP4({ objetivos_smart: copy }); }}
-                                            disabled={isClosed}
-                                            placeholder="[verbo] + [variable] + [basal] + [meta] + [plazo]..."
-                                        />
+                                    <div className="md:col-span-2 pr-6 flex items-start gap-2">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Descripción SMART {idx + 1}</label>
+                                            <textarea
+                                                className="w-full bg-white border border-slate-200 rounded p-2 text-sm disabled:opacity-75 resize-none h-16"
+                                                value={goal.texto}
+                                                onChange={(e) => { const copy = [...(p4_plan_structured.objetivos_smart || [])]; copy[idx].texto = e.target.value; handleUpdateP4({ objetivos_smart: copy }); }}
+                                                disabled={isClosed}
+                                                placeholder="[verbo] + [variable] + [basal] + [meta] + [plazo]..."
+                                            />
+                                        </div>
+                                        {goal.cluster && (
+                                            <span className="mt-5 inline-block bg-blue-100 text-blue-800 text-[9px] font-bold px-2 py-1 rounded-full whitespace-nowrap">{goal.cluster}</span>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Variable Base</label>
@@ -397,7 +414,8 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                     )}
                                     <div className="flex gap-2 mb-2 pr-16">
                                         <input type="number" min="1" className="w-16 bg-white border border-slate-200 rounded p-1.5 text-sm font-bold text-slate-800 text-center" value={pilar.prioridad || 1} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].prioridad = parseInt(e.target.value) || 1; handleUpdateP4({ pilares_intervencion: copy }); }} disabled={isClosed} title="Prioridad" />
-                                        <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-sm font-bold text-slate-800 truncate" value={pilar.titulo} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].titulo = e.target.value; handleUpdateP4({ pilares_intervencion: copy }); }} placeholder="Título del Pilar (Ej: Educación)" disabled={isClosed} />
+                                        <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-sm font-bold text-slate-800 truncate" value={pilar.titulo} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].titulo = e.target.value; handleUpdateP4({ pilares_intervencion: copy }); }} placeholder="Título del Pilar" disabled={isClosed} />
+                                        {pilar.rol_clinico && <span className={`shrink-0 text-[9px] font-bold px-2 py-1 rounded-full self-center ${pilar.rol_clinico === 'Pilar Central' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{pilar.rol_clinico}</span>}
                                     </div>
                                     <textarea className="w-full bg-transparent border-none p-0 text-xs text-slate-600 outline-none resize-none h-12 mb-2" value={pilar.justificacion} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].justificacion = e.target.value; handleUpdateP4({ pilares_intervencion: copy }); }} placeholder="Por qué es necesario..." disabled={isClosed} />
                                     <div className="mb-2">
@@ -408,6 +426,12 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                         <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Focos (Separados por coma)</label>
                                         <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs text-slate-600" value={(pilar.foco_que_aborda || []).join(', ')} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].foco_que_aborda = e.target.value.split(',').map((x: string) => x.trim()).filter(Boolean); handleUpdateP4({ pilares_intervencion: copy }); }} placeholder="Ej: kinesiofobia, fuerza..." disabled={isClosed} />
                                     </div>
+                                    {(pilar.ejemplos_ejercicios || []).length > 0 && (
+                                        <div className="mt-2">
+                                            <label className="text-[9px] font-bold text-purple-500 uppercase tracking-wider block mb-1">🏋️ Ejemplos de Ejercicios</label>
+                                            <textarea className="w-full bg-purple-50/50 border border-purple-100 rounded p-1.5 text-xs text-purple-900 resize-none h-14" value={(pilar.ejemplos_ejercicios || []).join('\n')} onChange={(e) => { const copy = [...(p4_plan_structured.pilares_intervencion || [])]; copy[idx].ejemplos_ejercicios = e.target.value.split('\n').filter(Boolean); handleUpdateP4({ pilares_intervencion: copy }); }} disabled={isClosed} />
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -435,6 +459,10 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                                 <input type="text" className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs" value={faseObj.foco_principal || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].foco_principal = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
                                             <div>
+                                                <label className="text-[10px] font-bold text-violet-600 uppercase tracking-wider block mb-1">🧬 Objetivo Fisiológico</label>
+                                                <input type="text" className="w-full bg-violet-50 border border-violet-200 rounded p-1.5 text-xs text-violet-900" value={faseObj.objetivo_fisiologico || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].objetivo_fisiologico = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} placeholder="Meta biológica/tisular de esta fase" />
+                                            </div>
+                                            <div>
                                                 <label className="text-[10px] font-bold text-blue-500 uppercase tracking-wider block mb-1">Criterios de Entrada</label>
                                                 <input type="text" className="w-full bg-blue-50 border border-blue-100 rounded p-1.5 text-xs" value={faseObj.criterios_entrada || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_entrada = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
@@ -454,6 +482,18 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                                 <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">Regresión de Fase</label>
                                                 <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[40px] resize-none" value={faseObj.criterios_regresion || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].criterios_regresion = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
                                             </div>
+                                            {(faseObj.errores_frecuentes || []).length > 0 && (
+                                                <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded p-2">
+                                                    <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block mb-1">⚠️ Errores Frecuentes del Kinesiólogo Novato</label>
+                                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-amber-900 min-h-[40px] resize-none" value={(faseObj.errores_frecuentes || []).join('\n')} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].errores_frecuentes = e.target.value.split('\n').filter(Boolean); handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                </div>
+                                            )}
+                                            {faseObj.perla_docente && (
+                                                <div className="md:col-span-2 bg-indigo-50 border border-indigo-200 rounded p-2">
+                                                    <label className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block mb-1">🎓 Perla Docente (Basada en Evidencia)</label>
+                                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-indigo-900 min-h-[40px] resize-none leading-relaxed" value={faseObj.perla_docente || ''} onChange={(e) => { const copy = [...p4_plan_structured.plan_maestro]; copy[idx].perla_docente = e.target.value; handleUpdateP4({ plan_maestro: copy }); }} disabled={isClosed} />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -471,8 +511,16 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                                 <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={p4_plan_structured.reglas_reevaluacion?.signo_comparable_principal || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { signo_comparable_principal: e.target.value })} disabled={isClosed} />
                             </div>
                             <div>
+                                <label className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block mb-1">🎓 Por Qué Este Signo</label>
+                                <input type="text" className="w-full bg-indigo-50 border border-indigo-200 rounded p-2 text-xs text-indigo-900" value={p4_plan_structured.reglas_reevaluacion?.razon_signo_comparable || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { razon_signo_comparable: e.target.value })} disabled={isClosed} placeholder="Se eligió porque reproduce la queja principal y es sensible al cambio..." />
+                            </div>
+                            <div>
                                 <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Variables de Seguimiento (coma)</label>
                                 <input type="text" className="w-full bg-white border border-emerald-200 rounded p-2 text-sm" value={(p4_plan_structured.reglas_reevaluacion?.variables_seguimiento || []).join(', ')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { variables_seguimiento: e.target.value.split(',').map((v: string) => v.trim()).filter(Boolean) })} disabled={isClosed} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-1">📋 Instrumentos Sugeridos (coma)</label>
+                                <input type="text" className="w-full bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-900" value={(p4_plan_structured.reglas_reevaluacion?.instrumentos_sugeridos || []).join(', ')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { instrumentos_sugeridos: e.target.value.split(',').map((v: string) => v.trim()).filter(Boolean) })} disabled={isClosed} placeholder="PSFS, SANE, GROC, EVA..." />
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Frecuencia Sugerida</label>
@@ -481,13 +529,19 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="bg-white p-3 rounded-lg border border-emerald-100">
                                     <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Criterio de Mejora Real</label>
-                                    <textarea className="w-full border-none outline-none text-xs h-[40px] resize-none" placeholder="Ej: Aumento >20% en dinamometría sin irritación..." value={p4_plan_structured.reglas_reevaluacion?.criterio_mejora_real || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_mejora_real: e.target.value })} disabled={isClosed} />
+                                    <textarea className="w-full border-none outline-none text-xs h-[60px] resize-none" placeholder="Ej: Aumento >20% en dinamometría sin irritación..." value={p4_plan_structured.reglas_reevaluacion?.criterio_mejora_real || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_mejora_real: e.target.value })} disabled={isClosed} />
                                 </div>
                                 <div className="bg-white p-3 rounded-lg border border-emerald-100">
                                     <label className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block mb-1">Criterio de Estancamiento / Derivación</label>
-                                    <textarea className="w-full border-none outline-none text-xs h-[40px] resize-none" placeholder="Ej: Mismo dolor a las 4 semanas, derivar..." value={p4_plan_structured.reglas_reevaluacion?.criterio_estancamiento_derivacion || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_estancamiento_derivacion: e.target.value })} disabled={isClosed} />
+                                    <textarea className="w-full border-none outline-none text-xs h-[60px] resize-none" placeholder="Ej: Mismo dolor a las 4 semanas, derivar..." value={p4_plan_structured.reglas_reevaluacion?.criterio_estancamiento_derivacion || ''} onChange={(e) => updateDeepObj('reglas_reevaluacion', { criterio_estancamiento_derivacion: e.target.value })} disabled={isClosed} />
                                 </div>
                             </div>
+                            {(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).length > 0 && (
+                                <div className="md:col-span-2 bg-rose-50 border border-rose-200 rounded-lg p-3">
+                                    <label className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block mb-1">🚨 Alertas de Derivación Específicas del Caso</label>
+                                    <textarea className="w-full bg-transparent border-none p-0 outline-none text-xs text-rose-900 min-h-[50px] resize-none" value={(p4_plan_structured.reglas_reevaluacion?.alertas_derivacion || []).join('\n')} onChange={(e) => updateDeepObj('reglas_reevaluacion', { alertas_derivacion: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -145,9 +145,10 @@ export const DiagnosisSchema = z.object({
 // Esquema B.5) narrative (Screen 4 P4 Narrative)
 export const P4PlanStructuredSchema = z.object({
     referencia_p3_breve: z.string().describe("Breve resumen pasivo del caso de P3"),
-    diagnostico_kinesiologico_narrativo: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3. Sigue exactamente la lógica y palabras pedidas."),
+    diagnostico_kinesiologico_narrativo: z.string().describe("Texto único continuo narrativo estructurado sobre hallazgos de P3. Mínimo 8 líneas."),
+    razonamiento_diagnostico: z.string().optional().describe("Explicación docente de cómo se construyó el diagnóstico: qué pesa más y por qué"),
     objetivo_general: z.object({
-        opciones_sugeridas: z.array(z.string()).describe("2 a 3 opciones de objetivo general recomendadas"),
+        opciones_sugeridas: z.array(z.string()).describe("3 a 5 opciones de objetivo general con distintos enfoques"),
         seleccionado: z.string()
     }),
     objetivos_smart: z.array(z.object({
@@ -156,7 +157,8 @@ export const P4PlanStructuredSchema = z.object({
         basal: z.string().describe("Estado inicial"),
         meta: z.string().describe("Estado esperado"),
         plazo: z.string().describe("Tiempo sugerido"),
-        prioridad: z.string().describe("Prioridad clínica")
+        prioridad: z.string().describe("Prioridad clínica"),
+        cluster: z.string().optional().describe("Dominio: Dolor, ROM, Fuerza, Control Motor, Psicosocial, Rendimiento, etc.")
     })),
     pronostico_biopsicosocial: z.object({
         corto_plazo: z.string(),
@@ -164,8 +166,8 @@ export const P4PlanStructuredSchema = z.object({
         largo_plazo: z.string(),
         categoria: z.enum(["favorable", "favorable con vigilancia", "reservado", "reservado dependiente de adherencia/contexto", "desfavorable", "incierto"]),
         justificacion_clinica_integral: z.string(),
-        factores_a_favor: z.array(z.string()).describe("Lista de todo lo que juega a favor"),
-        factores_en_contra: z.array(z.string()).describe("Lista de todo en contra"),
+        factores_a_favor: z.array(z.string()).describe("Lista amplia de todo lo que juega a favor (mínimo 4)"),
+        factores_en_contra: z.array(z.string()).describe("Lista amplia de todo en contra (mínimo 3)"),
         comparativa_adherencia: z.string().describe("Comparativa entre seguir tratamiento propuesto vs mala adherencia"),
         historia_natural: z.string().describe("Qué pasaría si NO se trata (evolución esperada)"),
         impacto_biologico: z.string().describe("Cómo afectan edad, sexo, ocupación y biología del caso")
@@ -173,27 +175,35 @@ export const P4PlanStructuredSchema = z.object({
     pilares_intervencion: z.array(z.object({
         titulo: z.string(),
         prioridad: z.number().describe("Prioridad 1 es la más alta"),
+        rol_clinico: z.string().optional().describe("'Pilar Central' o 'Adjunto/Complementario'"),
         justificacion: z.string(),
-        objetivos_operacionales: z.array(z.string()).describe("Cómo lo hará en concreto para cumplir metas SMART"),
+        objetivos_operacionales: z.array(z.string()).describe("Mínimo 4 pasos concretos"),
+        ejemplos_ejercicios: z.array(z.string()).optional().describe("Ejemplos de ejercicios o actividades para este pilar"),
         foco_que_aborda: z.array(z.string())
-    })).describe("Pilares priorizados base (educación, ejercicio, manejo carga) y complementos"),
+    })).describe("Mínimo 4-5 pilares priorizados: trinidad base + complementos justificados"),
     plan_maestro: z.array(z.object({
         fase: z.number().describe("Fase 1 a 4 típicas de rehabilitación"),
         nombre: z.string(),
         foco_principal: z.string(),
+        objetivo_fisiologico: z.string().optional().describe("Meta biológica/tisular de esta fase"),
         duracion_estimada: z.string(),
         criterios_entrada: z.string(),
-        intervenciones: z.array(z.string()),
-        progresiones: z.array(z.string()),
+        intervenciones: z.array(z.string()).describe("Mínimo 4-6 intervenciones específicas"),
+        progresiones: z.array(z.string()).describe("Mínimo 3-4 progresiones con criterio de carga"),
         criterios_avance: z.string(),
-        criterios_regresion: z.string()
-    })).describe("Narrativa estructurada de desarrollo de intervención por Fases"),
+        criterios_regresion: z.string(),
+        errores_frecuentes: z.array(z.string()).optional().describe("Errores comunes que el kinesiólogo debe evitar en esta fase"),
+        perla_docente: z.string().optional().describe("Dato basado en evidencia útil para enseñanza clínica")
+    })).describe("4 fases de rehabilitación ultra-detalladas y docentes"),
     reglas_reevaluacion: z.object({
         signo_comparable_principal: z.string(),
+        razon_signo_comparable: z.string().optional().describe("Por qué se eligió este signo y no otro"),
         variables_seguimiento: z.array(z.string()),
+        instrumentos_sugeridos: z.array(z.string()).optional().describe("Escalas/tests: PSFS, SANE, GROC, dinamometría, etc."),
         frecuencia_sugerida: z.string(),
         criterio_mejora_real: z.string(),
-        criterio_estancamiento_derivacion: z.string()
+        criterio_estancamiento_derivacion: z.string(),
+        alertas_derivacion: z.array(z.string()).optional().describe("Red flags específicos del caso que ameritan derivación")
     }),
     ia_metadata: z.object({
         model_used: z.string(),
