@@ -38,13 +38,15 @@ REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma 
 
 ### REGLA #3 — BLOQUE E: ALTERACIONES (ATOMIZACIÓN + OVER-CAPTURE MASIVA):
 **E1 — Checklist Estructural (AL MENOS 5 ítems):**
-- Nervio periférico, Músculo, Hueso, Cardiovascular, Respiratorio, Endocrino/Metabólico, Piel/Fascia/Cicatrices.
+- Debes buscar alteraciones en TODOS los subsistemas: Nervio periférico/Plexos, Hueso (reacciones de estrés/edema), Cápsula/Ligamento, Tendón/Fascia/Cicatrices, Sistema Vascular/Endotelial, Respiratorio (Caja torácica/Diafragma), Endocrino/Metabólico.
 - Cada fundamento debe tener 2 oraciones, citando P1/P1.5 y confirmando en P2.
 
 **E2 — Checklist Funcional (AL MENOS 12 ítems):**
-- DEBES cubrir todos estos dominios si aplican: Dolor, Irritabilidad mecánica, Debilidad (CADA grupo muscular = 1 ítem), Baja resistencia/Fatiga, Déficit de control motor, Compensaciones patológicas, Limitación de ROM (CADA articulación), Hipermovilidad/Inestabilidad, Baja tolerancia a la carga, Mecanosensibilidad neural, Balance/Propiocepción, Kinesiofobia, Catastrofización/Stress, Mala calidad de sueño, Edema/Inflamación, Fatiga cardiovascular, Sensorimotor, Tegumentario.
-- CRUCE DE FUENTES OBLIGATORIO: Cada fundamento DEBE cruzar P1 ↔ P2 o P1.5 ↔ P2. (ej: "Reportado en P1 como fatiga rápida, corroborado en P2 al fallar test al 5to repetición").
-- ATOMIZACIÓN: Si una prueba de P2 revela múltiples fallas, NO las agrupes. Ej: "Puente unilateral alterado" -> 3 ítems separados en E2.
+- DEBES cubrir todos estos dominios si aplican: Dolor somático/neuropático, Irritabilidad/Sensibilización Periférica o Central, Debilidad focal (CADA grupo muscular = 1 ítem), Inhibición Muscular Artrogénica (AMI), Hipermovilidad/Rigidez (CADA articulación).
+- **DOMINIO DEPORTIVO / RENDIMIENTO:** Busca obligatoriamente alteraciones en RFD (Tasa de Desarrollo de Fuerza/Potencia), Agilidad (Cambios de Dirección/COD), Mecánica de Aterrizaje/Pliometría (Stiff-landing, asimetrías de impacto), y Alteración del Ciclo Estiramiento-Acortamiento (SSC).
+- **DOMINIO INTEGRAL / SISTÉMICO:** Busca obligatoriamente Fatiga Metabólica/Glucolítica precoz, Ineficiencia Ventilatoria bajo carga (Apneas, valsalva), Desacondicionamiento Cardiovascular aeróbico, Alteraciones Propioceptivas/Sensorimotoras, Kinesiofobia específica, Miedo al movimiento, y Alteraciones de Sueño/Recuperación.
+- CRUCE DE FUENTES OBLIGATORIO: Cada fundamento DEBE cruzar relato (P1/P1.5) con examen físico (P2).
+- ATOMIZACIÓN: Extrae cada disfunción por separado. NUNCA agrupes.
 
 ### REGLA #3 — BLOQUE F: ACTIVIDAD Y PARTICIPACIÓN (INFERENCIA OBLIGATORIA):
 - **F1 (Limitaciones)**: Genera AL MENOS 5 limitaciones de actividad. NO solo las que el paciente dice literalmente. INFIERE: si tiene debilidad de glúteo (P2) + sube escaleras (P1) → limitación en escaleras. Si tiene dolor sentado (P2) + trabaja en oficina (P1) → limitación en sedestación.

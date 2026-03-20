@@ -142,6 +142,34 @@ export async function POST(req: Request) {
         "certeza": "Probable",
         "fundamento": "Cicatriz por cesárea en P1.5, con severa restricción de deslizamiento tisular inferior confirmada a la palpación en P2.",
         "impacto_caso": "Mucho"
+      },
+      {
+        "estructura": "Nervio Ciático / Elementos Neurales Periféricos",
+        "alteracion": "Sensibilización neural mecánica leve",
+        "certeza": "Posible",
+        "fundamento": "Relato ocasional de tensión posterior en P1. Slump test resulta en tirón neural (3/10) antes del dolor articular primario en P2.",
+        "impacto_caso": "Medio"
+      },
+      {
+        "estructura": "Sistema Vascular / Endotelio Periférico",
+        "alteracion": "Disfunción endotelial microvascular",
+        "certeza": "Posible",
+        "fundamento": "HTA de larga data en P1.5. Frialdad distal y llenado capilar enlentecido (>3s) tras estrés físico observado rudimentariamente en P2.",
+        "impacto_caso": "Poco"
+      },
+      {
+        "estructura": "Hueso Subcondral (Ej. Sacro/Ilíaco)",
+        "alteracion": "Posible reacción de estrés óseo temprana",
+        "certeza": "Duda",
+        "fundamento": "Dolor óseo sordo post-cargas mecánicas extremas (running) en P1. Percusión directa dolorosa profunda no articular en P2.",
+        "impacto_caso": "Medio"
+      },
+      {
+        "estructura": "Fascia Plantar / Cadena Miofascial Posterior",
+        "alteracion": "Sobrecarga tensil reactiva",
+        "certeza": "Probable",
+        "fundamento": "Reporte de rigidez matinal en pie derecho al iniciar marcha P1. Palpación tensa y dolorosa en inserción del calcáneo P2.",
+        "impacto_caso": "Medio"
       }
     ], 
     "funcionales": [
@@ -222,6 +250,48 @@ export async function POST(req: Request) {
         "severidad": "Moderada",
         "fundamento": "Sensación de tirón profundo P1. Retracción evidente del tejido celular subcutáneo en test de pliegue rodado abdominal P2.",
         "dominio_sugerido": "Tegumentario"
+      },
+      {
+        "funcion_disfuncion": "Mecanosensibilidad Neural Periférica (Neuromotor)",
+        "severidad": "Leve",
+        "fundamento": "Percibe tirones eléctricos difusos al agacharse en P1. Tensión de isquiotibiales en P2 enmascara respuesta positiva leve al Slump Test.",
+        "dominio_sugerido": "Neurológico"
+      },
+      {
+        "funcion_disfuncion": "Déficit en Reclutamiento Neuromotor Rápido (RFD - Potencia)",
+        "severidad": "Severa",
+        "fundamento": "Impotencia para reacelerar en el running relatada en P1. Incapacidad de generar despegue explosivo en test de salto vertical P2.",
+        "dominio_sugerido": "Rendimiento"
+      },
+      {
+        "funcion_disfuncion": "Alteración de absorción de impacto (Landing Mechanics)",
+        "severidad": "Severa",
+        "fundamento": "Referencia de 'golpe' duro al trotar en asfalto P1. Observación de stiff-landing (aterrizaje rígido) sin amortiguación glútea en Drop Jump P2.",
+        "dominio_sugerido": "Rendimiento"
+      },
+      {
+        "funcion_disfuncion": "Ineficiencia y aprehensión en Cambios de Dirección (COD)",
+        "severidad": "Moderada",
+        "fundamento": "Relato de evitación de giros bruscos por miedo en P1. Lentitud extrema y pérdida de estabilidad en pivotes a 45 grados en P2.",
+        "dominio_sugerido": "Rendimiento"
+      },
+      {
+        "funcion_disfuncion": "Inhibición Muscular Artrogénica (AMI) del Glúteo Mayor",
+        "severidad": "Severa",
+        "fundamento": "Incapacidad de 'sentir' el glúteo trabajando al correr P1. Ausencia casi total de activación tónica a la palpación isométrica en camilla P2.",
+        "dominio_sugerido": "Neurológico"
+      },
+      {
+        "funcion_disfuncion": "Fatiga Metabólica/Glucolítica Prematura",
+        "severidad": "Moderada",
+        "fundamento": "Choque energético a los 5 minutos de esfuerzo P1. Caída dramática de fuerza de prensión (Handgrip) post-sprint anaeróbico en P2.",
+        "dominio_sugerido": "Metabólico"
+      },
+      {
+        "funcion_disfuncion": "Ineficiencia Ventilatoria Bajo Carga (Core)",
+        "severidad": "Leve",
+        "fundamento": "Falta de aire reportada al hacer sentadillas P1. Patrón apical obligado y respiración paradójica objetivada al meter presión intraabdominal P2.",
+        "dominio_sugerido": "Respiratorio"
       }
     ] 
   },
@@ -306,7 +376,7 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.8.0',
+            promptVersion: 'v3.9.0',
             temperature: 0.2,
             validator: (data) => DiagnosisSchema.parse(data)
         });
