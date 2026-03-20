@@ -63,12 +63,17 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
     }
 
     if (activeModel.startsWith('gemini-3')) {
-        if (params.thinkingBudget) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingBudget. Use thinkingLevel.`);
+        if (params.thinkingBudget) {
+            console.warn(`[AI Routing] MODELO ${activeModel} ignora thinkingBudget. Usando thinkingLevel en su lugar.`);
+        }
         if (params.thinkingLevel) {
             requestPayload.generationConfig.thinkingConfig = { thinkingLevel: params.thinkingLevel === 'low' ? 'LOW' : params.thinkingLevel === 'high' ? 'HIGH' : 'STANDARD' };
         }
     } else if (activeModel.startsWith('gemini-2.5')) {
-        if (params.thinkingLevel) throw new Error(`[AI Routing] MODELO ${activeModel} RECHAZA thinkingLevel. Use thinkingBudget.`);
+        if (params.thinkingLevel) {
+            console.warn(`[AI Routing] MODELO ${activeModel} ignora thinkingLevel. Omitiendo.`);
+            // DO NOT add thinkingLevel for 2.5 models — just skip it gracefully
+        }
         if (params.thinkingBudget) {
             requestPayload.generationConfig.thinkingConfig = { thinkingBudget: params.thinkingBudget };
         }

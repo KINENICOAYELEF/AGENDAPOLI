@@ -51,7 +51,6 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p4_base_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
-            { modelId: 'gemini-3-flash', thinkingLevel: 'low' },
             { modelId: 'gemini-2.5-flash' }
         ];
     }
@@ -59,7 +58,6 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p4_premium_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-3-flash', thinkingLevel: 'medium' },
             { modelId: 'gemini-2.5-flash' }
         ];
     }

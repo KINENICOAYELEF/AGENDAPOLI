@@ -212,7 +212,7 @@ export const P4PlanStructuredSchema = z.object({
         plan_reevaluacion_temporal: z.array(z.object({
             momento: z.string().describe("Ej: Sesiones 1-3, Semana 4, Semana 8-10, Alta"),
             evaluaciones_incluidas: z.array(z.string()).describe("Qué evaluaciones aplicar en este momento"),
-            evaluaciones_excluidas: z.string().optional().describe("Qué NO evaluar aún y por qué"),
+            evaluaciones_excluidas: z.string().nullish().describe("Qué NO evaluar aún y por qué"),
             razon: z.string().describe("Justificación clínica de esta selección")
         })).optional().describe("Timeline de qué evaluar en cada momento y qué postergar")
     }),
