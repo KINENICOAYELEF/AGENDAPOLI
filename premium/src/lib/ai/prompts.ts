@@ -135,7 +135,8 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
    - Dolor + déficit ROM = 2 SMARTs separados
    - Dolor + déficit fuerza + déficit control motor = 3 SMARTs separados
    - NUNCA combinar dos variables distintas en un solo texto SMART
-   CUENTA EXPLÍCITA: Si P3 lista 10 alteraciones/limitaciones/factores, genera MÍNIMO 10 SMARTs.
+   CUENTA EXPLÍCITA: Si P3 lista 10 alteraciones/limitaciones/factores, genera MÍNIMO 10 SMARTs. CADA disfunción puede necesitar MÁS DE UN SMART (ej: disfunción "dolor + rigidez en rotación interna" = 2 SMARTs: uno para dolor y otro para ROM).
+   PROCEDIMIENTO: Lee P3 línea por línea. Para CADA item en E1/E2/F1/G que sea modificable, genera al menos 1 SMART. Si el item tiene múltiples variables, genera múltiples SMARTs.
    Estructura: [verbo] + [UNA variable] + de [basal] a [meta] + en [plazo].
    En "cluster": "Dolor", "ROM", "Fuerza", "Control Motor", "Tolerancia", "Psicosocial", "Rendimiento", "Resistencia", "Equilibrio" u otro.
    En "prioridad": Alta (dolor agudo, seguridad, inflamación), Media (fuerza, ROM, control motor), Baja (rendimiento avanzado).
@@ -173,6 +174,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * Modalidades complementarias: crioterapia, termoterapia, TENS (si aplica)
      * Estrategias deportivas (si aplica): pliometría progresiva, entrenamiento reactivo, agilidad, cambios de dirección, return to sport protocols
      REGLA: Solo incluir lo que tenga SENTIDO CLÍNICO para el caso. Si no aporta, no agregarlo.
+     INCLUIR CITA breve de soporte (ej: "MWM para ganancia de ROM articular (Vicenzino et al., 2011)", "Exposición gradual al movimiento para kinesiofobia (Vlaeyen & Linton, 2012)", "Imaginería motora para dolor crónico (Moseley, 2006)").
    - "tips_dosificacion": 3-5 tips MODERNOS de dosificación para esta fase:
      * RPE (Rating of Perceived Exertion): cómo usarlo (ej: "Mantener RPE 4-5 en fase 1, progresar a RPE 7-8 en fase 3")
      * RIR (Reps in Reserve): ej: "RIR 3-4 en fase 2, progresar a RIR 1-2 en fase 3"
@@ -180,6 +182,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * TUT (Time Under Tension / Tiempo Bajo Tensión): ej: "30-45 seg por set para hipertrofia funcional"
      * Volumen semanal y frecuencia de entrenamiento recomendada
      PROHIBIDO dejar dosificación como "3x15 convencional". Debe ser clínicamente justificado con variables modernas.
+     INCLUIR CITA breve cuando sea posible (ej: "RPE 5-6 para hipertrofia submáxima segura (Helms et al., 2016)", "Isométricos 5x45s al 70% CVM para hipoalgesia (Rio et al., 2015)").
    - "progresiones": MÍNIMO 3-4 criterios de progresión de carga/volumen.
    - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES.
    - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma.
@@ -208,7 +211,13 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * "fase_recomendada": En qué fase usarlo (ej: "Fase 2-3")
      * "objetivo": Qué trabaja (ej: "Fuerza de glúteo medio y estabilidad pélvica")
    - "busquedas_sugeridas": 4-6 términos de búsqueda en INGLÉS para profundizar en YouTube/PubMed/Scholar (ej: "sacroiliac joint mobilization physiotherapy", "hip abductor strengthening exercises rehab", "graded motor imagery chronic pain")
-   - "referencias_bibliograficas": 3-6 referencias REALES y relevantes en formato APA abreviado. Incluir autores y año. Priorizar: guías de práctica clínica, revisiones sistemáticas, artículos seminales del tema.
+   - "referencias_bibliograficas": 6-10 referencias REALES y relevantes en formato APA abreviado. Incluir autores y año (preferir post-2015, pero incluir clásicos seminales). Priorizar:
+     * Guías de práctica clínica (CPG) del tema principal
+     * Revisiones sistemáticas y meta-análisis recientes
+     * Artículos seminales sobre las técnicas usadas (ej: Rio et al. 2015 para isométricos, Vicenzino para MWM, Moseley para neurociencia del dolor)
+     * Libros de texto reconocidos si aplica (ej: "Clinical Sports Medicine" de Brukner & Khan, "Grieve's Modern MSK Physiotherapy" de Jull et al.)
+     * Artículos sobre dosificación y prescripción de ejercicio (Helms et al., ACSM Guidelines)
+     REGLA: Los títulos deben ser BUSCABLES en Google Scholar o PubMed. No inventar referencias.
 
 ═══ REGLAS GENERALES DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan datos, asume escenarios clínicamente probables basados en P3.
