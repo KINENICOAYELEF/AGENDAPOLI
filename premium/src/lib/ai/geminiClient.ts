@@ -303,7 +303,9 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
             return resultObj;
 
         } catch (err: any) {
-            console.warn(`[AI Router] Falló intento ${triesCount} con modelo ${modelInfo.modelId}. Motivo: ${err.message}`);
+            console.warn(`[AI Router] ❌ FALLÓ intento ${triesCount} con modelo ${modelInfo.modelId}.`);
+            console.warn(`[AI Router]    Error type: ${err.constructor?.name}`);
+            console.warn(`[AI Router]    Error msg: ${err.message?.substring(0, 300)}`);
             lastError = err;
             
             // Abortar instantáneamente todos los fallbacks si es un bloqueo de filtros de seguridad. 
