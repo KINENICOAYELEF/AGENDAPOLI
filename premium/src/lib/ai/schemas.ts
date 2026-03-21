@@ -89,11 +89,11 @@ export const DiagnosisSchema = z.object({
             secundarias: z.array(z.object({
                 nombre: z.string(),
                 argumento: z.string()
-            })).optional().default([]),
+            })),
             asociadas_moduladoras: z.array(z.object({
                 nombre: z.string(),
                 argumento: z.string()
-            })).optional().default([]),
+            })),
         }),
         estructuras_mas_afectan: z.string(), // Resumen para P4
     }),
@@ -206,10 +206,10 @@ export const P4PlanStructuredSchema = z.object({
     reglas_reevaluacion: z.object({
         signo_comparable_principal: z.string().optional().describe("Signo comparable principal (legacy, preferir signos_comparables)"),
         signos_comparables: z.array(z.object({
-            evaluacion: z.string().optional().default(""),
-            tipo: z.string().optional().default(""),
-            justificacion: z.string().optional().default("")
-        })).optional().default([]).describe("Evaluaciones guía para monitorear progreso"),
+            evaluacion: z.string().describe("Nombre del test, movimiento o provocación"),
+            tipo: z.string().describe("Test especial, ROM funcional, provocación, test funcional, etc."),
+            justificacion: z.string().describe("Por qué sirve como guía de progreso")
+        })).optional().describe("Evaluaciones guía: tests, movimientos y provocaciones que monitorean progreso"),
         razon_signo_comparable: z.string().optional().describe("Por qué se eligieron estos signos"),
         variables_seguimiento: z.array(z.string()),
         instrumentos_sugeridos: z.array(z.string()).optional().describe("Escalas/tests: PSFS, SANE, GROC, dinamometría, etc."),
@@ -226,11 +226,11 @@ export const P4PlanStructuredSchema = z.object({
     }),
     banco_recursos: z.object({
         ejercicios_clave: z.array(z.object({
-            nombre_es: z.string().optional().default(""),
-            nombre_en: z.string().optional().default(""),
-            fase_recomendada: z.string().optional().default(""),
-            objetivo: z.string().optional().default("")
-        })).optional().default([]).describe("8-15 ejercicios clave del caso con nombre EN+ES"),
+            nombre_es: z.string().describe("Nombre en español"),
+            nombre_en: z.string().describe("Nombre en inglés para buscar en YouTube/internet"),
+            fase_recomendada: z.string().describe("En qué fase usar: Fase 1, 2, 3 o 4"),
+            objetivo: z.string().describe("Qué trabaja: fuerza, ROM, control motor, etc.")
+        })).describe("8-15 ejercicios clave con nombre EN+ES para buscar"),
         busquedas_sugeridas: z.array(z.string()).optional().describe("Términos de búsqueda sugeridos para profundizar (ej: 'sacroiliac joint mobilization physiotherapy')"),
         referencias_bibliograficas: z.array(z.string()).optional().describe("3-6 referencias relevantes en formato APA abreviado")
     }).optional().describe("Banco de recursos para el estudiante/evaluador"),

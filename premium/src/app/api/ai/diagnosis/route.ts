@@ -366,17 +366,36 @@ export async function POST(req: Request) {
 Genera el output requerido usando EXCLUSIVAMENTE formato JSON parseable y cumpliendo estrictamente con la siguiente estructura y tipos exactos:
 ${expectedJsonExample}
 
-INSTRUCCIONES CRÍTICAS DE COMPLETITUD — NO OMITIR NINGUNA SECCIÓN:
-1. "sistema_y_estructuras.estructuras" DEBE tener las 3 categorías pobladas: "principales" (≥2), "secundarias" (≥1), "asociadas_moduladoras" (≥2). Si no existen hallazgos suficientes, INFERIR de las comorbilidades y antecedentes.
-2. "alteraciones_detectadas.estructurales" (≥3) y "funcionales" (≥5). Cada una CON "fundamento" extenso cruzando P1+P2.
-3. "actividad_y_participacion": "limitaciones_directas" (≥3) y "restricciones_participacion" (≥3). Cada una con "detalle" explicativo.
-4. "factores_biopsicosociales": TODAS las sub-categorías (positivos, negativos, facilitadores, barreras, clínicos). Mínimo 2 items por categoría.
-5. CADA campo "argumento", "fundamento", "detalle" y "observaciones" debe tener MÍNIMO 2 líneas de justificación clínica cruzando datos de P1, P1.5, P2.
-6. NO dejar arrays vacíos en NINGUNA sección que el ejemplo muestre con entradas.
-
 DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA (COMPACT CASE PACKAGE):
 ${normalizedPayload}
     `;
+
+        // Sanitizador: rellena campos que el modelo lite a veces omite, SIN relajar el schema
+        const sanitizeP3Response = (data: any) => {
+            if (data?.sistema_y_estructuras?.estructuras) {
+                if (!data.sistema_y_estructuras.estructuras.secundarias) data.sistema_y_estructuras.estructuras.secundarias = [];
+                if (!data.sistema_y_estructuras.estructuras.asociadas_moduladoras) data.sistema_y_estructuras.estructuras.asociadas_moduladoras = [];
+                if (!data.sistema_y_estructuras.estructuras.principales) data.sistema_y_estructuras.estructuras.principales = [];
+            }
+            if (data?.actividad_y_participacion) {
+                if (!data.actividad_y_participacion.limitaciones_directas) data.actividad_y_participacion.limitaciones_directas = [];
+                if (!data.actividad_y_participacion.restricciones_participacion) data.actividad_y_participacion.restricciones_participacion = [];
+            }
+            if (data?.factores_biopsicosociales) {
+                if (!data.factores_biopsicosociales.factores_personales_positivos) data.factores_biopsicosociales.factores_personales_positivos = [];
+                if (!data.factores_biopsicosociales.factores_personales_negativos) data.factores_biopsicosociales.factores_personales_negativos = [];
+                if (!data.factores_biopsicosociales.facilitadores_ambientales) data.factores_biopsicosociales.facilitadores_ambientales = [];
+                if (!data.factores_biopsicosociales.barreras_ambientales) data.factores_biopsicosociales.barreras_ambientales = [];
+                if (!data.factores_biopsicosociales.factores_clinicos_moduladores) data.factores_biopsicosociales.factores_clinicos_moduladores = [];
+            }
+            if (data?.recordatorios_y_coherencia) {
+                if (!data.recordatorios_y_coherencia.recordatorios_clinicos) data.recordatorios_y_coherencia.recordatorios_clinicos = [];
+                if (!data.recordatorios_y_coherencia.cosas_a_vigilar_en_tratamiento) data.recordatorios_y_coherencia.cosas_a_vigilar_en_tratamiento = [];
+                if (!data.recordatorios_y_coherencia.faltantes_no_criticos) data.recordatorios_y_coherencia.faltantes_no_criticos = [];
+                if (!data.recordatorios_y_coherencia.incoherencias_detectadas) data.recordatorios_y_coherencia.incoherencias_detectadas = [];
+            }
+            return data;
+        };
 
         const result = await executeAIAction({
             screen: 'P3',
@@ -386,7 +405,7 @@ ${normalizedPayload}
             inputHash,
             promptVersion: 'v3.9.0',
             temperature: 0.2,
-            validator: (data) => DiagnosisSchema.parse(data)
+            validator: (data) => DiagnosisSchema.parse(sanitizeP3Response(data))
         });
 
         // The UI (Screen3_Sintesis) currently expects `{ success: true, data: ..., hash, latencyMs }`

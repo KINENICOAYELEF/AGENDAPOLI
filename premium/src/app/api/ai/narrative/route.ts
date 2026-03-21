@@ -129,7 +129,37 @@ ${normalizedPayload}
             inputHash,
             promptVersion: 'v5.0_p4',
             temperature: modelTemp,
-            validator: (data) => P4PlanStructuredSchema.parse(data)
+            validator: (data) => {
+                // Sanitizador P4: rellena campos que el modelo a veces omite
+                if (data?.banco_recursos) {
+                    if (!data.banco_recursos.ejercicios_clave) data.banco_recursos.ejercicios_clave = [];
+                    data.banco_recursos.ejercicios_clave = data.banco_recursos.ejercicios_clave.map((ej: any) => ({
+                        nombre_es: ej?.nombre_es || '',
+                        nombre_en: ej?.nombre_en || '',
+                        fase_recomendada: ej?.fase_recomendada || '',
+                        objetivo: ej?.objetivo || '',
+                    }));
+                    if (!data.banco_recursos.busquedas_sugeridas) data.banco_recursos.busquedas_sugeridas = [];
+                    if (!data.banco_recursos.referencias_bibliograficas) data.banco_recursos.referencias_bibliograficas = [];
+                }
+                if (data?.plan_maestro && Array.isArray(data.plan_maestro)) {
+                    data.plan_maestro = data.plan_maestro.map((fase: any) => ({
+                        ...fase,
+                        intervenciones_complementarias: fase?.intervenciones_complementarias || [],
+                        tips_dosificacion: fase?.tips_dosificacion || [],
+                        sesiones_tipo: fase?.sesiones_tipo || [],
+                    }));
+                }
+                if (data?.reglas_reevaluacion) {
+                    if (!data.reglas_reevaluacion.signos_comparables) data.reglas_reevaluacion.signos_comparables = [];
+                    data.reglas_reevaluacion.signos_comparables = data.reglas_reevaluacion.signos_comparables.map((sc: any) => ({
+                        evaluacion: sc?.evaluacion || '',
+                        tipo: sc?.tipo || '',
+                        justificacion: sc?.justificacion || '',
+                    }));
+                }
+                return P4PlanStructuredSchema.parse(data);
+            }
         });
 
         const finalData = {
