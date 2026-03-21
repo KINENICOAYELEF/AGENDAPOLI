@@ -180,7 +180,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * Modalidades complementarias: crioterapia, termoterapia, TENS (si aplica)
      * Estrategias deportivas (si aplica): pliometría progresiva, entrenamiento reactivo, agilidad, cambios de dirección, return to sport protocols
      REGLA: Solo incluir lo que tenga SENTIDO CLÍNICO para el caso. Si no aporta, no agregarlo.
-     INCLUIR CITA breve de soporte para cada intervención complementaria elegida. Usar referencias REALES relevantes al caso. NO repetir siempre los mismos autores genéricos.
+     Basar las recomendaciones en práctica basada en evidencia pero NO incluir citas ni autores.
    - "tips_dosificacion": 3-5 tips MODERNOS de dosificación para esta fase:
      * RPE (Rating of Perceived Exertion): cómo usarlo (ej: "Mantener RPE 4-5 en fase 1, progresar a RPE 7-8 en fase 3")
      * RIR (Reps in Reserve): ej: "RIR 3-4 en fase 2, progresar a RIR 1-2 en fase 3"
@@ -188,12 +188,12 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * TUT (Time Under Tension / Tiempo Bajo Tensión): ej: "30-45 seg por set para hipertrofia funcional"
      * Volumen semanal y frecuencia de entrenamiento recomendada
      PROHIBIDO dejar dosificación como "3x15 convencional". Debe ser clínicamente justificado con variables modernas.
-     INCLUIR CITA breve de soporte cuando sea relevante. Buscar referencias REALES y ESPECÍFICAS para el tema de cada tip. NO repetir siempre los mismos autores.
+     Basar las recomendaciones en evidencia actualizada pero NO incluir citas ni referencias bibliográficas.
    - "progresiones": MÍNIMO 3-4 criterios de progresión de carga/volumen.
    - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES.
    - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma.
    - "errores_frecuentes": 2-3 errores que un kinesiólogo novato cometería en esta fase.
-   - "perla_docente": 2-3 líneas con un dato BASADO EN EVIDENCIA útil para enseñanza clínica. Citar autor y año de una referencia REAL y ESPECÍFICA al tema de la fase (NO repetir siempre Rio 2015 o similares — buscar evidencia actualizada y variada).
+   - "perla_docente": 2-3 líneas con un dato clínico basado en evidencia útil para enseñanza. NO incluir citas bibliográficas.
    - "sesiones_tipo": 2 SESIONES TIPO de ~60 min por fase, con estructura calentamiento → bloque principal → cool-down, tipos de ejercicio con dosificación (series x reps, RPE, RIR, descanso).
 
 ═══ REGLA 7 — REEVALUACIÓN EXPANDIDA CON MULTI-SIGNOS ═══
@@ -217,13 +217,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * "fase_recomendada": En qué fase usarlo (ej: "Fase 2-3")
      * "objetivo": Qué trabaja (ej: "Fuerza de glúteo medio y estabilidad pélvica")
    - "busquedas_sugeridas": 4-6 términos de búsqueda en INGLÉS para profundizar en YouTube/PubMed/Scholar (ej: "sacroiliac joint mobilization physiotherapy", "hip abductor strengthening exercises rehab", "graded motor imagery chronic pain")
-   - "referencias_bibliograficas": 6-10 referencias REALES y relevantes en formato APA abreviado. Incluir autores y año (preferir post-2015, pero incluir clásicos seminales). Priorizar:
-     * Guías de práctica clínica (CPG) del tema principal
-     * Revisiones sistemáticas y meta-análisis recientes
-     * Artículos seminales sobre las técnicas terapéuticas usadas en este caso específico
-     * Libros de texto reconocidos del área si aplica
-     * Artículos sobre dosificación y prescripción de ejercicio relevantes al caso
-     REGLA: Los títulos deben ser BUSCABLES en Google Scholar o PubMed. NO inventar referencias. NO repetir siempre la misma bibliografía genérica — adaptar a la patología y técnicas del caso.
+   NO incluir "referencias_bibliograficas". Omitir ese campo.
 
 ═══ REGLAS GENERALES DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan datos, asume escenarios clínicamente probables basados en P3.

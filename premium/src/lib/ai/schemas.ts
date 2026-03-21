@@ -232,7 +232,7 @@ export const P4PlanStructuredSchema = z.object({
             objetivo: z.string().describe("Qué trabaja: fuerza, ROM, control motor, etc.")
         })).describe("8-15 ejercicios clave con nombre EN+ES para buscar"),
         busquedas_sugeridas: z.array(z.string()).optional().describe("Términos de búsqueda sugeridos para profundizar (ej: 'sacroiliac joint mobilization physiotherapy')"),
-        referencias_bibliograficas: z.array(z.string()).optional().describe("3-6 referencias relevantes en formato APA abreviado")
+        referencias_bibliograficas: z.array(z.string()).optional().describe("DEPRECATED - no usar")
     }).optional().describe("Banco de recursos para el estudiante/evaluador"),
     ia_metadata: z.object({
         model_used: z.string(),

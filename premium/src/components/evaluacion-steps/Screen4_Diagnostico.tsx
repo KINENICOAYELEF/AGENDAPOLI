@@ -720,7 +720,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                     {/* Búsquedas Sugeridas */}
                     {(p4_plan_structured.banco_recursos?.busquedas_sugeridas || []).length > 0 && (
                         <div className="mb-4">
-                            <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-1">🔍 Búsquedas Sugeridas (YouTube / PubMed / Scholar)</h4>
+                            <h4 className="text-[10px] font-bold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-1">🔍 Términos de Búsqueda para PubMed</h4>
                             <div className="flex flex-wrap gap-2">
                                 {(p4_plan_structured.banco_recursos?.busquedas_sugeridas || []).map((busq: string, bIdx: number) => (
                                     <span key={bIdx} className="bg-blue-50 border border-blue-200 text-blue-800 text-[11px] px-3 py-1.5 rounded-full font-medium">{busq}</span>
@@ -729,15 +729,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         </div>
                     )}
 
-                    {/* Referencias Bibliográficas */}
-                    {(p4_plan_structured.banco_recursos?.referencias_bibliograficas || []).length > 0 && (
-                        <div>
-                            <h4 className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider mb-2 flex items-center gap-1">📖 Referencias Bibliográficas Sugeridas</h4>
-                            <div className="bg-indigo-50/50 border border-indigo-200 rounded-lg p-3">
-                                <textarea data-autoresize onInput={autoResize} className="w-full bg-transparent border-none p-0 outline-none text-xs text-indigo-900 min-h-[50px] resize-none leading-relaxed" value={(p4_plan_structured.banco_recursos?.referencias_bibliograficas || []).join('\n')} onChange={(e) => updateDeepObj('banco_recursos', { referencias_bibliograficas: e.target.value.split('\n').filter(Boolean) })} disabled={isClosed} />
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             )}
 
