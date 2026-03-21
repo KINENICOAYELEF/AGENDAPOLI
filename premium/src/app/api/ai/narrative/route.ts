@@ -4,6 +4,9 @@ import { PROMPTS, SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
 import { P4PlanStructuredSchema } from '@/lib/ai/schemas';
 import { generateSHA256, normalizePayload } from '@/lib/ai/hash';
 
+// Allow P4 generation up to 2 minutes on Vercel
+export const maxDuration = 120;
+
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS = 10;

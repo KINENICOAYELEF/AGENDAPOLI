@@ -83,7 +83,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
     // Implementar AbortController para evitar hangs infinitos en Vercel
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 segundos máximo por llamada individual (evita 504 global de Vercel)
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 segundos máximo por llamada individual (P4 v5.2 genera más contenido)
 
     try {
         const response = await fetch(url, {
