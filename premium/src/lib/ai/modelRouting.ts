@@ -41,9 +41,11 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     } 
     else if (screen === 'P3' || aiAction === 'P3_SYNTHESIS') {
         cacheBucket = 'p3_ai_cache';
+        // gemini-2.5-flash-lite como primario: soporta el JSON extenso de P3 (~363 líneas)
+        // gemini-3.1-flash-lite-preview no logra generar la respuesta completa por capacidad limitada
         orderedModels = [
-            { modelId: 'gemini-3.1-flash-lite-preview' },
             { modelId: 'gemini-2.5-flash-lite' },
+            { modelId: 'gemini-3.1-flash-lite-preview' },
             { modelId: 'gemini-2.5-flash' }
         ];
     } 
