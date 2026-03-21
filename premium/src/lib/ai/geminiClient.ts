@@ -25,6 +25,7 @@ interface GeminiCallParams {
     thinkingLevel?: 'low' | 'medium' | 'high';
     thinkingBudget?: number;
     responseMimeType?: string;
+    maxOutputTokens?: number;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
@@ -51,6 +52,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             temperature: temperature,
             topP: params.topP,
             topK: params.topK,
+            maxOutputTokens: params.maxOutputTokens || 16384,
             responseMimeType: params.responseMimeType || "application/json"
         }
     };
@@ -83,7 +85,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
     // Implementar AbortController para evitar hangs infinitos en Vercel
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 segundos máximo por llamada individual (P4 v5.2 genera más contenido)
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 segundos — Vercel hobby plan tiene límite de 60s
 
     try {
         const response = await fetch(url, {
@@ -184,6 +186,7 @@ export interface AIExecutionOptions<T> {
     temperature?: number;
     validator: (data: any) => T; 
     responseMimeType?: string;
+    maxOutputTokens?: number;
 }
 
 export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
@@ -225,7 +228,8 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 modelId: modelInfo.modelId,
                 thinkingLevel: modelInfo.thinkingLevel,
                 thinkingBudget: modelInfo.thinkingBudget,
-                responseMimeType: opts.responseMimeType
+                responseMimeType: opts.responseMimeType,
+                maxOutputTokens: opts.maxOutputTokens
             });
 
             // Validacion vacia/truncada local
