@@ -366,6 +366,14 @@ export async function POST(req: Request) {
 Genera el output requerido usando EXCLUSIVAMENTE formato JSON parseable y cumpliendo estrictamente con la siguiente estructura y tipos exactos:
 ${expectedJsonExample}
 
+INSTRUCCIONES CRÍTICAS DE COMPLETITUD — NO OMITIR NINGUNA SECCIÓN:
+1. "sistema_y_estructuras.estructuras" DEBE tener las 3 categorías pobladas: "principales" (≥2), "secundarias" (≥1), "asociadas_moduladoras" (≥2). Si no existen hallazgos suficientes, INFERIR de las comorbilidades y antecedentes.
+2. "alteraciones_detectadas.estructurales" (≥3) y "funcionales" (≥5). Cada una CON "fundamento" extenso cruzando P1+P2.
+3. "actividad_y_participacion": "limitaciones_directas" (≥3) y "restricciones_participacion" (≥3). Cada una con "detalle" explicativo.
+4. "factores_biopsicosociales": TODAS las sub-categorías (positivos, negativos, facilitadores, barreras, clínicos). Mínimo 2 items por categoría.
+5. CADA campo "argumento", "fundamento", "detalle" y "observaciones" debe tener MÍNIMO 2 líneas de justificación clínica cruzando datos de P1, P1.5, P2.
+6. NO dejar arrays vacíos en NINGUNA sección que el ejemplo muestre con entradas.
+
 DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA (COMPACT CASE PACKAGE):
 ${normalizedPayload}
     `;
