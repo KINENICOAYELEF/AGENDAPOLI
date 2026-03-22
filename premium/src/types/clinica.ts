@@ -1252,6 +1252,23 @@ export interface Evolucion {
 
     audit: AuditTrail;
 
+    // FASE 4.1: Analítica y Trazabilidad Docente
+    _analytics?: {
+        sessionDurationMinutes?: number | null;
+        objectivesWorkedCount?: number;
+        objectivesAvailableCount?: number;
+        objectiveComplianceRate?: string | null;
+        evaReduction?: number | null;
+        hasInterventions?: boolean;
+        interventionCount?: number;
+        interventionCategories?: string[];
+        hasExercises?: boolean;
+        exerciseCount?: number;
+        registrationDelayHours?: string | null;
+        isLateRegistration?: boolean;
+        readinessSnapshot?: any;
+    };
+
     // Campos Antiguos Legacy / Migración
     notesLegacy?: string;
     _migratedFromLegacy?: boolean;

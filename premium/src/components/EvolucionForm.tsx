@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from "@/types/clinica";
 import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -424,8 +424,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     };
 
     // --- MANEJO DE OBJETIVOS VIGENTES Y CONTEXTO PROCESO (FASE 2.1.18 y 2.1.30) ---
-    const [availableObjectives, setAvailableObjectives] = useState<{ id: string, label: string, status?: string }[]>([]);
-    const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
+    const [availableObjectives, setAvailableObjectives] = useState<any[]>([]);
+    const [objectivesSource, setObjectivesSource] = useState<string>("");
+    const [currentVersionId, setCurrentVersionId] = useState<string | undefined>(undefined);
     const [procesoContext, setProcesoContext] = useState<{ motivoIngresoLibre?: string, evaluacionesStr?: string, caseSnapshot?: any, flags?: any }>({});
     const [loadingObjectives, setLoadingObjectives] = useState(false);
 
@@ -518,8 +519,38 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         setCurrentVersionId(activeSet.versionId);
                     } else {
                         // El proceso no tiene un set
-                        setAvailableObjectives([]);
-                        setCurrentVersionId(undefined);
+                        // PASO 3.1: Fallback a Evaluación última
+                        let fallbackActives: any[] = [];
+                        let fallbackVersionId: string | undefined = undefined;
+                        try {
+                            const evalsRef = collection(db, "programs", globalActiveYear, "evaluaciones");
+                            const lastEvalQ = query(evalsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"));
+                            const lastEvalSnap = await getDocs(lastEvalQ);
+                            if (!lastEvalSnap.empty) {
+                                const sorted = lastEvalSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                                const lastEval = sorted[0] as any;
+                                const evalObjectives = lastEval?.p4?.planMaestro?.fases?.flatMap((f: any) => (f.intervenciones || []).map((iv: any) => ({
+                                    id: `eval_${lastEval.id}_${iv.id || Math.random()}`,
+                                    label: iv.descripcion || iv.objetivo || iv.texto || '',
+                                    status: 'activo',
+                                    source: 'evaluacion'
+                                })).filter((ov: any) => ov.label)) || lastEval?.objectives?.map((o: any) => ({
+                                    id: o.id || `eval_${lastEval.id}_${o.description}`,
+                                    label: o.description || o.label,
+                                    status: o.status || 'activo'
+                                })) || [];
+                                if (evalObjectives.length > 0) {
+                                    fallbackActives = evalObjectives;
+                                    fallbackVersionId = `eval_${lastEval.id}`;
+                                    setObjectivesSource(`Evaluación ${lastEval.type || ''} del ${new Date(lastEval.sessionAt).toLocaleDateString('es-CL')}`);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error buscando última evaluación para objetivos", e);
+                        }
+
+                        setAvailableObjectives(fallbackActives);
+                        setCurrentVersionId(fallbackVersionId);
                     }
                 }
             } catch (err) {
@@ -792,168 +823,6 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         setCopyCandidates(null);
     };
 
-    // --- FASE 2.1.28: INTEGRACIÓN GEMINI AI ---
-    // States para Gemini AI
-    const [aiLoading, setAiLoading] = useState<string | null>(null); // 'generarObjetivoSesion', 'generarPlanProximaSesion', 'generarHandoffInterColega'
-    const [aiCache, setAiCache] = useState<Record<string, { hash: string; text: string }>>({});
-    const [aiError, setAiError] = useState<string | null>(null);
-
-    // Función determinista para crear un hash string de estado clínico actual
-    const getClinicalContextHash = () => {
-        const payload = {
-            procesoContext,
-            evolucionesCount: evolucionesAnteriores?.length,
-            selectedObjectives: formData.selectedObjectiveIds,
-            objectiveWork: formData.objectiveWork,
-            interventions: formData.interventions,
-            exercises: formData.exercises?.map(e => ({ name: e.name, sets: e.sets, reps: e.repsOrTime, load: e.loadKg })),
-            evaStart: formData.pain?.evaStart,
-            evaEnd: formData.pain?.evaEnd,
-            readiness: formData.readiness,
-            sessionStatus: formData.sessionStatus
-        };
-        return JSON.stringify(payload);
-    };
-
-    const handleGeminiSuggest = async (actionType: 'generarObjetivoSesion' | 'generarPlanProximaSesion' | 'generarHandoffInterColega') => {
-        if (isClosed) return;
-
-        const currentHash = getClinicalContextHash();
-
-        // Caching: Si el contexto no ha cambiado, usa memoria
-        if (aiCache[actionType]?.hash === currentHash) {
-            applyGeminiText(actionType, aiCache[actionType].text);
-            return;
-        }
-
-        setAiLoading(actionType);
-        setAiError(null); // Clear previous errors
-        try {
-            // Transformar objetivos a texto
-            const objetivosHoyStr = (formData.selectedObjectiveIds || []).map(id => {
-                const statusObj = formData.objectiveWork?.find(w => w.id === id);
-                const objMeta = availableObjectives.find(o => o.id === id);
-                return { objetivo: objMeta ? objMeta.label : id, estado: statusObj?.sessionStatus || 'trabajado' };
-            });
-
-            // Compactar historial de evoluciones para no exceder token limits drásticamente, pero proveer info rica
-            const historialResumido = (evolucionesAnteriores || []).map(evo => ({
-                fecha: evo.sessionAt,
-                metaSesion: evo.sessionGoal,
-                dolor: `${evo.pain?.evaStart || '-'} -> ${evo.pain?.evaEnd || '-'}`,
-                intervenciones: Array.isArray(evo.interventions) ? evo.interventions.map((i: any) => i.category || i.subType).filter(Boolean).join(', ') : '',
-                ejercicios: evo.exercises?.map(e => e.name).join(', '),
-                planDejado: evo.nextPlan
-            }));
-
-            const contextPayload = {
-                // FASE 2.1.30: CONTEXTO MACRO DEL PROCESO
-                motivoIngresoGeneral: procesoContext.motivoIngresoLibre || "No especificado",
-                evaluacionesHistoricas: procesoContext.evaluacionesStr || "No disponible",
-                historialEvolucionesAnteriores: historialResumido,
-
-                // CONTEXTO MICRO DE HOY
-                objetivosTrabajadosHoy: objetivosHoyStr,
-                estadoSesionHoy: formData.sessionStatus,
-                readinessUsuarioHoy: formData.readiness,
-                dolorInicioHoy: formData.pain?.evaStart,
-                intervencionesHoy: formData.interventions || [],
-                ejerciciosHoy: formData.exercises?.map(e => `${e.name} ${e.sets}x${e.repsOrTime} ${e.loadKg ? e.loadKg + 'kg' : ''} ${e.rir ? 'RIR ' + e.rir : ''}`) || [],
-                dolorFinalHoy: formData.pain?.evaEnd
-            };
-
-            const response = await fetch('/api/ai/suggest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: actionType,
-                    context: contextPayload
-                })
-            });
-
-            if (!response.ok) throw new Error("Error en API de Gemini");
-
-            const data = await response.json();
-            if (data.result) {
-                // Guardar en cache local
-                setAiCache(prev => ({
-                    ...prev,
-                    [actionType]: { hash: currentHash, text: data.result }
-                }));
-                // Aplicar al formulario
-                applyGeminiText(actionType, data.result);
-            }
-        } catch (error) {
-            console.error("AI Assistant Error:", error);
-            setAiError("No se pudo conectar con el Asistente Clínico (Gemini). Inténtalo más tarde.");
-        } finally {
-            setAiLoading(null);
-        }
-    };
-
-    const applyGeminiText = (actionType: string, text: string) => {
-        setFormData(prev => {
-            if (actionType === 'generarObjetivoSesion' || actionType === 'generarGuiaHoy') return { ...prev, sessionGoal: text };
-            if (actionType === 'generarPlanProximaSesion') return { ...prev, nextPlan: text }; // Changed from nextSessionPlan to nextPlan
-            if (actionType === 'generarHandoffInterColega') return { ...prev, handoffText: (prev.handoffText ? prev.handoffText + '\n\n' : '') + '--- AI HANDOFF ---\n' + text };
-            return prev;
-        });
-    };
-
-    const handleGeminiGuideAll = async () => {
-        if (isClosed || aiLoading === 'generarGuiaHoy') return;
-
-        setAiLoading('generarGuiaHoy');
-        setAiError(null);
-        try {
-            const contextPayload = {
-                ultimaEvolucionCerrada: lastClosedEvol ? {
-                    fecha: lastClosedEvol.sessionAt,
-                    planAnterior: lastClosedEvol.sessionGoal,
-                    dolorFin: lastClosedEvol.pain?.evaEnd
-                } : "No disponible",
-                objetivosTrabajadosHoy: (formData.selectedObjectiveIds || []).map(id => {
-                    const statusObj = formData.objectiveWork?.find(w => w.id === id);
-                    return { objetivoId: id, estado: statusObj?.sessionStatus || 'trabajado' };
-                }),
-                intervencionesHoy: formData.interventions || [],
-                ejerciciosHoy: formData.exercises?.map(e => `${e.name} ${e.sets}x${e.repsOrTime} ${e.loadKg ? e.loadKg + 'kg' : ''} ${e.rir ? 'RIR ' + e.rir : ''}`) || [],
-                dolorInicio: formData.pain?.evaStart,
-                dolorFinal: formData.pain?.evaEnd,
-                estadoSesion: formData.sessionStatus,
-                readinessUsuario: formData.readiness
-            };
-
-            // Ejecuta los 3 llamados en paralelo (o uno consolidado en el backend ideal, pero por ahora reusamos el route existene x3)
-            const actions: ('generarObjetivoSesion' | 'generarPlanProximaSesion' | 'generarHandoffInterColega')[] = ['generarObjetivoSesion', 'generarPlanProximaSesion', 'generarHandoffInterColega'];
-
-            const results = await Promise.all(actions.map(action =>
-                fetch('/api/ai/suggest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: action, context: contextPayload })
-                }).then(res => res.json())
-            ));
-
-            results.forEach((data, index) => {
-                if (data.result) applyGeminiText(actions[index], data.result);
-            });
-
-        } catch (error) {
-            console.error("AI Guide Error:", error);
-            setAiError("Falló la generación masiva de la Guía de Hoy.");
-        } finally {
-            setAiLoading(null);
-        }
-    };
-
-    // Render Helpers para UI
-    const getGeminiIcon = () => (
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-            <path d="M11.6667 0.666656C12.0526 6.32742 16.6348 10.9096 22.2956 11.2955C22.6844 11.3219 22.9556 11.6579 22.9556 12C22.9556 12.3421 22.6844 12.6781 22.2956 12.7045C16.6348 13.0904 12.0526 17.6726 11.6667 23.3333C11.6402 23.7222 11.3042 23.9933 10.9622 23.9933C10.6202 23.9933 10.2842 23.7222 10.2578 23.3333C9.87189 17.6726 5.28967 13.0904 -0.371109 12.7045C-0.759949 12.6781 -1.03111 12.3421 -1.03111 12C-1.03111 11.6579 -0.759949 11.3219 -0.371109 11.2955C5.28967 10.9096 9.87189 6.32742 10.2578 0.666656C10.2842 0.277817 10.6202 0.00665283 10.9622 0.00665283C11.3042 0.00665283 11.6402 0.277817 11.6667 0.666656Z" fill="currentColor" />
-        </svg>
-    );
-
     // Método universal de Guardado para Borrador o Cierre
     const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false, extraProps?: Partial<Evolucion>) => {
         if (!globalActiveYear || !user) {
@@ -979,6 +848,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const payload: Partial<Evolucion> = {
                 id: targetId,
                 usuariaId,
+                procesoId: procesoId || formData.procesoId || null,
                 casoId: formData.casoId || null,
                 sesionId: formData.sesionId || null,
 
@@ -1019,6 +889,31 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 ...extraProps,
 
                 outcomesSnapshot: formData.outcomesSnapshot,
+
+                // FASE 4.1: Guardar Metadatos de Trazabilidad para Análisis Docente
+                _analytics: {
+                    sessionDurationMinutes: (formData as any).durationMinutes || null, // Depende si existe
+                    objectivesWorkedCount: formData.selectedObjectiveIds?.length || 0,
+                    objectivesAvailableCount: availableObjectives.length,
+                    objectiveComplianceRate: availableObjectives.length > 0 
+                        ? ((formData.selectedObjectiveIds?.length || 0) / availableObjectives.length * 100).toFixed(0) + '%'
+                        : null,
+                    evaReduction: (formData.pain?.evaStart !== '' && formData.pain?.evaStart !== undefined && formData.pain?.evaEnd !== '' && formData.pain?.evaEnd !== undefined) 
+                        ? Number(formData.pain?.evaStart) - Number(formData.pain?.evaEnd) 
+                        : null,
+                    hasInterventions: Array.isArray(formData.interventions) && formData.interventions.length > 0,
+                    interventionCount: Array.isArray(formData.interventions) ? formData.interventions.length : 0,
+                    interventionCategories: Array.isArray(formData.interventions) 
+                        ? [...new Set(formData.interventions.map((i: any) => i.category))] 
+                        : [],
+                    hasExercises: Array.isArray(formData.exercises) && formData.exercises.length > 0,
+                    exerciseCount: formData.exercises?.length || 0,
+                    registrationDelayHours: formData.sessionAt 
+                        ? getDifferenceInHours(formData.sessionAt, new Date().toISOString()).toFixed(1) 
+                        : null,
+                    isLateRegistration: isLateDraft,
+                    readinessSnapshot: formData.readiness || null,
+                },
 
                 audit: finalAudit,
                 notesLegacy: formData.notesLegacy
@@ -1200,29 +1095,25 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
         if (hoursPassed > 36) {
             setRequiresLateReason(true);
-            setIsAttemptingClose(true);
-            return; // Cortamos flujo si falta el motivo
+            
+            // PASO 3.2: Ya no hay modal. Si faltan datos, bloqueamos y hacemos scroll
+            if (!lateCategory || lateText.trim().length < 20) {
+                alert("Debes completar OBLIGATORIAMENTE la justificación de auditoría por cierre tardío (mínimo 20 caracteres) en la sección de 'Datos Administrativos'.");
+                scrollToSection('sec-admin');
+                return;
+            }
+            // Si tiene datos válidos, los pasamos
+            const finalReason = `[${lateCategory}] ${lateText}`;
+            const extraProps: Partial<Evolucion> = {};
+            if (tempObjectiveReason) extraProps.objectiveSelectionReason = tempObjectiveReason;
+            executeSave(true, finalReason, false, extraProps);
+            return;
         }
 
         const extraProps: Partial<Evolucion> = {};
         if (tempObjectiveReason) extraProps.objectiveSelectionReason = tempObjectiveReason;
 
         executeSave(true, undefined, false, extraProps);
-    };
-
-    // Cuando superó 36hrs y ahora escribe la justificación para confirmar el cierre final
-    const confirmLateClose = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!lateCategory) {
-            alert("Debe seleccionar una Categoría de Motivo para el cierre tardío.");
-            return;
-        }
-        if (lateText.trim().length < 5) {
-            alert("Debe agregar un detalle específico del motivo (mínimo 5 caracteres).");
-            return;
-        }
-        const finalReason = `[${lateCategory}] ${lateText}`;
-        executeSave(true, finalReason);
     };
 
     const scrollToSection = (id: string) => {
@@ -1376,6 +1267,29 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     const canClose = missingFields.length === 0;
 
+    // FASE 3.3: CHIPS DE NAVEGACIÓN Y COMPLETITUD
+    const sectionStatus = useMemo(() => ({
+        esencial: {
+            complete: !!formData.sessionStatus && 
+                      (formData.sessionStatus !== 'Realizada' || 
+                       (formData.pain?.evaStart !== '' && formData.pain?.evaStart !== undefined)),
+            label: 'Esencial'
+        },
+        interv: {
+            complete: Array.isArray(formData.interventions) && formData.interventions.length > 0,
+            label: 'Intervenciones'
+        },
+        ejerc: {
+            complete: Array.isArray(formData.exercises) && formData.exercises.length > 0,
+            label: 'Ejercicios'
+        },
+        result: {
+            complete: !!formData.nextPlan?.trim() && 
+                      formData.pain?.evaEnd !== '' && formData.pain?.evaEnd !== undefined,
+            label: 'Cierre'
+        }
+    }), [formData]);
+
     return (
         <form onSubmit={handleSaveDraft} className="flex flex-col h-full w-full mx-auto overflow-hidden bg-slate-50/50 md:bg-transparent" id="evolution-form">
 
@@ -1466,24 +1380,28 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                 <div className="px-4 md:px-6 pb-2 pt-1 overflow-x-auto hide-scrollbar flex gap-2 snap-x bg-white relative z-10 border-b border-slate-100 shadow-sm mb-2 shrink-0">
                     {[
-                        { id: 'sec-esencial', label: 'Esencial' },
-                        { id: 'sec-interv', label: 'Intervenciones' },
-                        { id: 'sec-ejerc', label: 'Ejercicios' },
-                        { id: 'sec-result', label: 'Cierre y Planificación' }
-                    ].map(chip => (
-                        <button
-                            key={chip.id}
-                            id={`chip-${chip.id}`}
-                            type="button"
-                            onClick={() => scrollToSection(chip.id)}
-                            className={`snap-start whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all border ${activeSection === chip.id
-                                ? 'bg-indigo-600 text-white border-indigo-700 shadow-md transform scale-105'
-                                : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                                }`}
-                        >
-                            {chip.label}
-                        </button>
-                    ))}
+                        { id: 'sec-esencial', key: 'esencial' },
+                        { id: 'sec-interv', key: 'interv' },
+                        { id: 'sec-ejerc', key: 'ejerc' },
+                        { id: 'sec-result', key: 'result' }
+                    ].map(chip => {
+                        const status = sectionStatus[chip.key as keyof typeof sectionStatus];
+                        return (
+                            <button
+                                key={chip.id}
+                                id={`chip-${chip.id}`}
+                                type="button"
+                                onClick={() => scrollToSection(chip.id)}
+                                className={`snap-start whitespace-nowrap px-4 py-1.5 rounded-full text-[11px] font-black tracking-wide transition-all border flex items-center gap-1.5 ${activeSection === chip.id
+                                    ? 'bg-indigo-600 text-white border-indigo-700 shadow-md transform scale-105'
+                                    : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                                    }`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.complete ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                {status.label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -1512,7 +1430,54 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                     <div id="evolution-form" className="space-y-4">
 
-                        {/* --- FASE 2.1.29: BANNER DE CONTINUIDAD --- */}
+                        {/* --- FASE 4.2: PANEL DOCENTE EN READONLY --- */}
+                        {isClosed && user?.role === 'DOCENTE' && (
+                            <div className="bg-gradient-to-br from-purple-950 to-indigo-950 p-5 rounded-2xl border border-purple-700/30 shadow-md mb-2 animate-in fade-in slide-in-from-top-4">
+                                <h3 className="text-sm font-black text-purple-100 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    🎓 Panel de Revisión Docente
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                    {/* Indicador 1: Objetivos */}
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                        <span className="block text-purple-300 text-[10px] uppercase font-bold mb-1">Objetivos Registrados</span>
+                                        <span className={`text-lg font-black ${formData._analytics?.objectivesWorkedCount && formData._analytics.objectivesWorkedCount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {formData._analytics?.objectivesWorkedCount || 0} / {formData._analytics?.objectivesAvailableCount || '?'}
+                                        </span>
+                                        <span className="block text-purple-400 text-[9px] mt-0.5">Cumplimiento: {formData._analytics?.objectiveComplianceRate || 'N/D'}</span>
+                                    </div>
+                                    {/* Indicador 2: EVA */}
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                        <span className="block text-purple-300 text-[10px] uppercase font-bold mb-1">Variación Dolor (EVA)</span>
+                                        <span className={`text-lg font-black ${(formData._analytics?.evaReduction ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {formData._analytics?.evaReduction !== null && formData._analytics?.evaReduction !== undefined ? (formData._analytics.evaReduction > 0 ? `-${formData._analytics.evaReduction}` : `+${Math.abs(formData._analytics.evaReduction)}`) : 'N/D'}
+                                        </span>
+                                        <span className="block text-purple-400 text-[9px] mt-0.5">
+                                            {formData.pain?.evaStart} → {formData.pain?.evaEnd}
+                                        </span>
+                                    </div>
+                                    {/* Indicador 3: Intervenciones */}
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                        <span className="block text-purple-300 text-[10px] uppercase font-bold mb-1">Procedimientos</span>
+                                        <span className={`text-lg font-black ${formData._analytics?.interventionCount && formData._analytics.interventionCount > 0 ? 'text-white' : 'text-amber-400'}`}>
+                                            {formData._analytics?.interventionCount || 0}
+                                        </span>
+                                        <span className="block text-purple-400 text-[9px] mt-0.5 truncate border-t border-purple-800/50 pt-1 mt-1" title={formData._analytics?.interventionCategories?.join(', ')}>
+                                            {formData._analytics?.interventionCategories?.join(', ') || 'Sin registro'}
+                                        </span>
+                                    </div>
+                                    {/* Indicador 4: Puntualidad */}
+                                    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+                                        <span className="block text-purple-300 text-[10px] uppercase font-bold mb-1">Demora de Registro</span>
+                                        <span className={`text-lg font-black ${formData._analytics?.isLateRegistration ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                            {formData._analytics?.registrationDelayHours || '?'}h
+                                        </span>
+                                        <span className="block text-purple-400 text-[9px] mt-0.5 border-t border-purple-800/50 pt-1 mt-1">
+                                            {formData._analytics?.isLateRegistration ? '⚠ Excedió 36h' : '✓ En plazo normativo'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}                        {/* --- FASE 2.1.29: BANNER DE CONTINUIDAD --- */}
                         {lastClosedEvol ? (
                             <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 p-5 rounded-2xl border border-indigo-500/30 shadow-md animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden">
                                 {/* Decoración de fondo */}
@@ -1548,28 +1513,6 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         <p className="text-slate-200 whitespace-pre-wrap">{lastClosedEvol.handoffText || "No dejó notas de traspaso."}</p>
                                     </div>
                                 </div>
-
-                                {/* Generador "Qué se espera hoy" */}
-                                {!isClosed && formData.sessionStatus === 'Realizada' && (
-                                    <div className="mt-4 pt-4 border-t border-indigo-800/50 flex flex-col md:flex-row items-center justify-between gap-3 relative z-10">
-                                        <div className="text-xs text-indigo-200">
-                                            Acelera el proceso y obtén los lineamientos de la sesión en 1 click.
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleGeminiGuideAll}
-                                            disabled={aiLoading === 'generarGuiaHoy'}
-                                            className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group border border-indigo-400"
-                                        >
-                                            {aiLoading === 'generarGuiaHoy' ? (
-                                                <div className="w-4 h-4 border-2 border-indigo-200 border-t-white rounded-full animate-spin"></div>
-                                            ) : (
-                                                <SparklesIcon className="w-5 h-5 text-indigo-200 group-hover:text-white transition-colors" />
-                                            )}
-                                            Usar como Guía de Hoy (Autocompletar)
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center flex items-center justify-center gap-2">
@@ -1610,21 +1553,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             <span className="text-slate-700 font-medium">{procesoContext.caseSnapshot.lastRetest}</span>
                                         </div>
                                     )}
-                                    {procesoContext.flags?.consideracionesClinicas && (
+                                    {(procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.p4?.narrativeDiagnosis) && (
                                         <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/50 md:col-span-2">
                                             <span className="block font-black text-orange-600 text-[10px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                                                 <ExclamationCircleIcon className="w-4 h-4" />
-                                                Consideraciones Clínicas
+                                                Diagnóstico Narrativo (Evaluación)
                                             </span>
-                                            {Array.isArray(procesoContext.flags.consideracionesClinicas) ? (
-                                                <ul className="list-disc pl-5 text-orange-950/80 space-y-1 font-medium">
-                                                    {procesoContext.flags.consideracionesClinicas.map((c: string, i: number) => (
-                                                        <li key={i}>{c}</li>
-                                                    ))}
-                                                </ul>
-                                            ) : (
-                                                <p className="text-orange-950/80 font-medium ml-5">{procesoContext.flags.consideracionesClinicas}</p>
-                                            )}
+                                            <p className="text-orange-950/80 font-medium ml-5">{procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.p4?.narrativeDiagnosis}</p>
                                         </div>
                                     )}
                                 </div>
@@ -1633,39 +1568,17 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                         {/* GRUPO ESENCIAL DEL PACIENTE (Scroll Spy agrupa estos acórdeones) */}
                         <div id="sec-esencial" className="space-y-4 scroll-mt-6">
-                            {/* 1. SECCIÓN ADMINISTRATIVA */}
-                            <AccordionSection
-                                id="sec-admin"
-                                title="Datos Administrativos de Sesión"
-                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-                                defaultOpen={true}
-                                theme="slate"
-                            >
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha y Hora Real <span className="text-rose-500">*</span></label>
-                                        <input
-                                            type="datetime-local"
-                                            value={toDateTimeLocal(formData.sessionAt as string)}
-                                            onChange={handleDateChange}
-                                            disabled={isClosed}
-                                            max={toDateTimeLocal(new Date().toISOString())}
-                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
-                                            required
-                                        />
-                                        <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Clínico / Interno</label>
-                                        <input
-                                            type="text"
-                                            disabled
-                                            value={initialData?.autorName || user?.email || "Cargando..."}
-                                            className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
-                                        />
-                                    </div>
 
-                                    {/* ESTADO DE SESIÓN (FASE 2.1.14) */}
+                            {/* 1. SECCIÓN ADMINISTRATIVA Y ESTADO (REORGANIZADO 3.4) */}
+                            <div className="bg-white p-5 rounded-2xl border-l-4 border-l-emerald-500 border-y border-r border-slate-200 shadow-sm relative mb-2 animate-in fade-in slide-in-from-top-4">
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Asistencia y Objetivos
+                                </h3>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    {/* Módulo de Asistencia Movido Arriba */}
+{/* ESTADO DE SESIÓN (FASE 2.1.14) */}
                                     <div className="md:col-span-2 mt-1 pt-4 border-t border-slate-200">
                                         <label className="block text-[11px] font-bold text-slate-600 mb-2 uppercase tracking-wide">Estado de la Sesión <span className="text-rose-500">*</span></label>
                                         <div className="flex flex-wrap gap-2">
@@ -1744,7 +1657,106 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </div>
                                     )}
 
-                                    {/* SIGNOS VITALES OPTATIVOS (TRIAJE) */}
+                                    
+
+                                    {/* Módulo de Objetivos Movido Arriba */}
+                                    <div className="md:col-span-2">
+{/* FASE 2.1.24: OBJETIVOS VIGENTES DEL PROCESO */}
+                                            {availableObjectives.length > 0 && (
+                                                <div className="col-span-1 bg-sky-50/50 p-4 rounded-xl border border-sky-100 shadow-sm">
+                                                    <div className="mb-3">
+                                                        <label className="block text-[11px] font-bold text-sky-700 uppercase tracking-wide flex items-center justify-between">
+                                                            <span>Objetivos Vigentes del Proceso</span>
+                                                            <span className="text-[9px] bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full border border-sky-200">Requerido</span>
+                                                        </label>
+                                                        {objectivesSource && (
+                                                            <span className="text-[9px] text-sky-600 font-medium italic mt-0.5 block">Origen: {objectivesSource}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-3">
+                                                        {availableObjectives.map(obj => {
+                                                            const isSelected = formData.selectedObjectiveIds?.includes(obj.id);
+                                                            const workObj = formData.objectiveWork?.find(w => w.id === obj.id);
+
+                                                            return (
+                                                                <div key={obj.id} className={`p-3 rounded-xl border transition-all ${isSelected ? 'bg-white border-sky-300 shadow-sm ring-1 ring-sky-100' : 'bg-white/60 border-slate-200 hover:border-sky-200'}`}>
+                                                                    <div className="flex items-start gap-3">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={isClosed}
+                                                                            onClick={() => toggleObjective(obj.id)}
+                                                                            className={`mt-0.5 shrink-0 w-5 h-5 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-sky-500 border-sky-600 text-white' : 'bg-slate-100 border-slate-300'}`}
+                                                                        >
+                                                                            {isSelected && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                                                                        </button>
+                                                                        <div className="flex-1">
+                                                                            <p className={`text-xs font-medium leading-relaxed ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{obj.label}</p>
+
+                                                                            {/* Mini-estado si está seleccionado */}
+                                                                            {isSelected && (
+                                                                                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                                                                    {(['trabajado', 'avanzó', 'sin cambio', 'empeoró'] as const).map(status => (
+                                                                                        <button
+                                                                                            key={status}
+                                                                                            type="button"
+                                                                                            disabled={isClosed}
+                                                                                            onClick={() => toggleObjective(obj.id, status)}
+                                                                                            className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md transition-all border ${workObj?.sessionStatus === status ?
+                                                                                                (status === 'avanzó' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                                                                                    status === 'empeoró' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                                                                                                        status === 'sin cambio' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                                                                                                            'bg-sky-100 text-sky-800 border-sky-300') :
+                                                                                                'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                                                                                                }`}
+                                                                                        >
+                                                                                            {status}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. CHECK-IN Y EVA (REORGANIZADO 3.4) */}
+                            <AccordionSection
+                                id="sec-checkin"
+                                title="Check-In Clínico del Paciente"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>}
+                                defaultOpen={true}
+                                theme="emerald"
+                            >
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                    {/* EVA INITIAL */}
+<div className="col-span-1">
+                                                <EvaSlider
+                                                    label="Dolor al Ingresar (EVA)"
+                                                    value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
+                                                    onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
+                                                    disabled={isClosed}
+                                                />
+                                            </div>
+                                    
+                                    {/* META PARA HOY */}
+<div className="col-span-1">
+                                                <div className="flex justify-between items-end mb-1.5">
+                                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">
+                                                        Principal molestia o meta para hoy
+                                                        {availableObjectives.length === 0 && <span className="text-slate-400 font-medium normal-case ml-1">(Objetivo temporal)</span>}
+                                                        <span className="text-emerald-600 ml-1">*</span>
+                                                    </label>
+                                                </div>
+
+                                    {/* SIGNOS VITALES OPTATIVOS */}
+{/* SIGNOS VITALES OPTATIVOS (TRIAJE) */}
                                     <div className="md:col-span-2 mt-1">
                                         <Disclosure as="div" className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                             {({ open }) => (
@@ -1837,180 +1849,78 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </Disclosure>
                                     </div>
                                 </div>
-                            </AccordionSection>
-
-                            {/* --- BLOQUE A: CHECK-IN Y ESTADO INICIAL --- */}
-                            <div id="sec-esencial" className="scroll-mt-24 space-y-5">
-                                <div className="flex items-center gap-2 mb-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-200 text-emerald-800 font-black text-xs">A</span>
-                                    <h3 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Check-In y Estado Inicial</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                                    {/* READINESS TAGS (FASE 2.1.22) */}
-                                    <div className="md:col-span-2 space-y-4">
-
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Calidad de Sueño Anoche</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Pobre', 'Normal', 'Óptimo'].map(opt => (
-                                                    <button
-                                                        key={opt} type="button" disabled={isClosed}
-                                                        onClick={() => handleNestedChange("readiness", "sleepQuality", opt as any)}
-                                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${formData.readiness?.sleepQuality === opt ? 'bg-indigo-100 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                                                    >{opt}</button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Nivel de Estrés Actual</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {['Alto', 'Moderado', 'Bajo'].map(opt => (
-                                                    <button
-                                                        key={opt} type="button" disabled={isClosed}
-                                                        onClick={() => handleNestedChange("readiness", "stressLevel", opt as any)}
-                                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${formData.readiness?.stressLevel === opt ? 'bg-indigo-100 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                                                    >{opt}</button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Energía Disponibile</label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {['Baja', 'Normal', 'Alta'].map(opt => (
-                                                        <button
-                                                            key={opt} type="button" disabled={isClosed}
-                                                            onClick={() => handleNestedChange("readiness", "energy", opt as any)}
-                                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${formData.readiness?.energy === opt ? 'bg-indigo-100 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                                                        >{opt}</button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wide">Tareas de Casa Completadas</label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {['No Aplica', 'No', 'Parcial', 'Sí'].map(opt => (
-                                                        <button
-                                                            key={opt} type="button" disabled={isClosed}
-                                                            onClick={() => handleNestedChange("readiness", "homeTasksCompleted", opt as any)}
-                                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${formData.readiness?.homeTasksCompleted === opt ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
-                                                        >{opt}</button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
+                            </AccordionSection>
 
-                            {/* FASE 2.1.17: REGISTRO CLÍNICO GUIADO (4 PASOS) */}
-                            <AccordionSection
-                                id="sec-guiado"
-                                title="Registro Clínico de la Sesión (Guiado)"
-                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>}
-                                theme="emerald"
+                            {/* 3. DATOS ADMINISTRATIVOS MENORES */}
+<AccordionSection
+                                id="sec-admin"
+                                title="Datos Administrativos de Sesión"
+                                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                                defaultOpen={false}
+                                theme="slate"
                             >
-                                <div className="space-y-8 mt-2">
-                                    {/* BLOQUE A: CHECK-IN */}
-                                    <div className="bg-white border-2 border-emerald-100/50 rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-2 h-full bg-emerald-400"></div>
-                                        <h3 className="text-[12px] font-black uppercase tracking-widest text-emerald-800 mb-4 flex items-center gap-2">
-                                            <span className="bg-emerald-100 text-emerald-700 w-5 h-5 rounded flex items-center justify-center text-[10px]">A</span>
-                                            Check-in del Paciente
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-5">
-                                            <div className="col-span-1">
-                                                <EvaSlider
-                                                    label="Dolor al Ingresar (EVA)"
-                                                    value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
-                                                    onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
-                                                    disabled={isClosed}
-                                                />
-                                            </div>
-
-                                            {/* FASE 2.1.24: OBJETIVOS VIGENTES DEL PROCESO */}
-                                            {availableObjectives.length > 0 && (
-                                                <div className="col-span-1 bg-sky-50/50 p-4 rounded-xl border border-sky-100 shadow-sm">
-                                                    <label className="block text-[11px] font-bold text-sky-700 uppercase tracking-wide mb-3 flex items-center justify-between">
-                                                        <span>Objetivos Vigentes del Proceso</span>
-                                                        <span className="text-[9px] bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full border border-sky-200">Requerido</span>
-                                                    </label>
-                                                    <div className="flex flex-col gap-3">
-                                                        {availableObjectives.map(obj => {
-                                                            const isSelected = formData.selectedObjectiveIds?.includes(obj.id);
-                                                            const workObj = formData.objectiveWork?.find(w => w.id === obj.id);
-
-                                                            return (
-                                                                <div key={obj.id} className={`p-3 rounded-xl border transition-all ${isSelected ? 'bg-white border-sky-300 shadow-sm ring-1 ring-sky-100' : 'bg-white/60 border-slate-200 hover:border-sky-200'}`}>
-                                                                    <div className="flex items-start gap-3">
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={isClosed}
-                                                                            onClick={() => toggleObjective(obj.id)}
-                                                                            className={`mt-0.5 shrink-0 w-5 h-5 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-sky-500 border-sky-600 text-white' : 'bg-slate-100 border-slate-300'}`}
-                                                                        >
-                                                                            {isSelected && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
-                                                                        </button>
-                                                                        <div className="flex-1">
-                                                                            <p className={`text-xs font-medium leading-relaxed ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{obj.label}</p>
-
-                                                                            {/* Mini-estado si está seleccionado */}
-                                                                            {isSelected && (
-                                                                                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                                                                                    {(['trabajado', 'avanzó', 'sin cambio', 'empeoró'] as const).map(status => (
-                                                                                        <button
-                                                                                            key={status}
-                                                                                            type="button"
-                                                                                            disabled={isClosed}
-                                                                                            onClick={() => toggleObjective(obj.id, status)}
-                                                                                            className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md transition-all border ${workObj?.sessionStatus === status ?
-                                                                                                (status === 'avanzó' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                                                                                                    status === 'empeoró' ? 'bg-rose-100 text-rose-800 border-rose-300' :
-                                                                                                        status === 'sin cambio' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                                                                                                            'bg-sky-100 text-sky-800 border-sky-300') :
-                                                                                                'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
-                                                                                                }`}
-                                                                                        >
-                                                                                            {status}
-                                                                                        </button>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha y Hora Real <span className="text-rose-500">*</span></label>
+                                        <input
+                                            type="datetime-local"
+                                            value={toDateTimeLocal(formData.sessionAt as string)}
+                                            onChange={handleDateChange}
+                                            disabled={isClosed}
+                                            max={toDateTimeLocal(new Date().toISOString())}
+                                            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
+                                            required
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
+                                        
+                                        {/* PASO 3.2: Panel 36h Inline */}
+                                        {isLateDraft && !isClosed && (
+                                            <div className="mt-3 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl animate-in fade-in slide-in-from-top-2">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <ClockIcon className="w-5 h-5 text-amber-600" />
+                                                    <span className="text-sm font-black text-amber-800 uppercase tracking-wide">Registro Extemporáneo — Requiere Justificación</span>
                                                 </div>
-                                            )}
-
-                                            <div className="col-span-1">
-                                                <div className="flex justify-between items-end mb-1.5">
-                                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wide">
-                                                        Principal molestia o meta para hoy
-                                                        {availableObjectives.length === 0 && <span className="text-slate-400 font-medium normal-case ml-1">(Objetivo temporal)</span>}
-                                                        <span className="text-emerald-600 ml-1">*</span>
-                                                    </label>
+                                                <p className="text-[10px] text-amber-700 mb-3 font-medium">
+                                                    Esta sesión fue registrada con más de 36 horas de diferencia a la hora real de atención.
+                                                    El motivo quedará permanentemente en el historial.
+                                                </p>
+                                                <select value={lateCategory} onChange={e => setLateCategory(e.target.value)}
+                                                    className="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs mb-2 bg-white text-slate-800 font-semibold focus:ring-2 focus:ring-amber-400 outline-none">
+                                                    <option value="">-- Seleccionar causal --</option>
+                                                    <option value="Fallo infraestructura">Fallo de Infraestructura (Luz/Internet)</option>
+                                                    <option value="Traspaso desde papel">Digitalización desde registro en papel</option>
+                                                    <option value="Emergencia clínica">Emergencia médica durante el turno</option>
+                                                    <option value="Olvido administrativo">Reconocimiento: Olvido Administrativo</option>
+                                                    <option value="Otro">Otro motivo — Detallar abajo</option>
+                                                </select>
+                                                <textarea value={lateText} onChange={e => setLateText(e.target.value)} rows={2}
+                                                    placeholder="Explicación detallada (mínimo 20 caracteres)..."
+                                                    className="w-full border border-amber-300 rounded-xl px-3 py-2 text-xs resize-none bg-white text-slate-800 font-medium focus:ring-2 focus:ring-amber-400 outline-none" />
+                                                <div className="text-right text-[10px] text-amber-600 font-bold mt-1">
+                                                    {lateText.length}/20 caracteres mínimos
                                                 </div>
-                                                <textarea
-                                                    name="sessionGoal"
-                                                    value={formData.sessionGoal}
-                                                    onChange={handleChange}
-                                                    disabled={isClosed}
-                                                    rows={2}
-                                                    placeholder="Ej: Viene con molestia en rodilla derecha 6/10. Meta: Disminuir dolor y reactivar propiocepción básica..."
-                                                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none disabled:bg-slate-100 transition-all font-medium text-slate-700 shadow-inner"
-                                                />
                                             </div>
-                                        </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Clínico / Interno</label>
+                                        <input
+                                            type="text"
+                                            disabled
+                                            value={initialData?.autorName || user?.email || "Cargando..."}
+                                            className="w-full border border-slate-200 bg-slate-100 rounded-xl px-4 py-3 text-sm text-slate-500 cursor-not-allowed font-medium shadow-inner"
+                                        />
                                     </div>
                                 </div>
                             </AccordionSection>
+
+                            {/* 1. SECCIÓN ADMINISTRATIVA */}
+                            
+
+
+
+                            
                         </div> {/* Fin Envoltura Esencial A */}
 
                         {/* BLOQUE B: QUÉ SE HIZO (Intervenciones + Ejercicios) */}
@@ -2122,25 +2032,32 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     {!isClosed && (
                                         <div className="mt-4 flex flex-col gap-3">
                                             {/* Quick Add por línea */}
-                                            <form onSubmit={processQuickAdd} className="flex flex-col md:flex-row gap-2 w-full bg-slate-900/50 p-2 md:p-1 rounded-2xl border border-indigo-900/40 focus-within:border-indigo-500/80 transition-all shadow-inner">
+                                            <div className="flex flex-col md:flex-row gap-2 w-full bg-slate-900/50 p-2 md:p-1 rounded-2xl border border-indigo-900/40 focus-within:border-indigo-500/80 transition-all shadow-inner" role="group">
                                                 <div className="flex-1 relative flex items-center">
                                                     <SparklesIcon className="w-5 h-5 text-indigo-400 absolute left-3" />
                                                     <input
                                                         type="text"
                                                         value={quickAddText}
                                                         onChange={e => setQuickAddText(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                if (quickAddText.trim()) processQuickAdd();
+                                                            }
+                                                        }}
                                                         placeholder="Pega o escribe. Ej: Sentadilla Búlgara 3x10 20kg RIR 2 descanso 90"
                                                         className="w-full bg-transparent border-none pl-10 pr-4 h-12 text-[13px] md:text-sm font-medium text-white outline-none placeholder:text-indigo-400/50"
                                                     />
                                                 </div>
                                                 <button
-                                                    type="submit"
+                                                    type="button"
+                                                    onClick={processQuickAdd}
                                                     disabled={!quickAddText.trim()}
                                                     className="md:w-36 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-700 text-white font-bold h-10 md:h-12 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md border border-indigo-500"
                                                 >
                                                     <PlusIcon className="w-4 h-4" /> Inteligente
                                                 </button>
-                                            </form>
+                                            </div>
 
                                             {/* Opciones clásicas */}
                                             <div className="flex flex-col md:flex-row gap-3">
@@ -2166,51 +2083,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 <h3 className="text-sm font-black text-amber-900 uppercase tracking-widest">Cierre y Planificación</h3>
                             </div>
 
-                            {/* GEMINI AI ASSISTANT PANEL */}
-                            {!isClosed && formData.sessionStatus === 'Realizada' && (
-                                <div className="bg-gradient-to-r from-indigo-950 to-blue-950 p-4 md:p-5 rounded-2xl border border-indigo-500/30 shadow-sm relative overflow-hidden mb-6">
-                                    <div className="absolute top-0 right-0 -mr-6 -mt-6 opacity-10 blur-xl">
-                                        {getGeminiIcon()}
-                                    </div>
-                                    <div className="flex items-center gap-2 mb-3 z-10 relative">
-                                        <div className="text-blue-400">{getGeminiIcon()}</div>
-                                        <h4 className="text-white font-bold text-sm">Asistente Clínico (Gemini)</h4>
-                                        <span className="bg-blue-500/20 text-blue-300 text-[10px] uppercase font-black px-2 py-0.5 rounded border border-blue-500/30">BETA</span>
-                                    </div>
-                                    <p className="text-sm text-indigo-200/80 mb-4 font-medium leading-relaxed max-w-2xl">
-                                        Genera automáticamente borradores de alta calidad analizando tu prescripción actual, dolores y variables de sesión. Los borradores sobreescriben los campos pero puedes editarlos manualmente después.
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 z-10 relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleGeminiSuggest('generarObjetivoSesion')}
-                                            disabled={aiLoading !== null}
-                                            className="bg-slate-900/60 hover:bg-indigo-600 outline outline-1 outline-indigo-500/50 hover:outline-indigo-400 text-indigo-100 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative group"
-                                        >
-                                            {aiLoading === 'generarObjetivoSesion' ? <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-white rounded-full animate-spin"></div> : <SparklesIcon className="w-3.5 h-3.5" />}
-                                            1. Sugerir Objetivo de Sesión (Hoy)
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleGeminiSuggest('generarPlanProximaSesion')}
-                                            disabled={aiLoading !== null}
-                                            className="bg-slate-900/60 hover:bg-indigo-600 outline outline-1 outline-indigo-500/50 hover:outline-indigo-400 text-indigo-100 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative"
-                                        >
-                                            {aiLoading === 'generarPlanProximaSesion' ? <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-white rounded-full animate-spin"></div> : <SparklesIcon className="w-3.5 h-3.5" />}
-                                            2. Sugerir Plan Próxima Sesión
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleGeminiSuggest('generarHandoffInterColega')}
-                                            disabled={aiLoading !== null}
-                                            className="bg-slate-900/60 hover:bg-slate-800 outline outline-1 outline-slate-700 hover:outline-slate-500 text-slate-300 font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1.5 transition-all w-full md:w-auto overflow-hidden relative"
-                                        >
-                                            {aiLoading === 'generarHandoffInterColega' ? <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-white rounded-full animate-spin"></div> : <DocumentDuplicateIcon className="w-3.5 h-3.5" />}
-                                            3. Hand-off (Notas Privadas)
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+
 
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
 
@@ -2432,69 +2305,6 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 </div>{/* Fin padding body */}
             </div>{/* Fin scroll container */}
 
-            {/* MODAL / PANTALLA TRAMPA DE CIERRE TARDÍO (Al intentar cerrar >36h) */}
-            {
-                isAttemptingClose && requiresLateReason && (
-                    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6 pb-24 md:pb-6">
-                        <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-amber-100 text-amber-600 p-3 rounded-2xl">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-xl text-slate-800">Cierre Extemporáneo</h4>
-                                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Protocolo de Auditoría Requerido</p>
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-slate-600 font-medium mb-6 leading-relaxed">
-                                Ha expirado la regla hospitalaria de <b>36 horas</b> desde la fecha médica indicada de la sesión.
-                                Para cerrar esta ficha de forma permanente e inmutable, firme y declare el motivo del atraso.
-                            </p>
-
-                            <div className="space-y-4 mb-8">
-                                <select
-                                    value={lateCategory}
-                                    onChange={(e) => setLateCategory(e.target.value)}
-                                    className="w-full p-4 text-sm font-semibold border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all"
-                                >
-                                    <option value="" disabled>Seleccione Causal Directa...</option>
-                                    <option value="Corte de Energía/Internet">Fallo de Infraestructura (Luz/Internet)</option>
-                                    <option value="Traspaso desde Papel">Retraso por Traspaso desde Ficha de Papel</option>
-                                    <option value="Emergencia Clínica">Extensión por Emergencia Médica en Box</option>
-                                    <option value="Error de Sistema">Fallo temporal de la Plataforma KinePoli</option>
-                                    <option value="Olvido/Omisión Administrativa">Reconocimiento Culpable: Olvido Administrativo</option>
-                                    <option value="Otro">Otro motivo inusual (Detallar debajo)</option>
-                                </select>
-
-                                <textarea
-                                    value={lateText}
-                                    onChange={(e) => setLateText(e.target.value)}
-                                    placeholder="Justificación extendida obligatoria (Min. 5 letras)..."
-                                    className="w-full p-4 text-sm font-medium border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-slate-50 text-slate-800 outline-none transition-all resize-none min-h-[120px]"
-                                />
-                            </div>
-
-                            <div className="flex flex-col-reverse md:flex-row gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAttemptingClose(false)}
-                                    className="w-full py-4 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 rounded-2xl border-2 border-slate-200 transition-colors"
-                                >
-                                    Cancelar (Dejar Abierto)
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={confirmLateClose}
-                                    className="w-full py-4 text-sm font-black text-white bg-amber-600 hover:bg-amber-700 rounded-2xl shadow-lg shadow-amber-600/30 transition-all active:scale-[0.98]"
-                                >
-                                    Firmar y Cerrar Evolución
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
 
             {/* MODAL COPIA SELECTIVA (FASE 2.1.25) */}
             {showCopyModal && copyCandidates && (
