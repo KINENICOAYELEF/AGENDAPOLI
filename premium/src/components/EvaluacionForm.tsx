@@ -522,6 +522,24 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const fd = payload as EvaluacionReevaluacion;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
 
+                // FASE 2.2.4: Actualizar semáforo si fue modificado (Master Traffic Light)
+                const getMasterTL = (f: any) => {
+                    const norm = (s: string) => (s || '').trim().toLowerCase();
+                    const s = f.autoSynthesis?.trafficLight || 'Verde';
+                    
+                    const iRatio = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+                    const i = (iRatio === 'alta') ? 'Rojo' : 
+                              (iRatio === 'media' || iRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
+                    const cRatio = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+                    const c = (cRatio === 'baja') ? 'Rojo' :
+                              (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
+                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                };
+                const finalTL = getMasterTL(fd);
+
                 // Asegurarse que se use un nested object para que merge lo resuelva correctamente y no cree keys literales con puntos
                 const updatePayloadNested: any = {
                     caseSnapshot: {
