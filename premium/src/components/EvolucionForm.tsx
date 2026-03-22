@@ -301,7 +301,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     // Buscar última cerrada (aceptar ambos formatos de status)
                     const closedEvols = evolucionesAnteriores
                         .filter(d => d.status === 'CLOSED' || (d as any).estado === 'CERRADA')
-                        .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                        .sort((a, b) => {
+                            const dateA = new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime();
+                            const dateB = new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime();
+                            return dateB - dateA;
+                        });
                     const last = closedEvols.find(d => d.id !== initialData?.id) || closedEvols[0];
                     if (last && last.id !== initialData?.id) {
                         setLastClosedEvol(last);
@@ -331,7 +335,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     const sortedDocs = snap.docs
                         .map(d => ({ id: d.id, ...d.data() } as Evolucion))
                         .filter(d => d.status === 'CLOSED' || (d as any).estado === 'CERRADA')
-                        .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                        .sort((a, b) => new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime() - new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime());
 
                     const data = sortedDocs[0];
                     if (data && data.id !== initialData?.id) {
@@ -560,7 +564,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             const lastEvalQ = query(evalsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"));
                             const lastEvalSnap = await getDocs(lastEvalQ);
                             if (!lastEvalSnap.empty) {
-                                const sorted = lastEvalSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                                const sorted = lastEvalSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime() - new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime());
                                 const lastEval = sorted[0] as any;
                                 const evalObjectives = lastEval?.p4?.planMaestro?.fases?.flatMap((f: any) => (f.intervenciones || []).map((iv: any) => ({
                                     id: `eval_${lastEval.id}_${iv.id || Math.random()}`,
@@ -767,7 +771,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const candidates = querySnapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() } as any))
                 .filter(d => d.status === 'CLOSED' || d.estado === 'CERRADA')
-                .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                .sort((a, b) => new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime() - new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime());
 
             let lastEvol: any = null;
             if (candidates.length > 0) {
@@ -1820,6 +1824,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                         <span className="text-emerald-600 ml-1">*</span>
                                                     </label>
                                                 </div>
+                                                <textarea
+                                                    disabled={isClosed}
+                                                    value={formData.sessionGoal || ""}
+                                                    onChange={e => setFormData(p => ({ ...p, sessionGoal: e.target.value }))}
+                                                    placeholder="Ej: Dolor al elevar el brazo, o meta: mejorar propiocepción hoy..."
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 shadow-sm transition-all resize-none"
+                                                    rows={3}
+                                                />
+                                            </div>
 
                                     {/* SIGNOS VITALES OPTATIVOS */}
 {/* SIGNOS VITALES OPTATIVOS (TRIAJE) */}
@@ -1915,7 +1928,6 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </Disclosure>
                                     </div>
                                 </div>
-                            </div>
                             </AccordionSection>
 
                             {/* 3. DATOS ADMINISTRATIVOS MENORES */}
