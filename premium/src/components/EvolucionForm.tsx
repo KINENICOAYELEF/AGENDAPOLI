@@ -1501,41 +1501,62 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     </div>
                                 </div>
                             </div>
-                        )}                        {/* --- FASE 2.1.29: BANNER DE CONTINUIDAD --- */}
+                        )}                        {/* --- FASE 2.1.29: REDISEÑO BANNER DE CONTINUIDAD --- */}
                         {lastClosedEvol ? (
-                            <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 p-5 rounded-2xl border border-indigo-500/30 shadow-md animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden">
-                                {/* Decoración de fondo */}
-                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+                            <div className="bg-white p-5 md:p-6 rounded-2xl border border-indigo-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 animate-in fade-in slide-in-from-top-4 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-2xl"></div>
+                                <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full blur-2xl opacity-70 group-hover:scale-110 transition-transform"></div>
 
-                                <div className="flex items-center gap-2 mb-4 relative z-10">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-black text-xs border border-indigo-400/30">
-                                        <ClockIcon className="w-3.5 h-3.5" />
-                                    </span>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Última Sesión Cerrada</h3>
-                                    <span className="ml-auto text-xs font-medium text-indigo-300">
-                                        hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 relative z-10 border-b border-slate-100 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-indigo-100 p-2.5 rounded-xl text-indigo-600">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-slate-800 tracking-tight">ÚLTIMA SESIÓN CERRADA</h3>
+                                            <p className="text-xs font-semibold text-indigo-500 mt-0.5">Continuidad Clínica del Paciente</p>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                                        Hace {Math.floor(getDifferenceInHours(lastClosedEvol.sessionAt, new Date().toISOString()) / 24)} días
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs relative z-10">
-                                    <div className="bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
-                                        <h4 className="text-[10px] font-bold text-indigo-400 mb-1.5 uppercase">Plan y Objetivos Previos</h4>
-                                        <p className="text-slate-200 line-clamp-2">{lastClosedEvol.sessionGoal || "Sin objetivo declarado"}</p>
-                                        <p className="text-indigo-200 mt-1 italic line-clamp-1">{lastClosedEvol.nextPlan || "Sin plan pautado"}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                                    <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors">
+                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-indigo-800 mb-2.5 uppercase tracking-wide">
+                                            <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                                            El paciente requirió
+                                        </h4>
+                                        <p className="text-sm font-medium text-slate-700 leading-relaxed mb-2">{lastClosedEvol.sessionGoal || "Sin requerimiento registrado"}</p>
+                                        <p className="text-xs font-semibold text-indigo-600 italic bg-indigo-100/50 p-2 rounded-lg inline-block w-full">Plan/Proyección: {lastClosedEvol.nextPlan || "Sin plan pautado"}</p>
                                     </div>
-                                    <div className="bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
-                                        <h4 className="text-[10px] font-bold text-rose-400 mb-1.5 uppercase">Métricas Clínicas (EVA)</h4>
-                                        <div className="flex justify-between items-center text-slate-200">
-                                            <span>Inicio: <strong className="text-white">{lastClosedEvol.pain?.evaStart || "-"}</strong></span>
-                                            <svg className="w-3 h-3 text-slate-500 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                                            <span>Salida: <strong className="text-white">{lastClosedEvol.pain?.evaEnd || "-"}</strong></span>
+                                    <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100/50 hover:bg-rose-50 transition-colors">
+                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-rose-800 mb-2.5 uppercase tracking-wide">
+                                            <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                            Variación del Dolor (EVA)
+                                        </h4>
+                                        <div className="flex items-center justify-between text-sm py-2">
+                                            <div className="text-center">
+                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1">CÓMO LLEGÓ</span>
+                                                <span className="font-black text-slate-800 text-lg px-4 py-1.5 bg-white rounded-lg shadow-sm border border-rose-100">{lastClosedEvol.pain?.evaStart || "-"}</span>
+                                            </div>
+                                            <svg className="w-6 h-6 text-rose-300 mx-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                            <div className="text-center">
+                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1">CÓMO SE FUE</span>
+                                                <span className="font-black text-slate-800 text-lg px-4 py-1.5 bg-white rounded-lg shadow-sm border border-rose-100">{lastClosedEvol.pain?.evaEnd || "-"}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="md:col-span-2 bg-slate-900/50 p-3 rounded-xl border border-indigo-800/40">
-                                        <h4 className="text-[10px] font-bold text-amber-400 mb-1.5 uppercase">Hand-off (Traspaso Colega)</h4>
-                                        <p className="text-slate-200 whitespace-pre-wrap">{lastClosedEvol.handoffText || "No dejó notas de traspaso."}</p>
-                                    </div>
+                                    {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 && (
+                                        <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
+                                            <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
+                                                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                                                Hand-off (Traspaso Clínico Colega)
+                                            </h4>
+                                            <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">{lastClosedEvol.handoffText}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -1560,36 +1581,27 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             </div>
                         )}
 
-                        {/* --- NOTAS DE TRASPASO DIRECTAS (IMPERDIBLES) --- */}
-                        {lastClosedEvol?.handoffText && lastClosedEvol.handoffText.length > 5 && (
-                            <div className="bg-amber-500 text-slate-900 p-5 rounded-2xl shadow-xl mb-4 border-2 border-amber-600 animate-pulse-subtle">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-900" />
-                                    <h4 className="text-[11px] font-black uppercase tracking-tighter text-amber-900">Mensaje Crítico del Colega Anterior</h4>
-                                </div>
-                                <p className="text-sm font-bold italic leading-relaxed">
-                                    "{lastClosedEvol.handoffText}"
-                                </p>
-                            </div>
-                        )}
-
-                        {/* --- FASE 2.2.4: BANNER PROCESO ACTIVO (Semaforo, Consideraciones, Baselines) --- */}
-                        {procesoContext.caseSnapshot ? (
-                            <div className="bg-white p-4 lg:p-5 rounded-2xl border-l-4 border-l-indigo-500 border-y border-r border-slate-200 shadow-sm relative mb-2 animate-in fade-in slide-in-from-bottom-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-lg">📋</span>
-                                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Contexto del Caso Activo</h3>
-                                    {(procesoContext.caseSnapshot.trafficLight || (procesoContext.caseSnapshot as any).irritabilidadTexto) && (
+                        {/* --- FASE 2.2.4: BANNER PROCESO ACTIVO --- */}
+                        {procesoContext.caseSnapshot || procesoContext.motivoIngresoLibre || procesoContext.evaluacionesStr ? (
+                            <div className="bg-white p-5 lg:p-6 rounded-2xl border-l-[6px] border-l-emerald-500 border-y border-r border-slate-200 shadow-sm relative mb-4 animate-in fade-in slide-in-from-bottom-4 group">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="bg-emerald-50 p-2.5 rounded-xl text-emerald-600">
+                                        <span className="text-xl">📋</span>
+                                    </div>
+                                    <h3 className="text-base font-black text-slate-800 uppercase tracking-widest">Contexto del Caso Activo</h3>
+                                    
+                                    {/* SEMAFORO (Si lo hay) */}
+                                    {procesoContext.caseSnapshot && (procesoContext.caseSnapshot.trafficLight || (procesoContext.caseSnapshot as any).irritabilidadTexto) && (
                                         <div className="ml-auto flex flex-col items-end">
-                                            <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-extrabold ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                                            <span className={`px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider font-extrabold shadow-sm ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
                                                 procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
                                                     'bg-emerald-100 text-emerald-700 border border-emerald-200'
                                                 }`}>
-                                                Semáforo: {procesoContext.caseSnapshot.trafficLight}
+                                                🚦 Semáforo: {procesoContext.caseSnapshot.trafficLight}
                                             </span>
-                                            <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
+                                            <span className="text-[9px] font-bold text-slate-500 mt-1.5 uppercase tracking-tighter">
                                                 {(procesoContext.caseSnapshot as any).irritabilidadTexto 
-                                                    ? `Irrit: ${(procesoContext.caseSnapshot as any).irritabilidadTexto} | Carga: ${(procesoContext.caseSnapshot as any).toleranciaCargaTexto || 'N/A'}`
+                                                    ? `Irritabilidad: ${(procesoContext.caseSnapshot as any).irritabilidadTexto} | Carga: ${(procesoContext.caseSnapshot as any).toleranciaCargaTexto || 'N/A'}`
                                                     : procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'Alta irritabilidad (Precaución)' :
                                                       procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'Irritabilidad media (Cautela)' :
                                                       'Baja irritabilidad (Carga progresiva)'}
@@ -1597,30 +1609,58 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </div>
                                     )}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                    {procesoContext.caseSnapshot.baselineComparable && (
-                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Signo Comparable (Baseline)</span>
-                                            <span className="text-slate-700 font-medium">
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {procesoContext.caseSnapshot && procesoContext.caseSnapshot.baselineComparable && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 hover:border-slate-300 transition-colors">
+                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                                                Signo Comparable (Baseline)
+                                            </span>
+                                            <span className="text-slate-700 font-bold text-sm">
                                                 {typeof procesoContext.caseSnapshot.baselineComparable === 'string'
                                                     ? procesoContext.caseSnapshot.baselineComparable
                                                     : (procesoContext.caseSnapshot.baselineComparable.name || procesoContext.caseSnapshot.baselineComparable.result || 'Sin dato registrado')}
                                             </span>
                                         </div>
                                     )}
-                                    {procesoContext.caseSnapshot.lastRetest && (
-                                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">Último Retest (Reevaluación)</span>
-                                            <span className="text-slate-700 font-medium">{procesoContext.caseSnapshot.lastRetest}</span>
+                                    {procesoContext.caseSnapshot && procesoContext.caseSnapshot.lastRetest && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 hover:border-slate-300 transition-colors">
+                                            <span className="block font-black text-slate-500 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                                Último Retest (Reevaluación)
+                                            </span>
+                                            <span className="text-slate-700 font-bold text-sm">{procesoContext.caseSnapshot.lastRetest}</span>
                                         </div>
                                     )}
-                                    {(procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis) && (
-                                        <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/50 md:col-span-2">
-                                            <span className="block font-black text-orange-600 text-[10px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                                                <ExclamationCircleIcon className="w-4 h-4" />
+
+                                    {/* DIAGNOSTICO NARRATIVO O CONTEXTO LEGACY */}
+                                    {(procesoContext.caseSnapshot && (procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis)) ? (
+                                        <div className="bg-orange-50/70 p-4 rounded-xl border border-orange-200/60 md:col-span-full shadow-sm">
+                                            <span className="block font-black text-orange-700 text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                                <ExclamationCircleIcon className="w-4.5 h-4.5" />
                                                 Diagnóstico y Resumen Clínico
                                             </span>
-                                            <p className="text-orange-950/80 font-medium ml-5">{procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis}</p>
+                                            <p className="text-orange-950/80 font-semibold text-sm ml-6 leading-relaxed">
+                                                {procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-200/60 md:col-span-full shadow-sm">
+                                            <span className="block font-black text-blue-700 text-[11px] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Motivo de Ingreso Registrado
+                                            </span>
+                                            <p className="text-blue-950/80 font-semibold text-sm ml-6 leading-relaxed mb-3">
+                                                {procesoContext.motivoIngresoLibre || "Ficha original sin resumen narrativo estructurado."}
+                                            </p>
+                                            
+                                            {procesoContext.evaluacionesStr && (
+                                                <div className="ml-6 mt-3 bg-white/60 p-3 rounded-lg border border-blue-100/50">
+                                                    <span className="block font-black text-slate-500 text-[9px] uppercase tracking-wider mb-1">Historial de Evaluaciones:</span>
+                                                    <p className="text-slate-600 text-xs font-medium italic">{procesoContext.evaluacionesStr}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -1631,7 +1671,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     <ExclamationCircleIcon className="w-6 h-6 text-slate-400" />
                                 </div>
                                 <p className="text-xs text-slate-500 font-bold max-w-xs">
-                                    📌 No hay resumen de diagnóstico o signo comparable registrado en la Evaluación Inicial de este proceso. Asegúrese de completar la síntesis en la evaluación.
+                                    📌 No existen antecedentes grabados en este caso (Paciente Nuevo).
                                 </p>
                             </div>
                         )}
