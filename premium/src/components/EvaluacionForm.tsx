@@ -418,6 +418,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const versionId = `v_${Date.now()}`;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
                 
+                // FASE 2.2.4: Master Traffic Light (Agregado de Seguridad, Irritabilidad y Carga)
+                const getMasterTL = (f: any) => {
+                    const s = f.autoSynthesis?.trafficLight || 'Verde';
+                    const i = f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Alta' ? 'Rojo' : 
+                              f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Media' ? 'Amarillo' : 'Verde';
+                    const c = (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Baja') ? 'Rojo' :
+                              (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Media') ? 'Amarillo' : 'Verde';
+                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                };
+                const finalTL = getMasterTL(fd);
+
                 // 1. Sincronizar estado del Proceso
                 const updatePayload = sanitizeForFirestoreDeep({
                     estado: 'ACTIVO',
@@ -430,13 +442,14 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         consideracionesClinicas: fd.p4_plan_structured?.pronostico_biopsicosocial?.justificacion_clinica_integral || []
                     },
                     loadManagementVigente: {
-                        trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
+                        trafficLight: finalTL,
                         rules: []
                     },
                     caseSnapshot: { 
                         summary: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
+                        diagnosticoNarrativo: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
-                        trafficLight: fd.autoSynthesis?.trafficLight || 'Verde',
+                        trafficLight: finalTL,
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
@@ -512,11 +525,20 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     updatePayload.diagnosisVigente = (fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative;
                 }
 
-                // FASE 2.2.4: Actualizar semáforo si fue modificado
-                if ((fd as any).autoSynthesis?.trafficLight) {
-                    updatePayload["loadManagementVigente.trafficLight"] = (fd as any).autoSynthesis.trafficLight;
-                    updatePayload["caseSnapshot.trafficLight"] = (fd as any).autoSynthesis.trafficLight;
-                }
+                // FASE 2.2.4: Actualizar semáforo si fue modificado (Master Traffic Light)
+                const getMasterTL = (f: any) => {
+                    const s = f.autoSynthesis?.trafficLight || 'Verde';
+                    const i = f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Alta' ? 'Rojo' : 
+                              f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Media' ? 'Amarillo' : 'Verde';
+                    const c = (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Baja') ? 'Rojo' :
+                              (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Media') ? 'Amarillo' : 'Verde';
+                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+                    return [s, i, c].sort((a, b) => w[b] - w[a])[0];
+                };
+
+                const finalTL = getMasterTL(fd);
+                updatePayload["loadManagementVigente.trafficLight"] = finalTL;
+                updatePayload["caseSnapshot.trafficLight"] = finalTL;
 
                 // FASE 2.2.4.1: Actualizar baseline si el clínico marcó que cambió el signo comparable
                 if (fd.reevaluation?.changedComparable && fd.reevaluation?.retest?.comparableSignResult) {

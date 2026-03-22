@@ -199,8 +199,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     const [loading, setLoading] = useState(false);
 
-    // FASE 2.1.15: Clave Única de Borrador Local
-    const draftKey = `evoDraft_${initialData?.id || 'new_' + usuariaId}`;
+    // FASE 2.1.15: Clave Única de Borrador Local (Agregado procesoId para evitar colisiones entre sesiones nuevas)
+    const draftKey = `evoDraft_${initialData?.id || 'new_' + (procesoId || '') + '_' + usuariaId}`;
 
     // Estado interno del formulario (Copia Inicial mode Pro + LocalStorage recovery)
     const [formData, setFormData] = useState<Partial<Evolucion>>(() => {
@@ -209,7 +209,21 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             try {
                 const localDraft = localStorage.getItem(draftKey);
                 if (localDraft) {
-                    return { ...basePro, ...JSON.parse(localDraft) };
+                    const parsed = JSON.parse(localDraft);
+                    // FASE 9: Limpieza de "Borrador Fantasma" para sesiones nuevas
+                    // Si el borrador no tiene ID y nosotros tampoco, es un residuo de la sesión anterior
+                    if (!initialData?.id && !parsed.id) {
+                        return { 
+                            ...basePro, 
+                            sessionNumber: basePro.sessionNumber, // Mantener el calculado por el map
+                            selectedObjectiveIds: [],
+                            selectedObjectivesSnapshot: [],
+                            outcomesSnapshot: { groc: 0, sane: 0 },
+                            exercises: [],
+                            interventions: { ...basePro.interventions, techniques: [] }
+                        };
+                    }
+                    return { ...basePro, ...parsed };
                 }
             } catch (e) {
                 console.warn("No se pudo cargar el borrador local", e);
@@ -279,7 +293,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             try {
                 const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
                 // 1. Contar sesiones totales del proceso para asignar el Correlativo actual
-                if (procesoId && !formData.sessionNumber) {
+                if (procesoId && (!formData.sessionNumber || !initialData?.id)) {
                     const countQuery = query(evolsRef, where("procesoId", "==", procesoId));
                     const countSnap = await getDocs(countQuery);
                     // Si ya tenía ID, restamos 1 para no contarse doble
@@ -933,7 +947,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             if (willClose) {
                 try {
                     localStorage.removeItem(draftKey);
-                    localStorage.removeItem(`evoDraft_new_${usuariaId}`); // Por si cambió de draftKey temporal a targetId
+                    // Limpieza legacy y de emergencia para evitar fugas entre procesos
+                    localStorage.removeItem(`evoDraft_new_${usuariaId}`);
+                    if (procesoId) localStorage.removeItem(`evoDraft_new_${procesoId}_${usuariaId}`);
                 } catch (e) { }
 
                 // FASE 2.2.6: Despachar Outcomes "on-the-fly" a subcolección dedicada
@@ -1568,13 +1584,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             <span className="text-slate-700 font-medium">{procesoContext.caseSnapshot.lastRetest}</span>
                                         </div>
                                     )}
-                                    {(procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.p4?.narrativeDiagnosis) && (
+                                    {(procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis) && (
                                         <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/50 md:col-span-2">
                                             <span className="block font-black text-orange-600 text-[10px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                                                 <ExclamationCircleIcon className="w-4 h-4" />
-                                                Diagnóstico Narrativo (Evaluación)
+                                                Diagnóstico y Resumen Clínico
                                             </span>
-                                            <p className="text-orange-950/80 font-medium ml-5">{procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.p4?.narrativeDiagnosis}</p>
+                                            <p className="text-orange-950/80 font-medium ml-5">{procesoContext.caseSnapshot.diagnosticoNarrativo || procesoContext.caseSnapshot.summary || procesoContext.caseSnapshot.p4?.narrativeDiagnosis}</p>
                                         </div>
                                     )}
                                 </div>
