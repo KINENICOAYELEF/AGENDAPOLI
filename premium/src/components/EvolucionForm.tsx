@@ -289,13 +289,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 // 2. Traer la última cerrada del usuario o proceso para Handoff Continuidad
                 let qQuery;
                 if (procesoId) {
-                    qQuery = query(evolsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"), orderBy("sessionAt", "desc"), limit(1));
+                    qQuery = query(evolsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"));
                 } else {
-                    qQuery = query(evolsRef, where("usuariaId", "==", usuariaId), where("status", "==", "CLOSED"), orderBy("sessionAt", "desc"), limit(1));
+                    qQuery = query(evolsRef, where("usuariaId", "==", usuariaId), where("status", "==", "CLOSED"));
                 }
                 const snap = await getDocs(qQuery);
                 if (!snap.empty) {
-                    const data = snap.docs[0].data() as Evolucion;
+                    // Ordenar en memoria para evitar requerir un índice compuesto de Firestore (procesoId + status + sessionAt)
+                    const sortedDocs = snap.docs
+                        .map(d => ({ id: d.id, ...d.data() } as Evolucion))
+                        .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+
+                    const data = sortedDocs[0];
                     if (data.id !== initialData?.id) {
                         setLastClosedEvol(data);
                     }
@@ -484,11 +489,16 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                     // FASE 2.2.4: Inyección automática de pre-requisitos si es Evolución Nueva
                     if (!isClosed && !isEditMode) {
+                        const rawConsiderations = procesoData.flags?.consideracionesClinicas;
+                        const considerationsArray = Array.isArray(rawConsiderations) 
+                            ? rawConsiderations 
+                            : (typeof rawConsiderations === 'string' ? [rawConsiderations] : []);
+
                         setFormData((prev: any) => ({
                             ...prev,
                             evaluationIndexId: prev.evaluationIndexId || procesoData.activeEvaluationIndexId,
                             loadTrafficLightAtSession: prev.loadTrafficLightAtSession || procesoData.loadManagementVigente?.trafficLight,
-                            considerationsAtSession: prev.considerationsAtSession?.length ? prev.considerationsAtSession : (procesoData.flags?.consideracionesClinicas || [])
+                            considerationsAtSession: prev.considerationsAtSession?.length ? prev.considerationsAtSession : considerationsArray
                         }));
                     }
 
@@ -1600,17 +1610,21 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             <span className="text-slate-700 font-medium">{procesoContext.caseSnapshot.lastRetest}</span>
                                         </div>
                                     )}
-                                    {procesoContext.flags?.consideracionesClinicas?.length > 0 && (
+                                    {procesoContext.flags?.consideracionesClinicas && (
                                         <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/50 md:col-span-2">
                                             <span className="block font-black text-orange-600 text-[10px] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                                                 <ExclamationCircleIcon className="w-4 h-4" />
                                                 Consideraciones Clínicas
                                             </span>
-                                            <ul className="list-disc pl-5 text-orange-950/80 space-y-1 font-medium">
-                                                {procesoContext.flags.consideracionesClinicas.map((c: string, i: number) => (
-                                                    <li key={i}>{c}</li>
-                                                ))}
-                                            </ul>
+                                            {Array.isArray(procesoContext.flags.consideracionesClinicas) ? (
+                                                <ul className="list-disc pl-5 text-orange-950/80 space-y-1 font-medium">
+                                                    {procesoContext.flags.consideracionesClinicas.map((c: string, i: number) => (
+                                                        <li key={i}>{c}</li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-orange-950/80 font-medium ml-5">{procesoContext.flags.consideracionesClinicas}</p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
