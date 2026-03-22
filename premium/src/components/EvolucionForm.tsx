@@ -1190,7 +1190,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             // Faltantes de cierre normal
             if (!hasValidStart) missingFields.push("EVA Inicio");
             if (!hasValidEnd) missingFields.push("EVA Salida");
-            if (!formData.sessionGoal?.trim()) missingFields.push("Objetivo de Sesión");
+            if (!formData.sessionGoal?.trim()) missingFields.push("Molestia o meta para hoy");
             if (!formData.nextPlan?.trim()) missingFields.push("Plan Próximo");
 
             const hasEmptyNames = formData.exercises?.some((ex: any) => !ex.name.trim());

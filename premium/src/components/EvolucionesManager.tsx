@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, limit, getDocs, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { Evolucion } from "@/types/clinica";
@@ -22,7 +22,6 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
     // Listado Firebase
     const [evoluciones, setEvoluciones] = useState<Evolucion[]>([]);
     const [loadingData, setLoadingData] = useState(false);
-    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [indexError, setIndexError] = useState<string | null>(null);
 
@@ -37,51 +36,48 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
 
             const evolucionesRef = collection(db, "programs", globalActiveYear, "evoluciones");
 
-            // Requiere composite index: usuariaId (Asc/Desc) + sessionAt o fechaHoraAtencion (Desc)
-            // Ya que migramos, pediremos ordenar por 'sessionAt'. Sin embargo, para retrocompatibilidad
-            // el orderBy buscará 'sessionAt'. Si no existe, no lo traerá (Aviso: un script masivo sería ideal, por ahora ordenamos los nuevos).
-            // FASE 12: Filtrar por procesoId cuando disponible para garantizar que solo
-            // se muestren evoluciones del proceso activo (no de otros procesos del usuario)
-            const filters = [where("usuariaId", "==", usuariaId)];
-            if (procesoId) {
-                filters.push(where("procesoId", "==", procesoId));
-            }
-
-            let q = query(
+            // FASE 12 (Hard Fix): Para asegurar compatibilidad con datos legacy que no tienen 'sessionAt',
+            // NO usamos orderBy() en Firestore (esto requiere índice compuesto y excluye docs sin el campo).
+            // Traemos todas las del usuario y filtramos/ordenamos en memoria.
+            const q = query(
                 evolucionesRef,
-                ...filters,
-                orderBy("sessionAt", "desc"),
-                limit(PAGE_LIMIT)
+                where("usuariaId", "==", usuariaId)
             );
-
-            if (!reset && lastDoc) {
-                q = query(
-                    evolucionesRef,
-                    ...filters,
-                    orderBy("sessionAt", "desc"),
-                    startAfter(lastDoc),
-                    limit(PAGE_LIMIT)
-                );
-            }
 
             const querySnapshot = await getDocs(q);
 
-            const fetchedList = querySnapshot.docs.map(doc => ({
+            let fetchedList = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             })) as Evolucion[];
 
-            if (querySnapshot.docs.length < PAGE_LIMIT) {
+            // 1. Filtrar por procesoId si se proporcionó
+            if (procesoId) {
+                fetchedList = fetchedList.filter(evo => evo.procesoId === procesoId);
+            }
+
+            // 2. Ordenar en memoria (sessionAt o fechaHoraAtencion)
+            fetchedList.sort((a, b) => {
+                const dateA = new Date((a.sessionAt || (a as any).fechaHoraAtencion || Date.now()) as string).getTime();
+                const dateB = new Date((b.sessionAt || (b as any).fechaHoraAtencion || Date.now()) as string).getTime();
+                return dateB - dateA; // Descendente
+            });
+
+            // 3. Paginación en memoria
+            const startIndex = reset ? 0 : evoluciones.length;
+            const endIndex = startIndex + PAGE_LIMIT;
+            const pagedList = fetchedList.slice(startIndex, endIndex);
+
+            if (endIndex >= fetchedList.length) {
                 setHasMore(false);
             } else {
-                setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
                 setHasMore(true);
             }
 
             if (reset) {
-                setEvoluciones(fetchedList);
+                setEvoluciones(pagedList);
             } else {
-                setEvoluciones(prev => [...prev, ...fetchedList]);
+                setEvoluciones(prev => [...prev, ...pagedList]);
             }
 
         } catch (error: any) {
@@ -99,7 +95,6 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
 
     useEffect(() => {
         setEvoluciones([]);
-        setLastDoc(null);
         setHasMore(true);
         fetchEvolucionesBatch(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
