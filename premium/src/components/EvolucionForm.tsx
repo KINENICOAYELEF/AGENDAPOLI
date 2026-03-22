@@ -84,8 +84,9 @@ function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion>
             evaEnd: legacyData.dolorSalida ?? ""
         },
         sessionGoal: data.sessionGoal || legacyData.objetivoSesion || "",
-        interventions: interventionsArray, // Now directly an array
-        exercises: data.exercises || [],
+        perceptionMode: data.perceptionMode || data.exerciseRx?.effortMode || 'RIR',
+        interventions: interventionsArray,
+        exercises: data.exercises?.length ? data.exercises : (data.exerciseRx?.rows || []), 
         nextPlan: data.nextPlan || legacyData.planProximaSesion || "",
         audit: data.audit || {
             draftCreatedAt: legacyData.createdAt || new Date().toISOString(), // FASE 2.1.23 fallback
@@ -1100,8 +1101,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
             await setDocCounted(docRef, { status: "DRAFT", audit: auditPayload }, { merge: true });
 
-            alert("Ficha reabierta exitosamente bajo la responsabilidad y huella de DOCENTE. Actualice la vista.");
-            onClose(); // Forzamos al usuario a recargar la UI descartándola
+            // FASE 2.1.28: Actualizar estado local para evitar el redirect y permitir edición
+            setFormData(prev => ({ 
+                ...prev, 
+                status: "DRAFT", 
+                audit: auditPayload 
+            }));
+            setIsEditingOverride(true);
+            
+            alert("Ficha reabierta exitosamente bajo la responsabilidad y huella de DOCENTE. Ya puede editar.");
         } catch (error) {
             console.error(error);
             alert("Hubo un error de base de datos reabriendo la evolución.");
@@ -1363,24 +1371,30 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     <span className="bg-indigo-500/30 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-400/30 mb-2 inline-block">
                                         Documento Clínico Firmado
                                     </span>
-                                    <h1 className="text-2xl md:text-3xl font-black tracking-tight">{(formData as any).patientName || "Registro de Continuidad"}</h1>
+                                    <h1 className="text-2xl md:text-3xl font-black tracking-tight">{(formData as any).patientName || (initialData as any)?.patientName || "Registro de Continuidad"}</h1>
                                     <p className="text-indigo-300 font-medium mt-0.5 flex items-center gap-2 text-xs">
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         {formData.sessionAt ? new Date(formData.sessionAt).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible'}
                                     </p>
                                 </div>
                             </div>
-                            <button 
-                                type="button"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setIsEditingOverride(true);
-                                }}
-                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                Habilitar Edición
-                            </button>
+                            <div className="flex flex-col items-end gap-2">
+                                <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md shadow-lg
+                                    ${formData.sessionStatus === 'Realizada' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/20 text-rose-200'}`}>
+                                    {formData.sessionStatus || 'Realizada'}
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setIsEditingOverride(true);
+                                    }}
+                                    className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                    Habilitar Edición
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1412,6 +1426,72 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             </div>
                         </section>
                     </div>
+                    
+                    {/* 1.1 Wellness & Vitals (Readiness) */}
+                    {(formData.readiness || (formData.vitalSigns && (formData.vitalSigns.bloodPressureSys || formData.vitalSigns.heartRate))) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                            {formData.readiness && (
+                                <section>
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div> Wellness Check-in
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {formData.readiness.sleepQuality && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">Sueño</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.readiness.sleepQuality}</div>
+                                            </div>
+                                        )}
+                                        {formData.readiness.stressLevel && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">Estrés</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.readiness.stressLevel}</div>
+                                            </div>
+                                        )}
+                                        {formData.readiness.energy && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">Energía</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.readiness.energy}</div>
+                                            </div>
+                                        )}
+                                        {formData.readiness.homeTasksCompleted && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">Tarea Casa</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.readiness.homeTasksCompleted}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+                            {formData.vitalSigns && (formData.vitalSigns.bloodPressureSys || formData.vitalSigns.heartRate || formData.vitalSigns.spO2) && (
+                                <section>
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> Signos Vitales
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {formData.vitalSigns.bloodPressureSys && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">P. Arterial</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.vitalSigns.bloodPressureSys}/{formData.vitalSigns.bloodPressureDia || '--'}</div>
+                                            </div>
+                                        )}
+                                        {formData.vitalSigns.heartRate && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">F. Cardíaca</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.vitalSigns.heartRate} bpm</div>
+                                            </div>
+                                        )}
+                                        {formData.vitalSigns.spO2 && (
+                                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                                <div className="text-[9px] font-bold text-slate-400 uppercase">SpO2</div>
+                                                <div className="text-xs font-black text-slate-700">{formData.vitalSigns.spO2}%</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+                    )}
 
                     {/* 2. Procedimientos Ejecutados */}
                     <section>
@@ -1487,6 +1567,26 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             </div>
                         </section>
                     </div>
+
+                    {/* 3.1 Educación y Objetivos */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Educación al Paciente</h3>
+                            <div className="prose prose-sm text-slate-600 font-medium bg-amber-50/30 p-4 rounded-2xl border border-amber-100/50">
+                                {formData.educationNotes || "No se registraron notas de educación o telemetría."}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Objetivos de Proceso Trabajados</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.selectedObjectivesSnapshot?.length ? formData.selectedObjectivesSnapshot.map((obj, i) => (
+                                    <span key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 shadow-sm">
+                                        {obj.label}
+                                    </span>
+                                )) : <p className="text-[10px] text-slate-400 italic">No se vincularon objetivos maestros en esta sesión.</p>}
+                            </div>
+                        </div>
+                    </section>
 
                     {/* Footer Profesional */}
                     <div className="flex justify-between items-center py-8 border-t border-slate-100">
