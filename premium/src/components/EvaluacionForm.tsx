@@ -745,6 +745,18 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${isClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                 {isClosed ? 'Cerrada' : 'Borrador'}
                             </div>
+                            {isClosed && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm("¿Seguro que deseas desbloquear esta evaluación cerrada para editar sus campos? (Podrás volver a guardarla/cerrarla)")) {
+                                            setIsClosed(false);
+                                        }
+                                    }}
+                                    className="text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold px-2 py-1 rounded-md flex items-center transition-colors uppercase tracking-wider shrink-0"
+                                >
+                                    🔓 Desbloquear
+                                </button>
+                            )}
                             {/* Semáforo Load Traffic Light Solo en INITIAL, REEVALUATION o si existe */}
                             {(type === 'INITIAL' || type === 'REEVALUATION') && (
                                 <div className="flex gap-0.5 items-center bg-slate-100 px-1.5 py-1 rounded-md border border-slate-200" title="Semáforo de Irritabilidad / Manejo de Carga">
