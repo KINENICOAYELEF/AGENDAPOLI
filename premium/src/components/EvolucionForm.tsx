@@ -936,6 +936,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 },
 
                 nextPlan: formData.nextPlan || '',
+                handoffText: formData.handoffText || '',
                 educationNotes: formData.educationNotes || "",
 
                 // Mapeo Objetivos Activos (Fase 2.1.24)
@@ -1548,6 +1549,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </h4>
                                         <p className="text-sm font-medium text-slate-700 leading-relaxed mb-3">{lastClosedEvol.sessionGoal || "Sin requerimiento registrado"}</p>
                                         
+                                        {/* INTERVENCIONES PREVIAS (TAGS) */}
                                         {lastClosedEvol.interventions && (Array.isArray(lastClosedEvol.interventions) ? lastClosedEvol.interventions.length > 0 : (lastClosedEvol.interventions as any).categories?.length > 0) && (
                                             <div className="flex flex-wrap gap-1.5 mb-3">
                                                 {Array.isArray(lastClosedEvol.interventions) 
@@ -1565,9 +1567,31 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             </div>
                                         )}
 
-                                        <div className="mt-auto">
-                                            <p className="text-xs font-semibold text-indigo-600 italic bg-indigo-100/60 p-2.5 rounded-lg inline-block w-full border border-indigo-200/50">
-                                                Plan/Proyección: {lastClosedEvol.nextPlan || "Sin plan pautado"}
+                                        {/* EJERCICIOS PREVIOS (LISTA) */}
+                                        {((lastClosedEvol as any).exerciseRx?.rows || (lastClosedEvol as any).exercises || []).length > 0 && (
+                                            <div className="mt-1 mb-4 p-3 bg-white/60 rounded-xl border border-indigo-100/50">
+                                                <h5 className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                    Ejercicios realizados
+                                                </h5>
+                                                <ul className="space-y-1">
+                                                    {((lastClosedEvol as any).exerciseRx?.rows || (lastClosedEvol as any).exercises || []).map((ex: any, idx: number) => (
+                                                        <li key={idx} className="text-[11px] font-bold text-slate-600 flex items-center gap-2">
+                                                            <span className="w-1 h-1 bg-indigo-300 rounded-full"></span>
+                                                            {ex.name} <span className="text-[9px] font-medium text-slate-400">({ex.sets || '-'}x{ex.repsOrTime || '-'} {ex.loadKg ? `@${ex.loadKg}kg` : ''})</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        <div className="mt-auto pt-2">
+                                            <h5 className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                                                <svg className="w-3 h-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Hito Logrado y Plan Próxima Sesión
+                                            </h5>
+                                            <p className="text-[13px] font-semibold text-slate-700 italic bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50 leading-relaxed shadow-sm">
+                                                {lastClosedEvol.nextPlan || "Sin plan pautado por el colega"}
                                             </p>
                                         </div>
                                     </div>
@@ -1588,13 +1612,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             </div>
                                         </div>
                                     </div>
-                                    {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 && (
-                                        <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
-                                            <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
+                                    {lastClosedEvol.handoffText && (
+                                        <div className="lg:col-span-3 bg-amber-50 p-5 rounded-2xl border border-amber-200/60 shadow-inner mt-2">
+                                            <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-3 uppercase tracking-wide">
                                                 <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                                                Hand-off (Traspaso Clínico Colega)
+                                                Resumen de Traspaso (Handoff) Inter-Colegas
                                             </h4>
-                                            <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">{lastClosedEvol.handoffText}</p>
+                                            <p className="text-sm font-semibold text-amber-950/90 leading-relaxed whitespace-pre-wrap">{lastClosedEvol.handoffText}</p>
                                         </div>
                                     )}
                                 </div>
@@ -2606,8 +2630,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     {!isClosed && (
                         <>
                             <button
-                                type="submit"
-                                form="evolution-form" // Triggers onSaveDraft
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); executeSave(false); }}
                                 disabled={loading}
                                 className={`flex-1 max-w-[200px] py-4 md:py-3 rounded-2xl border-2 font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50
                                     ${saveStatus === 'saved' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
