@@ -10,6 +10,78 @@ interface ReadOnlyEvaluacionProps {
     onEdit: () => void;
 }
 
+// Renderizador recursivo elegante para evitar JSON en crudo ({}[])
+const StructuredDataRenderer = ({ data, level = 0 }: { data: any, level?: number }) => {
+    if (data === null || data === undefined || data === '') return null;
+    
+    // Arrays
+    if (Array.isArray(data)) {
+        if (data.length === 0) return null;
+        // Array de primitivos
+        if (data.every(val => typeof val !== 'object')) {
+            return (
+                <ul className="list-disc pl-4 space-y-1">
+                    {data.map((item, idx) => (
+                        <li key={idx} className="text-xs text-slate-600 font-medium leading-relaxed">{item}</li>
+                    ))}
+                </ul>
+            );
+        }
+        // Array de objetos
+        return (
+            <div className="space-y-3 mt-1 w-full">
+                {data.map((item, idx) => (
+                    <div key={idx} className={`relative pt-1 pb-2 w-full ${level > 0 ? 'border-l-2 border-indigo-100 pl-3' : 'bg-white p-3 rounded-lg border border-slate-100 shadow-sm'}`}>
+                        {data.length > 1 && level > 0 && <div className="absolute top-[14px] -left-[5px] w-2 h-2 rounded-full bg-indigo-200"></div>}
+                        <StructuredDataRenderer data={item} level={level + 1} />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    
+    // Objects
+    if (typeof data === 'object') {
+        const entries = Object.entries(data).filter(([key, val]) => {
+            if (val === null || val === undefined || val === '') return false;
+            if (Array.isArray(val) && val.length === 0) return false;
+            if (key === 'mostrar') return false; // flag tecnico
+            return true;
+        });
+        
+        if (entries.length === 0) return null;
+
+        return (
+            <div className="flex flex-col gap-2 w-full overflow-hidden">
+                {entries.map(([key, val], idx) => {
+                    const humanKey = key.replace(/Config/ig, '').replace(/([A-Z])/g, ' $1').trim();
+                    const isSimpleValue = typeof val !== 'object';
+                    
+                    return (
+                        <div key={idx} className={`flex w-full ${isSimpleValue ? 'flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2' : 'flex-col gap-1.5'}`}>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 break-words mt-0.5">
+                                {humanKey}:
+                            </span>
+                            <div className="w-full flex-1 min-w-0">
+                                {isSimpleValue ? (
+                                    <span className="text-xs text-slate-800 font-medium break-words leading-relaxed block">{String(val)}</span>
+                                ) : (
+                                    <div className="w-full overflow-hidden">
+                                        <StructuredDataRenderer data={val} level={level + 1} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+    
+    // Valores simples finales (fallback)
+    return <span className="text-xs text-slate-800 font-medium break-words leading-relaxed">{String(data)}</span>;
+};
+
 const InfoCard = ({ label, value, sub }: { label: string, value?: string, sub?: string }) => {
     if (!value || value === "No registrada" || value === "No definido") return null;
     return (
@@ -157,15 +229,15 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
 
                         {/* FASE 2.5: Datos Estructurados de P2 */}
                         {ev.guidedExam && Object.keys(ev.guidedExam).length > 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
                                 {Object.entries(ev.guidedExam).map(([key, data]: [string, any]) => {
                                     if (!data || key === 'status' || key === 'completedModules') return null;
-                                    const title = key.replace(/([A-Z])/g, ' $1').toUpperCase();
+                                    const title = key.replace(/([A-Z])/g, ' $1').replace(/Config/ig, '').trim().toUpperCase();
                                     return (
-                                        <div key={key} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            <h4 className="text-[10px] font-bold text-amber-700 uppercase mb-1">{title}</h4>
-                                            <div className="text-xs text-slate-600 line-clamp-3">
-                                                {typeof data === 'string' ? data : JSON.stringify(data).slice(0, 100) + '...'}
+                                        <div key={key} className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 overflow-hidden shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">{title}</h4>
+                                            <div className="w-full overflow-x-auto">
+                                                <StructuredDataRenderer data={data} />
                                             </div>
                                         </div>
                                     );
@@ -424,14 +496,15 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                     {ev.reevaluation?.retest && (
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h3 className="text-sm uppercase tracking-widest font-bold text-emerald-600 mb-5 flex items-center gap-2 border-b pb-3">Retest Clínico</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {Object.entries(ev.reevaluation.retest).map(([key, val]: [string, any]) => {
                                     if (!val || key === 'status') return null;
+                                    const title = key.replace(/([A-Z])/g, ' $1').replace(/Config/ig, '').trim().toUpperCase();
                                     return (
-                                        <div key={key} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-1">{key.replace(/([A-Z])/g, ' $1')}</h4>
-                                            <div className="text-sm text-slate-700 font-semibold">
-                                                {typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : JSON.stringify(val)}
+                                        <div key={key} className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 overflow-hidden shadow-sm">
+                                            <h4 className="text-[11px] font-black text-emerald-700 uppercase mb-3 tracking-widest border-b border-emerald-100 pb-2">{title}</h4>
+                                            <div className="w-full overflow-x-auto">
+                                                <StructuredDataRenderer data={val} />
                                             </div>
                                         </div>
                                     );

@@ -115,6 +115,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                 <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50">
                     <ReadOnlyEvaluacion
                         evaluacion={selectedEval}
+                        usuariaName={personaUsuariaName}
                         onClose={() => setView('timeline')}
                         onEdit={() => setView('editEval')}
                     />
