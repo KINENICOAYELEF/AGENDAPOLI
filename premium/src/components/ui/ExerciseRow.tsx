@@ -146,18 +146,18 @@ export const ExerciseRow: React.FC<ExerciseRowProps> = ({
 
                     {!isClosed && (
                         <div className="flex items-center gap-1 shrink-0 z-10" onClick={e => e.stopPropagation()}>
-                            <button onClick={handleAddRep} className="px-2 py-1 bg-emerald-950/40 hover:bg-emerald-800 border border-emerald-800/50 text-emerald-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1" title="+1 Repetición">
+                            <button type="button" onClick={handleAddRep} className="px-2 py-1 bg-emerald-950/40 hover:bg-emerald-800 border border-emerald-800/50 text-emerald-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1" title="+1 Repetición">
                                 +1 <ArrowTrendingUpIcon className="w-3 h-3" />
                             </button>
-                            <button onClick={handleAddLoad} className="px-2 py-1 bg-amber-950/40 hover:bg-amber-800 border border-amber-800/50 text-amber-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1" title="+2.5 kg">
+                            <button type="button" onClick={handleAddLoad} className="px-2 py-1 bg-amber-950/40 hover:bg-amber-800 border border-amber-800/50 text-amber-400 rounded-lg text-[10px] font-bold transition-colors flex items-center gap-1" title="+2.5 kg">
                                 +2.5kg <ArrowTrendingUpIcon className="w-3 h-3" />
                             </button>
                             {onCloneSelf && (
-                                <button onClick={onCloneSelf} className="p-1.5 text-indigo-400 hover:text-white bg-indigo-950/40 hover:bg-indigo-700 rounded-lg transition-colors border border-transparent hover:border-indigo-600" title="Duplicar">
+                                <button type="button" onClick={onCloneSelf} className="p-1.5 text-indigo-400 hover:text-white bg-indigo-950/40 hover:bg-indigo-700 rounded-lg transition-colors border border-transparent hover:border-indigo-600" title="Duplicar">
                                     <DocumentDuplicateIcon className="w-4 h-4" />
                                 </button>
                             )}
-                            <button onClick={() => setIsEditing(true)} className="p-1.5 text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-700 rounded-lg transition-colors ml-1" title="Editar">
+                            <button type="button" onClick={() => setIsEditing(true)} className="p-1.5 text-slate-400 hover:text-white bg-slate-800/40 hover:bg-slate-700 rounded-lg transition-colors ml-1" title="Editar">
                                 <PencilSquareIcon className="w-4 h-4" />
                             </button>
                         </div>

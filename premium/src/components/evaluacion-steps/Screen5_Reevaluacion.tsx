@@ -213,13 +213,28 @@ export function Screen5_Reevaluacion({ formData, updateFormData, procesoContext,
                                 )}
                                 {procesoContext.loadManagementVigente?.trafficLight && (
                                     <div className="flex flex-col">
-                                        <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Semáforo de Carga / Irrit.</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-3 h-3 rounded-full 
-                                                ${procesoContext.loadManagementVigente.trafficLight === 'Rojo' ? 'bg-rose-500' :
-                                                    procesoContext.loadManagementVigente.trafficLight === 'Amarillo' ? 'bg-amber-500' : 'bg-emerald-500'}
-                                            `}></span>
-                                            <span className="font-bold text-slate-700">{procesoContext.loadManagementVigente.trafficLight}</span>
+                                        <span className="block text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1">Semáforo de Carga / Irritabilidad</span>
+                                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 self-start">
+                                            {(['Verde', 'Amarillo', 'Rojo'] as const).map(color => (
+                                                <button
+                                                    key={color}
+                                                    type="button"
+                                                    onClick={() => updateFormData({
+                                                        autoSynthesis: { ...(formData as any).autoSynthesis, trafficLight: color }
+                                                    } as any)}
+                                                    disabled={isClosed}
+                                                    className={`px-2 py-1 rounded-md text-[10px] font-black uppercase transition-all flex items-center gap-1.5 ${
+                                                        ((formData as any).autoSynthesis?.trafficLight || procesoContext.loadManagementVigente?.trafficLight) === color
+                                                            ? (color === 'Rojo' ? 'bg-rose-500 text-white shadow-sm' : color === 'Amarillo' ? 'bg-amber-500 text-white shadow-sm' : 'bg-emerald-500 text-white shadow-sm')
+                                                            : 'text-slate-400 hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    <span className={`w-2 h-2 rounded-full border border-white/20 ${
+                                                        color === 'Rojo' ? 'bg-rose-200' : color === 'Amarillo' ? 'bg-amber-200' : 'bg-emerald-200'
+                                                    }`} />
+                                                    {color}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 )}

@@ -1056,25 +1056,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             return;
         }
 
-        let tempObjectiveReason: string | undefined = undefined;
-
-        // Validación 1.5 (FASE 2.1.24): Exigir al menos 1 objetivo si el proceso los tiene habilitados, o justificación.
-        if (availableObjectives.length > 0 && (!formData.selectedObjectiveIds || formData.selectedObjectiveIds.length === 0)) {
-            // El proceso TIENE objetivos, pero el doc no marcó ninguno.
-            const reason = window.prompt("ATENCIÓN: Cierre de Sesión\n\nEl paciente tiene Objetivos de Proceso definidos, pero no ha marcado ninguno como trabajado hoy.\n\nPor favor justifique clínicamente la no adherencia al plan general para autorizar el cierre (ej. 'Sesión enfocada en urgencia', 'Falta de tiempo'):");
-
-            if (!reason || reason.trim().length < 4) {
-                alert("Cierre cancelado. Debe justificar la omisión de objetivos.");
-                return;
-            }
-
-            tempObjectiveReason = reason.trim();
-            // Actualizar state para consistencia UI (aunque la DB se guardará por la vía paralela)
-            setFormData(prev => ({
-                ...prev,
-                objectiveSelectionReason: tempObjectiveReason
-            }));
-        }
+        // Validación 1.5 (FASE 2.1.24): Ya no bloquea con Modal. Se asume como "No trabajado en esta sesión" si viene vacío.
 
         // Validación 1.6 (FASE 2.1.25): Sesiones "Realizadas" obligatorias
         if (formData.sessionStatus === 'Realizada') {
@@ -1105,13 +1087,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             // Si tiene datos válidos, los pasamos
             const finalReason = `[${lateCategory}] ${lateText}`;
             const extraProps: Partial<Evolucion> = {};
-            if (tempObjectiveReason) extraProps.objectiveSelectionReason = tempObjectiveReason;
             executeSave(true, finalReason, false, extraProps);
             return;
         }
 
         const extraProps: Partial<Evolucion> = {};
-        if (tempObjectiveReason) extraProps.objectiveSelectionReason = tempObjectiveReason;
 
         executeSave(true, undefined, false, extraProps);
     };
@@ -1428,7 +1408,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         )}
                     </div>
 
-                    <div id="evolution-form" className="space-y-4">
+                    <div id="evolution-form-content" className="space-y-4">
 
                         {/* --- FASE 4.2: PANEL DOCENTE EN READONLY --- */}
                         {isClosed && user?.role === 'DOCENTE' && (
@@ -1521,19 +1501,54 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             </div>
                         )}
 
+                        {/* --- MODO COBERTURA: Alerta si el profesional cambió --- */}
+                        {lastClosedEvol && user?.uid !== lastClosedEvol.audit?.createdBy && (
+                            <div className="bg-indigo-600 text-white p-4 rounded-2xl shadow-lg mb-4 flex items-center gap-4 animate-in fade-in zoom-in duration-500">
+                                <div className="bg-white/20 p-2 rounded-full">
+                                    <SparklesIcon className="w-6 h-6 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-xs font-black uppercase tracking-widest mb-0.5">Modo Cobertura Activo</h4>
+                                    <p className="text-sm font-medium opacity-90">
+                                        Hola, parece que estás cubriendo a un colega. Hemos priorizado las <b>Notas de Traspaso</b> y el <b>Contexto del Caso</b> para ayudarte.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- NOTAS DE TRASPASO DIRECTAS (IMPERDIBLES) --- */}
+                        {lastClosedEvol?.handoffText && lastClosedEvol.handoffText.length > 5 && (
+                            <div className="bg-amber-500 text-slate-900 p-5 rounded-2xl shadow-xl mb-4 border-2 border-amber-600 animate-pulse-subtle">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <ExclamationTriangleIcon className="w-5 h-5 text-amber-900" />
+                                    <h4 className="text-[11px] font-black uppercase tracking-tighter text-amber-900">Mensaje Crítico del Colega Anterior</h4>
+                                </div>
+                                <p className="text-sm font-bold italic leading-relaxed">
+                                    "{lastClosedEvol.handoffText}"
+                                </p>
+                            </div>
+                        )}
+
                         {/* --- FASE 2.2.4: BANNER PROCESO ACTIVO (Semaforo, Consideraciones, Baselines) --- */}
-                        {procesoContext.caseSnapshot && (
+                        {procesoContext.caseSnapshot ? (
                             <div className="bg-white p-4 lg:p-5 rounded-2xl border-l-4 border-l-indigo-500 border-y border-r border-slate-200 shadow-sm relative mb-2 animate-in fade-in slide-in-from-bottom-4">
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="text-lg">📋</span>
                                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Contexto del Caso Activo</h3>
                                     {procesoContext.caseSnapshot.trafficLight && (
-                                        <span className={`ml-auto px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-extrabold ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
-                                            procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                                                'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                                            }`}>
-                                            Semáforo: {procesoContext.caseSnapshot.trafficLight}
-                                        </span>
+                                        <div className="ml-auto flex flex-col items-end">
+                                            <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-extrabold ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                                                procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                    'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                }`}>
+                                                Semáforo: {procesoContext.caseSnapshot.trafficLight}
+                                            </span>
+                                            <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
+                                                {procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'Alta irritabilidad (Precaución)' :
+                                                 procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'Irritabilidad media (Cautela)' :
+                                                 'Baja irritabilidad (Carga progresiva)'}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -1563,6 +1578,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200 text-center flex flex-col items-center justify-center gap-2 mb-4">
+                                <div className="bg-slate-200 p-3 rounded-full">
+                                    <ExclamationCircleIcon className="w-6 h-6 text-slate-400" />
+                                </div>
+                                <p className="text-xs text-slate-500 font-bold max-w-xs">
+                                    📌 No hay resumen de diagnóstico o signo comparable registrado en la Evaluación Inicial de este proceso. Asegúrese de completar la síntesis en la evaluación.
+                                </p>
                             </div>
                         )}
 
@@ -2061,9 +2085,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                                             {/* Opciones clásicas */}
                                             <div className="flex flex-col md:flex-row gap-3">
-                                                <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-indigo-700/50 hover:border-indigo-500 hover:bg-indigo-900/30 text-indigo-300 font-bold py-3 md:py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs md:text-sm">
+                                                <button type="button" onClick={addExercise} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white shadow-md font-bold py-3 md:py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs md:text-sm">
                                                     <PlusIcon className="w-5 h-5" />
-                                                    Formulario Tradicional
+                                                    Añadir Ejercicio en Blanco
                                                 </button>
                                                 <button type="button" onClick={duplicatePreviousExercises} className="md:w-auto w-full border border-indigo-600 bg-indigo-800/40 hover:bg-indigo-700/60 text-indigo-100 font-bold py-3 md:py-3.5 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 text-xs md:text-sm shadow-sm backdrop-blur-sm group">
                                                     <DocumentDuplicateIcon className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
@@ -2130,8 +2154,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         value={formData.handoffText || ""}
                                         disabled={isClosed}
                                         onChange={handleChange}
-                                        className="w-full border border-indigo-100 bg-indigo-50/20 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all min-h-[80px]"
-                                        placeholder="📝 Texto libre, directo y conciso para situar rápidamente al profesional que abra esta ficha mañana..."
+                                        className="w-full border border-indigo-100 bg-indigo-50/20 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all min-h-[80px] placeholder:text-slate-400"
+                                        placeholder="Si alguien te debe cubrir la próxima sesión, ¿Qué le aconsejas revisar o continuar?"
                                     />
                                     <p className="text-[10px] text-slate-400 mt-1 italic">
                                         Evita re-escribir los ejercicios aquí. Enfócate en la tolerancia y red-flags.
@@ -2227,10 +2251,14 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 onChange={(e) => handleNestedChange("outcomesSnapshot", "sane", Number(e.target.value))}
                                                 className="w-full accent-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                             />
-                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-1">
-                                                <span>0% (Pésimo)</span>
-                                                <span>50%</span>
-                                                <span>100% (Normal)</span>
+                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-2">
+                                                <span>0%</span>
+                                                <span className="text-center">50%</span>
+                                                <span className="text-right">100%</span>
+                                            </div>
+                                            <div className="flex justify-between text-[8.5px] font-medium text-slate-400 uppercase tracking-tighter">
+                                                <span>Pésimo</span>
+                                                <span>Normal</span>
                                             </div>
                                         </div>
                                     ) : (

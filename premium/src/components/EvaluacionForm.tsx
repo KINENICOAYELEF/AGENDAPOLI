@@ -515,6 +515,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 // FASE 2.2.4: Actualizar semáforo si fue modificado
                 if ((fd as any).autoSynthesis?.trafficLight) {
                     updatePayload["loadManagementVigente.trafficLight"] = (fd as any).autoSynthesis.trafficLight;
+                    updatePayload["caseSnapshot.trafficLight"] = (fd as any).autoSynthesis.trafficLight;
+                }
+
+                // FASE 2.2.4.1: Actualizar baseline si el clínico marcó que cambió el signo comparable
+                if (fd.reevaluation?.changedComparable && fd.reevaluation?.retest?.comparableSignResult) {
+                    updatePayload["caseSnapshot.baselineComparable"] = fd.reevaluation.retest.comparableSignResult;
                 }
 
                 // FASE 2.2.4: Crear nueva versión de objetivos si hay nuevos
@@ -683,12 +689,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                             <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${isClosed ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                 {isClosed ? 'Cerrada' : 'Borrador'}
                             </div>
-                            {/* Semáforo Load Traffic Light Solo en INITIAL o si existe */}
-                            {type === 'INITIAL' && (
-                                <div className="flex gap-0.5 items-center bg-slate-100 px-1.5 py-1 rounded-md border border-slate-200">
-                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Verde' ? 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)]' : 'bg-slate-300'} transition-all`} />
-                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.8)]' : 'bg-slate-300'} transition-all`} />
-                                    <span className={`w-2 h-2 rounded-full ${(formData as EvaluacionInicial).autoSynthesis?.trafficLight === 'Rojo' ? 'bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]' : 'bg-slate-300'} transition-all`} />
+                            {/* Semáforo Load Traffic Light Solo en INITIAL, REEVALUATION o si existe */}
+                            {(type === 'INITIAL' || type === 'REEVALUATION') && (
+                                <div className="flex gap-0.5 items-center bg-slate-100 px-1.5 py-1 rounded-md border border-slate-200" title="Semáforo de Irritabilidad / Manejo de Carga">
+                                    <span className={`w-2 h-2 rounded-full ${(formData as any).autoSynthesis?.trafficLight === 'Verde' ? 'bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)]' : 'bg-slate-300'} transition-all`} />
+                                    <span className={`w-2 h-2 rounded-full ${(formData as any).autoSynthesis?.trafficLight === 'Amarillo' ? 'bg-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.8)]' : 'bg-slate-300'} transition-all`} />
+                                    <span className={`w-2 h-2 rounded-full ${(formData as any).autoSynthesis?.trafficLight === 'Rojo' ? 'bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]' : 'bg-slate-300'} transition-all`} />
                                 </div>
                             )}
                         </div>
