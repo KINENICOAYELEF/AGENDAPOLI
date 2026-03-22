@@ -522,57 +522,37 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const fd = payload as EvaluacionReevaluacion;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
 
-                const updatePayload: Record<string, any> = {
-                    "caseSnapshot.lastUpdated": new Date().toISOString(),
-                    "caseSnapshot.lastProgressSummary": fd.reevaluation?.progressSummary || '',
-                    // FASE 2.2.5 Guardar retrospectiva
-                    "caseSnapshot.lastRetest": typeof fd.reevaluation?.retest === 'string' ? fd.reevaluation.retest : JSON.stringify(fd.reevaluation?.retest || '')
+                // Asegurarse que se use un nested object para que merge lo resuelva correctamente y no cree keys literales con puntos
+                const updatePayloadNested: any = {
+                    caseSnapshot: {
+                        lastUpdated: new Date().toISOString(),
+                        lastProgressSummary: fd.reevaluation?.progressSummary || '',
+                        lastRetest: typeof fd.reevaluation?.retest === 'string' ? fd.reevaluation.retest : JSON.stringify(fd.reevaluation?.retest || ''),
+                        trafficLight: finalTL
+                    },
+                    loadManagementVigente: {
+                        trafficLight: finalTL
+                    }
                 };
 
                 if (typeof fd.reevaluation?.retest === 'object' && fd.reevaluation.retest?.psfsScores) {
-                    updatePayload["caseSnapshot.psfsLast"] = fd.reevaluation.retest.psfsScores;
+                    updatePayloadNested.caseSnapshot.psfsLast = fd.reevaluation.retest.psfsScores;
                 }
-
-                // FASE 2.2.4: Actualizar dx vigente si fue modificado
-                if ((fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
-                    updatePayload.diagnosisVigente = (fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative;
-                }
-
-                // FASE 2.2.4: Actualizar semáforo si fue modificado (Master Traffic Light)
-                const getMasterTL = (f: any) => {
-                    const norm = (s: string) => (s || '').trim().toLowerCase();
-                    const s = f.autoSynthesis?.trafficLight || 'Verde';
-                    
-                    const iRatio = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
-                    const i = (iRatio === 'alta') ? 'Rojo' : 
-                              (iRatio === 'media' || iRatio === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    const cRatio = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-                    const c = (cRatio === 'baja') ? 'Rojo' :
-                              (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
-                };
-
-                const finalTL = getMasterTL(fd);
-                updatePayload["loadManagementVigente.trafficLight"] = finalTL;
-                updatePayload["caseSnapshot.trafficLight"] = finalTL;
-
-                // FASE 2.2.4.1: Actualizar baseline si el clínico marcó que cambió el signo comparable
                 if (fd.reevaluation?.changedComparable && fd.reevaluation?.retest?.comparableSignResult) {
-                    updatePayload["caseSnapshot.baselineComparable"] = fd.reevaluation.retest.comparableSignResult;
+                    updatePayloadNested.caseSnapshot.baselineComparable = fd.reevaluation.retest.comparableSignResult;
                 }
 
-                // FASE 2.2.4: Crear nueva versión de objetivos si hay nuevos
+                if ((fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative) {
+                    updatePayloadNested.diagnosisVigente = (fd as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (fd as any).geminiDiagnostic?.narrativeDiagnosis || (fd as any).geminiDiagnostic?.kinesiologicalDxNarrative;
+                }
+
                 // FASE 2.2.4 / 2.2.5: Crear nueva versión de objetivos si hay nuevos
                 let versionId = null;
-                // Intentar leer targets de objetivos editados en reevaluación (Screen5)
                 const newObjectives = (fd as any).p4_plan_structured?.objetivos_smart || (fd as any).geminiDiagnostic?.smartGoals || (fd as any).geminiDiagnostic?.objectivesSmart || (fd.reevaluation as any)?.updatedObjectives;
                 if (newObjectives && newObjectives.length > 0) {
                     versionId = `v_${Date.now()}`;
-                    updatePayload.activeObjectiveSetVersionId = versionId;
-                    updatePayload.activeObjectiveSet = {
+                    updatePayloadNested.activeObjectiveSetVersionId = versionId;
+                    updatePayloadNested.activeObjectiveSet = {
                         versionId,
                         updatedAt: new Date().toISOString(),
                         objectives: newObjectives.map((o: any) => ({
@@ -583,7 +563,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     };
                 }
 
-                await setDoc(procesoRef, sanitizeForFirestoreDeep(updatePayload), { merge: true });
+                await setDoc(procesoRef, sanitizeForFirestoreDeep(updatePayloadNested), { merge: true });
+
                 if (versionId) {
                     const sanitizedVersion = sanitizeForFirestoreDeep({ activeObjectiveSetVersionId: versionId });
                     await setDoc(docRef, sanitizedVersion, { merge: true });
@@ -654,6 +635,40 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 setSaveFeedback({ message: 'Autoguardado', type: 'success' });
                 setTimeout(() => setSaveFeedback(null), 1500);
             }
+        }
+    };
+
+    const handleResyncTrafficLight = async () => {
+        if (!window.confirm("¿Forzar re-sincronización del Semáforo y Diagnóstico hacia el Proceso Clínico Histórico?")) return;
+        try {
+            const fd = formData as any;
+            const norm = (s: string) => (s || '').trim().toLowerCase();
+            const s = fd.autoSynthesis?.trafficLight || 'Verde';
+            const iRatio = norm(fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+            const i = (iRatio === 'alta') ? 'Rojo' : (iRatio === 'media' || iRatio === 'moderada') ? 'Amarillo' : 'Verde';
+            const cRatio = norm(fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+            const c = (cRatio === 'baja') ? 'Rojo' : (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+            const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+            const finalTL = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+
+            const diag = fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '';
+
+            const procesoRef = doc(db, "programs", globalActiveYear!, "procesos", procesoId);
+            const sysUpdate: any = {
+                loadManagementVigente: { trafficLight: finalTL },
+                caseSnapshot: { trafficLight: finalTL }
+            };
+            if (diag) {
+                sysUpdate.diagnosisVigente = diag;
+                sysUpdate.caseSnapshot.diagnosticoNarrativo = diag;
+            }
+            
+            await setDoc(procesoRef, sanitizeForFirestoreDeep(sysUpdate), { merge: true });
+
+            alert(`✅ Proceso actualizado exitosamente.\nNuevo Semáforo: ${finalTL}`);
+        } catch (e: any) {
+            console.error(e);
+            alert("Error al sincronizar: " + e.message);
         }
     };
 
@@ -795,6 +810,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Cargar JSON
                             </button>
+                            {isClosed && (
+                                <button onClick={handleResyncTrafficLight} className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm whitespace-nowrap">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    Re-sincronizar Proceso
+                                </button>
+                            )}
                             <button onClick={handleLogAdminPayloads} className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 Imprimir Tokens
