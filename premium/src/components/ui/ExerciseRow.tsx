@@ -132,7 +132,7 @@ export const ExerciseRow: React.FC<ExerciseRowProps> = ({
             {/* VISTA COMPACTA */}
             {!isEditing && (
                 <div
-                    onClick={() => !isClosed && setIsEditing(true)}
+                    onClick={() => setIsEditing(true)}
                     className="p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer"
                 >
                     <div className="flex items-center gap-2.5 flex-1 min-w-0">

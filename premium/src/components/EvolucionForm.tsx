@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from "@/types/clinica";
-import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { OutcomesService } from "@/services/outcomes";
@@ -237,6 +237,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     // Control para la regla de las 36 Horas
     const [requiresLateReason, setRequiresLateReason] = useState(false);
     const [isAttemptingClose, setIsAttemptingClose] = useState(false);
+    const [isEditingOverride, setIsEditingOverride] = useState(false); // FASE 2.1.28
     const [isLateDraft, setIsLateDraft] = useState(false);
 
     // UI Layout States
@@ -1333,6 +1334,174 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         }
     }), [formData]);
 
+    // --- FASE 2.1.28: VISOR DE REPORTE ---
+    const renderViewer = () => {
+        const normalizedInterventions = Array.isArray(formData.interventions) 
+            ? formData.interventions 
+            : (formData.interventions?.categories || []).map(cat => ({ category: cat, subType: 'Intervención Clínica' }));
+
+        return (
+            <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in duration-500">
+                {/* Header Visor */}
+                <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-8 text-white relative">
+                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-2 10H7v-2h10v2m0-4H7V7h10v2m0 8H7v-2h10v2z"/></svg>
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <span className="bg-indigo-500/30 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-400/30 mb-4 inline-block">
+                                    Documento Clínico Firmado
+                                </span>
+                                <h1 className="text-3xl font-black tracking-tight">{(formData as any).patientName || "Registro de Continuidad"}</h1>
+                                <p className="text-indigo-300 font-medium mt-1 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    {formData.sessionAt ? new Date(formData.sessionAt).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible'}
+                                </p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setIsEditingOverride(true);
+                                }}
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                Habilitar Edición
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-8 md:p-12 space-y-12">
+                    {/* 1. Objetivos y Contexto */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <section>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Objetivo de la Sesión</h3>
+                            <p className="text-slate-700 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
+                                "{formData.sessionGoal || "No se registró objetivo específico."}"
+                            </p>
+                        </section>
+                        <section>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Resultados Inmediatos</h3>
+                            <div className="flex gap-4">
+                                {formData.pain?.evaStart !== undefined && (
+                                    <div className="text-center">
+                                        <div className="text-[10px] font-bold text-slate-500 mb-1">EVA Pre</div>
+                                        <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center font-black text-rose-600 text-lg">{formData.pain.evaStart}</div>
+                                    </div>
+                                )}
+                                {formData.pain?.evaEnd !== undefined && (
+                                    <div className="text-center">
+                                        <div className="text-[10px] font-bold text-slate-500 mb-1">EVA Post</div>
+                                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center font-black text-emerald-600 text-lg">{formData.pain.evaEnd}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* 2. Procedimientos Ejecutados */}
+                    <section>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">Intervenciones Realizadas</h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            {normalizedInterventions.length ? normalizedInterventions.map((inv: any, i: number) => (
+                                <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-colors">
+                                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm text-indigo-500">
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">{inv.category}</span>
+                                            <span className="text-sm font-bold text-slate-800">{inv.subType || inv.type}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 leading-relaxed">{inv.notes || "Sin observaciones adicionales."}</p>
+                                    </div>
+                                </div>
+                            )) : <p className="text-xs text-slate-400 italic">No se registraron intervenciones manuales.</p>}
+                        </div>
+                    </section>
+
+                    {/* 3. Ejercicios (Tabla de Prescripción) */}
+                    <section>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">Prescripción de Ejercicio</h3>
+                        {formData.exercises?.length ? (
+                            <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-slate-900 text-white text-[10px] uppercase tracking-widest font-black">
+                                        <tr>
+                                            <th className="p-4">Ejercicio</th>
+                                            <th className="p-4">Dosis</th>
+                                            <th className="p-4">Esfuerzo</th>
+                                            <th className="p-4">Descanso</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {formData.exercises.map((ex, i) => (
+                                            <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="font-bold text-slate-800 text-sm">{ex.name}</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">{ex.pattern} {ex.side ? `(${ex.side})` : ""}</div>
+                                                </td>
+                                                <td className="p-4 text-xs font-medium text-slate-600">
+                                                    {ex.sets} x {ex.repsOrTime} {ex.loadKg ? `@ ${ex.loadKg}kg` : ""}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase tracking-wide">
+                                                        {formData.perceptionMode || 'RIR'} {ex.rir || ex.rpe || ex.rpeOrRir}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-xs font-bold text-slate-400">{ex.rest ? `${ex.rest}s` : "--"}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : <p className="text-xs text-slate-400 italic">No se registraron ejercicios en esta sesión.</p>}
+                    </section>
+
+                    {/* 4. Traspaso y Plan */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-slate-100">
+                        <section>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Traspaso Inter-Colegas</h3>
+                            <div className="prose prose-sm text-slate-600 font-medium">
+                                {formData.handoffText || "No hay notas de traspaso."}
+                            </div>
+                        </section>
+                        <section>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Hito y Plan Próxima Sesión</h3>
+                            <div className="prose prose-sm text-slate-800 font-bold bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100/50">
+                                {formData.nextPlan || "No se registró plan proyectado."}
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Footer Profesional */}
+                    <div className="flex justify-between items-center py-8 border-t border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                                {user?.photoURL ? <img src={user.photoURL} alt="pro" className="w-full h-full object-cover" /> : <span className="font-black text-slate-400 text-xs">KF</span>}
+                            </div>
+                            <div>
+                                <div className="text-sm font-black text-slate-900">{formData.clinicianResponsible || user?.displayName || "Kinesiólogo(a)"}</div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Firma Electrónica Simple</div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ID Documento</div>
+                           <div className="font-mono text-[9px] text-slate-300">{formData.id}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const isViewMode = isClosed && !isEditingOverride;
+
+    if (isViewMode) return renderViewer();
+
     return (
         <form onSubmit={handleSaveDraft} className="flex flex-col h-full w-full mx-auto overflow-hidden bg-slate-50/50 md:bg-transparent" id="evolution-form">
 
@@ -1522,7 +1691,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             </div>
                         )}                        {/* --- FASE 2.1.29: REDISEÑO BANNER DE CONTINUIDAD --- */}
                         {lastClosedEvol ? (
-                            <div className="bg-white p-5 md:p-6 rounded-2xl border border-indigo-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 animate-in fade-in slide-in-from-top-4 relative overflow-hidden group">
+                            <div className="bg-white p-5 md:p-6 rounded-2xl border-l-[6px] border-l-indigo-500 border-y border-r border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-4 animate-in fade-in slide-in-from-top-4 relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-2xl"></div>
                                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full blur-2xl opacity-70 group-hover:scale-110 transition-transform"></div>
 
@@ -1555,7 +1724,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 {Array.isArray(lastClosedEvol.interventions) 
                                                     ? lastClosedEvol.interventions.map((inv: any, i: number) => (
                                                         <span key={i} className="px-2 py-1 bg-white border border-indigo-200 text-[10px] font-bold text-indigo-600 rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                                                            {inv.type || inv.name || inv.label || "Intervención Clínica"}
+                                                            {inv.category ? `${inv.category}: ` : ""}{inv.type || inv.name || inv.label || "Intervención Clínica"}
                                                         </span>
                                                     ))
                                                     : ((lastClosedEvol.interventions as any).categories || []).map((cat: string, i: number) => (
@@ -2330,12 +2499,28 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {recentOutcomes.map(o => (
-                                        <div key={o.id} className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 px-3 text-xs w-fit flex items-center gap-2">
+                                        <div key={o.id} className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 px-3 text-xs w-fit flex items-center gap-2 group/chip">
                                             <span className="font-bold text-indigo-900 bg-white px-1.5 py-0.5 rounded shadow-sm">{o.type}</span>
                                             <span className="text-indigo-800 font-bold">
                                                 {o.type === 'SANE' ? `${o.values.score}%` : o.type === 'GROC' ? (o.values.score > 0 ? `+${o.values.score}` : o.values.score) : 'Test'}
                                             </span>
                                             <span className="text-[10px] text-slate-500 border-l border-indigo-200 pl-2">Hace {Math.floor((new Date().getTime() - new Date(o.capturedAt).getTime()) / (1000 * 3600 * 24))}d</span>
+                                            <button 
+                                                type="button"
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm("¿Eliminar este resultado antiguo?")) {
+                                                        try {
+                                                            const docRef = doc(db, "programs", globalActiveYear!, "outcomes", o.id);
+                                                            await deleteDoc(docRef);
+                                                            setRecentOutcomes(prev => prev.filter(x => x.id !== o.id));
+                                                        } catch (err) { console.error(err); }
+                                                    }
+                                                }}
+                                                className="ml-1 opacity-0 group-hover/chip:opacity-100 text-slate-400 hover:text-rose-500 transition-all border border-transparent hover:border-slate-200 rounded px-1"
+                                            >
+                                                ✕
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -2517,6 +2702,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     <div className="flex justify-between items-center mb-3">
                                         <h4 className="text-[11px] font-black tracking-widest text-indigo-300 uppercase">Intervenciones ({copyCandidates.interventions.length})</h4>
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 if (selectedInterventionsToCopy.size === copyCandidates.interventions.length) {
                                                     setSelectedInterventionsToCopy(new Set());
@@ -2559,6 +2745,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     <div className="flex justify-between items-center mb-3">
                                         <h4 className="text-[11px] font-black tracking-widest text-emerald-300 uppercase">Ejercicios Prescritos ({copyCandidates.exercises.length})</h4>
                                         <button
+                                            type="button"
                                             onClick={() => {
                                                 if (selectedExercisesToCopy.size === copyCandidates.exercises.length) {
                                                     setSelectedExercisesToCopy(new Set());
@@ -2601,22 +2788,22 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         </div>
 
                         {/* FOOTER MODAL */}
-                        <div className="p-4 border-t border-slate-800 bg-slate-900/80 rounded-b-2xl flex justify-between items-center">
-                            <span className="text-xs text-slate-500 font-medium">
-                                Seleccionados: {selectedInterventionsToCopy.size} intervs. / {selectedExercisesToCopy.size} ejs.
-                            </span>
-                            <div className="flex gap-3">
-                                <button onClick={() => setShowCopyModal(false)} className="px-5 py-2 rounded-xl text-sm font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition">
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={confirmDuplicate}
-                                    disabled={selectedInterventionsToCopy.size === 0 && selectedExercisesToCopy.size === 0}
-                                    className="px-6 py-2 rounded-xl text-sm font-black text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 transition"
-                                >
-                                    Importar Seleccionados
-                                </button>
-                            </div>
+                        <div className="p-5 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/50">
+                            <button
+                                type="button"
+                                onClick={() => setShowCopyModal(false)}
+                                className="px-6 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-all border border-slate-700"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDuplicate}
+                                disabled={selectedExercisesToCopy.size === 0 && selectedInterventionsToCopy.size === 0}
+                                className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg disabled:opacity-30 disabled:grayscale transition-all"
+                            >
+                                Importar Seleccionados
+                            </button>
                         </div>
 
                     </div>
