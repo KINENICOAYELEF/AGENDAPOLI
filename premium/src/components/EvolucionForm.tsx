@@ -239,6 +239,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     const [requiresLateReason, setRequiresLateReason] = useState(false);
     const [isAttemptingClose, setIsAttemptingClose] = useState(false);
     const [isEditingOverride, setIsEditingOverride] = useState(false); // FASE 2.1.28
+    // Control dinámico de cierre (permite editar tras reapertura sin mutar initialData)
+    const isClosedDynamic = useMemo(() => formData.status === 'CLOSED', [formData.status]);
     const [isLateDraft, setIsLateDraft] = useState(false);
 
     // UI Layout States
@@ -277,21 +279,20 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         }
     }, [initialData, usuariaId]);
 
-    // Calcular permanentemente si la ficha lleva más de 36h en borrador desde la fecha indicada
     useEffect(() => {
-        if (!isClosed && formData.sessionAt) {
+        if (!isClosedDynamic && formData.sessionAt) {
             const h = getDifferenceInHours(formData.sessionAt, new Date().toISOString());
             setIsLateDraft(h > 36);
         } else {
             setIsLateDraft(false);
         }
-    }, [isClosed, formData.sessionAt]);
+    }, [isClosedDynamic, formData.sessionAt]);
 
     // FASE 2.1.21: Obtener Última Evolución Cerrada (Continuidad) + FASE 2.1.22: Cálculo SessionNumber
     // FASE 11: Usa evolucionesAnteriores prop cuando disponible + acepta legacy estado='CERRADA'
     useEffect(() => {
         const fetchContinuityAndNumber = async () => {
-            if (!globalActiveYear || isClosed) return;
+            if (!globalActiveYear || isClosedDynamic) return;
             setIsLoadingContinuity(true);
             try {
                 // FASE 11: Si tenemos evolucionesAnteriores del ProcesoTimeline, usarlas directamente
@@ -351,11 +352,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             }
         };
         fetchContinuityAndNumber();
-    }, [globalActiveYear, procesoId, usuariaId, isClosed, initialData?.id, evolucionesAnteriores]);
+    }, [globalActiveYear, procesoId, usuariaId, isClosedDynamic, initialData?.id, evolucionesAnteriores]);
 
     // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms) Anti-Loop
     useEffect(() => {
-        if (isClosed || loading || isAttemptingClose || !formData.usuariaId) return;
+        if (isClosedDynamic || loading || isAttemptingClose || !formData.usuariaId) return;
 
         // Omitimos 'audit' e 'id' para evitar bucles de autoguardado generados por el mismo save (inyección de fechas)
         const { audit, id, _migratedFromLegacy, ...dataToCompare } = formData as any;
@@ -374,18 +375,18 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData, isClosed, loading, isAttemptingClose, saveStatus]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando muta el contenido real
+    }, [formData, isClosedDynamic, loading, isAttemptingClose, saveStatus]); // Ejecutar re-evaluación EXCLUSIVAMENTE cuando muta el contenido real
 
     // FASE 2.1.15: PERSISTENCIA LOCAL LIGERA (Inmediata y en caché físico)
     useEffect(() => {
-        if (!isClosed && formData && formData.usuariaId) {
+        if (!isClosedDynamic && formData && formData.usuariaId) {
             try {
                 localStorage.setItem(draftKey, JSON.stringify(formData));
             } catch (e) {
                 console.warn("Error guardando progreso en localStorage", e);
             }
         }
-    }, [formData, isClosed, draftKey]);
+    }, [formData, isClosedDynamic, draftKey]);
 
     // FASE 2.1.15: OPTIMIZACIÓN TECLADO MÓVIL
     useEffect(() => {
@@ -494,7 +495,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                 // Evitamos pisar si estamos en Edit Mode de una sesión con una versión anterior
                 const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== cached.versionId;
-                if (isOldVersion && isClosed) return;
+                if (isOldVersion && isClosedDynamic) return;
 
                 setAvailableObjectives(cached.objectives);
                 setCurrentVersionId(cached.versionId);
@@ -537,7 +538,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     setProcesoContext(newContext);
 
                     // FASE 2.2.4: Inyección automática de pre-requisitos si es Evolución Nueva
-                    if (!isClosed && !isEditMode) {
+                    if (!isClosedDynamic && !isEditMode) {
                         const rawConsiderations = procesoData.flags?.consideracionesClinicas;
                         const considerationsArray = Array.isArray(rawConsiderations) 
                             ? rawConsiderations 
@@ -562,7 +563,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         };
 
                         const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== activeSet.versionId;
-                        if (isOldVersion && isClosed) return;
+                        if (isOldVersion && isClosedDynamic) return;
 
                         setAvailableObjectives(actives);
                         setCurrentVersionId(activeSet.versionId);
@@ -618,10 +619,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         };
 
         fetchObjectiveSet();
-    }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosed]);
+    }, [procesoId, globalActiveYear, formData.objectiveSetVersionId, isClosedDynamic]);
 
     const toggleObjective = (objId: string, customStatus?: 'trabajado' | 'avanzó' | 'sin cambio' | 'empeoró') => {
-        if (isClosed) return;
+        if (isClosedDynamic) return;
 
         setFormData(prev => {
             const currentWork = Array.isArray(prev.objectiveWork) ? [...prev.objectiveWork] : [];
@@ -757,7 +758,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     };
 
     const moveExercise = (index: number, direction: 'up' | 'down') => {
-        if (isClosed) return;
+        if (isClosedDynamic) return;
         setFormData((prev: any) => {
             if (!prev.exercises) return prev;
             const newExercises = [...prev.exercises];
@@ -775,7 +776,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             alert("Seleccione el año de operación actual para duplicar.");
             return;
         }
-        if (isClosed || !user) return;
+        if (isClosedDynamic || !user) return;
         try {
             // Busca la última evolución cerrada de este proceso (o usuario globalmente)
             const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
@@ -1071,8 +1072,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             alert("No hay programa activo configurado en este momento.");
             return;
         }
-        if (user?.role !== "DOCENTE") {
-            alert("Solo Rol DOCENTE o Coordinador puede reabrir evoluciones firmadas.");
+        if (user?.role !== "DOCENTE" && user?.role !== "INTERNO") {
+            alert("No tienes permisos suficientes para reabrir evoluciones firmadas.");
             return;
         }
 
@@ -1109,7 +1110,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             }));
             setIsEditingOverride(true);
             
-            alert("Ficha reabierta exitosamente bajo la responsabilidad y huella de DOCENTE. Ya puede editar.");
+            alert(`Ficha reabierta exitosamente por ${user.role}. Ya puede editar.`);
+            
+            // Notificar al padre para que actualice el Timeline (opcional pero recomendado)
+            if (onSaveSuccess) onSaveSuccess(formData as Evolucion, false, false);
         } catch (error) {
             console.error(error);
             alert("Hubo un error de base de datos reabriendo la evolución.");
@@ -1120,7 +1124,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
     // Handler para apretar "Cerrar Evolución"
     const handleAttemptClose = () => {
-        if (isClosed) return;
+        if (isClosedDynamic) return;
 
         // Validación 1: Campos mínimos y asistentes (Lógica unificada)
         if (missingFields.length > 0) {
@@ -1214,7 +1218,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     const assistantCards: any[] = [];
     const missingFields: string[] = [];
 
-    if (!isClosed) {
+    if (!isClosedDynamic) {
         const hasValidStart = formData.pain?.evaStart !== undefined && formData.pain?.evaStart !== "";
         const hasValidEnd = formData.pain?.evaEnd !== undefined && formData.pain?.evaEnd !== "";
 
@@ -1578,23 +1582,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         </section>
                     </div>
 
-                    {/* 3.1 Educación y Objetivos */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Educación al Paciente</h3>
-                            <div className="prose prose-sm text-slate-600 font-medium bg-amber-50/30 p-4 rounded-2xl border border-amber-100/50">
-                                {formData.educationNotes || "No se registraron notas de educación o telemetría."}
-                            </div>
-                        </div>
-                        <div>
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Objetivos de Proceso Trabajados</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {formData.selectedObjectivesSnapshot?.length ? formData.selectedObjectivesSnapshot.map((obj, i) => (
-                                    <span key={i} className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 shadow-sm">
-                                        {obj.label}
-                                    </span>
-                                )) : <p className="text-[10px] text-slate-400 italic">No se vincularon objetivos maestros en esta sesión.</p>}
-                            </div>
+                    {/* 3.1 Objetivos de Proceso Trabajados (Full Width) */}
+                    <section className="pt-8 border-t border-slate-100">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Objetivos de Proceso Trabajados</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {formData.selectedObjectivesSnapshot?.length ? formData.selectedObjectivesSnapshot.map((obj: any, i: number) => (
+                                <span key={i} className="px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-[10px] font-bold text-indigo-700 shadow-sm transition-all hover:scale-105">
+                                    {obj.label}
+                                </span>
+                            )) : <p className="text-[10px] text-slate-400 italic">No se vincularon objetivos maestros en esta sesión.</p>}
                         </div>
                     </section>
 
@@ -1621,7 +1617,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     );
 };
 
-    const isViewMode = isClosed && !isEditingOverride;
+    const isViewMode = isClosedDynamic && !isEditingOverride;
 
     if (isViewMode) return renderViewer();
 
@@ -1656,9 +1652,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 )}
                             </h2>
                             <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                <span className={`flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border shrink-0 ${isClosed ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${isClosed ? 'bg-rose-500' : 'bg-blue-500 animate-pulse'}`}></span>
-                                    {isClosed ? 'Cerrada' : 'Borrador'}
+                                <span className={`flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border shrink-0 ${isClosedDynamic ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isClosedDynamic ? 'bg-rose-500' : 'bg-blue-500 animate-pulse'}`}></span>
+                                    {isClosedDynamic ? 'Cerrada' : 'Borrador'}
                                 </span>
                                 {isLateDraft && (
                                     <span className="flex items-center gap-1 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full border shrink-0 bg-orange-50 text-orange-700 border-orange-200">
@@ -1673,7 +1669,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {!isClosed && (
+                        {!isClosedDynamic && (
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1693,7 +1689,6 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             selectedObjectiveIds: [],
                                             objectiveWork: [],
                                             isDraft: true,
-                                            isClosed: false,
                                             nextPlan: "",
                                             sessionStatus: "Realizada"
                                         } as any);
@@ -1751,7 +1746,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             <div><span className="font-bold">Apertura del borrador:</span> <span className="text-slate-900">{formData.audit?.draftCreatedAt ? new Date(formData.audit.draftCreatedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : (formData.audit?.createdAt ? new Date(formData.audit.createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '---')}</span></div>
                             <div><span className="font-bold">Primer guardado:</span> <span className="text-slate-900">{formData.audit?.firstSavedAt ? new Date(formData.audit.firstSavedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : 'Aún no en BD'}</span></div>
                             <div><span className="font-bold">Última edición:</span> <span className="text-slate-900">{formData.audit?.lastEditedAt || formData.audit?.updatedAt ? new Date((formData.audit?.lastEditedAt || formData.audit?.updatedAt)!).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : 'Aún no guardado'}</span></div>
-                            {isClosed && formData.audit?.closedAt && (
+                            {isClosedDynamic && formData.audit?.closedAt && (
                                 <div><span className="font-bold text-slate-800">Cierre total:</span> <span className="text-slate-900">{new Date(formData.audit.closedAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                             )}
                         </div>
@@ -1766,7 +1761,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     <div id="evolution-form-content" className="space-y-4">
 
                         {/* --- FASE 4.2: PANEL DOCENTE EN READONLY --- */}
-                        {isClosed && user?.role === 'DOCENTE' && (
+                        {isClosedDynamic && user?.role === 'DOCENTE' && (
                             <div className="bg-gradient-to-br from-purple-950 to-indigo-950 p-5 rounded-2xl border border-purple-700/30 shadow-md mb-2 animate-in fade-in slide-in-from-top-4">
                                 <h3 className="text-sm font-black text-purple-100 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     🎓 Panel de Revisión Docente
@@ -2052,7 +2047,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 <button
                                                     key={status}
                                                     type="button"
-                                                    disabled={isClosed}
+                                                    disabled={isClosedDynamic}
                                                     onClick={() => setFormData(prev => ({ ...prev, sessionStatus: status as any }))}
                                                     className={`px-4 py-2.5 rounded-xl text-[11px] tracking-wide uppercase font-black transition-all border ${formData.sessionStatus === status
                                                         ? (status === 'Realizada' ? 'bg-emerald-600 text-white border-emerald-500 shadow-md ring-1 ring-emerald-400 ring-offset-1' : 'bg-rose-600 text-white border-rose-500 shadow-md ring-1 ring-rose-400 ring-offset-1')
@@ -2076,7 +2071,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Motivo Principal <span className="text-rose-600">*</span></label>
                                                     <select
-                                                        disabled={isClosed}
+                                                        disabled={isClosedDynamic}
                                                         value={formData.suspensionDetails?.reason || ""}
                                                         onChange={(e) => handleNestedChange("suspensionDetails", "reason", e.target.value)}
                                                         className="w-full border border-rose-200/80 bg-white rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 text-rose-900 shadow-sm transition-all"
@@ -2094,7 +2089,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Acción Tomada <span className="text-rose-600">*</span></label>
                                                     <select
-                                                        disabled={isClosed}
+                                                        disabled={isClosedDynamic}
                                                         value={formData.suspensionDetails?.action || ""}
                                                         onChange={(e) => handleNestedChange("suspensionDetails", "action", e.target.value)}
                                                         className="w-full border border-rose-200/80 bg-white rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 text-rose-900 shadow-sm transition-all"
@@ -2112,7 +2107,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                     <label className="block text-[10px] font-bold text-rose-700/80 mb-1.5 uppercase">Nota Aclaratoria Extra</label>
                                                     <input
                                                         type="text"
-                                                        disabled={isClosed}
+                                                        disabled={isClosedDynamic}
                                                         value={formData.suspensionDetails?.note || ""}
                                                         onChange={(e) => handleNestedChange("suspensionDetails", "note", e.target.value)}
                                                         placeholder="Detalles sobre por qué se canceló y quién avisó..."
@@ -2149,7 +2144,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                                     <div className="flex items-start gap-3">
                                                                         <button
                                                                             type="button"
-                                                                            disabled={isClosed}
+                                                                            disabled={isClosedDynamic}
                                                                             onClick={() => toggleObjective(obj.id)}
                                                                             className={`mt-0.5 shrink-0 w-5 h-5 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-sky-500 border-sky-600 text-white' : 'bg-slate-100 border-slate-300'}`}
                                                                         >
@@ -2165,7 +2160,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                                                         <button
                                                                                             key={status}
                                                                                             type="button"
-                                                                                            disabled={isClosed}
+                                                                                            disabled={isClosedDynamic}
                                                                                             onClick={() => toggleObjective(obj.id, status)}
                                                                                             className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md transition-all border ${workObj?.sessionStatus === status ?
                                                                                                 (status === 'avanzó' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
@@ -2207,7 +2202,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                     label="Dolor al Ingresar (EVA)"
                                                     value={formData.pain?.evaStart !== "" && formData.pain?.evaStart !== undefined ? Number(formData.pain.evaStart) : undefined}
                                                     onChange={(val) => handleNestedChange("pain", "evaStart", val !== undefined ? String(val) : "")}
-                                                    disabled={isClosed}
+                                                    disabled={isClosedDynamic}
                                                 />
                                             </div>
                                     
@@ -2221,7 +2216,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                     </label>
                                                 </div>
                                                 <textarea
-                                                    disabled={isClosed}
+                                                    disabled={isClosedDynamic}
                                                     value={formData.sessionGoal || ""}
                                                     onChange={e => setFormData(p => ({ ...p, sessionGoal: e.target.value }))}
                                                     placeholder="Ej: Dolor al elevar el brazo, o meta: mejorar propiocepción hoy..."
@@ -2256,28 +2251,28 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                             <div>
                                                                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">PA Sistólica</label>
                                                                 <div className="relative">
-                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.bloodPressureSys || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureSys", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <input type="number" disabled={isClosedDynamic} value={formData.vitalSigns?.bloodPressureSys || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureSys", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
                                                                     <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">SYS</span>
                                                                 </div>
                                                             </div>
                                                             <div>
                                                                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">PA Diastólica</label>
                                                                 <div className="relative">
-                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.bloodPressureDia || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureDia", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <input type="number" disabled={isClosedDynamic} value={formData.vitalSigns?.bloodPressureDia || ""} onChange={(e) => handleNestedChange("vitalSigns", "bloodPressureDia", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
                                                                     <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">DIA</span>
                                                                 </div>
                                                             </div>
                                                             <div>
                                                                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Frec. Cardíaca</label>
                                                                 <div className="relative">
-                                                                    <input type="number" disabled={isClosed} value={formData.vitalSigns?.heartRate || ""} onChange={(e) => handleNestedChange("vitalSigns", "heartRate", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <input type="number" disabled={isClosedDynamic} value={formData.vitalSigns?.heartRate || ""} onChange={(e) => handleNestedChange("vitalSigns", "heartRate", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-10 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
                                                                     <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">BPM</span>
                                                                 </div>
                                                             </div>
                                                             <div>
                                                                 <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Saturación SpO2</label>
                                                                 <div className="relative">
-                                                                    <input type="number" step="0.1" disabled={isClosed} value={formData.vitalSigns?.spO2 || ""} onChange={(e) => handleNestedChange("vitalSigns", "spO2", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
+                                                                    <input type="number" step="0.1" disabled={isClosedDynamic} value={formData.vitalSigns?.spO2 || ""} onChange={(e) => handleNestedChange("vitalSigns", "spO2", e.target.value === "" ? "" : Number(e.target.value))} className="w-full border border-slate-200 rounded-lg pl-3 pr-8 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner hover:border-slate-300" />
                                                                     <span className="absolute right-3 top-2.5 text-xs font-semibold text-slate-400">%</span>
                                                                 </div>
                                                             </div>
@@ -2291,7 +2286,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                                             <button
                                                                                 key={sint}
                                                                                 type="button"
-                                                                                disabled={isClosed}
+                                                                                disabled={isClosedDynamic}
                                                                                 onClick={() => {
                                                                                     const current = formData.vitalSigns?.acuteSymptoms || [];
                                                                                     const newVal = isSelected ? current.filter(s => s !== sint) : [...current, sint];
@@ -2306,7 +2301,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                                 </div>
                                                                 <button
                                                                     type="button"
-                                                                    disabled={isClosed}
+                                                                    disabled={isClosedDynamic}
                                                                     onClick={() => {
                                                                         handleNestedChange("vitalSigns", "acuteSymptoms", ["Asintomático"]);
                                                                         handleNestedChange("vitalSigns", "symptomNote", "N/A" as any);
@@ -2315,7 +2310,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                                 >
                                                                     Marcar como "Asintomático"
                                                                 </button>
-                                                                <input type="text" placeholder="Observaciones extras de Triaje..." disabled={isClosed} value={formData.vitalSigns?.symptomNote || ""} onChange={(e) => handleNestedChange("vitalSigns", "symptomNote", e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium outline-none focus:border-emerald-500 text-slate-700 shadow-inner hover:border-slate-300" />
+                                                                <input type="text" placeholder="Observaciones extras de Triaje..." disabled={isClosedDynamic} value={formData.vitalSigns?.symptomNote || ""} onChange={(e) => handleNestedChange("vitalSigns", "symptomNote", e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium outline-none focus:border-emerald-500 text-slate-700 shadow-inner hover:border-slate-300" />
                                                             </div>
                                                         </Disclosure.Panel>
                                                     </Transition>
@@ -2341,7 +2336,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             type="datetime-local"
                                             value={toDateTimeLocal(formData.sessionAt as string)}
                                             onChange={handleDateChange}
-                                            disabled={isClosed}
+                                            disabled={isClosedDynamic}
                                             max={toDateTimeLocal(new Date().toISOString())}
                                             className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500 transition-all font-medium text-slate-700 shadow-inner"
                                             required
@@ -2349,7 +2344,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         <p className="text-[10px] text-slate-500 mt-2 font-medium leading-relaxed">Registro bioético. Un atraso al digitalizar mayor a 36hrs exige justificación de auditoría.</p>
                                         
                                         {/* PASO 3.2: Panel 36h Inline */}
-                                        {isLateDraft && !isClosed && (
+                                        {isLateDraft && !isClosedDynamic && (
                                             <div className="mt-3 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl animate-in fade-in slide-in-from-top-2">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <ClockIcon className="w-5 h-5 text-amber-600" />
@@ -2410,7 +2405,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         <button
                                             type="button"
                                             onClick={duplicatePreviousExercises}
-                                            disabled={isClosed}
+                                            disabled={isClosedDynamic}
                                             className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
@@ -2421,7 +2416,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         interventions={formData.interventions || []}
                                         onChange={(newInterventions) => setFormData(prev => ({ ...prev, interventions: newInterventions as any }))}
                                         activeObjectives={availableObjectives.filter(obj => formData.selectedObjectiveIds?.includes(obj.id))}
-                                        disabled={isClosed}
+                                        disabled={isClosedDynamic}
                                     />
                                 </div>
                             </AccordionSection>
@@ -2452,7 +2447,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         <div className="flex items-center gap-1 bg-indigo-950/70 p-1 rounded-xl border border-indigo-800/60 shadow-inner">
                                             <button
                                                 type="button"
-                                                disabled={isClosed}
+                                                disabled={isClosedDynamic}
                                                 onClick={() => setFormData(prev => ({ ...prev, perceptionMode: 'RIR' }))}
                                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${(!formData.perceptionMode || formData.perceptionMode === 'RIR') ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-200'}`}
                                             >
@@ -2460,7 +2455,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             </button>
                                             <button
                                                 type="button"
-                                                disabled={isClosed}
+                                                disabled={isClosedDynamic}
                                                 onClick={() => setFormData(prev => ({ ...prev, perceptionMode: 'RPE' }))}
                                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${formData.perceptionMode === 'RPE' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-400 hover:text-indigo-200'}`}
                                             >
@@ -2483,7 +2478,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 exercise={ex}
                                                 index={index}
                                                 effortMode={currentPerception as 'RIR' | 'RPE'}
-                                                isClosed={isClosed}
+                                                isClosed={isClosedDynamic}
                                                 isFirst={index === 0}
                                                 isLast={index === (formData.exercises?.length || 0) - 1}
                                                 activeObjectives={availableObjectives.filter(obj => formData.selectedObjectiveIds?.includes(obj.id))}
@@ -2503,7 +2498,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     })}
 
                                     {/* CONTROLES DE AÑADIR EJERCICIO (FASE 2.1.26) */}
-                                    {!isClosed && (
+                                    {!isClosedDynamic && (
                                         <div className="mt-4 flex flex-col gap-3">
                                             {/* Quick Add por línea */}
                                             <div className="flex flex-col md:flex-row gap-2 w-full bg-slate-900/50 p-2 md:p-1 rounded-2xl border border-indigo-900/40 focus-within:border-indigo-500/80 transition-all shadow-inner" role="group">
@@ -2663,7 +2658,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                     GROC <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Cambio Global)</span>
                                                 </label>
                                                 <div className="flex items-center gap-2">
-                                                    {!isClosed && (
+                                                    {!isClosedDynamic && (
                                                         <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "groc", undefined)} className="text-[10px] text-rose-500 hover:text-rose-700 font-bold px-2 py-0.5 rounded-full hover:bg-rose-100 transition-colors bg-white shadow-sm border border-rose-100">Cerrar ✕</button>
                                                     )}
                                                     <span className="text-sm font-black px-2.5 py-0.5 rounded-full border text-rose-600 bg-rose-100 border-rose-200">
@@ -2701,7 +2696,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                     SANE <span className="text-[9px] text-slate-400 font-medium normal-case ml-1">(Eval. Numérica)</span>
                                                 </label>
                                                 <div className="flex items-center gap-2">
-                                                    {!isClosed && (
+                                                    {!isClosedDynamic && (
                                                         <button type="button" onClick={() => handleNestedChange("outcomesSnapshot", "sane", undefined)} className="text-[10px] text-blue-500 hover:text-blue-700 font-bold px-2 py-0.5 rounded-full hover:bg-blue-100 transition-colors bg-white shadow-sm border border-blue-100">Cerrar ✕</button>
                                                     )}
                                                     <span className="text-sm font-black px-2.5 py-0.5 rounded-full border text-blue-600 bg-blue-100 border-blue-200">
@@ -2762,7 +2757,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         )}
 
                         {/* TARJETAS DEL ASISTENTE CLÍNICO */}
-                        {!isClosed && (
+                        {!isClosedDynamic && (
                             <div className="mt-8 mb-4 border-2 border-dashed border-indigo-200 bg-indigo-50/30 rounded-3xl p-5">
                                 <div className="flex items-center gap-2 mb-4">
                                     <SparklesIcon className="w-5 h-5 text-indigo-500" />
@@ -2937,7 +2932,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             <div className="bg-white/95 backdrop-blur-xl border-t border-slate-200 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] md:pb-4 fixed bottom-0 left-0 right-0 z-40 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.1)]">
                 <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
 
-                    {!isClosed && (
+                    {!isClosedDynamic && (
                         <>
                             <button
                                 type="button"
@@ -2972,9 +2967,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     {isClosed && (
                         <div className="flex-1 flex justify-between items-center bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
                             <p className="text-slate-500 font-bold text-sm tracking-wide py-4 w-full text-center">DOCUMENTO FIRMADO Y SELLADO</p>
-                            {user?.role === "DOCENTE" && (
+                            {(user?.role === "DOCENTE" || user?.role === "INTERNO") && (
                                 <button type="button" onClick={handleReopen} disabled={loading} className="px-6 py-4 bg-orange-100/50 hover:bg-orange-100 text-orange-700 font-black tracking-wide border-l border-slate-200 transition-colors text-xs whitespace-nowrap active:bg-orange-200">
-                                    Reabrir <span className="hidden md:inline opacity-60">(Docente)</span>
+                                    Reabrir <span className="hidden md:inline opacity-60">(Interno/Docente)</span>
                                 </button>
                             )}
                         </div>
