@@ -31,8 +31,8 @@ import { InterventionPanel } from "./ui/InterventionPanel";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS
-const globalEvalCache: Record<string, { objectives: { id: string, label: string, status?: string }[], versionId: string, timestamp: number }> = {};
+// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS Y DE CONTEXTO(2.2.4)
+const globalEvalCache: Record<string, { objectives: { id: string, label: string, status?: string }[], versionId: string, timestamp: number, procesoContext?: any }> = {};
 
 function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion> {
     if (!data) return {
@@ -490,6 +490,12 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
                 setAvailableObjectives(cached.objectives);
                 setCurrentVersionId(cached.versionId);
+                
+                // RESTAURAR PROCESOCONTEXT SI ESTÁ EN CACHÉ (FASE 2.1.30 Bugfix)
+                if (cached.procesoContext) {
+                    setProcesoContext(cached.procesoContext);
+                }
+
                 return;
             }
 
@@ -518,12 +524,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     const procesoData = docSnap.data();
                     const activeSet = procesoData.activeObjectiveSet;
 
-                    setProcesoContext({
+                    const pc = {
                         motivoIngresoLibre: procesoData.motivoIngresoLibre,
                         evaluacionesStr: evalsStr,
                         caseSnapshot: procesoData.caseSnapshot,
                         flags: procesoData.flags
-                    });
+                    };
+                    setProcesoContext(pc);
 
                     // FASE 2.2.4: Inyección automática de pre-requisitos si es Evolución Nueva
                     if (!isClosed && !isEditMode) {
@@ -546,7 +553,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         globalEvalCache[cacheKey] = {
                             objectives: actives,
                             versionId: activeSet.versionId,
-                            timestamp: timeNow
+                            timestamp: timeNow,
+                            procesoContext: pc
                         };
 
                         const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== activeSet.versionId;
@@ -585,6 +593,12 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         } catch (e) {
                             console.error("Error buscando última evaluación para objetivos", e);
                         }
+                        globalEvalCache[cacheKey] = {
+                            objectives: fallbackActives,
+                            versionId: fallbackVersionId || '',
+                            timestamp: timeNow,
+                            procesoContext: pc
+                        };
 
                         setAvailableObjectives(fallbackActives);
                         setCurrentVersionId(fallbackVersionId);
@@ -1548,15 +1562,17 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                             </div>
                                         </div>
                                     </div>
-                                    {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 && (
-                                        <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
-                                            <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
-                                                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                                                Hand-off (Traspaso Clínico Colega)
-                                            </h4>
-                                            <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">{lastClosedEvol.handoffText}</p>
-                                        </div>
-                                    )}
+                                    <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
+                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
+                                            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                                            Hand-off (Traspaso Clínico Colega)
+                                        </h4>
+                                        <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">
+                                            {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 
+                                                ? lastClosedEvol.handoffText 
+                                                : <span className="text-amber-800/60 italic">No dejó notas de traspaso.</span>}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
