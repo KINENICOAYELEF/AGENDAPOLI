@@ -31,7 +31,7 @@ import { InterventionPanel } from "./ui/InterventionPanel";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS Y DE CONTEXTO(2.2.4)
+// CACHÉ EN MEMORIA (FASE 2.1.9) PARA EVITAR RE-LECTURAS DE OBJETIVOS
 const globalEvalCache: Record<string, { objectives: { id: string, label: string, status?: string }[], versionId: string, timestamp: number, procesoContext?: any }> = {};
 
 function mapLegacyToPro(data: any, defaultUsuariaId: string): Partial<Evolucion> {
@@ -484,6 +484,12 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             // Cache local para SPA
             if (globalEvalCache[cacheKey] && (timeNow - globalEvalCache[cacheKey].timestamp < 600000)) {
                 const cached = globalEvalCache[cacheKey];
+                
+                // Si tenemos el contexto en caché, lo restauramos (FASE 2.2.4 fix para múltiples evoluciones continuas)
+                if (cached.procesoContext) {
+                    setProcesoContext(cached.procesoContext);
+                }
+
                 // Evitamos pisar si estamos en Edit Mode de una sesión con una versión anterior
                 const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== cached.versionId;
                 if (isOldVersion && isClosed) return;
@@ -491,12 +497,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 setAvailableObjectives(cached.objectives);
                 setCurrentVersionId(cached.versionId);
                 
-                // RESTAURAR PROCESOCONTEXT SI ESTÁ EN CACHÉ (FASE 2.1.30 Bugfix)
-                if (cached.procesoContext) {
-                    setProcesoContext(cached.procesoContext);
-                }
-
-                return;
+                // Solo retornamos anticipado si ya logramos restaurar el contexto también
+                if (cached.procesoContext) return;
             }
 
             setLoadingObjectives(true);
@@ -524,13 +526,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     const procesoData = docSnap.data();
                     const activeSet = procesoData.activeObjectiveSet;
 
-                    const pc = {
+                    const newContext = {
                         motivoIngresoLibre: procesoData.motivoIngresoLibre,
                         evaluacionesStr: evalsStr,
                         caseSnapshot: procesoData.caseSnapshot,
                         flags: procesoData.flags
                     };
-                    setProcesoContext(pc);
+                    setProcesoContext(newContext);
 
                     // FASE 2.2.4: Inyección automática de pre-requisitos si es Evolución Nueva
                     if (!isClosed && !isEditMode) {
@@ -554,7 +556,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                             objectives: actives,
                             versionId: activeSet.versionId,
                             timestamp: timeNow,
-                            procesoContext: pc
+                            procesoContext: newContext
                         };
 
                         const isOldVersion = formData.objectiveSetVersionId && formData.objectiveSetVersionId !== activeSet.versionId;
@@ -579,7 +581,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     label: iv.descripcion || iv.objetivo || iv.texto || '',
                                     status: 'activo',
                                     source: 'evaluacion'
-                                })).filter((ov: any) => ov.label)) || lastEval?.objectives?.map((o: any) => ({
+                                }))).filter((ov: any) => ov.label) || lastEval?.objectives?.map((o: any) => ({
                                     id: o.id || `eval_${lastEval.id}_${o.description}`,
                                     label: o.description || o.label,
                                     status: o.status || 'activo'
@@ -593,11 +595,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         } catch (e) {
                             console.error("Error buscando última evaluación para objetivos", e);
                         }
+
+                        // Guardamos en cache el Fallback con el contexto
                         globalEvalCache[cacheKey] = {
                             objectives: fallbackActives,
-                            versionId: fallbackVersionId || '',
+                            versionId: fallbackVersionId || 'fallback_1',
                             timestamp: timeNow,
-                            procesoContext: pc
+                            procesoContext: newContext
                         };
 
                         setAvailableObjectives(fallbackActives);
@@ -1536,43 +1540,63 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                                    <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-10">
+                                    <div className="lg:col-span-2 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors flex flex-col">
                                         <h4 className="flex items-center gap-2 text-[11px] font-black text-indigo-800 mb-2.5 uppercase tracking-wide">
                                             <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                                            El paciente requirió
+                                            El paciente requirió (Sesión Previa)
                                         </h4>
-                                        <p className="text-sm font-medium text-slate-700 leading-relaxed mb-2">{lastClosedEvol.sessionGoal || "Sin requerimiento registrado"}</p>
-                                        <p className="text-xs font-semibold text-indigo-600 italic bg-indigo-100/50 p-2 rounded-lg inline-block w-full">Plan/Proyección: {lastClosedEvol.nextPlan || "Sin plan pautado"}</p>
+                                        <p className="text-sm font-medium text-slate-700 leading-relaxed mb-3">{lastClosedEvol.sessionGoal || "Sin requerimiento registrado"}</p>
+                                        
+                                        {lastClosedEvol.interventions && (Array.isArray(lastClosedEvol.interventions) ? lastClosedEvol.interventions.length > 0 : (lastClosedEvol.interventions as any).categories?.length > 0) && (
+                                            <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {Array.isArray(lastClosedEvol.interventions) 
+                                                    ? lastClosedEvol.interventions.map((inv: any, i: number) => (
+                                                        <span key={i} className="px-2 py-1 bg-white border border-indigo-200 text-[10px] font-bold text-indigo-600 rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                                                            {inv.type || inv.name || inv.label || "Intervención Clínica"}
+                                                        </span>
+                                                    ))
+                                                    : ((lastClosedEvol.interventions as any).categories || []).map((cat: string, i: number) => (
+                                                        <span key={i} className="px-2 py-1 bg-white border border-indigo-200 text-[10px] font-bold text-indigo-600 rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+                                                            {cat}
+                                                        </span>
+                                                    ))
+                                                }
+                                            </div>
+                                        )}
+
+                                        <div className="mt-auto">
+                                            <p className="text-xs font-semibold text-indigo-600 italic bg-indigo-100/60 p-2.5 rounded-lg inline-block w-full border border-indigo-200/50">
+                                                Plan/Proyección: {lastClosedEvol.nextPlan || "Sin plan pautado"}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100/50 hover:bg-rose-50 transition-colors">
-                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-rose-800 mb-2.5 uppercase tracking-wide">
+                                    <div className="lg:col-span-1 bg-rose-50/50 p-4 rounded-xl border border-rose-100/50 hover:bg-rose-50 transition-colors">
+                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-rose-800 mb-4 uppercase tracking-wide">
                                             <svg className="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-                                            Variación del Dolor (EVA)
+                                            Dolor (EVA) Previo
                                         </h4>
                                         <div className="flex items-center justify-between text-sm py-2">
-                                            <div className="text-center">
-                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1">CÓMO LLEGÓ</span>
-                                                <span className="font-black text-slate-800 text-lg px-4 py-1.5 bg-white rounded-lg shadow-sm border border-rose-100">{lastClosedEvol.pain?.evaStart || "-"}</span>
+                                            <div className="text-center w-full">
+                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1.5">Inicio</span>
+                                                <span className="font-black text-slate-800 text-xl px-4 py-2 bg-white rounded-xl shadow-sm border border-rose-100 block w-full">{lastClosedEvol.pain?.evaStart || "-"}</span>
                                             </div>
-                                            <svg className="w-6 h-6 text-rose-300 mx-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                                            <div className="text-center">
-                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1">CÓMO SE FUE</span>
-                                                <span className="font-black text-slate-800 text-lg px-4 py-1.5 bg-white rounded-lg shadow-sm border border-rose-100">{lastClosedEvol.pain?.evaEnd || "-"}</span>
+                                            <svg className="w-5 h-5 text-rose-300 mx-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                            <div className="text-center w-full">
+                                                <span className="block text-[10px] uppercase text-rose-600 font-bold mb-1.5">Salida</span>
+                                                <span className="font-black text-slate-800 text-xl px-4 py-2 bg-white rounded-xl shadow-sm border border-rose-100 block w-full">{lastClosedEvol.pain?.evaEnd || "-"}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
-                                        <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
-                                            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                                            Hand-off (Traspaso Clínico Colega)
-                                        </h4>
-                                        <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">
-                                            {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 
-                                                ? lastClosedEvol.handoffText 
-                                                : <span className="text-amber-800/60 italic">No dejó notas de traspaso.</span>}
-                                        </p>
-                                    </div>
+                                    {lastClosedEvol.handoffText && lastClosedEvol.handoffText.length > 5 && (
+                                        <div className="md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200/60 shadow-inner">
+                                            <h4 className="flex items-center gap-2 text-[11px] font-black text-amber-900 mb-2 uppercase tracking-wide">
+                                                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                                                Hand-off (Traspaso Clínico Colega)
+                                            </h4>
+                                            <p className="text-sm font-semibold text-amber-950/80 leading-relaxed whitespace-pre-wrap">{lastClosedEvol.handoffText}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
