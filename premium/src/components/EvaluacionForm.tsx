@@ -419,37 +419,33 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
                 
                 // FASE 2.2.4: Master Traffic Light (Agregado de Seguridad, Irritabilidad y Carga)
-                // FASE 11: Búsqueda exhaustiva en TODAS las fuentes posibles de irritabilidad y carga
+                // FASE 11: Usa normalizeEvaluationState (la misma función que P3) como fuente canónica
                 const getMasterTL = (f: any) => {
                     const norm = (s: string) => (s || '').trim().toLowerCase();
                     
-                    // 1. Seguridad (Triage) — desde autoSynthesis
+                    // 1. Seguridad (Triage) — desde autoSynthesis trafficLight
                     const s = f.autoSynthesis?.trafficLight || 'Verde';
                     
-                    // 2. Irritabilidad — buscar en TODAS las fuentes posibles
-                    const irritSources = [
-                        f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida,
-                        f.interview?.v4?.analisisIA?.SINS?.irritabilidad?.irritabilidad_global?.valor,
-                        f.interview?.v4?.sins?.irritabilidad_global,
-                        f.interview?.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-                        f.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-                    ].map(v => norm(v)).find(v => v && v !== 'no definida' && v !== 'pendiente' && v !== 'nodefinido') || '';
+                    // 2. Irritabilidad — PRIORIDAD: P3 autoSynthesis → normalizeEvaluationState (misma fuente que P3 usa)
+                    const p3Irrit = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+                    const normalized = normalizeEvaluationState(f);
+                    const normalizedIrrit = norm(normalized.irritabilidad);
+                    const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
+                        ? p3Irrit 
+                        : normalizedIrrit;
                     
-                    const i = (irritSources === 'alta') ? 'Rojo' : 
-                              (irritSources === 'media' || irritSources === 'moderada') ? 'Amarillo' : 'Verde';
+                    const i = (finalIrrit === 'alta') ? 'Rojo' : 
+                              (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
                     
-                    // 3. Tolerancia a la Carga — buscar en múltiples fuentes
-                    const cargaSources = [
-                        f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel,
-                    ].map(v => norm(v)).find(v => v && v !== 'n/a') || '';
-                    
-                    const c = (cargaSources === 'baja') ? 'Rojo' :
-                              (cargaSources === 'media' || cargaSources === 'moderada') ? 'Amarillo' : 'Verde';
+                    // 3. Tolerancia a la Carga — desde P3 autoSynthesis
+                    const carga = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+                    const c = (carga === 'baja') ? 'Rojo' :
+                              (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
                     
                     const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
                     const finalColor = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
                     
-                    console.log("[DEBUG] getMasterTL INITIAL:", { safety: s, irrit: i, irrSrc: irritSources, load: c, cargaSrc: cargaSources, final: finalColor });
+                    console.log("[DEBUG] getMasterTL INITIAL:", { safety: s, p3Irrit, normalizedIrrit, finalIrrit, irrit: i, carga, load: c, final: finalColor });
                     return finalColor;
                 };
                 const finalTL = getMasterTL(fd);
@@ -533,26 +529,25 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const fd = payload as EvaluacionReevaluacion;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
 
-                // FASE 2.2.4: Actualizar semáforo si fue modificado (Master Traffic Light)
-                // FASE 11: Búsqueda exhaustiva en TODAS las fuentes posibles
+                // FASE 2.2.4: Actualizar semáforo (Reevaluación)
+                // FASE 11: Usa normalizeEvaluationState como fuente canónica de P3
                 const getMasterTL = (f: any) => {
                     const norm = (s: string) => (s || '').trim().toLowerCase();
                     const s = f.autoSynthesis?.trafficLight || 'Verde';
                     
-                    const irritSources = [
-                        f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida,
-                        f.interview?.v4?.analisisIA?.SINS?.irritabilidad?.irritabilidad_global?.valor,
-                        f.interview?.v4?.sins?.irritabilidad_global,
-                        f.interview?.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-                        f.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-                    ].map(v => norm(v)).find(v => v && v !== 'no definida' && v !== 'pendiente' && v !== 'nodefinido') || '';
+                    const p3Irrit = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+                    const normalized = normalizeEvaluationState(f);
+                    const normalizedIrrit = norm(normalized.irritabilidad);
+                    const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
+                        ? p3Irrit 
+                        : normalizedIrrit;
                     
-                    const i = (irritSources === 'alta') ? 'Rojo' : 
-                              (irritSources === 'media' || irritSources === 'moderada') ? 'Amarillo' : 'Verde';
+                    const i = (finalIrrit === 'alta') ? 'Rojo' : 
+                              (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
                     
-                    const cRatio = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-                    const c = (cRatio === 'baja') ? 'Rojo' :
-                              (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    const carga = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+                    const c = (carga === 'baja') ? 'Rojo' :
+                              (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
                     
                     const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
                     return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
@@ -682,17 +677,17 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const norm = (s: string) => (s || '').trim().toLowerCase();
             const s = fd.autoSynthesis?.trafficLight || 'Verde';
             
-            const irritSources = [
-                fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida,
-                fd.interview?.v4?.analisisIA?.SINS?.irritabilidad?.irritabilidad_global?.valor,
-                fd.interview?.v4?.sins?.irritabilidad_global,
-                fd.interview?.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-                fd.focosPrincipales?.[0]?.irritabilidadAuto?.nivel,
-            ].map(v => norm(v)).find(v => v && v !== 'no definida' && v !== 'pendiente' && v !== 'nodefinido') || '';
+            // FASE 11: Usa normalizeEvaluationState como fuente canónica de P3
+            const p3Irrit = norm(fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+            const normalizedResync = normalizeEvaluationState(fd);
+            const normalizedIrrit = norm(normalizedResync.irritabilidad);
+            const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
+                ? p3Irrit 
+                : normalizedIrrit;
             
-            const i = (irritSources === 'alta') ? 'Rojo' : (irritSources === 'media' || irritSources === 'moderada') ? 'Amarillo' : 'Verde';
-            const cRatio = norm(fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-            const c = (cRatio === 'baja') ? 'Rojo' : (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+            const i = (finalIrrit === 'alta') ? 'Rojo' : (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
+            const carga = norm(fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+            const c = (carga === 'baja') ? 'Rojo' : (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
             const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
             const finalTL = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
 
