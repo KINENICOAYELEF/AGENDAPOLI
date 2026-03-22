@@ -303,19 +303,20 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 // 2. Traer la última cerrada del usuario o proceso para Handoff Continuidad
                 let qQuery;
                 if (procesoId) {
-                    qQuery = query(evolsRef, where("procesoId", "==", procesoId), where("status", "==", "CLOSED"));
+                    qQuery = query(evolsRef, where("procesoId", "==", procesoId));
                 } else {
-                    qQuery = query(evolsRef, where("usuariaId", "==", usuariaId), where("status", "==", "CLOSED"));
+                    qQuery = query(evolsRef, where("usuariaId", "==", usuariaId));
                 }
                 const snap = await getDocs(qQuery);
                 if (!snap.empty) {
-                    // Ordenar en memoria para evitar requerir un índice compuesto de Firestore (procesoId + status + sessionAt)
+                    // Ordenar y filtrar en memoria para evitar requerir un índice compuesto de Firestore (procesoId + status + sessionAt)
                     const sortedDocs = snap.docs
                         .map(d => ({ id: d.id, ...d.data() } as Evolucion))
+                        .filter(d => d.status === 'CLOSED')
                         .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
 
                     const data = sortedDocs[0];
-                    if (data.id !== initialData?.id) {
+                    if (data && data.id !== initialData?.id) {
                         setLastClosedEvol(data);
                     }
                 }
@@ -738,18 +739,23 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
             let q;
             if (procesoId) {
-                q = query(evolsRef, where("procesoId", "==", procesoId), orderBy("sessionAt", "desc"), limit(2));
+                q = query(evolsRef, where("procesoId", "==", procesoId));
             } else {
-                q = query(evolsRef, where("usuariaId", "==", usuariaId), orderBy("sessionAt", "desc"), limit(2));
+                q = query(evolsRef, where("usuariaId", "==", usuariaId));
             }
             const querySnapshot = await getDocs(q);
 
+            // Filtrar y ordenar en memoria para evitar errores de índice compuesto
+            const candidates = querySnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as any))
+                .filter(d => d.status === 'CLOSED')
+                .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+
             let lastEvol: any = null;
-            querySnapshot.forEach(doc => {
-                if (doc.id !== initialData?.id && !lastEvol) {
-                    lastEvol = { id: doc.id, ...doc.data() };
-                }
-            });
+            if (candidates.length > 0) {
+                // El primer candidato que no sea el actual
+                lastEvol = candidates.find(d => d.id !== initialData?.id) || candidates[0];
+            }
 
             // Compatibilidad Transversal Fase 2.1.19 / 2.1.20
             const oldExercises = lastEvol?.exerciseRx?.rows || lastEvol?.exercises || [];

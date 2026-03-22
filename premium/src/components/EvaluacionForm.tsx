@@ -420,13 +420,26 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 
                 // FASE 2.2.4: Master Traffic Light (Agregado de Seguridad, Irritabilidad y Carga)
                 const getMasterTL = (f: any) => {
+                    const norm = (s: string) => (s || '').trim().toLowerCase();
+                    
+                    // 1. Seguridad (Triage)
                     const s = f.autoSynthesis?.trafficLight || 'Verde';
-                    const i = f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Alta' ? 'Rojo' : 
-                              f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Media' ? 'Amarillo' : 'Verde';
-                    const c = (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Baja') ? 'Rojo' :
-                              (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Media') ? 'Amarillo' : 'Verde';
+                    
+                    // 2. Irritabilidad (P1/P3)
+                    const iRatio = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+                    const i = (iRatio === 'alta') ? 'Rojo' : 
+                              (iRatio === 'media' || iRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
+                    // 3. Tolerancia a la Carga (P3)
+                    const cRatio = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+                    const c = (cRatio === 'baja') ? 'Rojo' :
+                              (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
                     const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                    const finalColor = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                    
+                    console.log("[DEBUG] getMasterTL calculation:", { safety: s, irrit: i, load: c, final: finalColor });
+                    return finalColor;
                 };
                 const finalTL = getMasterTL(fd);
 
@@ -527,13 +540,19 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
                 // FASE 2.2.4: Actualizar semáforo si fue modificado (Master Traffic Light)
                 const getMasterTL = (f: any) => {
+                    const norm = (s: string) => (s || '').trim().toLowerCase();
                     const s = f.autoSynthesis?.trafficLight || 'Verde';
-                    const i = f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Alta' ? 'Rojo' : 
-                              f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida === 'Media' ? 'Amarillo' : 'Verde';
-                    const c = (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Baja') ? 'Rojo' :
-                              (f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel === 'Media') ? 'Amarillo' : 'Verde';
+                    
+                    const iRatio = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
+                    const i = (iRatio === 'alta') ? 'Rojo' : 
+                              (iRatio === 'media' || iRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
+                    const cRatio = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
+                    const c = (cRatio === 'baja') ? 'Rojo' :
+                              (cRatio === 'media' || cRatio === 'moderada') ? 'Amarillo' : 'Verde';
+                    
                     const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-                    return [s, i, c].sort((a, b) => w[b] - w[a])[0];
+                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
                 };
 
                 const finalTL = getMasterTL(fd);
