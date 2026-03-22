@@ -1349,8 +1349,15 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             : (formData.interventions?.categories || []).map(cat => ({ category: cat, subType: 'Intervención Clínica' }));
 
         return (
-            <div className="fixed inset-0 z-[60] flex flex-col w-full h-full bg-slate-100/95 backdrop-blur-sm overflow-y-auto scroll-smooth pb-32">
-                <div className="max-w-4xl mx-auto w-full bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-500 my-4 md:my-12">
+            <div className="fixed inset-0 z-[70] overflow-y-auto scroll-smooth overscroll-contain" id="clinical-viewer-overlay">
+                <div 
+                    className="min-h-screen w-full flex items-start justify-center p-4 md:p-12 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" 
+                    onClick={onClose}
+                >
+                    <div 
+                        className="w-full max-w-4xl bg-white shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)] rounded-[2.5rem] overflow-hidden border border-white/10 animate-in zoom-in duration-500 relative flex flex-col"
+                        onClick={e => e.stopPropagation()}
+                    >
                 {/* Header Visor */}
                 <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-8 text-white relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -1606,6 +1613,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ID Documento</div>
                            <div className="font-mono text-[9px] text-slate-300">{formData.id}</div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
