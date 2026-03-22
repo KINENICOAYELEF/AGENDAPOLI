@@ -1341,23 +1341,34 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             : (formData.interventions?.categories || []).map(cat => ({ category: cat, subType: 'Intervención Clínica' }));
 
         return (
-            <div className="max-w-4xl mx-auto bg-white min-h-screen shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in duration-500">
+            <div className="flex flex-col h-full w-full mx-auto overflow-y-auto bg-slate-50/50 scroll-smooth hide-scrollbar pb-32">
+                <div className="max-w-4xl mx-auto w-full bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in duration-500 my-4 md:my-8">
                 {/* Header Visor */}
                 <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-8 text-white relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-2 10H7v-2h10v2m0-4H7V7h10v2m0 8H7v-2h10v2z"/></svg>
                     </div>
                     <div className="relative z-10">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="bg-indigo-500/30 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-400/30 mb-4 inline-block">
-                                    Documento Clínico Firmado
-                                </span>
-                                <h1 className="text-3xl font-black tracking-tight">{(formData as any).patientName || "Registro de Continuidad"}</h1>
-                                <p className="text-indigo-300 font-medium mt-1 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    {formData.sessionAt ? new Date(formData.sessionAt).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible'}
-                                </p>
+                        <div className="flex justify-between items-center bg-transparent">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all backdrop-blur-md border border-white/10 group shadow-lg"
+                                    title="Volver"
+                                >
+                                    <ChevronLeftIcon className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+                                </button>
+                                <div>
+                                    <span className="bg-indigo-500/30 text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-indigo-400/30 mb-2 inline-block">
+                                        Documento Clínico Firmado
+                                    </span>
+                                    <h1 className="text-2xl md:text-3xl font-black tracking-tight">{(formData as any).patientName || "Registro de Continuidad"}</h1>
+                                    <p className="text-indigo-300 font-medium mt-0.5 flex items-center gap-2 text-xs">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        {formData.sessionAt ? new Date(formData.sessionAt).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Fecha no disponible'}
+                                    </p>
+                                </div>
                             </div>
                             <button 
                                 type="button"
@@ -1365,9 +1376,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                     e.preventDefault();
                                     setIsEditingOverride(true);
                                 }}
-                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
+                                className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-xl"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                 Habilitar Edición
                             </button>
                         </div>
@@ -1495,8 +1506,9 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                     </div>
                 </div>
             </div>
-        );
-    };
+        </div>
+    );
+};
 
     const isViewMode = isClosed && !isEditingOverride;
 
