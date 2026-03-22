@@ -18,72 +18,61 @@ Clasifica las pruebas en "essential", "recommended" y "optional".
   `,
 
   DIAGNOSIS: `
-### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.7.0 (OVER-CAPTURE MÁXIMA)
+### PRONTUARIO DE DIAGNÓSTICO FUNCIONAL P3 - Versión v3.7.1 (OVER-CAPTURE EXTREMA)
 
-REGLA DE ORO: NO TE LIMITES A LOS EJEMPLOS. Captura ABSOLUTAMENTE TODO de forma integral (no solo músculo-esquelético), extrayendo de P1, P1.5, P2 y Expediente. EL EVALUADOR SIEMPRE PUEDE BORRAR LO QUE SOBRE, PERO NO INVENTAR LO QUE FALTA.
+REGLA DE ORO DE EXHAUSTIVIDAD: 
+- **NO TE LIMITES A LOS EJEMPLOS.** 
+- **NO DEJES NINGUNA CASILLA VACÍA.** Si el dato no es explícito, infiere el impacto clínico más probable basado en el mecanismo de lesión y el contexto BPS.
+- **CAPTURA ABSOLUTAMENTE TODO**: Extrae cada detalle de P1, P1.5, P2 y Expediente. 
+- **EL EVALUADOR PREFIERE BORRAR LO QUE SOBRE A TENER QUE ESCRIBIR LO QUE FALTA.**
 
 ### REGLA #1 — BLOQUE C: CLASIFICACIÓN DEL DOLOR (ESTABILIDAD OBLIGATORIA):
 - **Clasificación**: Determina el mecanismo dominante PRIMERO según relato y mecanismo de lesión en P1, luego confirma con test de provocación en P2.
 - **Fundamento ESTRUCTURADO**:
   - \`apoyo\`: Genera AL MENOS 4 hallazgos. Cada uno en 1 oración citando MÍNIMO una fuente (ej: "Confirmado por dolor a compresión en P2").
   - \`duda_mezcla\`: Genera AL MENOS 2 hallazgos discordantes o que sugieran cautela (ej: "Dolor nocturno reportado en P1.5 sugiere...").
-  - \`conclusion\`: Párrafo de 2-3 oraciones integrando mecanismo principal, modulación y nivel de certeza.
+  - \`conclusion\`: Párrafo de 3-4 oraciones integrando mecanismo principal, modulación y nivel de certeza.
 - **Subtipos**: Siempre genera AL MENOS 2 subtipos (ej: Mecánico + Inflamatorio).
 
-### REGLA #2 — BLOQUE D: SISTEMAS Y ESTRUCTURAS (OVER-CAPTURE):
-- **Principales**: Genera AL MENOS 2 estructuras principales con argumento clínico extenso (2-3 oraciones cruzando P1+P2).
-- **Secundarias**: Genera AL MENOS 2-3 estructuras secundarias con argumento que correlacione hallazgos de P1/P1.5 con P2.
-- **Moduladoras**: Genera AL MENOS 3-4 estructuras asociadas/moduladoras. Incluye TODA comorbilidad (HTA, diabetes, tiroides), toda cicatriz, toda estructura neurológica cercana. Cada argumento DEBE ser un párrafo que explique POR QUÉ modula el caso (edad, sexo, medicamentos, mecanismo).
-- **Argumento extenso**: Cada argumento debe tener 2-3 oraciones mínimo, cruzando datos de AL MENOS 2 fuentes (ej: "detectado en P2 + correlacionado con P1.5").
+### REGLA #2 — BLOQUE D: SISTEMAS Y ESTRUCTURAS (MAX-CAPTURE):
+- **Principales**: Genera AL MENOS 2 estructuras principales con argumento clínico extenso (3 oraciones cruzando P1+P2).
+- **Secundarias**: Genera AL MENOS 3 estructuras secundarias con argumento que correlacione hallazgos de P1/P1.5 con P2.
+- **Moduladoras**: Genera AL MENOS 4-5 estructuras asociadas/moduladoras. Incluye TODA comorbilidad (HTA, diabetes, tiroides), todas las cicatrices, toda estructura neurológica o circulatoria cercana. Cada argumento DEBE ser un párrafo que explique POR QUÉ modula el caso (edad, sexo, medicamentos, mecanismo).
+- **Argumento extenso**: Cada argumento debe tener 3 oraciones mínimo, citando datos de AL MENOS 2 fuentes.
 
 ### REGLA #3 — BLOQUE E: ALTERACIONES (ATOMIZACIÓN + OVER-CAPTURE MASIVA):
-**E1 — Checklist Estructural (AL MENOS 5 ítems):**
-- Debes buscar alteraciones en TODOS los subsistemas: Nervio periférico/Plexos, Hueso (reacciones de estrés/edema), Cápsula/Ligamento, Tendón/Fascia/Cicatrices, Sistema Vascular/Endotelial, Respiratorio (Caja torácica/Diafragma), Endocrino/Metabólico.
-- Cada fundamento debe tener 2 oraciones, citando P1/P1.5 y confirmando en P2.
+**E1 — Checklist Estructural (AL MENOS 6 ítems):**
+- Debes buscar alteraciones en TODOS los subsistemas: Hueso, Cápsula/Ligamento, Tendón/Fascia, Sistema Vascular, Respiratorio (Caja torácica), Endocrino/Metabólico.
+- Cada fundamento debe tener 2-3 oraciones, citando P1/P1.5 y confirmando en P2.
 
-**E2 — Checklist Funcional (AL MENOS 12 ítems):**
-- DEBES cubrir todos estos dominios si aplican: Dolor somático/neuropático, Irritabilidad/Sensibilización Periférica o Central, Debilidad focal (CADA grupo muscular = 1 ítem), Inhibición Muscular Artrogénica (AMI), Hipermovilidad/Rigidez (CADA articulación).
-- **DOMINIO DEPORTIVO / RENDIMIENTO:** Busca obligatoriamente alteraciones en RFD (Tasa de Desarrollo de Fuerza/Potencia), Agilidad (Cambios de Dirección/COD), Mecánica de Aterrizaje/Pliometría (Stiff-landing, asimetrías de impacto), y Alteración del Ciclo Estiramiento-Acortamiento (SSC).
-- **DOMINIO INTEGRAL / SISTÉMICO:** Busca obligatoriamente Fatiga Metabólica/Glucolítica precoz, Ineficiencia Ventilatoria bajo carga (Apneas, valsalva), Desacondicionamiento Cardiovascular aeróbico, Alteraciones Propioceptivas/Sensorimotoras, Kinesiofobia específica, Miedo al movimiento, y Alteraciones de Sueño/Recuperación.
-- CRUCE DE FUENTES OBLIGATORIO: Cada fundamento DEBE cruzar relato (P1/P1.5) con examen físico (P2).
-- ATOMIZACIÓN: Extrae cada disfunción por separado. NUNCA agrupes.
+**E2 — Checklist Funcional (AL MENOS 12-15 ítems):**
+- DEBES cubrir: Dolor, Irritabilidad/Sensibilización, Debilidad focal (CADA grupo muscular = 1 ítem), Inhibición (AMI), Hipermovilidad/Rigidez.
+- **DOMINIO DEPORTIVO:** RFD (Potencia), Agilidad (COD), Mecánica de Aterrizaje/Pliometría, y Alteración del Ciclo Estiramiento-Acortamiento (SSC).
+- **DOMINIO INTEGRAL:** Fatiga Metabólica, Ineficiencia Ventilatoria, Desacondicionamiento Cardiovascular, Propiocepción, Kinesiofobia, Sueño/Recuperación.
+- CRUCE DE FUENTES OBLIGATORIO: Cada fundamento DEBE cruzar relato con examen físico.
 
 ### REGLA #3 — BLOQUE F: ACTIVIDAD Y PARTICIPACIÓN (INFERENCIA OBLIGATORIA):
-- **F1 (Limitaciones)**: Genera AL MENOS 5 limitaciones de actividad. NO solo las que el paciente dice literalmente. INFIERE: si tiene debilidad de glúteo (P2) + sube escaleras (P1) → limitación en escaleras. Si tiene dolor sentado (P2) + trabaja en oficina (P1) → limitación en sedestación.
-- **F2 (Restricciones)**: Genera AL MENOS 5 restricciones de participación. INFIERE roles afectados: trabajo, deporte, vida social, recreación, autocuidado, vida sexual, rol familiar, transporte. Si duele correr → afecta deporte. Si duele sentarse → afecta trabajo.
-- **Detalle**: Cada ítem DEBE tener el campo 'detalle' explicando la biomecánica o la lógica clínica de la limitación/restricción, indicando de qué fuente se infirió (P1, P1.5 o P2).
+- **F1 (Limitaciones)**: Genera AL MENOS 5-6 limitaciones. INFIERE impactos en AVDs basados en debilidades y dolor de P2 + rutinas de P1.
+- **F2 (Restricciones)**: Genera AL MENOS 5-6 restricciones. INFIERE roles afectados: trabajo, deporte, vida social, rol familiar, transporte.
+- **Detalle**: Cada ítem DEBE explicar la biomecánica o la lógica clínica.
 
 ### REGLA #4 — BLOQUE G: FACTORES BPS (CONTEXTUALIZACIÓN OBLIGATORIA):
-- Genera AL MENOS 4 ítems por CADA categoría (positivos, negativos, facilitadores, barreras, moduladores).
-- **NO SEAS LITERAL**: Infiere factores que el paciente no dice explícitamente pero que se deducen del contexto:
-  - EDAD: Un paciente de 50+ tiene declive hormonal, sarcopenia incipiente, cambios degenerativos esperables.
-  - SEXO: Mujer post-parto tiene laxitud ligamentosa residual; hombre adulto joven tiene pico de masa muscular.
-  - OCUPACIÓN: Trabajo sedentario = barrera por desacondicionamiento; trabajo manual pesado = barrera por sobrecarga.
-  - DEPORTE: Si practicaba deporte, su abandono es factor negativo (estrés+aislamiento); si tiene acceso a gimnasio es facilitador.
-  - SUEÑO/ESTRÉS: Si reporta mal sueño, conéctalo con sensitización central y reducción del umbral de dolor.
-- **G5 (Moduladores clínicos)**: Cada medicamento, cada comorbilidad, la cronicidad del cuadro, antecedentes especiales.
-- **G6 (Síntesis narrativa)**: Texto de 3-5 oraciones conectando E, F y G con lógica clínica experta. Debe mencionar edad, sexo, ocupación, y proyectar el pronóstico.
+- Genera AL MENOS 4-5 ítems por CADA categoría.
+- **INFERENCIA BPS**:
+  - EDAD: Declive hormonal, sarcopenia, cambios degenerativos.
+  - SEXO: Factores biológicos/hormonales específicos.
+  - OCUPACIÓN: Cargas estáticas/dinámicas, ergonomía, estrés laboral.
+  - DEPORTE: Impacto psicológico del cese de actividad, acceso a equipamiento.
+- **G5 (Moduladores clínicos)**: Medicamentos, comorbilidades (HTA, Diabetes, etc.), cronicidad.
+- **G6 (Síntesis narrativa)**: Texto de 5-6 oraciones conectando todo con lógica experta.
 
 ### REGLA FINAL — VERIFICACIÓN ANTI-OMISIÓN: 
-Antes de responder, verifica:
-✓ ¿Bloque C tiene ≥4 apoyos, ≥2 dudas y conclusión larga?
-✓ ¿Bloque D tiene ≥2 principales, ≥2 secundarias, ≥3 moduladoras con argumentos extensos?
-✓ ¿Bloque E tiene ≥5 estructurales y ≥12 funcionales con cruce explícito de P1/P2?
-✓ ¿Bloque F tiene ≥5 limitaciones y ≥5 restricciones con detalle e inferencia?
-✓ ¿Bloque G tiene ≥4 ítems por categoría con contextualización de edad/sexo/ocupación?
-✓ ¿Capturé COMORBILIDADES como alteraciones estructurales sistémicas (HTA, Diabetes)?
-✓ ¿He inferido impactos razonables en la participación social/laboral/familiar?
+¿Has capturado TODAS las comorbilidades? ¿Has inferido impactos en TODAS las categorías? ¿Hay algún array de menos de 4-5 items? SI ES ASÍ, AGREGA MÁS.
 
 ### REGLAS TÉCNICAS:
 - **FORMATO JSON PURO**. **IDIOMA**: Español clínico técnico.
-- **ENUM DOLOR**: Usa exactamente uno de ['nociceptivo', 'neuropático', 'nociplástico', 'mixto', 'no_concluyente'] (minúsculas).
 - **DATOS FALTANTES**: Arrays vacíos [], NUNCA omitas campos obligatorios.
-  `,
-
-
-
-
-  P3_BPS_DICTIONARY: `
+  `,  P3_BPS_DICTIONARY: `
 Utiliza este diccionario para traducir claves técnicas a lenguaje humano en el Bloque G:
 - "diurna_fija": "Disponibilidad principalmente diurna y estable."
 - "vespertina": "Disponibilidad al final del día."
@@ -180,7 +169,7 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * Modalidades complementarias: crioterapia, termoterapia, TENS (si aplica)
      * Estrategias deportivas (si aplica): pliometría progresiva, entrenamiento reactivo, agilidad, cambios de dirección, return to sport protocols
      REGLA: Solo incluir lo que tenga SENTIDO CLÍNICO para el caso. Si no aporta, no agregarlo.
-     Basar las recomendaciones en práctica basada en evidencia pero NO incluir citas ni autores.
+     Basar las recomendaciones en práctica basada en evidencia pero ESTÁ PROHIBIDO incluir citas, autores o bibliografía.
    - "tips_dosificacion": 3-5 tips MODERNOS de dosificación para esta fase:
      * RPE (Rating of Perceived Exertion): cómo usarlo (ej: "Mantener RPE 4-5 en fase 1, progresar a RPE 7-8 en fase 3")
      * RIR (Reps in Reserve): ej: "RIR 3-4 en fase 2, progresar a RIR 1-2 en fase 3"
@@ -188,12 +177,12 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * TUT (Time Under Tension / Tiempo Bajo Tensión): ej: "30-45 seg por set para hipertrofia funcional"
      * Volumen semanal y frecuencia de entrenamiento recomendada
      PROHIBIDO dejar dosificación como "3x15 convencional". Debe ser clínicamente justificado con variables modernas.
-     Basar las recomendaciones en evidencia actualizada pero NO incluir citas ni referencias bibliográficas.
+     Basar las recomendaciones en evidencia actualizada pero ESTÁ PROHIBIDO incluir citas, autores o bibliografía.
    - "progresiones": MÍNIMO 3-4 criterios de progresión de carga/volumen.
    - "criterios_avance": Párrafo de 2-3 líneas con criterios MEDIBLES.
    - "criterios_regresion": Párrafo de 2-3 líneas con señales de alarma.
    - "errores_frecuentes": 2-3 errores que un kinesiólogo novato cometería en esta fase.
-   - "perla_docente": 2-3 líneas con un dato clínico basado en evidencia útil para enseñanza. NO incluir citas bibliográficas.
+   - "perla_docente": 2-3 líneas con un dato clínico basado en evidencia útil para enseñanza. PROHIBIDO incluir citas o bibliografía.
    - "sesiones_tipo": 2 SESIONES TIPO de ~60 min por fase, con estructura calentamiento → bloque principal → cool-down, tipos de ejercicio con dosificación (series x reps, RPE, RIR, descanso).
 
 ═══ REGLA 7 — REEVALUACIÓN EXPANDIDA CON MULTI-SIGNOS ═══
@@ -216,8 +205,8 @@ DEBES retornar un JSON estrictamente mapeado al esquema solicitado. TODOS los ca
      * "nombre_en": Nombre en inglés para buscar en YouTube/internet (ej: "Single leg glute bridge")
      * "fase_recomendada": En qué fase usarlo (ej: "Fase 2-3")
      * "objetivo": Qué trabaja (ej: "Fuerza de glúteo medio y estabilidad pélvica")
-   - "busquedas_sugeridas": 4-6 términos de búsqueda en INGLÉS para profundizar en YouTube/PubMed/Scholar (ej: "sacroiliac joint mobilization physiotherapy", "hip abductor strengthening exercises rehab", "graded motor imagery chronic pain")
-   NO incluir "referencias_bibliograficas". Omitir ese campo.
+   - "busquedas_sugeridas": 4-6 términos de búsqueda en INGLÉS específicos para PubMed/Scholar para profundizar en la patología y tratamiento (ej: "patellofemoral pain syndrome exercise pubmed", "hamstring rehab return to sport criteria").
+   PROHIBIDO incluir el campo "referencias_bibliograficas" o cualquier tipo de citas.
 
 ═══ REGLAS GENERALES DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan datos, asume escenarios clínicamente probables basados en P3.

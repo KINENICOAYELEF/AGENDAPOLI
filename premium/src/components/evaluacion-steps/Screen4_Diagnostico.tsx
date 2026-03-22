@@ -30,15 +30,18 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
         el.style.height = el.scrollHeight + 'px';
     }, []);
 
-    // Auto-resize all textareas when AI content loads
+    // Auto-resize all textareas when AI content loads or data changes
     useEffect(() => {
-        if (p4_plan_structured.diagnostico_kinesiologico_narrativo) {
-            setTimeout(() => {
+        if (p4_plan_structured) {
+            const resizeAll = () => {
                 document.querySelectorAll<HTMLTextAreaElement>('[data-autoresize]').forEach(el => {
                     el.style.height = 'auto';
                     el.style.height = el.scrollHeight + 'px';
                 });
-            }, 100);
+            };
+            // Run twice: once immediately and once after a short delay for rendering
+            resizeAll();
+            setTimeout(resizeAll, 150);
         }
     }, [p4_plan_structured]);
 
@@ -251,7 +254,7 @@ export function Screen4_Diagnostico({ formData, updateFormData, isClosed }: Scre
                         <div>
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Objetivo General Definido</label>
                             <textarea
-                                data-autoresize onInput={autoResize} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm disabled:opacity-75 min-h-[60px]"
+                                data-autoresize onInput={autoResize} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm disabled:opacity-75 min-h-[60px] overflow-hidden"
                                 placeholder="[Verbo] + [problema macro] + para + [participación]..."
                                 value={p4_plan_structured.objetivo_general?.seleccionado || ''}
                                 onChange={(e) => updateDeepObj('objetivo_general', { seleccionado: e.target.value })}

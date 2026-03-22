@@ -43,7 +43,7 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p3_ai_cache';
         // Restaurado al config original que funcionaba: gemini-3.1-flash-lite-preview con thinkingLevel low
         orderedModels = [
-            { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'low' },
+            { modelId: 'gemini-3.1-flash-lite-preview', thinkingLevel: 'medium' },
             { modelId: 'gemini-2.5-flash-lite' },
             { modelId: 'gemini-2.5-flash' }
         ];

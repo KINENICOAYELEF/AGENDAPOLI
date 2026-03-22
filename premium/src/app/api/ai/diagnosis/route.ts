@@ -370,14 +370,53 @@ DATOS CLÍNICOS ESTRUCTURADOS DE ENTRADA (COMPACT CASE PACKAGE):
 ${normalizedPayload}
     `;
 
-        // Sanitizador P3: SOLO rellena campos menores que no afectan contenido clínico.
-        // Campos críticos (estructuras, limitaciones, factores) NO se sanitizan — si faltan, Zod falla
-        // y el modelo de fallback los genera completos.
-        const sanitizeP3Response = (data: any) => {
-            if (data?.recordatorios_y_coherencia) {
-                if (!data.recordatorios_y_coherencia.faltantes_no_criticos) data.recordatorios_y_coherencia.faltantes_no_criticos = [];
-                if (!data.recordatorios_y_coherencia.incoherencias_detectadas) data.recordatorios_y_coherencia.incoherencias_detectadas = [];
-            }
+        // Sanitizador: rellena campos que el modelo lite a veces omite, SIN relajar el schema
+                const sanitizeP3Response = (data: any) => {
+            if (!data) return {};
+            
+            // A. Clasificación Dolor
+            if (!data.clasificacion_dolor) data.clasificacion_dolor = {};
+            if (!data.clasificacion_dolor.subtipos) data.clasificacion_dolor.subtipos = [];
+            if (!data.clasificacion_dolor.fundamento) data.clasificacion_dolor.fundamento = {};
+            if (!data.clasificacion_dolor.fundamento.apoyo) data.clasificacion_dolor.fundamento.apoyo = [];
+            if (!data.clasificacion_dolor.fundamento.duda_mezcla) data.clasificacion_dolor.fundamento.duda_mezcla = [];
+            if (!data.clasificacion_dolor.fundamento.conclusion) data.clasificacion_dolor.fundamento.conclusion = "";
+
+            // B. Sistemas y Estructuras
+            if (!data.sistema_y_estructuras) data.sistema_y_estructuras = {};
+            if (!data.sistema_y_estructuras.sistemas_involucrados) data.sistema_y_estructuras.sistemas_involucrados = [];
+            if (!data.sistema_y_estructuras.estructuras) data.sistema_y_estructuras.estructuras = {};
+            if (!data.sistema_y_estructuras.estructuras.principales) data.sistema_y_estructuras.estructuras.principales = [];
+            if (!data.sistema_y_estructuras.estructuras.secundarias) data.sistema_y_estructuras.estructuras.secundarias = [];
+            if (!data.sistema_y_estructuras.estructuras.asociadas_moduladoras) data.sistema_y_estructuras.estructuras.asociadas_moduladoras = [];
+            if (!data.sistema_y_estructuras.estructuras_mas_afectan) data.sistema_y_estructuras.estructuras_mas_afectan = "";
+
+            // C. Alteraciones
+            if (!data.alteraciones_detectadas) data.alteraciones_detectadas = {};
+            if (!data.alteraciones_detectadas.estructurales) data.alteraciones_detectadas.estructurales = [];
+            if (!data.alteraciones_detectadas.funcionales) data.alteraciones_detectadas.funcionales = [];
+
+            // D. Actividad y Participación
+            if (!data.actividad_y_participacion) data.actividad_y_participacion = {};
+            if (!data.actividad_y_participacion.limitaciones_directas) data.actividad_y_participacion.limitaciones_directas = [];
+            if (!data.actividad_y_participacion.restricciones_participacion) data.actividad_y_participacion.restricciones_participacion = [];
+
+            // E. Factores Biopsicosociales
+            if (!data.factores_biopsicosociales) data.factores_biopsicosociales = {};
+            if (!data.factores_biopsicosociales.factores_personales_positivos) data.factores_biopsicosociales.factores_personales_positivos = [];
+            if (!data.factores_biopsicosociales.factores_personales_negativos) data.factores_biopsicosociales.factores_personales_negativos = [];
+            if (!data.factores_biopsicosociales.facilitadores_ambientales) data.factores_biopsicosociales.facilitadores_ambientales = [];
+            if (!data.factores_biopsicosociales.barreras_ambientales) data.factores_biopsicosociales.barreras_ambientales = [];
+            if (!data.factores_biopsicosociales.factores_clinicos_moduladores) data.factores_biopsicosociales.factores_clinicos_moduladores = [];
+            if (!data.factores_biopsicosociales.observaciones_bps_integradas) data.factores_biopsicosociales.observaciones_bps_integradas = "";
+
+            // F. Recordatorios y Coherencia
+            if (!data.recordatorios_y_coherencia) data.recordatorios_y_coherencia = {};
+            if (!data.recordatorios_y_coherencia.recordatorios_clinicos) data.recordatorios_y_coherencia.recordatorios_clinicos = [];
+            if (!data.recordatorios_y_coherencia.cosas_a_vigilar_en_tratamiento) data.recordatorios_y_coherencia.cosas_a_vigilar_en_tratamiento = [];
+            if (!data.recordatorios_y_coherencia.faltantes_no_criticos) data.recordatorios_y_coherencia.faltantes_no_criticos = [];
+            if (!data.recordatorios_y_coherencia.incoherencias_detectadas) data.recordatorios_y_coherencia.incoherencias_detectadas = [];
+
             return data;
         };
 
@@ -387,8 +426,8 @@ ${normalizedPayload}
             systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + PROMPTS.DIAGNOSIS,
             userPrompt,
             inputHash,
-            promptVersion: 'v3.9.0',
-            temperature: 0.2,
+            promptVersion: 'v3.9.1',
+            temperature: 0.3,
             validator: (data) => DiagnosisSchema.parse(sanitizeP3Response(data))
         });
 

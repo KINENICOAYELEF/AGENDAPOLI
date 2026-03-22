@@ -231,8 +231,7 @@ export const P4PlanStructuredSchema = z.object({
             fase_recomendada: z.string().describe("En qué fase usar: Fase 1, 2, 3 o 4"),
             objetivo: z.string().describe("Qué trabaja: fuerza, ROM, control motor, etc.")
         })).describe("8-15 ejercicios clave con nombre EN+ES para buscar"),
-        busquedas_sugeridas: z.array(z.string()).optional().describe("Términos de búsqueda sugeridos para profundizar (ej: 'sacroiliac joint mobilization physiotherapy')"),
-        referencias_bibliograficas: z.array(z.string()).optional().describe("DEPRECATED - no usar")
+        busquedas_sugeridas: z.array(z.string()).optional().describe("Términos de búsqueda sugeridos para profundizar en PubMed/Scholar (ej: 'patellofemoral pain syndrome exercise pubmed')")
     }).optional().describe("Banco de recursos para el estudiante/evaluador"),
     ia_metadata: z.object({
         model_used: z.string(),

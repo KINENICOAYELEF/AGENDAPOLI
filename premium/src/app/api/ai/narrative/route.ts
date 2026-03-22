@@ -140,7 +140,7 @@ ${normalizedPayload}
                         objetivo: ej?.objetivo || '',
                     }));
                     if (!data.banco_recursos.busquedas_sugeridas) data.banco_recursos.busquedas_sugeridas = [];
-                    if (!data.banco_recursos.referencias_bibliograficas) data.banco_recursos.referencias_bibliograficas = [];
+                    
                 }
                 if (data?.plan_maestro && Array.isArray(data.plan_maestro)) {
                     data.plan_maestro = data.plan_maestro.map((fase: any) => ({
