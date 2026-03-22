@@ -33,7 +33,7 @@ type TimelineItem =
 export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, onBack }: ProcesoTimelineProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
-    const isAdmin = (user?.role as string) === 'ADMIN';
+    const isAdmin = (user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE';
 
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
