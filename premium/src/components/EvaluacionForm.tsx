@@ -374,7 +374,12 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             const targetId = formData.id || (isEditMode ? initialData!.id! : generateId());
 
             if (!formData.id) {
-                updateFormData({ id: targetId });
+                // FASE 1.3: Si es primer guardado de nuevo registro, refrescar el timestamp para evitar colisiones 
+                // con otras evaluaciones abiertas al mismo tiempo.
+                const freshSessionAt = new Date().toISOString();
+                updateFormData({ id: targetId, sessionAt: freshSessionAt });
+                formData.id = targetId;
+                formData.sessionAt = freshSessionAt;
             }
 
             const payload: Evaluacion = {

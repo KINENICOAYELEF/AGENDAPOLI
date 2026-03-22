@@ -148,12 +148,31 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         )}
                     </div>
 
-                    {/* 2. Examen Físico (P2) */}
+                     {/* 2. Examen Físico (P2) */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h3 className="text-sm uppercase tracking-widest font-bold text-amber-600 mb-5 flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">2</span>
                             Examen Físico
                         </h3>
+
+                        {/* FASE 2.5: Datos Estructurados de P2 */}
+                        {ev.guidedExam && Object.keys(ev.guidedExam).length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                                {Object.entries(ev.guidedExam).map(([key, data]: [string, any]) => {
+                                    if (!data || key === 'status' || key === 'completedModules') return null;
+                                    const title = key.replace(/([A-Z])/g, ' $1').toUpperCase();
+                                    return (
+                                        <div key={key} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                            <h4 className="text-[10px] font-bold text-amber-700 uppercase mb-1">{title}</h4>
+                                            <div className="text-xs text-slate-600 line-clamp-3">
+                                                {typeof data === 'string' ? data : JSON.stringify(data).slice(0, 100) + '...'}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
                         {p2_text ? (
                             <div className="p-5 rounded-xl border border-slate-100 bg-amber-50/30">
                                 <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
@@ -178,9 +197,11 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 {/* Pain Classification */}
                                 <div className="bg-teal-50 p-5 rounded-xl border border-teal-100">
                                     <h4 className="text-[11px] uppercase text-teal-800 font-bold mb-1 tracking-wider">Diagnóstico Terapéutico</h4>
-                                    <div className="text-lg font-bold text-teal-900">{p3.clasificacion_dolor.categoria_seleccionada}</div>
+                                    <div className="text-lg font-bold text-teal-900">
+                                        {p3.clasificacion_dolor.categoria || p3.clasificacion_dolor.categoria_seleccionada}
+                                    </div>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {(p3.clasificacion_dolor.subtipos_seleccionados || (p3.clasificacion_dolor.subtipo_seleccionado ? [p3.clasificacion_dolor.subtipo_seleccionado] : [])).map((s: string, idx: number) => (
+                                        {(p3.clasificacion_dolor.subtipos || p3.clasificacion_dolor.subtipos_seleccionados || (p3.clasificacion_dolor.subtipo_seleccionado ? [p3.clasificacion_dolor.subtipo_seleccionado] : [])).map((s: string, idx: number) => (
                                             <span key={idx} className="bg-teal-600 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shadow-sm">
                                                 {s}
                                             </span>
@@ -191,17 +212,27 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-teal-800/80 mt-3 font-medium leading-relaxed">{p3.clasificacion_dolor.fundamento_breve}</p>
+                                    <p className="text-sm text-teal-800/80 mt-3 font-medium leading-relaxed">
+                                        {p3.clasificacion_dolor.fundamento?.conclusion || p3.clasificacion_dolor.fundamento_breve}
+                                    </p>
                                 </div>
 
                                 {/* Sistema y Estructuras */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                           <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Sistema y Estructuras</h4>
-                                          <p className="text-base text-slate-800 font-bold">{p3.sistema_y_estructuras?.sistemas_principales?.join(', ')}</p>
-                                          <p className="text-sm text-slate-700 font-medium">{p3.sistema_y_estructuras?.estructuras_principales?.join(', ')}</p>
-                                          {p3.sistema_y_estructuras?.estructuras_secundarias?.length > 0 && (
-                                            <p className="text-xs text-slate-500 mt-2"><span className="font-semibold">Secundarias:</span> {p3.sistema_y_estructuras.estructuras_secundarias.join(', ')}</p>
+                                          <p className="text-base text-slate-800 font-bold">
+                                            {(p3.sistema_y_estructuras?.sistemas_involucrados || p3.sistema_y_estructuras?.sistemas_principales || []).join(', ')}
+                                          </p>
+                                          <p className="text-sm text-slate-700 font-medium">
+                                            {(p3.sistema_y_estructuras?.estructuras?.principales || p3.sistema_y_estructuras?.estructuras_principales || [])
+                                                .map((e: any) => typeof e === 'string' ? e : e.nombre)
+                                                .join(', ')}
+                                          </p>
+                                          {(p3.sistema_y_estructuras?.estructuras?.secundarias || p3.sistema_y_estructuras?.estructuras_secundarias)?.length > 0 && (
+                                            <p className="text-xs text-slate-500 mt-2">
+                                                <span className="font-semibold">Secundarias:</span> {(p3.sistema_y_estructuras.estructuras?.secundarias || p3.sistema_y_estructuras.estructuras_secundarias).map((e: any) => typeof e === 'string' ? e : e.nombre).join(', ')}
+                                            </p>
                                           )}
                                      </div>
                                      
@@ -210,7 +241,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                               <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Funcionales (E2)</h4>
                                               <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
-                                                  {p3.alteraciones_detectadas.funcionales.slice(0,3).map((f:any, i:number) => <li key={`f-${i}`}>{f.funcion_disfuncion}</li>)}
+                                                  {p3.alteraciones_detectadas.funcionales.map((f:any, i:number) => <li key={`f-${i}`}>{f.funcion_disfuncion}</li>)}
                                               </ul>
                                          </div>
                                      )}
@@ -220,8 +251,56 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                               <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Estructurales (E1)</h4>
                                               <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
-                                                  {p3.alteraciones_detectadas.estructurales.slice(0,3).map((e:any, i:number) => <li key={`e-${i}`}>{e.alteracion} ({e.estructura})</li>)}
+                                                  {p3.alteraciones_detectadas.estructurales.map((e:any, i:number) => <li key={`e-${i}`}>{e.alteracion} ({e.estructura})</li>)}
                                               </ul>
+                                         </div>
+                                     )}
+
+                                     {/* F1 - Actividad / P1 - Participación */}
+                                     {p3.actividad_y_participacion?.limitaciones_directas?.length > 0 && (
+                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Limitaciones (F1)</h4>
+                                              <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
+                                                  {p3.actividad_y_participacion.limitaciones_directas.map((l:any, i:number) => (
+                                                    <li key={`l-${i}`}>
+                                                        {l.texto || l.actividad} <span className="text-[10px] font-bold text-slate-400">({l.severidad})</span>
+                                                    </li>
+                                                  ))}
+                                              </ul>
+                                         </div>
+                                     )}
+
+                                     {p3.actividad_y_participacion?.restricciones_sociales?.length > 0 && (
+                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Restricciones (F2)</h4>
+                                              <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
+                                                  {p3.actividad_y_participacion.restricciones_sociales.map((r:any, i:number) => (
+                                                    <li key={`r-${i}`}>
+                                                        {r.texto || r.participacion} <span className="text-[10px] font-bold text-slate-400">({r.severidad})</span>
+                                                    </li>
+                                                  ))}
+                                              </ul>
+                                         </div>
+                                     )}
+
+                                     {/* G - Factores Biopsicosociales */}
+                                     {p3.factores_biopsicosociales && Object.keys(p3.factores_biopsicosociales).length > 0 && (
+                                         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 md:col-span-2">
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-3 tracking-wider border-b pb-1">Factores Biopsicosociales (G)</h4>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                                  {Object.entries(p3.factores_biopsicosociales).map(([key, list]: [string, any]) => (
+                                                      Array.isArray(list) && list.length > 0 && (
+                                                          <div key={key}>
+                                                              <h5 className="text-[9px] uppercase font-black text-indigo-400 mb-1">{key.replace(/_/g, ' ')}</h5>
+                                                              <ul className="text-[11px] text-slate-600 list-disc pl-3 space-y-0.5">
+                                                                  {list.map((item: any, idx: number) => (
+                                                                      <li key={idx}>{item.texto || item.factor || item}</li>
+                                                                  ))}
+                                                              </ul>
+                                                          </div>
+                                                      )
+                                                  ))}
+                                              </div>
                                          </div>
                                      )}
                                 </div>
@@ -254,7 +333,23 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                         <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Plan Maestro</h4>
-                                        <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{p4.plan_maestro}</p>
+                                        {Array.isArray(p4.plan_maestro) ? (
+                                            <div className="space-y-3">
+                                                {p4.plan_maestro.map((fase: any, idx: number) => (
+                                                    <div key={idx} className="border-l-2 border-slate-200 pl-3 py-1">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase">{fase.nombre_fase || `Fase ${idx+1}`}</div>
+                                                        <div className="text-xs text-slate-700 font-bold">{fase.objetivo_fisiologico}</div>
+                                                        <ul className="mt-1 text-[10px] text-slate-500 list-disc pl-3">
+                                                            {(fase.intervenciones || []).slice(0,2).map((inter: any, i: number) => (
+                                                                <li key={i}>{typeof inter === 'string' ? inter : inter.nombre}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{p4.plan_maestro}</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -326,9 +421,41 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         <p className="text-base text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.reevaluation?.progressSummary || "Sin resumen."}</p>
                     </div>
 
+                    {ev.reevaluation?.retest && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 className="text-sm uppercase tracking-widest font-bold text-emerald-600 mb-5 flex items-center gap-2 border-b pb-3">Retest Clínico</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {Object.entries(ev.reevaluation.retest).map(([key, val]: [string, any]) => {
+                                    if (!val || key === 'status') return null;
+                                    return (
+                                        <div key={key} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-1">{key.replace(/([A-Z])/g, ' $1')}</h4>
+                                            <div className="text-sm text-slate-700 font-semibold">
+                                                {typeof val === 'string' ? val : Array.isArray(val) ? val.join(', ') : JSON.stringify(val)}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h3 className="text-sm uppercase tracking-widest font-bold text-emerald-600 mb-5 flex items-center gap-2 border-b pb-3">Ajustes Módulos y Plan</h3>
                         <p className="text-base text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.reevaluation?.planModifications || "Sin ajustes al plan maestro."}</p>
+                        
+                        {(ev.reevaluation as any)?.updatedObjectives && (ev.reevaluation as any).updatedObjectives.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estado de Objetivos Actualizado</h4>
+                                {(ev.reevaluation as any).updatedObjectives.map((obj: any, idx: number) => (
+                                    <div key={idx} className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded border border-slate-100">
+                                        <span className={`w-2 h-2 rounded-full ${obj.status === 'completado' ? 'bg-emerald-500' : obj.status === 'pausado' ? 'bg-amber-500' : 'bg-indigo-500'}`}></span>
+                                        <span className="font-bold flex-1">{obj.texto || obj.label}</span>
+                                        <span className="uppercase font-black text-[9px] text-slate-400">{obj.status}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex justify-center pt-4 pb-8">

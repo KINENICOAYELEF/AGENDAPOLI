@@ -25,6 +25,8 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
     const [selectedProceso, setSelectedProceso] = useState<Proceso | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [expandedDiag, setExpandedDiag] = useState<string | null>(null);
+
     const [indexError, setIndexError] = useState<string | null>(null);
 
     const loadProcesos = async () => {
@@ -250,14 +252,24 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                                                 {proc.diagnosisVigente && (
                                                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
                                                         <span className="block text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-1">Diagnóstico Clínico Vigente</span>
-                                                        <p className="text-xs text-slate-700 leading-relaxed max-w-2xl line-clamp-3">{proc.diagnosisVigente}</p>
+                                                        <p className={`text-xs text-slate-700 leading-relaxed max-w-2xl ${expandedDiag !== proc.id ? 'line-clamp-3' : ''}`}>
+                                                            {proc.diagnosisVigente}
+                                                        </p>
+                                                        {proc.diagnosisVigente.length > 200 && (
+                                                            <button 
+                                                                onClick={() => setExpandedDiag(expandedDiag === proc.id ? null : proc.id!)}
+                                                                className="text-xs text-indigo-600 font-semibold mt-1 hover:underline underline-offset-2"
+                                                            >
+                                                                {expandedDiag === proc.id ? '▲ Ver menos' : '▼ Ver más completo'}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {proc.activeObjectiveSet?.objectives && proc.activeObjectiveSet.objectives.length > 0 && (
-                                                    <div className="flex flex-wrap gap-2 items-center text-xs mt-2">
+                                                    <div className="flex flex-wrap gap-2 items-center text-xs mt-2 overflow-hidden">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Metas Activas:</span>
                                                         {proc.activeObjectiveSet.objectives.filter(o => o.status === 'activo').map(obj => (
-                                                            <span key={obj.id} className="bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded-md max-w-[200px] truncate shadow-sm" title={obj.label}>
+                                                            <span key={obj.id} className="bg-white border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg shadow-sm border-b-2 hover:border-indigo-200 transition-colors" title={obj.label}>
                                                                 {obj.label}
                                                             </span>
                                                         ))}

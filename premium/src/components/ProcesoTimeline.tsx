@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { doc, deleteDoc, collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { useYear } from "@/context/YearContext";
+import { useAuth } from "@/context/AuthContext";
 import { Evaluacion, Evolucion, Proceso } from "@/types/clinica";
 import { EvaluacionForm } from "./EvaluacionForm";
 import { EvolucionForm } from "./EvolucionForm";
@@ -31,6 +32,8 @@ type TimelineItem =
 
 export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso, onBack }: ProcesoTimelineProps) {
     const { globalActiveYear } = useYear();
+    const { user } = useAuth();
+    const isAdmin = (user?.role as string) === 'ADMIN';
 
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,13 +64,33 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                 ...evols.map(e => ({ type: 'evolucion' as const, data: e, date: new Date(e.sessionAt) }))
             ];
 
-            // sort descending
-            combined.sort((a, b) => b.date.getTime() - a.date.getTime());
+            // sort descending with ID tie-breaker for same-timestamp items
+            combined.sort((a, b) => {
+                const diff = b.date.getTime() - a.date.getTime();
+                if (diff !== 0) return diff;
+                return (b.data.id || '').localeCompare(a.data.id || '');
+            });
             setItems(combined);
         } catch (error) {
             console.error("Error cargando timeline:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (item: TimelineItem) => {
+        const typeStr = item.type === 'evaluacion' ? 'evaluación' : 'evolución';
+        if (!window.confirm(`¿Estás seguro de eliminar esta ${typeStr}?\n\nESTA ACCIÓN NO SE PUEDE DESHACER.`)) return;
+
+        try {
+            const collectionName = item.type === 'evaluacion' ? 'evaluaciones' : 'evoluciones';
+            const docRef = doc(db, "programs", globalActiveYear!, collectionName, item.data.id!);
+            await deleteDoc(docRef);
+            // Optimization: Filter out the item locally instead of full reload
+            setItems(prev => prev.filter(i => i.data.id !== item.data.id));
+        } catch (error) {
+            console.error("Error eliminando item:", error);
+            alert("Error al eliminar. Intente de nuevo.");
         }
     };
 
@@ -234,28 +257,65 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                 }
                                             }}
                                         >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${isEval ? (isReeval ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700') : 'bg-indigo-100 text-indigo-700'
-                                                    }`}>
-                                                    {isEval ? (isReeval ? 'Reevaluación' : 'Evaluación Inicial') : 'Evolución Sesión'}
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-[10px] font-bold text-slate-400">
+                                                    {new Date(item.data.sessionAt || 0).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                                 </span>
-                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                                                    <ClockIcon className="w-3 h-3" />
-                                                    {item.date.toLocaleDateString()} {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
+                                                {isEval && (
+                                                    <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${(item.data as Evaluacion).status === 'CLOSED' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                        {(item.data as Evaluacion).status === 'CLOSED' ? 'Cerrada' : 'Abierta'}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex justify-between items-start gap-2">
-                                                <p className="text-xs font-bold text-slate-800 line-clamp-2 flex-1">
-                                                    {isEval
-                                                        ? (item.data as Evaluacion).type === 'INITIAL'
-                                                            ? (item.data as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || (item.data as any).geminiDiagnostic?.narrativeDiagnosis || (item.data as any).geminiDiagnostic?.kinesiologicalDxNarrative || 'Diagnóstico no finalizado'
-                                                            : (item.data as any).reevaluation?.progressSummary || 'Reevaluación en progreso'
-                                                        : (item.data as Evolucion).sessionGoal || 'Sesión sin objetivo'
-                                                    }
-                                                </p>
-                                                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md mb-2 shrink-0 flex items-center gap-1">
-                                                    ✏️ Editar
-                                                </span>
+                                            <div className="text-sm font-bold text-slate-800 leading-tight mb-2">
+                                                {isEval ? (isReeval ? 'Re-Evaluación Seguimiento' : 'Evaluación Inicial') : 'Evolución de Sesión'}
+                                            </div>
+
+                                            {/* MINI RESUMEN CLÍNICO */}
+                                            {isEval && (item.data as any).autoSynthesis?.clasificacion_dolor && (
+                                                <div className="text-[10px] font-bold text-indigo-500 uppercase flex items-center gap-1 mb-1">
+                                                    <span className="w-1 h-1 rounded-full bg-indigo-500"></span>
+                                                    {(item.data as any).autoSynthesis.clasificacion_dolor.categoria}
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div className="text-xs text-slate-500 line-clamp-2 italic flex-1">
+                                                    {isEval ? 
+                                                        ((item.data as any).p4_plan_structured?.diagnostico_kinesiologico_narrativo || 
+                                                         (item.data as any).geminiDiagnostic?.narrativeDiagnosis || 
+                                                         "Sin diagnóstico sintetizado") : 
+                                                        (item.data as Evolucion).sessionGoal || "Sin objetivo definido"}
+                                                </div>
+                                                <div className="flex flex-col gap-1 items-end shrink-0">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isEval) {
+                                                                setSelectedEval(item.data as Evaluacion);
+                                                                setView('editEval');
+                                                            } else {
+                                                                setSelectedEvol(item.data as Evolucion);
+                                                                setView('editEvol');
+                                                            }
+                                                        }}
+                                                        className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                    >
+                                                        ✏️ Editar
+                                                    </button>
+                                                    {isAdmin && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(item);
+                                                            }}
+                                                            className="text-[10px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-md transition-colors"
+                                                            title="Eliminar"
+                                                        >
+                                                            🗑️ Borrar
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {(!isEval && (item.data as Evolucion).sessionStatus) && (
