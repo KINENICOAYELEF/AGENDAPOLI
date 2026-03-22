@@ -286,17 +286,35 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     }, [isClosed, formData.sessionAt]);
 
     // FASE 2.1.21: Obtener Última Evolución Cerrada (Continuidad) + FASE 2.1.22: Cálculo SessionNumber
+    // FASE 11: Usa evolucionesAnteriores prop cuando disponible + acepta legacy estado='CERRADA'
     useEffect(() => {
         const fetchContinuityAndNumber = async () => {
-            if (!globalActiveYear || isClosed) return; // Solo importa si estamos llenando una nueva/draft
+            if (!globalActiveYear || isClosed) return;
             setIsLoadingContinuity(true);
             try {
+                // FASE 11: Si tenemos evolucionesAnteriores del ProcesoTimeline, usarlas directamente
+                if (evolucionesAnteriores && evolucionesAnteriores.length > 0) {
+                    // Calcular correlativo
+                    if (!formData.sessionNumber || !initialData?.id) {
+                        setFormData(prev => ({ ...prev, sessionNumber: evolucionesAnteriores.length + (initialData?.id ? 0 : 1) }));
+                    }
+                    // Buscar última cerrada (aceptar ambos formatos de status)
+                    const closedEvols = evolucionesAnteriores
+                        .filter(d => d.status === 'CLOSED' || (d as any).estado === 'CERRADA')
+                        .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
+                    const last = closedEvols.find(d => d.id !== initialData?.id) || closedEvols[0];
+                    if (last && last.id !== initialData?.id) {
+                        setLastClosedEvol(last);
+                    }
+                    setIsLoadingContinuity(false);
+                    return;
+                }
+
                 const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
                 // 1. Contar sesiones totales del proceso para asignar el Correlativo actual
                 if (procesoId && (!formData.sessionNumber || !initialData?.id)) {
                     const countQuery = query(evolsRef, where("procesoId", "==", procesoId));
                     const countSnap = await getDocs(countQuery);
-                    // Si ya tenía ID, restamos 1 para no contarse doble
                     setFormData(prev => ({ ...prev, sessionNumber: countSnap.size + (initialData?.id ? 0 : 1) }));
                 }
 
@@ -309,10 +327,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                 }
                 const snap = await getDocs(qQuery);
                 if (!snap.empty) {
-                    // Ordenar y filtrar en memoria para evitar requerir un índice compuesto de Firestore (procesoId + status + sessionAt)
+                    // FASE 11: Filtrar aceptando AMBOS formatos de status (moderno y legacy)
                     const sortedDocs = snap.docs
                         .map(d => ({ id: d.id, ...d.data() } as Evolucion))
-                        .filter(d => d.status === 'CLOSED')
+                        .filter(d => d.status === 'CLOSED' || (d as any).estado === 'CERRADA')
                         .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
 
                     const data = sortedDocs[0];
@@ -327,7 +345,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             }
         };
         fetchContinuityAndNumber();
-    }, [globalActiveYear, procesoId, usuariaId, isClosed, initialData?.id]);
+    }, [globalActiveYear, procesoId, usuariaId, isClosed, initialData?.id, evolucionesAnteriores]);
 
     // FASE 2.1.15: DEBOUNCED AUTOSAVE (1200ms) Anti-Loop
     useEffect(() => {
@@ -745,10 +763,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             }
             const querySnapshot = await getDocs(q);
 
-            // Filtrar y ordenar en memoria para evitar errores de índice compuesto
+            // FASE 11: Filtrar aceptando AMBOS formatos de status (moderno y legacy)
             const candidates = querySnapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() } as any))
-                .filter(d => d.status === 'CLOSED')
+                .filter(d => d.status === 'CLOSED' || d.estado === 'CERRADA')
                 .sort((a, b) => new Date(b.sessionAt).getTime() - new Date(a.sessionAt).getTime());
 
             let lastEvol: any = null;
