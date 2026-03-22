@@ -64,12 +64,19 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
         };
     }
 
-    if (activeModel.startsWith('gemini-3')) {
+    if (activeModel.startsWith('gemini-3') && !activeModel.includes('lite')) {
+        // Solo gemini-3 NO-lite soportan thinkingConfig
         if (params.thinkingBudget) {
             console.warn(`[AI Routing] MODELO ${activeModel} ignora thinkingBudget. Usando thinkingLevel en su lugar.`);
         }
         if (params.thinkingLevel) {
-            requestPayload.generationConfig.thinkingConfig = { thinkingLevel: params.thinkingLevel === 'low' ? 'LOW' : params.thinkingLevel === 'high' ? 'HIGH' : 'STANDARD' };
+            requestPayload.generationConfig.thinkingConfig = { thinkingLevel: params.thinkingLevel === 'low' ? 'LOW' : params.thinkingLevel === 'high' ? 'HIGH' : 'MEDIUM' };
+        }
+    } else if (activeModel.includes('lite')) {
+        // Modelos lite (3.1-flash-lite, 2.5-flash-lite) NO soportan thinkingConfig
+        // Se ignoran thinkingLevel y thinkingBudget silenciosamente
+        if (params.thinkingLevel || params.thinkingBudget) {
+            console.warn(`[AI Routing] MODELO LITE ${activeModel} no soporta thinkingConfig. Ignorando.`);
         }
     } else if (activeModel.startsWith('gemini-2.5')) {
         if (params.thinkingLevel) {
