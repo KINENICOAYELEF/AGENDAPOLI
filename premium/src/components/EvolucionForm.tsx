@@ -1349,8 +1349,8 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             : (formData.interventions?.categories || []).map(cat => ({ category: cat, subType: 'Intervención Clínica' }));
 
         return (
-            <div className="flex flex-col h-full w-full mx-auto overflow-y-auto bg-slate-50/50 scroll-smooth hide-scrollbar pb-32">
-                <div className="max-w-4xl mx-auto w-full bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in duration-500 my-4 md:my-8">
+            <div className="fixed inset-0 z-[60] flex flex-col w-full h-full bg-slate-100/95 backdrop-blur-sm overflow-y-auto scroll-smooth pb-32">
+                <div className="max-w-4xl mx-auto w-full bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-500 my-4 md:my-12">
                 {/* Header Visor */}
                 <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-8 text-white relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
@@ -1503,11 +1503,14 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">{inv.category}</span>
+                                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">{inv.category}</span>
                                             <span className="text-sm font-bold text-slate-800">{inv.subType || inv.type}</span>
+                                            {inv.durationMinutes && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded flex items-center gap-1"><ClockIcon className="w-3 h-3" />{inv.durationMinutes} min</span>}
+                                            {inv.dose && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded italic">Dosis: {inv.dose}</span>}
+                                            {inv.intensity && <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${inv.intensity === 'Alta' ? 'bg-rose-50 text-rose-600 border-rose-100' : inv.intensity === 'Media' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>Intensidad: {inv.intensity}</span>}
                                         </div>
-                                        <p className="text-xs text-slate-500 leading-relaxed">{inv.notes || "Sin observaciones adicionales."}</p>
+                                        <p className="text-xs text-slate-600 font-medium leading-relaxed bg-white/50 p-2 rounded-lg border border-slate-100/50">{inv.notes || "Sin observaciones adicionales."}</p>
                                     </div>
                                 </div>
                             )) : <p className="text-xs text-slate-400 italic">No se registraron intervenciones manuales.</p>}
