@@ -238,12 +238,14 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                                         {new Date(proc.fechaInicio).toLocaleDateString()}
                                                     </span>
-                                                    {proc.loadManagementVigente?.trafficLight && (
-                                                        <span className={`flex items-center gap-1 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md ${proc.loadManagementVigente.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700' :
-                                                            proc.loadManagementVigente.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700' :
+                                                    {((proc.loadManagementVigente as any)?.trafficLight || (proc.loadManagementVigente as any)?.irritabilidadTexto) && (
+                                                        <span className={`flex items-center gap-1 text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded-md ${(proc.loadManagementVigente as any)?.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700' :
+                                                            (proc.loadManagementVigente as any)?.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700' :
                                                                 'bg-emerald-100 text-emerald-700'
                                                             }`}>
-                                                            Semáforo {proc.loadManagementVigente.trafficLight}
+                                                            {(proc.loadManagementVigente as any)?.irritabilidadTexto 
+                                                                ? `🔥 Irrit: ${(proc.loadManagementVigente as any).irritabilidadTexto} | ⚖️ Carga: ${(proc.loadManagementVigente as any).toleranciaCargaTexto || 'N/A'}`
+                                                                : `Semáforo ${(proc.loadManagementVigente as any)?.trafficLight}`}
                                                         </span>
                                                     )}
                                                 </div>

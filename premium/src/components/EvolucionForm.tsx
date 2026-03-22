@@ -1575,7 +1575,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="text-lg">📋</span>
                                     <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Contexto del Caso Activo</h3>
-                                    {procesoContext.caseSnapshot.trafficLight && (
+                                    {(procesoContext.caseSnapshot.trafficLight || (procesoContext.caseSnapshot as any).irritabilidadTexto) && (
                                         <div className="ml-auto flex flex-col items-end">
                                             <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-extrabold ${procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
                                                 procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
@@ -1584,9 +1584,11 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                                                 Semáforo: {procesoContext.caseSnapshot.trafficLight}
                                             </span>
                                             <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">
-                                                {procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'Alta irritabilidad (Precaución)' :
-                                                 procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'Irritabilidad media (Cautela)' :
-                                                 'Baja irritabilidad (Carga progresiva)'}
+                                                {(procesoContext.caseSnapshot as any).irritabilidadTexto 
+                                                    ? `Irrit: ${(procesoContext.caseSnapshot as any).irritabilidadTexto} | Carga: ${(procesoContext.caseSnapshot as any).toleranciaCargaTexto || 'N/A'}`
+                                                    : procesoContext.caseSnapshot.trafficLight === 'Rojo' ? 'Alta irritabilidad (Precaución)' :
+                                                      procesoContext.caseSnapshot.trafficLight === 'Amarillo' ? 'Irritabilidad media (Cautela)' :
+                                                      'Baja irritabilidad (Carga progresiva)'}
                                             </span>
                                         </div>
                                     )}

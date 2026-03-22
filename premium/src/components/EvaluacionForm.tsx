@@ -418,37 +418,25 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const versionId = `v_${Date.now()}`;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
                 
-                // FASE 2.2.4: Master Traffic Light (Agregado de Seguridad, Irritabilidad y Carga)
-                // FASE 11: Usa normalizeEvaluationState (la misma función que P3) como fuente canónica
-                const getMasterTL = (f: any) => {
-                    const norm = (s: string) => (s || '').trim().toLowerCase();
-                    
-                    // 1. Seguridad (Triage) — desde autoSynthesis trafficLight
-                    const s = f.autoSynthesis?.trafficLight || 'Verde';
-                    
-                    // 2. Irritabilidad — PRIORIDAD: P3 autoSynthesis → normalizeEvaluationState (misma fuente que P3 usa)
-                    const p3Irrit = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
-                    const normalized = normalizeEvaluationState(f);
-                    const normalizedIrrit = norm(normalized.irritabilidad);
-                    const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
-                        ? p3Irrit 
-                        : normalizedIrrit;
-                    
-                    const i = (finalIrrit === 'alta') ? 'Rojo' : 
-                              (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    // 3. Tolerancia a la Carga — desde P3 autoSynthesis
-                    const carga = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-                    const c = (carga === 'baja') ? 'Rojo' :
-                              (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-                    const finalColor = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
-                    
-                    console.log("[DEBUG] getMasterTL INITIAL:", { safety: s, p3Irrit, normalizedIrrit, finalIrrit, irrit: i, carga, load: c, final: finalColor });
-                    return finalColor;
-                };
-                const finalTL = getMasterTL(fd);
+                // FASE 12: Extraer irritabilidad EXACTA de P3 y calcular color con .includes()
+                const norm12 = (s: string) => (s || '').trim().toLowerCase();
+                const p3IrritRaw = fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida || '';
+                const normalized12 = normalizeEvaluationState(fd);
+                const irritTextoFinal = p3IrritRaw || normalized12.irritabilidad || 'No definida';
+                const toleranciaTextoFinal = fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel || 'No definida';
+
+                // Calcular color usando .includes() para manejar valores compuestos como "Moderada-Alta"
+                const irritLower = norm12(irritTextoFinal);
+                const iColor = irritLower.includes('alta') ? 'Rojo' : 
+                    (irritLower.includes('media') || irritLower.includes('moderada')) ? 'Amarillo' : 'Verde';
+                const cargaLower = norm12(toleranciaTextoFinal);
+                const cColor = (cargaLower.includes('baja')) ? 'Rojo' :
+                    (cargaLower.includes('media') || cargaLower.includes('moderada') || cargaLower === 'amarillo') ? 'Amarillo' : 'Verde';
+                const sColor = fd.autoSynthesis?.trafficLight || 'Verde';
+                const w12: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+                const finalTL = [sColor, iColor, cColor].sort((a, b) => w12[b] - w12[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                
+                console.log("[FASE12] getMasterTL INITIAL:", { irritTextoFinal, irritLower, iColor, toleranciaTextoFinal, cargaLower, cColor, sColor, finalTL });
 
                 // 1. Sincronizar estado del Proceso
                 const updatePayload = sanitizeForFirestoreDeep({
@@ -463,6 +451,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                     },
                     loadManagementVigente: {
                         trafficLight: finalTL,
+                        irritabilidadTexto: irritTextoFinal,
+                        toleranciaCargaTexto: toleranciaTextoFinal,
                         rules: []
                     },
                     caseSnapshot: { 
@@ -470,6 +460,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                         diagnosticoNarrativo: fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '',
                         lastUpdated: new Date().toISOString(),
                         trafficLight: finalTL,
+                        irritabilidadTexto: irritTextoFinal,
+                        toleranciaCargaTexto: toleranciaTextoFinal,
                         baselineComparable: (fd.guidedExam?.comparableRetest && fd.guidedExam.comparableRetest.length > 0)
                             ? fd.guidedExam.comparableRetest[0]
                             : ((fd as any).comparableSign || null),
@@ -529,41 +521,39 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 const fd = payload as EvaluacionReevaluacion;
                 const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
 
-                // FASE 2.2.4: Actualizar semáforo (Reevaluación)
-                // FASE 11: Usa normalizeEvaluationState como fuente canónica de P3
-                const getMasterTL = (f: any) => {
-                    const norm = (s: string) => (s || '').trim().toLowerCase();
-                    const s = f.autoSynthesis?.trafficLight || 'Verde';
-                    
-                    const p3Irrit = norm(f.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
-                    const normalized = normalizeEvaluationState(f);
-                    const normalizedIrrit = norm(normalized.irritabilidad);
-                    const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
-                        ? p3Irrit 
-                        : normalizedIrrit;
-                    
-                    const i = (finalIrrit === 'alta') ? 'Rojo' : 
-                              (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    const carga = norm(f.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-                    const c = (carga === 'baja') ? 'Rojo' :
-                              (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
-                    
-                    const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-                    return [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
-                };
-                const finalTL = getMasterTL(fd);
+                // FASE 12: Calcular color con .includes() y guardar textos
+                const norm12r = (s: string) => (s || '').trim().toLowerCase();
+                const p3IrritRawR = (fd as any).autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida || '';
+                const normalizedR = normalizeEvaluationState(fd as any);
+                const irritTextoR = p3IrritRawR || normalizedR.irritabilidad || 'No definida';
+                const toleranciaTextoR = (fd as any).autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel || 'No definida';
 
-                // Asegurarse que se use un nested object para que merge lo resuelva correctamente y no cree keys literales con puntos
+                const irritLowerR = norm12r(irritTextoR);
+                const iR = irritLowerR.includes('alta') ? 'Rojo' : 
+                    (irritLowerR.includes('media') || irritLowerR.includes('moderada')) ? 'Amarillo' : 'Verde';
+                const cargaLowerR = norm12r(toleranciaTextoR);
+                const cR = (cargaLowerR.includes('baja')) ? 'Rojo' :
+                    (cargaLowerR.includes('media') || cargaLowerR.includes('moderada') || cargaLowerR === 'amarillo') ? 'Amarillo' : 'Verde';
+                const sR = (fd as any).autoSynthesis?.trafficLight || 'Verde';
+                const w12r: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+                const finalTL = [sR, iR, cR].sort((a, b) => w12r[b] - w12r[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+                
+                console.log("[FASE12] getMasterTL REEVAL:", { irritTextoR, iR, toleranciaTextoR, cR, sR, finalTL });
+
+                // Asegurarse que se use un nested object para que merge lo resuelva correctamente
                 const updatePayloadNested: any = {
                     caseSnapshot: {
                         lastUpdated: new Date().toISOString(),
                         lastProgressSummary: fd.reevaluation?.progressSummary || '',
                         lastRetest: typeof fd.reevaluation?.retest === 'string' ? fd.reevaluation.retest : JSON.stringify(fd.reevaluation?.retest || ''),
-                        trafficLight: finalTL
+                        trafficLight: finalTL,
+                        irritabilidadTexto: irritTextoR,
+                        toleranciaCargaTexto: toleranciaTextoR
                     },
                     loadManagementVigente: {
-                        trafficLight: finalTL
+                        trafficLight: finalTL,
+                        irritabilidadTexto: irritTextoR,
+                        toleranciaCargaTexto: toleranciaTextoR
                     }
                 };
 
@@ -674,29 +664,40 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         if (!window.confirm("¿Forzar re-sincronización del Semáforo y Diagnóstico hacia el Proceso Clínico Histórico?")) return;
         try {
             const fd = formData as any;
-            const norm = (s: string) => (s || '').trim().toLowerCase();
-            const s = fd.autoSynthesis?.trafficLight || 'Verde';
+            const norm12s = (s: string) => (s || '').trim().toLowerCase();
             
-            // FASE 11: Usa normalizeEvaluationState como fuente canónica de P3
-            const p3Irrit = norm(fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida);
-            const normalizedResync = normalizeEvaluationState(fd);
-            const normalizedIrrit = norm(normalizedResync.irritabilidad);
-            const finalIrrit = (p3Irrit && p3Irrit !== 'no definida' && p3Irrit !== 'pendiente') 
-                ? p3Irrit 
-                : normalizedIrrit;
-            
-            const i = (finalIrrit === 'alta') ? 'Rojo' : (finalIrrit === 'media' || finalIrrit === 'moderada') ? 'Amarillo' : 'Verde';
-            const carga = norm(fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel);
-            const c = (carga === 'baja') ? 'Rojo' : (carga === 'media' || carga === 'moderada') ? 'Amarillo' : 'Verde';
-            const w: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
-            const finalTL = [s, i, c].sort((a, b) => w[b] - w[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+            // FASE 12: Extraer textos reales de P3 + calcular con .includes()
+            const p3IrritRawS = fd.autoSynthesis?.snapshot_clinico?.irritabilidad_sugerida || '';
+            const normalizedS = normalizeEvaluationState(fd);
+            const irritTextoS = p3IrritRawS || normalizedS.irritabilidad || 'No definida';
+            const toleranciaTextoS = fd.autoSynthesis?.snapshot_clinico?.tolerancia_carga?.nivel || 'No definida';
+
+            const irritLowerS = norm12s(irritTextoS);
+            const iS = irritLowerS.includes('alta') ? 'Rojo' : 
+                (irritLowerS.includes('media') || irritLowerS.includes('moderada')) ? 'Amarillo' : 'Verde';
+            const cargaLowerS = norm12s(toleranciaTextoS);
+            const cS = (cargaLowerS.includes('baja')) ? 'Rojo' :
+                (cargaLowerS.includes('media') || cargaLowerS.includes('moderada') || cargaLowerS === 'amarillo') ? 'Amarillo' : 'Verde';
+            const sS = fd.autoSynthesis?.trafficLight || 'Verde';
+            const w12s: Record<string, number> = { 'Rojo': 3, 'Amarillo': 2, 'Verde': 1 };
+            const finalTL = [sS, iS, cS].sort((a, b) => w12s[b] - w12s[a])[0] as 'Verde' | 'Amarillo' | 'Rojo';
+
+            console.log("[FASE12] Resync:", { irritTextoS, iS, toleranciaTextoS, cS, sS, finalTL });
 
             const diag = fd.p4_plan_structured?.diagnostico_kinesiologico_narrativo || fd.geminiDiagnostic?.narrativeDiagnosis || fd.geminiDiagnostic?.kinesiologicalDxNarrative || '';
 
             const procesoRef = doc(db, "programs", globalActiveYear!, "procesos", procesoId);
             const sysUpdate: any = {
-                loadManagementVigente: { trafficLight: finalTL },
-                caseSnapshot: { trafficLight: finalTL }
+                loadManagementVigente: { 
+                    trafficLight: finalTL,
+                    irritabilidadTexto: irritTextoS,
+                    toleranciaCargaTexto: toleranciaTextoS
+                },
+                caseSnapshot: { 
+                    trafficLight: finalTL,
+                    irritabilidadTexto: irritTextoS,
+                    toleranciaCargaTexto: toleranciaTextoS
+                }
             };
             if (diag) {
                 sysUpdate.diagnosisVigente = diag;
@@ -705,7 +706,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
             
             await setDoc(procesoRef, sanitizeForFirestoreDeep(sysUpdate), { merge: true });
 
-            alert(`✅ Proceso actualizado exitosamente.\nNuevo Semáforo: ${finalTL}`);
+            alert(`✅ Proceso actualizado.\nSemáforo: ${finalTL}\nIrritabilidad: ${irritTextoS}\nTolerancia Carga: ${toleranciaTextoS}`);
         } catch (e: any) {
             console.error(e);
             alert("Error al sincronizar: " + e.message);

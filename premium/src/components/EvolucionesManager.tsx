@@ -40,9 +40,16 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
             // Requiere composite index: usuariaId (Asc/Desc) + sessionAt o fechaHoraAtencion (Desc)
             // Ya que migramos, pediremos ordenar por 'sessionAt'. Sin embargo, para retrocompatibilidad
             // el orderBy buscará 'sessionAt'. Si no existe, no lo traerá (Aviso: un script masivo sería ideal, por ahora ordenamos los nuevos).
+            // FASE 12: Filtrar por procesoId cuando disponible para garantizar que solo
+            // se muestren evoluciones del proceso activo (no de otros procesos del usuario)
+            const filters = [where("usuariaId", "==", usuariaId)];
+            if (procesoId) {
+                filters.push(where("procesoId", "==", procesoId));
+            }
+
             let q = query(
                 evolucionesRef,
-                where("usuariaId", "==", usuariaId),
+                ...filters,
                 orderBy("sessionAt", "desc"),
                 limit(PAGE_LIMIT)
             );
@@ -50,7 +57,7 @@ export function EvolucionesManager({ usuariaId, usuariaName, procesoId, onBack }
             if (!reset && lastDoc) {
                 q = query(
                     evolucionesRef,
-                    where("usuariaId", "==", usuariaId),
+                    ...filters,
                     orderBy("sessionAt", "desc"),
                     startAfter(lastDoc),
                     limit(PAGE_LIMIT)
