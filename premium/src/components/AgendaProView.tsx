@@ -41,6 +41,7 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
     const [actionReason, setActionReason] = useState<string>('');
     const [isProcessingAction, setIsProcessingAction] = useState(false);
 
+    const baseDateValue = baseDate.getTime();
     useEffect(() => {
         if (globalActiveYear && user) {
             // Default based on role
@@ -49,7 +50,8 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
             }
             fetchAgenda();
         }
-    }, [globalActiveYear, user, viewMode, filterScope, filterStatus, baseDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [globalActiveYear, user, viewMode, filterScope, filterStatus, baseDateValue]);
 
     const fetchAgenda = async () => {
         if (!globalActiveYear || !user) return;
