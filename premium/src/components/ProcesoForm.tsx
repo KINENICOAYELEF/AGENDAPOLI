@@ -113,7 +113,13 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
                 } else if ((initialData.estado !== 'ALTA' && initialData.estado !== 'CERRADO_ADMIN') &&
                     (payload.estado === 'ALTA' || payload.estado === 'CERRADO_ADMIN')) {
                     await AgendaService.cancelFutureSchedule(globalActiveYear, targetId);
-                } else if (initialData.estado !== 'ACTIVO' && payload.estado === 'ACTIVO') {
+                } else if (payload.estado === 'ACTIVO') {
+                    // Si sigue activo o cambió a activo, aseguramos que la agenda esté cubierta
+                    await AgendaService.ensureSchedule(globalActiveYear, payload);
+                }
+            } else {
+                // Si es un proceso NUEVO y nace como ACTIVO, generar su agenda inicial
+                if (payload.estado === 'ACTIVO') {
                     await AgendaService.ensureSchedule(globalActiveYear, payload);
                 }
             }
