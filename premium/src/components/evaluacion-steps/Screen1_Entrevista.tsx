@@ -879,64 +879,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const completitudString = `${completedFoci}/${interviewV4.focos.length} Focos`;
 
     return (
-        <div className="flex flex-col w-full h-full relative font-sans max-w-3xl mx-auto pb-48">
-            {/* STICKY TOP BAR (MINI FASE 02) */}
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 py-2 sm:py-3 mb-6 -mx-4 sm:mx-0 sm:px-0 flex flex-col gap-2">
-
-                {/* FILA 1: Título, IA y Guardado */}
-                <div className="flex flex-row justify-between items-center gap-2">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-sm font-bold text-slate-600 tracking-tight hidden sm:block">Sección actual: Anamnesis próxima</h2>
-                        <h2 className="text-sm font-bold text-slate-600 tracking-tight sm:hidden">Anamnesis</h2>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-auto overflow-x-auto pb-0 hide-scrollbar justify-end">
-                        <span className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200 px-2.5 py-1 sm:py-1.5 rounded text-[10px] font-bold text-slate-500 mr-1" title="Cambia entre modo pedagógico y flujo rápido">
-                            <span>Alumno</span>
-                            <button
-                                onClick={() => setIsExpertMode(!isExpertMode)}
-                                className={`w-7 h-3.5 sm:w-8 sm:h-4 rounded-full flex items-center transition-colors duration-200 focus:outline-none ${isExpertMode ? 'bg-blue-600' : 'bg-slate-300'}`}
-                            >
-                                <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 bg-white rounded-full shadow-md transform transition-transform duration-200 ${isExpertMode ? 'translate-x-[14px] sm:translate-x-[18px]' : 'translate-x-[2px]'}`} />
-                            </button>
-                            <span className={isExpertMode ? 'text-blue-600' : ''}>Experto</span>
-                        </span>
-
-                        {isSavingDraft ? (
-                            <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 px-2 py-1 sm:py-1.5 rounded animate-pulse whitespace-nowrap shrink-0">Guardando...</span>
-                        ) : lastSaved ? (
-                            <span className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 px-2 py-1 sm:py-1.5 rounded whitespace-nowrap shrink-0 border border-emerald-100">✔ {lastSaved}</span>
-                        ) : null}
-                    </div>
-                </div>
-
-                {/* El bloque 'Foco y etiquetas rápidas' ha sido extraído de este sticky header (Fase 22) */}
-
-                {/* FILA 3: 3 Badges AUTO */}
-                {(interviewV4.seguridad.confirmado || !!interviewV4.analisisIA) && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${seguridadStyles}`} title={seguridadMotivo}>
-                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${seguridadDot}`} />
-                            Seguridad: {seguridadColor}
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm 
-                            ${focoPrincipal?.irritabilidadAuto?.nivel === 'Alta' ? 'border-rose-200 bg-rose-50 text-rose-800' :
-                                focoPrincipal?.irritabilidadAuto?.nivel === 'Media' ? 'border-amber-200 bg-amber-50 text-amber-800' :
-                                    focoPrincipal?.irritabilidadAuto?.nivel === 'Baja' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' :
-                                        'border-slate-200 bg-slate-50 text-slate-500'
-                            }`}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            Irritabilidad: {focoPrincipal?.irritabilidadAuto?.nivel && focoPrincipal.irritabilidadAuto.nivel !== 'NoDefinido' ? focoPrincipal.irritabilidadAuto.nivel : 'Pendiente'}
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded border text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[250px]
-                            ${focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
-                            title={focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}>
-                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
-                            Naturaleza sugerida: {focoPrincipal?.mecanismoTextoFinal && focoPrincipal.mecanismoTextoFinal !== 'NO' && focoPrincipal.mecanismoTextoFinal !== 'NoDefinido' ? `posible ${focoPrincipal.mecanismoTextoFinal.toLowerCase()}` : 'Pendiente'}
-                        </div>
-                    </div>
-                )}
-            </div>
+        <div className="flex flex-col w-full h-full relative font-sans max-w-5xl mx-auto pb-48">
 
             {/* CONTENEDOR NUEVA ESTRUCTURA FASE 1 */}
             <div className="px-4 flex flex-col gap-5 mt-4">

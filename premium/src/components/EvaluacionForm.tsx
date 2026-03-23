@@ -51,6 +51,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
     const isSavingRef = useRef(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // TEMPORIZADOR CLINICO DOCENTE (Pill)
     const [secondsElapsed, setSecondsElapsed] = useState(initialData?.timer?.totalSeconds || 0);
@@ -355,9 +356,9 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
 
         if (isClosing && !getValidationContext.allValid) {
             const warnMsg = (getValidationContext as any).warnings && (getValidationContext as any).warnings.length > 0 
-                ? `\n\n⚠️ ADVERTENCIAS:\n - ${(getValidationContext as any).warnings.join('\n - ')}` 
+                ? `\n\nADVERTENCIAS:\n - ${(getValidationContext as any).warnings.join('\n - ')}` 
                 : '';
-            const confirmSave = window.confirm("🛑 EXISTEN HITOS CLÍNICOS PENDIENTES\n\nFalta completar:\n - " + getValidationContext.missing.join('\n - ') + warnMsg + "\n\n¿Deseas forzar el guardado definitivo de todas maneras?");
+            const confirmSave = window.confirm("EXISTEN HITOS CLINICOS PENDIENTES\n\nFalta completar:\n - " + getValidationContext.missing.join('\n - ') + warnMsg + "\n\n¿Deseas forzar el guardado definitivo de todas maneras?");
             if (!confirmSave) return;
         }
         if (isClosing && !window.confirm("¿Seguro que deseas Cerrar y Fijar esta evaluación? Generará el Set de Objetivos inmutable del Proceso.")) {
@@ -717,7 +718,8 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
         if (!isClosed) {
             handleSave(false, true).catch(e => console.error("Error auto-saving on tab change", e));
         }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // window.scrollTo({ top: 0, behavior: 'smooth' }); // Deprecado: Usamos ref del contenedor
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' });
         setScreen(targetScreenId);
     };
 
@@ -893,7 +895,7 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                 )}
 
                 {/* CONTENIDO PRINCIPAL SCROLL V2 */}
-                <div key={importKey} className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
+                <div ref={scrollContainerRef} key={importKey} className={`flex-1 overflow-y-auto ${isKeyboardOpen ? 'pb-40' : 'pb-32'} pt-4 sm:pt-6 px-0 sm:px-6 max-w-5xl mx-auto w-full transition-all duration-300`}>
 
                     {screen === 5 && type === 'REEVALUATION' && <Screen5_Reevaluacion procesoContext={procesoContext} formData={formData} updateFormData={updateFormData as any} isClosed={isClosed} onProceed={() => setScreen(1)} onCreateNewInitial={() => {
                         handleSave(false);
@@ -932,21 +934,21 @@ export function EvaluacionForm({ usuariaId, procesoId, type, initialData, proces
                                 <button
                                     onClick={() => handleSave(false)}
                                     disabled={loading}
-                                    className="flex-1 md:flex-none md:w-48 bg-white text-slate-700 font-black border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 py-3.5 px-4 rounded-xl transition-all shadow-sm text-sm"
+                                    className="flex-1 md:flex-none md:w-36 lg:w-48 bg-white text-slate-700 font-black border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 py-2.5 md:py-3.5 px-3 md:px-4 rounded-xl transition-all shadow-sm text-xs md:text-sm"
                                 >
-                                    {loading ? 'Guardando...' : 'Guardar borrador'}
+                                    {loading ? 'Guardando...' : 'Borrador'}
                                 </button>
 
                                 <button
                                     onClick={() => handleSave(true)}
                                     disabled={loading}
-                                    className={`flex-1 md:flex-none md:w-56 font-black py-3.5 px-4 rounded-xl transition-all shadow-md text-sm flex justify-center items-center gap-2 ${getValidationContext.allValid
+                                    className={`flex-1 md:flex-none md:w-48 lg:w-56 font-black py-2.5 md:py-3.5 px-3 md:px-4 rounded-xl transition-all shadow-md text-xs md:text-sm flex justify-center items-center gap-1.5 md:gap-2 ${getValidationContext.allValid
                                         ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg'
                                         : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                                         }`}
                                 >
-                                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Guardar definitivo
+                                    <svg className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Cerrar y Fijar
                                 </button>
                             </div>
                         </div>
