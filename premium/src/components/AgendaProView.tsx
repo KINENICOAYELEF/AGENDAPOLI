@@ -336,10 +336,10 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                                         Cancelar
                                                     </button>
                                                     <Link
-                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}`}
+                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar`}
                                                         className="w-full sm:w-auto text-center px-4 py-2 sm:py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition"
                                                     >
-                                                        Abrir Expediente (Evolucionar)
+                                                        Evolucionar Cita
                                                     </Link>
                                                 </div>
                                             )}

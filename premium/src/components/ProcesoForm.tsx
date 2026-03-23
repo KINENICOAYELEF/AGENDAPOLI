@@ -43,9 +43,19 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
 
     useEffect(() => {
         if (initialData) {
+            // Normalizar attendancePlan para docs viejos que no tenían status o startDate
+            const normalizedPlan = {
+                daysOfWeek: initialData.attendancePlan?.daysOfWeek || [],
+                time: initialData.attendancePlan?.time || '18:00',
+                durationMin: initialData.attendancePlan?.durationMin || 50,
+                startDate: initialData.attendancePlan?.startDate || new Date().toISOString().slice(0, 10),
+                excludeHolidays: initialData.attendancePlan?.excludeHolidays ?? true,
+                status: initialData.attendancePlan?.status || 'ACTIVO',
+                assignedInternIds: initialData.attendancePlan?.assignedInternIds || []
+            };
             setFormData({
                 ...initialData,
-                // Si la fecha y hora está en full ISO, recortamos para el input datetime-local
+                attendancePlan: normalizedPlan,
                 fechaInicio: initialData.fechaInicio ? new Date(initialData.fechaInicio).toISOString().slice(0, 16) : '',
                 fechaAlta: initialData.fechaAlta ? new Date(initialData.fechaAlta).toISOString().slice(0, 16) : ''
             });
@@ -146,11 +156,17 @@ export function ProcesoForm({ personaUsuariaId, initialData, onClose, onSaveSucc
         try {
             setLoading(true);
 
+            // Normalizar attendancePlan para garantizar status ACTIVO
+            const normalizedPlan = {
+                ...(formData.attendancePlan || {}),
+                status: formData.attendancePlan?.status || 'ACTIVO',
+                startDate: formData.attendancePlan?.startDate || new Date().toISOString().slice(0, 10),
+            } as Proceso['attendancePlan'];
+
             const payload: Proceso = {
                 ...initialData,
                 estado: formData.estado as Proceso['estado'],
-                attendancePlan: formData.attendancePlan as Proceso['attendancePlan'],
-
+                attendancePlan: normalizedPlan,
                 updatedAt: new Date().toISOString()
             };
 

@@ -19,7 +19,12 @@ export const AgendaService = {
      * No sobrescribe ni duplica citas ya existentes en estado SCHEDULED.
      */
     async ensureSchedule(year: string, proceso: Proceso, maxWeeksAhead: number = 8): Promise<void> {
-        if (!proceso.id || !proceso.attendancePlan || proceso.attendancePlan.status !== 'ACTIVO') {
+        if (!proceso.id || !proceso.attendancePlan) {
+            return;
+        }
+        // Tratar status ausente/undefined como ACTIVO (retrocompatibilidad docs viejos)
+        const planStatus = proceso.attendancePlan.status || 'ACTIVO';
+        if (planStatus !== 'ACTIVO') {
             return;
         }
 

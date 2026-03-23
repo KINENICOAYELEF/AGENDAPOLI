@@ -12,6 +12,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 
 interface UserFormProps {
     initialData: PersonaUsuaria | null;
+    initialAction?: string;
     onClose: () => void;
     onSaveSuccess: (savedUser: PersonaUsuaria, isNew: boolean) => void;
 }
@@ -19,7 +20,7 @@ interface UserFormProps {
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { UsersService } from "@/services/users";
 
-export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: UserFormProps) {
+export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSaveSuccess }: UserFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
@@ -34,7 +35,9 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
     }, []);
 
     // Control de Sub- vistas (Navegación esclava en modal)
-    const [subView, setSubView] = useState<'main' | 'procesos'>('main');
+    const [subView, setSubView] = useState<'main' | 'procesos'>(
+        initialAction === 'evolucionar' && initialData?.id ? 'procesos' : 'main'
+    );
 
     // Estado interno del formulario
     const [formData, setFormData] = useState<PersonaUsuaria>({

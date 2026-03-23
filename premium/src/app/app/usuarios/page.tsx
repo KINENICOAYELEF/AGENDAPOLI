@@ -8,18 +8,19 @@ import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
 
-function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string) => void }) {
+function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, action?: string) => void }) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const openFicha = searchParams.get('openFicha');
+    const action = searchParams.get('action');
 
     useEffect(() => {
         if (openFicha) {
-            onOpenFicha(openFicha);
+            onOpenFicha(openFicha, action || undefined);
             // Replace url to clean up the query param without full refresh
             router.replace('/app/usuarios');
         }
-    }, [openFicha, onOpenFicha, router]);
+    }, [openFicha, action, onOpenFicha, router]);
 
     return null;
 }
@@ -30,6 +31,7 @@ export default function UsuariosPage() {
     // Estados Ficha / Formulario
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<PersonaUsuaria | null>(null);
+    const [initialAction, setInitialAction] = useState<string | undefined>(undefined);
 
     // Lista y Paginación
     const [personasUsuarias, setPersonasUsuarias] = useState<PersonaUsuaria[]>([]);
@@ -108,7 +110,7 @@ export default function UsuariosPage() {
         }
     };
 
-    const handleOpenFichaFromUrl = useCallback(async (id: string) => {
+    const handleOpenFichaFromUrl = useCallback(async (id: string, action?: string) => {
         if (!globalActiveYear) return;
         
         // Try memory first
@@ -117,6 +119,7 @@ export default function UsuariosPage() {
             const userInMem = personasUsuarias.find(u => u.id === id);
             if (userInMem) {
                 setSelectedUser(userInMem);
+                setInitialAction(action);
                 setIsFormOpen(true);
                 return;
             }
@@ -132,6 +135,7 @@ export default function UsuariosPage() {
                     return prev;
                 });
                 setSelectedUser(fetched);
+                setInitialAction(action);
                 setIsFormOpen(true);
             }
         } catch (e) {
@@ -347,7 +351,8 @@ export default function UsuariosPage() {
                         <div className="overflow-y-auto p-5 sm:p-6 flex-1 bg-slate-50/30">
                             <PersonaUsuariaForm
                                 initialData={selectedUser}
-                                onClose={() => setIsFormOpen(false)}
+                                initialAction={initialAction}
+                                onClose={() => { setIsFormOpen(false); setInitialAction(undefined); }}
                                 onSaveSuccess={handleUserSaved}
                             />
                         </div>
