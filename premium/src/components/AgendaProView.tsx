@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
 import { useAuth } from "@/context/AuthContext";
@@ -92,6 +92,30 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                     c.internoPlanificadoId === user.uid ||
                     c.internoAtendioId === user.uid
                 );
+            }
+
+            // FASE 15: Lazy-load de nombres faltantes para tarjetas antiguas o recién creadas
+            const unpopulatedUids = Array.from(new Set(results.filter(c => !c.usuariaName).map(c => c.usuariaId)));
+            if (unpopulatedUids.length > 0) {
+                try {
+                    const nameMap: Record<string, string> = {};
+                    await Promise.all(unpopulatedUids.map(async (uid) => {
+                        const snap = await getDoc(doc(db, "programs", globalActiveYear, "usuarias", uid));
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            nameMap[uid] = data.identity?.fullName || data.nombreCompleto || `ID: ${uid.slice(0, 6)}`;
+                        }
+                    }));
+                    
+                    results = results.map(c => {
+                        if (!c.usuariaName && nameMap[c.usuariaId]) {
+                            return { ...c, usuariaName: nameMap[c.usuariaId] };
+                        }
+                        return c;
+                    });
+                } catch (e) {
+                    console.error("Error al obtener nombres faltantes", e);
+                }
             }
 
             // Sort by Date & Time
