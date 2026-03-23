@@ -39,7 +39,7 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
             const currentYear = new Date().getFullYear();
             // Genera un rango de 11 años: desde hace 5 años hasta 5 años en el futuro. Ej (2021-2031)
             const yearsToCheck = Array.from({ length: 11 }, (_, i) => (currentYear - 5 + i).toString());
-            let foundYear = "2026";
+            let foundYear = ""; // Default empty instead of faking "2026"
             const available: string[] = [];
 
             // Validamos sin CollectionGroup (para evitar errores de indexación en plan Spark)
@@ -61,7 +61,7 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
             }
 
             setGlobalActiveYear(foundYear);
-            setActiveYear(foundYear); // Predeterminado: te mete en el año activo global
+            setActiveYear(foundYear || "2026"); // Fallback local para que la UI no colapse, pero el global queda vacío si no hay DB.
         } catch (error) {
             console.error("Error fetching years from Firebase:", error);
         } finally {
