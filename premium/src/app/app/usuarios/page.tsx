@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useYear } from "@/context/YearContext";
+import { useAuth } from "@/context/AuthContext";
 import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
@@ -27,6 +28,8 @@ function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string, action
 
 export default function UsuariosPage() {
     const { globalActiveYear, loadingYear } = useYear();
+    const { user } = useAuth();
+    const canDelete = user?.role === 'DOCENTE';
 
     // Estados Ficha / Formulario
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -107,6 +110,21 @@ export default function UsuariosPage() {
         } else {
             // Actualizamos en memoria
             setPersonasUsuarias(prev => prev.map(u => u.id === savedUser.id ? savedUser : u));
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!globalActiveYear || !canDelete) return;
+        if (!confirm(`¿Estás seguro de eliminar permanentemente a "${userName}"?\n\nEsta acción NO se puede deshacer.`)) return;
+        if (!confirm(`ÚLTIMA CONFIRMACIÓN: Se eliminará "${userName}" y todos sus datos del sistema. ¿Continuar?`)) return;
+
+        try {
+            await PersonasUsuariasService.deleteById(globalActiveYear, userId);
+            setPersonasUsuarias(prev => prev.filter(u => u.id !== userId));
+            alert(`"${userName}" ha sido eliminada del sistema.`);
+        } catch (error) {
+            console.error("Error eliminando persona usuaria", error);
+            alert("Error al eliminar. Verifique permisos de Firestore.");
         }
     };
 
@@ -238,6 +256,15 @@ export default function UsuariosPage() {
                                     Abrir Expediente
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                                 </button>
+                                {canDelete && (
+                                    <button
+                                        onClick={() => handleDeleteUser(u.id!, u.identity?.fullName || (u as any).nombreCompleto || 'Sin nombre')}
+                                        className="w-full min-h-[44px] flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-medium rounded-xl transition border border-rose-100 text-xs"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        Eliminar
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -283,12 +310,23 @@ export default function UsuariosPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
-                                                className="text-indigo-600 hover:text-indigo-800 font-medium text-sm bg-indigo-50/50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100 shadow-sm"
-                                            >
-                                                Abrir Expediente
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => { setSelectedUser(u); setIsFormOpen(true); }}
+                                                    className="text-indigo-600 hover:text-indigo-800 font-medium text-sm bg-indigo-50/50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors border border-indigo-100 shadow-sm"
+                                                >
+                                                    Abrir Expediente
+                                                </button>
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={() => handleDeleteUser(u.id!, u.identity?.fullName || (u as any).nombreCompleto || 'Sin nombre')}
+                                                        className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-2 rounded-lg transition-colors border border-transparent hover:border-rose-100"
+                                                        title={`Eliminar a ${u.identity?.fullName || 'esta persona'}`}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

@@ -1,4 +1,4 @@
-import { collection, doc, query, getDocs, limit, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, doc, query, getDocs, limit, startAfter, QueryDocumentSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
@@ -74,5 +74,17 @@ export const PersonasUsuariasService = {
 
         // Hacemos el volcado a la base de datos real
         await setDocCounted(targetRef, data, { merge: true });
+    },
+
+    /**
+     * Elimina permanentemente una Persona Usuaria.
+     * Solo debe ser invocado por roles ADMIN o DOCENTE.
+     */
+    async deleteById(year: string, id: string): Promise<void> {
+        if (!year) throw new Error("Año de programa requerido");
+        if (!id) throw new Error("ID de Persona Usuaria requerido para eliminar");
+
+        const targetRef = doc(db, "programs", year, "usuarias", id);
+        await deleteDoc(targetRef);
     }
 };
