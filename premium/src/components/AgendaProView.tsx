@@ -27,7 +27,7 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
 
     // Filters
     const [viewMode, setViewMode] = useState<'HOY' | 'SEMANA'>('HOY');
-    const [filterScope, setFilterScope] = useState<'MIS_CITAS' | 'TODAS' | 'MI_TURNO' | 'CONTINUIDAD'>('MIS_CITAS');
+    const [filterScope, setFilterScope] = useState<'MIS_CITAS' | 'TODAS' | 'MI_TURNO'>('MIS_CITAS');
     const [filterStatus, setFilterStatus] = useState<string>('ACTIVAS'); // SCHEDULED o ALL
 
     // Takeover State
@@ -73,16 +73,15 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                 dateConstraints.push(where("date", "<=", format(end, 'yyyy-MM-dd')));
             }
 
-            // Status filter
-            const statusConstraints = [];
-            if (filterStatus === 'ACTIVAS') {
-                statusConstraints.push(where("status", "in", ["SCHEDULED", "COMPLETED", "NO_SHOW"])); // Oculta canceladas/suspendidas por defecto
-            }
-
-            // Note: Complexe queries with internal arrays or multiple fields might need local filtering
-            const q = query(citasRef, ...dateConstraints, ...statusConstraints);
+            // Status filtrado en memoria para evitar errores de Index Firebase
+            const q = query(citasRef, ...dateConstraints);
             const snapshot = await getDocs(q);
             let results = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Cita));
+
+            if (filterStatus === 'ACTIVAS') {
+                const activeStatuses = ["SCHEDULED", "COMPLETED", "NO_SHOW"];
+                results = results.filter(c => activeStatuses.includes(c.status));
+            }
 
             // Local filtering for Scope (to avoid complex Firestore compound indexing issues right now)
             if (filterScope === 'MIS_CITAS') {
@@ -90,19 +89,6 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                     c.internoPlanificadoId === user.uid ||
                     c.internoAtendioId === user.uid
                 );
-            } else if (filterScope === 'CONTINUIDAD') {
-                // FASE 2.3.3: Filtro de Continuidad (Internos Fijos)
-                const pRef = collection(db, "programs", globalActiveYear, "procesos");
-                const q1 = query(pRef, where("continuityInternIds", "array-contains", user.uid));
-                const q2 = query(pRef, where("primaryInternId", "==", user.uid));
-
-                const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-                const validProcesoIds = new Set([
-                    ...snap1.docs.map(d => d.id),
-                    ...snap2.docs.map(d => d.id)
-                ]);
-
-                results = results.filter(c => c.procesoId && validProcesoIds.has(c.procesoId));
             } else if (filterScope === 'MI_TURNO') {
                 // FASE 2.3.4: "Ver mi Turno"
                 // Busca los turnos donde estoy asignado y filtra las citas que caigan en ese día/horario
@@ -236,7 +222,7 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                         <option value="MIS_CITAS">Mis Citas</option>
                         {user?.role === 'DOCENTE' && <option value="TODAS">Agenda General</option>}
                         <option value="MI_TURNO">Bloque de Turno</option>
-                        <option value="CONTINUIDAD">Solo Casos de Continuidad</option>
+
                     </select>
 
                     <select
