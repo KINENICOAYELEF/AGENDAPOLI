@@ -30,7 +30,7 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
 
     // Filters
     const [viewMode, setViewMode] = useState<'HOY' | 'SEMANA'>('HOY');
-    const [filterScope, setFilterScope] = useState<'MIS_CITAS' | 'TODAS' | 'MI_TURNO'>('MIS_CITAS');
+    const [filterScope, setFilterScope] = useState<'MIS_CITAS' | 'TODAS'>('MIS_CITAS');
     const [filterStatus, setFilterStatus] = useState<string>('ACTIVAS'); // SCHEDULED o ALL
 
     // Takeover State
@@ -46,10 +46,6 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
 
     useEffect(() => {
         if (globalActiveYear && user) {
-            // Default based on role
-            if (user.role === 'DOCENTE' && filterScope === 'MIS_CITAS') {
-                setFilterScope('TODAS');
-            }
             fetchAgenda();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,28 +92,6 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                     c.internoPlanificadoId === user.uid ||
                     c.internoAtendioId === user.uid
                 );
-            } else if (filterScope === 'MI_TURNO') {
-                // FASE 2.3.4: "Ver mi Turno"
-                // Busca los turnos donde estoy asignado y filtra las citas que caigan en ese día/horario
-                const allTurnos = await TurnosService.getActiveTurnos(globalActiveYear);
-                const misTurnos = allTurnos.filter(t => t.internosAsignados?.includes(user.uid));
-
-                if (misTurnos.length === 0) {
-                    results = []; // No tengo turnos
-                } else {
-                    const dayMap = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                    results = results.filter(c => {
-                        const citaDate = new Date(c.date + "T00:00:00");
-                        const dowStr = dayMap[citaDate.getDay()];
-
-                        // Validar si la cita cae en alguno de mis turnos
-                        return misTurnos.some(t =>
-                            t.diaSemana === dowStr &&
-                            c.startTime >= t.horaInicio &&
-                            c.startTime <= t.horaFin
-                        );
-                    });
-                }
             }
 
             // Sort by Date & Time
@@ -227,9 +201,7 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                         className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-100 outline-none"
                     >
                         <option value="MIS_CITAS">Mis Citas</option>
-                        {user?.role === 'DOCENTE' && <option value="TODAS">Agenda General</option>}
-                        <option value="MI_TURNO">Bloque de Turno</option>
-
+                        <option value="TODAS">Agenda General</option>
                     </select>
 
                     <select
@@ -253,23 +225,6 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                             <h4 className="font-bold text-rose-900 text-sm">Día Feriado / Bloqueado</h4>
                             <p className="text-xs text-rose-700 mt-0.5">La generación automática ignoró este día. Las citas vistas aquí fueron forzadas o desplazadas manualmente.</p>
                         </div>
-                    </div>
-                )}
-
-                {/* KPIs para MI_TURNO */}
-                {!loading && filterScope === 'MI_TURNO' && citas.length > 0 && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex justify-center gap-6 items-center text-sm shadow-sm mb-4">
-                        <span className="font-semibold text-indigo-900">
-                            Casos en Franja: <span className="font-bold text-lg">{citas.length}</span>
-                        </span>
-                        <span className="font-semibold text-emerald-700">
-                            Ejecutados: <span className="font-bold text-lg">{citas.filter(c => c.status === 'COMPLETED').length}</span>
-                        </span>
-                        {citas.filter(c => c.status === 'NO_SHOW' || c.status === 'CANCELLED').length > 0 && (
-                            <span className="font-semibold text-rose-700">
-                                Caídos: <span className="font-bold text-lg">{citas.filter(c => c.status === 'NO_SHOW' || c.status === 'CANCELLED').length}</span>
-                            </span>
-                        )}
                     </div>
                 )}
 

@@ -16,7 +16,8 @@ interface UserFormProps {
     onSaveSuccess: (savedUser: PersonaUsuaria, isNew: boolean) => void;
 }
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AppUser } from "@/context/AuthContext";
+import { UsersService } from "@/services/users";
 
 export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: UserFormProps) {
     const { globalActiveYear } = useYear();
@@ -26,6 +27,11 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
     const isEditMode = !!initialData;
 
     const [loading, setLoading] = useState(false);
+    const [internos, setInternos] = useState<AppUser[]>([]);
+
+    useEffect(() => {
+        UsersService.getInterns().then(setInternos).catch(console.error);
+    }, []);
 
     // Control de Sub- vistas (Navegación esclava en modal)
     const [subView, setSubView] = useState<'main' | 'procesos'>('main');
@@ -139,10 +145,11 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                 // Inyectamos timestamp de creación solo si es un documento nuevo
                 ...(!isEditMode && { 
                     meta: { 
+                        ...formData.meta, // Preserve existing meta like assignedInternId
                         createdAt: new Date().toISOString(),
                         createdBy: user?.uid,
-                        // FASE 14: Asignación por defecto si el creador es INTERNO
-                        ...(user?.role === 'INTERNO' && {
+                        // FASE 14: Asignación por defecto si el creador es INTERNO y no escogió uno
+                        ...(user?.role === 'INTERNO' && !formData.meta?.assignedInternId && {
                             assignedInternId: user.uid,
                             assignedInternName: user.displayName || user.email
                         })
@@ -325,7 +332,31 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                             </div>
                         </div>
 
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Interno Asignado (Tratante)</label>
+                            <select
+                                name="assignedInternId"
+                                value={formData.meta?.assignedInternId || ""}
+                                onChange={(e) => {
+                                    const t = e.target;
+                                    setFormData(p => ({
+                                        ...p,
+                                        meta: {
+                                            ...p.meta,
+                                            assignedInternId: t.value || undefined,
+                                            assignedInternName: t.options[t.selectedIndex]?.text || undefined
+                                        }
+                                    }));
+                                }}
+                                className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                            >
+                                <option value="">Aún sin asignar / No aplica</option>
+                                {internos.map(int => (
+                                    <option key={int.uid} value={int.uid}>{int.displayName || int.email}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="md:col-span-1">
                             <label className="block text-sm font-medium text-slate-700 mb-1">Observaciones Administrativas</label>
                             <input
                                 type="text"
