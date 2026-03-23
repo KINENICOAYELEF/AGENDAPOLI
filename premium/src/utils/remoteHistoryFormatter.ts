@@ -261,12 +261,12 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
         }
         if (occ.adherenceBarriers) defaultVal.contexto_ocupacional.barreras_logisticas_adherencia = occ.adherenceBarriers.map(b => humanize(b));
         if (occ.contextoDomiciliario) {
-            const dom = occ.contextoDomiciliario;
-            if (dom.viveCon) defaultVal.contexto_domiciliario.vive_con = humanize(dom.viveCon);
-            if (dom.redApoyo) defaultVal.contexto_domiciliario.red_apoyo_tratamiento = humanize(dom.redApoyo);
-            if (dom.personasACargo) defaultVal.contexto_domiciliario.personas_a_cargo = humanize(dom.personasACargo);
-            if (dom.barrerasEntorno) defaultVal.contexto_domiciliario.barreras_hogar_entorno = dom.barrerasEntorno;
-            if (dom.observacion) defaultVal.contexto_domiciliario.observacion_contexto_domiciliario = dom.observacion;
+            const dom_sub = occ.contextoDomiciliario;
+            if (dom_sub.viveCon) defaultVal.contexto_domiciliario.vive_con = humanize(dom_sub.viveCon);
+            if (dom_sub.redApoyo) defaultVal.contexto_domiciliario.red_apoyo_tratamiento = humanize(dom_sub.redApoyo);
+            if (dom_sub.personasACargo) defaultVal.contexto_domiciliario.personas_a_cargo = humanize(dom_sub.personasACargo);
+            if (dom_sub.barrerasEntorno) defaultVal.contexto_domiciliario.barreras_hogar_entorno = dom_sub.barrerasEntorno;
+            if (dom_sub.observacion) defaultVal.contexto_domiciliario.observacion_contexto_domiciliario = dom_sub.observacion;
         }
     }
 
@@ -278,6 +278,8 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
         if (bps.basalMood) defaultVal.biopsicosocial_habitos.estado_animo_basal = humanize(bps.basalMood);
         if (bps.smoking) defaultVal.biopsicosocial_habitos.tabaquismo = humanize(bps.smoking);
         if (bps.socialSupport) defaultVal.biopsicosocial_habitos.red_apoyo_social_emocional = humanize(bps.socialSupport);
+        if (bps.poorAdherenceHistory) defaultVal.biopsicosocial_habitos.adherencia_historica = humanize(bps.poorAdherenceHistory);
+        if (bps.alcohol) defaultVal.biopsicosocial_habitos.alcohol = humanize(bps.alcohol);
         if (bps.protectiveFactors) defaultVal.biopsicosocial_habitos.factores_protectores = [bps.protectiveFactors];
         if (bps.sueno) {
             if (bps.sueno.horasPromedio) defaultVal.biopsicosocial_habitos.horas_promedio_sueno = bps.sueno.horasPromedio;
