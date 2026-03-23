@@ -276,10 +276,16 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
         if (bps.sleepQuality) defaultVal.biopsicosocial_habitos.calidad_sueno = humanize(bps.sleepQuality);
         if (bps.stressLevel) defaultVal.biopsicosocial_habitos.estres_basal = humanize(bps.stressLevel);
         if (bps.basalMood) defaultVal.biopsicosocial_habitos.estado_animo_basal = humanize(bps.basalMood);
-        if (bps.smoking) defaultVal.biopsicosocial_habitos.tabaquismo = humanize(bps.smoking);
+        if (bps.smoking) {
+            let smokeStr = humanize(bps.smoking);
+            if (bps.tabaquismo?.cantidadDiaria) {
+                smokeStr += ` (${humanize(bps.tabaquismo.cantidadDiaria)})`;
+            }
+            defaultVal.biopsicosocial_habitos.tabaquismo = smokeStr;
+        }
         if (bps.socialSupport) defaultVal.biopsicosocial_habitos.red_apoyo_social_emocional = humanize(bps.socialSupport);
         if (bps.poorAdherenceHistory) defaultVal.biopsicosocial_habitos.adherencia_historica = humanize(bps.poorAdherenceHistory);
-        if (bps.alcohol) defaultVal.biopsicosocial_habitos.alcohol = humanize(bps.alcohol);
+        if (bps.habitos?.alcohol) defaultVal.biopsicosocial_habitos.alcohol = humanize(bps.habitos.alcohol);
         if (bps.protectiveFactors) defaultVal.biopsicosocial_habitos.factores_protectores = [bps.protectiveFactors];
         if (bps.sueno) {
             if (bps.sueno.horasPromedio) defaultVal.biopsicosocial_habitos.horas_promedio_sueno = bps.sueno.horasPromedio;
@@ -293,6 +299,10 @@ export function buildP15Structured(history: RemoteHistory): NonNullable<RemoteHi
             if (bps.habitos.dieta) defaultVal.biopsicosocial_habitos.patron_dieta_principal = bps.habitos.dieta;
         }
         if (bps.actividadesSignificativas) defaultVal.biopsicosocial_habitos.hobbies_bienestar = [bps.actividadesSignificativas];
+    }
+
+    if (history.permanentNotes) {
+        defaultVal.notas_basales = history.permanentNotes;
     }
 
     return defaultVal;

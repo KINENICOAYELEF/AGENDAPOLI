@@ -358,149 +358,181 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
 
                 {/* --- C) EXPEDIENTE CLÍNICO (RESUMEN BASAL) --- */}
                 {isEditMode && formData.remoteHistory ? (
-                    <div className="col-span-1 md:col-span-2 space-y-4 mt-2 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-                        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                            <span className="bg-indigo-500 text-white p-1 rounded-md">📇</span> C) Expediente Clínico (Contexto Basal Actualizado)
+                    <div className="col-span-1 md:col-span-2 space-y-5 mt-2 bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100/60 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-100 rounded-full blur-3xl opacity-30 -mr-20 -mt-20 pointer-events-none"></div>
+                        <h3 className="text-[11px] font-black text-indigo-950 uppercase tracking-[0.2em] flex items-center gap-2.5 relative z-10">
+                            <span className="w-7 h-7 bg-indigo-600 text-white flex items-center justify-center rounded-lg shadow-md shadow-indigo-100 text-[14px]">📇</span> C) Expediente Clínico (Contexto Basal Actualizado)
                         </h3>
-                        <div className="text-xs text-slate-300 leading-relaxed max-h-64 overflow-y-auto w-full pr-2 space-y-3 custom-scrollbar">
+                        
+                        <div className="text-[11px] text-slate-700 leading-relaxed w-full space-y-4 relative z-10">
                             {formData.remoteHistory.p15_context_structured ? (
-                                <div className="space-y-4">
-                                    {/* 1. Biología y Salud General */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-                                            <h4 className="font-semibold text-rose-400 mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                                                <span>Salud General y Biología</span>
-                                                <span className="text-[10px] opacity-70">🏥</span>
-                                            </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    {/* 1. Salud General y Biología */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-rose-200 transition-colors">
+                                        <h4 className="font-bold text-rose-900 mb-2.5 border-b border-rose-100 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider">
+                                            <span>Salud General y Biología</span>
+                                            <span className="opacity-50 text-[14px]">🏥</span>
+                                        </h4>
+                                        <div className="space-y-2.5">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[...(formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes || []), ...(formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.comorbilidades_relevantes || [])].length > 0 ? (
+                                                    [...(formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes || []), ...(formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.comorbilidades_relevantes || [])].map((i: string, idx: number) => (
+                                                        <span key={idx} className="bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded-full font-bold text-[9px]">{i}</span>
+                                                    ))
+                                                ) : <span className="text-slate-400 italic">No reporta condiciones basales.</span>}
+                                            </div>
+                                            <p><span className="text-slate-400 font-bold uppercase text-[9px]">💊 Medicación:</span> {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.medicacion_relevante?.join(', ') || '-'}</p>
+                                            <p><span className="text-slate-400 font-bold uppercase text-[9px]">⚠️ Alergias:</span> {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.alergias_relevantes?.join(', ') || '-'}</p>
+                                            <p><span className="text-slate-400 font-bold uppercase text-[9px]">📄 Detalle Clínico:</span> {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.detalle_clinico_relevante || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Antecedentes MSK */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
+                                        <h4 className="font-bold text-slate-900 mb-2.5 border-b border-slate-100 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider">
+                                            <span>Antecedentes MSK y Trauma</span>
+                                            <span className="opacity-50 text-[14px]">🦴</span>
+                                        </h4>
+                                        <div className="space-y-2.5">
+                                            <div>
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase">Lesiones y Cirugías MSK:</span>
+                                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                                    {[...(formData.remoteHistory.p15_context_structured.antecedentes_msk?.lesiones_previas || []), ...(formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas || [])].length > 0 ? (
+                                                        [...(formData.remoteHistory.p15_context_structured.antecedentes_msk?.lesiones_previas || []), ...(formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas || [])].map((i: string, idx: number) => (
+                                                            <span key={idx} className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-full text-[9px] font-medium">{i}</span>
+                                                        ))
+                                                    ) : <span className="text-slate-400 italic">Ninguna reportada.</span>}
+                                                </div>
+                                            </div>
+                                            <p><span className="text-slate-400 font-bold uppercase text-[9px]">📍 Región Crónica:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.region_historicamente_problematica || '-'}</p>
+                                            <p><span className="text-slate-400 font-bold uppercase text-[9px]">🔄 Recurrencias:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.recurrencias?.join(', ') || '-'}</p>
+                                            <div className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-600">
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px]">⚠️ Secuelas:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.secuelas_persistentes?.join(', ') || '-'}</p>
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px]">🖼️ Imágenes:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.imagenes_previas_relevantes?.join(', ') || '-'}</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px]">✋ Dom:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.dominancia || '-'}</p>
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px]">👟 Órtesis:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.ortesis_plantillas || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Capacidad Física y Deporte */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-200 transition-colors">
+                                        <h4 className="font-bold text-emerald-900 mb-2.5 border-b border-emerald-100 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider">
+                                            <span>Deporte y Actividad Basal</span>
+                                            <span className="opacity-50 text-[14px]">🏃</span>
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Deporte:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.actividad_deporte_central || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Categoría:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.categoria || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Nivel:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.nivel_practica_actual || '-'}</p>
+                                                </div>
+                                                <div className="space-y-1.5 text-slate-600">
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">⚡ Frec:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.frecuencia_semanal || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">⏱️ Dur:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.duracion_tipica || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">📊 Exp:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.experiencia_acumulada || '-'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-100 text-emerald-800 italic">
+                                                <p><span className="text-emerald-400 font-bold uppercase text-[9px] not-italic block mb-0.5">Doble Carga / Objetivo:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.doble_carga_basal || '-'} · {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.calendario_competitivo_objetivo || '-'}</p>
+                                            </div>
+                                            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
+                                                <p className="text-emerald-600 font-medium"><span className="text-slate-400 font-bold uppercase text-[9px] block">Útil antes:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.tratamientos_previos_exitosos?.join(', ') || '-'}</p>
+                                                <p className="text-rose-600 font-medium"><span className="text-slate-400 font-bold uppercase text-[9px] block">Inútil antes:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk?.tratamientos_mal_tolerados?.join(', ') || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 4. Contexto Ocupacional y Red de Apoyo */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-sky-200 transition-colors">
+                                        <h4 className="font-bold text-sky-900 mb-2.5 border-b border-sky-100 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider">
+                                            <span>Ocupación y Entorno</span>
+                                            <span className="opacity-50 text-[14px]">💼</span>
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Rol:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.ocupacion_principal || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Horario:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.jornada_formato || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">Trayecto:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.exposicion_trayectos_conduccion || '-'}</p>
+                                                </div>
+                                                <div className="space-y-1.5 text-slate-600">
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">🏠 Vive con:</span> {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.vive_con || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">👪 Cargas:</span> {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.personas_a_cargo || '-'}</p>
+                                                    <p><span className="text-slate-400 font-bold uppercase text-[9px]">🤝 Red Apoyo:</span> {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.red_apoyo_tratamiento || '-'}</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-2 bg-sky-50 rounded-lg border border-sky-100 space-y-1.5">
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px]">Demandas Físicas:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.demandas_fisicas_laborales?.join(', ') || '-'}</p>
+                                                <p><span className="text-rose-500 font-bold uppercase text-[9px]">Barreras:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.barreras_logisticas_adherencia?.join(', ') || '-'}</p>
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 italic"><span className="text-slate-400 font-bold uppercase text-[9px] not-italic">Obs Hogar:</span> {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.observacion_contexto_domiciliario || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* 5. Perfil Biopsicosocial y Hábitos */}
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-amber-200 transition-colors md:col-span-2">
+                                        <h4 className="font-bold text-amber-900 mb-2.5 border-b border-amber-100 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider">
+                                            <span>Perfil Biopsicosocial y Hábitos Basales</span>
+                                            <span className="opacity-50 text-[14px]">🧘</span>
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <div className="space-y-2">
-                                                {formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes?.length > 0 || (formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.comorbilidades_relevantes?.length > 0) ? (
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {[...(formData.remoteHistory.p15_context_structured.condiciones_clinicas_relevantes || []), ...(formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.comorbilidades_relevantes || [])].map((i: string, idx: number) => (
-                                                            <span key={idx} className="bg-rose-900/30 text-rose-200 border border-rose-800/50 px-1.5 py-0.5 rounded text-[10px]">{i}</span>
-                                                        ))}
-                                                    </div>
-                                                ) : <p className="text-slate-500 italic">No reporta condiciones relevantes.</p>}
-
-                                                {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.medicacion_relevante?.length > 0 && (
-                                                    <p className="text-[10px] border-l-2 border-indigo-500 pl-2 py-0.5"><span className="text-slate-400 font-bold uppercase text-[9px]">💊 Meds:</span> {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes.medicacion_relevante.join(', ')}</p>
-                                                )}
-                                                {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.alergias_relevantes?.length > 0 && (
-                                                    <p className="text-[10px] border-l-2 border-amber-500 pl-2 py-0.5"><span className="text-slate-400 font-bold uppercase text-[9px]">⚠️ Alergias:</span> {formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes.alergias_relevantes.join(', ')}</p>
-                                                )}
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px] block">Sueño:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.calidad_sueno) || '-'}</p>
+                                                <p className="text-[10px] text-slate-600">⏱️ {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.horas_promedio_sueno || '-'} hrs · 😴 Rep: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.sueno_reparador || '-'}</p>
+                                                <p className="text-[10px] text-slate-600">🌙 Desp: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.despertares_nocturnos || '-'}</p>
                                             </div>
-                                        </div>
-
-                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-                                            <h4 className="font-semibold text-indigo-400 mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                                                <span>Antecedentes MSK</span>
-                                                <span className="text-[10px] opacity-70">🦴</span>
-                                            </h4>
                                             <div className="space-y-2">
-                                                {formData.remoteHistory.p15_context_structured.antecedentes_msk?.lesiones_previas?.length > 0 && (
-                                                    <div>
-                                                        <span className="text-[9px] text-slate-500 font-bold uppercase">Lesiones:</span>
-                                                        <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
-                                                            {formData.remoteHistory.p15_context_structured.antecedentes_msk.lesiones_previas.map((i: string, idx: number) => <li key={idx}>{i}</li>)}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                                {(formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas?.length > 0 || formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.cirugias_medicas_relevantes?.length > 0) && (
-                                                    <div className="text-[10px]">
-                                                        <span className="text-slate-400 font-bold uppercase text-[9px]">Cirugías:</span> {[...(formData.remoteHistory.p15_context_structured.antecedentes_msk?.cirugias_previas || []), ...(formData.remoteHistory.p15_context_structured.factores_biologicos_relevantes?.cirugias_medicas_relevantes || [])].join(', ')}
-                                                    </div>
-                                                )}
-                                                {formData.remoteHistory.p15_context_structured.antecedentes_msk?.secuelas_persistentes?.length > 0 && (
-                                                    <div className="text-[10px] bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
-                                                        <span className="text-amber-400/80 font-bold uppercase text-[9px]">Secuelas:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk.secuelas_persistentes.join(', ')}
-                                                    </div>
-                                                )}
-                                                <div className="flex flex-wrap gap-2 text-[9px] mt-1 text-slate-400">
-                                                    <span>Dom: {formData.remoteHistory.p15_context_structured.antecedentes_msk?.dominancia || '-'}</span>
-                                                    {formData.remoteHistory.p15_context_structured.antecedentes_msk?.recurrencias?.length > 0 && <span>· Recurrencias: {formData.remoteHistory.p15_context_structured.antecedentes_msk.recurrencias.join(', ')}</span>}
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px] block">Estrés y Ánimo:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estres_basal) || '-'}</p>
+                                                <p className="text-[10px] text-slate-600">🧠 {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.fuente_principal_estres || '-'}</p>
+                                                <p className="text-[10px] text-slate-600">😊 Ánimo: {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estado_animo_basal) || '-'}</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <p><span className="text-slate-400 font-bold uppercase text-[9px] block">Hábitos:</span></p>
+                                                <div className="flex flex-wrap gap-2 text-[10px]">
+                                                    <span title="Tabaquismo">🚭 {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.tabaquismo || '-'}</span>
+                                                    <span title="Alcohol">🍷 {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.alcohol || '-'}</span>
+                                                    <span title="Cafeína">☕ {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.cafeina || '-'}</span>
                                                 </div>
+                                                <p className="text-[10px] text-slate-500">🥗 Dieta: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.patron_dieta_principal || '-'}</p>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 2. Actividad Fisica y Deporte */}
-                                    <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-                                        <h4 className="font-semibold text-emerald-400 mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                                            <span>Capacidad Física y Deporte Basal</span>
-                                            <span className="text-[10px] opacity-70">🏃</span>
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px]">
-                                            <div className="space-y-1">
-                                                <p><span className="text-slate-400 font-bold">Actividad Central:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.actividad_deporte_central || '-'}</p>
-                                                <p><span className="text-slate-400 font-bold">Nivel:</span> {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.nivel_practica_actual || '-'} ({formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.frecuencia_semanal || '-'})</p>
-                                                {formData.remoteHistory.p15_context_structured.deporte_actividad_basal?.doble_carga_basal && <p className="text-[9px] italic border-l border-emerald-500 pl-2 mt-1">{formData.remoteHistory.p15_context_structured.deporte_actividad_basal.doble_carga_basal}</p>}
-                                            </div>
-                                            <div className="space-y-1">
-                                                {formData.remoteHistory.p15_context_structured.antecedentes_msk?.tratamientos_previos_exitosos?.length > 0 && (
-                                                    <p className="text-emerald-300/80"><span className="text-slate-400 font-bold uppercase text-[9px]">Útil antes:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk.tratamientos_previos_exitosos.join(', ')}</p>
-                                                )}
-                                                {formData.remoteHistory.p15_context_structured.antecedentes_msk?.tratamientos_mal_tolerados?.length > 0 && (
-                                                    <p className="text-rose-300/60"><span className="text-slate-400 font-bold uppercase text-[9px]">Inútil antes:</span> {formData.remoteHistory.p15_context_structured.antecedentes_msk.tratamientos_mal_tolerados.join(', ')}</p>
+                                            <div className="md:col-span-3 pt-3 border-t border-slate-50 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] text-indigo-700 font-medium italic"><span className="text-slate-400 font-bold uppercase text-[9px] not-italic mr-2">🎨 Hobbies:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.hobbies_bienestar?.join(', ') || '-'}</p>
+                                                    <p className="text-[10px] text-emerald-700 font-medium mt-1"><span className="text-slate-400 font-bold uppercase text-[9px] not-italic mr-2">🛡️ Protectores:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.factores_protectores?.join(', ') || '-'}</p>
+                                                </div>
+                                                {formData.remoteHistory.p15_context_flags && (
+                                                    <div className="flex flex-wrap gap-1.5 justify-end">
+                                                        {formData.remoteHistory.p15_context_flags.factores_personales_positivos?.map((f: string, i: number) => <span key={`fp-${i}`} className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded text-[9px] font-bold">↑ {humanize(f)}</span>)}
+                                                        {formData.remoteHistory.p15_context_flags.factores_personales_negativos?.map((f: string, i: number) => <span key={`fn-${i}`} className="bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded text-[9px] font-bold">↓ {humanize(f)}</span>)}
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* 3. Ocupacional y Domiciliario */}
-                                    <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-                                        <h4 className="font-semibold text-amber-400 mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                                            <span>Contexto Ocupacional y Red de Apoyo</span>
-                                            <span className="text-[10px] opacity-70">💼</span>
+                                    {/* 6. Notas Basales y Sintesis */}
+                                    <div className="bg-white p-4 rounded-xl border-2 border-indigo-100 shadow-md md:col-span-2 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full blur-2xl opacity-40 -mr-12 -mt-12"></div>
+                                        <h4 className="font-bold text-indigo-950 mb-2.5 border-b border-indigo-50 pb-1.5 flex justify-between items-center text-[10px] uppercase tracking-wider relative z-10">
+                                            <span>Síntesis y Notas del Expediente Basal</span>
+                                            <span className="opacity-50 text-[14px]">📝</span>
                                         </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px]">
-                                            <div className="space-y-1">
-                                                <p><span className="text-slate-400 font-bold">Rol Principal:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.ocupacion_principal || '-'}</p>
-                                                <p><span className="text-slate-400 font-bold">Demandas:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.demandas_fisicas_laborales?.join(', ') || '-'}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p><span className="text-slate-400 font-bold">Vive con:</span> {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.vive_con || '-'} (Red: {formData.remoteHistory.p15_context_structured.contexto_domiciliario?.red_apoyo_tratamiento || 'N/A'})</p>
-                                                {formData.remoteHistory.p15_context_structured.contexto_ocupacional?.barreras_logisticas_adherencia?.length > 0 && <p className="text-rose-400/80"><span className="text-slate-400 font-bold uppercase text-[9px]">Barreras:</span> {formData.remoteHistory.p15_context_structured.contexto_ocupacional.barreras_logisticas_adherencia.join(', ')}</p>}
-                                            </div>
+                                        <div className="text-[12px] text-slate-700 leading-relaxed italic relative z-10 p-1">
+                                            {formData.remoteHistory.p15_context_structured.notas_basales || "No hay notas adicionales registradas en el expediente basal."}
                                         </div>
-                                    </div>
-
-                                    {/* 4. Biopsicosocial y Banderas */}
-                                    <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700">
-                                        <h4 className="font-semibold text-sky-400 mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                                            <span>Perfil Biopsicosocial y Hábitos</span>
-                                            <span className="text-[10px] opacity-70">🧘</span>
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px]">
-                                            <div className="space-y-1">
-                                                <p><span className="text-slate-400 font-bold">Estrés:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.estres_basal) || '-'} ({humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.fuente_principal_estres) || 'N/A'})</p>
-                                                <p><span className="text-slate-400 font-bold">Sueño:</span> {humanize(formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.calidad_sueno) || '-'} ({formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.horas_promedio_sueno || '-'} hrs, Rep: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.sueno_reparador || 'N/A'})</p>
-                                                <div className="flex flex-wrap gap-2 text-[9px] mt-1 text-slate-400">
-                                                    <span>🚭 Tab: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.tabaquismo || '-'}</span>
-                                                    <span>🍷 Alc: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.alcohol || '-'}</span>
-                                                    <span>☕ Caf: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.cafeina || '-'}</span>
-                                                </div>
-                                                {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.hobbies_bienestar?.length > 0 && (
-                                                    <p className="text-[9px] mt-1 italic text-slate-500">🎨 Hobbies: {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos.hobbies_bienestar.join(', ')}</p>
-                                                )}
-                                            </div>
-                                            {formData.remoteHistory.p15_context_flags && (
-                                                <div className="flex flex-wrap gap-1 content-start">
-                                                    {formData.remoteHistory.p15_context_flags.factores_personales_positivos?.map((f: string, i: number) => <span key={`fp-${i}`} className="bg-emerald-900/40 text-emerald-300 border border-emerald-800/50 px-1.5 py-0.5 rounded text-[9px]">{humanize(f)}</span>)}
-                                                    {formData.remoteHistory.p15_context_flags.factores_personales_negativos?.map((f: string, i: number) => <span key={`fn-${i}`} className="bg-rose-900/40 text-rose-300 border border-rose-800/50 px-1.5 py-0.5 rounded text-[9px]">{humanize(f)}</span>)}
-                                                    {formData.remoteHistory.p15_context_flags.barreras_ambientales?.map((f: string, i: number) => <span key={`ba-${i}`} className="bg-amber-900/40 text-amber-300 border border-amber-800/50 px-1.5 py-0.5 rounded text-[9px]">{humanize(f)}</span>)}
-                                                </div>
-                                            )}
+                                        <div className="mt-3 grid grid-cols-2 gap-4 pt-3 border-t border-indigo-50 text-[10px] relative z-10">
+                                            <p className="text-slate-500 font-medium"><span className="text-slate-400 font-bold uppercase text-[9px] block">Adherencia Hist:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.adherencia_historica || '-'}</p>
+                                            <p className="text-slate-500 font-medium"><span className="text-slate-400 font-bold uppercase text-[9px] block">Red Apoyo Social:</span> {formData.remoteHistory.p15_context_structured.biopsicosocial_habitos?.red_apoyo_social_emocional || '-'}</p>
                                         </div>
-                                        {formData.remoteHistory.p15_context_structured.notas_basales && (
-                                            <div className="mt-3 p-2 bg-slate-800/50 rounded border border-slate-700 text-slate-300 italic text-[10px]">
-                                                <span className="font-bold text-slate-500 not-italic uppercase text-[8px] block mb-1">Notas de Expediente:</span>
-                                                {formData.remoteHistory.p15_context_structured.notas_basales}
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-3 bg-slate-900/50 border border-slate-700 rounded-lg whitespace-pre-wrap text-[10px] text-slate-400 italic">
-                                    {formData.remoteHistory.basalSynthesis || "Expediente basal extraído de versión antigua."}
+                                <div className="p-4 bg-white border border-slate-200 rounded-xl whitespace-pre-wrap text-[11px] text-slate-500 italic leading-relaxed">
+                                    {formData.remoteHistory.basalSynthesis || "Expediente basal extraído de registro antiguo sin estructurar."}
                                 </div>
                             )}
                         </div>
