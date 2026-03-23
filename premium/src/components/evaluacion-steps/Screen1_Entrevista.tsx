@@ -1468,27 +1468,21 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     <div className="relative w-full">
                         <textarea
                             id="relato-libre-textarea"
-                            placeholder="Relato clínico de la persona en consulta... (la caja se agrandará sola a medida que escribas)"
-                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-y leading-relaxed min-h-[250px] bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
+                            placeholder="Relato clínico de la persona en consulta..."
+                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-y leading-relaxed min-h-[250px] sm:min-h-[300px] max-h-[50vh] sm:max-h-none overflow-y-auto sm:overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
                             style={highlightTexts.length > 0 && !isClosed ? { color: 'transparent', caretColor: '#1e293b' } : { WebkitTextFillColor: 'inherit', opacity: 1 }}
                             value={interviewV4.experienciaPersona.relatoLibre || ""}
                             onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
-                                // Auto-grow: reset then set to content height
-                                target.style.height = 'auto';
-                                target.style.height = `${target.scrollHeight}px`;
-                                // Fix mobile scroll: ensure cursor is visible after resize
-                                requestAnimationFrame(() => {
-                                    // Get cursor position and scroll to it
-                                    const cursorPos = target.selectionStart;
-                                    if (cursorPos !== null) {
-                                        target.blur();
-                                        target.focus();
-                                        target.setSelectionRange(cursorPos, cursorPos);
-                                    }
-                                    // Scroll the textarea into view so the writing area is visible
-                                    target.scrollIntoView({ behavior: 'instant', block: 'nearest' });
-                                });
+                                // Only auto-grow on desktop (mobile uses internal scroll)
+                                if (window.innerWidth >= 768) {
+                                    target.style.height = 'auto';
+                                    target.style.height = `${target.scrollHeight}px`;
+                                } else {
+                                    // On mobile: ensure the cursor line stays visible within the textarea
+                                    // Scroll the textarea to show the bottom (where typing happens)
+                                    target.scrollTop = target.scrollHeight;
+                                }
                             }}
                             onChange={e => {
                                 updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } });
