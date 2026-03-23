@@ -44,16 +44,17 @@ service cloud.firestore {
       // Privacidad: El dueño lee su documento, El Docente lee todos los documentos.
       allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente());
       
-      // Prevención de Hackeo de Elevación de Rol:
-      // La app local solo tiene permitido mandar un 'CREATE' si obligatoriamente
-      // etiqueta su profile como "INTERNO".
+      // Prevención de Elevación de Rol:
+      // Se permite registrarse inicialmente como "PENDING" (Fase 9).
       allow create: if isAuthenticated() 
                     && request.auth.uid == userId 
-                    && request.resource.data.role == "INTERNO";
+                    && request.resource.data.role == "PENDING";
                     
-      // Los roles NO se pueden mutar o eliminar desde la página web, solo
-      // por administradores directamente en la Consola Oficial Firestore.
-      allow update, delete: if false;
+      // Los Docentes/Admins pueden actualizar roles para aprobar solicitudes.
+      allow update: if isDocente();
+      
+      // Eliminación deshabilitada por seguridad histórica.
+      allow delete: if false;
     }
 
     // --------------------------------------------------------------------
