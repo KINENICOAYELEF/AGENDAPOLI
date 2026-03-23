@@ -6,7 +6,7 @@ import { doc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { getDocCounted, setDocCounted } from "@/services/firestore";
 
-export type Role = "DOCENTE" | "INTERNO";
+export type Role = "DOCENTE" | "INTERNO" | "PENDING";
 
 export interface AppUser extends User {
     role: Role;
@@ -38,16 +38,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const userDocRef = doc(db, "users", firebaseUser.uid);
                     const userDocSnap = await getDocCounted(userDocRef);
 
-                    let userRole: Role = "INTERNO";
+                    let userRole: Role = "PENDING";
 
                     if (userDocSnap.exists()) {
                         userRole = userDocSnap.data().role as Role;
                     } else {
-                        // Primer inicio de sesión histórico: Creamos el documento "INTERNO"
+                        // Primer inicio de sesión histórico: Creamos el documento "PENDING"
                         await setDocCounted(userDocRef, {
                             displayName: firebaseUser.displayName || "",
                             email: firebaseUser.email || "",
-                            role: "INTERNO",
+                            role: "PENDING",
                             createdAt: serverTimestamp(),
                         });
                     }
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setUser({ ...firebaseUser, role: userRole } as AppUser);
                 } catch (error) {
                     console.error("Error sincronizando rol desde Firestore:", error);
-                    setUser({ ...firebaseUser, role: "INTERNO" } as AppUser); // Fallback seguro
+                    setUser({ ...firebaseUser, role: "PENDING" } as AppUser); // Fallback seguro
                 }
             } else {
                 setUser(null);

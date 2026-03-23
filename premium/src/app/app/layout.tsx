@@ -32,6 +32,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     // If there's no user, we might be in the split second before redirect, so return null
     if (!user) return null;
+
+    // FASE 9: Pantalla de Bloqueo para Usuarios Pendientes
+    if (user.role === 'PENDING') {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+                <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 p-8 space-y-6">
+                    <div className="mx-auto w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-6 shadow-inner ring-4 ring-amber-50">
+                        <svg className="w-10 h-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Cuenta en Revisión</h2>
+                        <p className="text-slate-500 font-medium leading-relaxed">
+                            Tu registro ha sido completado con éxito con el correo <span className="text-slate-700 font-bold">{user.email}</span>, pero requieres autorización de un Docente o Administrador para acceder a las fichas clínicas.
+                        </p>
+                    </div>
+                    
+                    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-sm text-slate-600">
+                        Pide a un Docente que apruebe tu acceso desde su panel de administración.
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                        <button
+                            onClick={logout}
+                            className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all focus:ring-4 focus:ring-slate-100 outline-none"
+                        >
+                            Cerrar Sesión e Intentar con otra Cuenta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar Desktop / Mobile Drawer */}
