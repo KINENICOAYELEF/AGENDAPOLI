@@ -257,7 +257,17 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         if (procesoId && globalActiveYear) {
             OutcomesService.getByProceso(globalActiveYear, procesoId)
                 .then(outcomes => {
-                    setRecentOutcomes(outcomes.reverse().slice(0, 3));
+                    // Solo obtener el último de cada tipo (GROC, SANE, etc.) ordenado por fecha
+                    const sorted = outcomes.sort((a,b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime());
+                    const uniqueTypes = new Map();
+                    for (const o of sorted) {
+                        // Si estamos editando una evolución ya cerrada, no queremos que sus propios outcomes aparezcan como "Anteriores"
+                        // asumiendo que el Outcome.createdAt es muy cercano, pero dejémoslo simple: el más reciente por tipo.
+                        if (!uniqueTypes.has(o.type)) {
+                            uniqueTypes.set(o.type, o);
+                        }
+                    }
+                    setRecentOutcomes(Array.from(uniqueTypes.values()));
                 })
                 .catch(console.error);
         }
@@ -1087,6 +1097,20 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
         try {
             setLoading(true);
             const docRef = doc(db, "programs", globalActiveYear, "evoluciones", initialData.id);
+            // FASE 8: Crear un Snapshot (Version History) del estado original antes de pasarlo a DRAFT
+            // Guardaremos el initialData intacto en una subcolección 'history_snapshots' para Auditoría.
+            const snapshotRef = doc(collection(docRef, "history_snapshots"));
+            const snapshotPayload = {
+                ...initialData,
+                snapshotMetadata: {
+                    snapshotAt: new Date().toISOString(),
+                    snapshotReason: override,
+                    snapshotByUid: user.uid,
+                    snapshotByRole: user.role
+                }
+            };
+            await setDocCounted(snapshotRef, snapshotPayload);
+
             const auditPayload = {
                 ...formData.audit,
                 updatedAt: new Date().toISOString(),
@@ -2606,7 +2630,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
                         </div>
 
                         {/* FASE 2.2.6: MINI-PANEL ÚLTIMOS OUTCOMES */}
-                        {recentOutcomes.length > 0 && (
+                        {evolucionesAnteriores && evolucionesAnteriores.length > 0 && recentOutcomes.length > 0 && (
                             <div className="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm mt-4 mb-2">
                                 <h4 className="text-[10px] font-black uppercase text-indigo-700 tracking-wider mb-2 flex items-center gap-1">
                                     <SparklesIcon className="w-3 h-3" /> Últimos Resultados Clínicos

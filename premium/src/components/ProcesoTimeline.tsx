@@ -38,10 +38,14 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [view, setView] = useState<'timeline' | 'formEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol' | 'readEval'>('timeline');
+    const [view, setView] = useState<'timeline' | 'formEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol' | 'readEval' | 'historyEvol'>('timeline');
     const [activeTab, setActiveTab] = useState<'timeline' | 'outcomes'>('timeline');
     const [selectedEval, setSelectedEval] = useState<Evaluacion | null>(null);
     const [selectedEvol, setSelectedEvol] = useState<Evolucion | null>(null);
+
+    // Estado para el modal de historial
+    const [historySnapshots, setHistorySnapshots] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const loadData = async () => {
         if (!globalActiveYear || !proceso.id) return;
@@ -150,6 +154,52 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             onClose={() => setView('timeline')}
                             onSaveSuccess={handleEvolSaved}
                         />
+                    )}
+                    {view === 'historyEvol' && selectedEvol && (
+                        <div className="p-6 h-full overflow-y-auto w-full max-w-2xl mx-auto">
+                            <button onClick={() => setView('timeline')} className="mb-4 text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                <ChevronLeftIcon className="w-4 h-4" /> Volver al Timeline
+                            </button>
+                            <h2 className="text-xl font-black text-slate-800 mb-6">Historial de Revisiones (Snapshots)</h2>
+                            {loadingHistory ? (
+                                <div className="animate-pulse w-full h-20 bg-slate-200 rounded-xl"></div>
+                            ) : historySnapshots.length === 0 ? (
+                                <div className="p-6 bg-slate-100 rounded-2xl text-center text-slate-500 font-medium">
+                                    No hay historial de modificaciones previas para esta evolución.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {historySnapshots.map(snap => (
+                                        <div key={snap.id} className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+                                            <div className="flex justify-between items-start mb-2 border-b border-slate-100 pb-2">
+                                                <div>
+                                                    <span className="text-[10px] font-black uppercase text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full mb-1 inline-block">
+                                                        Copia de Seguridad Antes de Reabrir
+                                                    </span>
+                                                    <p className="text-xs font-bold text-slate-700">Responsable reapertura: <span className="text-indigo-600">{snap.snapshotMetadata?.snapshotByRole || 'Admin'}</span></p>
+                                                    <p className="text-[10px] text-slate-500">Motivo: {snap.snapshotMetadata?.snapshotReason}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-bold text-slate-400">
+                                                        {new Date(snap.snapshotMetadata?.snapshotAt || snap.sessionAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3">
+                                                <p className="text-xs font-bold text-slate-600 mb-1">Cuerpo Clínico Original:</p>
+                                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 max-h-40 overflow-y-auto font-mono text-[10px] text-slate-600 whitespace-pre-wrap">
+                                                    {/* Mostrar un resumen simple de los datos más mutables */}
+                                                    Subjetivo: {snap.pain?.patientComment}{'\n'}
+                                                    Objetivo/Plan: {snap.sessionGoal}{'\n'}
+                                                    Evaluación SANE: {snap.outcomesSnapshot?.sane}{'\n'}
+                                                    Ejercicios Registrados: {snap.exercises?.length || 0}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -304,6 +354,30 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                     >
                                                         ✏️ Editar
                                                     </button>
+                                                    {isAdmin && !isEval && (
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedEvol(item.data as Evolucion);
+                                                                setView('historyEvol');
+                                                                setLoadingHistory(true);
+                                                                try {
+                                                                    const docRef = doc(db, "programs", globalActiveYear!, "evoluciones", item.data.id!);
+                                                                    const histRef = collection(docRef, "history_snapshots");
+                                                                    const snaps = await getDocs(query(histRef, orderBy("snapshotMetadata.snapshotAt", "desc")));
+                                                                    setHistorySnapshots(snaps.docs.map(d => ({id: d.id, ...d.data()})));
+                                                                } catch (err) {
+                                                                    console.error(err);
+                                                                } finally {
+                                                                    setLoadingHistory(false);
+                                                                }
+                                                            }}
+                                                            className="text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md transition-colors"
+                                                            title="Ver Historial de Ediciones"
+                                                        >
+                                                            ⏱️ Historial
+                                                        </button>
+                                                    )}
                                                     {isAdmin && (
                                                         <button
                                                             onClick={(e) => {
