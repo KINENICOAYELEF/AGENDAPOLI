@@ -63,13 +63,16 @@ export const AgendaService = {
 
         const qExisting = query(
             citasRef,
-            where('procesoId', '==', proceso.id),
-            where('date', '>=', startDateISO),
-            where('date', '<=', endDateISO)
+            where('procesoId', '==', proceso.id)
         );
 
         const existingDocs = await getDocs(qExisting);
-        const existingDates = new Set(existingDocs.docs.map(d => d.data().date));
+        const existingDates = new Set(
+            existingDocs.docs
+                .map(d => d.data() as Cita)
+                .filter(d => d.date >= startDateISO && d.date <= endDateISO)
+                .map(d => d.date)
+        );
 
         // 4. Calcular los días candidatos a agendar
         const dayMap: Record<string, number> = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
@@ -164,15 +167,17 @@ export const AgendaService = {
 
         const qFuture = query(
             citasRef,
-            where('procesoId', '==', proceso.id),
-            where('date', '>=', todayStr),
-            where('status', '==', 'SCHEDULED')
+            where('procesoId', '==', proceso.id)
         );
         const snapshot = await getDocs(qFuture);
+        const docsToDelete = snapshot.docs.filter(d => {
+            const data = d.data() as Cita;
+            return data.date >= todayStr && data.status === 'SCHEDULED';
+        });
 
-        if (!snapshot.empty) {
+        if (docsToDelete.length > 0) {
             const batch = writeBatch(db);
-            snapshot.docs.forEach(d => {
+            docsToDelete.forEach(d => {
                 batch.delete(d.ref);
             });
             await batch.commit();
@@ -200,16 +205,18 @@ export const AgendaService = {
 
         const qFuture = query(
             collection(db, 'programs', year, 'citas'),
-            where('procesoId', '==', procesoId),
-            where('date', '>=', todayStr),
-            where('status', '==', 'SCHEDULED')
+            where('procesoId', '==', procesoId)
         );
 
         const snapshot = await getDocs(qFuture);
+        const docsToUpdate = snapshot.docs.filter(d => {
+            const data = d.data() as Cita;
+            return data.date >= todayStr && data.status === 'SCHEDULED';
+        });
 
-        if (!snapshot.empty) {
+        if (docsToUpdate.length > 0) {
             const batch = writeBatch(db);
-            snapshot.docs.forEach(d => {
+            docsToUpdate.forEach(d => {
                 batch.update(d.ref, sanitizeForFirestoreDeep({
                     status: targetStatus,
                     updatedAt: new Date().toISOString()
