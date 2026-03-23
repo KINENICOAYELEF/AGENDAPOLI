@@ -83,8 +83,11 @@ export default function AdminDocentePage() {
 
         setIsProcessing(true);
         try {
-            // 1. Apagamos el año actual
-            await setDocCounted(doc(db, "programs", globalActiveYear, "meta", "settings"), { isActive: false }, { merge: true });
+            // 1. Apagamos el año actual (Solo si existe)
+            if (globalActiveYear) {
+                await setDocCounted(doc(db, "programs", globalActiveYear, "meta", "settings"), { isActive: false }, { merge: true });
+            }
+            
             // 2. Encendemos el año destino
             await setDocCounted(doc(db, "programs", targetYear, "meta", "settings"), { isActive: true }, { merge: true });
 

@@ -10,17 +10,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserRole() {
-      // Solo evalúa esto si el usuario está autenticado
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
     function isDocente() {
-      return isAuthenticated() && getUserRole() == "DOCENTE";
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "DOCENTE";
     }
 
     function isInterno() {
-      return isAuthenticated() && getUserRole() == "INTERNO";
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "INTERNO";
     }
 
     function isProgramActive(year) {
