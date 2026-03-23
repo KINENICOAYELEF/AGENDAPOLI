@@ -92,6 +92,7 @@ export interface Cita {
     id: string; // Unique ID
     procesoId: string;
     usuariaId: string;
+    usuariaName?: string; // FASE 15: Optimización para UI de Agenda sin hacer fetch adicional
     date: string; // ISO String (YYYY-MM-DD)
     startTime: string; // "18:00"
     endTime: string; // "18:50"

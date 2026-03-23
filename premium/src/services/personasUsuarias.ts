@@ -44,6 +44,18 @@ export const PersonasUsuariasService = {
     },
 
     /**
+     * Obtiene una Persona Usuaria por su ID directly
+     */
+    async getById(year: string, id: string): Promise<PersonaUsuaria | null> {
+        if (!year || !id) return null;
+        const { getDoc } = await import("firebase/firestore");
+        const docRef = doc(db, "programs", year, "usuarias", id);
+        const snapshot = await getDoc(docRef);
+        if (!snapshot.exists()) return null;
+        return snapshot.data() as PersonaUsuaria;
+    },
+
+    /**
      * Busca en bloque cargado (Actualmente Firebase no soporta LIKE, 
      * esta capa permite extender lógica de búsqueda a futuro Ej. Algolia/Typesense)
      * Por ahora, si se requiere búsqueda real en DB habría que hacer "IN" o Range Queries.

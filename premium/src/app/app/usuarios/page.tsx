@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useYear } from "@/context/YearContext";
 import { PersonaUsuariaForm } from "@/components/PersonaUsuariaForm";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
 import { PersonasUsuariasService } from "@/services/personasUsuarias";
+
+function SearchParamsHandler({ onOpenFicha }: { onOpenFicha: (id: string) => void }) {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const openFicha = searchParams.get('openFicha');
+
+    useEffect(() => {
+        if (openFicha) {
+            onOpenFicha(openFicha);
+            // Replace url to clean up the query param without full refresh
+            router.replace('/app/usuarios');
+        }
+    }, [openFicha, onOpenFicha, router]);
+
+    return null;
+}
 
 export default function UsuariosPage() {
     const { globalActiveYear, loadingYear } = useYear();
@@ -91,6 +108,39 @@ export default function UsuariosPage() {
         }
     };
 
+    const handleOpenFichaFromUrl = useCallback(async (id: string) => {
+        if (!globalActiveYear) return;
+        
+        // Try memory first
+        setLoadingData(true);
+        try {
+            const userInMem = personasUsuarias.find(u => u.id === id);
+            if (userInMem) {
+                setSelectedUser(userInMem);
+                setIsFormOpen(true);
+                return;
+            }
+
+            // Force dynamic load
+            const fetched = await PersonasUsuariasService.getById(globalActiveYear, id);
+            if (fetched) {
+                // Insert silently into memory so it renders in the table when closing the modal
+                setPersonasUsuarias(prev => {
+                    if (!prev.find(u => u.id === fetched.id)) {
+                        return [fetched, ...prev];
+                    }
+                    return prev;
+                });
+                setSelectedUser(fetched);
+                setIsFormOpen(true);
+            }
+        } catch (e) {
+            console.error("Excepción auto-abriendo ficha", e);
+        } finally {
+            setLoadingData(false);
+        }
+    }, [globalActiveYear, personasUsuarias]);
+
     if (loadingYear) {
         return <div className="p-8 text-slate-500">Sincronizando reloj clínico...</div>;
     }
@@ -116,6 +166,10 @@ export default function UsuariosPage() {
                     Añadir Nuevo Ingreso
                 </button>
             </div>
+
+            <Suspense fallback={null}>
+                <SearchParamsHandler onOpenFicha={handleOpenFichaFromUrl} />
+            </Suspense>
 
             {/* MASTER CONTAINER / DASHBOARD */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">

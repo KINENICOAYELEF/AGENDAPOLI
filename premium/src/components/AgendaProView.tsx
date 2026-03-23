@@ -317,7 +317,7 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                         <div>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-base">Paciente Módulo (ID: {cita.usuariaId.slice(0, 6)})</h4>
+                                                    <h4 className="font-bold text-slate-800 text-base">{cita.usuariaName || `Ficha Clínica (ID: ${cita.usuariaId.slice(0, 6)})`}</h4>
                                                     <p className="text-xs text-slate-500 font-medium">Proceso: {cita.procesoId}</p>
                                                     {cita.shortReason && (
                                                         <p className="text-sm text-slate-600 mt-1 italic opacity-90 line-clamp-2">
@@ -337,8 +337,8 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                         </div>
 
                                         {/* Acciones */}
-                                        <div className="mt-4 flex gap-2 justify-end">
-                                            <Link href={`/app/evaluacion/${cita.usuariaId}`} className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-bold rounded hover:bg-slate-200 transition">
+                                        <div className="mt-4 flex gap-2 justify-end items-center flex-wrap">
+                                            <Link href={`/app/usuarios?openFicha=${cita.usuariaId}`} className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-bold rounded hover:bg-slate-200 transition">
                                                 Ver Ficha
                                             </Link>
 
@@ -357,10 +357,10 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                                         Cancelar
                                                     </button>
                                                     <Link
-                                                        href={`/app/evaluacion/${cita.usuariaId}?citaId=${cita.id}`}
+                                                        href={`/app/usuarios?openFicha=${cita.usuariaId}`}
                                                         className="w-full sm:w-auto text-center px-4 py-2 sm:py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition"
                                                     >
-                                                        Evolucionar Cita
+                                                        Abrir Expediente (Evolucionar)
                                                     </Link>
                                                 </div>
                                             )}
