@@ -1077,11 +1077,7 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             return;
         }
 
-        const override = prompt("AUDITORÍA DE REAPERTURA:\n\nIngrese motivo clínico o de docencia (min. 10 chars) para romper el sello de firma:");
-        if (!override || override.length < 10) {
-            alert("Operación cancelada. El motivo debe ser extenso y explícito por razones médico-legales.");
-            return;
-        }
+        const override = `Reapertura de ficha clínica por ${user?.role || 'Clinico'} autorizada (ID: ${user?.uid || 'Unknown'}) para correcciones o docencia.`;
 
         if (!initialData?.id) {
             alert("Error crítico: La evolución no tiene un ID válido para reabrir.");
@@ -1110,10 +1106,10 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             }));
             setIsEditingOverride(true);
             
-            alert(`Ficha reabierta exitosamente por ${user.role}. Ya puede editar.`);
+            alert(`Ficha reabierta exitosamente por ${user.role}. Ya puede editar directamente.`);
             
-            // Notificar al padre para que actualice el Timeline (opcional pero recomendado)
-            if (onSaveSuccess) onSaveSuccess(formData as Evolucion, false, false);
+            // Ya NO notificamos al padre (onSaveSuccess) porque el padre lo cierra y redirecciona.
+            // Si el user quiere volver, cerrará con "Guardar Borrador" o "Volver"
         } catch (error) {
             console.error(error);
             alert("Hubo un error de base de datos reabriendo la evolución.");
