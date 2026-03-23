@@ -103,6 +103,7 @@ export interface Cita {
     linkedEvolutionId?: string; // ID de la evolución que concreta esta cita
     attendanceMarkedAt?: string; // ISO String
     attendanceMarkedBy?: string; // RUID
+    shortReason?: string; // Motivo de consulta breve (Fase 15)
 
     cancelReason?: string; // Razón si fue CANCELLED
     noShowReason?: string; // Razón si fue NO_SHOW

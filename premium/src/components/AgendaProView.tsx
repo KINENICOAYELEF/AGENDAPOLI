@@ -326,6 +326,11 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 text-base">Paciente Módulo (ID: {cita.usuariaId.slice(0, 6)})</h4>
                                                     <p className="text-xs text-slate-500 font-medium">Proceso: {cita.procesoId}</p>
+                                                    {cita.shortReason && (
+                                                        <p className="text-sm text-slate-600 mt-1 italic opacity-90 line-clamp-2">
+                                                            "{cita.shortReason}"
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -362,7 +367,7 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
                                                         href={`/app/evaluacion/${cita.usuariaId}?citaId=${cita.id}`}
                                                         className="w-full sm:w-auto text-center px-4 py-2 sm:py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition"
                                                     >
-                                                        + Tratamiento
+                                                        Evolucionar Cita
                                                     </Link>
                                                 </div>
                                             )}

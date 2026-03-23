@@ -1,4 +1,4 @@
-import { collection, doc, writeBatch, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, query, where, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sanitizeForFirestoreDeep } from '@/lib/firebase-utils';
 import { Proceso, Cita, Feriado } from '@/types/clinica';
@@ -75,6 +75,19 @@ export const AgendaService = {
         const dayMap: Record<string, number> = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
         const allowedDays = new Set(plan.daysOfWeek.map(d => dayMap[d]));
 
+        // FASE 15: Obtener información del paciente para Asignaciones
+        let assignedInternId: string | undefined = undefined;
+        try {
+            const usuariaRef = doc(db, 'programs', year, 'usuarias', proceso.personaUsuariaId);
+            const usuariaSnap = await getDoc(usuariaRef);
+            if (usuariaSnap.exists()) {
+                const data = usuariaSnap.data();
+                assignedInternId = data?.meta?.assignedInternId;
+            }
+        } catch (e) {
+            console.error("No se pudo obtener la usuaria", e);
+        }
+
         const citasToCreate: Partial<Cita>[] = [];
         let cursor = new Date(startDate);
 
@@ -100,8 +113,8 @@ export const AgendaService = {
                         endCursor.setHours(h, m + duration, 0, 0);
                         const endHm = endCursor.toTimeString().substring(0, 5);
 
-                        // FASE 2.3.4: Inferencia de internPlanificado
-                        let planificado = proceso.primaryInternId || plan.primaryInternId;
+                        // FASE 2.3.4 & FASE 15: Inferencia de internPlanificado
+                        let planificado = assignedInternId || proceso.primaryInternId || plan.primaryInternId;
                         if (!planificado) {
                             const dowStr = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][dow];
                             const matchTurno = await TurnosService.findInternForSlot(year, dowStr, startHm, duration, activeTurnos);
@@ -117,6 +130,7 @@ export const AgendaService = {
                             endTime: endHm,
                             status: 'SCHEDULED',
                             internoPlanificadoId: planificado,
+                            shortReason: proceso.motivoIngresoLibre, // FASE 15
                             createdAt: new Date().toISOString(),
                             updatedAt: new Date().toISOString()
                         });
