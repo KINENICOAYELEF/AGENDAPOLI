@@ -61,22 +61,25 @@ export function AgendaProView({ baseDate = new Date() }: AgendaProViewProps) {
             setHolidays(hList);
 
             const citasRef = collection(db, "programs", globalActiveYear, "citas");
-            let dateConstraints = [];
-
+            let q;
             if (viewMode === 'HOY') {
                 const dayStr = format(baseDate, 'yyyy-MM-dd');
-                dateConstraints.push(where("date", "==", dayStr));
+                q = query(citasRef, where("date", "==", dayStr));
             } else if (viewMode === 'SEMANA') {
                 const start = startOfWeek(baseDate, { weekStartsOn: 1 });
-                const end = addDays(start, 6);
-                dateConstraints.push(where("date", ">=", format(start, 'yyyy-MM-dd')));
-                dateConstraints.push(where("date", "<=", format(end, 'yyyy-MM-dd')));
+                q = query(citasRef, where("date", ">=", format(start, 'yyyy-MM-dd')));
+            } else {
+                q = query(citasRef);
             }
 
-            // Status filtrado en memoria para evitar errores de Index Firebase
-            const q = query(citasRef, ...dateConstraints);
             const snapshot = await getDocs(q);
             let results = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Cita));
+
+            if (viewMode === 'SEMANA') {
+                const start = startOfWeek(baseDate, { weekStartsOn: 1 });
+                const end = format(addDays(start, 6), 'yyyy-MM-dd');
+                results = results.filter(c => c.date <= end);
+            }
 
             if (filterStatus === 'ACTIVAS') {
                 const activeStatuses = ["SCHEDULED", "COMPLETED", "NO_SHOW"];
