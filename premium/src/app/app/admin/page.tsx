@@ -12,6 +12,7 @@ import { EvolutionsMigrator } from "@/components/EvolutionsMigrator";
 import { HolidayManager } from "@/components/HolidayManager";
 import { PendingUsersManager } from "@/components/PendingUsersManager";
 import { ActiveUsersManager } from "@/components/ActiveUsersManager";
+import { InternAssignmentManager } from "@/components/InternAssignmentManager";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -113,6 +114,9 @@ export default function AdminDocentePage() {
 
             {/* Administrador de Usuarios Pendientes (FASE 9) */}
             <PendingUsersManager />
+
+            {/* Vinculación Clínica de Pacientes (FASE 14) */}
+            <InternAssignmentManager />
 
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 

@@ -16,8 +16,11 @@ interface UserFormProps {
     onSaveSuccess: (savedUser: PersonaUsuaria, isNew: boolean) => void;
 }
 
+import { useAuth } from "@/context/AuthContext";
+
 export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: UserFormProps) {
     const { globalActiveYear } = useYear();
+    const { user } = useAuth();
 
     // Si viene `initialData`, significa que estamos en modo EDIT / FICHA CLÍNICA
     const isEditMode = !!initialData;
@@ -134,7 +137,17 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                 email: formData.identity.correo,
 
                 // Inyectamos timestamp de creación solo si es un documento nuevo
-                ...(!isEditMode && { meta: { createdAt: new Date().toISOString() } })
+                ...(!isEditMode && { 
+                    meta: { 
+                        createdAt: new Date().toISOString(),
+                        createdBy: user?.uid,
+                        // FASE 14: Asignación por defecto si el creador es INTERNO
+                        ...(user?.role === 'INTERNO' && {
+                            assignedInternId: user.uid,
+                            assignedInternName: user.displayName || user.email
+                        })
+                    } 
+                })
             };
 
             const docRef = doc(db, "programs", globalActiveYear, "usuarias", targetId);
@@ -603,6 +616,6 @@ export function PersonaUsuariaForm({ initialData, onClose, onSaveSuccess }: User
                     {isEditMode ? "Guardar Cambios" : "Crear Persona Usuaria"}
                 </button>
             </div>
-        </form >
+        </form>
     );
 }
