@@ -40,7 +40,13 @@ export const AgendaService = {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const planStart = new Date(plan.startDate);
+        let planStart = new Date(today); // Fallback to today
+        if (plan.startDate) {
+            const parsed = new Date(plan.startDate);
+            if (!isNaN(parsed.getTime())) {
+                planStart = parsed;
+            }
+        }
         planStart.setHours(0, 0, 0, 0);
 
         const startDate = new Date(Math.max(today.getTime(), planStart.getTime()));
@@ -106,10 +112,10 @@ export const AgendaService = {
                         // Cumple restricción de feriados
 
                         // Parse de tiempo final
-                        const startHm = plan.time; // ej. "18:00"
+                        const startHm = plan.time || "08:00"; // ej. "18:00"
                         const [hStr, mStr] = startHm.split(':');
-                        const h = parseInt(hStr, 10);
-                        const m = parseInt(mStr, 10);
+                        const h = parseInt(hStr || "8", 10);
+                        const m = parseInt(mStr || "0", 10);
                         const duration = plan.durationMin || 50;
 
                         const endCursor = new Date(cursor);
