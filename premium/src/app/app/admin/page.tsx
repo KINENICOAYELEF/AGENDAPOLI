@@ -11,6 +11,7 @@ import { LegacyImporter } from "@/components/LegacyImporter";
 import { EvolutionsMigrator } from "@/components/EvolutionsMigrator";
 import { HolidayManager } from "@/components/HolidayManager";
 import { PendingUsersManager } from "@/components/PendingUsersManager";
+import { ActiveUsersManager } from "@/components/ActiveUsersManager";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -103,6 +104,9 @@ export default function AdminDocentePage() {
                 <h1 className="text-3xl font-bold text-gray-900">Panel Docente</h1>
                 <p className="text-gray-600">Configuración global de espacios temporales académicos.</p>
             </div>
+
+            {/* Lista Principal de Personal Activo */}
+            <ActiveUsersManager />
 
             {/* Administrador de Usuarios Pendientes (FASE 9) */}
             <PendingUsersManager />
