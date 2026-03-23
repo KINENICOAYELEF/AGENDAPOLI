@@ -63,6 +63,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
     const [showFocoGuide, setShowFocoGuide] = useState(false);
     const [focoGuideTab, setFocoGuideTab] = useState(0);
     const [showRelatoGuide, setShowRelatoGuide] = useState(false);
+    const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
 
     // FASE 8 & 9: Highlight State (Multiple Highlight support)
     const [highlightTexts, setHighlightTexts] = useState<string[]>([]);
@@ -1466,22 +1467,26 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
 
                     {/* FASE 8 y 32: Overlay para Resaltado Exacto sin perder Visibilidad */}
                     <div className="relative w-full">
+                        {/* Mobile: tappable preview that opens fullscreen editor */}
                         <textarea
                             id="relato-libre-textarea"
-                            placeholder="Relato clínico de la persona en consulta..."
-                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-y leading-relaxed min-h-[250px] sm:min-h-[300px] max-h-[50vh] sm:max-h-none overflow-y-auto sm:overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
+                            placeholder="Toca aquí para escribir el relato clínico..."
+                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none sm:resize-y leading-relaxed min-h-[120px] sm:min-h-[300px] sm:max-h-none overflow-hidden sm:overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
                             style={highlightTexts.length > 0 && !isClosed ? { color: 'transparent', caretColor: '#1e293b' } : { WebkitTextFillColor: 'inherit', opacity: 1 }}
                             value={interviewV4.experienciaPersona.relatoLibre || ""}
+                            onFocus={(e) => {
+                                // On mobile: open fullscreen editor instead
+                                if (window.innerWidth < 768 && !isClosed) {
+                                    e.target.blur();
+                                    setMobileEditorOpen(true);
+                                }
+                            }}
                             onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
-                                // Only auto-grow on desktop (mobile uses internal scroll)
+                                // Auto-grow only on desktop
                                 if (window.innerWidth >= 768) {
                                     target.style.height = 'auto';
                                     target.style.height = `${target.scrollHeight}px`;
-                                } else {
-                                    // On mobile: ensure the cursor line stays visible within the textarea
-                                    // Scroll the textarea to show the bottom (where typing happens)
-                                    target.scrollTop = target.scrollHeight;
                                 }
                             }}
                             onChange={e => {
@@ -1490,6 +1495,36 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             }}
                             disabled={isClosed}
                         />
+
+                        {/* FULLSCREEN MOBILE EDITOR OVERLAY */}
+                        {mobileEditorOpen && (
+                            <div className="fixed inset-0 z-[9999] bg-white flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                                {/* Header bar */}
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+                                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                        <span className="w-5 h-5 bg-indigo-600 text-white rounded flex items-center justify-center text-[10px] font-bold">2</span>
+                                        Relato del caso
+                                    </h3>
+                                    <button
+                                        onClick={() => setMobileEditorOpen(false)}
+                                        className="bg-indigo-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-md active:scale-95 transition-transform"
+                                    >
+                                        ✓ Listo
+                                    </button>
+                                </div>
+                                {/* Full-height textarea */}
+                                <textarea
+                                    autoFocus
+                                    placeholder="Escribe el relato clínico de la persona en consulta..."
+                                    className="flex-1 w-full p-4 text-[15px] leading-relaxed outline-none resize-none bg-white text-slate-800 font-medium"
+                                    value={interviewV4.experienciaPersona.relatoLibre || ""}
+                                    onChange={e => {
+                                        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: e.target.value } });
+                                        if (highlightTexts.length > 0) setHighlightTexts([]);
+                                    }}
+                                />
+                            </div>
+                        )}
                         {highlightTexts.length > 0 && (() => {
                             const text = interviewV4.experienciaPersona.relatoLibre || "";
                             // Regex escape and exact match for ALL highlights
