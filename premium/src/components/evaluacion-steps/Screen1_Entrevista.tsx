@@ -1471,7 +1471,7 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         <textarea
                             id="relato-libre-textarea"
                             placeholder="Toca aquí para escribir el relato clínico..."
-                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none sm:resize-y leading-relaxed min-h-[120px] sm:min-h-[300px] sm:max-h-none overflow-hidden sm:overflow-hidden bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
+                            className="w-full text-sm sm:text-[13px] p-4 border border-slate-300 rounded-xl outline-none resize-none sm:resize-y leading-relaxed min-h-[120px] sm:min-h-[300px] sm:max-h-none overflow-hidden sm:overflow-y-auto bg-slate-50 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-none font-medium text-slate-800 relative z-10 disabled:bg-slate-100 disabled:text-slate-800 disabled:cursor-not-allowed"
                             style={highlightTexts.length > 0 && !isClosed ? { color: 'transparent', caretColor: '#1e293b' } : { WebkitTextFillColor: 'inherit', opacity: 1 }}
                             value={interviewV4.experienciaPersona.relatoLibre || ""}
                             onFocus={(e) => {
@@ -1483,10 +1483,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             }}
                             onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
-                                // Auto-grow only on desktop
+                                // Auto-grow only on desktop — preserve scroll position to avoid jump
                                 if (window.innerWidth >= 768) {
+                                    const scrollY = window.scrollY;
                                     target.style.height = 'auto';
                                     target.style.height = `${target.scrollHeight}px`;
+                                    window.scrollTo(0, scrollY);
                                 }
                             }}
                             onChange={e => {
