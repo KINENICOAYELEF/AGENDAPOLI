@@ -21,10 +21,12 @@ ${rawText}
 `;
 
         // Llamada a Gemini
+        // Llamada a Gemini usando un modelo lite para cuidar los límites de la cuota gratuita
         const textResponse = await callGemini({
             systemInstruction: P1_ANAMNESIS_FORMAT_PROMPT,
             userPrompt: promptPayload,
-            temperature: 0.2
+            temperature: 0.1,
+            modelId: 'gemini-3.1-flash-lite-preview'
         });
 
         console.log("Gemini Raw Response para p1-anamnesis-format:", textResponse);

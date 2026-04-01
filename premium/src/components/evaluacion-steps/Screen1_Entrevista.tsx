@@ -241,21 +241,41 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         finalTranscript += event.results[i][0].transcript + ' ';
                     }
                 }
-                if (finalTranscript) {
-                    const currentText = interviewV4.experienciaPersona.relatoLibre || '';
-                    updateV4({
-                        experienciaPersona: {
-                            ...interviewV4.experienciaPersona,
-                            relatoLibre: currentText + (currentText.length > 0 ? '\\n' : '') + finalTranscript.trim()
-                        }
+                const appendText = finalTranscript.trim();
+                if (appendText) {
+                    // Update state securely using functional approach to avoid stale closure overrides
+                    updateFormData(prev => {
+                        const currentV4 = (prev.interview?.v4 as AnamnesisProximaV4) || interviewV4;
+                        const currentExp = currentV4.experienciaPersona || {};
+                        const currentRelato = currentExp.relatoLibre || '';
+                        return {
+                            ...prev,
+                            interview: {
+                                ...prev.interview,
+                                v4: {
+                                    ...currentV4,
+                                    experienciaPersona: {
+                                        ...currentExp,
+                                        relatoLibre: currentRelato + (currentRelato.length > 0 && !currentRelato.endsWith('\\n') ? '\\n' : '') + appendText
+                                    },
+                                    updatedAt: new Date().toISOString()
+                                }
+                            }
+                        };
                     });
-                    setTimeout(() => {
+
+                    // Resize silently avoiding jumps
+                    requestAnimationFrame(() => {
                         const tx = document.getElementById("relato-libre-textarea");
                         if (tx) {
+                            const originalScroll = window.scrollY;
                             tx.style.height = "auto";
                             tx.style.height = tx.scrollHeight + "px";
+                            if (window.scrollY !== originalScroll) {
+                                window.scrollTo({ top: originalScroll, behavior: "instant" });
+                            }
                         }
-                    }, 50);
+                    });
                 }
             };
 
