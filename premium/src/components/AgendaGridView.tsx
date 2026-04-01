@@ -106,10 +106,10 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
             </div>
 
             {/* Grid */}
-            <div className="overflow-x-auto">
-                <div className="min-w-[700px]">
+            <div className="overflow-x-auto w-full">
+                <div className="min-w-[800px] w-full">
                     {/* Encabezados de días */}
-                    <div className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-slate-200 bg-white sticky top-0 z-10">
+                    <div className="grid grid-cols-[60px_repeat(5,minmax(0,1fr))] border-b border-slate-200 bg-white sticky top-0 z-10">
                         <div className="p-2 border-r border-slate-100"></div>
                         {weekDays.map((day, i) => {
                             const isCurrentDay = isToday(day);
@@ -132,7 +132,7 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
                     {/* Filas de horas */}
                     <div className="relative">
                         {HOURS.map(hour => (
-                            <div key={hour} className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-slate-100 min-h-[72px]">
+                            <div key={hour} className="grid grid-cols-[60px_repeat(5,minmax(0,1fr))] border-b border-slate-100 min-h-[72px]">
                                 {/* Etiqueta de hora */}
                                 <div className="p-2 border-r border-slate-100 flex items-start justify-end">
                                     <span className="text-[11px] font-bold text-slate-400 -mt-1">{`${hour.toString().padStart(2, '0')}:00`}</span>
