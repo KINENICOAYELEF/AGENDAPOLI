@@ -1,4 +1,4 @@
-import { collection, doc, query, getDocs, orderBy, QueryDocumentSnapshot, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, getDocs, orderBy, QueryDocumentSnapshot, deleteDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
@@ -86,14 +86,59 @@ export const PersonasUsuariasService = {
     },
 
     /**
-     * Elimina permanentemente una Persona Usuaria.
+     * Elimina permanentemente una Persona Usuaria Y TODOS sus datos asociados.
+     * FASE 70: Cascade delete - elimina procesos, citas y evaluaciones huérfanas.
      * Solo debe ser invocado por roles ADMIN o DOCENTE.
      */
     async deleteById(year: string, id: string): Promise<void> {
         if (!year) throw new Error("Año de programa requerido");
         if (!id) throw new Error("ID de Persona Usuaria requerido para eliminar");
 
+        // 1. Buscar y eliminar PROCESOS vinculados
+        const procesosRef = collection(db, "programs", year, "procesos");
+        const procesosQuery = query(procesosRef, where("personaUsuariaId", "==", id));
+        const procesosSnap = await getDocs(procesosQuery);
+        const procesoIds: string[] = [];
+
+        if (!procesosSnap.empty) {
+            const batch = writeBatch(db);
+            procesosSnap.docs.forEach(d => {
+                procesoIds.push(d.id);
+                batch.delete(d.ref);
+            });
+            await batch.commit();
+        }
+
+        // 2. Buscar y eliminar CITAS vinculadas (por usuariaId)
+        const citasRef = collection(db, "programs", year, "citas");
+        const citasQuery = query(citasRef, where("usuariaId", "==", id));
+        const citasSnap = await getDocs(citasQuery);
+
+        if (!citasSnap.empty) {
+            const batch = writeBatch(db);
+            citasSnap.docs.forEach(d => {
+                batch.delete(d.ref);
+            });
+            await batch.commit();
+        }
+
+        // 3. Buscar y eliminar EVALUACIONES vinculadas (por personaUsuariaId)
+        const evalsRef = collection(db, "programs", year, "evaluaciones");
+        const evalsQuery = query(evalsRef, where("personaUsuariaId", "==", id));
+        const evalsSnap = await getDocs(evalsQuery);
+
+        if (!evalsSnap.empty) {
+            const batch = writeBatch(db);
+            evalsSnap.docs.forEach(d => {
+                batch.delete(d.ref);
+            });
+            await batch.commit();
+        }
+
+        // 4. Finalmente, eliminar la Persona Usuaria
         const targetRef = doc(db, "programs", year, "usuarias", id);
         await deleteDoc(targetRef);
+
+        console.log(`[CASCADE DELETE] Persona ${id}: ${procesosSnap.size} procesos, ${citasSnap.size} citas, ${evalsSnap.size} evaluaciones eliminadas.`);
     }
 };
