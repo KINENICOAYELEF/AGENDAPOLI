@@ -1,21 +1,28 @@
-import { collection, doc, query, getDocs, limit, startAfter, QueryDocumentSnapshot, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, getDocs, orderBy, QueryDocumentSnapshot, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
-
-const PAGE_LIMIT = 20;
 
 /**
  * REPOSITORIO DE PERSONAS USUARIAS
  * Capa de abstracción. Internamente sigue comunicándose con la colección
  * "/programs/{year}/usuarias" para mantener compatibilidad e integridad en BD.
+ * 
+ * FASE 70: Eliminada la paginación de 20 documentos que causaba que usuarios
+ * nuevos no aparecieran después de refrescar (sus IDs quedaban después del
+ * límite de la primera página). Para datasets de <500 usuarios, cargar todo
+ * es seguro y elimina el bug completamente.
  */
 
 export const PersonasUsuariasService = {
     /**
-     * Obtiene un bloque paginado de Personas Usuarias.
+     * Obtiene TODAS las Personas Usuarias del año.
+     * Para datasets de hasta ~500 registros esto es seguro y rápido.
+     * 
+     * Mantiene la firma de retorno original para no romper el contrato
+     * con usuarios/page.tsx (lastDoc y hasMore siempre null/false).
      */
-    async getPaginated(year: string, lastDocParam: QueryDocumentSnapshot | null = null): Promise<{
+    async getPaginated(year: string, _lastDocParam: QueryDocumentSnapshot | null = null): Promise<{
         data: PersonaUsuaria[],
         lastDoc: QueryDocumentSnapshot | null,
         hasMore: boolean
@@ -24,22 +31,24 @@ export const PersonasUsuariasService = {
 
         const collectionRef = collection(db, "programs", year, "usuarias");
 
-        let q;
-        if (lastDocParam) {
-            // Siguiente página
-            q = query(collectionRef, startAfter(lastDocParam), limit(PAGE_LIMIT));
-        } else {
-            // Primera página
-            q = query(collectionRef, limit(PAGE_LIMIT));
-        }
+        // Carga todos los documentos sin límite ni paginación.
+        // Firestore retorna por __name__ (document ID) por defecto.
+        const q = query(collectionRef);
 
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(d => d.data() as PersonaUsuaria);
 
+        // Ordenar en el cliente por nombre para vista consistente
+        data.sort((a, b) => {
+            const nameA = (a.identity?.fullName || (a as any).nombreCompleto || '').toLowerCase();
+            const nameB = (b.identity?.fullName || (b as any).nombreCompleto || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
         return {
             data,
-            lastDoc: snapshot.docs.length === PAGE_LIMIT ? snapshot.docs[snapshot.docs.length - 1] : null,
-            hasMore: snapshot.docs.length === PAGE_LIMIT
+            lastDoc: null,
+            hasMore: false
         };
     },
 
