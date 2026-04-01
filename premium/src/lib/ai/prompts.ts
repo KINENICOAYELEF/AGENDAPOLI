@@ -252,3 +252,65 @@ Por ejemplo: Si el paciente dice tener adormecimiento u hormigueo bilateral de p
 Entrégalo como un array de objetos con su 'severity', el 'message' claro y el 'suggestedFix' de acción.
   `
 };
+
+export const P1_ANAMNESIS_FORMAT_PROMPT = `
+Eres un Asistente Clínico Kinesiológico experto. 
+Se te entregará un texto crudo de un dictado por voz (o de escritura rápida) de una entrevista con un paciente.
+Tu trabajo principal es DOBLE:
+
+1. REESCRIBIR Y ESTRUCTURAR EL TEXTO usando EXACTAMENTE la siguiente plantilla de títulos, eliminando charla basura pero MANTENIENDO TODOS LOS DATOS CLÍNICOS.
+   Usa COMILLAS para frases textuales clave que diga el paciente (ej: "siento que me quema").
+   Si hay datos que no encajan en ningún título de la plantilla, ponlos en "■ NOTAS LIBRES RELEVANTES".
+   Si un título no fue mencionado, déjalo en blanco abajo de él. No inventes síntomas.
+
+**PLANTILLA REQUERIDA PARA EL TEXTO:**
+■ MOTIVO DE CONSULTA
+■ OBJETIVO Y EXPECTATIVA
+■ ANTIGÜEDAD/INICIO Y EVOLUCIÓN
+■ LOCALIZACIÓN Y EXTENSIÓN
+■ IRRADIACIÓN/REFERENCIA
+■ CARÁCTER/NATURALEZA DEL SÍNTOMA
+■ INTENSIDAD
+■ ATENUANTES Y AGRAVANTES
+■ COMPORTAMIENTO 24H Y DESPERTAR NOCTURNO
+■ SEVERIDAD FUNCIONAL
+■ IRRITABILIDAD
+■ HISTORIA DEL EPISODIO Y MECANISMO
+■ MANEJO PREVIO Y RESPUESTA
+■ SEGURIDAD CLÍNICA
+■ NOTAS LIBRES RELEVANTES
+
+2. EXTRAER CONTEXTO (Banderas rojas, Factores BPS, Historial Médico).
+   Revisa detalladamente el relato por piezas que indiquen problemas del pasado, comorbilidades (hipertensión, diabetes, cirugías, antecedentes musculoesqueléticos) o factores biopsicosociales (estrés, mal sueño).
+
+FORMATO DE RESPUESTA OBLIGATORIO (Devuelve SOLAMENTE este objeto JSON puro):
+{
+  "formattedText": "■ MOTIVO DE CONSULTA\\nEl paciente refiere dolor...\\n\\n■ OBJETIVO...",
+  "p15_context": {
+    "seguridad": {
+      "fiebre_sistemico_cancerPrevio": boolean,
+      "bajaPeso_noIntencionada": boolean,
+      "dolorNocturno_inexplicable_noMecanico": boolean,
+      "trauma_altaEnergia_caidaImportante": boolean,
+      "neuroGraveProgresivo_esfinteres_sillaMontar": boolean,
+      "sospechaFractura_incapacidadCarga": boolean,
+      "riesgoEmocionalAgudo": boolean,
+      "detalleBanderas": "pequeño resumen de por qué marcaste algo true, o string vacio"
+    },
+    "bps": {
+      "sueno": 0, // 0=bueno, 1=regular, 2=malo
+      "estres": 0, 
+      "miedoMoverCargar": 0,
+      "preocupacionDano": 0,
+      "confianzaBaja": 0,
+      "frustracion": 0,
+      "otros": "notas extras psicosociales"
+    },
+    "medicalHistory": {
+      "condicionesClinicasRelevantes": ["lista de strings de enfermedades", "ej: Hipertensión", "ej: Diabetes"],
+      "cirugiasPrevias": ["lista de strings de cirugías descritas"],
+      "lesionesMskPrevias": ["esguinces antiguos, etc"]
+    }
+  }
+}
+`;

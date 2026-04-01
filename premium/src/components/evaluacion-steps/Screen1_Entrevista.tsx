@@ -211,6 +211,150 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }));
     };
 
+    const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = React.useRef<any>(null);
+    const [isFormatting, setIsFormatting] = useState(false);
+
+    const toggleRecording = () => {
+        if (isRecording) {
+            if (recognitionRef.current) recognitionRef.current.stop();
+            setIsRecording(false);
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Tu navegador no soporta dictado por voz. Usa Chrome o Safari actualizados.");
+            return;
+        }
+
+        try {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'es-CL';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = (event: any) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    }
+                }
+                if (finalTranscript) {
+                    const currentText = interviewV4.experienciaPersona.relatoLibre || '';
+                    updateV4({
+                        experienciaPersona: {
+                            ...interviewV4.experienciaPersona,
+                            relatoLibre: currentText + (currentText.length > 0 ? '\\n' : '') + finalTranscript.trim()
+                        }
+                    });
+                    setTimeout(() => {
+                        const tx = document.getElementById("relato-libre-textarea");
+                        if (tx) {
+                            tx.style.height = "auto";
+                            tx.style.height = tx.scrollHeight + "px";
+                        }
+                    }, 50);
+                }
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
+                setIsRecording(false);
+            };
+
+            recognition.onend = () => {
+                setIsRecording(false);
+            };
+
+            recognition.start();
+            recognitionRef.current = recognition;
+            setIsRecording(true);
+        } catch (e: any) {
+            alert("Error al intentar iniciar la grabación por voz: " + e.message);
+            setIsRecording(false);
+        }
+    };
+
+    const handleFormatAndMap = async () => {
+        const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
+        if (relatoLength < 10) {
+            alert("El relato es demasiado corto o está vacío. Por favor dicta o escribe antes de solicitar el formateo.");
+            return;
+        }
+
+        setIsFormatting(true);
+
+        try {
+            const rawText = interviewV4.experienciaPersona.relatoLibre;
+            
+            const response = await fetch('/api/ai/p1-anamnesis-format', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rawText })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success || !data.data) {
+                throw new Error(data.error || "Error al procesar el formateo con IA.");
+            }
+
+            const aiPayload = data.data; 
+            
+            // 1. Reemplazamos el texto crudo por el formateado y Mapeamos Banderas/BPS
+            updateV4({
+                experienciaPersona: {
+                    ...interviewV4.experienciaPersona,
+                    relatoLibre: aiPayload.formattedText
+                },
+                seguridad: { ...interviewV4.seguridad, ...aiPayload.p15_context?.seguridad },
+                bps: { ...interviewV4.bps, ...aiPayload.p15_context?.bps }
+            });
+
+            // 2. Inyectamos Historial Medico en formData global (Screen1.5)
+            if (aiPayload.p15_context?.medicalHistory && Array.isArray(aiPayload.p15_context?.medicalHistory?.condicionesClinicasRelevantes)) {
+                updateFormData((prev: any) => {
+                    const currentRemote = prev.remoteHistorySnapshot || { medicalHistory: { comorbidities: [], flagsWarning: "" } };
+                    const currentMedicalHistory = currentRemote.medicalHistory || { comorbidities: [], flagsWarning: "" };
+                    
+                    const newComorbidities = [
+                        ...currentMedicalHistory.comorbidities,
+                        ...(aiPayload.p15_context.medicalHistory.condicionesClinicasRelevantes || []).map((c: string) => ({ name: c, severity: 'Media' as const, controlStatus: 'NoControlado' as const })),
+                        ...(aiPayload.p15_context.medicalHistory.cirugiasPrevias || []).map((c: string) => ({ name: "Cx: " + c, severity: 'Media' as const, controlStatus: 'Controlado' as const })),
+                        ...(aiPayload.p15_context.medicalHistory.lesionesMskPrevias || []).map((c: string) => ({ name: "Previa: " + c, severity: 'Media' as const, controlStatus: 'Controlado' as const }))
+                    ];
+
+                    return {
+                        ...prev,
+                        remoteHistorySnapshot: {
+                            ...currentRemote,
+                            medicalHistory: {
+                                ...currentMedicalHistory,
+                                comorbidities: newComorbidities
+                            }
+                        }
+                    };
+                });
+            }
+
+            setTimeout(() => {
+                const tx = document.getElementById("relato-libre-textarea");
+                if (tx) {
+                    tx.style.height = "auto";
+                    tx.style.height = tx.scrollHeight + "px";
+                }
+            }, 100);
+
+        } catch (error: any) {
+            console.error("Error en AI Formatting:", error);
+            alert(error.message || "Ocurrió un error inesperado al formatear con IA.");
+        } finally {
+            setIsFormatting(false);
+        }
+    };
+
     const handleAISynthesis = async () => {
         const relatoLength = interviewV4.experienciaPersona.relatoLibre?.trim().length || 0;
         if (relatoLength < 10) {
@@ -1264,6 +1408,29 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                             <h3 className="font-bold text-slate-800 text-sm">Relato del caso</h3>
                         </div>
                         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    toggleRecording();
+                                }}
+                                disabled={isClosed}
+                                className={`text-[11px] px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-all flex items-center justify-center gap-1 flex-1 sm:flex-none ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'}`}
+                                title="Dictar por voz"
+                            >
+                                {isRecording ? "⏹️ Detener" : "🎙️ Dictar"}
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleFormatAndMap();
+                                }}
+                                disabled={isClosed || isFormatting}
+                                className={`text-[11px] px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-all flex items-center justify-center gap-1 flex-1 sm:flex-none ${isFormatting ? 'bg-fuchsia-100 text-fuchsia-400 cursor-wait' : 'bg-fuchsia-600 text-white hover:bg-fuchsia-700'}`}
+                                title="Estructura la nota y rellena antecedentes médicos en P1.5 (Banderas, Quirúrgicos, Comorbilidades)"
+                            >
+                                {isFormatting ? "🪄 Procesando..." : "🪄 Formatear y Mapear a P1.5"}
+                            </button>
+
                             <button
                                 disabled={isClosed}
                                 onClick={(e) => {
