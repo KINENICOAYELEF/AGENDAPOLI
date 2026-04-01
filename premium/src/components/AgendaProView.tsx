@@ -94,19 +94,46 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                 );
             }
 
-            // FASE 15: Lazy-load de nombres faltantes para tarjetas antiguas o recién creadas
+            // FASE 70: Lazy-load de nombres + detección de citas huérfanas
             const unpopulatedUids = Array.from(new Set(results.filter(c => !c.usuariaName).map(c => c.usuariaId)));
             if (unpopulatedUids.length > 0) {
                 try {
                     const nameMap: Record<string, string> = {};
+                    const orphanedUids = new Set<string>();
+                    
                     await Promise.all(unpopulatedUids.map(async (uid) => {
                         const snap = await getDoc(doc(db, "programs", globalActiveYear, "usuarias", uid));
                         if (snap.exists()) {
                             const data = snap.data();
                             nameMap[uid] = data.identity?.fullName || data.nombreCompleto || `ID: ${uid.slice(0, 6)}`;
+                        } else {
+                            // La persona fue eliminada → esta cita es huérfana
+                            orphanedUids.add(uid);
                         }
                     }));
                     
+                    // Auto-limpiar citas huérfanas de la base de datos
+                    if (orphanedUids.size > 0) {
+                        const orphanedCitas = results.filter(c => orphanedUids.has(c.usuariaId));
+                        if (orphanedCitas.length > 0) {
+                            try {
+                                const { writeBatch } = await import("firebase/firestore");
+                                const batch = writeBatch(db);
+                                orphanedCitas.forEach(c => {
+                                    if (c.id) {
+                                        batch.delete(doc(db, "programs", globalActiveYear, "citas", c.id));
+                                    }
+                                });
+                                await batch.commit();
+                                console.log(`[AGENDA] Auto-limpieza: ${orphanedCitas.length} citas de personas eliminadas borradas.`);
+                            } catch (e) {
+                                console.error("[AGENDA] Error limpiando citas huérfanas:", e);
+                            }
+                        }
+                        // Filtrar las huérfanas del resultado visible
+                        results = results.filter(c => !orphanedUids.has(c.usuariaId));
+                    }
+
                     results = results.map(c => {
                         if (!c.usuariaName && nameMap[c.usuariaId]) {
                             return { ...c, usuariaName: nameMap[c.usuariaId] };
