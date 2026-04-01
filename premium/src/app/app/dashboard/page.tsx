@@ -3,22 +3,33 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { Cita } from "@/types/clinica";
 import { AgendaProView } from "@/components/AgendaProView";
 import { AgendaGridView } from "@/components/AgendaGridView";
-import { format, startOfWeek, addDays } from "date-fns";
+import { UsersService } from "@/services/users";
 
 export default function DashboardPage() {
     const [layoutMode, setLayoutMode] = useState<'LISTA' | 'GRILLA'>('LISTA');
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
 
-    // Data para la grilla (carga semana completa independiente)
-    const [gridCitas, setGridCitas] = useState<Cita[]>([]);
+    // Data para la grilla
+    const [gridCitas, setGridCitas] = useState<(Cita & { internName?: string })[]>([]);
     const [gridLoading, setGridLoading] = useState(false);
-    const [gridScope, setGridScope] = useState<'MIS_CITAS' | 'TODAS'>('TODAS');
+    
+    // gridScope puede ser 'TODAS', 'MIS_CITAS', o 'UID_DEL_INTERNO'
+    const [gridScope, setGridScope] = useState<string>('TODAS');
+    
+    // Lista de internos (solo para ADMIN/DOCENTE)
+    const [internosList, setInternosList] = useState<AppUser[]>([]);
+
+    useEffect(() => {
+        if (user && user.role === 'DOCENTE') {
+            UsersService.getInterns().then(setInternosList).catch(console.error);
+        }
+    }, [user]);
 
     // Cargar citas para la vista de grilla
     useEffect(() => {
@@ -27,10 +38,9 @@ export default function DashboardPage() {
         const fetchGridData = async () => {
             setGridLoading(true);
             try {
-                // Cargar todas las citas no canceladas (la grilla tiene su propia navegación de semana)
                 const citasRef = collection(db, "programs", globalActiveYear, "citas");
                 const activeStatuses = ["SCHEDULED", "COMPLETED", "NO_SHOW"];
-                const allCitas: Cita[] = [];
+                let allCitas: (Cita & { internName?: string })[] = [];
 
                 // Fetch por status para evitar índices compuestos
                 for (const status of activeStatuses) {
@@ -41,12 +51,26 @@ export default function DashboardPage() {
                     });
                 }
 
-                // Lazy-load nombres faltantes
-                const unpopulated = Array.from(new Set(allCitas.filter(c => !c.usuariaName).map(c => c.usuariaId)));
-                if (unpopulated.length > 0) {
-                    const nameMap: Record<string, string> = {};
-                    const orphanIds = new Set<string>();
-                    await Promise.all(unpopulated.map(async (uid) => {
+                // Diccionarios de caché para nombres
+                const nameMap: Record<string, string> = {}; // usuarias
+                const internNameMap: Record<string, string> = {}; // internos
+                
+                // Pre-poblar caché de internos con la lista cargada (si aplica)
+                internosList.forEach(int => {
+                    internNameMap[int.uid] = int.displayName || int.email?.split('@')[0] || '';
+                });
+                
+                // Si el usuario actual no está en la caché interna, lo agregamos para "Mis Citas"
+                if (!internNameMap[user.uid]) {
+                    internNameMap[user.uid] = user.displayName || 'Tú';
+                }
+
+                const orphanIds = new Set<string>();
+
+                // 1. Resolver nombres de pacientes faltantes
+                const unpopulatedVars = Array.from(new Set(allCitas.filter(c => !c.usuariaName).map(c => c.usuariaId)));
+                if (unpopulatedVars.length > 0) {
+                    await Promise.all(unpopulatedVars.map(async (uid) => {
                         try {
                             const snap = await getDoc(doc(db, "programs", globalActiveYear, "usuarias", uid));
                             if (snap.exists()) {
@@ -57,33 +81,60 @@ export default function DashboardPage() {
                             }
                         } catch { }
                     }));
-
-                    allCitas.forEach((c, i) => {
-                        if (!c.usuariaName && nameMap[c.usuariaId]) {
-                            allCitas[i] = { ...c, usuariaName: nameMap[c.usuariaId] };
-                        }
-                    });
-
-                    // Filtrar huérfanas
-                    const filtered = allCitas.filter(c => !orphanIds.has(c.usuariaId));
-
-                    // Filtrar por scope
-                    if (gridScope === 'MIS_CITAS') {
-                        setGridCitas(filtered.filter(c =>
-                            c.internoPlanificadoId === user.uid || c.internoAtendioId === user.uid
-                        ));
-                    } else {
-                        setGridCitas(filtered);
-                    }
-                } else {
-                    if (gridScope === 'MIS_CITAS') {
-                        setGridCitas(allCitas.filter(c =>
-                            c.internoPlanificadoId === user.uid || c.internoAtendioId === user.uid
-                        ));
-                    } else {
-                        setGridCitas(allCitas);
-                    }
                 }
+
+                // 2. Resolver nombres de internos faltantes (para los que no pasaron por getInterns)
+                const missingInternIds = new Set<string>();
+                allCitas.forEach(c => {
+                    const iid = c.internoPlanificadoId || c.internoAtendioId;
+                    if (iid && !internNameMap[iid]) {
+                        missingInternIds.add(iid);
+                    }
+                });
+
+                if (missingInternIds.size > 0) {
+                    await Promise.all(Array.from(missingInternIds).map(async (uid) => {
+                        try {
+                            const snap = await getDoc(doc(db, "users", uid));
+                            if (snap.exists()) {
+                                const data = snap.data();
+                                internNameMap[uid] = data.displayName || data.email?.split('@')[0] || `ID: ${uid.slice(0, 4)}`;
+                            } else {
+                                internNameMap[uid] = 'Interno Desconocido';
+                            }
+                        } catch { }
+                    }));
+                }
+
+                // 3. Aplicar nombres resueltos a las citas y filtrar huérfanas
+                allCitas = allCitas.filter(c => !orphanIds.has(c.usuariaId)).map(c => {
+                    const result = { ...c };
+                    if (!result.usuariaName && nameMap[result.usuariaId]) {
+                        result.usuariaName = nameMap[result.usuariaId];
+                    }
+                    const internId = result.internoPlanificadoId || result.internoAtendioId;
+                    if (internId && internNameMap[internId]) {
+                        // Solo mostramos nombre de interno si estamos en TODO el calendario.
+                        // En "Mis Citas" o si es nuestra grilla no hace tanta falta, pero dejémoslo.
+                        result.internName = internNameMap[internId];
+                    }
+                    return result;
+                });
+
+                // 4. Filtrar por Scope
+                if (gridScope === 'TODAS') {
+                    setGridCitas(allCitas);
+                } else if (gridScope === 'MIS_CITAS') {
+                    setGridCitas(allCitas.filter(c =>
+                        c.internoPlanificadoId === user.uid || c.internoAtendioId === user.uid
+                    ));
+                } else {
+                    // Scope es un UID de un interno específico
+                    setGridCitas(allCitas.filter(c =>
+                        c.internoPlanificadoId === gridScope || c.internoAtendioId === gridScope
+                    ));
+                }
+
             } catch (error) {
                 console.error("Error cargando grilla:", error);
             } finally {
@@ -92,7 +143,7 @@ export default function DashboardPage() {
         };
 
         fetchGridData();
-    }, [layoutMode, globalActiveYear, user, gridScope]);
+    }, [layoutMode, globalActiveYear, user, gridScope, internosList]);
 
     return (
         <div className="space-y-6">
@@ -126,15 +177,25 @@ export default function DashboardPage() {
                 <AgendaProView />
             ) : (
                 <div className="space-y-4">
-                    {/* Filtro de scope para la grilla */}
-                    <div className="flex items-center gap-3">
+                    {/* Filtros de la Grilla */}
+                    <div className="flex flex-wrap items-center gap-3">
                         <select
                             value={gridScope}
-                            onChange={(e) => setGridScope(e.target.value as any)}
-                            className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-100 outline-none shadow-sm"
+                            onChange={(e) => setGridScope(e.target.value)}
+                            className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-100 outline-none shadow-sm min-w-[200px]"
                         >
                             <option value="TODAS">📅 Agenda General (Todos)</option>
                             <option value="MIS_CITAS">👤 Solo Mis Citas</option>
+                            
+                            {user && user.role === 'DOCENTE' && internosList.length > 0 && (
+                                <optgroup label="Filtrar por Interno">
+                                    {internosList.map(int => (
+                                        <option key={int.uid} value={int.uid}>
+                                            🎓 {int.displayName || int.email?.split('@')[0]}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            )}
                         </select>
                     </div>
                     <AgendaGridView citas={gridCitas} loading={gridLoading} />

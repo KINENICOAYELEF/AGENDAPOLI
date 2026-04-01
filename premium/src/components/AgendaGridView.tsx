@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format, startOfWeek, addDays, isSameDay, isToday } from "date-fns";
+import { format, startOfWeek, addDays, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { Cita } from "@/types/clinica";
 import Link from "next/link";
 
 interface AgendaGridViewProps {
-    citas: Cita[];
+    citas: (Cita & { internName?: string })[];
     loading: boolean;
 }
 
-// Horas laborales del polideportivo
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8:00 - 20:00
+// Horarios desde las 10:00 hasta las 16:00 (7 horas)
+const HOURS = Array.from({ length: 7 }, (_, i) => i + 10); // 10:00 - 16:00
 
 const STATUS_STYLES: Record<string, { bg: string; border: string; text: string; dot: string }> = {
     SCHEDULED: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-800", dot: "bg-amber-400" },
@@ -39,15 +39,15 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
         return addDays(base, weekOffset * 7);
     }, [weekOffset]);
 
-    // Días de la semana (Lunes a Sábado = 6 columnas)
+    // Días de la semana (Lunes a Viernes = 5 columnas)
     const weekDays = useMemo(() =>
-        Array.from({ length: 6 }, (_, i) => addDays(weekStart, i)),
+        Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)),
         [weekStart]
     );
 
     // Agrupar citas por día y hora
     const citasByDayHour = useMemo(() => {
-        const map: Record<string, Cita[]> = {};
+        const map: Record<string, (Cita & { internName?: string })[]> = {};
         citas.forEach(cita => {
             const key = `${cita.date}_${cita.startTime?.split(":")[0]}`;
             if (!map[key]) map[key] = [];
@@ -57,7 +57,7 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
     }, [citas]);
 
     const weekLabel = useMemo(() => {
-        const end = addDays(weekStart, 5);
+        const end = addDays(weekStart, 4); // Viernes
         const startStr = format(weekStart, "d MMM", { locale: es });
         const endStr = format(end, "d MMM yyyy", { locale: es });
         return `${startStr} — ${endStr}`;
@@ -109,7 +109,7 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
             <div className="overflow-x-auto">
                 <div className="min-w-[700px]">
                     {/* Encabezados de días */}
-                    <div className="grid grid-cols-[60px_repeat(6,1fr)] border-b border-slate-200 bg-white sticky top-0 z-10">
+                    <div className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-slate-200 bg-white sticky top-0 z-10">
                         <div className="p-2 border-r border-slate-100"></div>
                         {weekDays.map((day, i) => {
                             const isCurrentDay = isToday(day);
@@ -132,7 +132,7 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
                     {/* Filas de horas */}
                     <div className="relative">
                         {HOURS.map(hour => (
-                            <div key={hour} className="grid grid-cols-[60px_repeat(6,1fr)] border-b border-slate-100 min-h-[72px]">
+                            <div key={hour} className="grid grid-cols-[60px_repeat(5,1fr)] border-b border-slate-100 min-h-[72px]">
                                 {/* Etiqueta de hora */}
                                 <div className="p-2 border-r border-slate-100 flex items-start justify-end">
                                     <span className="text-[11px] font-bold text-slate-400 -mt-1">{`${hour.toString().padStart(2, '0')}:00`}</span>
@@ -164,14 +164,21 @@ export function AgendaGridView({ citas, loading }: AgendaGridViewProps) {
                                                                 {cita.usuariaName || `ID: ${cita.usuariaId.slice(0, 6)}`}
                                                             </span>
                                                         </div>
-                                                        <div className="text-[9px] font-semibold opacity-70 mt-0.5 pl-3.5">
-                                                            {cita.startTime} — {cita.endTime}
+                                                        <div className="flex flex-col gap-[2px] mt-1 pl-3.5">
+                                                            <span className="text-[9px] font-semibold opacity-70 leading-none">
+                                                                {cita.startTime} — {cita.endTime}
+                                                            </span>
+                                                            {cita.internName && (
+                                                                <span className="text-[9px] font-medium opacity-90 leading-none text-indigo-700 bg-indigo-100/50 w-fit px-1 py-[1px] rounded">
+                                                                    🎓 {cita.internName}
+                                                                </span>
+                                                            )}
+                                                            {cita.shortReason && (
+                                                                <span className="text-[9px] opacity-60 truncate italic leading-none mt-[2px]">
+                                                                    {cita.shortReason}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        {cita.shortReason && (
-                                                            <div className="text-[9px] opacity-60 mt-0.5 pl-3.5 truncate italic">
-                                                                {cita.shortReason}
-                                                            </div>
-                                                        )}
                                                     </Link>
                                                 );
                                             })}
