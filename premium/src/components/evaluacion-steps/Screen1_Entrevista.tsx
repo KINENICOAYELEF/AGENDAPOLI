@@ -211,90 +211,32 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
         }));
     };
 
-    const [isRecording, setIsRecording] = useState(false);
-    const recognitionRef = React.useRef<any>(null);
     const [isFormatting, setIsFormatting] = useState(false);
+    const [showDictationTip, setShowDictationTip] = useState(true);
+    const [showQuickChips, setShowQuickChips] = useState(false);
 
-    const toggleRecording = () => {
-        if (isRecording) {
-            if (recognitionRef.current) recognitionRef.current.stop();
-            setIsRecording(false);
-            return;
-        }
-
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Tu navegador no soporta dictado por voz. Usa Chrome o Safari actualizados.");
-            return;
-        }
-
-        try {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'es-CL';
-            recognition.continuous = true;
-            recognition.interimResults = true;
-
-            recognition.onresult = (event: any) => {
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript + ' ';
-                    }
-                }
-                const appendText = finalTranscript.trim();
-                if (appendText) {
-                    // Update state securely using functional approach to avoid stale closure overrides
-                    updateFormData(prev => {
-                        const currentV4 = (prev.interview?.v4 as AnamnesisProximaV4) || interviewV4;
-                        const currentExp = currentV4.experienciaPersona || {};
-                        const currentRelato = currentExp.relatoLibre || '';
-                        return {
-                            ...prev,
-                            interview: {
-                                ...prev.interview,
-                                v4: {
-                                    ...currentV4,
-                                    experienciaPersona: {
-                                        ...currentExp,
-                                        relatoLibre: currentRelato + (currentRelato.length > 0 && !currentRelato.endsWith('\\n') ? '\\n' : '') + appendText
-                                    },
-                                    updatedAt: new Date().toISOString()
-                                }
-                            }
-                        };
-                    });
-
-                    // Resize silently avoiding jumps
-                    requestAnimationFrame(() => {
-                        const tx = document.getElementById("relato-libre-textarea");
-                        if (tx) {
-                            const originalScroll = window.scrollY;
-                            tx.style.height = "auto";
-                            tx.style.height = tx.scrollHeight + "px";
-                            if (window.scrollY !== originalScroll) {
-                                window.scrollTo({ top: originalScroll, behavior: "instant" });
-                            }
-                        }
-                    });
-                }
-            };
-
-            recognition.onerror = (event: any) => {
-                console.error("Speech recognition error", event.error);
-                setIsRecording(false);
-            };
-
-            recognition.onend = () => {
-                setIsRecording(false);
-            };
-
-            recognition.start();
-            recognitionRef.current = recognition;
-            setIsRecording(true);
-        } catch (e: any) {
-            alert("Error al intentar iniciar la grabación por voz: " + e.message);
-            setIsRecording(false);
-        }
+    // Helper: insert text at cursor position in the relato textarea
+    const insertAtCursor = (textToInsert: string) => {
+        const tx = document.getElementById("relato-libre-textarea") as HTMLTextAreaElement | null;
+        if (!tx) return;
+        const start = tx.selectionStart ?? (interviewV4.experienciaPersona.relatoLibre || '').length;
+        const end = tx.selectionEnd ?? start;
+        const current = interviewV4.experienciaPersona.relatoLibre || '';
+        const newText = current.substring(0, start) + textToInsert + current.substring(end);
+        updateV4({ experienciaPersona: { ...interviewV4.experienciaPersona, relatoLibre: newText } });
+        // Restore cursor after insert
+        requestAnimationFrame(() => {
+            if (tx) {
+                const newPos = start + textToInsert.length;
+                tx.focus();
+                tx.setSelectionRange(newPos, newPos);
+                // Resize without jump
+                const scrollY = window.scrollY;
+                tx.style.height = 'auto';
+                tx.style.height = tx.scrollHeight + 'px';
+                window.scrollTo(0, scrollY);
+            }
+        });
     };
 
     const handleFormatAndMap = async () => {
@@ -1429,15 +1371,12 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                         </div>
                         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                             <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    toggleRecording();
-                                }}
+                                onClick={(e) => { e.preventDefault(); setShowQuickChips(!showQuickChips); }}
                                 disabled={isClosed}
-                                className={`text-[11px] px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-all flex items-center justify-center gap-1 flex-1 sm:flex-none ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'}`}
-                                title="Dictar por voz"
+                                className={`text-[11px] px-3 py-3 min-h-[44px] rounded-lg font-bold shadow-sm transition-all flex items-center justify-center gap-1 flex-1 sm:flex-none ${showQuickChips ? 'bg-amber-500 text-white border-amber-600' : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'}`}
+                                title="Muestra chips de inserción rápida para frases clínicas comunes"
                             >
-                                {isRecording ? "⏹️ Detener" : "🎙️ Dictar"}
+                                ⚡ Chips rápidos
                             </button>
                             <button
                                 onClick={(e) => {
@@ -1649,6 +1588,85 @@ export function Screen1_Entrevista({ formData, updateFormData, isClosed }: Scree
                     {!isExpertMode && !showRelatoGuide && (
                         <div className="bg-indigo-50/50 border-l-2 border-indigo-400 p-3 text-xs text-slate-700 rounded-r-lg mb-4 text-justify leading-relaxed shadow-sm">
                             <p>Escribe aquí todo el relato libre directamente para tener un flujo natural, o bien, usa el botón <strong>"✨ + Plantilla"</strong> de arriba para inyectar una estructura base guiada.</p>
+                        </div>
+                    )}
+
+                    {/* Native dictation tip - dismissable */}
+                    {showDictationTip && !isClosed && (
+                        <div className="flex items-start gap-2 bg-sky-50 border border-sky-200 rounded-xl p-3 mb-3 text-xs text-sky-800 shadow-sm animate-fadeIn">
+                            <span className="text-base mt-[-1px]">🎤</span>
+                            <div className="flex-1">
+                                <strong>Tip: Dicta directo desde tu teclado.</strong>
+                                <span className="text-sky-600 ml-1">
+                                    En iPhone/Android toca el 🎤 del teclado. En Mac presiona <kbd className="bg-sky-100 px-1 rounded text-[10px] font-mono border border-sky-200">Fn</kbd> dos veces. Es más preciso y rápido que cualquier otra opción.
+                                </span>
+                            </div>
+                            <button
+                                onClick={(e) => { e.preventDefault(); setShowDictationTip(false); }}
+                                className="text-sky-400 hover:text-sky-700 text-sm font-bold shrink-0 ml-1"
+                                title="Cerrar tip"
+                            >✕</button>
+                        </div>
+                    )}
+
+                    {/* Quick-insert clinical chips */}
+                    {showQuickChips && !isClosed && (
+                        <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 mb-3 space-y-2 animate-fadeIn shadow-sm">
+                            <div>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Naturaleza</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {['punzante','opresivo','quemazón','corriente eléctrica','hormigueo','adormecimiento','pesadez','rigidez','tirantez','pulsátil','profundo'].map(c => (
+                                        <button key={c} onClick={(e) => { e.preventDefault(); insertAtCursor(c + ' '); }}
+                                            className="text-[11px] bg-white border border-amber-200 text-amber-800 px-2 py-1 rounded-md hover:bg-amber-100 transition-colors font-medium active:scale-95">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Intensidad EVA</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {['0/10','1/10','2/10','3/10','4/10','5/10','6/10','7/10','8/10','9/10','10/10'].map(c => (
+                                        <button key={c} onClick={(e) => { e.preventDefault(); insertAtCursor(c + ' '); }}
+                                            className="text-[11px] bg-white border border-amber-200 text-amber-800 px-2 py-1 rounded-md hover:bg-amber-100 transition-colors font-medium active:scale-95 min-w-[36px]">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Temporalidad</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {['hace 1 semana','hace 2 semanas','hace 1 mes','hace 2 meses','hace 3 meses','hace 6 meses','hace 1 año','más de 1 año','crónico'].map(c => (
+                                        <button key={c} onClick={(e) => { e.preventDefault(); insertAtCursor(c + ' '); }}
+                                            className="text-[11px] bg-white border border-amber-200 text-amber-800 px-2 py-1 rounded-md hover:bg-amber-100 transition-colors font-medium active:scale-95">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Agravantes / Aliviantes frecuentes</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {['al caminar','al correr','al subir escaleras','al bajar escaleras','al sentarse/levantarse','al agacharse','carga de peso','en reposo','al dormir','al despertar','con frío','con calor','con movimiento','con reposo','con hielo'].map(c => (
+                                        <button key={c} onClick={(e) => { e.preventDefault(); insertAtCursor(c + ' '); }}
+                                            className="text-[11px] bg-white border border-amber-200 text-amber-800 px-2 py-1 rounded-md hover:bg-amber-100 transition-colors font-medium active:scale-95">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Frases útiles</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {['"me duele cuando..."','"siento que se traba"','"se me va la fuerza"','"me despierta de noche"','"empeora con el estrés"','sin antecedentes quirúrgicos','no refiere banderas rojas','episodio único','episodios recurrentes','inicio insidioso','inicio súbito/traumático'].map(c => (
+                                        <button key={c} onClick={(e) => { e.preventDefault(); insertAtCursor(c + ' '); }}
+                                            className="text-[11px] bg-white border border-amber-200 text-amber-800 px-2 py-1 rounded-md hover:bg-amber-100 transition-colors font-medium active:scale-95">
+                                            {c}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
 
