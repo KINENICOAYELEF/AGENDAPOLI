@@ -97,6 +97,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             Admin Docente
                         </Link>
                     )}
+                    {user.role === "DOCENTE" && (
+                        <Link href="/app/pfg" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-300">
+                            📊 PFG Dashboard
+                        </Link>
+                    )}
                 </nav>
 
                 {/* Separador de Espacio de Nombres (Año) */}
