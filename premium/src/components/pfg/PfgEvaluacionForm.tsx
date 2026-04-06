@@ -28,7 +28,7 @@ const EMPTY_STEPDOWN: PfgStepDown = {
   observaciones: "",
 };
 const EMPTY_ALGOMETRIA: PfgAlgometria = {
-  zonaAnatomica: "", intento1: null, intento2: null, intento3: null, valorFinal: null, unidad: "kPa",
+  zonaAnatomica: "", intento1: null, intento2: null, intento3: null, valorFinal: null, unidad: "kg",
 };
 
 const EMPTY_EVAL = (deportistaId: string, semana: PfgSemana): PfgEvaluacion => ({

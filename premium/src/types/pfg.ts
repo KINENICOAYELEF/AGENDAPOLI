@@ -151,5 +151,5 @@ export interface PfgAlgometria {
   intento2: number | null;
   intento3: number | null;
   valorFinal: number | null;
-  unidad: 'kPa' | 'kg_cm2' | 'N' | 'lbs'; // (#9) más opciones
+  unidad: 'kPa' | 'kg_cm2' | 'N' | 'lbs' | 'kg'; // (#9) más opciones — incluye kg para algómetros digitales
 }

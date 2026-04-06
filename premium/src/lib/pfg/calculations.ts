@@ -211,13 +211,19 @@ export function generarSugerenciasClasificacion(
 export function buildRadarData(evaluaciones: PfgEvaluacion[]) {
   const sorted = [...evaluaciones].sort((a, b) => a.semana - b.semana);
 
+  // Valores de referencia para karatekas adolescentes (=100% en radar, estilo FIFA)
+  // Kujala 100 = rodilla perfecta
+  // Dolor 0 = sin dolor (invertido: 0 dolor → 100% en radar)
+  // F.Rodilla ~300N = excelente para adolescente
+  // F.Cadera ~200N = excelente para adolescente
+  // Tolerancia = calidad de movimiento step-down
   const axes = [
     { metric: 'Función', key: 'kujala', min: 0, max: 100, inv: false },
     { metric: 'Dolor reposo', key: 'enaReposo', min: 0, max: 10, inv: true },
-    { metric: 'Dolor step-down', key: 'enaStepDown', min: 0, max: 10, inv: true },
-    { metric: 'F. Rodilla', key: 'fuerzaExtRodilla', min: 0, max: 600, inv: false },
-    { metric: 'F. Cadera', key: 'fuerzaCaderaAvg', min: 0, max: 400, inv: false },
-    { metric: 'Tolerancia', key: 'tolerancia', min: 0, max: 100, inv: false },
+    { metric: 'Dolor carga', key: 'enaStepDown', min: 0, max: 10, inv: true },
+    { metric: 'F. Rodilla', key: 'fuerzaExtRodilla', min: 0, max: 300, inv: false },
+    { metric: 'F. Cadera', key: 'fuerzaCaderaAvg', min: 0, max: 200, inv: false },
+    { metric: 'Control', key: 'tolerancia', min: 0, max: 100, inv: false },
   ];
 
   return axes.map((ax) => {

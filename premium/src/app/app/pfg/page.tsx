@@ -47,6 +47,18 @@ export default function PfgListPage() {
     }
   };
 
+  const handleDelete = async (d: PfgDeportista) => {
+    const ok = confirm(`¿Eliminar a "${d.alias}" y todas sus evaluaciones?\n\nEsta acción es irreversible.`);
+    if (!ok) return;
+    try {
+      await PfgService.deleteDeportista(activeYear, d.id);
+      await fetchData();
+    } catch (err) {
+      console.error("Error eliminando deportista:", err);
+      alert("Error al eliminar");
+    }
+  };
+
   const filtered = deportistas.filter((d) =>
     filterStatus === "TODOS" ? true : d.status === filterStatus
   );
@@ -196,8 +208,16 @@ export default function PfgListPage() {
                         <button
                           onClick={() => { setEditTarget(d); setShowForm(true); }}
                           className="px-3 py-1 text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition"
+                          title="Editar deportista"
                         >
                           ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDelete(d)}
+                          className="px-3 py-1 text-xs font-bold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                          title="Eliminar deportista y sus evaluaciones"
+                        >
+                          🗑️
                         </button>
                         <Link
                           href={`/app/pfg/${d.id}`}

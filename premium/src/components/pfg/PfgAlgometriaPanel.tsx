@@ -44,6 +44,7 @@ export default function PfgAlgometriaPanel({ value, onChange }: Props) {
             onChange={(e) => update({ unidad: e.target.value as PfgAlgometria["unidad"] })}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 focus:ring-2 focus:ring-emerald-200 outline-none"
           >
+            <option value="kg">kg (kilogramos)</option>
             <option value="kPa">kPa (kilopascales)</option>
             <option value="kg_cm2">kg/cm²</option>
             <option value="N">N (Newtons)</option>
