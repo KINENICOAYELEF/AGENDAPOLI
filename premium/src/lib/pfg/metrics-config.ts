@@ -183,3 +183,27 @@ export const PFG_POSICIONES_FUERZA = {
     protocolo: '2 ensayos de práctica → 3 intentos máximos de 5 segundos → guardar mejor valor',
   },
 };
+
+// ── VALORES DE REFERENCIA PARA RADAR (estilo FIFA) ─────────────
+// Estos valores representan el "100%" en cada eje del radar.
+// AJÚSTALOS según tu dispositivo, posición y población.
+//
+// Contexto clínico (HHD isometría, adolescentes karatekas 14-18 años):
+// - Ext. Rodilla (sedente 90/90): rango típico HHD 150-400N según dispositivo.
+//   Con dinamómetro manual: ~200-300N. Con dispositivo fijo: puede ser mayor.
+// - Abd. Cadera (supino): rango típico ~100-250N.
+// - RE Cadera (prono 90° rodilla): rango típico ~80-180N.
+// - Promedio cadera para radar: usa media entre abd y RE.
+//
+// SI USAS KILOS en vez de Newtons → divide estos valores por 9.81
+// Ej: 300N ≈ 30.6 kg → si mides en kg, pon refFuerzaRodilla = 30
+export const PFG_RADAR_REFS = {
+  // 100% en el radar = valor de corte para "excelente" en tu población
+  refKujala: 100,           // máximo teórico
+  refEnaReposo: 10,         // invertido: 0 dolor = 100%
+  refEnaStepDown: 10,       // invertido: 0 dolor = 100%
+  refFuerzaRodilla: 300,    // N — ajustar según dispositivo
+  refFuerzaCadera: 200,     // N — promedio abd+RE, ajustar según dispositivo
+  refControl: 100,          // calidad movimiento: buena=100, aceptable=60, deficiente=20
+};
+

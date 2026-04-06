@@ -7,6 +7,8 @@ import { PFG_POSICIONES_FUERZA } from "@/lib/pfg/metrics-config";
 import PfgFuerzaPanel from "./PfgFuerzaPanel";
 import PfgAlgometriaPanel from "./PfgAlgometriaPanel";
 import PfgWeekBadge from "./PfgWeekBadge";
+import PfgKujalaForm from "./PfgKujalaForm";
+import type { KujalaAnswers } from "@/lib/pfg/kujala-utils";
 
 interface Props {
   evaluacion?: PfgEvaluacion | null;
@@ -52,6 +54,7 @@ const EMPTY_EVAL = (deportistaId: string, semana: PfgSemana): PfgEvaluacion => (
 
 export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, onSave, onCancel }: Props) {
   const [data, setData] = useState<PfgEvaluacion>(evaluacion || EMPTY_EVAL(deportistaId, semana));
+  const [showKujala, setShowKujala] = useState(false);
 
   const update = (patch: Partial<PfgEvaluacion>) => {
     setData((prev) => ({ ...prev, ...patch, updatedAt: new Date().toISOString() }));
@@ -104,8 +107,20 @@ export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Kujala (0–100)</label>
-              <input type="number" min={0} max={100} value={data.kujala ?? ""} onChange={(e) => update({ kujala: e.target.value === "" ? null : parseInt(e.target.value) })}
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="0–100" />
+              <div className="flex gap-2">
+                <input type="number" min={0} max={100} value={data.kujala ?? ""} onChange={(e) => update({ kujala: e.target.value === "" ? null : parseInt(e.target.value) })}
+                  className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-mono text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="0–100" />
+                <button
+                  type="button"
+                  onClick={() => setShowKujala(true)}
+                  className="px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition whitespace-nowrap"
+                >
+                  📋 Cuestionario
+                </button>
+              </div>
+              {data.kujala !== null && (
+                <p className="text-[10px] text-slate-400 mt-1">Puntaje actual: <strong>{data.kujala}/100</strong></p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">ENA Reposo (0–10)</label>
@@ -231,6 +246,16 @@ export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, on
           </button>
         </div>
       </div>
+      {/* Modal Kujala */}
+      {showKujala && (
+        <PfgKujalaForm
+          onComplete={(score: number, _answers: KujalaAnswers) => {
+            update({ kujala: score });
+            setShowKujala(false);
+          }}
+          onCancel={() => setShowKujala(false)}
+        />
+      )}
     </div>
   );
 }
