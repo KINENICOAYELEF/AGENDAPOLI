@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import type { PfgDeportista, PfgEvaluacion, PfgSemana } from "@/types/pfg";
+import { useState, useMemo } from "react";
+import type { PfgDeportista, PfgEvaluacion, PfgSemana, PfgClasificacionClinica } from "@/types/pfg";
 import { PFG_DOMINIOS_CLASIFICACION } from "@/lib/pfg/metrics-config";
-import { generarAlertas } from "@/lib/pfg/calculations";
+import { generarAlertas, generarSugerenciasClasificacion } from "@/lib/pfg/calculations";
+import PfgResumenSuperior from "./PfgResumenSuperior";
 import PfgKpiCards from "./PfgKpiCards";
 import PfgRadarChart from "./PfgRadarChart";
 import PfgProgressCharts from "./PfgProgressCharts";
@@ -11,6 +12,8 @@ import PfgComparisonBars from "./PfgComparisonBars";
 import PfgAlertPanel from "./PfgAlertPanel";
 import PfgWeekBadge from "./PfgWeekBadge";
 import PfgEvaluacionForm from "./PfgEvaluacionForm";
+import PfgClasificacionClinicaForm from "./PfgClasificacionClinica";
+import PfgInterpretacionClinica from "./PfgInterpretacionClinica";
 import { motion } from "framer-motion";
 
 interface Props {
@@ -18,11 +21,12 @@ interface Props {
   evaluaciones: PfgEvaluacion[];
   onSaveEvaluacion: (e: PfgEvaluacion) => Promise<void>;
   onDeleteEvaluacion: (evalId: string) => Promise<void>;
+  onSaveClasificacion: (c: PfgClasificacionClinica) => Promise<void>;
 }
 
-type Tab = "resumen" | "evaluaciones";
+type Tab = "resumen" | "evaluaciones" | "clasificacion" | "interpretacion";
 
-export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEvaluacion, onDeleteEvaluacion }: Props) {
+export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEvaluacion, onDeleteEvaluacion, onSaveClasificacion }: Props) {
   const [tab, setTab] = useState<Tab>("resumen");
   const [showEvalForm, setShowEvalForm] = useState(false);
   const [editEval, setEditEval] = useState<PfgEvaluacion | null>(null);
@@ -30,6 +34,12 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
 
   const alertas = generarAlertas(evaluaciones, deportista.diagnosticoOperativo.compatibleDolorPatelofemoral);
   const semanasEvaluadas = new Set(evaluaciones.map((e) => e.semana));
+
+  // Motor de sugerencias (#4, #5)
+  const sugerencias = useMemo(
+    () => generarSugerenciasClasificacion(deportista, evaluaciones),
+    [deportista, evaluaciones]
+  );
 
   const activeDomains = PFG_DOMINIOS_CLASIFICACION.filter(
     (d) => deportista.clasificacionClinica[d.key as keyof typeof deportista.clasificacionClinica] === true
@@ -40,6 +50,17 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
     setShowEvalForm(false);
     setEditEval(null);
   };
+
+  const handleClasificacionChange = async (c: PfgClasificacionClinica) => {
+    await onSaveClasificacion(c);
+  };
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "resumen", label: "📊 Resumen" },
+    { key: "evaluaciones", label: "📋 Evaluaciones" },
+    { key: "clasificacion", label: "🔬 Clasificación" },
+    { key: "interpretacion", label: "🧠 Interpretación" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -69,6 +90,11 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
                   {dom.icon} {dom.label}
                 </span>
               ))}
+              {deportista.clasificacionClinica.confirmadaPorDocente && (
+                <span className="inline-flex px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-300">
+                  ✅ Clasificación confirmada
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-start gap-2">
@@ -79,12 +105,12 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
         </div>
       </motion.div>
 
+      {/* Resumen Superior (#6) — siempre visible */}
+      <PfgResumenSuperior deportista={deportista} evaluaciones={evaluaciones} />
+
       {/* Tabs */}
-      <div className="flex gap-2">
-        {([
-          { key: "resumen" as Tab, label: "📊 Resumen" },
-          { key: "evaluaciones" as Tab, label: "📋 Evaluaciones" },
-        ]).map((t) => (
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -145,7 +171,7 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
             <div className="space-y-3">
               {[...evaluaciones].sort((a, b) => a.semana - b.semana).map((ev) => (
                 <div key={ev.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
                       <PfgWeekBadge semana={ev.semana} />
                       <div>
@@ -192,6 +218,20 @@ export default function PfgDashboardAdmin({ deportista, evaluaciones, onSaveEval
             </div>
           )}
         </div>
+      )}
+
+      {/* Tab: Clasificación (#3, #4, #5) */}
+      {tab === "clasificacion" && (
+        <PfgClasificacionClinicaForm
+          value={deportista.clasificacionClinica}
+          sugerencias={sugerencias}
+          onChange={handleClasificacionChange}
+        />
+      )}
+
+      {/* Tab: Interpretación Clínica (#10) */}
+      {tab === "interpretacion" && (
+        <PfgInterpretacionClinica deportista={deportista} evaluaciones={evaluaciones} />
       )}
 
       {/* Modal Evaluación */}

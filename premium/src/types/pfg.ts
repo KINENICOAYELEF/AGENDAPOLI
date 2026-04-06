@@ -21,6 +21,9 @@ export interface PfgDeportista {
   frecuenciaSemanalEntrenamiento: number;
   anosPractica: number;
 
+  // Historia de carga (para sugerencia de clasificación)
+  historiaCargaReciente: string; // texto libre: aumento volumen/freq/intensidad
+
   diagnosticoOperativo: PfgDiagnosticoOperativo;
   clasificacionClinica: PfgClasificacionClinica;
 
@@ -58,14 +61,27 @@ export interface PfgCausaAlternativa {
 }
 
 // ────────────────────────────────────────────────
-// 3) CLASIFICACIÓN CLÍNICA
+// 3) CLASIFICACIÓN CLÍNICA (semiautomática)
 // ────────────────────────────────────────────────
 export interface PfgClasificacionClinica {
+  // Sugeridas por hallazgos (auto-calculadas)
+  sugerencias: PfgSugerenciaClasificacion;
+  // Confirmadas por docente (editables)
   sobrecargaSobreuso: boolean;
   deficitRendimientoMuscular: boolean;
   deficitControlMovimiento: boolean;
   deficitMovilidad: boolean;
+  // Estado de confirmación
+  confirmadaPorDocente: boolean;
+  fechaConfirmacion: string | null;
   comentarioClinico: string;
+}
+
+export interface PfgSugerenciaClasificacion {
+  sobrecargaSobreuso: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string };
+  deficitRendimientoMuscular: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string };
+  deficitControlMovimiento: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string };
+  deficitMovilidad: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string };
 }
 
 // ────────────────────────────────────────────────
@@ -106,6 +122,7 @@ export interface PfgEvaluacion {
 export interface PfgStepDown {
   peorDolorENA: number | null;
   calidadMovimiento: 'buena' | 'aceptable' | 'deficiente' | null;
+  reproduceDolorTipico: boolean | null; // (#8) ¿reproduce dolor típico del cuadro?
   observaciones: string;
 }
 
@@ -119,6 +136,9 @@ export interface PfgPruebaFuerza {
   mejorValor: number | null;
   unidad: 'N' | 'kg' | 'lbs';
   torqueNm?: number | null;
+  ladoEvaluado: 'Derecho' | 'Izquierdo' | 'Bilateral'; // (#7)
+  validezPrueba: 'valido' | 'parcialmente_valido' | 'invalido'; // (#7)
+  observacionPrueba: string; // (#7)
   notas: string;
 }
 
@@ -131,5 +151,5 @@ export interface PfgAlgometria {
   intento2: number | null;
   intento3: number | null;
   valorFinal: number | null;
-  unidad: 'kPa' | 'kg_cm2';
+  unidad: 'kPa' | 'kg_cm2' | 'N' | 'lbs'; // (#9) más opciones
 }

@@ -38,10 +38,22 @@ export default function PfgFuerzaPanel({ label, posicion, protocolo, value, onCh
 
   return (
     <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
-      <div>
-        <h4 className="font-bold text-sm text-slate-800">{label}</h4>
-        <p className="text-xs text-slate-500 mt-0.5">📐 {posicion}</p>
-        <p className="text-xs text-slate-400 mt-0.5">📋 {protocolo}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="font-bold text-sm text-slate-800">{label}</h4>
+          <p className="text-xs text-slate-500 mt-0.5">📐 {posicion}</p>
+          <p className="text-xs text-slate-400 mt-0.5">📋 {protocolo}</p>
+        </div>
+        {/* Lado evaluado (#7) */}
+        <select
+          value={value.ladoEvaluado}
+          onChange={(e) => update({ ladoEvaluado: e.target.value as PfgPruebaFuerza["ladoEvaluado"] })}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-emerald-200 outline-none"
+        >
+          <option value="Derecho">Derecho</option>
+          <option value="Izquierdo">Izquierdo</option>
+          <option value="Bilateral">Bilateral</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -50,7 +62,7 @@ export default function PfgFuerzaPanel({ label, posicion, protocolo, value, onCh
         {numInput("intento3", "Intento 3")}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-emerald-100 rounded-xl px-4 py-2 border border-emerald-200">
             <span className="text-xs text-emerald-600 font-bold block">Mejor Valor</span>
@@ -83,14 +95,40 @@ export default function PfgFuerzaPanel({ label, posicion, protocolo, value, onCh
         </div>
       </div>
 
+      {/* Validez específica por prueba (#7) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Validez de esta prueba</label>
+          <select
+            value={value.validezPrueba}
+            onChange={(e) => update({ validezPrueba: e.target.value as PfgPruebaFuerza["validezPrueba"] })}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
+          >
+            <option value="valido">Válido</option>
+            <option value="parcialmente_valido">Parcialmente válido</option>
+            <option value="invalido">Inválido</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 mb-1">Observación de la prueba</label>
+          <input
+            type="text"
+            value={value.observacionPrueba}
+            onChange={(e) => update({ observacionPrueba: e.target.value })}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
+            placeholder="Ej: dolor durante contracción..."
+          />
+        </div>
+      </div>
+
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1">Notas</label>
+        <label className="block text-xs font-semibold text-slate-500 mb-1">Notas generales</label>
         <input
           type="text"
           value={value.notas}
           onChange={(e) => update({ notas: e.target.value })}
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
-          placeholder="Observaciones de la prueba..."
+          placeholder="Observaciones generales..."
         />
       </div>
     </div>

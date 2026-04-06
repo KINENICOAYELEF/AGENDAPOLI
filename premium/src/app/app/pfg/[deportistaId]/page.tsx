@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useYear } from "@/context/YearContext";
 import { PfgService } from "@/services/pfg";
-import type { PfgDeportista, PfgEvaluacion } from "@/types/pfg";
+import type { PfgDeportista, PfgEvaluacion, PfgClasificacionClinica } from "@/types/pfg";
 import PfgDashboardAdmin from "@/components/pfg/PfgDashboardAdmin";
 import PfgExportButtons from "@/components/pfg/PfgExportButtons";
 import Link from "next/link";
@@ -45,6 +45,17 @@ export default function PfgDeportistaPage() {
   const handleDeleteEval = async (evalId: string) => {
     await PfgService.deleteEvaluacion(activeYear, deportistaId, evalId);
     await fetchData();
+  };
+
+  const handleSaveClasificacion = async (c: PfgClasificacionClinica) => {
+    if (!deportista) return;
+    const updated: PfgDeportista = {
+      ...deportista,
+      clasificacionClinica: c,
+      updatedAt: new Date().toISOString(),
+    };
+    await PfgService.saveDeportista(activeYear, updated);
+    setDeportista(updated);
   };
 
   if (loading) {
@@ -94,6 +105,7 @@ export default function PfgDeportistaPage() {
         evaluaciones={evaluaciones}
         onSaveEvaluacion={handleSaveEval}
         onDeleteEvaluacion={handleDeleteEval}
+        onSaveClasificacion={handleSaveClasificacion}
       />
     </div>
   );

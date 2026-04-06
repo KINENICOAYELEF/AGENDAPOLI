@@ -16,9 +16,20 @@ interface Props {
   onCancel: () => void;
 }
 
-const EMPTY_FUERZA: PfgPruebaFuerza = { intento1: null, intento2: null, intento3: null, mejorValor: null, unidad: "N", torqueNm: null, notas: "" };
-const EMPTY_STEPDOWN: PfgStepDown = { peorDolorENA: null, calidadMovimiento: null, observaciones: "" };
-const EMPTY_ALGOMETRIA: PfgAlgometria = { zonaAnatomica: "", intento1: null, intento2: null, intento3: null, valorFinal: null, unidad: "kPa" };
+const EMPTY_FUERZA: PfgPruebaFuerza = {
+  intento1: null, intento2: null, intento3: null, mejorValor: null,
+  unidad: "N", torqueNm: null,
+  ladoEvaluado: "Derecho", validezPrueba: "valido", observacionPrueba: "",
+  notas: "",
+};
+const EMPTY_STEPDOWN: PfgStepDown = {
+  peorDolorENA: null, calidadMovimiento: null,
+  reproduceDolorTipico: null,
+  observaciones: "",
+};
+const EMPTY_ALGOMETRIA: PfgAlgometria = {
+  zonaAnatomica: "", intento1: null, intento2: null, intento3: null, valorFinal: null, unidad: "kPa",
+};
 
 const EMPTY_EVAL = (deportistaId: string, semana: PfgSemana): PfgEvaluacion => ({
   id: uuid(),
@@ -103,13 +114,13 @@ export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, on
             </div>
           </div>
 
-          {/* Step-Down */}
+          {/* Step-Down con reproduceDolorTipico (#8) */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
             <div>
               <h4 className="font-bold text-sm text-slate-800">Tarea Provocativa Fija: Step-Down</h4>
               <p className="text-xs text-slate-500">Step-down 20 cm · 5 repeticiones · registrar peor dolor</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Peor Dolor ENA (0–10)</label>
                 <input type="number" min={0} max={10} step="0.5" value={data.stepDown.peorDolorENA ?? ""}
@@ -125,6 +136,18 @@ export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, on
                   <option value="buena">Buena</option>
                   <option value="aceptable">Aceptable</option>
                   <option value="deficiente">Deficiente</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">¿Reproduce dolor típico?</label>
+                <select
+                  value={data.stepDown.reproduceDolorTipico === null ? "" : data.stepDown.reproduceDolorTipico ? "si" : "no"}
+                  onChange={(e) => update({ stepDown: { ...data.stepDown, reproduceDolorTipico: e.target.value === "" ? null : e.target.value === "si" } })}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
+                >
+                  <option value="">— Seleccionar —</option>
+                  <option value="si">Sí, reproduce</option>
+                  <option value="no">No reproduce</option>
                 </select>
               </div>
             </div>
@@ -171,10 +194,10 @@ export default function PfgEvaluacionForm({ evaluacion, semana, deportistaId, on
             />
           )}
 
-          {/* Validez y observaciones */}
+          {/* Validez general y observaciones */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Validez del Test</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Validez General del Test</label>
               <select value={data.validezTest} onChange={(e) => update({ validezTest: e.target.value as PfgEvaluacion["validezTest"] })}
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
                 <option value="valido">Válido</option>

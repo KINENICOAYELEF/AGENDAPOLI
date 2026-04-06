@@ -2,7 +2,7 @@
 // PFG — CÁLCULOS Y LÓGICA DE VISUALIZACIÓN
 // ============================================================
 
-import { PfgEvaluacion } from '@/types/pfg';
+import { PfgEvaluacion, PfgDeportista, PfgSugerenciaClasificacion } from '@/types/pfg';
 
 export function cambioAbsoluto(anterior: number | null, actual: number | null): number | null {
   if (anterior === null || actual === null) return null;
@@ -73,6 +73,41 @@ export function calidadMovimientoANumero(cal: 'buena' | 'aceptable' | 'deficient
   return 0;
 }
 
+// ── ESTADO GENERAL DEL DEPORTISTA ────────────────────────────
+export type EstadoGeneral = 'mejorando' | 'estable' | 'revisar_carga';
+
+export function calcularEstadoGeneral(evaluaciones: PfgEvaluacion[]): EstadoGeneral {
+  if (evaluaciones.length < 2) return 'estable';
+  const sorted = [...evaluaciones].sort((a, b) => a.semana - b.semana);
+  const primera = sorted[0];
+  const ultima = sorted[sorted.length - 1];
+
+  let positivos = 0;
+  let negativos = 0;
+
+  const dk = cambioAbsoluto(primera.kujala, ultima.kujala);
+  if (dk !== null && dk >= 10) positivos++;
+  if (dk !== null && dk < -5) negativos++;
+
+  const dd = cambioAbsoluto(primera.enaReposo, ultima.enaReposo);
+  if (dd !== null && dd <= -2) positivos++;
+  if (dd !== null && dd > 2) negativos++;
+
+  const dsd = cambioAbsoluto(primera.stepDown.peorDolorENA, ultima.stepDown.peorDolorENA);
+  if (dsd !== null && dsd <= -2) positivos++;
+  if (dsd !== null && dsd > 2) negativos++;
+
+  const df = cambioAbsoluto(primera.fuerzaExtensionRodilla.mejorValor, ultima.fuerzaExtensionRodilla.mejorValor);
+  if (df !== null && df > 0) positivos++;
+
+  const dfc = cambioAbsoluto(primera.fuerzaAbduccionCadera.mejorValor, ultima.fuerzaAbduccionCadera.mejorValor);
+  if (dfc !== null && dfc > 0) positivos++;
+
+  if (negativos >= 2) return 'revisar_carga';
+  if (positivos >= 2) return 'mejorando';
+  return 'estable';
+}
+
 export function mensajeProgreso(evaluaciones: PfgEvaluacion[]): {
   mensaje: string;
   tipo: 'positivo' | 'neutro' | 'atencion';
@@ -80,43 +115,99 @@ export function mensajeProgreso(evaluaciones: PfgEvaluacion[]): {
   if (evaluaciones.length === 0) return { mensaje: 'Sin evaluaciones', tipo: 'neutro' };
   if (evaluaciones.length === 1) return { mensaje: 'Evaluación inicial registrada', tipo: 'neutro' };
 
-  const sorted = [...evaluaciones].sort((a, b) => a.semana - b.semana);
-  const primera = sorted[0];
-  const ultima = sorted[sorted.length - 1];
-
-  const cambioKujala = cambioAbsoluto(primera.kujala, ultima.kujala);
-  const cambioDolor = cambioAbsoluto(primera.enaReposo, ultima.enaReposo);
-  const cambioFuerzaRod = cambioAbsoluto(
-    primera.fuerzaExtensionRodilla.mejorValor,
-    ultima.fuerzaExtensionRodilla.mejorValor
-  );
-
-  const señalesPositivas: string[] = [];
-  const señalesNegativas: string[] = [];
-
-  if (cambioKujala !== null && cambioKujala >= 10) señalesPositivas.push('mejorando función');
-  else if (cambioKujala !== null && cambioKujala > 0) señalesPositivas.push('función en progreso');
-  if (cambioDolor !== null && cambioDolor <= -2) señalesPositivas.push('menos dolor');
-  else if (cambioDolor !== null && cambioDolor < 0) señalesPositivas.push('dolor en descenso');
-  if (cambioFuerzaRod !== null && cambioFuerzaRod > 0) señalesPositivas.push('fuerza en progreso');
-
-  if (cambioKujala !== null && cambioKujala < -5) señalesNegativas.push('función descendió');
-  if (cambioDolor !== null && cambioDolor > 2) señalesNegativas.push('dolor aumentó');
-
-  if (señalesNegativas.length > 0) {
-    return { mensaje: 'Revisar carga y síntomas', tipo: 'atencion' };
+  const estado = calcularEstadoGeneral(evaluaciones);
+  switch (estado) {
+    case 'mejorando':
+      return { mensaje: 'Mejorando', tipo: 'positivo' };
+    case 'revisar_carga':
+      return { mensaje: 'Revisar carga y síntomas', tipo: 'atencion' };
+    default:
+      return { mensaje: 'Estable', tipo: 'neutro' };
   }
-  if (señalesPositivas.length >= 2) {
-    return { mensaje: 'Mejorando', tipo: 'positivo' };
-  }
-  if (señalesPositivas.length === 1) {
-    const msg = señalesPositivas[0];
-    return { mensaje: msg.charAt(0).toUpperCase() + msg.slice(1), tipo: 'positivo' };
-  }
-  return { mensaje: 'Estable', tipo: 'neutro' };
 }
 
-// Construir datos para radar chart de Nivo
+// ── MOTOR DE SUGERENCIAS DE CLASIFICACIÓN ────────────────────
+
+export function generarSugerenciasClasificacion(
+  deportista: PfgDeportista,
+  evaluaciones: PfgEvaluacion[]
+): PfgSugerenciaClasificacion {
+  const s0 = evaluaciones.find((e) => e.semana === 0) || null;
+
+  // 1) Sobrecarga/sobreuso: historia de aumento de carga
+  const historiaCarga = (deportista.historiaCargaReciente || '').trim().toLowerCase();
+  const palabrasClave = ['aumento', 'subió', 'más', 'incremento', 'carga', 'volumen', 'frecuencia', 'intensidad', 'torneo', 'competencia', 'doble jornada'];
+  const hitsCarga = palabrasClave.filter((p) => historiaCarga.includes(p)).length;
+  const sobrecarga = {
+    sugerida: hitsCarga >= 2 || historiaCarga.length > 20,
+    confianza: (hitsCarga >= 3 ? 'fuerte' : hitsCarga >= 1 ? 'debil' : 'ninguna') as 'fuerte' | 'debil' | 'ninguna',
+    motivo: hitsCarga > 0
+      ? `Historia menciona: ${palabrasClave.filter((p) => historiaCarga.includes(p)).join(', ')}`
+      : 'Sin historia de aumento de carga registrada',
+  };
+
+  // 2) Déficit rendimiento muscular: debilidad en S0
+  let deficitMuscular: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string } = { sugerida: false, confianza: 'ninguna', motivo: 'Sin datos S0' };
+  if (s0) {
+    const fRod = s0.fuerzaExtensionRodilla.mejorValor;
+    const fAbd = s0.fuerzaAbduccionCadera.mejorValor;
+    const fRe = s0.fuerzaRotacionExternaCadera.mejorValor;
+    // Valores bajos relativos (umbrales orientativos para adolescentes)
+    const rodillaBaja = fRod !== null && fRod < 200;
+    const caderaBaja = (fAbd !== null && fAbd < 120) || (fRe !== null && fRe < 100);
+    if (rodillaBaja || caderaBaja) {
+      const motivos: string[] = [];
+      if (rodillaBaja) motivos.push(`Ext. rodilla baja en S0: ${fRod}N`);
+      if (fAbd !== null && fAbd < 120) motivos.push(`Abd. cadera baja en S0: ${fAbd}N`);
+      if (fRe !== null && fRe < 100) motivos.push(`RE cadera baja en S0: ${fRe}N`);
+      deficitMuscular = {
+        sugerida: true,
+        confianza: rodillaBaja && caderaBaja ? 'fuerte' : 'debil',
+        motivo: motivos.join('; '),
+      };
+    } else {
+      deficitMuscular = { sugerida: false, confianza: 'ninguna', motivo: 'Fuerzas S0 dentro de rango aceptable' };
+    }
+  }
+
+  // 3) Déficit control movimiento: step-down calidad deficiente
+  let deficitControl: { sugerida: boolean; confianza: 'fuerte' | 'debil' | 'ninguna'; motivo: string } = { sugerida: false, confianza: 'ninguna', motivo: 'Sin datos S0' };
+  if (s0) {
+    const cal = s0.stepDown.calidadMovimiento;
+    if (cal === 'deficiente') {
+      deficitControl = {
+        sugerida: true,
+        confianza: 'fuerte',
+        motivo: 'Step-down calidad deficiente en S0',
+      };
+    } else if (cal === 'aceptable') {
+      deficitControl = {
+        sugerida: true,
+        confianza: 'debil',
+        motivo: 'Step-down calidad aceptable en S0 — posible alteración sutil',
+      };
+    } else {
+      deficitControl = { sugerida: false, confianza: 'ninguna', motivo: 'Step-down con buena calidad en S0' };
+    }
+  }
+
+  // 4) Déficit movilidad: SIEMPRE sugerencia débil o manual
+  const deficitMovilidad = {
+    sugerida: false,
+    confianza: 'debil' as const,
+    motivo: 'Evaluar manualmente — no hay datos objetivos suficientes para auto-calcular',
+  };
+
+  return {
+    sobrecargaSobreuso: sobrecarga,
+    deficitRendimientoMuscular: deficitMuscular,
+    deficitControlMovimiento: deficitControl,
+    deficitMovilidad: deficitMovilidad,
+  };
+}
+
+// ── RADAR DATA ───────────────────────────────────────────────
+
 export function buildRadarData(evaluaciones: PfgEvaluacion[]) {
   const sorted = [...evaluaciones].sort((a, b) => a.semana - b.semana);
 
@@ -153,7 +244,8 @@ export function buildRadarData(evaluaciones: PfgEvaluacion[]) {
   });
 }
 
-// Generar alertas
+// ── ALERTAS ──────────────────────────────────────────────────
+
 export interface PfgAlerta {
   tipo: 'warning' | 'error' | 'info';
   mensaje: string;
@@ -166,14 +258,12 @@ export function generarAlertas(
   const alertas: PfgAlerta[] = [];
   const semanasPresentes = new Set(evaluaciones.map((e) => e.semana));
 
-  // Semanas faltantes
   ([0, 5, 10] as const).forEach((s) => {
     if (!semanasPresentes.has(s)) {
       alertas.push({ tipo: 'warning', mensaje: `Semana ${s} sin evaluar` });
     }
   });
 
-  // Datos por evaluación
   evaluaciones.forEach((ev) => {
     if (ev.validezTest === 'invalido') {
       alertas.push({
@@ -181,17 +271,22 @@ export function generarAlertas(
         mensaje: `Evaluación S${ev.semana} marcada como inválida${ev.motivoInvalidez ? ': ' + ev.motivoInvalidez : ''}`,
       });
     }
+    // Per-test validity alerts
+    const tests = [
+      { name: 'Ext. Rodilla', t: ev.fuerzaExtensionRodilla },
+      { name: 'Abd. Cadera', t: ev.fuerzaAbduccionCadera },
+      { name: 'RE Cadera', t: ev.fuerzaRotacionExternaCadera },
+    ];
+    tests.forEach(({ name, t }) => {
+      if (t.validezPrueba === 'invalido') {
+        alertas.push({ tipo: 'error', mensaje: `Prueba ${name} inválida en S${ev.semana}` });
+      }
+      if (t.mejorValor === null) {
+        alertas.push({ tipo: 'warning', mensaje: `${name} sin dato en S${ev.semana}` });
+      }
+    });
     if (ev.kujala === null) {
       alertas.push({ tipo: 'warning', mensaje: `Kujala no registrado en S${ev.semana}` });
-    }
-    if (ev.fuerzaExtensionRodilla.mejorValor === null) {
-      alertas.push({ tipo: 'warning', mensaje: `Fuerza Ext. Rodilla sin dato en S${ev.semana}` });
-    }
-    if (ev.fuerzaAbduccionCadera.mejorValor === null) {
-      alertas.push({ tipo: 'warning', mensaje: `Fuerza Abd. Cadera sin dato en S${ev.semana}` });
-    }
-    if (ev.fuerzaRotacionExternaCadera.mejorValor === null) {
-      alertas.push({ tipo: 'warning', mensaje: `Fuerza RE Cadera sin dato en S${ev.semana}` });
     }
     if ((ev.semana === 0 || ev.semana === 10) && ev.algometria === null) {
       alertas.push({ tipo: 'warning', mensaje: `Algometría no registrada en S${ev.semana}` });

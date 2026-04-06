@@ -5,7 +5,6 @@ import { v4 as uuid } from "uuid";
 import type { PfgDeportista } from "@/types/pfg";
 import { PFG_CAUSAS_ALTERNATIVAS_PREDEFINIDAS } from "@/lib/pfg/metrics-config";
 import PfgDiagnosticoOperativoForm from "./PfgDiagnosticoOperativo";
-import PfgClasificacionClinicaForm from "./PfgClasificacionClinica";
 
 interface Props {
   deportista?: PfgDeportista | null;
@@ -27,6 +26,7 @@ const EMPTY_DEPORTISTA = (uid: string): PfgDeportista => ({
   nivelCompetitivo: "Competitivo regional",
   frecuenciaSemanalEntrenamiento: 3,
   anosPractica: 0,
+  historiaCargaReciente: "",
   diagnosticoOperativo: {
     dolorRetroPeripatelar: false,
     dolorConSentadilla: false,
@@ -41,10 +41,18 @@ const EMPTY_DEPORTISTA = (uid: string): PfgDeportista => ({
     observacionesClinicas: "",
   },
   clasificacionClinica: {
+    sugerencias: {
+      sobrecargaSobreuso: { sugerida: false, confianza: 'ninguna', motivo: '' },
+      deficitRendimientoMuscular: { sugerida: false, confianza: 'ninguna', motivo: '' },
+      deficitControlMovimiento: { sugerida: false, confianza: 'ninguna', motivo: '' },
+      deficitMovilidad: { sugerida: false, confianza: 'ninguna', motivo: '' },
+    },
     sobrecargaSobreuso: false,
     deficitRendimientoMuscular: false,
     deficitControlMovimiento: false,
     deficitMovilidad: false,
+    confirmadaPorDocente: false,
+    fechaConfirmacion: null,
     comentarioClinico: "",
   },
   createdAt: new Date().toISOString(),
@@ -57,7 +65,7 @@ export default function PfgDeportistaForm({ deportista, createdByUid, onSave, on
   const [data, setData] = useState<PfgDeportista>(
     deportista || EMPTY_DEPORTISTA(createdByUid)
   );
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
 
   const update = (patch: Partial<PfgDeportista>) => {
     setData((prev) => ({ ...prev, ...patch, updatedAt: new Date().toISOString() }));
@@ -86,19 +94,19 @@ export default function PfgDeportistaForm({ deportista, createdByUid, onSave, on
           </button>
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator — solo 2 pasos */}
         <div className="px-6 py-3 border-b border-slate-100 flex gap-2 shrink-0">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <button
               key={s}
-              onClick={() => setStep(s as 1 | 2 | 3)}
+              onClick={() => setStep(s as 1 | 2)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
                 step === s
                   ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
                   : "bg-slate-50 text-slate-400 border border-slate-200 hover:border-slate-300"
               }`}
             >
-              {s === 1 ? "1. Perfil" : s === 2 ? "2. Diagnóstico" : "3. Clasificación"}
+              {s === 1 ? "1. Perfil" : "2. Diagnóstico"}
             </button>
           ))}
         </div>
@@ -106,89 +114,108 @@ export default function PfgDeportistaForm({ deportista, createdByUid, onSave, on
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {step === 1 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nombre o Alias *</label>
-                <input type="text" value={data.alias} onChange={(e) => update({ alias: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 outline-none"
-                  placeholder="Nombre o alias del deportista" />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nombre o Alias *</label>
+                  <input type="text" value={data.alias} onChange={(e) => update({ alias: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 outline-none"
+                    placeholder="Nombre o alias del deportista" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Edad</label>
+                  <input type="number" min={8} max={25} value={data.edad} onChange={(e) => update({ edad: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Sexo</label>
+                  <select value={data.sexo} onChange={(e) => update({ sexo: e.target.value as PfgDeportista["sexo"] })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Peso (kg)</label>
+                  <input type="number" step="0.1" min={0} value={data.pesoKg || ""} onChange={(e) => update({ pesoKg: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="kg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Talla (cm)</label>
+                  <input type="number" step="0.1" min={0} value={data.tallaCm || ""} onChange={(e) => update({ tallaCm: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="cm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Pierna Dominante</label>
+                  <select value={data.piernaDominante} onChange={(e) => update({ piernaDominante: e.target.value as PfgDeportista["piernaDominante"] })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
+                    <option value="Derecha">Derecha</option>
+                    <option value="Izquierda">Izquierda</option>
+                    <option value="Ambidiestro">Ambidiestro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Rodilla Índice</label>
+                  <select value={data.rodillaIndice} onChange={(e) => update({ rodillaIndice: e.target.value as PfgDeportista["rodillaIndice"] })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
+                    <option value="Derecha">Derecha</option>
+                    <option value="Izquierda">Izquierda</option>
+                    <option value="Bilateral">Bilateral</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Categoría Karate</label>
+                  <input type="text" value={data.categoriaKarate} onChange={(e) => update({ categoriaKarate: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
+                    placeholder="Ej: Kumite juvenil" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nivel Competitivo</label>
+                  <select value={data.nivelCompetitivo} onChange={(e) => update({ nivelCompetitivo: e.target.value as PfgDeportista["nivelCompetitivo"] })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
+                    <option value="Recreativo">Recreativo</option>
+                    <option value="Competitivo regional">Competitivo regional</option>
+                    <option value="Competitivo nacional">Competitivo nacional</option>
+                    <option value="Elite">Elite</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Frecuencia Semanal</label>
+                  <input type="number" min={0} max={14} value={data.frecuenciaSemanalEntrenamiento} onChange={(e) => update({ frecuenciaSemanalEntrenamiento: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="sesiones/sem" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Años de Práctica</label>
+                  <input type="number" min={0} max={20} value={data.anosPractica} onChange={(e) => update({ anosPractica: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Estado</label>
+                  <select value={data.status} onChange={(e) => update({ status: e.target.value as PfgDeportista["status"] })}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                    <option value="EXCLUIDO">Excluido</option>
+                  </select>
+                </div>
               </div>
+
+              {/* Historia de carga reciente — alimenta la sugerencia de sobrecarga */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Edad</label>
-                <input type="number" min={8} max={25} value={data.edad} onChange={(e) => update({ edad: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Sexo</label>
-                <select value={data.sexo} onChange={(e) => update({ sexo: e.target.value as PfgDeportista["sexo"] })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
-                  <option value="Masculino">Masculino</option>
-                  <option value="Femenino">Femenino</option>
-                  <option value="Otro">Otro</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Peso (kg)</label>
-                <input type="number" step="0.1" min={0} value={data.pesoKg || ""} onChange={(e) => update({ pesoKg: parseFloat(e.target.value) || 0 })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="kg" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Talla (cm)</label>
-                <input type="number" step="0.1" min={0} value={data.tallaCm || ""} onChange={(e) => update({ tallaCm: parseFloat(e.target.value) || 0 })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="cm" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Pierna Dominante</label>
-                <select value={data.piernaDominante} onChange={(e) => update({ piernaDominante: e.target.value as PfgDeportista["piernaDominante"] })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
-                  <option value="Derecha">Derecha</option>
-                  <option value="Izquierda">Izquierda</option>
-                  <option value="Ambidiestro">Ambidiestro</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Rodilla Índice</label>
-                <select value={data.rodillaIndice} onChange={(e) => update({ rodillaIndice: e.target.value as PfgDeportista["rodillaIndice"] })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
-                  <option value="Derecha">Derecha</option>
-                  <option value="Izquierda">Izquierda</option>
-                  <option value="Bilateral">Bilateral</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Categoría Karate</label>
-                <input type="text" value={data.categoriaKarate} onChange={(e) => update({ categoriaKarate: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none"
-                  placeholder="Ej: Kumite juvenil" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Nivel Competitivo</label>
-                <select value={data.nivelCompetitivo} onChange={(e) => update({ nivelCompetitivo: e.target.value as PfgDeportista["nivelCompetitivo"] })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
-                  <option value="Recreativo">Recreativo</option>
-                  <option value="Competitivo regional">Competitivo regional</option>
-                  <option value="Competitivo nacional">Competitivo nacional</option>
-                  <option value="Elite">Elite</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Frecuencia Semanal</label>
-                <input type="number" min={0} max={14} value={data.frecuenciaSemanalEntrenamiento} onChange={(e) => update({ frecuenciaSemanalEntrenamiento: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" placeholder="sesiones/sem" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Años de Práctica</label>
-                <input type="number" min={0} max={20} value={data.anosPractica} onChange={(e) => update({ anosPractica: parseInt(e.target.value) || 0 })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Estado</label>
-                <select value={data.status} onChange={(e) => update({ status: e.target.value as PfgDeportista["status"] })}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none">
-                  <option value="ACTIVO">Activo</option>
-                  <option value="INACTIVO">Inactivo</option>
-                  <option value="EXCLUIDO">Excluido</option>
-                </select>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Historia de Carga Reciente
+                </label>
+                <p className="text-xs text-slate-400 mb-2">
+                  ¿Hubo aumento de volumen, frecuencia, intensidad, torneos, exposición?
+                </p>
+                <textarea
+                  value={data.historiaCargaReciente}
+                  onChange={(e) => update({ historiaCargaReciente: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-200 outline-none resize-none"
+                  placeholder="Ej: Aumentó de 3 a 5 sesiones/sem por torneo regional. Doble jornada los sábados..."
+                />
               </div>
             </div>
           )}
@@ -199,20 +226,13 @@ export default function PfgDeportistaForm({ deportista, createdByUid, onSave, on
               onChange={(v) => update({ diagnosticoOperativo: v })}
             />
           )}
-
-          {step === 3 && (
-            <PfgClasificacionClinicaForm
-              value={data.clasificacionClinica}
-              onChange={(v) => update({ clasificacionClinica: v })}
-            />
-          )}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
           <div className="flex gap-2">
             {step > 1 && (
-              <button onClick={() => setStep((step - 1) as 1 | 2 | 3)}
+              <button onClick={() => setStep(1)}
                 className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition">
                 ← Anterior
               </button>
@@ -223,8 +243,8 @@ export default function PfgDeportistaForm({ deportista, createdByUid, onSave, on
               className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition">
               Cancelar
             </button>
-            {step < 3 ? (
-              <button onClick={() => setStep((step + 1) as 1 | 2 | 3)}
+            {step < 2 ? (
+              <button onClick={() => setStep(2)}
                 className="px-5 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition shadow-sm">
                 Siguiente →
               </button>

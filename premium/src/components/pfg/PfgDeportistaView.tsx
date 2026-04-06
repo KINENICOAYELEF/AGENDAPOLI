@@ -1,8 +1,7 @@
 "use client";
 
 import type { PfgDeportista, PfgEvaluacion } from "@/types/pfg";
-import { mensajeProgreso, extraerValorMetrica, cambioAbsoluto, direccionCambio } from "@/lib/pfg/calculations";
-import { PFG_METRICS } from "@/lib/pfg/metrics-config";
+import { mensajeProgreso, extraerValorMetrica, cambioAbsoluto, direccionCambio, calcularEstadoGeneral } from "@/lib/pfg/calculations";
 import PfgRadarChart from "./PfgRadarChart";
 import PfgDeportistaProgressCard from "./PfgDeportistaProgressCard";
 
@@ -11,27 +10,35 @@ interface Props {
   evaluaciones: PfgEvaluacion[];
 }
 
+// (#11) Lenguaje simple para el deportista
+const SIMPLE_METRICS = [
+  { key: "kujala", icon: "🏃", label: "Función", desc: "Qué tan bien funciona tu rodilla" },
+  { key: "enaStepDown", icon: "🪜", label: "Dolor en carga", desc: "Dolor al bajar escalón", invertLabel: true },
+  { key: "fuerzaExtRodilla", icon: "🦵", label: "Fuerza", desc: "Fuerza de tu pierna" },
+];
+
+const ESTADO_MSG = {
+  mejorando: { text: "¡Vas muy bien! Tu rodilla está mejorando 💪", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  estable: { text: "Tu evolución es estable. Seguimos trabajando 📊", color: "bg-slate-50 text-slate-600 border-slate-200" },
+  revisar_carga: { text: "Necesitamos revisar tu carga de entrenamiento ⚠️", color: "bg-amber-50 text-amber-700 border-amber-200" },
+};
+
 export default function PfgDeportistaView({ deportista, evaluaciones }: Props) {
   const sorted = [...evaluaciones].sort((a, b) => a.semana - b.semana);
   const latest = sorted[sorted.length - 1] || null;
   const first = sorted[0] || null;
-  const progreso = mensajeProgreso(evaluaciones);
-
-  const bigMetrics = [
-    { key: "kujala", icon: "🏃" },
-    { key: "enaReposo", icon: "💢" },
-    { key: "fuerzaExtRodilla", icon: "💪" },
-  ];
+  const estado = calcularEstadoGeneral(evaluaciones);
+  const estadoMsg = ESTADO_MSG[estado];
 
   return (
     <div id="pfg-deportista-pdf" className="bg-white max-w-2xl mx-auto rounded-3xl overflow-hidden shadow-lg border border-slate-200">
       {/* Header */}
       <div className="bg-gradient-to-br from-emerald-600 to-teal-700 px-8 py-8 text-white text-center">
         <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-80 mb-1">
-          Programa de Intervención Supervisada
+          Tu Resumen de Progreso
         </p>
         <h1 className="text-2xl font-black tracking-tight">
-          Dolor Patelofemoral en Karatekas
+          Programa de Rodilla
         </h1>
       </div>
 
@@ -50,15 +57,15 @@ export default function PfgDeportistaView({ deportista, evaluaciones }: Props) {
         </div>
       </div>
 
-      {/* 3 Big indicators */}
+      {/* 3 Big indicators — lenguaje simple (#11) */}
       <div className="px-8 py-6">
         <div className="grid grid-cols-3 gap-4">
-          {bigMetrics.map((m) => {
-            const metric = PFG_METRICS[m.key];
+          {SIMPLE_METRICS.map((m) => {
             const current = latest ? extraerValorMetrica(latest, m.key) : null;
             const base = first && first !== latest ? extraerValorMetrica(first, m.key) : null;
             const delta = cambioAbsoluto(base, current);
-            const dir = direccionCambio(delta, metric.higherIsBetter);
+            const higherIsBetter = !m.invertLabel;
+            const dir = direccionCambio(delta, higherIsBetter);
 
             return (
               <div key={m.key} className="text-center bg-slate-50 rounded-2xl p-4 border border-slate-100">
@@ -67,14 +74,14 @@ export default function PfgDeportistaView({ deportista, evaluaciones }: Props) {
                   {current !== null ? (Number.isInteger(current) ? current : current.toFixed(1)) : "—"}
                 </p>
                 <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mt-1">
-                  {metric.labelCorto}
+                  {m.label}
                 </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{m.desc}</p>
                 {delta !== null && (
                   <p className={`text-xs font-bold mt-1.5 ${
                     dir === "mejora" ? "text-green-600" : dir === "empeora" ? "text-red-500" : "text-slate-400"
                   }`}>
-                    {dir === "mejora" ? "▲" : dir === "empeora" ? "▼" : "—"}{" "}
-                    {delta > 0 ? "+" : ""}{Number.isInteger(delta) ? delta : delta.toFixed(1)}
+                    {dir === "mejora" ? "▲ Mejorando" : dir === "empeora" ? "▼ Revisar" : "— Estable"}
                   </p>
                 )}
               </div>
@@ -83,11 +90,24 @@ export default function PfgDeportistaView({ deportista, evaluaciones }: Props) {
         </div>
       </div>
 
-      {/* Mini Radar */}
-      <div className="px-8 pb-4">
-        <div className="h-[280px]">
-          <PfgRadarChart evaluaciones={evaluaciones} />
+      {/* Control de movimiento — simple */}
+      {latest && (
+        <div className="px-8 pb-4">
+          <div className="bg-violet-50 rounded-2xl p-4 border border-violet-100 text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-1">🎯 Control de movimiento</p>
+            <p className="text-lg font-black text-violet-700">
+              {latest.stepDown.calidadMovimiento === "buena" ? "Buen control ✓"
+                : latest.stepDown.calidadMovimiento === "aceptable" ? "Aceptable — seguir trabajando"
+                : latest.stepDown.calidadMovimiento === "deficiente" ? "Necesita trabajo"
+                : "Sin evaluar"}
+            </p>
+          </div>
         </div>
+      )}
+
+      {/* Mini Radar (#12 — visualización longitudinal S0 vs S5 vs S10) */}
+      <div className="px-8 pb-4">
+        <PfgRadarChart evaluaciones={evaluaciones} />
       </div>
 
       {/* Progress bars */}
@@ -95,19 +115,10 @@ export default function PfgDeportistaView({ deportista, evaluaciones }: Props) {
         <PfgDeportistaProgressCard evaluaciones={evaluaciones} />
       </div>
 
-      {/* Progress message */}
+      {/* Progreso general — lenguaje simple (#11) */}
       <div className="px-8 pb-6">
-        <div className={`text-center px-6 py-4 rounded-2xl font-bold ${
-          progreso.tipo === "positivo"
-            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-            : progreso.tipo === "atencion"
-            ? "bg-amber-50 text-amber-700 border border-amber-200"
-            : "bg-slate-50 text-slate-600 border border-slate-200"
-        }`}>
-          <span className="text-lg">
-            {progreso.tipo === "positivo" ? "✨ " : progreso.tipo === "atencion" ? "⚠️ " : ""}
-            {progreso.mensaje}
-          </span>
+        <div className={`text-center px-6 py-4 rounded-2xl font-bold border ${estadoMsg.color}`}>
+          <span className="text-lg">{estadoMsg.text}</span>
         </div>
       </div>
 
