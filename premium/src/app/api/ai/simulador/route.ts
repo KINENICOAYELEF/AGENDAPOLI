@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { executeAIAction } from '@/lib/ai/geminiClient';
 import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT } from '@/lib/ai/simuladorPrompts';
 import { SimCaseSchema, SimInterviewSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema } from '@/lib/ai/simuladorSchemas';
-import { SYSTEM_PROMPT_BASE } from '@/lib/ai/prompts';
 
 // Vercel: allow up to 120s for complex AI calls
 export const maxDuration = 120;
@@ -63,7 +62,7 @@ Devuelve el JSON completo del caso siguiendo ESTRICTAMENTE la estructura solicit
                 result = await executeAIAction({
                     screen: 'SIMULADOR',
                     action: 'SIM_GENERATE',
-                    systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + SIM_GENERATE_PROMPT,
+                    systemInstruction: SIM_GENERATE_PROMPT,
                     userPrompt,
                     inputHash: `sim_gen_${Date.now()}_${userId}`,
                     promptVersion: 'sim_v1',
@@ -127,7 +126,7 @@ Narra los hallazgos SOLO de los módulos seleccionados. Analiza omisiones y just
                 result = await executeAIAction({
                     screen: 'SIMULADOR',
                     action: 'SIM_EXAM',
-                    systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + SIM_EXAM_PROMPT,
+                    systemInstruction: SIM_EXAM_PROMPT,
                     userPrompt,
                     inputHash: `sim_exam_${Date.now()}_${userId}`,
                     promptVersion: 'sim_v1',
@@ -181,7 +180,7 @@ Evalúa RIGUROSAMENTE el trabajo completo. Genera scorecard, errores, aciertos y
                 result = await executeAIAction({
                     screen: 'SIMULADOR',
                     action: 'SIM_EVALUATE',
-                    systemInstruction: SYSTEM_PROMPT_BASE + "\n\n" + SIM_EVALUATE_PROMPT,
+                    systemInstruction: SIM_EVALUATE_PROMPT,
                     userPrompt,
                     inputHash: `sim_eval_${Date.now()}_${userId}`,
                     promptVersion: 'sim_v1',

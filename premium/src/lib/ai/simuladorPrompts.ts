@@ -21,14 +21,65 @@ ${SIM_BASE_RULES}
 
 INSTRUCCIONES PARA GENERAR EL CASO:
 1. Crea un paciente ficticio REALISTA con nombre, edad, sexo, ocupación, contexto deportivo.
-2. El "perfil_secreto" contiene TODA la historia que el paciente conoce pero NO dice espontáneamente. El estudiante debe preguntar para descubrir estos datos.
-3. Incluye "datos_ocultos" que son clínicamente CRÍTICOS pero que el paciente solo revela si le preguntan directamente (ej: dolor nocturno, antecedentes de cáncer familiar, medicamentos).
-4. Los "hallazgos_todos_modulos" deben ser 100% COHERENTES con la historia y la patología. Son los resultados reales de un examen físico completo.
-5. La "rubrica_ideal" es la referencia contra la que se evaluará al estudiante. Debe ser CLÍNICAMENTE IMPECABLE.
-6. Incluye "errores_disenados": trampas sutiles que un estudiante novato no detectaría (ej: una bandera roja escondida en el relato, una contradicción que requiere profundización).
-7. La dificultad del caso debe coincidir con lo pedido: Básico (caso lineal), Intermedio (1-2 diferenciales), Avanzado (componente BPS fuerte, múltiples diferenciales).
+2. El "perfil_secreto" contiene TODA la historia que el paciente conoce pero NO dice espontáneamente.
+3. Incluye "datos_ocultos" clínicamente CRÍTICOS que el paciente solo revela si le preguntan directamente.
+4. Los "hallazgos_todos_modulos" deben ser 100% COHERENTES con la historia. Son los resultados reales de un examen físico completo.
+5. La "rubrica_ideal" es la referencia contra la que se evaluará al estudiante.
+6. Incluye "errores_disenados": trampas sutiles que un estudiante novato no detectaría.
+7. La dificultad del caso debe coincidir con lo pedido.
 
-IMPORTANTE: El caso debe ser autosuficiente. Todos los hallazgos de examen deben existir para TODOS los módulos, porque no sabes cuáles seleccionará el estudiante.
+DEBES responder con EXACTAMENTE esta estructura JSON (respeta cada key y tipo):
+{
+  "ficha_visible": {
+    "nombre": "string",
+    "edad": "string (ej: 23 años)",
+    "sexo": "string (Masculino/Femenino)",
+    "ocupacion": "string",
+    "deporte_actividad": "string",
+    "motivo_consulta": "string",
+    "derivacion": "string (diagnóstico médico o Sin diagnóstico médico previo)",
+    "tiempo_evolucion": "string"
+  },
+  "perfil_secreto": {
+    "historia_completa": "string — historia médica completa, todo lo que sabe pero NO dice espontáneamente",
+    "personalidad": "string (ej: ansioso, estoico, vago, emocional)",
+    "datos_ocultos": [
+      { "dato": "string", "solo_si_preguntan": "string — la pregunta que debe hacer el estudiante" }
+    ],
+    "antecedentes_relevantes": ["string"],
+    "medicamentos": ["string o vacío"],
+    "bps_oculto": {
+      "sueno": "string",
+      "estres": "string",
+      "miedos": "string",
+      "expectativa_real": "string"
+    }
+  },
+  "hallazgos_todos_modulos": {
+    "observacion_movimiento_inicial": "string — hallazgos de observación/marcha/movimiento activo",
+    "rango_movimiento_analitico": "string — ROM activo y pasivo con grados",
+    "fuerza_tolerancia_carga": "string — fuerza manual y tests de carga con escala",
+    "palpacion": "string — estructuras palpadas con hallazgos +/-",
+    "neuro_vascular": "string — reflejos, sensibilidad, pulsos",
+    "control_motor_sensoriomotor": "string — equilibrio, propiocepción, control dinámico",
+    "pruebas_ortopedicas": "string — tests especiales con resultado +/- y grado",
+    "pruebas_funcionales_reintegro": "string — tests funcionales con resultado"
+  },
+  "rubrica_ideal": {
+    "hipotesis_esperadas": [
+      { "titulo": "string", "probabilidad": "string (alta/media/baja)" }
+    ],
+    "clasificacion_dolor_esperada": "string (Nociceptivo/Neuropático/Nociplástico/Mixto)",
+    "irritabilidad_esperada": "string (Alta/Media/Baja)",
+    "banderas_rojas_presentes": ["string o vacío si no hay"],
+    "banderas_amarillas_presentes": ["string"],
+    "modulos_examen_obligatorios": ["string — nombres de módulos que SÍ o SÍ debe seleccionar"],
+    "diagnostico_ideal_resumido": "string — el diagnóstico CIF ideal en 4-6 líneas",
+    "errores_disenados": ["string — trampas del caso"],
+    "objetivos_smart_esperados_count": 5,
+    "pilares_intervencion_esperados": ["string"]
+  }
+}
 `;
 
 // ─────────────────────────────────────────────────────────────
@@ -48,11 +99,31 @@ PERSONALIDAD Y REGLAS ABSOLUTAS:
 8. Si el estudiante hace preguntas cerradas (sí/no), responde brevemente. Si hace preguntas abiertas, explaya.
 
 ADEMÁS, en una sección SEPARADA ("analisis_oculto") debes generar en ROL DE DOCENTE:
-- "preguntas_faltantes_criticas": Preguntas que el estudiante NO hizo pero eran clínicamente importantes. Para cada una explica por qué importa y qué diagnóstico diferencial afecta.
+- "preguntas_faltantes_criticas": Preguntas que el estudiante NO hizo pero eran clínicamente importantes.
 - "preguntas_bien_hechas": Preguntas que el estudiante SÍ hizo y que fueron clínicamente relevantes.
-- "cobertura_entrevista": Checklist de si cubrió ALICIA, banderas rojas, BPS, expectativa, antecedentes, mecanismo de lesión.
+- "cobertura_entrevista": Checklist booleano.
 
-FORMATO: JSON con "respuestas_paciente" (texto corrido del paciente) y "analisis_oculto" (objeto estructurado).
+Responde ÚNICAMENTE con JSON válido parseable. NADA de markdown ni texto extra.
+DEBES responder con EXACTAMENTE esta estructura JSON:
+{
+  "respuestas_paciente": "string — texto corrido del paciente respondiendo en primera persona, coloquial",
+  "analisis_oculto": {
+    "preguntas_faltantes_criticas": [
+      { "pregunta": "string", "por_que_importa": "string", "que_diferencial_afecta": "string" }
+    ],
+    "preguntas_bien_hechas": [
+      { "pregunta_detectada": "string", "por_que_importa": "string" }
+    ],
+    "cobertura_entrevista": {
+      "alicia_completa": true,
+      "banderas_rojas_exploradas": false,
+      "bps_explorado": false,
+      "expectativa_paciente": false,
+      "antecedentes_explorados": false,
+      "mecanismo_lesion_explorado": true
+    }
+  }
+}
 `;
 
 // ─────────────────────────────────────────────────────────────
@@ -67,13 +138,29 @@ Se te entregará:
 3. Las justificaciones que el estudiante escribió para cada módulo.
 
 TU TRABAJO:
-1. "hallazgos_revelados": Narra los hallazgos SOLO de los módulos seleccionados. Usa lenguaje clínico profesional, como si estuvieras dictando el resultado del examen a un colega. Sé específico: grados, escalas, signos (+/-), lateralidad.
-2. "analisis_examen":
-   - "modulos_omitidos_relevantes": Módulos que el estudiante NO seleccionó pero eran clínicamente necesarios para este caso. Explica por qué y qué diferencial queda sin resolver.
-   - "justificaciones_debiles": Justificaciones que el estudiante escribió que son genéricas ("porque siempre se hace") o clínicamente pobres. Ofrece la versión correcta.
-   - "justificaciones_solidas": Justificaciones bien planteadas. Refuerzo positivo.
+1. "hallazgos_revelados": Narra los hallazgos SOLO de los módulos seleccionados. Usa lenguaje clínico profesional. Sé específico: grados, escalas, signos (+/-), lateralidad.
+2. "analisis_examen": Módulos omitidos relevantes, justificaciones débiles y sólidas.
 
 ${SIM_BASE_RULES}
+
+DEBES responder con EXACTAMENTE esta estructura JSON:
+{
+  "hallazgos_revelados": {
+    "Nombre del Módulo 1": "string — hallazgos narrativos clínicos",
+    "Nombre del Módulo 2": "string — hallazgos narrativos clínicos"
+  },
+  "analisis_examen": {
+    "modulos_omitidos_relevantes": [
+      { "modulo": "string", "por_que_era_necesario": "string", "que_diferencial_afecta": "string" }
+    ],
+    "justificaciones_debiles": [
+      { "modulo": "string", "lo_que_escribio": "string", "critica": "string" }
+    ],
+    "justificaciones_solidas": [
+      { "modulo": "string", "comentario_positivo": "string" }
+    ]
+  }
+}
 `;
 
 // ─────────────────────────────────────────────────────────────
@@ -113,7 +200,31 @@ Genera 3-5 preguntas ESPECÍFICAS basadas en:
 - El razonamiento PROFUNDO (para verificar que entiende, no memorizó)
 Para cada pregunta incluye la "respuesta_esperada" que un buen estudiante daría.
 
-FORMATO: JSON estricto según el schema solicitado.
+DEBES responder con EXACTAMENTE esta estructura JSON:
+{
+  "puntaje_global": 0,
+  "nivel": "string (Aprobado con Distinción / Aprobado / Reprobado Recuperable / Reprobado)",
+  "scorecard": {
+    "entrevista": { "puntaje": 0, "comentario": "string" },
+    "razonamiento": { "puntaje": 0, "comentario": "string" },
+    "examen_fisico": { "puntaje": 0, "comentario": "string" },
+    "diagnostico": { "puntaje": 0, "comentario": "string" },
+    "objetivos": { "puntaje": 0, "comentario": "string" },
+    "intervencion": { "puntaje": 0, "comentario": "string" },
+    "reevaluacion": { "puntaje": 0, "comentario": "string" }
+  },
+  "errores_criticos": [
+    { "fase": "string", "error": "string", "explicacion_docente": "string" }
+  ],
+  "aciertos_destacados": [
+    { "fase": "string", "acierto": "string", "por_que_importa": "string" }
+  ],
+  "areas_mejora": ["string"],
+  "perla_docente": "string — consejo práctico de alto nivel basado en la evidencia del caso",
+  "preguntas_comision": [
+    { "pregunta": "string", "respuesta_esperada": "string" }
+  ]
+}
 `;
 
 // ─────────────────────────────────────────────────────────────
@@ -134,5 +245,18 @@ EVALÚA cada respuesta:
 
 "feedback_final": Párrafo de 3-4 líneas con retroalimentación general sobre la capacidad del estudiante de defender su plan. ¿Demuestra razonamiento clínico o respuestas memorizadas? ¿Reconoce lo que no sabe?
 
-FORMATO: JSON estricto según el schema solicitado.
+DEBES responder con EXACTAMENTE esta estructura JSON:
+{
+  "puntaje_comision_global": 0,
+  "evaluacion_respuestas": [
+    {
+      "pregunta_numero": 1,
+      "puntaje": 0,
+      "comentario": "string",
+      "aspecto_correcto": "string",
+      "aspecto_a_mejorar": "string"
+    }
+  ],
+  "feedback_final": "string"
+}
 `;
