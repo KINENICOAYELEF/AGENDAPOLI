@@ -10,7 +10,12 @@ export type AIAction =
     | 'FASE1'
     | 'PLAN'
     | 'SUGGEST'
-    | 'GENERAL';
+    | 'GENERAL'
+    | 'SIM_GENERATE'
+    | 'SIM_INTERVIEW'
+    | 'SIM_EXAM'
+    | 'SIM_EVALUATE'
+    | 'SIM_COMMISSION';
 
 export interface ModelRoute {
     modelId: string;
@@ -60,6 +65,13 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
             { modelId: 'gemini-2.5-flash' }
+        ];
+    }
+    else if (screen === 'SIMULADOR') {
+        cacheBucket = 'sim_ai_cache';
+        orderedModels = [
+            { modelId: 'gemini-3.1-flash-lite-preview' },
+            { modelId: 'gemini-2.5-flash-lite' },
         ];
     }
     else {

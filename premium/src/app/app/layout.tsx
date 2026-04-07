@@ -102,6 +102,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             📊 PFG Dashboard
                         </Link>
                     )}
+                    <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300">
+                        🎓 Simulador Examen
+                    </Link>
                 </nav>
 
                 {/* Separador de Espacio de Nombres (Año) */}
