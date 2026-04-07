@@ -125,18 +125,18 @@ export function InterventionPanel({ interventions, onChange, activeObjectives = 
                                 className="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all shadow-sm"
                             >
                                 {SUBTYPES_BY_CATEGORY[draft.category]?.map(st => (
-                                    <option key={st} value={st}>{st}</option>
+                                    <option key={st} value={st}>{st === 'Otro' ? 'Escribir Manualmente (Otro)' : st}</option>
                                 ))}
-                                {!SUBTYPES_BY_CATEGORY[draft.category]?.includes(draft.subType) && draft.subType !== 'Otro' && draft.subType !== '' && (
+                                {!SUBTYPES_BY_CATEGORY[draft.category]?.includes(draft.subType) && draft.subType !== '' && (
                                     <option value={draft.subType}>{draft.subType}</option>
                                 )}
-                                <option value="Otro">Escribir Manualmente (Otro)</option>
                             </select>
-                            {draft.subType === 'Otro' && (
+                            {(!SUBTYPES_BY_CATEGORY[draft.category]?.includes(draft.subType) || draft.subType === 'Otro') && (
                                 <input
                                     type="text"
                                     placeholder="Detalle la técnica..."
                                     autoFocus
+                                    value={draft.subType === 'Otro' ? '' : draft.subType}
                                     className="mt-2 w-full border border-amber-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-300 bg-white"
                                     onChange={(e) => setDraft({ ...draft, subType: e.target.value })}
                                 />
