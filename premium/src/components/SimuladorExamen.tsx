@@ -479,6 +479,39 @@ export function SimuladorExamen() {
             {/* ════════ PHASE: CONSTRUCTION ════════ */}
             {phase === 'CONSTRUCTION' && !loading && examData && (
                 <div className="space-y-4">
+                    {/* Resumen Clínico Previo */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                        <h3 className="font-bold text-slate-800">📚 Historial del Caso</h3>
+                        
+                        {interviewData && (
+                            <div>
+                                <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
+                                <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
+                                    {interviewData.respuestas_paciente}
+                                </p>
+                            </div>
+                        )}
+
+                        <div>
+                            <h4 className="font-semibold text-sm text-slate-700 mb-2">Tu Razonamiento Previo:</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                    <span className="font-semibold text-slate-500 block mb-1">Hipótesis Orientativas:</span>
+                                    <ul className="list-disc pl-4 text-slate-700">
+                                        {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
+                                        {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
+                                    </ul>
+                                </div>
+                                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                                    <p><span className="font-semibold text-slate-500">Mecanismo de Dolor:</span> {reasoning.clasificacion_dolor || 'No especificado'}</p>
+                                    <p><span className="font-semibold text-slate-500">Irritabilidad:</span> {reasoning.irritabilidad || 'No especificado'}</p>
+                                    <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
+                                    <p><span className="font-semibold text-slate-500">Banderas Amarillas/BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Exam Results */}
                     <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5">
                         <h3 className="font-bold text-teal-800 mb-3">📊 Hallazgos del Examen Físico</h3>
