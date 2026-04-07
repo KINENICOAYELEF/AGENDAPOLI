@@ -133,8 +133,8 @@ export const SimEvaluationSchema = z.object({
     preguntas_comision: z.array(z.object({
         pregunta: z.string(),
         respuesta_esperada: z.string(),
-    })).min(3).max(6),
-    areas_mejora: z.array(z.string()).max(3),
+    })),
+    areas_mejora: z.array(z.string()),
     perla_docente: z.string(),
 });
 export type SimEvaluationType = z.infer<typeof SimEvaluationSchema>;
