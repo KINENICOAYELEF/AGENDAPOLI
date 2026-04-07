@@ -8,14 +8,14 @@ import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, Sim
 type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
 
 const EXAM_MODULES = [
-    { key: 'observacion_movimiento_inicial', label: 'Observación / Movimiento Inicial' },
-    { key: 'rango_movimiento_analitico', label: 'Rango de Movimiento Analítico' },
-    { key: 'fuerza_tolerancia_carga', label: 'Fuerza / Tolerancia a la Carga' },
-    { key: 'palpacion', label: 'Palpación' },
-    { key: 'neuro_vascular', label: 'Neuro-Vascular / Somatosensorial' },
-    { key: 'control_motor_sensoriomotor', label: 'Control Motor / Sensoriomotor' },
-    { key: 'pruebas_ortopedicas', label: 'Pruebas Ortopédicas Dirigidas' },
-    { key: 'pruebas_funcionales_reintegro', label: 'Pruebas Funcionales / Reintegro' },
+    { key: 'observacion_movimiento_inicial', label: 'Observación / Movimiento Inicial', ejemplo: 'Ej: Marcha, postura asimétrica, patrón de movimiento' },
+    { key: 'rango_movimiento_analitico', label: 'Rango de Movimiento Analítico', ejemplo: 'Ej: Flexión pasiva 90°, rotación interna activa reducida' },
+    { key: 'fuerza_tolerancia_carga', label: 'Fuerza / Tolerancia a la Carga', ejemplo: 'Ej: Evaluación MMT, Heel raise test, dinamometría' },
+    { key: 'palpacion', label: 'Palpación', ejemplo: 'Ej: Línea articular, inserción tendinosa, trigger points' },
+    { key: 'neuro_vascular', label: 'Neuro-Vascular / Somatosensorial', ejemplo: 'Ej: Reflejos, dermatomas L4-S1, pulsos distales' },
+    { key: 'control_motor_sensoriomotor', label: 'Control Motor / Sensoriomotor', ejemplo: 'Ej: Single leg stance, control pélvico, step down' },
+    { key: 'pruebas_ortopedicas', label: 'Pruebas Ortopédicas Dirigidas', ejemplo: 'Ej: Lachman, Neer, Slump test, FADIR' },
+    { key: 'pruebas_funcionales_reintegro', label: 'Pruebas Funcionales / Reintegro', ejemplo: 'Ej: Y-Balance test, Single leg hop, sentadilla' },
 ];
 
 const PHASE_LABELS: Record<SimPhase, string> = {
@@ -465,7 +465,7 @@ export function SimuladorExamen() {
                             {examSelections[m.key].selected && (
                                 <div className="mt-3 space-y-2 pl-6">
                                     <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value } }))} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
-                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value } }))} placeholder="Pruebas/tests específicos que harías (ej: Lachman, Cajón Anterior)" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
+                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value } }))} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
                                 </div>
                             )}
                         </div>
