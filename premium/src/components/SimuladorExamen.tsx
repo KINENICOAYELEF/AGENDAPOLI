@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
 
@@ -79,6 +79,18 @@ export function SimuladorExamen() {
         timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
     };
     const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    // Prevent accidental reload or close
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (phase !== 'SETUP' && phase !== 'RESULTS') {
+                e.preventDefault();
+                e.returnValue = ''; // Muestra el promp del navegador nativo
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [phase]);
 
     // ─── Phase Handlers ───
     const handleGenerate = async () => {
