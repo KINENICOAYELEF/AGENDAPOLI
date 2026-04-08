@@ -435,6 +435,17 @@ export function SimuladorExamen() {
                                         ))}
                                     </div>
                                 )}
+                                {interviewData.analisis_oculto.preguntas_parcialmente_exploradas && interviewData.analisis_oculto.preguntas_parcialmente_exploradas.length > 0 && (
+                                    <div>
+                                        <h4 className="font-semibold text-orange-700 text-sm mb-2 mt-3">⚠️ Preguntas cerradas o superficiales:</h4>
+                                        {interviewData.analisis_oculto.preguntas_parcialmente_exploradas.map((p, i) => (
+                                            <div key={i} className="bg-orange-50 rounded-xl p-3 mb-2 border border-orange-100">
+                                                <p className="font-semibold text-sm text-orange-800">{p.pregunta}</p>
+                                                <p className="text-xs text-slate-600 mt-1"><strong>Insuficiente porque:</strong> {p.porque_insuficiente}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {Object.entries(interviewData.analisis_oculto.cobertura_entrevista).map(([k, v]) => (
                                         <div key={k} className={`text-xs px-3 py-1.5 rounded-lg font-semibold ${v ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -577,8 +588,13 @@ export function SimuladorExamen() {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-slate-800">📊 Scorecard</h3>
-                            <div className={`px-4 py-2 rounded-xl font-black text-lg ${evaluationData.puntaje_global >= 85 ? 'bg-emerald-100 text-emerald-700' : evaluationData.puntaje_global >= 65 ? 'bg-yellow-100 text-yellow-700' : evaluationData.puntaje_global >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
-                                {evaluationData.puntaje_global}/100 — {evaluationData.nivel}
+                            <div className="flex gap-2">
+                                <div className={`px-4 py-2 rounded-xl font-black text-lg ${evaluationData.puntaje_global >= 85 ? 'bg-emerald-100 text-emerald-700' : evaluationData.puntaje_global >= 70 ? 'bg-yellow-100 text-yellow-700' : evaluationData.puntaje_global >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                                    {evaluationData.puntaje_global}/100 — {evaluationData.nivel}
+                                </div>
+                                <div className={`px-4 py-2 rounded-xl font-black text-lg ${evaluationData.nota_chilena >= 6.0 ? 'bg-emerald-100 text-emerald-700' : evaluationData.nota_chilena >= 4.0 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                                    Nota {evaluationData.nota_chilena?.toFixed(1) || 'N/A'}
+                                </div>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -633,13 +649,17 @@ export function SimuladorExamen() {
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
                         <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
                         <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                                <div className="text-3xl font-black text-slate-800">{evaluationData.puntaje_global}</div>
-                                <div className="text-xs text-slate-500 font-semibold">Evaluación Clínica</div>
+                            <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
+                                <div className={`absolute top-0 w-full h-1 left-0 ${evaluationData.nota_chilena >= 4.0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                                <div className="text-3xl font-black text-slate-800 mt-1">{evaluationData.puntaje_global}</div>
+                                <div className="text-sm font-bold text-slate-600">Nota: {evaluationData.nota_chilena?.toFixed(1) || 'N/A'}</div>
+                                <div className="text-xs text-slate-400 mt-1">Evaluación Clínica</div>
                             </div>
-                            <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                                <div className="text-3xl font-black text-slate-800">{commissionData.puntaje_comision_global}</div>
-                                <div className="text-xs text-slate-500 font-semibold">Defensa Comisión</div>
+                            <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
+                                <div className={`absolute top-0 w-full h-1 left-0 ${commissionData.nota_chilena_comision >= 4.0 ? 'bg-blue-400' : 'bg-red-400'}`} />
+                                <div className="text-3xl font-black text-slate-800 mt-1">{commissionData.puntaje_comision_global}</div>
+                                <div className="text-sm font-bold text-slate-600">Nota: {commissionData.nota_chilena_comision?.toFixed(1) || 'N/A'}</div>
+                                <div className="text-xs text-slate-400 mt-1">Defensa Comisión</div>
                             </div>
                         </div>
                         <div className="text-sm text-slate-700 mb-4">⏱️ Tiempo total: <strong>{formatTime(timer)}</strong></div>

@@ -68,11 +68,15 @@ export const SimInterviewSchema = z.object({
             pregunta: z.string(),
             por_que_importa: z.string(),
             que_diferencial_afecta: z.string(),
-        })),
+        })).describe("Máximo 5 críticas"),
         preguntas_bien_hechas: z.array(z.object({
             pregunta_detectada: z.string(),
             por_que_importa: z.string(),
-        })),
+        })).describe("Máximo 5. Solo si fueron profundas y útiles"),
+        preguntas_parcialmente_exploradas: z.array(z.object({
+            pregunta: z.string(),
+            porque_insuficiente: z.string(),
+        })).describe("Preguntas que hizo pero falló en profundizar o fueron muy cerradas (Máx 3)"),
         cobertura_entrevista: z.object({
             alicia_completa: z.boolean(),
             banderas_rojas_exploradas: z.boolean(),
@@ -110,6 +114,7 @@ export type SimExamType = z.infer<typeof SimExamSchema>;
 // Call 4: Evaluación integral + preguntas de comisión
 export const SimEvaluationSchema = z.object({
     puntaje_global: z.number().min(0).max(100),
+    nota_chilena: z.number().min(1).max(7).describe("Nota de 1.0 a 7.0 al 70% de exigencia (Ej: 70pts = 4.0)"),
     nivel: z.enum(["Aprobado con Distinción", "Aprobado", "Reprobado Recuperable", "Reprobado"]),
     scorecard: z.object({
         entrevista: z.object({ puntaje: z.number(), comentario: z.string() }),
@@ -149,6 +154,7 @@ export const SimCommissionSchema = z.object({
         aspecto_a_mejorar: z.string(),
     })),
     puntaje_comision_global: z.number().min(0).max(100),
+    nota_chilena_comision: z.number().min(1).max(7),
     feedback_final: z.string().describe("Párrafo final de 3-4 líneas con retroalimentación general de la defensa"),
 });
 export type SimCommissionType = z.infer<typeof SimCommissionSchema>;
