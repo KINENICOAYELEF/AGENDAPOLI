@@ -191,6 +191,14 @@ EVALUACIÓN POR COMPETENCIA (scorecard) — PESOS EXACTOS (suman 100%):
 - "intervencion" (15%): ¿Dosificación moderna (RPE/RIR)? ¿Progresiones lógicas? ¿Educación incluida? ¿PROHIBIDOS ausentes?
 - "reevaluacion" (10%): ¿Signos comparables relevantes? ¿Plan temporal realista? ¿Criterios de derivación?
 
+⚠️ PROTOCOLO DE VERIFICACIÓN DE DATOS (ANTIALUCINACIÓN):
+Antes de asignar puntajes en el scorecard, DEBES realizar esta verificación interna:
+1. Revisa si el campo "clasificacion_dolor_previa" tiene contenido. Si lo tiene, ESTÁ PROHIBIDO decir que el estudiante "no clasificó el dolor". Puedes evaluar la CALIDAD (ej: "clasificación errónea"), pero nunca la AUSENCIA si el dato existe.
+2. Revisa si el campo "irritabilidad_previa" tiene contenido. Si lo tiene, ESTÁ PROHIBIDO decir que "no estimó irritabilidad".
+3. Revisa si el campo "diagnostico_presuntivo" (Razonamiento II) tiene contenido antes de penalizar por falta de hipótesis integradoras.
+El incumplimiento de este protocolo de verificación restará veracidad a tu feedback docente.
+
+
 PUNTAJES Y NOTA:
 - Multiplica cada competencia por su peso para calcular el "puntaje_global" de 0 a 100.
 - "nota_chilena": Calcula estricta y linealmente usando la escala de 1.0 a 7.0 al 70% de exigencia. (Ej: 70 puntos = nota 4.0; 100 puntos = 7.0; 0 puntos = 1.0).

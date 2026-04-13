@@ -105,17 +105,20 @@ export function SimuladorExamen() {
         if (!isActiveExam) return;
 
         // Push a sentinel state so pressing "back" lands on it instead of leaving
+        // We do this every time phase changes to keep the sentinel fresh
         window.history.pushState({ simGuard: true }, '');
 
         const handlePopState = (e: PopStateEvent) => {
-            // The user pressed back — re-push the sentinel and show warning
-            window.history.pushState({ simGuard: true }, '');
-            setShowExitWarning(true);
+            if (isActiveExam) {
+                // The user pressed back — re-push the sentinel and show warning
+                window.history.pushState({ simGuard: true }, '');
+                setShowExitWarning(true);
+            }
         };
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [isActiveExam]);
+    }, [isActiveExam, phase]); // Re-run on phase change to refresh sentinel
 
     // ─── Phase Handlers ───
     const handleGenerate = async () => {
@@ -879,7 +882,26 @@ export function SimuladorExamen() {
                 </div>
             )}
 
-            {/* ════════ PHASE: RESULTS ════════ */}
+            {/* ════════ PHASE: RESULTS (Review Tabs) ════════ */}
+            {phase === 'RESULTS' && !loading && (
+                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 mb-6">
+                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
+                        <button
+                            key={p}
+                            onClick={() => setReviewPhase(p === 'RESULTS' ? null : p)}
+                            className={`flex-1 min-w-[100px] text-xs font-bold px-3 py-2 rounded-xl transition-all ${
+                                (p === 'RESULTS' && !reviewPhase) || reviewPhase === p
+                                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                                    : 'text-slate-500 hover:bg-white/50'
+                            }`}
+                        >
+                            {p === 'RESULTS' ? '🏆 Resultados' : PHASE_LABELS[p]}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* ════════ PHASE: RESULTS (Content) ════════ */}
             {phase === 'RESULTS' && !reviewPhase && !loading && commissionData && evaluationData && (
                 <div className="space-y-4">
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
@@ -933,34 +955,14 @@ export function SimuladorExamen() {
                             </ul>
                         </div>
                     )}
-                    {/* Actions */}
-                    <div className="flex flex-col gap-3">
-                        {/* Review Mode */}
-                        {!reviewPhase && (
-                            <div className="flex flex-wrap gap-2">
-                                <p className="text-xs text-slate-500 w-full font-semibold">📋 Revisar etapas anteriores (solo lectura):</p>
-                                {(['INTERVIEW', 'REASONING', 'EXAM', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
-                                    <button key={p} onClick={() => setReviewPhase(p)}
-                                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition-all">
-                                        {PHASE_LABELS[p]}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        {reviewPhase && (
-                            <button onClick={() => setReviewPhase(null)}
-                                className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold py-2 rounded-xl transition-all text-sm">
-                                ← Volver a Resultados
-                            </button>
-                        )}
-                        <div className="flex gap-3">
-                            <button onClick={handleExport} className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                📄 Exportar Reporte
-                            </button>
-                            <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                🎲 Nuevo Caso
-                            </button>
-                        </div>
+                    {/* Final Actions */}
+                    <div className="flex gap-3 pt-4 border-t border-slate-200">
+                        <button onClick={handleExport} className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">
+                            📄 Exportar Reporte
+                        </button>
+                        <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg">
+                            🎲 Nuevo Caso
+                        </button>
                     </div>
                 </div>
             )}
