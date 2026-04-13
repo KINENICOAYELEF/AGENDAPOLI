@@ -182,7 +182,8 @@ Se te entregará:
 
 EVALUACIÓN POR COMPETENCIA (scorecard):
 - "entrevista" (15%): ¿Cubrió ALICIA, banderas, BPS, expectativas, antecedentes?
-- "razonamiento" (20%): ¿Hipótesis coherentes? ¿Clasificación de dolor correcta? ¿Irritabilidad bien estimada? ¿Sesgo diagnóstico?
+- "razonamiento" (20%): ¿Hipótesis coherentes con LOS DATOS DE ENTREVISTA disponibles en ese momento? ¿Clasificación de dolor razonable dado lo que el estudiante SABÍA antes del examen físico? ¿Irritabilidad bien estimada con los datos disponibles? ¿Sesgo diagnóstico evidente?
+  ⚠️ REGLA CRÍTICA DE EQUIDAD TEMPORAL: El razonamiento se evalúa SOLO con los datos de la entrevista clínica. NO penalices clasificaciones del dolor que solo podrían corregirse con hallazgos del examen físico posterior. Si el diagnóstico de componente neural solo emergió en el examen físico (ej: Phalen +, compresión del nervio), NO es válido penalizar al estudiante por no incluir "neuropático" en su clasificación PRE-examen. Solo penaliza si había señales en la entrevista que ya sugerían componente neural (hormigueo, parestesias, distribución en dermatoma, síntomas nocturnos eléctricos).
 - "examen_fisico" (10%): ¿Módulos justificados? ¿Omisiones graves? ¿Seguridad respetada?
 - "diagnostico" (15%): ¿Secuencia CIF? ¿Integra P1+P2? ¿Incluye BPS? ¿Es kinesiológico o solo una etiqueta médica?
 - "objetivos" (10%): ¿Objetivo general amplio? ¿SMARTs granulares (1 variable = 1 SMART)? ¿Cubren todas las alteraciones?
@@ -207,6 +208,11 @@ Genera entre 8 y 10 preguntas DIRECTAS y profesionales.
 - Las demás preguntas deben abarcar obligatoriamente una mezcla de: Biomecánica fundamental del caso, Interpretación de los hallazgos que extrajo, Dosificación moderna y Progresión, Factores BPS (Biopsicosociales), Retorno Funcional/Deportivo y ¿Qué haría si el paciente NO mejora o empeora?
 - Prohíbido hacer preguntas de relleno o puramente de memoria anatómica desvinculada del contexto clínico.
 Para cada pregunta incluye la "respuesta_esperada" rigurosa y exacta que la comisión espera de un kinesiólogo egresado.
+
+DEBES también respetar la INCERTIDUMBRE CLÍNICA APROPIADA:
+- No presentes relaciones biomecánicas controvertidas o preliminares como verdades absolutas (ej: "la protracción escapular CAUSA dolor distal" tiene evidencia débil e inconsistente; di "existe hipótesis de relación" o "se ha observado asociación").
+- Basa tus críticas en evidencia clínica sólida (metanálisis, revisiones sistemáticas). Si algo es opinión clínica o protocolo docente, señálalo como tal.
+- Si señalas un error, cita qué evidencia lo respalda o especifica que es consenso clínico.
 
 DEBES responder con EXACTAMENTE esta estructura JSON:
 {

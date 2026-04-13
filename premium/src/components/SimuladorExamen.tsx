@@ -72,6 +72,7 @@ export function SimuladorExamen() {
     });
     const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
     const [commissionAnswers, setCommissionAnswers] = useState<string[]>([]);
+    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null); // null = show RESULTS
 
     // Timer
     const startTimer = () => {
@@ -232,6 +233,7 @@ export function SimuladorExamen() {
             `Paciente: ${caseData.ficha_visible.nombre}, ${caseData.ficha_visible.edad}, ${caseData.ficha_visible.sexo}`,
             `Motivo: ${caseData.ficha_visible.motivo_consulta}`,
             `Derivación: ${caseData.ficha_visible.derivacion}`,
+            `Tiempo evolución: ${caseData.ficha_visible.tiempo_evolucion}`,
             '',
             '── MIS PREGUNTAS DE ENTREVISTA ──',
             studentQuestions,
@@ -240,39 +242,74 @@ export function SimuladorExamen() {
             `Hipótesis: ${reasoning.hipotesis.filter(h => h).join(' | ')}`,
             `Clasificación dolor: ${reasoning.clasificacion_dolor}`,
             `Irritabilidad: ${reasoning.irritabilidad}`,
+            `Banderas Rojas: ${reasoning.banderas_rojas || 'No registrado'}`,
+            `Banderas Amarillas/BPS: ${reasoning.factores_bps || 'No registrado'}`,
             '',
             '── MI DIAGNÓSTICO ──',
             construction.diagnostico,
             '',
             '── MIS OBJETIVOS ──',
             `General: ${construction.objetivo_general}`,
-            `SMART: ${construction.objetivos_smart}`,
             '',
-            '── MI PLAN ──',
+            'SMART:',
+            construction.objetivos_smart,
+            '',
+            '── MI PLAN DE INTERVENCIÓN ──',
             construction.plan_fases,
             '',
-            '── MI REEVALUACIÓN ──',
+            '── MI REEVALUACIÓN Y PRONÓSTICO ──',
             construction.reevaluacion,
             '',
             '═══════════════════════════════════════',
-            'EVALUACIÓN DE LA COMISIÓN',
+            'EVALUACIÓN CLÍNICA (SCORECARD)',
             '═══════════════════════════════════════',
-            `Puntaje Global: ${evaluationData.puntaje_global}/100 — ${evaluationData.nivel}`,
+            `Puntaje Global: ${evaluationData.puntaje_global}/100 — Nota: ${evaluationData.nota_chilena?.toFixed(1) || 'N/A'} — ${evaluationData.nivel}`,
             '',
-            '── Scorecard ──',
-            ...Object.entries(evaluationData.scorecard).map(([k, v]) => `${k}: ${v.puntaje}/100 — ${v.comentario}`),
+            '── Scorecard por Competencia ──',
+            ...Object.entries(evaluationData.scorecard).map(([k, v]) => `${k}: ${(v as any).puntaje}/100 — ${(v as any).comentario}`),
             '',
             '── Errores Críticos ──',
-            ...evaluationData.errores_criticos.map(e => `[${e.fase}] ${e.error}: ${e.explicacion_docente}`),
+            ...evaluationData.errores_criticos.map(e => `[${e.fase}] ${e.error}\n  → ${e.explicacion_docente}`),
             '',
-            '── Aciertos ──',
-            ...evaluationData.aciertos_destacados.map(a => `[${a.fase}] ${a.acierto}: ${a.por_que_importa}`),
+            '── Aciertos Destacados ──',
+            ...evaluationData.aciertos_destacados.map(a => `[${a.fase}] ${a.acierto}\n  → ${a.por_que_importa}`),
+            '',
+            '── Áreas de Mejora ──',
+            ...(evaluationData.areas_mejora || []).map((a: string) => `• ${a}`),
             '',
             '── Perla Docente ──',
             evaluationData.perla_docente,
         ];
         if (commissionData) {
-            lines.push('', '── Comisión ──', `Puntaje: ${commissionData.puntaje_comision_global}/100`, commissionData.feedback_final);
+            lines.push(
+                '',
+                '═══════════════════════════════════════',
+                'DEFENSA DE COMISIÓN',
+                '═══════════════════════════════════════',
+                `Puntaje Comisión: ${commissionData.puntaje_comision_global}/100 — Nota: ${commissionData.nota_chilena_comision?.toFixed(1) || 'N/A'}`,
+                ''
+            );
+            evaluationData.preguntas_comision.forEach((q: any, i: number) => {
+                lines.push(
+                    `── Pregunta ${i + 1} ──`,
+                    `Q: ${q.pregunta}`,
+                    `Mi respuesta: ${commissionAnswers[i] || '(Sin respuesta)'}`,
+                );
+                const evalR = commissionData.evaluacion_respuestas?.[i];
+                if (evalR) {
+                    lines.push(
+                        `Puntaje: ${evalR.puntaje}/100`,
+                        `Evaluación: ${evalR.comentario}`,
+                        `✓ Aspecto correcto: ${evalR.aspecto_correcto}`,
+                        `▲ Aspecto a mejorar: ${evalR.aspecto_a_mejorar}`,
+                    );
+                }
+                lines.push('');
+            });
+            lines.push(
+                '── Feedback Final de la Comisión ──',
+                commissionData.feedback_final
+            );
         }
         const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -399,7 +436,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: INTERVIEW ════════ */}
-            {phase === 'INTERVIEW' && !loading && caseData && (
+            {(phase === 'INTERVIEW' || reviewPhase === 'INTERVIEW') && !loading && caseData && (
                 <div className="space-y-4">
                     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
                         <h3 className="font-bold text-blue-800 mb-2">📋 Ficha del Paciente</h3>
@@ -426,7 +463,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: REASONING ════════ */}
-            {phase === 'REASONING' && !loading && interviewData && (
+            {(phase === 'REASONING' || reviewPhase === 'REASONING') && !loading && interviewData && (
                 <div className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
                         <h3 className="font-bold text-green-800 mb-2">💬 Respuestas del Paciente</h3>
@@ -525,7 +562,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: EXAM ════════ */}
-            {phase === 'EXAM' && !loading && (
+            {(phase === 'EXAM' || reviewPhase === 'EXAM') && !loading && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
                     <h3 className="font-bold text-slate-800">🔍 Planificación del Examen Físico</h3>
                     <p className="text-xs text-slate-500">Selecciona los módulos que incluirías, justifica cada uno, y especifica qué pruebas harías.</p>
@@ -550,7 +587,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: CONSTRUCTION ════════ */}
-            {phase === 'CONSTRUCTION' && !loading && examData && (
+            {(phase === 'CONSTRUCTION' || reviewPhase === 'CONSTRUCTION') && !loading && examData && (
                 <div className="space-y-4">
                     {/* Resumen Clínico Previo */}
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
@@ -644,7 +681,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: REVIEW (Scorecard + Commission Questions) ════════ */}
-            {phase === 'REVIEW' && !loading && evaluationData && (
+            {(phase === 'REVIEW' || reviewPhase === 'REVIEW') && !loading && evaluationData && (
                 <div className="space-y-4">
                     {/* Scorecard */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
@@ -706,7 +743,7 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: RESULTS ════════ */}
-            {phase === 'RESULTS' && !loading && commissionData && evaluationData && (
+            {phase === 'RESULTS' && !reviewPhase && !loading && commissionData && evaluationData && (
                 <div className="space-y-4">
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
                         <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
@@ -760,13 +797,33 @@ export function SimuladorExamen() {
                         </div>
                     )}
                     {/* Actions */}
-                    <div className="flex gap-3">
-                        <button onClick={handleExport} className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                            📄 Exportar Reporte
-                        </button>
-                        <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                            🎲 Nuevo Caso
-                        </button>
+                    <div className="flex flex-col gap-3">
+                        {/* Review Mode */}
+                        {!reviewPhase && (
+                            <div className="flex flex-wrap gap-2">
+                                <p className="text-xs text-slate-500 w-full font-semibold">📋 Revisar etapas anteriores (solo lectura):</p>
+                                {(['INTERVIEW', 'REASONING', 'EXAM', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
+                                    <button key={p} onClick={() => setReviewPhase(p)}
+                                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition-all">
+                                        {PHASE_LABELS[p]}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {reviewPhase && (
+                            <button onClick={() => setReviewPhase(null)}
+                                className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold py-2 rounded-xl transition-all text-sm">
+                                ← Volver a Resultados
+                            </button>
+                        )}
+                        <div className="flex gap-3">
+                            <button onClick={handleExport} className="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                                📄 Exportar Reporte
+                            </button>
+                            <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                                🎲 Nuevo Caso
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
