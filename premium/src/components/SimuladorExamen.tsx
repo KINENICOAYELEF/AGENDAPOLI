@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
 
 // ─── Types ───
-type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
+type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
 
 const EXAM_MODULES = [
     { key: 'observacion_movimiento_inicial', label: 'Observación / Movimiento Inicial', ejemplo: 'Ej: Marcha, postura asimétrica, patrón de movimiento' },
@@ -21,15 +21,16 @@ const EXAM_MODULES = [
 const PHASE_LABELS: Record<SimPhase, string> = {
     SETUP: 'Configurar Caso',
     INTERVIEW: 'Entrevista Clínica',
-    REASONING: 'Razonamiento Clínico',
+    REASONING: 'Razonamiento I',
     EXAM: 'Examen Físico',
+    REASONING2: 'Razonamiento II',
     CONSTRUCTION: 'Construcción Clínica',
     REVIEW: 'Evaluación',
     COMMISSION: 'Comisión',
     RESULTS: 'Resultados',
 };
 
-const PHASE_ORDER: SimPhase[] = ['SETUP', 'INTERVIEW', 'REASONING', 'EXAM', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'];
+const PHASE_ORDER: SimPhase[] = ['SETUP', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'];
 
 // ─── API helper ───
 async function simFetch(action: string, payload: any, userId: string) {
@@ -72,7 +73,9 @@ export function SimuladorExamen() {
     });
     const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
     const [commissionAnswers, setCommissionAnswers] = useState<string[]>([]);
-    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null); // null = show RESULTS
+    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null);
+    // Razonamiento 2: Post-examen físico (integración de hallazgos)
+    const [reasoning2, setReasoning2] = useState({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
 
     // Timer
     const startTimer = () => {
@@ -166,7 +169,7 @@ export function SimuladorExamen() {
                 })),
             }, user.uid);
             setExamData(data);
-            setPhase('CONSTRUCTION');
+            setPhase('REASONING2');
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -183,10 +186,16 @@ export function SimuladorExamen() {
                 rubrica_ideal: caseData.rubrica_ideal,
                 trabajo_estudiante: {
                     preguntas_entrevista: studentQuestions,
-                    hipotesis: reasoning.hipotesis.filter(h => h.trim()),
-                    clasificacion_dolor: reasoning.clasificacion_dolor,
-                    irritabilidad: reasoning.irritabilidad,
+                    hipotesis_previas: reasoning.hipotesis.filter(h => h.trim()),
+                    clasificacion_dolor_previa: reasoning.clasificacion_dolor,
+                    irritabilidad_previa: reasoning.irritabilidad,
                     banderas: { rojas: reasoning.banderas_rojas, amarillas: reasoning.banderas_amarillas, bps: reasoning.factores_bps },
+                    // Razonamiento post-examen
+                    hipotesis_confirmadas: reasoning2.hipotesis_confirmadas,
+                    clasificacion_dolor_final: reasoning2.clasificacion_actualizada,
+                    diagnostico_presuntivo: reasoning2.diagnostico_presuntivo,
+                    hallazgos_clave_integrados: reasoning2.hallazgos_clave,
+                    // Construcción
                     modulos_seleccionados: modulosTexto,
                     diagnostico: construction.diagnostico,
                     objetivo_general: construction.objetivo_general,
@@ -238,12 +247,26 @@ export function SimuladorExamen() {
             '── MIS PREGUNTAS DE ENTREVISTA ──',
             studentQuestions,
             '',
-            '── MI RAZONAMIENTO ──',
-            `Hipótesis: ${reasoning.hipotesis.filter(h => h).join(' | ')}`,
-            `Clasificación dolor: ${reasoning.clasificacion_dolor}`,
-            `Irritabilidad: ${reasoning.irritabilidad}`,
+            '── MI RAZONAMIENTO I (Post-entrevista) ──',
+            `Hipótesis orientadoras: ${reasoning.hipotesis.filter(h => h).join(' | ')}`,
+            `Clasificación dolor tentativa: ${reasoning.clasificacion_dolor}`,
+            `Irritabilidad estimada: ${reasoning.irritabilidad}`,
             `Banderas Rojas: ${reasoning.banderas_rojas || 'No registrado'}`,
             `Banderas Amarillas/BPS: ${reasoning.factores_bps || 'No registrado'}`,
+            '',
+            '── HALLAZGOS DEL EXAMEN FÍSICO (Revelados por el caso) ──',
+            ...(examData ? Object.entries(examData.hallazgos_revelados).map(([mod, hall]) => `${mod}:\n  ${hall}`) : ['(No disponible)']),
+            '',
+            '── ANÁLISIS DEL EXAMEN (Docente) ──',
+            ...(examData?.analisis_examen?.modulos_omitidos_relevantes?.length
+                ? ['Módulos omitidos:', ...examData.analisis_examen.modulos_omitidos_relevantes.map(m => `  • ${m.modulo}: ${m.por_que_era_necesario}`)]
+                : ['Sin omisiones críticas.']),
+            '',
+            '── MI RAZONAMIENTO II (Post-examen físico) ──',
+            `Hipótesis confirmadas/modificadas: ${reasoning2.hipotesis_confirmadas || 'No registrado'}`,
+            `Clasificación del dolor actualizada: ${reasoning2.clasificacion_actualizada || 'No registrado'}`,
+            `Diagnóstico presuntivo: ${reasoning2.diagnostico_presuntivo || 'No registrado'}`,
+            `Hallazgos clave integrados: ${reasoning2.hallazgos_clave || 'No registrado'}`,
             '',
             '── MI DIAGNÓSTICO ──',
             construction.diagnostico,
@@ -326,8 +349,9 @@ export function SimuladorExamen() {
         setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false);
         setStudentQuestions(''); setTimer(0); setError('');
         setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', banderas_amarillas: '', factores_bps: '' });
+        setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
         setConstruction({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
-        setCommissionAnswers([]);
+        setCommissionAnswers([]); setReviewPhase(null);
         const init: any = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
         setExamSelections(init);
@@ -583,6 +607,119 @@ export function SimuladorExamen() {
                     <button onClick={handleExamSubmit} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
                         Evaluar al Paciente →
                     </button>
+                </div>
+            )}
+
+            {/* ════════ PHASE: REASONING2 ════════ */}
+            {(phase === 'REASONING2' || reviewPhase === 'REASONING2') && !loading && examData && (
+                <div className="space-y-4">
+                    {/* Header explicativo */}
+                    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5">
+                        <h3 className="font-black text-violet-900 text-base mb-1">🔄 Razonamiento Clínico Integrador</h3>
+                        <p className="text-sm text-violet-700">
+                            Ya tienes los hallazgos del examen físico. Ahora debes <strong>integrarlos con tu razonamiento previo</strong>:
+                            ¿se confirman tus hipótesis? ¿cambia tu clasificación de dolor? ¿qué datos del examen son clave para tu diagnóstico?
+                        </p>
+                        <p className="text-xs text-violet-500 mt-2 italic">
+                            Este paso alimenta directamente tu diagnóstico final. No copies los hallazgos — interprétalos.
+                        </p>
+                    </div>
+
+                    {/* Hallazgos como contexto */}
+                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5">
+                        <h4 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos que obtuviste en el examen físico</h4>
+                        {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
+                            <div key={mod} className="mb-3">
+                                <span className="text-xs font-bold text-teal-700 uppercase tracking-wide">{mod}</span>
+                                <p className="text-sm text-slate-700 mt-0.5 whitespace-pre-wrap">{findings as string}</p>
+                            </div>
+                        ))}
+                        {examData.analisis_examen.modulos_omitidos_relevantes.length > 0 && (
+                            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                <p className="text-xs font-bold text-amber-800 mb-1">⚠️ Módulos omitidos (información que no tienes):</p>
+                                {examData.analisis_examen.modulos_omitidos_relevantes.map((o, i) => (
+                                    <p key={i} className="text-xs text-amber-700">• {o.modulo}</p>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Formulario de integración */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+                        <h3 className="font-bold text-slate-800">🧠 Tu Integración Clínica</h3>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                1. Hipótesis confirmadas, descartadas o nuevas
+                                <span className="font-normal text-slate-400 ml-1">(¿qué hipótesis persisten, cuáles caen, y aparece alguna nueva?)</span>
+                            </label>
+                            <textarea
+                                value={reasoning2.hipotesis_confirmadas}
+                                onChange={e => setReasoning2(r => ({ ...r, hipotesis_confirmadas: e.target.value }))}
+                                placeholder="Ej: Se confirma Tendinopatía rotuliana (dolor en polo inferior +, deceleración +, Decline squat +). Se descarta rotura LCA (Lachman -). Nueva hipótesis: posible componente de control motor deficiente (single leg squat con valgo marcado)."
+                                rows={4}
+                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                2. Clasificación del mecanismo de dolor actualizada
+                                <span className="font-normal text-slate-400 ml-1">(¿cambia con los hallazgos físicos? ¿por qué?)</span>
+                            </label>
+                            <textarea
+                                value={reasoning2.clasificacion_actualizada}
+                                onChange={e => setReasoning2(r => ({ ...r, clasificacion_actualizada: e.target.value }))}
+                                placeholder="Ej: Se mantiene predominantemente Nociceptivo (dolor mecánico con patrón de movimiento claro). Se suma componente Nociplástico leve por hiperalgesia a palpación difusa. Se descarta Neuropático (neuro-vascular sin alteraciones)."
+                                rows={3}
+                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                3. Hallazgos clave que más pesan en tu diagnóstico
+                                <span className="font-normal text-slate-400 ml-1">(los datos que dirigen tu razonamiento final)</span>
+                            </label>
+                            <textarea
+                                value={reasoning2.hallazgos_clave}
+                                onChange={e => setReasoning2(r => ({ ...r, hallazgos_clave: e.target.value }))}
+                                placeholder="Ej: Dolor 7/10 en polo inferior rotuliano a palpación. Decline squat +++ (reproduce síntoma principal). ROM completo. Valgo dinámico marcado en single leg squat. MMT cuádriceps 4/5."
+                                rows={3}
+                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                4. Diagnóstico presuntivo (borrador CIF)
+                                <span className="font-normal text-slate-400 ml-1">(en 2-3 líneas; lo desarrollarás completamente en la siguiente etapa)</span>
+                            </label>
+                            <textarea
+                                value={reasoning2.diagnostico_presuntivo}
+                                onChange={e => setReasoning2(r => ({ ...r, diagnostico_presuntivo: e.target.value }))}
+                                placeholder="Ej: Paciente con Tendinopatía rotuliana bilateral de predominio izquierdo (Nociceptivo + componente Nociplástico leve), con déficit de fuerza de cuádriceps y control motor en cadena cinética cerrada, que limita actividad deportiva y genera restricción en participación en competencias de voleibol."
+                                rows={4}
+                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                            />
+                        </div>
+
+                        {phase === 'REASONING2' && (
+                            <button
+                                onClick={() => {
+                                    if (!reasoning2.hipotesis_confirmadas.trim() || !reasoning2.hallazgos_clave.trim()) {
+                                        setError('Completa al menos las hipótesis integradas y los hallazgos clave antes de continuar.');
+                                        return;
+                                    }
+                                    setError('');
+                                    setPhase('CONSTRUCTION');
+                                }}
+                                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm"
+                            >
+                                Construir Diagnóstico y Plan →
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 
