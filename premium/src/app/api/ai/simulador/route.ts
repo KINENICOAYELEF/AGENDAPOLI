@@ -9,7 +9,7 @@ export const maxDuration = 120;
 // Rate limiter: max 5 requests per user per hour
 const rateLimitCache = new Map<string, { count: number; timestamp: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS = 6; // 5 calls per exam + 1 buffer
+const MAX_REQUESTS = 8; // 5 calls per exam + buffer for retries
 
 function checkRateLimit(userId: string): boolean {
     const now = Date.now();
@@ -66,8 +66,9 @@ Devuelve el JSON completo del caso siguiendo ESTRICTAMENTE la estructura solicit
                     userPrompt,
                     inputHash: `sim_gen_${Date.now()}_${userId}`,
                     promptVersion: 'sim_v1',
-                    temperature: 0.7, // High creativity for case variety
+                    temperature: 0.7,
                     validator: (data) => SimCaseSchema.parse(data),
+                    skipGuardrails: true,
                 });
                 break;
             }
@@ -100,6 +101,7 @@ Responde como el paciente descrito arriba. Además genera el "analisis_oculto" c
                     promptVersion: 'sim_v1',
                     temperature: 0.5,
                     validator: (data) => SimInterviewSchema.parse(data),
+                    skipGuardrails: true,
                 });
                 break;
             }
@@ -132,6 +134,7 @@ Narra los hallazgos SOLO de los módulos seleccionados. Analiza omisiones y just
                     promptVersion: 'sim_v1',
                     temperature: 0.2,
                     validator: (data) => SimExamSchema.parse(data),
+                    skipGuardrails: true,
                 });
                 break;
             }
@@ -186,6 +189,7 @@ Evalúa RIGUROSAMENTE el trabajo completo. Genera scorecard, errores, aciertos y
                     promptVersion: 'sim_v1',
                     temperature: 0.25,
                     validator: (data) => SimEvaluationSchema.parse(data),
+                    skipGuardrails: true,
                 });
                 break;
             }
@@ -213,6 +217,7 @@ Genera la evaluación detallada para cada respuesta y el feedback final.
                     promptVersion: 'sim_v1',
                     temperature: 0.2,
                     validator: (data) => SimCommissionSchema.parse(data),
+                    skipGuardrails: true,
                 });
                 break;
             }

@@ -51,6 +51,7 @@ export function SimuladorExamen() {
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [showExitWarning, setShowExitWarning] = useState(false);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -80,17 +81,37 @@ export function SimuladorExamen() {
     };
     const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
-    // Prevent accidental reload or close
+    // ═══ PROTECCIÓN ANTI-SALIDA (beforeunload + popstate + history sentinel) ═══
+    const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
+
+    // 1) beforeunload: protects against tab close / F5 refresh
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (phase !== 'SETUP' && phase !== 'RESULTS') {
                 e.preventDefault();
-                e.returnValue = ''; // Muestra el promp del navegador nativo
+                e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [phase]);
+
+    // 2) popstate + history.pushState: protects against browser back button / iPad swipe-back
+    useEffect(() => {
+        if (!isActiveExam) return;
+
+        // Push a sentinel state so pressing "back" lands on it instead of leaving
+        window.history.pushState({ simGuard: true }, '');
+
+        const handlePopState = (e: PopStateEvent) => {
+            // The user pressed back — re-push the sentinel and show warning
+            window.history.pushState({ simGuard: true }, '');
+            setShowExitWarning(true);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [isActiveExam]);
 
     // ─── Phase Handlers ───
     const handleGenerate = async () => {
@@ -281,6 +302,35 @@ export function SimuladorExamen() {
     // ─── RENDER ───
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            {/* ═══ EXIT WARNING MODAL ═══ */}
+            {showExitWarning && (
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">⚠️</div>
+                            <div>
+                                <h3 className="font-black text-lg text-slate-900">¿Abandonar el examen?</h3>
+                                <p className="text-sm text-slate-500">Perderás todo tu progreso actual.</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-600">Llevas <strong>{formatTime(timer)}</strong> en este intento y estás en la fase <strong>{PHASE_LABELS[phase]}</strong>. Si sales, tendrás que empezar de cero.</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowExitWarning(false)}
+                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all"
+                            >
+                                Seguir con el examen
+                            </button>
+                            <button
+                                onClick={() => { setShowExitWarning(false); handleReset(); }}
+                                className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-xl transition-all"
+                            >
+                                Abandonar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>

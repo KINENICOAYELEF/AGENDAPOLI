@@ -194,6 +194,7 @@ export interface AIExecutionOptions<T> {
     validator: (data: any) => T; 
     responseMimeType?: string;
     maxOutputTokens?: number;
+    skipGuardrails?: boolean; // e.g. SIMULADOR needs to mention EMG/TENS in clinical history context
 }
 
 export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
@@ -244,9 +245,11 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
 
             // Plaintext fallback bypass for non-json expectations
             if (opts.responseMimeType === 'text/plain') {
-                const guardrailCheck = validateGuardrails(rawText);
-                if (!guardrailCheck.valid) {
-                     throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+                if (!opts.skipGuardrails) {
+                    const guardrailCheck = validateGuardrails(rawText);
+                    if (!guardrailCheck.valid) {
+                         throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+                    }
                 }
                 const validData = opts.validator(rawText);
                 const resultObj = {
@@ -278,9 +281,11 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 cleanJsonText = extractionMatch[0];
             }
 
-            const guardrailCheck = validateGuardrails(cleanJsonText);
-            if (!guardrailCheck.valid) {
-                 throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+            if (!opts.skipGuardrails) {
+                const guardrailCheck = validateGuardrails(cleanJsonText);
+                if (!guardrailCheck.valid) {
+                     throw new Error("OUTPUT_BLOCKED: " + guardrailCheck.bannedTermsFound.join(', '));
+                }
             }
 
             let parsed: any;
