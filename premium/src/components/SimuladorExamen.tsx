@@ -106,12 +106,12 @@ export function SimuladorExamen() {
 
         // Push a sentinel state so pressing "back" lands on it instead of leaving
         // We do this every time phase changes to keep the sentinel fresh
-        window.history.pushState({ simGuard: true }, '');
+        window.history.pushState({ simGuard: true }, '', window.location.href);
 
         const handlePopState = (e: PopStateEvent) => {
             if (isActiveExam) {
                 // The user pressed back — re-push the sentinel and show warning
-                window.history.pushState({ simGuard: true }, '');
+                window.history.pushState({ simGuard: true }, '', window.location.href);
                 setShowExitWarning(true);
             }
         };
@@ -411,9 +411,28 @@ export function SimuladorExamen() {
 
             {/* Progress */}
             {phase !== 'SETUP' && (
-                <div className="flex gap-1">
+                <div className="flex gap-1 mb-2">
                     {PHASE_ORDER.map((p, i) => (
                         <div key={p} className={`h-2 flex-1 rounded-full transition-all ${i <= currentIdx ? (i === currentIdx ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200'}`} title={PHASE_LABELS[p]} />
+                    ))}
+                </div>
+            )}
+
+            {/* ════════ PHASE: RESULTS (Review Tabs) Top Level ════════ */}
+            {phase === 'RESULTS' && !loading && (
+                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 mb-2">
+                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
+                        <button
+                            key={p}
+                            onClick={() => setReviewPhase(p === 'RESULTS' ? null : p)}
+                            className={`flex-1 min-w-[100px] text-xs font-bold px-3 py-2 rounded-xl transition-all ${
+                                (p === 'RESULTS' && !reviewPhase) || reviewPhase === p
+                                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                                    : 'text-slate-500 hover:bg-white/50'
+                            }`}
+                        >
+                            {p === 'RESULTS' ? '🏆 Resultados' : PHASE_LABELS[p]}
+                        </button>
                     ))}
                 </div>
             )}
@@ -879,25 +898,6 @@ export function SimuladorExamen() {
                             Enviar Respuestas de Comisión →
                         </button>
                     </div>
-                </div>
-            )}
-
-            {/* ════════ PHASE: RESULTS (Review Tabs) ════════ */}
-            {phase === 'RESULTS' && !loading && (
-                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 mb-6">
-                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
-                        <button
-                            key={p}
-                            onClick={() => setReviewPhase(p === 'RESULTS' ? null : p)}
-                            className={`flex-1 min-w-[100px] text-xs font-bold px-3 py-2 rounded-xl transition-all ${
-                                (p === 'RESULTS' && !reviewPhase) || reviewPhase === p
-                                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
-                                    : 'text-slate-500 hover:bg-white/50'
-                            }`}
-                        >
-                            {p === 'RESULTS' ? '🏆 Resultados' : PHASE_LABELS[p]}
-                        </button>
-                    ))}
                 </div>
             )}
 
