@@ -456,7 +456,7 @@ function SeccionCIF({
   return (
     <SectionCard title="5. Tabla CIF – Clasificación del caso" icon="📊">
       <GuideBox title="Guía para completar la CIF">
-        <p>La CIF sirve para <strong>ordenar y clasificar profesionalmente el caso</strong>. Cada componente responde a una pregunta diferente.</p>
+        <p>La CIF (Clasificación Internacional del Funcionamiento) sirve para <strong>ordenar y clasificar profesionalmente el caso</strong>. Cada componente responde a una pregunta diferente.</p>
         <div className="mt-2 bg-white border border-blue-200 rounded-lg p-3 space-y-1">
           <p>🦴 <strong>Estructuras</strong> = ¿Qué parte del cuerpo está comprometida? (tejidos físicos)</p>
           <p>⚡ <strong>Funciones</strong> = ¿Qué capacidad está alterada? (dolor, fuerza, movilidad...)</p>
@@ -467,9 +467,45 @@ function SeccionCIF({
         </div>
       </GuideBox>
 
+      {/* Guía de severidad */}
+      <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-xs text-purple-900 space-y-2">
+        <p className="font-bold text-sm text-purple-800">📏 ¿Cómo clasificar la severidad?</p>
+        <p>Cuando agreguen funciones alteradas, actividades limitadas o restricciones de participación, deben indicar <strong>qué tan afectado</strong> está cada ítem. Usen esta escala:</p>
+        <div className="mt-2 space-y-2">
+          <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
+            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-bold shrink-0 mt-0.5">Leve</span>
+            <div>
+              <p className="font-semibold text-purple-800">La persona puede hacerlo, pero con algo de dificultad o molestia menor.</p>
+              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Caminar — leve: puede caminar normalmente pero siente molestia leve después de 1 km&quot;</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
+            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold shrink-0 mt-0.5">Moderado</span>
+            <div>
+              <p className="font-semibold text-purple-800">La persona puede hacerlo, pero con dificultad importante. Necesita adaptarse, ir más lento o modificar la tarea.</p>
+              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Subir escaleras — moderado: puede subir pero debe ir lento, agarrarse del pasamanos y parar a descansar cada piso&quot;</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
+            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-bold shrink-0 mt-0.5">Severo</span>
+            <div>
+              <p className="font-semibold text-purple-800">La persona tiene mucha dificultad. Casi no puede hacerlo o necesita ayuda de otra persona.</p>
+              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Agacharse — severo: prácticamente no puede agacharse, necesita que otra persona le recoja los objetos del suelo&quot;</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
+            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold shrink-0 mt-0.5">Completo</span>
+            <div>
+              <p className="font-semibold text-purple-800">La persona no puede hacerlo en absoluto. La limitación es total.</p>
+              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Correr — completo: no puede correr ni trotar, genera dolor intenso e inmediato&quot;</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 text-xs text-amber-900">
         <p className="font-bold">⚠️ Importante:</p>
-        <p className="mt-1">Cada ítem que agreguen <strong>debe estar sustentado</strong> en lo que encontraron en la entrevista o evaluación. No inventen ni supongan. Los ejemplos son solo orientativos — los ítems reales dependen de cada caso. Pueden agregar tantos como sean necesarios.</p>
+        <p className="mt-1">Cada ítem que agreguen <strong>debe haber sido encontrado en la entrevista o la evaluación</strong>. No inventen ni supongan cosas que no observaron. Los ejemplos son solo orientativos — los ítems reales dependen de cada caso. Pueden agregar tantos ítems como sean necesarios usando el botón &quot;+ Agregar otro&quot;.</p>
       </div>
 
       <CifSection
@@ -478,14 +514,14 @@ function SeccionCIF({
         subtitle="¿Qué estructuras del cuerpo podrían estar relacionadas con el problema?"
         helpContent={
           <HelpText>
-            Tejidos, articulaciones, huesos, músculos, tendones, ligamentos, nervios o cápsulas que podrían estar comprometidos. La severidad aquí no siempre aplica — pueden dejarla sin seleccionar si no corresponde.
+            Registren los <strong>tejidos, articulaciones, músculos, tendones, ligamentos, nervios o huesos</strong> que podrían estar involucrados según lo que encontraron en la entrevista y evaluación. No necesitan estar 100% seguros — pueden indicar estructuras &quot;sospechadas&quot;. No se usa severidad aquí.
             <br/><br/>
-            <strong>Algunos ejemplos:</strong> Complejo patelofemoral · Tendón rotuliano · Musculatura cuadricipital · Columna lumbar (L4-L5) · Manguito rotador · Nervio mediano · Fascia plantar · Ligamento colateral medial — <em>pero depende de cada caso</em>.
+            <strong>Algunos ejemplos (dependen del caso):</strong> Complejo patelofemoral derecho · Tendón rotuliano · Musculatura cuadricipital · Columna lumbar (segmentos L4-L5) · Manguito rotador · Nervio mediano · Fascia plantar · Ligamento colateral medial · Cápsula glenohumeral.
           </HelpText>
         }
         items={getItems("estructurasCorporales")}
         onChange={(items) => setItems("estructurasCorporales", items)}
-        placeholder="Escriba una estructura posiblemente comprometida..."
+        placeholder="Ej: Complejo patelofemoral derecho"
         showSeveridad={false}
       />
 
@@ -495,14 +531,14 @@ function SeccionCIF({
         subtitle="¿Qué funciones corporales encontraron alteradas en la evaluación?"
         helpContent={
           <HelpText>
-            Las funciones son <strong>capacidades del cuerpo</strong> que están disminuidas. No son estructuras ni actividades. Seleccionen la severidad para cada función alterada.
+            Las funciones son <strong>capacidades del cuerpo</strong> que están disminuidas o alteradas. No son las estructuras (esas van arriba) ni las actividades (esas van abajo). <strong>Seleccionen la severidad</strong> según la guía de arriba.
             <br/><br/>
-            <strong>Algunos ejemplos:</strong> Dolor · Movilidad articular · Fuerza muscular · Control motor · Equilibrio · Tolerancia a carga · Propiocepción · Coordinación · Resistencia muscular · Sensibilidad · Edema — <em>incluyan solo las que encontraron realmente alteradas</em>.
+            <strong>Algunos ejemplos (incluyan solo las que encontraron alteradas):</strong> Dolor en región anterior de rodilla · Movilidad articular de flexión de rodilla · Fuerza muscular de cuádriceps · Control motor dinámico de rodilla · Equilibrio en apoyo unipodal · Tolerancia a carga en miembro inferior · Propiocepción · Edema periarticular.
           </HelpText>
         }
         items={getItems("funcionesCorporales")}
         onChange={(items) => setItems("funcionesCorporales", items)}
-        placeholder="Función alterada encontrada en la evaluación..."
+        placeholder="Ej: Dolor en región anterior de rodilla"
         showSeveridad={true}
       />
 
@@ -512,14 +548,14 @@ function SeccionCIF({
         subtitle="¿Qué actividades concretas están limitadas?"
         helpContent={
           <HelpText>
-            Las actividades son <strong>tareas y acciones concretas</strong> (verbos) que la persona tiene dificultad o no puede hacer. No son diagnósticos ni funciones.
+            Las actividades son <strong>tareas y acciones concretas</strong> que la persona tiene dificultad o no puede hacer. Son verbos o acciones, no diagnósticos ni funciones. <strong>Seleccionen la severidad</strong> según la guía.
             <br/><br/>
-            <strong>Algunos ejemplos:</strong> Subir escaleras · Caminar distancias largas · Agacharse · Sentarse y levantarse · Correr · Levantar objetos · Vestirse parte inferior · Permanecer de pie — <em>incluyan las que la persona reportó o que ustedes observaron</em>.
+            <strong>Algunos ejemplos (incluyan las que la persona reportó o que ustedes observaron):</strong> Subir escaleras · Caminar distancias largas (&gt;500m) · Agacharse a recoger objetos · Sentarse y levantarse de silla baja · Correr · Levantar objetos del suelo · Vestirse la parte inferior · Permanecer de pie más de 30 minutos.
           </HelpText>
         }
         items={getItems("actividades")}
         onChange={(items) => setItems("actividades", items)}
-        placeholder="Actividad que la persona tiene limitada..."
+        placeholder="Ej: Subir escaleras"
         showSeveridad={true}
       />
 
@@ -529,14 +565,14 @@ function SeccionCIF({
         subtitle="¿En qué roles o situaciones de la vida real participa menos o con dificultad?"
         helpContent={
           <HelpText>
-            La participación es el <strong>impacto en la vida real</strong> de la persona: sus roles, rutina y cosas que le importan. No es lo mismo que actividades (subir escaleras es actividad; no poder ir al trabajo porque hay escaleras es participación).
+            La participación es el <strong>impacto en la vida real</strong>: sus roles, rutina y cosas que le importan. No es lo mismo que actividades: subir escaleras es actividad; no poder ir al trabajo porque hay escaleras es <strong>participación</strong>. <strong>Seleccionen la severidad</strong>.
             <br/><br/>
-            <strong>Algunos ejemplos:</strong> Participación laboral · Actividades deportivas · Rol de cuidador/a · Actividades sociales · Independencia en el hogar · Actividades recreativas · Estudios — <em>según lo que la persona les contó</em>.
+            <strong>Algunos ejemplos (según lo que la persona contó):</strong> Cumplir jornada laboral completa · Participar en actividades deportivas recreativas · Cumplir rol de cuidador/a de hijos · Actividades sociales con amigos · Independencia en tareas del hogar · Actividades de ocio · Vida académica o de estudios.
           </HelpText>
         }
         items={getItems("participacion")}
         onChange={(items) => setItems("participacion", items)}
-        placeholder="Rol o situación de vida afectada..."
+        placeholder="Ej: Cumplir jornada laboral completa"
         showSeveridad={true}
       />
 
@@ -546,16 +582,16 @@ function SeccionCIF({
         subtitle="¿Qué factores propios de la persona facilitan o dificultan su recuperación?"
         helpContent={
           <HelpText>
-            Características internas que <strong>facilitan (+) o dificultan (-)</strong> la situación. La severidad no aplica aquí.
+            Características internas de la persona. Indiquen si cada factor es un <strong>facilitador (+)</strong> o una <strong>barrera (-)</strong> escribiéndolo al inicio. No se usa severidad aquí.
             <br/><br/>
-            <strong>Facilitadores (+):</strong> Alta motivación · Buena comprensión del problema · Adherente · Expectativas realistas · Experiencia deportiva previa.
+            <strong>Facilitadores (+):</strong> Alta motivación · Buena comprensión del problema · Adherente a indicaciones · Expectativas realistas · Experiencia deportiva previa · Joven y activa.
             <br/>
-            <strong>Barreras (-):</strong> Miedo al movimiento · Baja autoeficacia · Sedentarismo · Expectativas irreales · Creencias limitantes sobre el dolor — <em>según lo que obtuvieron del caso real</em>.
+            <strong>Barreras (-):</strong> Miedo al movimiento · Baja autoeficacia · Sedentarismo · Expectativas irreales · Creencias limitantes sobre el dolor · Experiencias negativas con kinesiólogos — <em>según lo que obtuvieron del caso real</em>.
           </HelpText>
         }
         items={getItems("factoresPersonales")}
         onChange={(items) => setItems("factoresPersonales", items)}
-        placeholder="Factor personal (indique si facilita + o dificulta -)..."
+        placeholder="Ej: (+) Alta motivación por mejorar"
         showSeveridad={false}
       />
 
@@ -565,16 +601,16 @@ function SeccionCIF({
         subtitle="¿Qué del entorno ayuda o dificulta la situación?"
         helpContent={
           <HelpText>
-            Elementos del <strong>entorno externo</strong> que facilitan (+) o son barreras (-).
+            Elementos del <strong>entorno externo</strong>. Indiquen si cada factor es un <strong>facilitador (+)</strong> o una <strong>barrera (-)</strong>. No se usa severidad aquí.
             <br/><br/>
-            <strong>Facilitadores (+):</strong> Apoyo familiar · Acceso a gimnasio · Horario flexible · Red de apoyo.
+            <strong>Facilitadores (+):</strong> Apoyo familiar presente · Acceso a gimnasio o espacio para ejercicio · Horario flexible · Buena red de apoyo · Entrenador colaborador.
             <br/>
-            <strong>Barreras (-):</strong> Trabajo físico pesado · Vive en piso alto sin ascensor · Largos traslados · Poca disponibilidad horaria · Presión laboral — <em>según la información real del caso</em>.
+            <strong>Barreras (-):</strong> Trabajo físico pesado que no puede modificar · Vive en piso alto sin ascensor · Largos traslados diarios · Poco tiempo disponible · Presión laboral por reintegrarse rápido — <em>según la información real del caso</em>.
           </HelpText>
         }
         items={getItems("factoresAmbientales")}
         onChange={(items) => setItems("factoresAmbientales", items)}
-        placeholder="Factor ambiental (indique si facilita + o dificulta -)..."
+        placeholder="Ej: (-) Vive en tercer piso sin ascensor"
         showSeveridad={false}
       />
     </SectionCard>
@@ -587,55 +623,47 @@ function SeccionDiagnostico({ value, onChange }: { value: string; onChange: (v: 
     <SectionCard title="6. Diagnóstico kinesiológico incipiente" icon="🎯">
       <GuideBox title="¿Qué es un diagnóstico kinesiológico?">
         <p>Un diagnóstico kinesiológico <strong>NO es decir &quot;tiene tendinitis&quot; o &quot;tiene dolor lumbar&quot;</strong>. Eso es un diagnóstico médico.</p>
-        <p className="mt-1.5">Desde la perspectiva del tratante, un diagnóstico kinesiológico debe integrar:</p>
-        <div className="mt-1 ml-2 space-y-0.5">
-          {[
-            "1. Quién es la persona y qué exige su vida.",
-            "2. Qué problema refiere (desde su perspectiva).",
-            "3. Qué encontramos como tratantes en la evaluación.",
-            "4. Qué estructuras o sistemas podrían estar comprometidos.",
-            "5. Qué actividades están limitadas y cómo afecta su vida.",
-            "6. Qué factores facilitan o dificultan.",
-            "7. Cuál es el problema principal kinesiológico.",
-            "8. Qué objetivo general guiará la intervención.",
-          ].map((l) => (
-            <p key={l} className="flex gap-2"><span className="text-blue-400 shrink-0">›</span> <span>{l}</span></p>
-          ))}
-        </div>
+        <p className="mt-1.5">Un diagnóstico kinesiológico es un <strong>texto integrador</strong> donde ustedes como tratantes resumen y conectan toda la información que obtuvieron: quién es la persona, qué problema tiene, qué encontraron en la evaluación, y qué factores influyen.</p>
+        <p className="mt-1.5">A continuación tienen una <strong>plantilla que deben seguir</strong>. Reemplacen los textos en [corchetes] con la información real de su caso. No copien los corchetes — escriban directamente lo que corresponda.</p>
       </GuideBox>
 
-      {/* Plantilla completa visible */}
+      {/* Plantilla simplificada a 4 puntos */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 text-xs text-indigo-900 space-y-4">
-        <p className="font-bold text-sm text-indigo-800">📝 Plantilla de referencia — úsenla como guía</p>
-        <p className="text-indigo-600 italic">No copien textualmente. Adapten cada sección al caso real que atendieron. Los textos en [corchetes] son lo que deben reemplazar con su información.</p>
+        <p className="font-bold text-sm text-indigo-800">📝 Plantilla a seguir — reemplacen los [corchetes] con su información</p>
 
-        <div className="space-y-4 bg-white border border-indigo-200 rounded-lg p-4">
+        <div className="space-y-5 bg-white border border-indigo-200 rounded-lg p-5">
           <div>
-            <p className="font-bold text-indigo-700">1. Identificación y contexto relevante</p>
-            <p className="text-slate-600 italic mt-1">[Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo, sobrecarga o antecedente relevante].</p>
+            <p className="font-bold text-indigo-700 text-sm">1. Identificación y contexto relevante</p>
+            <p className="text-slate-600 italic mt-2 leading-relaxed">[Iniciales], [edad], [sexo], [ocupación], consulta por [motivo principal] de [tiempo de evolución]. El cuadro se asocia a [mecanismo, sobrecarga o antecedente relevante].</p>
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <p className="text-green-800 text-[11px]"><strong>Ejemplo:</strong> M.G., 52 años, sexo femenino, auxiliar de aseo, consulta por dolor en región anterior de rodilla derecha de 4 semanas de evolución. El cuadro se asocia a sobrecarga laboral durante periodo de limpieza profunda, sin mecanismo traumático.</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-indigo-700">2. Problemas identificados por la persona</p>
-            <p className="text-slate-600 italic mt-1">Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividad 1], [actividad 2] y [actividad 3], con severidad [leve/moderada/severa]. Esto restringe su participación en [trabajo/deporte/hogar/otro].</p>
+
+          <div className="border-t border-indigo-100 pt-4">
+            <p className="font-bold text-indigo-700 text-sm">2. Problemas identificados por la persona</p>
+            <p className="text-slate-600 italic mt-2 leading-relaxed">Desde la perspectiva de la persona, el problema se expresa como dificultad para [actividad 1], [actividad 2] y [actividad 3], con severidad [leve/moderada/severa]. Esto restringe su participación en [trabajo/deporte/hogar/otro].</p>
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <p className="text-green-800 text-[11px]"><strong>Ejemplo:</strong> Desde la perspectiva de la persona, el problema se expresa como dificultad para subir y bajar escaleras, ponerse de pie desde silla baja y caminar más de 500 metros, con severidad moderada. Esto restringe su participación laboral, ya que tiene dificultad para completar la jornada de trabajo.</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-indigo-700">3. Problemas identificados por el tratante</p>
-            <p className="text-slate-600 italic mt-1">Desde nuestra evaluación, el cuadro compromete predominantemente el sistema [musculoesquelético/neuromuscular/otro].</p>
-            <p className="text-slate-600 italic mt-1">A nivel de <strong>estructuras</strong>: compromiso [confirmado/probable/sospechado] de [estructura], sustentado por [evidencia].</p>
-            <p className="text-slate-600 italic mt-1">A nivel de <strong>funciones</strong>: [dolor: severidad], [movilidad: severidad], [fuerza: severidad], [control motor: severidad], [otros hallazgos relevantes].</p>
+
+          <div className="border-t border-indigo-100 pt-4">
+            <p className="font-bold text-indigo-700 text-sm">3. Problemas identificados por el tratante</p>
+            <p className="text-slate-600 italic mt-2 leading-relaxed">Desde nuestra evaluación, el cuadro compromete predominantemente el sistema [musculoesquelético/neuromuscular/otro].</p>
+            <p className="text-slate-600 italic mt-1.5 leading-relaxed">A nivel de <strong>estructuras</strong>: compromiso [confirmado/probable/sospechado] de [estructura], sustentado por [evidencia].</p>
+            <p className="text-slate-600 italic mt-1.5 leading-relaxed">A nivel de <strong>funciones</strong>: [dolor: severidad], [movilidad: severidad], [fuerza: severidad], [control motor: severidad], [otros hallazgos relevantes].</p>
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <p className="text-green-800 text-[11px]"><strong>Ejemplo:</strong> Desde nuestra evaluación, el cuadro compromete predominantemente el sistema musculoesquelético. A nivel de estructuras: compromiso probable del complejo patelofemoral derecho, sustentado por dolor localizado en cara anterior de rodilla que aumenta con actividades de carga en flexión. A nivel de funciones: dolor moderado (6/10) en actividades provocadoras, disminución moderada de rango de movimiento de flexión (90° vs 135° contralateral), déficit leve de fuerza de cuádriceps, disminución moderada de tolerancia a carga en miembro inferior derecho.</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-indigo-700">4. Factores contextuales</p>
-            <p className="text-slate-600 italic mt-1">Factores personales: [facilitadores] y [barreras]. Factores ambientales: [facilitadores] y [barreras].</p>
-          </div>
-          <div>
-            <p className="font-bold text-indigo-700">5. Problema principal kinesiológico</p>
-            <p className="text-slate-600 italic mt-1">El problema principal corresponde a [alteración funcional central] asociada a [hipótesis clínica o estructura], lo que limita [actividades] y restringe [participación].</p>
-          </div>
-          <div>
-            <p className="font-bold text-indigo-700">6. Objetivo general</p>
-            <p className="text-slate-600 italic mt-1">[Verbo] + [problema funcional principal] + para [actividad o participación a recuperar].</p>
-            <p className="text-slate-500 italic mt-1">Ejemplo: &quot;Mejorar la tolerancia a carga del miembro inferior derecho para subir escaleras, caminar distancias laborales y completar la jornada de trabajo sin dolor limitante.&quot;</p>
+
+          <div className="border-t border-indigo-100 pt-4">
+            <p className="font-bold text-indigo-700 text-sm">4. Factores contextuales</p>
+            <p className="text-slate-600 italic mt-2 leading-relaxed">Factores personales: [facilitadores] y [barreras]. Factores ambientales: [facilitadores] y [barreras].</p>
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+              <p className="text-green-800 text-[11px]"><strong>Ejemplo:</strong> Factores personales: como facilitador, la persona presenta alta motivación por mejorar y buena comprensión del problema; como barrera, es sedentaria y presenta sobrepeso. Factores ambientales: como facilitador, tiene horario estable que permite asistir a sesiones; como barrera, su trabajo exige subir y bajar escaleras frecuentemente y no puede modificar esa exigencia.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -647,7 +675,7 @@ function SeccionDiagnostico({ value, onChange }: { value: string; onChange: (v: 
           onChange={onChange}
           required
           rows={18}
-          placeholder="Redacten aquí su diagnóstico kinesiológico completo como tratantes. Usen la plantilla de arriba como guía. Incluyan los 6 componentes: identificación, problemas de la persona, hallazgos del tratante (estructuras y funciones con severidad), factores contextuales, problema principal kinesiológico y objetivo general..."
+          placeholder="Escriban su diagnóstico kinesiológico siguiendo la plantilla de arriba. Incluyan los 4 puntos: (1) Identificación y contexto, (2) Problemas desde la persona, (3) Problemas desde el tratante (estructuras y funciones con severidad), y (4) Factores contextuales (facilitadores y barreras)."
         />
       </div>
     </SectionCard>
