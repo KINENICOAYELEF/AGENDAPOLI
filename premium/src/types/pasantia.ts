@@ -91,10 +91,7 @@ export interface RevisionDocente {
   aprobado: boolean;
   revisadoEn: string;
   estadoRevision: EstadoEntrega;
-  revisionIA?: {
-    caso1?: RevisionIAResultado;
-    caso2?: RevisionIAResultado;
-  };
+  revisionIA?: RevisionIAResultado;
 }
 
 export interface EntregaConRevision extends EntregaPasantia {

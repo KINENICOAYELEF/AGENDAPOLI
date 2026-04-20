@@ -209,8 +209,8 @@ function ModalRevision({ entrega, onClose, onSaved }: { entrega: EntregaConRevis
   const [puntajes, setPuntajes] = useState<PuntajesCriterios>(defaultPuntajes);
   const [comentario, setComentario] = useState(entrega.revision?.comentarioDocente ?? "");
   const [estadoRevision, setEstadoRevision] = useState<EstadoEntrega>(entrega.revision?.estadoRevision ?? "revisado");
-  const [loadingIA, setLoadingIA] = useState<Record<string, boolean>>({});
-  const [revisionIA, setRevisionIA] = useState<{ caso1?: RevisionIAResultado; caso2?: RevisionIAResultado }>(entrega.revision?.revisionIA ?? {});
+  const [loadingIA, setLoadingIA] = useState(false);
+  const [revisionIA, setRevisionIA] = useState<RevisionIAResultado | undefined>(entrega.revision?.revisionIA);
   const [saving, setSaving] = useState(false);
   const [casoTab, setCasoTab] = useState<1 | 2>(1);
 
@@ -218,18 +218,17 @@ function ModalRevision({ entrega, onClose, onSaved }: { entrega: EntregaConRevis
   const { nota, porcentaje, aprobado } = calcularNota(puntajeTotal);
   const allScored = Object.values(puntajes).every((v) => v > 0);
 
-  const revisarConIA = async (num: 1 | 2) => {
-    const key = `caso${num}` as "caso1" | "caso2";
-    setLoadingIA((p) => ({ ...p, [key]: true }));
+  const revisarConIA = async () => {
+    setLoadingIA(true);
     try {
       const resp = await fetch("/api/pasantia/revisar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caso: entrega[key], numeroCaso: num }),
+        body: JSON.stringify({ entrega }),
       });
       const json = await resp.json();
       if (json.success) {
-        setRevisionIA((prev) => ({ ...prev, [key]: json.data }));
+        setRevisionIA(json.data);
         // Suggest scores
         const sugeridos = json.data.puntajesSugeridos;
         setPuntajes((prev) => ({
@@ -243,7 +242,7 @@ function ModalRevision({ entrega, onClose, onSaved }: { entrega: EntregaConRevis
     } catch (e) {
       console.error(e);
     } finally {
-      setLoadingIA((p) => ({ ...p, [key]: false }));
+      setLoadingIA(false);
     }
   };
 
@@ -304,19 +303,17 @@ function ModalRevision({ entrega, onClose, onSaved }: { entrega: EntregaConRevis
           {/* Vista del caso */}
           <VistaCaso caso={casoTab === 1 ? entrega.caso1 : entrega.caso2} num={casoTab} />
 
-          {/* IA Review */}
-          <div className="flex flex-col gap-3">
+          {/* IA Review (Global) */}
+          <div className="flex flex-col gap-3 mt-6">
             <button
               type="button"
-              onClick={() => revisarConIA(casoTab)}
-              disabled={loadingIA[`caso${casoTab}`]}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-xl hover:from-violet-700 hover:to-purple-800 transition disabled:opacity-50 text-sm shadow"
+              onClick={revisarConIA}
+              disabled={loadingIA}
+              className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-xl hover:from-violet-700 hover:to-purple-800 transition disabled:opacity-50 text-sm shadow-md"
             >
-              {loadingIA[`caso${casoTab}`] ? "🔄 Analizando con IA..." : `🤖 Revisar Caso ${casoTab} con IA`}
+              {loadingIA ? "🔄 Analizando entrega completa..." : "🤖 Revisar Entrega Completa con IA"}
             </button>
-            {revisionIA[`caso${casoTab}` as "caso1" | "caso2"] && (
-              <PanelRevisionIA resultado={revisionIA[`caso${casoTab}` as "caso1" | "caso2"]!} />
-            )}
+            {revisionIA && <PanelRevisionIA resultado={revisionIA} />}
           </div>
 
           {/* Rúbrica */}

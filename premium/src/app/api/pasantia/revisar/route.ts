@@ -1,69 +1,60 @@
 import { NextResponse } from 'next/server';
 import { callGemini } from '@/lib/ai/geminiClient';
-import type { CasoClinco, RevisionIAResultado } from '@/types/pasantia';
+import type { EntregaPasantia, RevisionIAResultado } from '@/types/pasantia';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { caso, numeroCaso }: { caso: CasoClinco; numeroCaso: number } = body;
+    const { entrega }: { entrega: EntregaPasantia } = body;
 
     const systemInstruction = `
 Eres un docente universitario experto en Kinesiología clínica evaluando una entrega de estudiantes de 2º año en pasantía.
-Tu tarea es revisar el caso clínico registrado y entregar retroalimentación pedagógica clara, honesta y constructiva.
+El modelo de IA que estás usando es Gemini 2.5 Flash.
+Tu tarea es revisar de manera global la entrega completa (que consta de DOS casos clínicos) y entregar retroalimentación pedagógica clara, honesta y constructiva que englobe el desempeño del estudiante en ambos casos en conjunto.
 
 REGLAS ABSOLUTAS:
-1. Evalúa SOLO lo que el estudiante escribió. No inventes datos clínicos, no supongas información no escrita.
-2. Sé específico al señalar errores: cita el campo o sección problemática.
+1. Evalúa SOLO lo que los estudiantes escribieron en ambos casos. No inventes datos clínicos, no supongas información no escrita.
+2. Sé específico al señalar errores: cita de qué caso y qué sección es el problema principal.
 3. Usa lenguaje académico pero directo, entendible para estudiantes de 2º año.
-4. No seas condescendiente, pero sé honesto con las debilidades.
+4. No seas condescendiente, pero sé honesto con las debilidades globales.
 5. Responde SIEMPRE en JSON válido con la estructura exacta solicitada.
-6. Los puntajes sugeridos son solo orientativos (el docente decide el final).
+6. Los puntajes sugeridos son solo orientativos y deben representar la evaluación GLOBAL de la entrega considerando ambos casos (promedio o apreciación general).
 7. Escala de puntaje sugerido por criterio: 1 (no cumple) a 5 (cumple a cabalidad).
 `;
 
-    const userPrompt = `
-Revisa el siguiente CASO ${numeroCaso} de una entrega de pasantía de 2º año de Kinesiología.
+    const formatCaso = (caso: any, num: number) => `
+=== CASO CLÍNICO ${num} ===
+DATOS USUARIA: ${caso.datosUsuaria.nombre}, ${caso.datosUsuaria.edad}, ${caso.datosUsuaria.ocupacion}, ${caso.datosUsuaria.motivoConsulta}.
+ANAMNESIS: ${caso.anamnesis}
+INTERPRETACIÓN: ${caso.interpretacionAnamnesis}
 
-=== DATOS DE LA USUARIA ===
-Nombre: ${caso.datosUsuaria.nombre}
-Edad: ${caso.datosUsuaria.edad}
-Ocupación: ${caso.datosUsuaria.ocupacion}
-Contexto: ${caso.datosUsuaria.contextoAtencion}
-Motivo de consulta: ${caso.datosUsuaria.motivoConsulta}
+EVALUACIONES REALIZADAS:
+${caso.evaluaciones.map((e: any, i: number) => `Eval ${i + 1}: ${e.nombre} | Resultado: ${e.resultado} | Int: ${e.interpretacion}`).join('\n')}
 
-=== ANAMNESIS ===
-${caso.anamnesis}
+HALLAZGOS: 1. ${caso.hallazgo1} | 2. ${caso.hallazgo2} | 3. ${caso.hallazgo3}
 
-=== INTERPRETACIÓN DE LA ANAMNESIS ===
-${caso.interpretacionAnamnesis}
+TABLA CIF:
+- Estructuras: ${caso.cif.estructurasCorporales}
+- Funciones: ${caso.cif.funcionesCorporales}
+- Actividades: ${caso.cif.actividades}
+- Participación: ${caso.cif.participacion}
+- F. Personales: ${caso.cif.factoresPersonales}
+- F. Ambientales: ${caso.cif.factoresAmbientales}
 
-=== EVALUACIONES REALIZADAS ===
-${caso.evaluaciones.map((e, i) => `
-Evaluación ${i + 1}: ${e.nombre}
-  Por qué: ${e.razon}
-  Resultado: ${e.resultado}
-  Interpretación: ${e.interpretacion}
-`).join('\n')}
-
-=== HALLAZGOS PRINCIPALES ===
-1. ${caso.hallazgo1}
-2. ${caso.hallazgo2}
-3. ${caso.hallazgo3}
-
-=== TABLA CIF ===
-Estructuras corporales: ${caso.cif.estructurasCorporales}
-Funciones corporales: ${caso.cif.funcionesCorporales}
-Actividades: ${caso.cif.actividades}
-Participación: ${caso.cif.participacion}
-Factores personales: ${caso.cif.factoresPersonales}
-Factores ambientales: ${caso.cif.factoresAmbientales}
-
-=== DIAGNÓSTICO KINESIOLÓGICO INCIPIENTE ===
+DIAGNÓSTICO KINESIOLÓGICO:
 ${caso.diagnosticoKinesiologico}
+`;
+
+    const userPrompt = `
+Revisa la siguiente ENTREGA COMPLETA de pasantía de 2º año, de los estudiantes: ${entrega.dupla.estudiante1} y ${entrega.dupla.estudiante2}.
+
+${formatCaso(entrega.caso1, 1)}
+
+${formatCaso(entrega.caso2, 2)}
 
 ---
 
-Evalúa los 4 dominios técnicos (c3 a c6) según la siguiente rúbrica:
+Evalúa los 4 dominios técnicos (c3 a c6) DE FORMA GLOBAL PARA AMBOS CASOS según la siguiente rúbrica:
 - c3: La entrevista/anamnesis es pertinente, está ejecutada correctamente y los datos se ordenan de manera correcta.
 - c4: Las evaluaciones iniciales son pertinentes, se ejecutan correctamente y los resultados se interpretan de manera correcta.
 - c5: La tabla CIF es coherente con la observación, entrevista y evaluación.
