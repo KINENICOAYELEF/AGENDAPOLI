@@ -475,29 +475,41 @@ function SeccionCIF({
           <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
             <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-bold shrink-0 mt-0.5">Leve</span>
             <div>
-              <p className="font-semibold text-purple-800">La persona puede hacerlo, pero con algo de dificultad o molestia menor.</p>
-              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Caminar — leve: puede caminar normalmente pero siente molestia leve después de 1 km&quot;</p>
+              <p className="font-semibold text-purple-800">Hay una alteración funcional pequeña, o la persona puede hacer la actividad pero con molestia menor.</p>
+              <div className="text-purple-600 italic mt-0.5 text-[11px] space-y-0.5">
+                <p>⚡ <strong>Función:</strong> Dolor leve (1 a 3/10) · Disminución mínima de rango de movimiento.</p>
+                <p>🚶 <strong>Actividad:</strong> Puede caminar normalmente pero siente molestia leve después de 1 km.</p>
+              </div>
             </div>
           </div>
           <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-bold shrink-0 mt-0.5">Moderado</span>
             <div>
-              <p className="font-semibold text-purple-800">La persona puede hacerlo, pero con dificultad importante. Necesita adaptarse, ir más lento o modificar la tarea.</p>
-              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Subir escaleras — moderado: puede subir pero debe ir lento, agarrarse del pasamanos y parar a descansar cada piso&quot;</p>
+              <p className="font-semibold text-purple-800">Alteración funcional evidente. La persona puede hacer la actividad, pero con dificultad importante y debe adaptarse.</p>
+              <div className="text-purple-600 italic mt-0.5 text-[11px] space-y-0.5">
+                <p>⚡ <strong>Función:</strong> Dolor moderado (4 a 6/10) · Limitación evidente de movilidad (ej. flexión hasta 90°).</p>
+                <p>🚶 <strong>Actividad:</strong> Puede subir escaleras, pero debe ir lento y agarrarse del pasamanos.</p>
+              </div>
             </div>
           </div>
           <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-bold shrink-0 mt-0.5">Severo</span>
             <div>
-              <p className="font-semibold text-purple-800">La persona tiene mucha dificultad. Casi no puede hacerlo o necesita ayuda de otra persona.</p>
-              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Agacharse — severo: prácticamente no puede agacharse, necesita que otra persona le recoja los objetos del suelo&quot;</p>
+              <p className="font-semibold text-purple-800">Gran alteración funcional. La persona tiene mucha dificultad, casi no puede hacer la actividad o necesita ayuda.</p>
+              <div className="text-purple-600 italic mt-0.5 text-[11px] space-y-0.5">
+                <p>⚡ <strong>Función:</strong> Dolor intenso (7 a 9/10) · Articulación casi rígida · Debilidad extrema.</p>
+                <p>🚶 <strong>Actividad:</strong> Prácticamente no puede agacharse, necesita que otra persona le recoja objetos.</p>
+              </div>
             </div>
           </div>
           <div className="flex items-start gap-2 bg-white rounded-lg p-2.5 border border-purple-100">
             <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold shrink-0 mt-0.5">Completo</span>
             <div>
-              <p className="font-semibold text-purple-800">La persona no puede hacerlo en absoluto. La limitación es total.</p>
-              <p className="text-purple-600 italic mt-0.5">Ej: &quot;Correr — completo: no puede correr ni trotar, genera dolor intenso e inmediato&quot;</p>
+              <p className="font-semibold text-purple-800">Alteración funcional total. La limitación para la actividad es absoluta.</p>
+              <div className="text-purple-600 italic mt-0.5 text-[11px] space-y-0.5">
+                <p>⚡ <strong>Función:</strong> Dolor insoportable (10/10) · Parálisis completa · Bloqueo articular total.</p>
+                <p>🚶 <strong>Actividad:</strong> No puede correr ni trotar bajo ninguna circunstancia por dolor limitante.</p>
+              </div>
             </div>
           </div>
         </div>
