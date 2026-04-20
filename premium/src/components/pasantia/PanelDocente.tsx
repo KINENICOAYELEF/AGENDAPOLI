@@ -48,12 +48,42 @@ function ScoreSelector({ value, onChange }: { value: number; onChange: (v: numbe
   );
 }
 
-// ─── Campo CIF compacto ─────────────────────────────────────────────────────
+// ─── Campo CIF compacto (soporta JSON items con severidad o texto plano) ────
+const SEV_COLORS: Record<string, string> = {
+  leve: "bg-green-100 text-green-700",
+  moderado: "bg-amber-100 text-amber-700",
+  severo: "bg-orange-100 text-orange-700",
+  completo: "bg-red-100 text-red-700",
+};
+
 function CifRow({ label, value }: { label: string; value: string }) {
+  let items: { texto: string; severidad?: string }[] = [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].texto !== undefined) {
+      items = parsed.filter((i: { texto: string }) => i.texto.trim());
+    }
+  } catch { /* plain text fallback */ }
+
   return (
     <div className="border-b border-slate-100 py-2">
       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</span>
-      <p className="text-sm text-slate-700 mt-0.5 whitespace-pre-wrap">{value || <span className="text-slate-400 italic">Sin completar</span>}</p>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {items.map((item, i) => (
+            <span key={i} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-lg border border-slate-200">
+              {item.texto}
+              {item.severidad && (
+                <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${SEV_COLORS[item.severidad] || "bg-slate-200 text-slate-500"}`}>
+                  {item.severidad}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-700 mt-0.5 whitespace-pre-wrap">{value || <span className="text-slate-400 italic">Sin completar</span>}</p>
+      )}
     </div>
   );
 }
@@ -128,14 +158,7 @@ function VistaCaso({ caso, num }: { caso: CasoClinco; num: number }) {
             <div className="bg-indigo-50 rounded-lg p-3 text-indigo-900 whitespace-pre-wrap text-xs">{caso.diagnosticoKinesiologico}</div>
           </div>
 
-          <div>
-            <h4 className="font-bold text-slate-700 mb-2 text-xs uppercase tracking-wider">Autoevaluación de la dupla</h4>
-            <div className="space-y-2 text-xs text-slate-600">
-              <p><strong>Dificultad:</strong> {caso.autoevaluacion.mayorDificultad || "No respondió"}</p>
-              <p><strong>Info faltante:</strong> {caso.autoevaluacion.informacionFaltante || "No respondió"}</p>
-              <p><strong>Mejoras:</strong> {caso.autoevaluacion.mejoras || "No respondió"}</p>
-            </div>
-          </div>
+
         </div>
       )}
     </div>
