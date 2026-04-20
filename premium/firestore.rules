@@ -82,5 +82,20 @@ service cloud.firestore {
         allow read, write: if isInterno() && isProgramActive(year);
       }
     }
+
+    // --------------------------------------------------------------------
+    // 3. Pasantía 2º Año – Formulario Público de Estudiantes
+    // --------------------------------------------------------------------
+    match /pasantia_entregas/{entregaId} {
+      // Cualquier persona puede crear una entrega (sin login).
+      // La resistencia ante spam se maneja desde el formulario (envío único + confirmación).
+      allow create: if true;
+
+      // Solo el DOCENTE puede leer todas las entregas y actualizar (guardar revisión).
+      allow read, update: if isDocente();
+
+      // Eliminación solo por DOCENTE
+      allow delete: if isDocente();
+    }
   }
 }

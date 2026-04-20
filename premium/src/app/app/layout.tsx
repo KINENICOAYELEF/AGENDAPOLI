@@ -102,6 +102,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             📊 PFG Dashboard
                         </Link>
                     )}
+                    {user.role === "DOCENTE" && (
+                        <Link href="/app/pasantia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-teal-300">
+                            📋 Pasantía 2º Año
+                        </Link>
+                    )}
                     <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300">
                         🎓 Simulador Examen
                     </Link>
