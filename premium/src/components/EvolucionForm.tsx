@@ -845,12 +845,13 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
     const confirmDuplicate = () => {
         if (!copyCandidates) return;
 
-        // Filtrar y regenerar IDs reales
+        // Filtrar y regenerar IDs reales — solo lo que el usuario marcó
         const duplicatedExercises = copyCandidates.exercises
             .filter(ex => selectedExercisesToCopy.has(ex._tempId))
             .map((ex: any) => ({
                 ...ex,
-                id: generateId()
+                id: generateId(),
+                _tempId: undefined // Limpiar id temporal
             }));
 
         const duplicatedInterventions = copyCandidates.interventions
@@ -858,43 +859,58 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             .map((int: any) => ({
                 ...int,
                 id: generateId(),
-                copiedFromEvolutionId: copyCandidates.evolutionId // Tracking estricto FASE 2.1.25
+                _tempId: undefined,
+                copiedFromEvolutionId: copyCandidates.evolutionId // Tracking FASE 2.1.25
             }));
 
-        setFormData((prev: any) => ({
-            ...prev,
-            exercises: [
-                ...(prev.exercises || []),
-                ...duplicatedExercises
-            ],
-            interventions: [
-                ...(Array.isArray(prev.interventions) ? prev.interventions : []),
-                ...duplicatedInterventions
-            ],
-            // Heredar el "NextPlan" previo como la meta de la sesión de hoy
-            sessionGoal: copyCandidates.oldGoal || prev.sessionGoal || "",
+        const importingExercises = duplicatedExercises.length > 0;
+        const importingInterventions = duplicatedInterventions.length > 0;
 
-            // Limpiar EVAs y CheckIn (Condición Clínica Estricta: Se miden de 0 en la sesión de Hoy)
-            pain: {
-                ...prev.pain,
-                evaStart: "",
-                evaEnd: ""
-            },
-            readiness: undefined,
+        setFormData((prev: any) => {
+            const update: any = {
+                ...prev,
+                audit: {
+                    ...(prev.audit || {}),
+                    copiedFromEvolutionId: copyCandidates.evolutionId
+                }
+            };
 
-            // Si el anterior tenía un effort mode forzado explícitamente, heredarlo
-            perceptionMode: copyCandidates.oldEffortMode || prev.perceptionMode,
-
-            audit: {
-                ...(prev.audit || {}),
-                copiedFromEvolutionId: copyCandidates.evolutionId
+            // Solo mezclar ejercicios si el usuario seleccionó alguno
+            if (importingExercises) {
+                update.exercises = [...(prev.exercises || []), ...duplicatedExercises];
+                // Heredar el modo de esfuerzo solo cuando se traen ejercicios
+                update.perceptionMode = copyCandidates.oldEffortMode || prev.perceptionMode;
+                // EVAs se miden desde 0 en la sesión de hoy (solo si se importan ejercicios)
+                update.pain = { ...prev.pain, evaStart: "", evaEnd: "" };
+                update.readiness = undefined;
             }
-        }));
 
-        alert(`✅ Se reciclaron ${duplicatedExercises.length} ejercicios y ${duplicatedInterventions.length} intervenciones específicas.`);
+            // Solo mezclar intervenciones si el usuario seleccionó alguna
+            if (importingInterventions) {
+                update.interventions = [
+                    ...(Array.isArray(prev.interventions) ? prev.interventions : []),
+                    ...duplicatedInterventions
+                ];
+            }
+
+            // Heredar el plan de la sesión anterior como meta de hoy SOLO si el usuario
+            // importa ejercicios (es la continuación lógica del tratamiento)
+            if (importingExercises && copyCandidates.oldGoal && !prev.sessionGoal) {
+                update.sessionGoal = copyCandidates.oldGoal;
+            }
+
+            return update;
+        });
+
+        const parts = [];
+        if (duplicatedExercises.length > 0) parts.push(`${duplicatedExercises.length} ejercicio(s)`);
+        if (duplicatedInterventions.length > 0) parts.push(`${duplicatedInterventions.length} intervención(es)`);
+        alert(`✅ Se importaron: ${parts.join(' y ')}.`);
+
         setShowCopyModal(false);
         setCopyCandidates(null);
     };
+
 
     // Método universal de Guardado para Borrador o Cierre
     const executeSave = async (willClose: boolean, overrideReason?: string, isAutoSave = false, extraProps?: Partial<Evolucion>) => {
