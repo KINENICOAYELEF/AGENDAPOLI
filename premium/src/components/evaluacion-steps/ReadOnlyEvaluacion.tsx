@@ -131,6 +131,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                         </h3>
                         
                         {p1 ? (
+                            <>
                             <div className="space-y-6">
                                 {/* Foco y Motivo */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,7 +168,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                      <InfoCard label="Irritabilidad Global" value={p1.sins?.irritabilidad_global?.toUpperCase()} />
                                 </div>
 
-                                {/* Banderas / Contexto Clínico (Si existen rojas o amarillas) */}
+                                {/* Banderas / Contexto Clínico */}
                                 {p1.factores_contextuales_clave && (p1.factores_contextuales_clave.banderas_rojas?.length > 0 || p1.factores_contextuales_clave.banderas_amarillas?.length > 0) && (
                                     <div className="bg-red-50 p-4 rounded-xl border border-red-100">
                                         <h4 className="text-[11px] uppercase text-red-800 font-bold mb-2 tracking-wider">Alertas Clínicas Detectadas o Descartadas</h4>
@@ -177,7 +178,185 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Resumen Clínico IA */}
+                                {(p1.resumen_clinico_breve || p1.resumen_clinico) && (
+                                    <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                                        <h4 className="text-[11px] uppercase text-indigo-600 font-bold mb-2 tracking-wider">Resumen Clínico</h4>
+                                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{p1.resumen_clinico_breve || p1.resumen_clinico}</p>
+                                    </div>
+                                )}
+
+                                {/* Hipótesis Orientativas */}
+                                {(p1.hipotesis_orientativas?.length > 0) && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Hipótesis Orientativas</h4>
+                                        <div className="space-y-2">
+                                            {p1.hipotesis_orientativas.map((h: any, i: number) => (
+                                                <div key={i} className="flex items-start gap-2 text-sm">
+                                                    <span className="bg-indigo-100 text-indigo-700 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i+1}</span>
+                                                    <div><span className="font-bold text-slate-800">{h.titulo || h.nombre}</span>{h.explicacion && <span className="text-slate-500 ml-1">— {h.explicacion}</span>}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+
+                            {/* --- DATOS CRUDOS V4 (Focos, BPS, Seguridad, Contexto) --- */}
+                            {(() => {
+                                const v4 = ev.interview?.v4;
+                                if (!v4) return null;
+                                return (
+                                    <div className="space-y-5 mt-2">
+                                        {/* Relato Libre */}
+                                        {v4.experienciaPersona?.relatoLibre && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Relato de la Persona</h4>
+                                                <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed italic">&ldquo;{v4.experienciaPersona.relatoLibre}&rdquo;</p>
+                                            </div>
+                                        )}
+
+                                        {/* Focos Clínicos */}
+                                        {v4.focos?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs uppercase text-indigo-500 font-bold tracking-widest border-b pb-2 mb-3">Focos Clínicos ({v4.focos.length})</h4>
+                                                <div className="space-y-4">
+                                                    {v4.focos.map((f: any, fi: number) => (
+                                                        <div key={fi} className={`p-4 rounded-xl border shadow-sm ${f.esPrincipal ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                {f.esPrincipal && <span className="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Principal</span>}
+                                                                <span className="font-bold text-slate-800">{f.region}</span>
+                                                                <span className="text-xs text-slate-500">({humanize(f.lado)})</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                                                <InfoCard label="Inicio" value={humanize(f.inicio)} />
+                                                                <InfoCard label="Antigüedad" value={f.antiguedad} />
+                                                                <InfoCard label="Evolución" value={humanize(f.evolucion)} />
+                                                                <InfoCard label="Episodios Previos" value={humanize(f.episodiosPrevios)} />
+                                                            </div>
+                                                            {f.contextoDetallado && <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-500">Contexto:</span> {f.contextoDetallado}</p>}
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                                                                <InfoCard label="Dolor Actual" value={f.dolorActual != null ? `${f.dolorActual}/10` : '-'} />
+                                                                <InfoCard label="Mejor 24h" value={f.mejor24h != null ? `${f.mejor24h}/10` : '-'} />
+                                                                <InfoCard label="Peor 24h" value={f.peor24h != null ? `${f.peor24h}/10` : '-'} />
+                                                                <InfoCard label="En Actividad" value={f.dolorActividadIndice != null ? `${f.dolorActividadIndice}/10` : '-'} sub={f.actividadIndice} />
+                                                            </div>
+                                                            {f.naturaleza?.length > 0 && (
+                                                                <div className="mb-2"><span className="text-[9px] font-bold text-slate-400 uppercase">Naturaleza:</span> <span className="text-xs text-slate-600">{f.naturaleza.join(', ')}</span></div>
+                                                            )}
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                {f.agravantes && <div><span className="text-[9px] font-bold text-slate-400 uppercase block">Agravantes</span><span className="text-xs text-slate-600">{f.agravantes}</span></div>}
+                                                                {f.aliviantes && <div><span className="text-[9px] font-bold text-slate-400 uppercase block">Aliviantes</span><span className="text-xs text-slate-600">{f.aliviantes}</span></div>}
+                                                            </div>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                                                                <InfoCard label="Extensión" value={humanize(f.extension)} />
+                                                                <InfoCard label="Profundidad" value={humanize(f.profundidad)} />
+                                                                <InfoCard label="Irritabilidad" value={humanize(f.irritabilidadAuto?.nivel)} sub={f.irritabilidadAuto?.explicacion?.substring(0,60)} />
+                                                                <InfoCard label="Mecanismo Dolor" value={humanize(f.mecanismoCategoria)} sub={f.mecanismoApellido} />
+                                                            </div>
+                                                            {f.signoComparable && <div className="mt-2"><span className="text-[9px] font-bold text-slate-400 uppercase block">Signo Comparable</span><span className="text-xs text-slate-700 font-medium">{f.signoComparable} {f.dolorEnSigno != null ? `(Dolor: ${f.dolorEnSigno}/10)` : ''}</span></div>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* PSFS Global */}
+                                        {v4.psfsGlobal?.length > 0 && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Escala Funcional (PSFS)</h4>
+                                                <div className="space-y-1.5">
+                                                    {v4.psfsGlobal.filter((p: any) => p.actividad).map((p: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between text-sm bg-white p-2 rounded-lg border border-slate-100">
+                                                            <span className="text-slate-700 font-medium">{p.actividad}</span>
+                                                            <span className={`font-bold px-2 py-0.5 rounded text-xs ${(p.score ?? 0) <= 3 ? 'bg-rose-100 text-rose-700' : (p.score ?? 0) <= 6 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{p.score ?? '?'}/10</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {v4.objetivoPersona && <p className="text-xs text-slate-600 mt-2"><span className="font-bold">Objetivo:</span> {v4.objetivoPersona} {v4.plazoEsperado ? `(Plazo: ${v4.plazoEsperado})` : ''}</p>}
+                                            </div>
+                                        )}
+
+                                        {/* Experiencia Persona - Objetivos */}
+                                        {v4.experienciaPersona?.objetivos?.length > 0 && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Objetivos de la Persona</h4>
+                                                <div className="space-y-2">
+                                                    {v4.experienciaPersona.objetivos.map((o: any, i: number) => (
+                                                        <div key={i} className="flex items-start gap-2 text-sm bg-white p-2.5 rounded-lg border border-slate-100">
+                                                            {o.esPrincipal && <span className="bg-indigo-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0 mt-0.5">Ppal</span>}
+                                                            <div>
+                                                                <span className="font-medium text-slate-800">{o.verbo ? `${o.verbo} ` : ''}{o.actividad}</span>
+                                                                {o.contexto?.length > 0 && <span className="text-xs text-slate-500 ml-1">({o.contexto.join(', ')})</span>}
+                                                                {o.plazoSemanas && <span className="text-xs text-slate-400 ml-1">· {o.plazoSemanas} sem</span>}
+                                                                {o.enSusPalabras && <p className="text-xs text-slate-500 italic mt-0.5">&ldquo;{o.enSusPalabras}&rdquo;</p>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* BPS */}
+                                        {v4.bps && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Perfil Biopsicosocial (BPS)</h4>
+                                                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                                    {[['sueno','Sueño'],['estres','Estrés'],['miedoMoverCargar','Kinesiofobia'],['preocupacionDano','Preocupación Daño'],['confianzaBaja','Baja Autoeficacia'],['frustracion','Frustración']].map(([k,label]) => {
+                                                        const val = (v4.bps as any)[k];
+                                                        if (val === undefined || val === null) return null;
+                                                        return <InfoCard key={k} label={label} value={`${val}/2`} />;
+                                                    })}
+                                                </div>
+                                                {v4.bps.otros && <p className="text-xs text-slate-600 mt-2"><span className="font-bold">Otros:</span> {v4.bps.otros}</p>}
+                                            </div>
+                                        )}
+
+                                        {/* Seguridad */}
+                                        {v4.seguridad && (
+                                            <div className={`p-4 rounded-xl border ${(v4.seguridad.fiebre_sistemico_cancerPrevio || v4.seguridad.neuroGraveProgresivo_esfinteres_sillaMontar || v4.seguridad.sospechaFractura_incapacidadCarga) ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-100'}`}>
+                                                <h4 className="text-[11px] uppercase font-bold mb-2 tracking-wider text-slate-600">Screening de Seguridad</h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                                                    {[['fiebre_sistemico_cancerPrevio','Fiebre / Sistémico / Cáncer previo'],['bajaPeso_noIntencionada','Baja de peso no intencionada'],['dolorNocturno_inexplicable_noMecanico','Dolor nocturno no mecánico'],['trauma_altaEnergia_caidaImportante','Trauma alta energía'],['neuroGraveProgresivo_esfinteres_sillaMontar','Neuro grave progresivo'],['sospechaFractura_incapacidadCarga','Sospecha fractura'],['riesgoEmocionalAgudo','Riesgo emocional agudo']].map(([k,label]) => {
+                                                        const val = (v4.seguridad as any)[k];
+                                                        if (val === undefined) return null;
+                                                        return <div key={k} className="flex items-center gap-1.5"><span className={`w-3 h-3 rounded-full shrink-0 ${val ? 'bg-red-500' : 'bg-emerald-400'}`}></span><span className="text-slate-700">{label}</span></div>;
+                                                    })}
+                                                </div>
+                                                {v4.seguridad.detalleBanderas && <p className="text-xs text-slate-600 mt-2 italic">{v4.seguridad.detalleBanderas}</p>}
+                                            </div>
+                                        )}
+
+                                        {/* Contexto Deportivo */}
+                                        {v4.contextoDeportivo?.aplica && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Contexto Deportivo</h4>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                    <InfoCard label="Deporte" value={v4.contextoDeportivo.deportePrincipal} />
+                                                    <InfoCard label="Nivel" value={humanize(v4.contextoDeportivo.nivel)} />
+                                                    <InfoCard label="Hrs/Semana" value={v4.contextoDeportivo.horasSemanales != null ? String(v4.contextoDeportivo.horasSemanales) : '-'} />
+                                                    <InfoCard label="Objetivo Retorno" value={humanize(v4.contextoDeportivo.objetivoRetorno)} />
+                                                </div>
+                                                {v4.contextoDeportivo.cambioBruscoCarga === 'Sí' && <p className="text-xs text-amber-700 font-bold mt-2">⚠️ Cambio brusco de carga reportado{v4.contextoDeportivo.notaCarga ? `: ${v4.contextoDeportivo.notaCarga}` : ''}</p>}
+                                            </div>
+                                        )}
+
+                                        {/* Contexto Laboral */}
+                                        {v4.contextoLaboral && (v4.contextoLaboral.trabajoDificultaRecuperacion || v4.contextoLaboral.temorEmpeorarTrabajo || v4.contextoLaboral.barrerasReales) && (
+                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Contexto Laboral</h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                                    {v4.contextoLaboral.trabajoDificultaRecuperacion && <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span><span>Trabajo dificulta recuperación</span></div>}
+                                                    {v4.contextoLaboral.temorEmpeorarTrabajo && <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span><span>Temor a empeorar en trabajo</span></div>}
+                                                    {v4.contextoLaboral.barrerasReales && <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span><span>Barreras reales: {v4.contextoLaboral.barrerasDetalles?.join(', ')}</span></div>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                            </>
                         ) : ev.interview?.v4?.experienciaPersona?.relatoLibre || ev.interview?.v4?.anamnesisProxima?.motivoPrincipalConsulta ? (
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
                                 <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.interview.v4.experienciaPersona?.relatoLibre || ev.interview.v4.anamnesisProxima?.motivoPrincipalConsulta}</p>
@@ -196,16 +375,92 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                             Contexto Basal Relevante
                         </h3>
                         {p15 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <InfoCard label="Ocupación" value={humanize(p15.contexto_ocupacional?.ocupacion_principal)} sub={humanize(p15.contexto_ocupacional?.barreras_logisticas_adherencia?.[0])} />
-                                <InfoCard label="Actividad/Deporte" value={humanize(p15.deporte_actividad_basal?.actividad_deporte_central)} sub={humanize(p15.deporte_actividad_basal?.nivel_practica_actual)} />
-                                <InfoCard label="Calidad Sueño" value={humanize(p15.biopsicosocial_habitos?.calidad_sueno)} />
-                                <InfoCard label="Estrés" value={humanize(p15.biopsicosocial_habitos?.estres_basal)} />
-                                {p15.antecedentes_msk?.lesiones_previas?.length > 0 && (
-                                     <InfoCard label="Lesiones Previas" value={p15.antecedentes_msk.lesiones_previas.map(humanize).join(', ')} />
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <InfoCard label="Ocupación" value={humanize(p15.contexto_ocupacional?.ocupacion_principal)} sub={humanize(p15.contexto_ocupacional?.barreras_logisticas_adherencia?.[0])} />
+                                    <InfoCard label="Actividad/Deporte" value={humanize(p15.deporte_actividad_basal?.actividad_deporte_central)} sub={humanize(p15.deporte_actividad_basal?.nivel_practica_actual)} />
+                                    <InfoCard label="Calidad Sueño" value={humanize(p15.biopsicosocial_habitos?.calidad_sueno)} />
+                                    <InfoCard label="Estrés" value={humanize(p15.biopsicosocial_habitos?.estres_basal)} />
+                                </div>
+
+                                {/* Antecedentes MSK */}
+                                {(p15.antecedentes_msk?.lesiones_previas?.length > 0 || p15.antecedentes_msk?.cirugias_previas?.length > 0 || p15.antecedentes_msk?.secuelas_persistentes?.length > 0) && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Antecedentes Musculoesqueléticos</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {p15.antecedentes_msk.lesiones_previas?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Lesiones Previas</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.antecedentes_msk.lesiones_previas.map((l: string, i: number) => <li key={i}>{humanize(l)}</li>)}</ul></div>}
+                                            {p15.antecedentes_msk.cirugias_previas?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Cirugías</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.antecedentes_msk.cirugias_previas.map((c: string, i: number) => <li key={i}>{humanize(c)}</li>)}</ul></div>}
+                                            {p15.antecedentes_msk.secuelas_persistentes?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Secuelas</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.antecedentes_msk.secuelas_persistentes.map((s: string, i: number) => <li key={i}>{humanize(s)}</li>)}</ul></div>}
+                                        </div>
+                                    </div>
                                 )}
-                                {p15.antecedentes_msk?.cirugias_previas?.length > 0 && (
-                                     <InfoCard label="Cirugías" value={p15.antecedentes_msk.cirugias_previas.map(humanize).join(', ')} />
+
+                                {/* Comorbilidades / Medicamentos / Alergias */}
+                                {(p15.factores_biologicos_relevantes?.comorbilidades_relevantes?.length > 0 || p15.factores_biologicos_relevantes?.medicacion_relevante?.length > 0 || p15.factores_biologicos_relevantes?.alergias_relevantes?.length > 0) && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Factores Biológicos Relevantes</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {p15.factores_biologicos_relevantes.comorbilidades_relevantes?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Comorbilidades</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.factores_biologicos_relevantes.comorbilidades_relevantes.map((c: string, i: number) => <li key={i}>{c}</li>)}</ul></div>}
+                                            {p15.factores_biologicos_relevantes.medicacion_relevante?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Medicamentos</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.factores_biologicos_relevantes.medicacion_relevante.map((m: string, i: number) => <li key={i}>{m}</li>)}</ul></div>}
+                                            {p15.factores_biologicos_relevantes.alergias_relevantes?.length > 0 && <div><span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Alergias</span><ul className="text-xs text-slate-600 list-disc pl-3 space-y-0.5">{p15.factores_biologicos_relevantes.alergias_relevantes.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul></div>}
+                                        </div>
+                                        {p15.factores_biologicos_relevantes.detalle_clinico_relevante && <p className="text-xs text-slate-600 mt-2 italic">{p15.factores_biologicos_relevantes.detalle_clinico_relevante}</p>}
+                                    </div>
+                                )}
+
+                                {/* Contexto Domiciliario */}
+                                {p15.contexto_domiciliario && (p15.contexto_domiciliario.vive_con || p15.contexto_domiciliario.tipo_vivienda) && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        {p15.contexto_domiciliario.vive_con && <InfoCard label="Vive con" value={p15.contexto_domiciliario.vive_con} />}
+                                        {p15.contexto_domiciliario.tipo_vivienda && <InfoCard label="Vivienda" value={humanize(p15.contexto_domiciliario.tipo_vivienda)} />}
+                                        {p15.contexto_domiciliario.barreras_entorno?.length > 0 && <InfoCard label="Barreras Entorno" value={p15.contexto_domiciliario.barreras_entorno.map(humanize).join(', ')} />}
+                                    </div>
+                                )}
+
+                                {/* BPS Flags */}
+                                {p15_flags && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {p15_flags.factores_personales_positivos?.length > 0 && (
+                                            <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                                                <h5 className="text-[9px] font-bold text-emerald-600 uppercase mb-1">Factores Positivos</h5>
+                                                <div className="flex flex-wrap gap-1">{p15_flags.factores_personales_positivos.map((f: string, i: number) => <span key={i} className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{f}</span>)}</div>
+                                            </div>
+                                        )}
+                                        {p15_flags.factores_personales_negativos?.length > 0 && (
+                                            <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                                                <h5 className="text-[9px] font-bold text-amber-600 uppercase mb-1">Factores Negativos / Barreras</h5>
+                                                <div className="flex flex-wrap gap-1">{p15_flags.factores_personales_negativos.map((f: string, i: number) => <span key={i} className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{f}</span>)}</div>
+                                            </div>
+                                        )}
+                                        {p15_flags.facilitadores_ambientales?.length > 0 && (
+                                            <div className="bg-sky-50 p-3 rounded-xl border border-sky-100">
+                                                <h5 className="text-[9px] font-bold text-sky-600 uppercase mb-1">Facilitadores</h5>
+                                                <div className="flex flex-wrap gap-1">{p15_flags.facilitadores_ambientales.map((f: string, i: number) => <span key={i} className="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{f}</span>)}</div>
+                                            </div>
+                                        )}
+                                        {p15_flags.barreras_ambientales?.length > 0 && (
+                                            <div className="bg-rose-50 p-3 rounded-xl border border-rose-100">
+                                                <h5 className="text-[9px] font-bold text-rose-600 uppercase mb-1">Barreras Ambientales</h5>
+                                                <div className="flex flex-wrap gap-1">{p15_flags.barreras_ambientales.map((f: string, i: number) => <span key={i} className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{f}</span>)}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Notas Permanentes */}
+                                {ev.remoteHistorySnapshot?.permanentNotes && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Notas Permanentes del Perfil</h4>
+                                        <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{ev.remoteHistorySnapshot.permanentNotes}</p>
+                                    </div>
+                                )}
+
+                                {/* Modificadores clínicos */}
+                                {p15.modificadores_clinicos?.length > 0 && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Modificadores Clínicos</h4>
+                                        <div className="flex flex-wrap gap-1">{p15.modificadores_clinicos.map((m: string, i: number) => <span key={i} className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{m}</span>)}</div>
+                                    </div>
                                 )}
                             </div>
                         ) : (
@@ -474,23 +729,29 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                           )}
                                      </div>
                                      
-                                     {/* Alteraciones Funcionales (E2) */}
+                                     {/* Alteraciones Funcionales */}
                                      {p3.alteraciones_detectadas?.funcionales?.length > 0 && (
                                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Funcionales (E2)</h4>
-                                              <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
-                                                  {p3.alteraciones_detectadas.funcionales.map((f:any, i:number) => <li key={`f-${i}`}>{f.funcion_disfuncion}</li>)}
-                                              </ul>
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alteraciones Funcionales</h4>
+                                              <div className="space-y-2">{p3.alteraciones_detectadas.funcionales.map((f:any, i:number) => (
+                                                  <div key={`f-${i}`} className="bg-white p-2.5 rounded-lg border border-slate-100 flex items-start justify-between gap-2">
+                                                      <div><span className="text-sm font-bold text-slate-800">{f.funcion_disfuncion}</span>{f.dominio_sugerido && <span className="text-[10px] text-slate-500 ml-2">({humanize(f.dominio_sugerido)})</span>}{f.fundamento && <p className="text-xs text-slate-500 mt-0.5 italic">{f.fundamento}</p>}</div>
+                                                      {f.severidad && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${f.severidad === 'Severa' || f.severidad === 'Completa' ? 'bg-rose-100 text-rose-700' : f.severidad === 'Moderada' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{humanize(f.severidad)}</span>}
+                                                  </div>
+                                              ))}</div>
                                          </div>
                                      )}
 
-                                     {/* Alteraciones Estructurales (E1) */}
+                                     {/* Alteraciones Estructurales */}
                                      {p3.alteraciones_detectadas?.estructurales?.length > 0 && (
                                          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alt. Estructurales (E1)</h4>
-                                              <ul className="text-sm text-slate-700 list-disc pl-4 space-y-1.5">
-                                                  {p3.alteraciones_detectadas.estructurales.map((e:any, i:number) => <li key={`e-${i}`}>{e.alteracion} ({e.estructura})</li>)}
-                                              </ul>
+                                              <h4 className="text-[11px] uppercase text-slate-500 font-bold mb-2 tracking-wider">Alteraciones Estructurales</h4>
+                                              <div className="space-y-2">{p3.alteraciones_detectadas.estructurales.map((e:any, i:number) => (
+                                                  <div key={`e-${i}`} className="bg-white p-2.5 rounded-lg border border-slate-100 flex items-start justify-between gap-2">
+                                                      <div><span className="text-sm font-bold text-slate-800">{e.alteracion}</span> <span className="text-sm text-slate-600">({e.estructura})</span>{e.impacto_caso && <span className="text-[10px] text-slate-500 ml-2">Impacto: {humanize(e.impacto_caso)}</span>}{e.fundamento && <p className="text-xs text-slate-500 mt-0.5 italic">{e.fundamento}</p>}</div>
+                                                      {e.certeza && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${e.certeza === 'Casi confirmada' ? 'bg-emerald-100 text-emerald-700' : e.certeza === 'Probable' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'}`}>{humanize(e.certeza)}</span>}
+                                                  </div>
+                                              ))}</div>
                                          </div>
                                      )}
 
@@ -529,7 +790,7 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                                   {Object.entries(p3.factores_biopsicosociales).map(([key, list]: [string, any]) => (
                                                       Array.isArray(list) && list.length > 0 && (
                                                           <div key={key}>
-                                                              <h5 className="text-[9px] uppercase font-black text-indigo-400 mb-1">{key.replace(/_/g, ' ')}</h5>
+                                                              <h5 className="text-[9px] uppercase font-black text-indigo-400 mb-1">{humanizeKey(key)}</h5>
                                                               <ul className="text-[11px] text-slate-600 list-disc pl-3 space-y-0.5">
                                                                   {list.map((item: any, idx: number) => (
                                                                       <li key={idx}>{item.texto || item.factor || item}</li>
