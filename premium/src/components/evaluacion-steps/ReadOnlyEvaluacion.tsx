@@ -1,6 +1,6 @@
 import React from 'react';
 import { Evaluacion } from '@/types/clinica';
-import { humanize } from '@/utils/humanizer';
+import { humanize, humanizeKey, hiddenKeys } from '@/utils/humanizer';
 import { formatSafeDate } from '@/lib/firebase-utils';
 
 interface ReadOnlyEvaluacionProps {
@@ -10,24 +10,21 @@ interface ReadOnlyEvaluacionProps {
     onEdit: () => void;
 }
 
-// Renderizador recursivo elegante para evitar JSON en crudo ({}[])
+// Renderizador recursivo elegante — usa humanize/humanizeKey para lectura clínica
 const StructuredDataRenderer = ({ data, level = 0 }: { data: any, level?: number }) => {
     if (data === null || data === undefined || data === '') return null;
     
-    // Arrays
     if (Array.isArray(data)) {
         if (data.length === 0) return null;
-        // Array de primitivos
         if (data.every(val => typeof val !== 'object')) {
             return (
                 <ul className="list-disc pl-4 space-y-1">
                     {data.map((item, idx) => (
-                        <li key={idx} className="text-xs text-slate-600 font-medium leading-relaxed">{item}</li>
+                        <li key={idx} className="text-xs text-slate-600 font-medium leading-relaxed">{humanize(item)}</li>
                     ))}
                 </ul>
             );
         }
-        // Array de objetos
         return (
             <div className="space-y-3 mt-1 w-full">
                 {data.map((item, idx) => (
@@ -40,12 +37,11 @@ const StructuredDataRenderer = ({ data, level = 0 }: { data: any, level?: number
         );
     }
     
-    // Objects
     if (typeof data === 'object') {
         const entries = Object.entries(data).filter(([key, val]) => {
             if (val === null || val === undefined || val === '') return false;
             if (Array.isArray(val) && val.length === 0) return false;
-            if (key === 'mostrar') return false; // flag tecnico
+            if (hiddenKeys.has(key)) return false;
             return true;
         });
         
@@ -54,17 +50,17 @@ const StructuredDataRenderer = ({ data, level = 0 }: { data: any, level?: number
         return (
             <div className="flex flex-col gap-2 w-full overflow-hidden">
                 {entries.map(([key, val], idx) => {
-                    const humanKey = key.replace(/Config/ig, '').replace(/([A-Z])/g, ' $1').trim();
+                    const label = humanizeKey(key);
                     const isSimpleValue = typeof val !== 'object';
                     
                     return (
                         <div key={idx} className={`flex w-full ${isSimpleValue ? 'flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2' : 'flex-col gap-1.5'}`}>
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0 break-words mt-0.5">
-                                {humanKey}:
+                                {label}:
                             </span>
                             <div className="w-full flex-1 min-w-0">
                                 {isSimpleValue ? (
-                                    <span className="text-xs text-slate-800 font-medium break-words leading-relaxed block">{String(val)}</span>
+                                    <span className="text-xs text-slate-800 font-medium break-words leading-relaxed block">{typeof val === 'boolean' ? (val ? 'Sí' : 'No') : humanize(String(val))}</span>
                                 ) : (
                                     <div className="w-full overflow-hidden">
                                         <StructuredDataRenderer data={val} level={level + 1} />
@@ -78,8 +74,7 @@ const StructuredDataRenderer = ({ data, level = 0 }: { data: any, level?: number
         );
     }
     
-    // Valores simples finales (fallback)
-    return <span className="text-xs text-slate-800 font-medium break-words leading-relaxed">{String(data)}</span>;
+    return <span className="text-xs text-slate-800 font-medium break-words leading-relaxed">{humanize(String(data))}</span>;
 };
 
 const InfoCard = ({ label, value, sub }: { label: string, value?: string, sub?: string }) => {
@@ -227,26 +222,197 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                             Examen Físico
                         </h3>
 
-                        {/* FASE 2.5: Datos Estructurados de P2 */}
-                        {ev.guidedExam && Object.keys(ev.guidedExam).length > 0 && (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
-                                {Object.entries(ev.guidedExam).map(([key, data]: [string, any]) => {
-                                    if (!data || key === 'status' || key === 'completedModules') return null;
-                                    const title = key.replace(/([A-Z])/g, ' $1').replace(/Config/ig, '').trim().toUpperCase();
-                                    return (
-                                        <div key={key} className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 overflow-hidden shadow-sm">
-                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">{title}</h4>
-                                            <div className="w-full overflow-x-auto">
-                                                <StructuredDataRenderer data={data} />
+                        {/* P2 Especializado: Renderizar datos clínicos de forma legible */}
+                        {ev.guidedExam && Object.keys(ev.guidedExam).length > 0 && (() => {
+                            const gx = ev.guidedExam as any;
+                            const obsConfig = gx.observacionInicialConfig;
+                            const romRows = gx.romRangeRows || gx.romAnaliticoConfig?.romRangeRows || [];
+                            const muscleRows = gx.musclePerformanceRows || gx.fuerzaCargaConfig?.musclePerformanceRows || [];
+                            const neuroRowsData = gx.neuroRows || gx.neuroVascularConfig?.neuroRows || [];
+                            const retestCfg = gx.retestConfig;
+                            const medidasCfg = gx.medidasComplementariasConfig;
+                            const palpText = gx.palpationDetails || gx.palpation || gx.palpacionConfig?.palpationDetails || '';
+                            const motorText = gx.motorControl || gx.controlMotorConfig?.motorControlText || '';
+                            const ortopText = gx.specialTestsText || gx.orthopedicTestsText || gx.ortopedicasConfig?.specialTestsText || '';
+                            const funcText = gx.functionalTestsText || gx.functionalTests || gx.funcionalesConfig?.functionalTestsText || '';
+                            const obsText = gx.observation || '';
+                            const hasP2Data = obsConfig || romRows.length > 0 || muscleRows.length > 0 || neuroRowsData.length > 0 || retestCfg || medidasCfg || palpText || motorText || ortopText || funcText || obsText;
+                            if (!hasP2Data) return null;
+
+                            return (
+                                <div className="space-y-4 mb-5">
+                                    {/* Observación Inicial */}
+                                    {(obsConfig || obsText) && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Observación Inicial</h4>
+                                            {obsText && <p className="text-sm text-slate-700 mb-3 leading-relaxed">{obsText}</p>}
+                                            {gx.movimientoObservadoHoy && <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-500">Movimiento observado:</span> {gx.movimientoObservadoHoy}</p>}
+                                            {gx.postureAlignment && <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-500">Alineación postural:</span> {gx.postureAlignment}</p>}
+                                            {gx.gaitBasicGesture && <p className="text-xs text-slate-600 mb-2"><span className="font-bold text-slate-500">Marcha:</span> {gx.gaitBasicGesture}</p>}
+                                            {obsConfig && (
+                                                <div className="flex flex-wrap gap-4 mt-2">
+                                                    {obsConfig.posturaChips?.length > 0 && (
+                                                        <div>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Postura</span>
+                                                            <div className="flex flex-wrap gap-1">{obsConfig.posturaChips.map((c: string, i: number) => <span key={i} className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                                                        </div>
+                                                    )}
+                                                    {obsConfig.marchaChips?.length > 0 && (
+                                                        <div>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Marcha</span>
+                                                            <div className="flex flex-wrap gap-1">{obsConfig.marchaChips.map((c: string, i: number) => <span key={i} className="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                                                        </div>
+                                                    )}
+                                                    {obsConfig.movLibreChips?.length > 0 && (
+                                                        <div>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Movimiento Libre</span>
+                                                            <div className="flex flex-wrap gap-1">{obsConfig.movLibreChips.map((c: string, i: number) => <span key={i} className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{c}</span>)}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* ROM Analítico - Tabla */}
+                                    {romRows.length > 0 && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm overflow-x-auto">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">ROM Analítico</h4>
+                                            <table className="w-full text-xs">
+                                                <thead><tr className="border-b border-slate-200">
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Movimiento</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Lado</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Dolor</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">End-Feel</th>
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Notas</th>
+                                                </tr></thead>
+                                                <tbody>{romRows.filter((r: any) => r.movement).map((r: any, i: number) => (
+                                                    <tr key={i} className="border-b border-slate-100 hover:bg-white/60">
+                                                        <td className="py-1.5 px-2 font-medium text-slate-700">{r.movement}</td>
+                                                        <td className="py-1.5 px-2 text-center text-slate-600">{humanize(r.side) || '—'}</td>
+                                                        <td className="py-1.5 px-2 text-center"><span className={`font-bold ${(r.painLevel || 0) >= 5 ? 'text-rose-600' : (r.painLevel || 0) >= 3 ? 'text-amber-600' : 'text-slate-500'}`}>{r.painLevel ?? '—'}</span></td>
+                                                        <td className="py-1.5 px-2 text-center text-slate-600">{humanize(r.endFeel) || '—'}</td>
+                                                        <td className="py-1.5 px-2 text-slate-500 italic">{r.notes || '—'}</td>
+                                                    </tr>
+                                                ))}</tbody>
+                                            </table>
+                                        </div>
+                                    )}
+
+                                    {/* Fuerza y Carga - Tabla */}
+                                    {muscleRows.length > 0 && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm overflow-x-auto">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Fuerza y Carga</h4>
+                                            <table className="w-full text-xs">
+                                                <thead><tr className="border-b border-slate-200">
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Acción Muscular</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Lado</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Grado MRC</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Dolor</th>
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Notas</th>
+                                                </tr></thead>
+                                                <tbody>{muscleRows.filter((r: any) => r.action).map((r: any, i: number) => (
+                                                    <tr key={i} className="border-b border-slate-100 hover:bg-white/60">
+                                                        <td className="py-1.5 px-2 font-medium text-slate-700">{r.action}</td>
+                                                        <td className="py-1.5 px-2 text-center text-slate-600">{humanize(r.side) || '—'}</td>
+                                                        <td className="py-1.5 px-2 text-center font-bold text-slate-700">{humanize(r.mrcGrade) || '—'}</td>
+                                                        <td className="py-1.5 px-2 text-center"><span className={`font-bold ${(r.painScale || 0) >= 5 ? 'text-rose-600' : (r.painScale || 0) >= 3 ? 'text-amber-600' : 'text-slate-500'}`}>{r.painScale ?? '—'}</span></td>
+                                                        <td className="py-1.5 px-2 text-slate-500 italic">{r.notes || '—'}</td>
+                                                    </tr>
+                                                ))}</tbody>
+                                            </table>
+                                        </div>
+                                    )}
+
+                                    {/* Palpación */}
+                                    {palpText && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Palpación</h4>
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{palpText}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Neurovascular */}
+                                    {neuroRowsData.length > 0 && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm overflow-x-auto">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Evaluación Neurovascular</h4>
+                                            <table className="w-full text-xs">
+                                                <thead><tr className="border-b border-slate-200">
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Test</th>
+                                                    <th className="text-center py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Hallazgo</th>
+                                                    <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase text-[10px]">Notas</th>
+                                                </tr></thead>
+                                                <tbody>{neuroRowsData.filter((r: any) => r.test).map((r: any, i: number) => (
+                                                    <tr key={i} className="border-b border-slate-100 hover:bg-white/60">
+                                                        <td className="py-1.5 px-2 font-medium text-slate-700">{r.test}</td>
+                                                        <td className="py-1.5 px-2 text-center"><span className={`font-bold ${r.finding === 'Positivo' || r.finding === 'positivo' ? 'text-rose-600' : 'text-slate-600'}`}>{humanize(r.finding)}</span></td>
+                                                        <td className="py-1.5 px-2 text-slate-500 italic">{r.notes || '—'}</td>
+                                                    </tr>
+                                                ))}</tbody>
+                                            </table>
+                                        </div>
+                                    )}
+
+                                    {/* Control Motor */}
+                                    {motorText && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Control Motor</h4>
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{motorText}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Pruebas Ortopédicas */}
+                                    {ortopText && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Pruebas Ortopédicas Especiales</h4>
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{ortopText}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Pruebas Funcionales */}
+                                    {funcText && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Pruebas Funcionales</h4>
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{funcText}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Retest / Confirmación */}
+                                    {retestCfg && (retestCfg.tareaIndice || retestCfg.resultadoPost || retestCfg.comentario) && (
+                                        <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-200 pb-2">Retest / Confirmación</h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                {retestCfg.tareaIndice && <div><span className="text-[9px] font-bold text-amber-600 uppercase block mb-0.5">Tarea Índice</span><span className="text-sm font-medium text-slate-800">{retestCfg.tareaIndice}</span></div>}
+                                                {retestCfg.resultadoPost && <div><span className="text-[9px] font-bold text-amber-600 uppercase block mb-0.5">Resultado Post</span><span className="text-sm font-bold text-slate-800">{humanize(retestCfg.resultadoPost)}</span></div>}
+                                                {retestCfg.intervencion && <div><span className="text-[9px] font-bold text-amber-600 uppercase block mb-0.5">Intervención</span><span className="text-sm font-medium text-slate-800">{retestCfg.intervencion}</span></div>}
+                                            </div>
+                                            {retestCfg.comentario && <p className="text-xs text-slate-600 mt-3 leading-relaxed italic">{retestCfg.comentario}</p>}
+                                        </div>
+                                    )}
+
+                                    {/* Medidas Complementarias */}
+                                    {medidasCfg && (medidasCfg.peso || medidasCfg.talla || medidasCfg.imc || medidasCfg.perimetroEdema || medidasCfg.pa) && (
+                                        <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 shadow-sm">
+                                            <h4 className="text-[11px] font-black text-amber-700 uppercase mb-3 tracking-widest border-b border-amber-100 pb-2">Medidas Complementarias</h4>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {medidasCfg.peso && <InfoCard label="Peso" value={medidasCfg.peso} />}
+                                                {medidasCfg.talla && <InfoCard label="Talla" value={medidasCfg.talla} />}
+                                                {medidasCfg.imc && <InfoCard label="IMC" value={medidasCfg.imc} />}
+                                                {medidasCfg.perimetroEdema && <InfoCard label="Perímetro / Edema" value={medidasCfg.perimetroEdema} />}
+                                                {medidasCfg.pa && <InfoCard label="Presión Arterial" value={medidasCfg.pa} />}
+                                                {medidasCfg.fc && <InfoCard label="Frecuencia Cardíaca" value={medidasCfg.fc} />}
+                                                {medidasCfg.satO2 && <InfoCard label="Saturación O₂" value={medidasCfg.satO2} />}
+                                                {medidasCfg.otraMedida && <InfoCard label="Otra Medida" value={medidasCfg.otraMedida} />}
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         {p2_text ? (
                             <div className="p-5 rounded-xl border border-slate-100 bg-amber-50/30">
+                                <h4 className="text-[11px] font-black text-amber-700 uppercase mb-2 tracking-widest">Síntesis del Examen Físico</h4>
                                 <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                                     {p2_text}
                                 </p>
