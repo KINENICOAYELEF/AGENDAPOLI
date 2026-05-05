@@ -154,11 +154,17 @@ TRABAJO COMPLETO DEL ESTUDIANTE:
 == PREGUNTAS DE ENTREVISTA ==
 ${trabajo_estudiante.preguntas_entrevista || '(No registradas)'}
 
-== RAZONAMIENTO CLÍNICO ==
-Hipótesis: ${JSON.stringify(trabajo_estudiante.hipotesis || [])}
-Clasificación dolor: ${trabajo_estudiante.clasificacion_dolor || 'No completó'}
-Irritabilidad: ${trabajo_estudiante.irritabilidad || 'No completó'}
+== RAZONAMIENTO CLÍNICO I (Post-Entrevista) ==
+Hipótesis orientativas: ${JSON.stringify(trabajo_estudiante.hipotesis || [])}
+Clasificación dolor tentativa: ${trabajo_estudiante.clasificacion_dolor || 'No completó'}
+Irritabilidad estimada: ${trabajo_estudiante.irritabilidad || 'No completó'}
 Banderas detectadas: ${JSON.stringify(trabajo_estudiante.banderas || {})}
+
+== RAZONAMIENTO CLÍNICO II (Post-Examen Físico) ==
+Hipótesis confirmadas/descartadas/nuevas: ${trabajo_estudiante.hipotesis_confirmadas || '(No completó)'}
+Clasificación del dolor actualizada: ${trabajo_estudiante.clasificacion_dolor_final || '(No completó)'}
+Diagnóstico presuntivo (borrador): ${trabajo_estudiante.diagnostico_presuntivo || '(No completó)'}
+Hallazgos clave integrados: ${trabajo_estudiante.hallazgos_clave_integrados || '(No completó)'}
 
 == MÓDULOS DE EXAMEN SELECCIONADOS ==
 ${trabajo_estudiante.modulos_seleccionados || '(No registrados)'}

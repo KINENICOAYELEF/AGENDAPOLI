@@ -65,7 +65,7 @@ export function SimuladorExamen() {
     // Student Work
     const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '' });
     const [studentQuestions, setStudentQuestions] = useState('');
-    const [reasoning, setReasoning] = useState({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', banderas_amarillas: '', factores_bps: '' });
+    const [reasoning, setReasoning] = useState({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
     const [examSelections, setExamSelections] = useState<Record<string, { selected: boolean; justificacion: string; pruebas: string }>>(() => {
         const init: any = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
@@ -87,6 +87,7 @@ export function SimuladorExamen() {
 
     // ═══ PROTECCIÓN ANTI-SALIDA (beforeunload + popstate + history sentinel) ═══
     const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
+    const isReview = phase === 'RESULTS' && reviewPhase !== null;
 
     // 1) beforeunload: protects against tab close / F5 refresh
     useEffect(() => {
@@ -192,7 +193,7 @@ export function SimuladorExamen() {
                     hipotesis_previas: reasoning.hipotesis.filter(h => h.trim()),
                     clasificacion_dolor_previa: reasoning.clasificacion_dolor,
                     irritabilidad_previa: reasoning.irritabilidad,
-                    banderas: { rojas: reasoning.banderas_rojas, amarillas: reasoning.banderas_amarillas, bps: reasoning.factores_bps },
+                    banderas: { rojas: reasoning.banderas_rojas, bps: reasoning.factores_bps },
                     // Razonamiento post-examen
                     hipotesis_confirmadas: reasoning2.hipotesis_confirmadas,
                     clasificacion_dolor_final: reasoning2.clasificacion_actualizada,
@@ -351,7 +352,7 @@ export function SimuladorExamen() {
         setPhase('SETUP'); setCaseData(null); setInterviewData(null); setExamData(null);
         setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false);
         setStudentQuestions(''); setTimer(0); setError('');
-        setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', banderas_amarillas: '', factores_bps: '' });
+        setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
         setConstruction({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
         setCommissionAnswers([]); setReviewPhase(null);
@@ -481,10 +482,12 @@ export function SimuladorExamen() {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
                         <h3 className="font-bold text-slate-800">🗣️ ¿Qué le preguntarías a este paciente?</h3>
                         <p className="text-xs text-slate-500">Escribe TODAS tus preguntas. No podrás volver a preguntar después. Como en un examen real.</p>
-                        <textarea value={studentQuestions} onChange={e => setStudentQuestions(e.target.value)} placeholder="Ej: ¿Desde cuándo tiene el dolor? ¿Qué actividades lo provocan? ¿Ha tenido esto antes?..." rows={8} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
-                        <button onClick={handleInterview} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                            Entrevistar al Paciente →
-                        </button>
+                        <textarea value={studentQuestions} onChange={e => setStudentQuestions(e.target.value)} readOnly={isReview} placeholder="Ej: ¿Desde cuándo tiene el dolor? ¿Qué actividades lo provocan? ¿Ha tenido esto antes?..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                        {!isReview && (
+                            <button onClick={handleInterview} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
+                                Entrevistar al Paciente →
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -504,35 +507,38 @@ export function SimuladorExamen() {
                                 <label className="block text-sm font-semibold text-slate-600 mb-1">Hipótesis Orientativas (3)</label>
                                 {reasoning.hipotesis.map((h, i) => (
                                     <input key={i} value={h} onChange={e => { const arr = [...reasoning.hipotesis]; arr[i] = e.target.value; setReasoning(r => ({ ...r, hipotesis: arr })); }}
+                                        readOnly={isReview}
                                         placeholder={`Hipótesis ${i + 1}${i === 0 ? ' (más probable)' : i === 2 ? ' (menos probable)' : ''}`}
-                                        className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm mb-2 focus:ring-2 focus:ring-amber-200 outline-none" />
+                                        className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm mb-2 focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                                 ))}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-600 mb-1">Clasificación del Dolor</label>
-                                    <select value={reasoning.clasificacion_dolor} onChange={e => setReasoning(r => ({ ...r, clasificacion_dolor: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
+                                    <select value={reasoning.clasificacion_dolor} onChange={e => setReasoning(r => ({ ...r, clasificacion_dolor: e.target.value }))} disabled={isReview} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50' : ''}`}>
                                         <option value="">Seleccionar...</option><option>Nociceptivo</option><option>Neuropático</option><option>Nociplástico</option><option>Mixto</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-600 mb-1">Irritabilidad Estimada</label>
-                                    <select value={reasoning.irritabilidad} onChange={e => setReasoning(r => ({ ...r, irritabilidad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
+                                    <select value={reasoning.irritabilidad} onChange={e => setReasoning(r => ({ ...r, irritabilidad: e.target.value }))} disabled={isReview} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50' : ''}`}>
                                         <option value="">Seleccionar...</option><option>Alta</option><option>Media</option><option>Baja</option>
                                     </select>
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-600 mb-1">Banderas Rojas Detectadas</label>
-                                <textarea value={reasoning.banderas_rojas} onChange={e => setReasoning(r => ({ ...r, banderas_rojas: e.target.value }))} placeholder="Ej: Pérdida de peso, dolor nocturno..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                                <textarea value={reasoning.banderas_rojas} onChange={e => setReasoning(r => ({ ...r, banderas_rojas: e.target.value }))} readOnly={isReview} placeholder="Ej: Pérdida de peso, dolor nocturno..." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-600 mb-1">Factores BPS Relevantes</label>
-                                <textarea value={reasoning.factores_bps} onChange={e => setReasoning(r => ({ ...r, factores_bps: e.target.value }))} placeholder="Ej: Kinesiofobia, estrés laboral, mal sueño..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                                <textarea value={reasoning.factores_bps} onChange={e => setReasoning(r => ({ ...r, factores_bps: e.target.value }))} readOnly={isReview} placeholder="Ej: Kinesiofobia, estrés laboral, mal sueño..." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                             </div>
-                            <button onClick={handleReasoningSubmit} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                Confirmar Razonamiento →
-                            </button>
+                            {!isReview && (
+                                <button onClick={handleReasoningSubmit} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                                    Confirmar Razonamiento →
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -595,21 +601,23 @@ export function SimuladorExamen() {
                     <p className="text-xs text-slate-500">Selecciona los módulos que incluirías, justifica cada uno, y especifica qué pruebas harías.</p>
                     {EXAM_MODULES.map(m => (
                         <div key={m.key} className={`border rounded-xl p-4 transition-all ${examSelections[m.key].selected ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200'}`}>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={examSelections[m.key].selected} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], selected: e.target.checked } }))} className="w-4 h-4 rounded accent-blue-600" />
+                            <label className={`flex items-center gap-2 ${isReview ? '' : 'cursor-pointer'}`}>
+                                <input type="checkbox" checked={examSelections[m.key].selected} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], selected: e.target.checked } }))} disabled={isReview} className="w-4 h-4 rounded accent-blue-600" />
                                 <span className="font-semibold text-sm text-slate-800">{m.label}</span>
                             </label>
                             {examSelections[m.key].selected && (
                                 <div className="mt-3 space-y-2 pl-6">
-                                    <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value } }))} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
-                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value } }))} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none" />
+                                    <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value } }))} readOnly={isReview} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value } }))} readOnly={isReview} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                                 </div>
                             )}
                         </div>
                     ))}
-                    <button onClick={handleExamSubmit} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                        Evaluar al Paciente →
-                    </button>
+                    {!isReview && (
+                        <button onClick={handleExamSubmit} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
+                            Evaluar al Paciente →
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -659,9 +667,10 @@ export function SimuladorExamen() {
                             <textarea
                                 value={reasoning2.hipotesis_confirmadas}
                                 onChange={e => setReasoning2(r => ({ ...r, hipotesis_confirmadas: e.target.value }))}
+                                readOnly={isReview}
                                 placeholder="Ej: Se confirma Tendinopatía rotuliana (dolor en polo inferior +, deceleración +, Decline squat +). Se descarta rotura LCA (Lachman -). Nueva hipótesis: posible componente de control motor deficiente (single leg squat con valgo marcado)."
                                 rows={4}
-                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
                             />
                         </div>
 
@@ -673,9 +682,10 @@ export function SimuladorExamen() {
                             <textarea
                                 value={reasoning2.clasificacion_actualizada}
                                 onChange={e => setReasoning2(r => ({ ...r, clasificacion_actualizada: e.target.value }))}
+                                readOnly={isReview}
                                 placeholder="Ej: Se mantiene predominantemente Nociceptivo (dolor mecánico con patrón de movimiento claro). Se suma componente Nociplástico leve por hiperalgesia a palpación difusa. Se descarta Neuropático (neuro-vascular sin alteraciones)."
                                 rows={3}
-                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
                             />
                         </div>
 
@@ -687,9 +697,10 @@ export function SimuladorExamen() {
                             <textarea
                                 value={reasoning2.hallazgos_clave}
                                 onChange={e => setReasoning2(r => ({ ...r, hallazgos_clave: e.target.value }))}
+                                readOnly={isReview}
                                 placeholder="Ej: Dolor 7/10 en polo inferior rotuliano a palpación. Decline squat +++ (reproduce síntoma principal). ROM completo. Valgo dinámico marcado en single leg squat. MMT cuádriceps 4/5."
                                 rows={3}
-                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
                             />
                         </div>
 
@@ -701,9 +712,10 @@ export function SimuladorExamen() {
                             <textarea
                                 value={reasoning2.diagnostico_presuntivo}
                                 onChange={e => setReasoning2(r => ({ ...r, diagnostico_presuntivo: e.target.value }))}
+                                readOnly={isReview}
                                 placeholder="Ej: Paciente con Tendinopatía rotuliana bilateral de predominio izquierdo (Nociceptivo + componente Nociplástico leve), con déficit de fuerza de cuádriceps y control motor en cadena cinética cerrada, que limita actividad deportiva y genera restricción en participación en competencias de voleibol."
                                 rows={4}
-                                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none"
+                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
                             />
                         </div>
 
@@ -795,27 +807,29 @@ export function SimuladorExamen() {
                         <h3 className="font-bold text-slate-800">🏗️ Construcción Clínica</h3>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (párrafo CIF)</label>
-                            <textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({ ...c, diagnostico: e.target.value }))} placeholder="[Nombre/edad/sexo], consulta por [motivo]. Presenta [alteraciones estructurales]. A nivel funcional [disfunciones]. Lo anterior genera limitaciones en [actividades]. Restringiendo su participación en [roles]. Factores personales..." rows={8} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                            <textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({ ...c, diagnostico: e.target.value }))} readOnly={isReview} placeholder="[Nombre/edad/sexo], consulta por [motivo]. Presenta [alteraciones estructurales]. A nivel funcional [disfunciones]. Lo anterior genera limitaciones en [actividades]. Restringiendo su participación en [roles]. Factores personales..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivo General</label>
-                            <textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({ ...c, objetivo_general: e.target.value }))} placeholder="Ej: Restaurar la capacidad funcional del complejo de rodilla para permitir la participación en actividades deportivas y de la vida diaria sin limitación." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                            <textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({ ...c, objetivo_general: e.target.value }))} readOnly={isReview} placeholder="Ej: Restaurar la capacidad funcional del complejo de rodilla para permitir la participación en actividades deportivas y de la vida diaria sin limitación." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos SMART (1 variable = 1 SMART)</label>
-                            <textarea value={construction.objetivos_smart} onChange={e => setConstruction(c => ({ ...c, objetivos_smart: e.target.value }))} placeholder="1. Disminuir dolor de 7/10 a 3/10 en 4 semanas (Dolor, Alta)&#10;2. Aumentar flexión de rodilla de 90° a 130° en 6 semanas (ROM, Media)&#10;3. ..." rows={6} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                            <textarea value={construction.objetivos_smart} onChange={e => setConstruction(c => ({ ...c, objetivos_smart: e.target.value }))} readOnly={isReview} placeholder="1. Disminuir dolor de 7/10 a 3/10 en 4 semanas (Dolor, Alta)&#10;2. Aumentar flexión de rodilla de 90° a 130° en 6 semanas (ROM, Media)&#10;3. ..." rows={6} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Plan de Intervención por Fases</label>
-                            <textarea value={construction.plan_fases} onChange={e => setConstruction(c => ({ ...c, plan_fases: e.target.value }))} placeholder="FASE 1 (Protección, sem 0-2): Educación en dolor, ejercicios isométricos RPE 3-4...&#10;FASE 2 (Recuperación, sem 2-6): Fortalecimiento concéntrico RPE 5-6...&#10;FASE 3 (Fortalecimiento, sem 6-10): ...&#10;FASE 4 (Reintegro, sem 10+): ..." rows={8} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                            <textarea value={construction.plan_fases} onChange={e => setConstruction(c => ({ ...c, plan_fases: e.target.value }))} readOnly={isReview} placeholder="FASE 1 (Protección, sem 0-2): Educación en dolor, ejercicios isométricos RPE 3-4...&#10;FASE 2 (Recuperación, sem 2-6): Fortalecimiento concéntrico RPE 5-6...&#10;FASE 3 (Fortalecimiento, sem 6-10): ...&#10;FASE 4 (Reintegro, sem 10+): ..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Reevaluación y Pronóstico</label>
-                            <textarea value={construction.reevaluacion} onChange={e => setConstruction(c => ({ ...c, reevaluacion: e.target.value }))} placeholder="Signo comparable: ...&#10;Plan de reevaluación: Semana 2 evaluar..., Semana 6 evaluar...&#10;Pronóstico: Favorable / Reservado / Desfavorable — Justificación:..." rows={5} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                            <textarea value={construction.reevaluacion} onChange={e => setConstruction(c => ({ ...c, reevaluacion: e.target.value }))} readOnly={isReview} placeholder="Signo comparable: ...&#10;Plan de reevaluación: Semana 2 evaluar..., Semana 6 evaluar...&#10;Pronóstico: Favorable / Reservado / Desfavorable — Justificación:..." rows={5} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
-                        <button onClick={handleEvaluate} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                            📤 Enviar a Comisión Evaluadora
-                        </button>
+                        {!isReview && (
+                            <button onClick={handleEvaluate} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
+                                📤 Enviar a Comisión Evaluadora
+                            </button>
+                        )}
                     </div>
                 </div>
             )}

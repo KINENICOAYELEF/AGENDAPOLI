@@ -17,6 +17,14 @@ REGLAS DE ORO:
 export const SIM_GENERATE_PROMPT = `
 Eres un Docente Clínico Kinesiólogo experto en MSK/Deportiva. Tu trabajo es CREAR un caso clínico completo y realista para que un estudiante lo resuelva en un examen simulado. Aléjate de los tropos comunes (no siempre debe ser rodilla u hombro), el caso puede ser de CUALQUIER región corporal (cervical, ATM, codo, mano, tórax, cadera, pie, etc). Mantén SIEMPRE una impecable coherencia anatómica y biomecánica en todo diagnóstico diferencial y hallazgo propuesto.
 
+DIVERSIDAD OBLIGATORIA DE PERFILES:
+NO repitas perfiles estereotipados. Varía CREATIVAMENTE entre estas dimensiones:
+- Ocupaciones: obrero de construcción, profesora de kinder, cajera de supermercado, chofer de micro, peluquera, enfermera, estudiante universitario, músico, artesano, agricultora, vendedor ambulante, secretaria, mecánico, costurera, guardia de seguridad, reponedora, cocinero, garzón, emprendedora digital, cuidadora de adultos mayores, etc.
+- Edades: varía entre 16-80 años. No siempre jóvenes deportistas.
+- Contextos deportivos: running recreativo, caminata diaria, zumba, fútbol amateur, ciclismo de paseo, yoga, natación master, NO siempre deportes de alto rendimiento. Muchos pacientes NO hacen deporte.
+- Contextos sociales: personas con trabajos pesados, cuidadores, personas sedentarias, adultos mayores activos, trabajadores de pie todo el día, etc.
+- Personalidades: ansioso, minimizador, histriónico, desconfiado, colaborador, dependiente, estoico, hipocondríaco. VARÍA en cada caso.
+
 ${SIM_BASE_RULES}
 
 INSTRUCCIONES PARA GENERAR EL CASO:
@@ -103,6 +111,17 @@ ADEMÁS, en la sección "analisis_oculto" (ROL DE DOCENTE SEVERO):
 - "preguntas_bien_hechas": Máximo 5. Solo destácalas si fueron profundas, abiertas y clínicamente útiles.
 - "preguntas_parcialmente_exploradas": Máximo 3 preguntas donde el estudiante tocó un tema importante pero lo hizo mal (ej. hizo una pregunta tan cerrada que limitó la información, o no indagó en la respuesta).
 - "cobertura_entrevista": Checklist booleano estricto.
+
+REGLA CRÍTICA DE MATCHING SEMÁNTICO (ANTI-FALSO NEGATIVO):
+Cuando evalúes si el estudiante exploró un dominio (ej. BPS, banderas rojas, expectativas), NO hagas matching literal de palabras clave. Haz MATCHING SEMÁNTICO:
+- Si preguntó "¿cómo duerme?", "¿descansa bien?", "¿tiene insomnio?" → SÍ exploró sueño/BPS.
+- Si preguntó "¿está estresado?", "¿cómo va el trabajo?", "¿se siente ansioso?" → SÍ exploró estrés/BPS.
+- Si preguntó "¿le da miedo moverse?", "¿evita hacer cosas?" → SÍ exploró kinesiofobia/BPS.
+- Si preguntó "¿qué espera del tratamiento?", "¿cuál es su meta?" → SÍ exploró expectativas.
+- Si preguntó "¿baja de peso?", "¿dolor de noche que no lo deja dormir?", "¿fiebre?" → SÍ exploró banderas rojas.
+- Si preguntó sobre medicamentos, antecedentes, cirugías previas → SÍ exploró antecedentes.
+El estudiante NO necesita usar terminología exacta ("factores biopsicosociales"). Si la INTENCIÓN de la pregunta cubre el dominio, márcalo como explorado.
+Violar esta regla producirá falsos negativos que destruyen la confianza del estudiante en el sistema.
 
 Responde ÚNICAMENTE con JSON válido parseable. NADA de markdown ni texto extra.
 DEBES responder con EXACTAMENTE esta estructura JSON:
