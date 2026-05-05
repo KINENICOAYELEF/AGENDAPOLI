@@ -200,15 +200,16 @@ Se te entregará:
 2. TODO lo que el estudiante produjo: preguntas de entrevista, razonamiento previo (post-entrevista), razonamiento integrador (post-examen), módulos seleccionados, diagnóstico, objetivos, plan por fases, reevaluación.
 
 EVALUACIÓN POR COMPETENCIA (scorecard) — PESOS EXACTOS (suman 100%):
-- "entrevista" (15%): ¿Cubrió ALICIA, banderas, BPS, expectativas, antecedentes?
-- "razonamiento_previo" (10%): Evaluado SOLO con datos de entrevista. ¿Hipótesis orientativas coherentes con lo que el paciente dijo? ¿Irritabilidad estimada razonablemente? ¿Identificó banderas adecuadas?
+- "entrevista" (12%): ¿Cubrió ALICIA, banderas, BPS, expectativas, antecedentes?
+- "razonamiento_previo" (8%): Evaluado SOLO con datos de entrevista. ¿Hipótesis orientativas coherentes con lo que el paciente dijo? ¿Irritabilidad estimada razonablemente? ¿Identificó banderas adecuadas?
   ⚠️ REGLA CRÍTICA DE EQUIDAD TEMPORAL: NO penalices la clasificación del dolor ni hipótesis si el dato discriminante (ej: hiperalgesia a palpación, signo neurológico positivo) solo era visible en el examen físico. Solo penaliza si ya había señales claras en la entrevista (parestesias, patrón dermatomérico, síntomas eléctricos nocturnos).
-- "razonamiento_integrador" (15%): Evaluado CON los hallazgos físicos disponibles. ¿El estudiante confirmó/descartó hipótesis correctamente en base a evidencia objetiva? ¿Actualizó la clasificación del dolor con justificación? ¿Identificó los hallazgos más discriminantes? ¿El diagnóstico presuntivo es kinesiológico (no solo etiqueta médica)?
+- "razonamiento_integrador" (12%): Evaluado CON los hallazgos físicos disponibles. ¿El estudiante confirmó/descartó hipótesis correctamente en base a evidencia objetiva? ¿Actualizó la clasificación del dolor con justificación? ¿Identificó los hallazgos más discriminantes? ¿El diagnóstico presuntivo es kinesiológico (no solo etiqueta médica)?
 - "examen_fisico" (10%): ¿Módulos clínicamente justificados? ¿Omisiones graves? ¿Procedimientos seguros?
-- "diagnostico" (15%): ¿Secuencia CIF completa? ¿Integra hallazgos P1+P2+razonamiento? ¿Incluye BPS? ¿Es kinesiológico o solo etiqueta médica?
-- "objetivos" (10%): ¿Objetivo general amplio? ¿SMARTs granulares (1 variable = 1 SMART)? ¿Cubren todas las alteraciones?
-- "intervencion" (15%): ¿Dosificación moderna (RPE/RIR)? ¿Progresiones lógicas? ¿Educación incluida? ¿PROHIBIDOS ausentes?
-- "reevaluacion" (10%): ¿Signos comparables relevantes? ¿Plan temporal realista? ¿Criterios de derivación?
+- "intervencion_paciente" (13%): ¿Describió 2-3 intervenciones kinesiológicas concretas al paciente? ¿Incluyó dosificación moderna (RPE/RIR, series, repeticiones, duración)? ¿Especificó posiciones del terapeuta y paciente? ¿Las instrucciones al paciente son claras y educativas? ¿PROHIBIDOS ausentes (fármacos, electroterapia, TENS, punción seca)?
+- "diagnostico" (12%): ¿Secuencia CIF completa? ¿Integra hallazgos P1+P2+razonamiento? ¿Incluye BPS? ¿Es kinesiológico o solo etiqueta médica?
+- "objetivos" (10%): ¿Objetivo general amplio? ¿Específicos por variable alterada (1 variable = 1 específico)? ¿Operacionales granulares con actividad concreta y medible, varios por específico? ¿Cubren todas las alteraciones?
+- "plan_fases" (13%): ¿Progresiones lógicas por fases? ¿Coherente con las intervenciones propuestas?
+- "reevaluacion" (10%): ¿Signos comparables relevantes? ¿Plan temporal realista? ¿Criterios de derivación? ¿Pronóstico justificado?
 
 ⚠️ PROTOCOLO DE VERIFICACIÓN DE DATOS (ANTIALUCINACIÓN):
 Antes de asignar puntajes en el scorecard, DEBES realizar esta verificación interna:
@@ -254,9 +255,10 @@ DEBES responder con EXACTAMENTE esta estructura JSON:
     "razonamiento_previo": { "puntaje": 0, "comentario": "string" },
     "razonamiento_integrador": { "puntaje": 0, "comentario": "string" },
     "examen_fisico": { "puntaje": 0, "comentario": "string" },
+    "intervencion_paciente": { "puntaje": 0, "comentario": "string" },
     "diagnostico": { "puntaje": 0, "comentario": "string" },
     "objetivos": { "puntaje": 0, "comentario": "string" },
-    "intervencion": { "puntaje": 0, "comentario": "string" },
+    "plan_fases": { "puntaje": 0, "comentario": "string" },
     "reevaluacion": { "puntaje": 0, "comentario": "string" }
   },
   "errores_criticos": [

@@ -3,9 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
+import { guardarIntento } from '@/services/simuladorFirebase';
 
 // ─── Types ───
-type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
+type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'INTERVENTION' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
+type PracticeMode = 'completo' | 'entrevista' | 'examen' | 'intervencion' | 'escritura' | 'comision';
 
 const EXAM_MODULES = [
     { key: 'observacion_movimiento_inicial', label: 'Observación / Movimiento Inicial', ejemplo: 'Ej: Marcha, postura asimétrica, patrón de movimiento' },
@@ -24,13 +26,14 @@ const PHASE_LABELS: Record<SimPhase, string> = {
     REASONING: 'Razonamiento I',
     EXAM: 'Examen Físico',
     REASONING2: 'Razonamiento II',
-    CONSTRUCTION: 'Construcción Clínica',
+    INTERVENTION: 'Intervención al Paciente',
+    CONSTRUCTION: 'Escritura Clínica',
     REVIEW: 'Evaluación',
     COMMISSION: 'Comisión',
     RESULTS: 'Resultados',
 };
 
-const PHASE_ORDER: SimPhase[] = ['SETUP', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'];
+const PHASE_ORDER: SimPhase[] = ['SETUP', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'INTERVENTION', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'];
 
 // ─── API helper ───
 async function simFetch(action: string, payload: any, userId: string) {
@@ -71,11 +74,15 @@ export function SimuladorExamen() {
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
         return init;
     });
-    const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
+    const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
     const [commissionAnswers, setCommissionAnswers] = useState<string[]>([]);
     const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null);
     // Razonamiento 2: Post-examen físico (integración de hallazgos)
     const [reasoning2, setReasoning2] = useState({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
+    // Intervenciones al paciente (fase nueva)
+    const [interventions, setInterventions] = useState([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+    // Practice mode
+    const [practiceMode, setPracticeMode] = useState<PracticeMode>('completo');
 
     // Timer
     const startTimer = () => {
@@ -89,7 +96,49 @@ export function SimuladorExamen() {
     const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
     const isReview = phase === 'RESULTS' && reviewPhase !== null;
 
-    // 1) beforeunload: protects against tab close / F5 refresh
+    // ═══ localStorage AUTOSAVE ═══
+    const STORAGE_KEY = 'simulador_autosave';
+    useEffect(() => {
+        if (phase === 'SETUP' || phase === 'RESULTS') return;
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                phase, timer, caseData, interviewData, examData, evaluationData, commissionData,
+                studentQuestions, reasoning, reasoning2, interventions, construction,
+                examSelections, commissionAnswers, practiceMode, showInterviewAnalysis,
+                savedAt: Date.now(),
+            }));
+        } catch {}
+    }, [phase, studentQuestions, reasoning, reasoning2, interventions, construction, examSelections, commissionAnswers, timer]);
+
+    // Auto-restore on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            const data = JSON.parse(saved);
+            if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) { localStorage.removeItem(STORAGE_KEY); return; } // Expire after 4h
+            if (data.phase && data.caseData) {
+                setCaseData(data.caseData);
+                setInterviewData(data.interviewData || null);
+                setExamData(data.examData || null);
+                setEvaluationData(data.evaluationData || null);
+                setCommissionData(data.commissionData || null);
+                setStudentQuestions(data.studentQuestions || '');
+                setReasoning(data.reasoning || { hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
+                setReasoning2(data.reasoning2 || { hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
+                setInterventions(data.interventions || [{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+                setConstruction(data.construction || { diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
+                if (data.examSelections) setExamSelections(data.examSelections);
+                setCommissionAnswers(data.commissionAnswers || []);
+                setPracticeMode(data.practiceMode || 'completo');
+                setShowInterviewAnalysis(data.showInterviewAnalysis || false);
+                setTimer(data.timer || 0);
+                setPhase(data.phase);
+                startTimer();
+            }
+        } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (phase !== 'SETUP' && phase !== 'RESULTS') {
@@ -201,9 +250,13 @@ export function SimuladorExamen() {
                     hallazgos_clave_integrados: reasoning2.hallazgos_clave,
                     // Construcción
                     modulos_seleccionados: modulosTexto,
+                    intervenciones: interventions.filter(i => i.tecnica.trim()).map((int, idx) =>
+                        `Intervención ${idx + 1}: ${int.tecnica}\n  Objetivo: ${int.objetivo_tecnica}\n  Dosis: ${int.dosis}\n  Posición terapeuta: ${int.posicion_terapeuta}\n  Posición paciente: ${int.posicion_paciente}\n  Instrucciones al paciente: ${int.instrucciones_paciente}`
+                    ).join('\n\n') || '(No completó)',
                     diagnostico: construction.diagnostico,
                     objetivo_general: construction.objetivo_general,
-                    objetivos_smart: construction.objetivos_smart,
+                    objetivos_especificos: construction.objetivos_especificos,
+                    objetivos_operacionales: construction.objetivos_operacionales,
                     plan_fases: construction.plan_fases,
                     reevaluacion: construction.reevaluacion,
                 },
@@ -227,6 +280,27 @@ export function SimuladorExamen() {
             }, user.uid);
             setCommissionData(data);
             if (timerRef.current) clearInterval(timerRef.current);
+            localStorage.removeItem(STORAGE_KEY);
+            // Persist to Firebase
+            try {
+                await guardarIntento({
+                    userId: user.uid,
+                    userEmail: user.email || '',
+                    userName: user.displayName || user.email || 'Anónimo',
+                    area: setupForm.area || 'aleatoria',
+                    dificultad: setupForm.dificultad || 'intermedio',
+                    practiceMode,
+                    pacienteNombre: caseData?.ficha_visible?.nombre || '',
+                    motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
+                    puntajeGlobal: evaluationData.puntaje_global,
+                    notaChilena: evaluationData.nota_chilena,
+                    nivel: evaluationData.nivel,
+                    puntajeComision: data.puntaje_comision_global,
+                    notaComision: data.nota_chilena_comision,
+                    scorecard: evaluationData.scorecard as any,
+                    tiempoSegundos: timer,
+                });
+            } catch (fbErr) { console.error('[Simulador] Error guardando en Firebase:', fbErr); }
             setPhase('RESULTS');
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
@@ -272,14 +346,22 @@ export function SimuladorExamen() {
             `Diagnóstico presuntivo: ${reasoning2.diagnostico_presuntivo || 'No registrado'}`,
             `Hallazgos clave integrados: ${reasoning2.hallazgos_clave || 'No registrado'}`,
             '',
+            '── MIS INTERVENCIONES AL PACIENTE ──',
+            ...interventions.filter(i => i.tecnica.trim()).map((int, idx) =>
+                `Intervención ${idx + 1}: ${int.tecnica}\n  Objetivo: ${int.objetivo_tecnica}\n  Dosis: ${int.dosis}\n  Posición terapeuta: ${int.posicion_terapeuta}\n  Posición paciente: ${int.posicion_paciente}\n  Instrucciones: ${int.instrucciones_paciente}`
+            ),
+            '',
             '── MI DIAGNÓSTICO ──',
             construction.diagnostico,
             '',
             '── MIS OBJETIVOS ──',
             `General: ${construction.objetivo_general}`,
             '',
-            'SMART:',
-            construction.objetivos_smart,
+            'Específicos:',
+            construction.objetivos_especificos,
+            '',
+            'Operacionales:',
+            construction.objetivos_operacionales,
             '',
             '── MI PLAN DE INTERVENCIÓN ──',
             construction.plan_fases,
@@ -349,13 +431,15 @@ export function SimuladorExamen() {
 
     const handleReset = () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        localStorage.removeItem(STORAGE_KEY);
         setPhase('SETUP'); setCaseData(null); setInterviewData(null); setExamData(null);
         setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false);
         setStudentQuestions(''); setTimer(0); setError('');
         setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
-        setConstruction({ diagnostico: '', objetivo_general: '', objetivos_smart: '', plan_fases: '', reevaluacion: '' });
-        setCommissionAnswers([]); setReviewPhase(null);
+        setConstruction({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
+        setInterventions([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+        setCommissionAnswers([]); setReviewPhase(null); setPracticeMode('completo');
         const init: any = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
         setExamSelections(init);
@@ -436,6 +520,26 @@ export function SimuladorExamen() {
             {phase === 'SETUP' && !loading && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
                     <h2 className="text-lg font-bold text-slate-800">Configura tu caso clínico</h2>
+                    {/* Practice Mode Selector */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-600 mb-2">Modo de práctica</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {([
+                                { key: 'completo', label: '🎓 Examen Completo', desc: 'Todas las fases (5 llamadas IA)' },
+                                { key: 'entrevista', label: '🗣️ Solo Entrevista', desc: 'Entrevista + Razonamiento I (2 llamadas)' },
+                                { key: 'examen', label: '🔬 Solo Examen Físico', desc: 'Examen + Razonamiento II (2 llamadas)' },
+                                { key: 'intervencion', label: '💊 Solo Intervención', desc: 'Intervención + Escritura (1 llamada)' },
+                                { key: 'escritura', label: '📝 Solo Escritura', desc: 'Diagnóstico, Objetivos, Plan (1 llamada)' },
+                                { key: 'comision', label: '🎤 Solo Comisión', desc: 'Defensa oral (2 llamadas)' },
+                            ] as { key: PracticeMode; label: string; desc: string }[]).map(mode => (
+                                <button key={mode.key} onClick={() => setPracticeMode(mode.key)}
+                                    className={`text-left p-3 rounded-xl border-2 transition-all ${practiceMode === mode.key ? 'border-amber-400 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}>
+                                    <div className="font-bold text-xs text-slate-800">{mode.label}</div>
+                                    <div className="text-[10px] text-slate-500 mt-0.5">{mode.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal</label>
@@ -727,14 +831,72 @@ export function SimuladorExamen() {
                                         return;
                                     }
                                     setError('');
-                                    setPhase('CONSTRUCTION');
+                                    setPhase('INTERVENTION');
                                 }}
                                 className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm"
                             >
-                                Construir Diagnóstico y Plan →
+                                Planificar Intervenciones →
                             </button>
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* ════════ PHASE: INTERVENTION ════════ */}
+            {(phase === 'INTERVENTION' || reviewPhase === 'INTERVENTION') && !loading && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+                    <h3 className="font-bold text-slate-800">💊 Intervenciones Kinesiológicas al Paciente</h3>
+                    <p className="text-xs text-slate-500">Describe 2-3 intervenciones que realizarías en esta sesión. Detalla como si le estuvieras explicando al paciente qué vas a hacer.</p>
+                    {interventions.map((int, idx) => (
+                        <div key={idx} className="border border-emerald-200 rounded-xl p-4 space-y-3 bg-emerald-50/30">
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-sm text-emerald-800">Intervención {idx + 1}</span>
+                                {idx > 0 && !isReview && (
+                                    <button onClick={() => setInterventions(prev => prev.filter((_, i) => i !== idx))} className="text-xs text-red-500 hover:text-red-700 font-bold">✕ Eliminar</button>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Técnica / Intervención</label>
+                                <input value={int.tecnica} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], tecnica: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Ejercicio isométrico de cuádriceps en cadena cerrada" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Objetivo de esta técnica</label>
+                                <input value={int.objetivo_tecnica} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], objetivo_tecnica: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Activar cuádriceps sin aumentar irritabilidad articular" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Dosificación (series, repeticiones, RPE, tiempo, etc.)</label>
+                                <input value={int.dosis} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], dosis: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: 4 series x 30 seg mantenido, RPE 4/10, descanso 60 seg" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Posición del terapeuta</label>
+                                    <input value={int.posicion_terapeuta} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], posicion_terapeuta: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Al lado del paciente, estabilizando la pelvis" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Posición del paciente</label>
+                                    <input value={int.posicion_paciente} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], posicion_paciente: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Sentado, rodillas a 60° de flexión, pies apoyados" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Instrucciones al paciente</label>
+                                <textarea value={int.instrucciones_paciente} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], instrucciones_paciente: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: «Vamos a hacer un ejercicio para activar el músculo del muslo sin forzar la rodilla. Va a sentir tensión pero no dolor. Empuje contra el piso como si quisiera aplastarlo y mantenga 30 segundos...»" rows={3} className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none resize-none ${isReview ? 'bg-slate-50' : ''}`} />
+                            </div>
+                        </div>
+                    ))}
+                    {!isReview && interventions.length < 4 && (
+                        <button onClick={() => setInterventions(prev => [...prev, { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }])} className="w-full border-2 border-dashed border-emerald-300 text-emerald-600 font-bold py-2 rounded-xl hover:bg-emerald-50 transition-all text-sm">
+                            + Agregar otra intervención
+                        </button>
+                    )}
+                    {!isReview && (
+                        <button onClick={() => {
+                            if (interventions.filter(i => i.tecnica.trim()).length === 0) { setError('Agrega al menos una intervención.'); return; }
+                            setError('');
+                            setPhase('CONSTRUCTION');
+                        }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                            Continuar a Escritura Clínica →
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -814,8 +976,12 @@ export function SimuladorExamen() {
                             <textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({ ...c, objetivo_general: e.target.value }))} readOnly={isReview} placeholder="Ej: Restaurar la capacidad funcional del complejo de rodilla para permitir la participación en actividades deportivas y de la vida diaria sin limitación." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos SMART (1 variable = 1 SMART)</label>
-                            <textarea value={construction.objetivos_smart} onChange={e => setConstruction(c => ({ ...c, objetivos_smart: e.target.value }))} readOnly={isReview} placeholder="1. Disminuir dolor de 7/10 a 3/10 en 4 semanas (Dolor, Alta)&#10;2. Aumentar flexión de rodilla de 90° a 130° en 6 semanas (ROM, Media)&#10;3. ..." rows={6} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Específicos <span className="font-normal text-slate-400">(1 variable alterada = 1 objetivo específico)</span></label>
+                            <textarea value={construction.objetivos_especificos} onChange={e => setConstruction(c => ({ ...c, objetivos_especificos: e.target.value }))} readOnly={isReview} placeholder={"1. Disminuir dolor en región anterior de rodilla\n2. Aumentar rango de flexión de rodilla\n3. Mejorar fuerza de cuádriceps bilateral\n4. Restaurar control motor en cadena cinética cerrada"} rows={5} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Operacionales <span className="font-normal text-slate-400">(granulares, medibles, varios por específico)</span></label>
+                            <textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({ ...c, objetivos_operacionales: e.target.value }))} readOnly={isReview} placeholder={"OE1.1: Reducir EVA de 7/10 a 3/10 en reposo, en 4 semanas\nOE1.2: Reducir EVA en Decline squat de 8/10 a 4/10 en 6 semanas\nOE2.1: Aumentar flexión de rodilla de 90° a 130° en 6 semanas\nOE3.1: Aumentar MMT cuádriceps de 4/5 a 5/5 en 8 semanas\nOE4.1: Lograr Single Leg Squat sin valgo en 6 semanas"} rows={7} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Plan de Intervención por Fases</label>
@@ -899,7 +1065,7 @@ export function SimuladorExamen() {
             {/* ════════ PHASE: RESULTS (Review Tabs) ════════ */}
             {phase === 'RESULTS' && !loading && (
                 <div className="bg-slate-100/50 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 mb-6">
-                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
+                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'INTERVENTION', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
                         <button
                             key={p}
                             onClick={() => setReviewPhase(p === 'RESULTS' ? null : p)}
@@ -920,18 +1086,24 @@ export function SimuladorExamen() {
                 <div className="space-y-4">
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
                         <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="grid grid-cols-3 gap-3 mb-4">
                             <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
                                 <div className={`absolute top-0 w-full h-1 left-0 ${evaluationData.nota_chilena >= 4.0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                                <div className="text-3xl font-black text-slate-800 mt-1">{evaluationData.puntaje_global}</div>
+                                <div className="text-2xl font-black text-slate-800 mt-1">{evaluationData.puntaje_global}</div>
                                 <div className="text-sm font-bold text-slate-600">Nota: {evaluationData.nota_chilena?.toFixed(1) || 'N/A'}</div>
-                                <div className="text-xs text-slate-400 mt-1">Evaluación Clínica</div>
+                                <div className="text-xs text-slate-400 mt-1">Evaluación (70%)</div>
                             </div>
                             <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
                                 <div className={`absolute top-0 w-full h-1 left-0 ${commissionData.nota_chilena_comision >= 4.0 ? 'bg-blue-400' : 'bg-red-400'}`} />
-                                <div className="text-3xl font-black text-slate-800 mt-1">{commissionData.puntaje_comision_global}</div>
+                                <div className="text-2xl font-black text-slate-800 mt-1">{commissionData.puntaje_comision_global}</div>
                                 <div className="text-sm font-bold text-slate-600">Nota: {commissionData.nota_chilena_comision?.toFixed(1) || 'N/A'}</div>
-                                <div className="text-xs text-slate-400 mt-1">Defensa Comisión</div>
+                                <div className="text-xs text-slate-400 mt-1">Comisión (30%)</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl p-4 text-center shadow-sm relative overflow-hidden ring-2 ring-amber-300">
+                                <div className={`absolute top-0 w-full h-1 left-0 ${((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)) >= 4.0 ? 'bg-amber-500' : 'bg-red-400'}`} />
+                                <div className="text-2xl font-black text-amber-900 mt-1">{((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1)}</div>
+                                <div className="text-sm font-bold text-amber-800">NOTA FINAL</div>
+                                <div className="text-xs text-amber-600 mt-1">Consolidada</div>
                             </div>
                         </div>
                         <div className="text-sm text-slate-700 mb-4">⏱️ Tiempo total: <strong>{formatTime(timer)}</strong></div>

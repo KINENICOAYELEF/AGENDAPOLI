@@ -169,14 +169,20 @@ Hallazgos clave integrados: ${trabajo_estudiante.hallazgos_clave_integrados || '
 == MÓDULOS DE EXAMEN SELECCIONADOS ==
 ${trabajo_estudiante.modulos_seleccionados || '(No registrados)'}
 
+== INTERVENCIONES KINESIOLÓGICAS AL PACIENTE ==
+${trabajo_estudiante.intervenciones || '(No completó)'}
+
 == DIAGNÓSTICO KINESIOLÓGICO ==
 ${trabajo_estudiante.diagnostico || '(No completó)'}
 
 == OBJETIVO GENERAL ==
 ${trabajo_estudiante.objetivo_general || '(No completó)'}
 
-== OBJETIVOS SMART ==
-${trabajo_estudiante.objetivos_smart || '(No completó)'}
+== OBJETIVOS ESPECÍFICOS ==
+${trabajo_estudiante.objetivos_especificos || '(No completó)'}
+
+== OBJETIVOS OPERACIONALES ==
+${trabajo_estudiante.objetivos_operacionales || '(No completó)'}
 
 == PLAN DE INTERVENCIÓN POR FASES ==
 ${trabajo_estudiante.plan_fases || '(No completó)'}

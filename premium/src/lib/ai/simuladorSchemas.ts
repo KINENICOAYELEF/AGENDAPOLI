@@ -118,12 +118,13 @@ export const SimEvaluationSchema = z.object({
     nivel: z.enum(["Aprobado con Distinción", "Aprobado", "Reprobado Recuperable", "Reprobado"]),
     scorecard: z.object({
         entrevista: z.object({ puntaje: z.number(), comentario: z.string() }),
-        razonamiento_previo: z.object({ puntaje: z.number(), comentario: z.string() }).describe('10% — razonamiento post-entrevista'),
-        razonamiento_integrador: z.object({ puntaje: z.number(), comentario: z.string() }).describe('15% — integración post-examen físico'),
+        razonamiento_previo: z.object({ puntaje: z.number(), comentario: z.string() }).describe('8% — razonamiento post-entrevista'),
+        razonamiento_integrador: z.object({ puntaje: z.number(), comentario: z.string() }).describe('12% — integración post-examen físico'),
         examen_fisico: z.object({ puntaje: z.number(), comentario: z.string() }),
+        intervencion_paciente: z.object({ puntaje: z.number(), comentario: z.string() }).describe('13% — intervenciones descritas al paciente'),
         diagnostico: z.object({ puntaje: z.number(), comentario: z.string() }),
         objetivos: z.object({ puntaje: z.number(), comentario: z.string() }),
-        intervencion: z.object({ puntaje: z.number(), comentario: z.string() }),
+        plan_fases: z.object({ puntaje: z.number(), comentario: z.string() }).describe('13% — plan de intervención por fases'),
         reevaluacion: z.object({ puntaje: z.number(), comentario: z.string() }),
     }),
     errores_criticos: z.array(z.object({
