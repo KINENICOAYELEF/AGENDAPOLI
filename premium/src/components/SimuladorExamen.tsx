@@ -223,7 +223,21 @@ export function SimuladorExamen() {
         try {
             const data = await simFetch('generate', setupForm, user.uid);
             setCaseData(data);
+            
             const firstPhase = getFirstPhase();
+            
+            // Si el modo inicia directo en REVIEW o COMMISSION (ej: Solo Comisión),
+            // auto-generamos la evaluación (vacía) para obtener las preguntas de la comisión
+            if (firstPhase === 'REVIEW' || firstPhase === 'COMMISSION') {
+                const evalData = await simFetch('evaluate', {
+                    caso_resumen: { ficha: data.ficha_visible, hallazgos: data.hallazgos_todos_modulos },
+                    rubrica_ideal: data.rubrica_ideal,
+                    trabajo_estudiante: {}, // Trabajo vacío
+                }, user.uid);
+                setEvaluationData(evalData);
+                setCommissionAnswers(new Array(evalData.preguntas_comision?.length || 0).fill(''));
+            }
+            
             setPhase(firstPhase);
             startTimer();
         } catch (e: any) { setError(e.message); }
@@ -1025,7 +1039,9 @@ export function SimuladorExamen() {
             {(phase === 'REVIEW' || reviewPhase === 'REVIEW') && !loading && evaluationData && (
                 <div className="space-y-4">
                     {/* Scorecard */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    {practiceMode !== 'comision' && (
+                        <>
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-slate-800">📊 Scorecard</h3>
                             <div className="flex gap-2">
@@ -1065,6 +1081,8 @@ export function SimuladorExamen() {
                                 <div key={i} className="mb-2 text-sm"><strong className="text-emerald-700">[{a.fase}]</strong> {a.acierto} <span className="text-slate-600">— {a.por_que_importa}</span></div>
                             ))}
                         </div>
+                    )}
+                        </>
                     )}
                     {/* Commission Questions */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
