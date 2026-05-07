@@ -13,6 +13,7 @@ import { HolidayManager } from "@/components/HolidayManager";
 import { PendingUsersManager } from "@/components/PendingUsersManager";
 import { ActiveUsersManager } from "@/components/ActiveUsersManager";
 import { InternAssignmentManager } from "@/components/InternAssignmentManager";
+import { SimuladorDocentePanel } from "@/components/SimuladorDocentePanel";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -117,6 +118,9 @@ export default function AdminDocentePage() {
 
             {/* Vinculación Clínica de Pacientes (FASE 14) */}
             <InternAssignmentManager />
+
+            {/* Panel de Simulador de Examen Clínico */}
+            <SimuladorDocentePanel />
 
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 

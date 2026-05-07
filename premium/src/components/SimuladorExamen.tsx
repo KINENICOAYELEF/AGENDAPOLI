@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
 import { guardarIntento } from '@/services/simuladorFirebase';
+import { SimuladorHistorial } from './SimuladorHistorial';
 
 // ─── Types ───
 type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'INTERVENTION' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
@@ -47,15 +48,27 @@ async function simFetch(action: string, payload: any, userId: string) {
     return data.data;
 }
 
+// ─── Practice mode phase mapping ───
+const PRACTICE_PHASES: Record<PracticeMode, SimPhase[]> = {
+    completo: ['INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'INTERVENTION', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'],
+    entrevista: ['INTERVIEW', 'REASONING', 'RESULTS'],
+    examen: ['EXAM', 'REASONING2', 'RESULTS'],
+    intervencion: ['INTERVENTION', 'CONSTRUCTION', 'RESULTS'],
+    escritura: ['CONSTRUCTION', 'REVIEW', 'RESULTS'],
+    comision: ['REVIEW', 'COMMISSION', 'RESULTS'],
+};
+
 // ─── Main Component ───
 export function SimuladorExamen() {
     const { user } = useAuth();
     const [phase, setPhase] = useState<SimPhase>('SETUP');
+    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [showExitWarning, setShowExitWarning] = useState(false);
+    const [showHistorial, setShowHistorial] = useState(false);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -76,7 +89,6 @@ export function SimuladorExamen() {
     });
     const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
     const [commissionAnswers, setCommissionAnswers] = useState<string[]>([]);
-    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null);
     // Razonamiento 2: Post-examen físico (integración de hallazgos)
     const [reasoning2, setReasoning2] = useState({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
     // Intervenciones al paciente (fase nueva)
@@ -170,6 +182,18 @@ export function SimuladorExamen() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, [isActiveExam, phase]); // Re-run on phase change to refresh sentinel
 
+    // ─── Practice mode helper: get next valid phase ───
+    const getNextPhase = useCallback((currentPhase: SimPhase): SimPhase | null => {
+        const allowed = PRACTICE_PHASES[practiceMode];
+        const currentIdx = allowed.indexOf(currentPhase);
+        if (currentIdx === -1 || currentIdx >= allowed.length - 1) return null;
+        return allowed[currentIdx + 1];
+    }, [practiceMode]);
+
+    const getFirstPhase = useCallback((): SimPhase => {
+        return PRACTICE_PHASES[practiceMode][0];
+    }, [practiceMode]);
+
     // ─── Phase Handlers ───
     const handleGenerate = async () => {
         if (!user) return;
@@ -177,7 +201,8 @@ export function SimuladorExamen() {
         try {
             const data = await simFetch('generate', setupForm, user.uid);
             setCaseData(data);
-            setPhase('INTERVIEW');
+            const firstPhase = getFirstPhase();
+            setPhase(firstPhase);
             startTimer();
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
@@ -306,127 +331,60 @@ export function SimuladorExamen() {
         finally { setLoading(false); }
     };
 
-    const handleExport = () => {
+    const handleExportPDF = () => {
         if (!caseData || !evaluationData) return;
-        const lines = [
-            '═══════════════════════════════════════',
-            'SIMULADOR DE EXAMEN CLÍNICO — REPORTE',
-            '═══════════════════════════════════════',
-            `Fecha: ${new Date().toLocaleDateString('es-CL')}`,
-            `Tiempo: ${formatTime(timer)}`,
-            `Estudiante: ${user?.displayName || user?.email || 'N/A'}`,
-            '',
-            '── CASO ──',
-            `Paciente: ${caseData.ficha_visible.nombre}, ${caseData.ficha_visible.edad}, ${caseData.ficha_visible.sexo}`,
-            `Motivo: ${caseData.ficha_visible.motivo_consulta}`,
-            `Derivación: ${caseData.ficha_visible.derivacion}`,
-            `Tiempo evolución: ${caseData.ficha_visible.tiempo_evolucion}`,
-            '',
-            '── MIS PREGUNTAS DE ENTREVISTA ──',
-            studentQuestions,
-            '',
-            '── MI RAZONAMIENTO I (Post-entrevista) ──',
-            `Hipótesis orientadoras: ${reasoning.hipotesis.filter(h => h).join(' | ')}`,
-            `Clasificación dolor tentativa: ${reasoning.clasificacion_dolor}`,
-            `Irritabilidad estimada: ${reasoning.irritabilidad}`,
-            `Banderas Rojas: ${reasoning.banderas_rojas || 'No registrado'}`,
-            `Banderas Amarillas/BPS: ${reasoning.factores_bps || 'No registrado'}`,
-            '',
-            '── HALLAZGOS DEL EXAMEN FÍSICO (Revelados por el caso) ──',
-            ...(examData ? Object.entries(examData.hallazgos_revelados).map(([mod, hall]) => `${mod}:\n  ${hall}`) : ['(No disponible)']),
-            '',
-            '── ANÁLISIS DEL EXAMEN (Docente) ──',
-            ...(examData?.analisis_examen?.modulos_omitidos_relevantes?.length
-                ? ['Módulos omitidos:', ...examData.analisis_examen.modulos_omitidos_relevantes.map(m => `  • ${m.modulo}: ${m.por_que_era_necesario}`)]
-                : ['Sin omisiones críticas.']),
-            '',
-            '── MI RAZONAMIENTO II (Post-examen físico) ──',
-            `Hipótesis confirmadas/modificadas: ${reasoning2.hipotesis_confirmadas || 'No registrado'}`,
-            `Clasificación del dolor actualizada: ${reasoning2.clasificacion_actualizada || 'No registrado'}`,
-            `Diagnóstico presuntivo: ${reasoning2.diagnostico_presuntivo || 'No registrado'}`,
-            `Hallazgos clave integrados: ${reasoning2.hallazgos_clave || 'No registrado'}`,
-            '',
-            '── MIS INTERVENCIONES AL PACIENTE ──',
-            ...interventions.filter(i => i.tecnica.trim()).map((int, idx) =>
-                `Intervención ${idx + 1}: ${int.tecnica}\n  Objetivo: ${int.objetivo_tecnica}\n  Dosis: ${int.dosis}\n  Posición terapeuta: ${int.posicion_terapeuta}\n  Posición paciente: ${int.posicion_paciente}\n  Instrucciones: ${int.instrucciones_paciente}`
-            ),
-            '',
-            '── MI DIAGNÓSTICO ──',
-            construction.diagnostico,
-            '',
-            '── MIS OBJETIVOS ──',
-            `General: ${construction.objetivo_general}`,
-            '',
-            'Específicos:',
-            construction.objetivos_especificos,
-            '',
-            'Operacionales:',
-            construction.objetivos_operacionales,
-            '',
-            '── MI PLAN DE INTERVENCIÓN ──',
-            construction.plan_fases,
-            '',
-            '── MI REEVALUACIÓN Y PRONÓSTICO ──',
-            construction.reevaluacion,
-            '',
-            '═══════════════════════════════════════',
-            'EVALUACIÓN CLÍNICA (SCORECARD)',
-            '═══════════════════════════════════════',
-            `Puntaje Global: ${evaluationData.puntaje_global}/100 — Nota: ${evaluationData.nota_chilena?.toFixed(1) || 'N/A'} — ${evaluationData.nivel}`,
-            '',
-            '── Scorecard por Competencia ──',
-            ...Object.entries(evaluationData.scorecard).map(([k, v]) => `${k}: ${(v as any).puntaje}/100 — ${(v as any).comentario}`),
-            '',
-            '── Errores Críticos ──',
-            ...evaluationData.errores_criticos.map(e => `[${e.fase}] ${e.error}\n  → ${e.explicacion_docente}`),
-            '',
-            '── Aciertos Destacados ──',
-            ...evaluationData.aciertos_destacados.map(a => `[${a.fase}] ${a.acierto}\n  → ${a.por_que_importa}`),
-            '',
-            '── Áreas de Mejora ──',
-            ...(evaluationData.areas_mejora || []).map((a: string) => `• ${a}`),
-            '',
-            '── Perla Docente ──',
-            evaluationData.perla_docente,
-        ];
-        if (commissionData) {
-            lines.push(
-                '',
-                '═══════════════════════════════════════',
-                'DEFENSA DE COMISIÓN',
-                '═══════════════════════════════════════',
-                `Puntaje Comisión: ${commissionData.puntaje_comision_global}/100 — Nota: ${commissionData.nota_chilena_comision?.toFixed(1) || 'N/A'}`,
-                ''
-            );
-            evaluationData.preguntas_comision.forEach((q: any, i: number) => {
-                lines.push(
-                    `── Pregunta ${i + 1} ──`,
-                    `Q: ${q.pregunta}`,
-                    `Mi respuesta: ${commissionAnswers[i] || '(Sin respuesta)'}`,
-                );
-                const evalR = commissionData.evaluacion_respuestas?.[i];
-                if (evalR) {
-                    lines.push(
-                        `Puntaje: ${evalR.puntaje}/100`,
-                        `Evaluación: ${evalR.comentario}`,
-                        `✓ Aspecto correcto: ${evalR.aspecto_correcto}`,
-                        `▲ Aspecto a mejorar: ${evalR.aspecto_a_mejorar}`,
-                    );
-                }
-                lines.push('');
-            });
-            lines.push(
-                '── Feedback Final de la Comisión ──',
-                commissionData.feedback_final
-            );
-        }
-        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `simulador_${new Date().toISOString().slice(0, 10)}_${caseData.ficha_visible.nombre.replace(/\s/g, '_')}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const notaFinal = commissionData
+            ? ((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1)
+            : evaluationData.nota_chilena?.toFixed(1);
+        const scorecardRows = Object.entries(evaluationData.scorecard).map(([k, v]) =>
+            `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;">${k.replace(/_/g, ' ').toUpperCase()}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:15px;color:${(v as any).puntaje >= 60 ? '#059669' : '#dc2626'}">${(v as any).puntaje}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;">${(v as any).comentario}</td></tr>`
+        ).join('');
+        const erroresHTML = evaluationData.errores_criticos.map((e: any) =>
+            `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:6px;"><strong style="color:#991b1b;">[${e.fase}]</strong> ${e.error}<br/><span style="font-size:12px;color:#64748b;">→ ${e.explicacion_docente}</span></div>`
+        ).join('');
+        const aciertosHTML = evaluationData.aciertos_destacados.map((a: any) =>
+            `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:6px;"><strong style="color:#166534;">[${a.fase}]</strong> ${a.acierto}<br/><span style="font-size:12px;color:#64748b;">→ ${a.por_que_importa}</span></div>`
+        ).join('');
+        const comisionHTML = commissionData ? evaluationData.preguntas_comision.map((q: any, i: number) => {
+            const ev = commissionData.evaluacion_respuestas?.[i];
+            return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:8px;">
+                <p style="font-weight:700;color:#1e293b;margin:0 0 4px;">P${i+1}: ${q.pregunta}</p>
+                <p style="font-size:13px;color:#334155;margin:0 0 4px;">Mi respuesta: ${commissionAnswers[i] || '—'}</p>
+                ${ev ? `<p style="font-size:12px;margin:2px 0;"><span style="color:${ev.puntaje >= 60 ? '#059669' : '#dc2626'};font-weight:800;">${ev.puntaje}/100</span> — ${ev.comentario}</p>` : ''}
+            </div>`;
+        }).join('') : '';
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador</title>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
+        h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
+        .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f59e0b;padding-bottom:16px;margin-bottom:24px;}
+        .nota-box{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 24px;text-align:center;}
+        .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        table{width:100%;border-collapse:collapse;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
+        @media print{body{padding:20px;} .no-print{display:none;}}
+        </style></head><body>
+        <div class="header"><div><h1>🎓 Simulador de Examen Clínico</h1><p style="margin:4px 0;font-size:13px;color:#64748b;">Reporte de Evaluación · ${new Date().toLocaleDateString('es-CL')}</p>
+        <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${user?.displayName || user?.email || 'N/A'} · <strong>Tiempo:</strong> ${formatTime(timer)}</p></div>
+        <div class="nota-box"><div class="nota-big">${notaFinal}</div><div style="font-size:12px;font-weight:700;color:#92400e;">NOTA FINAL</div></div></div>
+        <h2>📋 Caso Clínico</h2>
+        <div class="grid2"><div><strong>Paciente:</strong> ${caseData.ficha_visible.nombre}</div><div><strong>Edad:</strong> ${caseData.ficha_visible.edad}</div>
+        <div><strong>Ocupación:</strong> ${caseData.ficha_visible.ocupacion}</div><div><strong>Actividad:</strong> ${caseData.ficha_visible.deporte_actividad}</div></div>
+        <p><strong>Motivo:</strong> ${caseData.ficha_visible.motivo_consulta}</p>
+        <h2>📊 Scorecard por Competencia</h2>
+        <table><thead><tr><th>Competencia</th><th>Puntaje</th><th>Comentario</th></tr></thead><tbody>${scorecardRows}</tbody></table>
+        <div class="grid2" style="margin-top:16px;">
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${evaluationData.puntaje_global}/100</div><div style="font-size:11px;color:#64748b;">Evaluación (70%)</div></div>
+        ${commissionData ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${commissionData.puntaje_comision_global}/100</div><div style="font-size:11px;color:#64748b;">Comisión (30%)</div></div>` : ''}
+        </div>
+        <h2>❌ Errores Críticos</h2>${erroresHTML || '<p style="color:#94a3b8;font-size:13px;">Ninguno detectado.</p>'}
+        <h2>✅ Aciertos Destacados</h2>${aciertosHTML || '<p style="color:#94a3b8;font-size:13px;">—</p>'}
+        ${evaluationData.areas_mejora?.length ? `<h2>📈 Áreas de Mejora</h2><ul>${evaluationData.areas_mejora.map((a: string) => `<li style="font-size:13px;margin-bottom:4px;">${a}</li>`).join('')}</ul>` : ''}
+        <h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${evaluationData.perla_docente}</p>
+        ${commissionData ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}<div style="background:#f8fafc;border-radius:10px;padding:14px;margin-top:8px;"><p style="font-size:13px;font-style:italic;color:#475569;">${commissionData.feedback_final}</p></div>` : ''}
+        <div class="no-print" style="text-align:center;margin-top:32px;"><button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar como PDF</button></div>
+        </body></html>`;
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); }
     };
 
     const handleReset = () => {
@@ -439,7 +397,7 @@ export function SimuladorExamen() {
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
         setConstruction({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
         setInterventions([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
-        setCommissionAnswers([]); setReviewPhase(null); setPracticeMode('completo');
+        setCommissionAnswers([]); setReviewPhase(null); setPracticeMode('completo'); setShowHistorial(false);
         const init: any = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
         setExamSelections(init);
@@ -517,9 +475,14 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: SETUP ════════ */}
-            {phase === 'SETUP' && !loading && (
+            {phase === 'SETUP' && !loading && !showHistorial && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-                    <h2 className="text-lg font-bold text-slate-800">Configura tu caso clínico</h2>
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-bold text-slate-800">Configura tu caso clínico</h2>
+                        <button onClick={() => setShowHistorial(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
+                            📊 Mi Historial
+                        </button>
+                    </div>
                     {/* Practice Mode Selector */}
                     <div>
                         <label className="block text-sm font-semibold text-slate-600 mb-2">Modo de práctica</label>
@@ -565,6 +528,11 @@ export function SimuladorExamen() {
                         🎲 Generar Caso Aleatorio
                     </button>
                 </div>
+            )}
+
+            {/* ════════ HISTORIAL ════════ */}
+            {phase === 'SETUP' && showHistorial && (
+                <SimuladorHistorial onClose={() => setShowHistorial(false)} />
             )}
 
             {/* ════════ PHASE: INTERVIEW ════════ */}
@@ -1143,8 +1111,8 @@ export function SimuladorExamen() {
                     )}
                     {/* Final Actions */}
                     <div className="flex gap-3 pt-4 border-t border-slate-200">
-                        <button onClick={handleExport} className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">
-                            📄 Exportar Reporte
+                        <button onClick={handleExportPDF} className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">
+                            📄 Exportar PDF
                         </button>
                         <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg">
                             🎲 Nuevo Caso
