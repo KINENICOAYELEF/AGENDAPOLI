@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isDocente() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "DOCENTE";
+    }
+    function isInterno() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "INTERNO";
+    }
+    function isProgramActive(year) {
+      return get(/databases/$(database)/documents/programs/$(year)/meta/settings).data.isActive == true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+      allow create: if isAuthenticated() 
+                    && request.auth.uid == userId 
+                    && request.resource.data.role == "PENDING";
+      allow update: if isDocente();
+      allow delete: if false;
+    }
+
+    match /programs/{year} {
+      match /meta/settings {
+        allow read: if isAuthenticated();
+        allow write: if isDocente();
+      }
+      match /{subcollection}/{document=**} {
+        allow read, write: if isDocente();
+        allow read, write: if isInterno() && isProgramActive(year);
+      }
+    }
+
+    match /pasantia_entregas/{entregaId} {
+      allow create: if true;
+      allow read, update: if isDocente();
+      allow delete: if isDocente();
+    }
+
+    match /simulador_intentos/{intentoId} {
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid || isDocente());
+      allow delete: if isDocente();
+      allow update: if false;
+    }
+
+    // NUEVA: Configuracion global del simulador (tareas, frecuencia, etc.)
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isDocente();
+    }
+
+  }
+}

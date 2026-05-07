@@ -1103,10 +1103,12 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ PHASE: RESULTS (Content) ════════ */}
-            {phase === 'RESULTS' && !reviewPhase && !loading && commissionData && evaluationData && (
+            {phase === 'RESULTS' && !reviewPhase && !loading && (
                 <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
-                        <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
+                    {commissionData && evaluationData ? (
+                        <>
+                            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
+                                <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
                         <div className="grid grid-cols-3 gap-3 mb-4">
                             <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
                                 <div className={`absolute top-0 w-full h-1 left-0 ${evaluationData.nota_chilena >= 4.0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
@@ -1171,6 +1173,21 @@ export function SimuladorExamen() {
                             🎲 Nuevo Caso
                         </button>
                     </div>
+                        </>
+                    ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
+                            <div className="text-4xl mb-3">👏</div>
+                            <h3 className="font-black text-xl text-blue-900 mb-2">Práctica Parcial Finalizada</h3>
+                            <p className="text-blue-800 mb-4">Has completado el modo de práctica: <strong>{PRACTICE_PHASES[practiceMode].filter(p => p !== 'RESULTS').map(p => p === 'INTERVIEW' ? 'Entrevista' : p === 'REASONING' ? 'Razonamiento I' : p === 'EXAM' ? 'Examen Físico' : p === 'REASONING2' ? 'Razonamiento II' : p === 'INTERVENTION' ? 'Intervención' : p === 'CONSTRUCTION' ? 'Escritura' : p === 'REVIEW' ? 'Scorecard' : 'Comisión').join(' + ')}</strong></p>
+                            <p className="text-sm text-blue-700">Puedes revisar las pestañas superiores para ver tu desempeño y respuestas en las fases que completaste.</p>
+                            <div className="text-sm text-blue-700 mt-4">⏱️ Tiempo total de práctica: <strong>{formatTime(timer)}</strong></div>
+                            <div className="mt-6 flex justify-center">
+                                <button onClick={handleReset} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-sm">
+                                    🎲 Practicar Nuevo Caso
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
