@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
-import { guardarIntento } from '@/services/simuladorFirebase';
+import { guardarIntento, getTareaConfig, verificarCumplimiento } from '@/services/simuladorFirebase';
 import { SimuladorHistorial } from './SimuladorHistorial';
 
 // ─── Types ───
@@ -69,6 +69,9 @@ export function SimuladorExamen() {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [showExitWarning, setShowExitWarning] = useState(false);
     const [showHistorial, setShowHistorial] = useState(false);
+
+    // Task compliance
+    const [tareaAlerta, setTareaAlerta] = useState<{ activa: boolean; mensaje: string; diasDesdeUltimo: number; frecuencia: number } | null>(null);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -151,6 +154,25 @@ export function SimuladorExamen() {
         } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Check task compliance on mount
+    useEffect(() => {
+        if (!user?.uid) return;
+        getTareaConfig().then(async (cfg) => {
+            if (!cfg || !cfg.activa) { setTareaAlerta(null); return; }
+            const resultado = await verificarCumplimiento(user.uid, cfg);
+            if (!resultado.cumple) {
+                setTareaAlerta({
+                    activa: true,
+                    mensaje: cfg.mensaje || `Debes completar al menos 1 simulación cada ${cfg.frecuenciaDias} días.`,
+                    diasDesdeUltimo: resultado.diasDesdeUltimo,
+                    frecuencia: cfg.frecuenciaDias,
+                });
+            } else {
+                setTareaAlerta(null);
+            }
+        }).catch(console.error);
+    }, [user?.uid]);
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (phase !== 'SETUP' && phase !== 'RESULTS') {
@@ -219,7 +241,8 @@ export function SimuladorExamen() {
                 preguntas_estudiante: studentQuestions,
             }, user.uid);
             setInterviewData(data);
-            setPhase('REASONING');
+            const next = getNextPhase('INTERVIEW');
+            if (next) setPhase(next);
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -228,7 +251,8 @@ export function SimuladorExamen() {
         setShowInterviewAnalysis(true);
     };
     const handleReasoningContinue = () => {
-        setPhase('EXAM');
+        const next = getNextPhase('REASONING');
+        if (next) setPhase(next);
     };
 
     const handleExamSubmit = async () => {
@@ -247,7 +271,8 @@ export function SimuladorExamen() {
                 })),
             }, user.uid);
             setExamData(data);
-            setPhase('REASONING2');
+            const next = getNextPhase('EXAM');
+            if (next) setPhase(next);
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -288,7 +313,8 @@ export function SimuladorExamen() {
             }, user.uid);
             setEvaluationData(data);
             setCommissionAnswers(new Array(data.preguntas_comision?.length || 0).fill(''));
-            setPhase('REVIEW');
+            const next = getNextPhase('CONSTRUCTION');
+            if (next) setPhase(next);
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -403,8 +429,9 @@ export function SimuladorExamen() {
         setExamSelections(init);
     };
 
-    // Progress bar
-    const currentIdx = PHASE_ORDER.indexOf(phase);
+    // Progress bar - only show phases in current practice mode
+    const activePhases = ['SETUP' as SimPhase, ...PRACTICE_PHASES[practiceMode]];
+    const currentIdx = activePhases.indexOf(phase);
 
     // ─── RENDER ───
     return (
@@ -455,8 +482,8 @@ export function SimuladorExamen() {
             {/* Progress */}
             {phase !== 'SETUP' && (
                 <div className="flex gap-1">
-                    {PHASE_ORDER.map((p, i) => (
-                        <div key={p} className={`h-2 flex-1 rounded-full transition-all ${i <= currentIdx ? (i === currentIdx ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200'}`} title={PHASE_LABELS[p]} />
+                    {activePhases.filter(p => p !== 'SETUP').map((p, i) => (
+                        <div key={p} className={`h-2 flex-1 rounded-full transition-all ${(i + 1) <= currentIdx ? ((i + 1) === currentIdx ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200'}`} title={PHASE_LABELS[p]} />
                     ))}
                 </div>
             )}
@@ -470,6 +497,23 @@ export function SimuladorExamen() {
                     <div className="flex flex-col items-center gap-3">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500" />
                         <p className="text-slate-500 font-medium text-sm animate-pulse">Procesando con IA...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* ════════ TASK ALERT ════════ */}
+            {phase === 'SETUP' && tareaAlerta?.activa && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex items-start gap-3 animate-pulse-subtle">
+                    <div className="text-3xl">🚨</div>
+                    <div>
+                        <h3 className="font-black text-red-800 text-sm">TAREA PENDIENTE</h3>
+                        <p className="text-sm text-red-700 mt-1">{tareaAlerta.mensaje}</p>
+                        <p className="text-xs text-red-500 mt-1">
+                            {tareaAlerta.diasDesdeUltimo >= 999
+                                ? 'Nunca has realizado una simulación.'
+                                : `Han pasado ${tareaAlerta.diasDesdeUltimo} día(s) desde tu última simulación (máximo permitido: ${tareaAlerta.frecuencia}).`
+                            }
+                        </p>
                     </div>
                 </div>
             )}
@@ -799,7 +843,8 @@ export function SimuladorExamen() {
                                         return;
                                     }
                                     setError('');
-                                    setPhase('INTERVENTION');
+                                    const next = getNextPhase('REASONING2');
+                                    if (next) setPhase(next);
                                 }}
                                 className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm"
                             >
@@ -860,7 +905,8 @@ export function SimuladorExamen() {
                         <button onClick={() => {
                             if (interventions.filter(i => i.tecnica.trim()).length === 0) { setError('Agrega al menos una intervención.'); return; }
                             setError('');
-                            setPhase('CONSTRUCTION');
+                            const next = getNextPhase('INTERVENTION');
+                            if (next) setPhase(next);
                         }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
                             Continuar a Escritura Clínica →
                         </button>

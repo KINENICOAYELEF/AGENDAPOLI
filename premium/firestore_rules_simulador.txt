@@ -1,0 +1,33 @@
+// ═══════════════════════════════════════════════════
+// REGLAS FIRESTORE ADICIONALES PARA EL SIMULADOR
+// ═══════════════════════════════════════════════════
+// 
+// Agrega estas reglas dentro de tu archivo de reglas existente,
+// en la sección de match /databases/{database}/documents {
+//
+// ─────────────────────────────────────────────────────
+// 1. Colección: settings (configuración global del simulador)
+// ─────────────────────────────────────────────────────
+//
+//     match /settings/{docId} {
+//       // Todos los autenticados pueden LEER la config (para ver la tarea)
+//       allow read: if isAuthenticated();
+//       // Solo docentes pueden ESCRIBIR la config
+//       allow write: if isDocente();
+//     }
+//
+// ─────────────────────────────────────────────────────
+// 2. Colección: simulador_intentos (YA DEBERÍA EXISTIR)
+// ─────────────────────────────────────────────────────
+// Si no la tienes, agrega:
+//
+//     match /simulador_intentos/{intentoId} {
+//       allow read: if isAuthenticated() && (
+//         resource.data.userId == request.auth.uid || isDocente()
+//       );
+//       allow create: if isAuthenticated() &&
+//         request.resource.data.userId == request.auth.uid;
+//       allow delete: if isDocente();
+//     }
+//
+// ═══════════════════════════════════════════════════

@@ -60,7 +60,7 @@ export function SimuladorHistorial({ onClose }: { onClose: () => void }) {
             {!loading && intentos.length > 0 && (
                 <div className="space-y-2">
                     {intentos.map((int) => {
-                        const fecha = int.fecha?.toDate ? int.fecha.toDate() : new Date();
+                        const fecha = int.fecha ? int.fecha.toDate() : new Date();
                         const isExpanded = expandedId === int.id;
                         const notaFinal = int.notaComision
                             ? (int.notaChilena * 0.7 + int.notaComision * 0.3).toFixed(1)
