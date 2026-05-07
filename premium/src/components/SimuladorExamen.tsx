@@ -71,7 +71,7 @@ export function SimuladorExamen() {
     const [showHistorial, setShowHistorial] = useState(false);
 
     // Task compliance
-    const [tareaAlerta, setTareaAlerta] = useState<{ activa: boolean; mensaje: string; diasDesdeUltimo: number; frecuencia: number } | null>(null);
+    const [tareaAlerta, setTareaAlerta] = useState<{ descripcion: string; mensaje: string; creditos: number; frecuencia: number } | null>(null);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -163,9 +163,9 @@ export function SimuladorExamen() {
             const resultado = await verificarCumplimiento(user.uid, cfg);
             if (!resultado.cumple) {
                 setTareaAlerta({
-                    activa: true,
+                    descripcion: resultado.descripcion,
                     mensaje: cfg.mensaje || `Debes completar al menos 1 simulación cada ${cfg.frecuenciaDias} días.`,
-                    diasDesdeUltimo: resultado.diasDesdeUltimo,
+                    creditos: resultado.creditosExtraAcumulados,
                     frecuencia: cfg.frecuenciaDias,
                 });
             } else {
@@ -502,18 +502,25 @@ export function SimuladorExamen() {
             )}
 
             {/* ════════ TASK ALERT ════════ */}
-            {phase === 'SETUP' && tareaAlerta?.activa && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex items-start gap-3 animate-pulse-subtle">
-                    <div className="text-3xl">🚨</div>
-                    <div>
-                        <h3 className="font-black text-red-800 text-sm">TAREA PENDIENTE</h3>
-                        <p className="text-sm text-red-700 mt-1">{tareaAlerta.mensaje}</p>
-                        <p className="text-xs text-red-500 mt-1">
-                            {tareaAlerta.diasDesdeUltimo >= 999
-                                ? 'Nunca has realizado una simulación.'
-                                : `Han pasado ${tareaAlerta.diasDesdeUltimo} día(s) desde tu última simulación (máximo permitido: ${tareaAlerta.frecuencia}).`
-                            }
-                        </p>
+            {phase === 'SETUP' && tareaAlerta && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-start gap-3">
+                        <div className="text-2xl">🚨</div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-red-800 text-sm">TAREA PENDIENTE</h3>
+                            <p className="text-sm text-red-700 mt-0.5">{tareaAlerta.mensaje}</p>
+                            <p className="text-xs text-red-500 mt-1">{tareaAlerta.descripcion}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 pl-9">
+                        <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+                            Requerimiento: 1 cada {tareaAlerta.frecuencia} días
+                        </span>
+                        {tareaAlerta.creditos > 0 && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
+                                {tareaAlerta.creditos} crédito(s) acumulados
+                            </span>
+                        )}
                     </div>
                 </div>
             )}

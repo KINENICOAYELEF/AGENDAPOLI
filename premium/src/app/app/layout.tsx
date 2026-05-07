@@ -6,6 +6,7 @@ import { useYear } from '@/context/YearContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
+import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading: authLoading, logout } = useAuth();
@@ -69,6 +70,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
     return (
         <div className="flex h-screen bg-gray-100">
+            <SimuladorAlertaModal />
             {/* Sidebar Desktop / Mobile Drawer */}
             {/* Overlay Móvil */}
             {isSidebarOpen && (
