@@ -261,6 +261,8 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                             'Biomecánica': 'from-blue-600 to-cyan-700',
                             'Fisiología': 'from-violet-600 to-purple-700',
                             'Entrenamiento': 'from-orange-500 to-red-600',
+                            'Neurociencia del Dolor': 'from-rose-600 to-pink-700',
+                            'Prevención / RTS': 'from-cyan-600 to-teal-700',
                             'Anatomía': 'from-pink-600 to-rose-700',
                             'Otro': 'from-slate-600 to-gray-700'
                         };
@@ -277,7 +279,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                             <span className="bg-white/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-bold">{article.category}</span>
                                             <span className="bg-white/15 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-semibold">👥 {article.population}</span>
                                             <span className="bg-white/15 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-semibold">🏥 {article.cif}</span>
-                                            {article.tags.map(t => <span key={t} className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{t}</span>)}
+                                            {article.tags.filter(t => t !== article.category && t !== article.cif && t !== article.population).slice(0, 5).map(t => <span key={t} className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{t}</span>)}
                                             {currentUserRole === 'DOCENTE' && (
                                                 <button onClick={() => setAddingTagsTo(article.id!)} className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full text-xs transition-colors">+ Tag</button>
                                             )}
@@ -364,10 +366,23 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                     <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{c.perlaClinica}</p>
                                                                 </div>
                                                             )}
+                                                            {/* Dose data */}
+                                                            {(c as any).dosis && Object.values((c as any).dosis).some((v: any) => v) && (
+                                                                <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mt-2">
+                                                                    <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">📊 DOSIS</div>
+                                                                    <div className="flex flex-wrap gap-2 text-xs">
+                                                                        {(c as any).dosis.intensidad && <span className="bg-white px-2 py-1 rounded border border-orange-100"><strong>Intensidad:</strong> {(c as any).dosis.intensidad}</span>}
+                                                                        {(c as any).dosis.volumen && <span className="bg-white px-2 py-1 rounded border border-orange-100"><strong>Volumen:</strong> {(c as any).dosis.volumen}</span>}
+                                                                        {(c as any).dosis.frecuencia && <span className="bg-white px-2 py-1 rounded border border-orange-100"><strong>Frecuencia:</strong> {(c as any).dosis.frecuencia}</span>}
+                                                                        {(c as any).dosis.duracion && <span className="bg-white px-2 py-1 rounded border border-orange-100"><strong>Duración:</strong> {(c as any).dosis.duracion}</span>}
+                                                                        {(c as any).dosis.tipoContraccion && <span className="bg-white px-2 py-1 rounded border border-orange-100"><strong>Contracción:</strong> {(c as any).dosis.tipoContraccion}</span>}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             {c.limitaciones && (
                                                                 <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mt-2">
-                                                                    <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">⚠️ LIMITACIONES</div>
-                                                                    <p className="text-xs text-gray-700 leading-relaxed">{c.limitaciones}</p>
+                                                                    <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">⚠️ ANÁLISIS CRÍTICO</div>
+                                                                    <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{c.limitaciones}</p>
                                                                 </div>
                                                             )}
                                                             {c.feedbackDocente && (

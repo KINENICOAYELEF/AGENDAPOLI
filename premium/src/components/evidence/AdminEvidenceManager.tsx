@@ -406,16 +406,57 @@ export function AdminEvidenceManager() {
                                 <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{reviewArticle.summary}</p>
                             </div>
 
-                            {/* Perla */}
-                            <div className="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-xl">
-                                <h4 className="font-black text-emerald-800 text-sm mb-2">💎 APLICACIÓN PRÁCTICA (La Perla Clínica)</h4>
-                                <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.perlaClinica}</p>
-                            </div>
+                            {/* Student's own summary */}
+                            {reviewContribution.resumenEstudiante && (
+                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                                    <h4 className="font-bold text-slate-700 text-sm mb-2">📝 Resumen del Estudiante</h4>
+                                    <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.resumenEstudiante}</p>
+                                </div>
+                            )}
+
+                            {/* Study design */}
+                            {reviewContribution.studyDesign && (
+                                <div className="inline-block bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-lg text-sm text-indigo-700">
+                                    <span className="font-bold">Diseño:</span> {reviewContribution.studyDesign}
+                                </div>
+                            )}
+
+                            {/* Dose data for training */}
+                            {reviewContribution.dosis && Object.values(reviewContribution.dosis).some(v => v) && (
+                                <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                                    <h4 className="font-bold text-orange-800 text-sm mb-2">📊 Dosis del Protocolo</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                                        {reviewContribution.dosis.intensidad && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Intensidad</span>{reviewContribution.dosis.intensidad}</div>}
+                                        {reviewContribution.dosis.volumen && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Volumen</span>{reviewContribution.dosis.volumen}</div>}
+                                        {reviewContribution.dosis.frecuencia && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Frecuencia</span>{reviewContribution.dosis.frecuencia}</div>}
+                                        {reviewContribution.dosis.duracion && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Duración</span>{reviewContribution.dosis.duracion}</div>}
+                                        {reviewContribution.dosis.tipoContraccion && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Contracción</span>{reviewContribution.dosis.tipoContraccion}</div>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Individual Perlas */}
+                            {reviewContribution.perlas && Object.keys(reviewContribution.perlas).length > 0 ? (
+                                <div className="space-y-3">
+                                    <h4 className="font-black text-emerald-800 text-sm">💎 PERLAS DE APLICACIÓN</h4>
+                                    {Object.entries(reviewContribution.perlas).map(([perlaId, content]) => (
+                                        <div key={perlaId} className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                            <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">{perlaId.replace('perla_', '').replace(/_/g, ' ')}</div>
+                                            <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{content}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : reviewContribution.perlaClinica && (
+                                <div className="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-xl">
+                                    <h4 className="font-black text-emerald-800 text-sm mb-2">💎 APLICACIÓN PRÁCTICA</h4>
+                                    <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.perlaClinica}</p>
+                                </div>
+                            )}
 
                             {/* Limitations */}
                             {reviewContribution.limitaciones && (
                                 <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
-                                    <h4 className="font-bold text-orange-800 text-sm mb-2">⚠️ Limitaciones y Cuidados</h4>
+                                    <h4 className="font-bold text-orange-800 text-sm mb-2">⚠️ Análisis Crítico y Limitaciones</h4>
                                     <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.limitaciones}</p>
                                 </div>
                             )}
@@ -441,6 +482,27 @@ export function AdminEvidenceManager() {
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 mb-1">Agregar Etiquetas Extra (separadas por coma)</label>
                                     <input value={reviewExtraTags} onChange={e => setReviewExtraTags(e.target.value)} placeholder="Ej: Isométricos, Cuádriceps, Dolor Anterior" className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                    {/* Current tags */}
+                                    {reviewArticle.tags?.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            <span className="text-[10px] text-gray-400 font-bold">TAGS ACTUALES:</span>
+                                            {reviewArticle.tags.map(t => <span key={t} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium">{t}</span>)}
+                                        </div>
+                                    )}
+                                    {/* Autocomplete suggestions */}
+                                    {reviewExtraTags.trim() && (() => {
+                                        const currentInput = reviewExtraTags.split(',').pop()?.trim().toLowerCase() || '';
+                                        if (!currentInput || currentInput.length < 2) return null;
+                                        const allTags = Array.from(new Set(articles.flatMap(a => a.tags || [])));
+                                        const suggestions = allTags.filter(t => t.toLowerCase().includes(currentInput) && !(reviewArticle.tags || []).includes(t)).slice(0, 6);
+                                        if (suggestions.length === 0) return null;
+                                        return (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                <span className="text-[10px] text-indigo-400 font-bold">SUGERENCIAS:</span>
+                                                {suggestions.map(s => <button key={s} type="button" onClick={() => { const parts = reviewExtraTags.split(','); parts[parts.length - 1] = ` ${s}`; setReviewExtraTags(parts.join(',') + ', '); }} className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-medium hover:bg-indigo-200 transition-colors cursor-pointer">{s}</button>)}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 <div className="flex gap-3">
