@@ -58,13 +58,18 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
         try {
             const contribId = `contrib_${Date.now()}`;
             const allLimitations = [limitMetodo ? `[METODOLOGÍA] ${limitMetodo}` : '', limitTransfer ? `[TRANSFERIBILIDAD] ${limitTransfer}` : '', limitFalta ? `[FALTA INVESTIGAR] ${limitFalta}` : ''].filter(Boolean).join('\n\n');
-            const dosis = cfg.hasDoseFields ? { intensidad: doseIntensidad, volumen: doseVolumen, frecuencia: doseFrecuencia, duracion: doseDuracion, tipoContraccion: doseTipoContraccion } : null;
+            const dosis = cfg.hasDoseFields ? { intensidad: doseIntensidad, volumen: doseVolumen, frecuencia: doseFrecuencia, duracion: doseDuracion, tipoContraccion: doseTipoContraccion } : undefined;
 
             const contribution = {
                 id: contribId, studentId, studentName, resumenEstudiante: resumen, studyDesign, perlas,
-                perlaClinica: Object.values(perlas).join(' | '), limitaciones: allLimitations, dosis,
+                perlaClinica: Object.values(perlas).join(' | '), limitaciones: allLimitations, dosis: dosis as any,
                 status: 'REVISION' as const, createdAt: Date.now(), updatedAt: Date.now()
             };
+
+            // Remove dosis property explicitly to avoid undefined Firebase error
+            if (contribution.dosis === undefined) {
+                delete contribution.dosis;
+            }
 
             // Auto-generate tags
             const autoTags = generateAutoTags({ category, cif: contextField, population, finding, methodology, summary: resumen }, studyDesign);
