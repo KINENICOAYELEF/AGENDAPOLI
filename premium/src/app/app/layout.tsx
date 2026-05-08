@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
 import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
+import { EvidenceAlertaModal } from '@/components/evidence/EvidenceAlertaModal';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading: authLoading, logout } = useAuth();
@@ -71,6 +72,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen bg-gray-100">
             <SimuladorAlertaModal />
+            <EvidenceAlertaModal />
             {/* Sidebar Desktop / Mobile Drawer */}
             {/* Overlay Móvil */}
             {isSidebarOpen && (
@@ -105,12 +107,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </Link>
                     )}
                     {user.role === "DOCENTE" && (
-                        <Link href="/app/pasantia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-teal-300">
-                            📋 Pasantía 2º Año
-                        </Link>
+                        <Link href="/app/pasantia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-300 font-semibold">
+                        🏥 Pasantía 2º Año
+                    </Link>
                     )}
-                    <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300">
+                    <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300 font-bold mt-4 border-t border-slate-800 pt-4">
                         🎓 Simulador Examen
+                    </Link>
+                    <Link href="/app/evidencia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-blue-300 font-bold mt-2">
+                        📚 Biblioteca Científica
                     </Link>
                 </nav>
 

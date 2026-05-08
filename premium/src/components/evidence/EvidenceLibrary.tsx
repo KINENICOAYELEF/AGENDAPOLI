@@ -1,0 +1,287 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { getEvidenceArticles, addContributionToArticle } from "@/services/evidence";
+import { EvidenceArticle, ArticleCategory } from "@/types/evidence";
+
+interface Props {
+    currentUserId: string;
+    currentUserName: string;
+    currentUserRole: string;
+}
+
+export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRole }: Props) {
+    const [articles, setArticles] = useState<EvidenceArticle[]>([]);
+    const [filteredArticles, setFilteredArticles] = useState<EvidenceArticle[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Search & Filters
+    const [searchTerm, setSearchTerm] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState<string>("TODAS");
+
+    // Add Contribution Modal
+    const [addingToArticle, setAddingToArticle] = useState<EvidenceArticle | null>(null);
+    const [perla, setPerla] = useState("");
+    const [limitaciones, setLimitaciones] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Add Tags Logic
+    const [addingTagsTo, setAddingTagsTo] = useState<string | null>(null);
+    const [newTagStr, setNewTagStr] = useState("");
+    
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    useEffect(() => {
+        filterData();
+    }, [searchTerm, categoryFilter, articles]);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const data = await getEvidenceArticles();
+            setArticles(data);
+        } catch (e: any) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filterData = () => {
+        let result = [...articles];
+        if (categoryFilter !== "TODAS") {
+            result = result.filter(a => a.category === categoryFilter);
+        }
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            result = result.filter(a => 
+                a.title.toLowerCase().includes(q) || 
+                a.cif.toLowerCase().includes(q) || 
+                a.population.toLowerCase().includes(q) || 
+                a.tags.some(t => t.toLowerCase().includes(q))
+            );
+        }
+        setFilteredArticles(result);
+    };
+
+    const submitContribution = async () => {
+        if (!addingToArticle || !perla.trim()) {
+            alert("Completa tu aplicación práctica (perla clínica).");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const contrib = {
+                id: `contrib_${Date.now()}`,
+                studentId: currentUserId,
+                studentName: currentUserName,
+                perlaClinica: perla,
+                limitaciones,
+                status: 'REVISION' as const,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            await addContributionToArticle(addingToArticle.id!, contrib);
+            alert("Aporte enviado correctamente. Está pendiente de revisión docente.");
+            setAddingToArticle(null);
+            setPerla("");
+            setLimitaciones("");
+            loadData();
+        } catch (e: any) {
+            alert("Error al enviar aporte: " + e.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleAddTags = async (article: EvidenceArticle) => {
+        if (!newTagStr.trim()) {
+            setAddingTagsTo(null);
+            return;
+        }
+        
+        setIsSubmitting(true);
+        try {
+            const tagsToAdd = newTagStr.split(',').map(t => t.trim()).filter(t => t);
+            if (tagsToAdd.length > 0) {
+                // To keep it simple, we use saveEvidenceArticle which does an updateDoc
+                const updatedTags = Array.from(new Set([...article.tags, ...tagsToAdd]));
+                await import('@/services/evidence').then(m => m.saveEvidenceArticle({ ...article, tags: updatedTags }));
+                loadData();
+            }
+            setNewTagStr("");
+            setAddingTagsTo(null);
+        } catch (e: any) {
+            alert("Error al guardar etiquetas: " + e.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (loading) return <div className="text-center py-10">Cargando biblioteca...</div>;
+
+    const categories = ["TODAS", "Clínica", "Biomecánica", "Fisiología", "Entrenamiento", "Anatomía", "Otro"];
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            
+            {/* Buscador y Filtros */}
+            <div className="flex flex-col md:flex-row gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Buscador Global</label>
+                    <input 
+                        type="text" 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                        placeholder="Buscar por patología, título, intervención..." 
+                        className="w-full border border-slate-300 rounded-lg px-4 py-2"
+                    />
+                </div>
+                <div className="w-full md:w-64">
+                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Categoría</label>
+                    <select 
+                        value={categoryFilter} 
+                        onChange={e => setCategoryFilter(e.target.value)} 
+                        className="w-full border border-slate-300 rounded-lg px-4 py-2"
+                    >
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            {/* Lista de Artículos */}
+            <div className="space-y-6">
+                {filteredArticles.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500">No se encontraron artículos con esos filtros.</div>
+                ) : (
+                    filteredArticles.map(article => {
+                        const approvedContribs = article.contributions.filter(c => c.status === 'APPROVED');
+                        if (approvedContribs.length === 0 && currentUserRole !== 'DOCENTE') return null; // No mostrar si no hay contribuciones aprobadas (y no soy profe)
+
+                        return (
+                            <div key={article.id} className="border border-slate-200 rounded-2xl overflow-hidden transition-all hover:shadow-md">
+                                <div className="bg-slate-900 p-5 text-white">
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        <span className="bg-blue-600 px-2 py-0.5 rounded text-xs font-bold">{article.category}</span>
+                                        <span className="bg-slate-700 px-2 py-0.5 rounded text-xs font-semibold">{article.population}</span>
+                                        <span className="bg-indigo-600 px-2 py-0.5 rounded text-xs font-semibold">{article.cif}</span>
+                                        {article.tags.map(t => <span key={t} className="bg-slate-800 border border-slate-600 px-2 py-0.5 rounded text-xs">{t}</span>)}
+                                        {currentUserRole === 'DOCENTE' && (
+                                            <button onClick={() => setAddingTagsTo(article.id!)} className="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-2 py-0.5 rounded text-xs text-slate-300">
+                                                + Añadir Etiqueta
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {addingTagsTo === article.id && (
+                                        <div className="mb-4 flex gap-2">
+                                            <input 
+                                                value={newTagStr} 
+                                                onChange={e => setNewTagStr(e.target.value)} 
+                                                placeholder="Ej: FNP, Cuádriceps (separados por coma)"
+                                                className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white"
+                                                autoFocus
+                                            />
+                                            <button 
+                                                onClick={() => handleAddTags(article)}
+                                                disabled={isSubmitting}
+                                                className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
+                                            >
+                                                Guardar
+                                            </button>
+                                            <button 
+                                                onClick={() => setAddingTagsTo(null)}
+                                                className="text-slate-400 hover:text-white px-2 py-1 text-sm"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <h3 className="text-xl font-bold mb-1">{article.title}</h3>
+                                    <div className="flex items-center gap-4 text-sm text-slate-400">
+                                        <span>Creado por: {article.createdBy}</span>
+                                        {article.url && (
+                                            <a href={article.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                                                <span>🔗 Enlace al Documento</span>
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="p-5 bg-white">
+                                    <div className="mb-4">
+                                        <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Resumen del Estudio</h4>
+                                        <p className="text-slate-800 text-sm whitespace-pre-wrap">{article.summary}</p>
+                                    </div>
+
+                                    <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 mt-6 border-t pt-4">Aportes y Aplicaciones Clínicas ({approvedContribs.length})</h4>
+                                    <div className="space-y-4">
+                                        {approvedContribs.map(c => (
+                                            <div key={c.id} className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-bold text-emerald-800">🧑‍⚕️ {c.studentName}</span>
+                                                    {c.nota && <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-emerald-600 border border-emerald-200">Nota: {c.nota.toFixed(1)}</span>}
+                                                </div>
+                                                <div className="mb-3">
+                                                    <span className="text-xs font-bold text-emerald-600 block mb-1">APLICACIÓN PRÁCTICA</span>
+                                                    <p className="text-sm text-slate-800 whitespace-pre-wrap">{c.perlaClinica}</p>
+                                                </div>
+                                                {c.limitaciones && (
+                                                    <div className="bg-orange-50/50 p-2 rounded-lg border border-orange-100">
+                                                        <span className="text-xs font-bold text-orange-600 block mb-1">LIMITACIONES</span>
+                                                        <p className="text-xs text-slate-700">{c.limitaciones}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {currentUserRole === 'INTERNO' && !article.contributions.some(c => c.studentId === currentUserId) && (
+                                        <button onClick={() => setAddingToArticle(article)} className="mt-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-sm transition-colors border border-slate-300">
+                                            + Añadir mi propio análisis/perla
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* ADD PERLA MODAL */}
+            {addingToArticle && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="bg-slate-900 p-4 sticky top-0 flex justify-between items-center text-white z-10">
+                            <h3 className="font-bold">Añadir Análisis a Artículo Existente</h3>
+                            <button onClick={() => setAddingToArticle(null)} className="text-slate-400 hover:text-white">✕ Cancelar</button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
+                                Estás añadiendo un aporte a: <strong>{addingToArticle.title}</strong>
+                            </div>
+
+                            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                <label className="block text-sm font-bold mb-1 text-emerald-800">💎 Aplicación Práctica (La Perla Clínica)</label>
+                                <p className="text-xs text-emerald-600 mb-2">¿Cómo aplicarías esta información con tus usuarios/pacientes en la práctica real?</p>
+                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} className="w-full border border-emerald-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="Mañana en el Polideportivo yo usaría esto para..." />
+                            </div>
+
+                            <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                                <label className="block text-sm font-bold mb-1 text-orange-800">⚠️ Limitaciones / Cuidados</label>
+                                <textarea value={limitaciones} onChange={e => setLimitaciones(e.target.value)} rows={3} className="w-full border border-orange-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-orange-400 outline-none" placeholder="El estudio fue en sedentarios, así que ojo con..." />
+                            </div>
+
+                            <button onClick={submitContribution} disabled={isSubmitting} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-lg">
+                                Enviar Aporte para Revisión →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+}
