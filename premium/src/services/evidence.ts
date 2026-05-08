@@ -48,9 +48,12 @@ export const createEvidenceTask = async (task: EvidenceTask): Promise<string> =>
 };
 
 export const getStudentTasks = async (studentId: string): Promise<EvidenceTask[]> => {
-    const q = query(collection(db, 'evidence_tasks'), where('studentId', '==', studentId), orderBy('createdAt', 'desc'));
+    // Quitamos orderBy para evitar error de índice compuesto en Firebase
+    const q = query(collection(db, 'evidence_tasks'), where('studentId', '==', studentId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvidenceTask));
+    const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EvidenceTask));
+    // Ordenamos en memoria
+    return tasks.sort((a, b) => b.createdAt - a.createdAt);
 };
 
 export const getAllEvidenceTasks = async (): Promise<EvidenceTask[]> => {

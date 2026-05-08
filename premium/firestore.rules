@@ -1,27 +1,23 @@
-rules_version = '2';
-service cloud.firestore {
+rules_version = '2'; 
+service cloud.firestore { 
   match /databases/{database}/documents {
-    
+
     // --------------------------------------------------------------------
-    // Funciones Auxiliares de Seguridad
+    // Funciones Auxiliares de Seguridad (FASE 11.1 - ROBUSTO)
     // --------------------------------------------------------------------
-    
     function isAuthenticated() {
       return request.auth != null;
     }
-
     function isDocente() {
       return isAuthenticated() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "DOCENTE";
     }
-
     function isInterno() {
       return isAuthenticated() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "INTERNO";
     }
-
     function isProgramActive(year) {
       // Verifica usando un 'get' al documento de settings de ese año
       return get(/databases/$(database)/documents/programs/$(year)/meta/settings).data.isActive == true;
@@ -88,31 +84,57 @@ service cloud.firestore {
     // --------------------------------------------------------------------
     match /pasantia_entregas/{entregaId} {
       // Cualquier persona puede crear una entrega (sin login).
-      // La resistencia ante spam se maneja desde el formulario (envío único + confirmación).
       allow create: if true;
-
       // Solo el DOCENTE puede leer todas las entregas y actualizar (guardar revisión).
       allow read, update: if isDocente();
-
       // Eliminación solo por DOCENTE
       allow delete: if isDocente();
     }
 
     // --------------------------------------------------------------------
-    // 4. Biblioteca de Evidencia y Tareas (Journal Club)
+    // 4. Simulador de Examen Clínico – Intentos
+    // --------------------------------------------------------------------
+    match /simulador_intentos/{intentoId} {
+      // Cualquier usuario autenticado puede crear su propio intento.
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid;
+      // El estudiante lee solo sus propios intentos. El Docente lee todos.
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid || isDocente());
+      // Solo el Docente puede eliminar intentos.
+      allow delete: if isDocente();
+      // Los intentos son inmutables (no se pueden editar después de creados).
+      allow update: if false;
+    }
+
+    // --------------------------------------------------------------------
+    // 5. Configuración de Tareas del Simulador
+    // --------------------------------------------------------------------
+    match /settings/{docId} {
+      // Todos pueden leer para saber si tienen tarea.
+      allow read: if isAuthenticated();
+      // Solo el docente puede asignar tareas.
+      allow write: if isDocente();
+    }
+
+    // --------------------------------------------------------------------
+    // 6. NUEVO: Biblioteca de Evidencia Clínica (Journal Club)
     // --------------------------------------------------------------------
     match /evidence_tasks/{taskId} {
-      allow create: if isDocente();
-      // El docente ve todas, el interno solo ve las suyas
-      allow read: if isDocente() || (isInterno() && resource.data.studentId == request.auth.uid);
-      // El docente puede actualizar (ej: poner nota). El interno también para subir su análisis (pasar a REVISION)
-      allow update: if isDocente() || (isInterno() && resource.data.studentId == request.auth.uid);
-      allow delete: if isDocente();
+      // Estudiantes ven sus propias tareas; docentes ven todas
+      allow read: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      // Solo docentes pueden crear o eliminar tareas
+      allow create, delete: if isDocente();
+      // Estudiantes actualizan su tarea al enviarla; docentes pueden editar todo
+      allow update: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
     }
 
     match /evidence_articles/{articleId} {
-      // Todos pueden crear, leer y actualizar (para aportar sus perlas clínicas)
-      allow create, read, update: if isDocente() || isInterno();
+      // Todos los usuarios autenticados leen la biblioteca
+      allow read: if isAuthenticated();
+      // Todos pueden crear artículos (aportes libres) y actualizar (añadir contribuciones/tags)
+      allow create, update: if isAuthenticated();
+      // Solo docentes pueden eliminar artículos
       allow delete: if isDocente();
     }
   }
