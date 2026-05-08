@@ -15,7 +15,7 @@ export function AdminEvidenceManager() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const [activeTab, setActiveTab] = useState<'TASKS' | 'CREATE_TASK' | 'ARTICLES'>('TASKS');
+    const [activeTab, setActiveTab] = useState<'TASKS' | 'CREATE_TASK'>('TASKS');
 
     // CREATE TASK FORM
     const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
@@ -30,6 +30,8 @@ export function AdminEvidenceManager() {
     const [reviewArticle, setReviewArticle] = useState<EvidenceArticle | null>(null);
     const [reviewNota, setReviewNota] = useState(4.0);
     const [reviewFeedback, setReviewFeedback] = useState("");
+    // Admin tag editing for the article under review
+    const [reviewExtraTags, setReviewExtraTags] = useState("");
 
     useEffect(() => {
         loadData();
@@ -37,27 +39,40 @@ export function AdminEvidenceManager() {
 
     const loadData = async () => {
         setLoading(true);
-        try {
-            const [t, a, u] = await Promise.all([
-                getAllEvidenceTasks(),
-                getEvidenceArticles(),
-                UsersService.getInterns()
-            ]);
-            setTasks(t);
-            setArticles(a);
-            setInterns(u);
-        } catch (e: any) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-        }
+        setError("");
+        // Load each independently so one failure doesn't kill the others
+        const [internsResult, tasksResult, articlesResult] = await Promise.allSettled([
+            UsersService.getInterns(),
+            getAllEvidenceTasks(),
+            getEvidenceArticles()
+        ]);
+
+        if (internsResult.status === 'fulfilled') setInterns(internsResult.value);
+        else console.warn("No se pudieron cargar internos:", internsResult.reason);
+
+        if (tasksResult.status === 'fulfilled') setTasks(tasksResult.value);
+        else console.warn("No se pudieron cargar tareas:", tasksResult.reason);
+
+        if (articlesResult.status === 'fulfilled') setArticles(articlesResult.value);
+        else console.warn("No se pudieron cargar artículos:", articlesResult.reason);
+
+        setLoading(false);
     };
 
     const handleCreateTasks = async () => {
-        if (!articleTitle || !dueDate || selectedStudents.length === 0) {
-            alert("Rellena el título, fecha y selecciona al menos un estudiante.");
+        if (!articleTitle.trim()) {
+            alert("Escribe el título del artículo o tema.");
             return;
         }
+        if (!dueDate) {
+            alert("Selecciona una fecha límite.");
+            return;
+        }
+        if (selectedStudents.length === 0) {
+            alert("Selecciona al menos un estudiante.");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const dateParsed = new Date(dueDate).getTime();
@@ -75,9 +90,10 @@ export function AdminEvidenceManager() {
                     createdAt: Date.now()
                 });
             }
-            alert("Tareas creadas con éxito");
+            alert(`✅ ${selectedStudents.length} tarea(s) creada(s) con éxito.`);
             setArticleTitle("");
             setArticleUrl("");
+            setDueDate("");
             setSelectedStudents([]);
             loadData();
             setActiveTab('TASKS');
@@ -92,8 +108,17 @@ export function AdminEvidenceManager() {
         setSelectedStudents(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
 
+    const selectAllStudents = () => {
+        if (selectedStudents.length === interns.length) {
+            setSelectedStudents([]);
+        } else {
+            setSelectedStudents(interns.map(i => i.uid));
+        }
+    };
+
     const openReviewModal = (task: EvidenceTask) => {
         setReviewTask(task);
+        setReviewExtraTags("");
         if (task.articleId && task.contributionId) {
             const article = articles.find(a => a.id === task.articleId);
             if (article) {
@@ -115,17 +140,30 @@ export function AdminEvidenceManager() {
             // Update Contribution
             const updatedContributions = reviewArticle.contributions.map(c => {
                 if (c.id === reviewContribution.id) {
-                    return { ...c, status: newStatus, nota: reviewNota, feedbackDocente: reviewFeedback };
+                    return { ...c, status: newStatus, nota: reviewNota, feedbackDocente: reviewFeedback, updatedAt: Date.now() };
                 }
                 return c;
             });
+
+            // If admin added extra tags during review, merge them
+            let updatedTags = [...(reviewArticle.tags || [])];
+            if (reviewExtraTags.trim()) {
+                const newTags = reviewExtraTags.split(',').map(t => t.trim()).filter(Boolean);
+                updatedTags = Array.from(new Set([...updatedTags, ...newTags]));
+            }
+
             await updateContributionInArticle(reviewArticle.id!, updatedContributions);
+            if (updatedTags.length !== (reviewArticle.tags || []).length) {
+                await saveEvidenceArticle({ ...reviewArticle, tags: updatedTags, contributions: updatedContributions });
+            }
             
             // Update Task Status
             await updateTaskStatus(reviewTask.id!, { status: newStatus === 'REJECTED' ? 'PENDING' : 'APPROVED' });
             
-            alert(newStatus === 'APPROVED' ? "Análisis aprobado y publicado." : "Análisis rechazado. El estudiante deberá rehacerlo.");
+            alert(newStatus === 'APPROVED' ? "✅ Análisis aprobado y publicado en la biblioteca." : "❌ Análisis rechazado. El estudiante deberá rehacerlo.");
             setReviewTask(null);
+            setReviewArticle(null);
+            setReviewContribution(null);
             loadData();
         } catch (e: any) {
             alert("Error al guardar revisión: " + e.message);
@@ -134,72 +172,152 @@ export function AdminEvidenceManager() {
         }
     };
 
-    if (loading) return <div className="p-4 text-center">Cargando biblioteca de evidencia...</div>;
-
     const pendingReviews = tasks.filter(t => t.status === 'REVISION');
+    const pendingTasks = tasks.filter(t => t.status === 'PENDING');
+    const completedTasks = tasks.filter(t => t.status === 'APPROVED');
+
+    const statusLabel: Record<string, string> = {
+        PENDING: 'Pendiente',
+        REVISION: 'En Revisión',
+        APPROVED: 'Aprobado',
+        REJECTED: 'Rechazado'
+    };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mt-6">
-            <div className="bg-indigo-900 px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h3 className="text-lg font-bold text-white">📖 Gestor de Tareas y Biblioteca de Evidencia</h3>
-                    <p className="text-indigo-200 text-sm">Asigna lecturas y revisa los análisis de los estudiantes.</p>
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-violet-900 px-6 py-5">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/10 backdrop-blur rounded-xl flex items-center justify-center text-xl">📋</div>
+                    <div>
+                        <h3 className="text-lg font-black text-white tracking-tight">Gestor de Tareas de Lectura</h3>
+                        <p className="text-indigo-200 text-sm">Asigna artículos y revisa los análisis de tus estudiantes.</p>
+                    </div>
+                </div>
+                {/* Stats */}
+                <div className="flex gap-6 mt-4">
+                    <div className="text-center">
+                        <div className="text-2xl font-black text-white">{pendingReviews.length}</div>
+                        <div className="text-xs text-indigo-300 font-medium">Por Revisar</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-black text-white">{pendingTasks.length}</div>
+                        <div className="text-xs text-indigo-300 font-medium">Pendientes</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-black text-white">{completedTasks.length}</div>
+                        <div className="text-xs text-indigo-300 font-medium">Aprobados</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-2xl font-black text-white">{interns.length}</div>
+                        <div className="text-xs text-indigo-300 font-medium">Estudiantes</div>
+                    </div>
                 </div>
             </div>
 
+            {/* Tab Bar */}
             <div className="flex border-b border-gray-200 bg-gray-50 px-4 pt-2">
-                <button onClick={() => setActiveTab('TASKS')} className={`px-4 py-2 font-semibold text-sm border-b-2 transition-colors ${activeTab === 'TASKS' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Tareas y Revisiones ({pendingReviews.length})</button>
-                <button onClick={() => setActiveTab('CREATE_TASK')} className={`px-4 py-2 font-semibold text-sm border-b-2 transition-colors ${activeTab === 'CREATE_TASK' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>+ Asignar Lectura</button>
+                <button onClick={() => setActiveTab('TASKS')} className={`px-5 py-2.5 font-bold text-sm border-b-2 transition-colors ${activeTab === 'TASKS' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                    Tareas y Revisiones {pendingReviews.length > 0 && <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pendingReviews.length}</span>}
+                </button>
+                <button onClick={() => setActiveTab('CREATE_TASK')} className={`px-5 py-2.5 font-bold text-sm border-b-2 transition-colors ${activeTab === 'CREATE_TASK' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                    + Asignar Nueva Lectura
+                </button>
             </div>
 
             <div className="p-6">
+                {/* ─── CREATE TASK ─── */}
                 {activeTab === 'CREATE_TASK' && (
-                    <div className="space-y-4 max-w-2xl">
-                        <div>
-                            <label className="block text-sm font-semibold mb-1">Título del Artículo o Tema</label>
-                            <input value={articleTitle} onChange={e => setArticleTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="Ej. Isometric exercises for patellar tendinopathy..." />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold mb-1">Enlace al Artículo (Opcional - Google Drive, Pubmed)</label>
-                            <input value={articleUrl} onChange={e => setArticleUrl(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="https://drive.google.com/..." />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold mb-1">Fecha Límite</label>
-                            <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold mb-2">Asignar a Estudiantes Específicos:</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {interns.map(i => (
-                                    <label key={i.uid} className="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                                        <input type="checkbox" checked={selectedStudents.includes(i.uid)} onChange={() => toggleStudent(i.uid)} />
-                                        <span className="text-sm">{i.displayName || i.email}</span>
-                                    </label>
-                                ))}
+                    <div className="space-y-5 max-w-3xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Título del Artículo o Tema</label>
+                                <input value={articleTitle} onChange={e => setArticleTitle(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="Ej. Isometric exercises for patellar tendinopathy..." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Enlace al Artículo (Opcional)</label>
+                                <input value={articleUrl} onChange={e => setArticleUrl(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="https://drive.google.com/..." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Fecha Límite de Entrega</label>
+                                <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-400 outline-none" />
                             </div>
                         </div>
-                        <button onClick={handleCreateTasks} disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg mt-4 disabled:opacity-50">
-                            Crear Tareas
+
+                        <div>
+                            <div className="flex justify-between items-center mb-3">
+                                <label className="text-sm font-bold text-gray-700">Asignar a Estudiantes:</label>
+                                <button onClick={selectAllStudents} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                                    {selectedStudents.length === interns.length ? '✕ Deseleccionar Todos' : '✓ Seleccionar Todos'}
+                                </button>
+                            </div>
+                            
+                            {loading ? (
+                                <div className="text-center py-4 text-gray-500">Cargando estudiantes...</div>
+                            ) : interns.length === 0 ? (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                                    <strong>⚠️ No se encontraron estudiantes.</strong> Asegúrate de haber aprobado al menos un usuario como INTERNO en el Admin Docente.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {interns.map(i => {
+                                        const isSelected = selectedStudents.includes(i.uid);
+                                        return (
+                                            <button
+                                                key={i.uid}
+                                                type="button"
+                                                onClick={() => toggleStudent(i.uid)}
+                                                className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                                                    isSelected 
+                                                        ? 'border-indigo-500 bg-indigo-50 shadow-md ring-1 ring-indigo-200' 
+                                                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                                                    isSelected ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'
+                                                }`}>
+                                                    {isSelected ? '✓' : (i.displayName || i.email || '?').charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className={`text-sm font-semibold truncate ${isSelected ? 'text-indigo-800' : 'text-gray-700'}`}>
+                                                    {i.displayName || i.email}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {selectedStudents.length > 0 && (
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2.5 text-sm text-indigo-700 font-medium">
+                                📌 Se creará la tarea para <strong>{selectedStudents.length}</strong> estudiante(s).
+                            </div>
+                        )}
+
+                        <button onClick={handleCreateTasks} disabled={isSubmitting || selectedStudents.length === 0} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black py-3.5 rounded-xl shadow-lg shadow-indigo-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+                            {isSubmitting ? 'Creando...' : `Crear ${selectedStudents.length > 0 ? selectedStudents.length : ''} Tarea(s)`}
                         </button>
                     </div>
                 )}
 
+                {/* ─── TASKS LIST ─── */}
                 {activeTab === 'TASKS' && (
-                    <div>
+                    <div className="space-y-6">
+                        {/* Pending Reviews */}
                         {pendingReviews.length > 0 && (
-                            <div className="mb-8">
-                                <h4 className="font-bold text-red-600 mb-3 flex items-center gap-2">
+                            <div>
+                                <h4 className="font-black text-red-600 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
                                     <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span></span>
-                                    Pendientes de Revisión Docente
+                                    Pendientes de tu Revisión
                                 </h4>
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {pendingReviews.map(t => (
-                                        <div key={t.id} className="border border-red-200 bg-red-50 p-4 rounded-xl flex justify-between items-center">
+                                        <div key={t.id} className="border-2 border-red-200 bg-gradient-to-r from-red-50 to-orange-50 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                                             <div>
                                                 <div className="font-bold text-gray-900">{t.studentName}</div>
-                                                <div className="text-sm text-gray-600">Artículo: {t.articleTitle}</div>
+                                                <div className="text-sm text-gray-600 mt-0.5">📄 {t.articleTitle}</div>
                                             </div>
-                                            <button onClick={() => openReviewModal(t)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                                            <button onClick={() => openReviewModal(t)} className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl text-sm font-black shadow-sm transition-colors">
                                                 Revisar y Calificar
                                             </button>
                                         </div>
@@ -208,93 +326,129 @@ export function AdminEvidenceManager() {
                             </div>
                         )}
 
-                        <h4 className="font-bold text-gray-800 mb-3">Historial de Tareas</h4>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-600 font-semibold border-b">
-                                    <tr>
-                                        <th className="p-3">Estudiante</th>
-                                        <th className="p-3">Artículo</th>
-                                        <th className="p-3">Límite</th>
-                                        <th className="p-3">Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {tasks.map(t => (
-                                        <tr key={t.id}>
-                                            <td className="p-3 font-medium">{t.studentName}</td>
-                                            <td className="p-3">{t.articleTitle}</td>
-                                            <td className="p-3">{new Date(t.dueDate).toLocaleDateString()}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                    t.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                                    t.status === 'PENDING' ? 'bg-gray-100 text-gray-700' :
-                                                    t.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                                                }`}>
-                                                    {t.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        {/* Full History Table */}
+                        <div>
+                            <h4 className="font-bold text-gray-800 mb-3 text-sm">Historial Completo de Tareas ({tasks.length})</h4>
+                            {tasks.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-sm">Aún no has asignado tareas. Haz clic en "+ Asignar Nueva Lectura" para comenzar.</div>
+                            ) : (
+                                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-200">
+                                            <tr>
+                                                <th className="p-3">Estudiante</th>
+                                                <th className="p-3">Artículo</th>
+                                                <th className="p-3">Límite</th>
+                                                <th className="p-3">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {tasks.map(t => {
+                                                const isOverdue = t.status === 'PENDING' && t.dueDate < Date.now();
+                                                return (
+                                                    <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50/50' : ''}`}>
+                                                        <td className="p-3 font-semibold text-gray-900">{t.studentName}</td>
+                                                        <td className="p-3 text-gray-700 max-w-[200px] truncate">{t.articleTitle}</td>
+                                                        <td className="p-3">
+                                                            <span className={isOverdue ? 'text-red-600 font-bold' : 'text-gray-600'}>{new Date(t.dueDate).toLocaleDateString()}</span>
+                                                        </td>
+                                                        <td className="p-3">
+                                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                                t.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' :
+                                                                t.status === 'PENDING' ? (isOverdue ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600') :
+                                                                t.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                                            }`}>
+                                                                {isOverdue && t.status === 'PENDING' ? '⏰ Atrasado' : statusLabel[t.status] || t.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* REVIEW MODAL */}
+            {/* ─── REVIEW MODAL ─── */}
             {reviewTask && reviewArticle && reviewContribution && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="bg-indigo-900 p-4 sticky top-0 flex justify-between items-center text-white">
-                            <h3 className="font-bold">Revisión de Análisis Clínico</h3>
-                            <button onClick={() => setReviewTask(null)} className="text-indigo-200 hover:text-white">✕ Cerrar</button>
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-5 sticky top-0 flex justify-between items-center text-white z-10">
+                            <div>
+                                <h3 className="font-black text-lg">Revisión de Análisis</h3>
+                                <p className="text-indigo-200 text-sm">{reviewTask.studentName} — {reviewTask.articleTitle}</p>
+                            </div>
+                            <button onClick={() => { setReviewTask(null); setReviewArticle(null); setReviewContribution(null); }} className="text-indigo-200 hover:text-white text-lg font-bold">✕</button>
                         </div>
                         <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                <div><span className="font-semibold text-gray-500">Estudiante:</span> {reviewTask.studentName}</div>
-                                <div><span className="font-semibold text-gray-500">Categoría:</span> {reviewArticle.category}</div>
-                                <div><span className="font-semibold text-gray-500">Población:</span> {reviewArticle.population}</div>
-                                <div><span className="font-semibold text-gray-500">Condición/CIF:</span> {reviewArticle.cif}</div>
-                                <div className="col-span-2"><span className="font-semibold text-gray-500">Etiquetas Extraídas:</span> {reviewArticle.tags?.join(', ')}</div>
+                            {/* Metadata */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {[
+                                    { label: 'Categoría', value: reviewArticle.category, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                    { label: 'Población', value: reviewArticle.population, color: 'bg-violet-50 text-violet-700 border-violet-200' },
+                                    { label: 'Condición / CIF', value: reviewArticle.cif, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                                    { label: 'Etiquetas', value: reviewArticle.tags?.join(', ') || 'Sin etiquetas', color: 'bg-slate-50 text-slate-700 border-slate-200' }
+                                ].map(m => (
+                                    <div key={m.label} className={`p-3 rounded-xl border ${m.color}`}>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-60">{m.label}</div>
+                                        <div className="text-sm font-semibold mt-0.5">{m.value || '—'}</div>
+                                    </div>
+                                ))}
                             </div>
                             
-                            <div>
-                                <h4 className="font-bold text-gray-800 border-b pb-2 mb-3">Resumen del Estudio</h4>
-                                <p className="text-gray-700 text-sm whitespace-pre-wrap">{reviewArticle.summary}</p>
+                            {/* Summary */}
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                                <h4 className="font-bold text-gray-800 text-sm uppercase tracking-wider mb-2">Resumen del Estudio</h4>
+                                <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{reviewArticle.summary}</p>
                             </div>
 
-                            <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-xl">
-                                <h4 className="font-bold text-emerald-800 border-b border-emerald-200 pb-2 mb-3">💎 Perla Clínica: Aplicación Práctica</h4>
-                                <p className="text-gray-800 text-sm whitespace-pre-wrap">{reviewContribution.perlaClinica}</p>
+                            {/* Perla */}
+                            <div className="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-xl">
+                                <h4 className="font-black text-emerald-800 text-sm mb-2">💎 APLICACIÓN PRÁCTICA (La Perla Clínica)</h4>
+                                <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.perlaClinica}</p>
                             </div>
 
-                            <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
-                                <h4 className="font-bold text-orange-800 border-b border-orange-200 pb-2 mb-3">⚠️ Limitaciones y Cuidados</h4>
-                                <p className="text-gray-800 text-sm whitespace-pre-wrap">{reviewContribution.limitaciones}</p>
-                            </div>
+                            {/* Limitations */}
+                            {reviewContribution.limitaciones && (
+                                <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
+                                    <h4 className="font-bold text-orange-800 text-sm mb-2">⚠️ Limitaciones y Cuidados</h4>
+                                    <p className="text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.limitaciones}</p>
+                                </div>
+                            )}
 
                             <hr className="border-gray-200" />
 
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-3">Evaluación Docente</h4>
-                                <div className="flex gap-4 mb-4">
-                                    <div className="w-32">
-                                        <label className="block text-sm font-semibold mb-1">Nota (1.0 - 7.0)</label>
-                                        <input type="number" step="0.1" min="1.0" max="7.0" value={reviewNota} onChange={e => setReviewNota(parseFloat(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-lg font-bold text-center" />
+                            {/* Admin Evaluation */}
+                            <div className="space-y-4">
+                                <h4 className="font-black text-gray-900 text-sm uppercase tracking-wider">Tu Evaluación Docente</h4>
+                                
+                                <div className="flex gap-4">
+                                    <div className="w-28">
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Nota (1-7)</label>
+                                        <input type="number" step="0.1" min="1.0" max="7.0" value={reviewNota} onChange={e => setReviewNota(parseFloat(e.target.value))} className="w-full border-2 border-gray-300 rounded-xl px-3 py-2.5 text-xl font-black text-center focus:ring-2 focus:ring-indigo-400 outline-none" />
                                     </div>
                                     <div className="flex-1">
-                                        <label className="block text-sm font-semibold mb-1">Retroalimentación para el estudiante</label>
-                                        <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)} rows={3} placeholder="Buen razonamiento, pero ten cuidado con..." className="w-full border rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Retroalimentación para el estudiante</label>
+                                        <textarea value={reviewFeedback} onChange={e => setReviewFeedback(e.target.value)} rows={3} placeholder="Buen razonamiento, pero ten cuidado con..." className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
                                     </div>
                                 </div>
+                                
+                                {/* Extra Tags during Review */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Agregar Etiquetas Extra (separadas por coma)</label>
+                                    <input value={reviewExtraTags} onChange={e => setReviewExtraTags(e.target.value)} placeholder="Ej: Isométricos, Cuádriceps, Dolor Anterior" className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                </div>
+
                                 <div className="flex gap-3">
-                                    <button onClick={() => submitReview('APPROVED')} disabled={isSubmitting} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl disabled:opacity-50">
-                                        ✅ Aprobar y Publicar en Biblioteca
+                                    <button onClick={() => submitReview('APPROVED')} disabled={isSubmitting} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-sm disabled:opacity-50 transition-colors">
+                                        ✅ Aprobar y Publicar
                                     </button>
-                                    <button onClick={() => submitReview('REJECTED')} disabled={isSubmitting} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl disabled:opacity-50">
-                                        ❌ Rechazar (Debe Rehacer)
+                                    <button onClick={() => submitReview('REJECTED')} disabled={isSubmitting} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl shadow-sm disabled:opacity-50 transition-colors">
+                                        ❌ Rechazar (Rehacer)
                                     </button>
                                 </div>
                             </div>

@@ -69,6 +69,8 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 a.title.toLowerCase().includes(q) || 
                 a.cif.toLowerCase().includes(q) || 
                 a.population.toLowerCase().includes(q) || 
+                a.summary.toLowerCase().includes(q) ||
+                a.category.toLowerCase().includes(q) ||
                 a.tags.some(t => t.toLowerCase().includes(q))
             );
         }
@@ -225,95 +227,124 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
             </div>
 
             {/* Lista de Artículos */}
-            <div className="space-y-6">
+            <div className="space-y-8">
                 {filteredArticles.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">No se encontraron artículos con esos filtros.</div>
+                    <div className="text-center py-16">
+                        <div className="text-5xl mb-4">📚</div>
+                        <p className="text-gray-400 font-medium">No se encontraron artículos con esos filtros.</p>
+                        <p className="text-gray-300 text-sm mt-1">Intenta con otra búsqueda o aporta el primer artículo.</p>
+                    </div>
                 ) : (
                     filteredArticles.map(article => {
                         const approvedContribs = article.contributions.filter(c => c.status === 'APPROVED');
-                        if (approvedContribs.length === 0 && currentUserRole !== 'DOCENTE') return null; // No mostrar si no hay contribuciones aprobadas (y no soy profe)
+                        const allContribs = article.contributions;
+                        if (approvedContribs.length === 0 && currentUserRole !== 'DOCENTE') return null;
+
+                        const categoryColors: Record<string, string> = {
+                            'Clínica': 'from-emerald-600 to-teal-700',
+                            'Biomecánica': 'from-blue-600 to-cyan-700',
+                            'Fisiología': 'from-violet-600 to-purple-700',
+                            'Entrenamiento': 'from-orange-500 to-red-600',
+                            'Anatomía': 'from-pink-600 to-rose-700',
+                            'Otro': 'from-slate-600 to-gray-700'
+                        };
+                        const gradientClass = categoryColors[article.category] || categoryColors['Otro'];
 
                         return (
-                            <div key={article.id} className="border border-slate-200 rounded-2xl overflow-hidden transition-all hover:shadow-md">
-                                <div className="bg-slate-900 p-5 text-white">
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        <span className="bg-blue-600 px-2 py-0.5 rounded text-xs font-bold">{article.category}</span>
-                                        <span className="bg-slate-700 px-2 py-0.5 rounded text-xs font-semibold">{article.population}</span>
-                                        <span className="bg-indigo-600 px-2 py-0.5 rounded text-xs font-semibold">{article.cif}</span>
-                                        {article.tags.map(t => <span key={t} className="bg-slate-800 border border-slate-600 px-2 py-0.5 rounded text-xs">{t}</span>)}
-                                        {currentUserRole === 'DOCENTE' && (
-                                            <button onClick={() => setAddingTagsTo(article.id!)} className="bg-slate-700 hover:bg-slate-600 border border-slate-500 px-2 py-0.5 rounded text-xs text-slate-300">
-                                                + Añadir Etiqueta
-                                            </button>
+                            <div key={article.id} className="rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+                                {/* Header Gradient */}
+                                <div className={`bg-gradient-to-r ${gradientClass} p-6 text-white relative`}>
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                                    <div className="relative z-10">
+                                        {/* Tags Row */}
+                                        <div className="flex flex-wrap gap-1.5 mb-3">
+                                            <span className="bg-white/20 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-bold">{article.category}</span>
+                                            <span className="bg-white/15 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-semibold">👥 {article.population}</span>
+                                            <span className="bg-white/15 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-semibold">🏥 {article.cif}</span>
+                                            {article.tags.map(t => <span key={t} className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{t}</span>)}
+                                            {currentUserRole === 'DOCENTE' && (
+                                                <button onClick={() => setAddingTagsTo(article.id!)} className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full text-xs transition-colors">+ Tag</button>
+                                            )}
+                                        </div>
+                                        
+                                        {addingTagsTo === article.id && (
+                                            <div className="mb-3 flex gap-2">
+                                                <input value={newTagStr} onChange={e => setNewTagStr(e.target.value)} placeholder="Ej: FNP, Cuádriceps (separados por coma)" className="flex-1 bg-white/15 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white placeholder-white/50 outline-none" autoFocus />
+                                                <button onClick={() => handleAddTags(article)} disabled={isSubmitting} className="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm font-bold disabled:opacity-50 transition-colors">Guardar</button>
+                                                <button onClick={() => setAddingTagsTo(null)} className="text-white/60 hover:text-white px-2 text-sm">✕</button>
+                                            </div>
                                         )}
+                                        
+                                        <h3 className="text-xl font-black leading-tight mb-2">{article.title}</h3>
+                                        <div className="flex items-center gap-4 text-sm text-white/70">
+                                            <span className="flex items-center gap-1">✏️ {article.createdBy}</span>
+                                            <span className="flex items-center gap-1">💬 {approvedContribs.length} aporte{approvedContribs.length !== 1 ? 's' : ''}</span>
+                                            {article.url && (
+                                                <a href={article.url} target="_blank" rel="noreferrer" className="text-white/90 hover:text-white flex items-center gap-1 underline underline-offset-2">🔗 Ver documento</a>
+                                            )}
+                                        </div>
                                     </div>
-                                    
-                                    {addingTagsTo === article.id && (
-                                        <div className="mb-4 flex gap-2">
-                                            <input 
-                                                value={newTagStr} 
-                                                onChange={e => setNewTagStr(e.target.value)} 
-                                                placeholder="Ej: FNP, Cuádriceps (separados por coma)"
-                                                className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm text-white"
-                                                autoFocus
-                                            />
-                                            <button 
-                                                onClick={() => handleAddTags(article)}
-                                                disabled={isSubmitting}
-                                                className="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded text-sm font-bold disabled:opacity-50"
-                                            >
-                                                Guardar
-                                            </button>
-                                            <button 
-                                                onClick={() => setAddingTagsTo(null)}
-                                                className="text-slate-400 hover:text-white px-2 py-1 text-sm"
-                                            >
-                                                ✕
-                                            </button>
+                                </div>
+
+                                {/* Body */}
+                                <div className="bg-white p-6">
+                                    {/* Summary Section */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-5 bg-gradient-to-b from-gray-400 to-gray-200 rounded-full"></div>
+                                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Resumen del Estudio</h4>
+                                        </div>
+                                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-gray-100">{article.summary}</p>
+                                    </div>
+
+                                    {/* Contributions */}
+                                    {approvedContribs.length > 0 && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="w-1 h-5 bg-gradient-to-b from-emerald-500 to-emerald-200 rounded-full"></div>
+                                                <h4 className="text-xs font-black text-emerald-600 uppercase tracking-widest">Perlas Clínicas y Aplicaciones</h4>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {approvedContribs.map(c => (
+                                                    <div key={c.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-5 relative overflow-hidden">
+                                                        <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                                                        <div className="relative z-10">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-black">{(c.studentName || '?').charAt(0).toUpperCase()}</div>
+                                                                    <div>
+                                                                        <span className="font-bold text-emerald-900 text-sm">{c.studentName}</span>
+                                                                        <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {c.nota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm">{c.nota.toFixed(1)}</div>}
+                                                            </div>
+                                                            <div className="mb-3">
+                                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">💎 APLICACIÓN PRÁCTICA</div>
+                                                                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{c.perlaClinica}</p>
+                                                            </div>
+                                                            {c.limitaciones && (
+                                                                <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mt-3">
+                                                                    <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">⚠️ LIMITACIONES</div>
+                                                                    <p className="text-xs text-gray-700 leading-relaxed">{c.limitaciones}</p>
+                                                                </div>
+                                                            )}
+                                                            {c.feedbackDocente && (
+                                                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-3">
+                                                                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">🎓 FEEDBACK DOCENTE</div>
+                                                                    <p className="text-xs text-gray-700 leading-relaxed italic">{c.feedbackDocente}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
-                                    <h3 className="text-xl font-bold mb-1">{article.title}</h3>
-                                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                                        <span>Creado por: {article.createdBy}</span>
-                                        {article.url && (
-                                            <a href={article.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                                                <span>🔗 Enlace al Documento</span>
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="p-5 bg-white">
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Resumen del Estudio</h4>
-                                        <p className="text-slate-800 text-sm whitespace-pre-wrap">{article.summary}</p>
-                                    </div>
-
-                                    <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 mt-6 border-t pt-4">Aportes y Aplicaciones Clínicas ({approvedContribs.length})</h4>
-                                    <div className="space-y-4">
-                                        {approvedContribs.map(c => (
-                                            <div key={c.id} className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-bold text-emerald-800">🧑‍⚕️ {c.studentName}</span>
-                                                    {c.nota && <span className="bg-white px-2 py-1 rounded-lg text-xs font-bold text-emerald-600 border border-emerald-200">Nota: {c.nota.toFixed(1)}</span>}
-                                                </div>
-                                                <div className="mb-3">
-                                                    <span className="text-xs font-bold text-emerald-600 block mb-1">APLICACIÓN PRÁCTICA</span>
-                                                    <p className="text-sm text-slate-800 whitespace-pre-wrap">{c.perlaClinica}</p>
-                                                </div>
-                                                {c.limitaciones && (
-                                                    <div className="bg-orange-50/50 p-2 rounded-lg border border-orange-100">
-                                                        <span className="text-xs font-bold text-orange-600 block mb-1">LIMITACIONES</span>
-                                                        <p className="text-xs text-slate-700">{c.limitaciones}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-
                                     {currentUserRole === 'INTERNO' && !article.contributions.some(c => c.studentId === currentUserId) && (
-                                        <button onClick={() => setAddingToArticle(article)} className="mt-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-lg text-sm transition-colors border border-slate-300">
-                                            + Añadir mi propio análisis/perla
+                                        <button onClick={() => setAddingToArticle(article)} className="mt-5 w-full bg-gradient-to-r from-slate-100 to-gray-100 hover:from-slate-200 hover:to-gray-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition-all border border-slate-200 shadow-sm">
+                                            + Añadir mi propio análisis / perla clínica
                                         </button>
                                     )}
                                 </div>
