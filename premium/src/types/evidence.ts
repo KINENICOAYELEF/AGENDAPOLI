@@ -1,8 +1,8 @@
-export type ArticleCategory = 'Clínica' | 'Biomecánica' | 'Fisiología' | 'Entrenamiento' | 'Anatomía' | 'Otro';
+export type ArticleCategory = 'Clínica' | 'Biomecánica' | 'Fisiología' | 'Entrenamiento' | 'Neurociencia del Dolor' | 'Prevención / RTS' | 'Anatomía' | 'Otro';
 export type TaskStatus = 'PENDING' | 'REVISION' | 'APPROVED' | 'REJECTED';
 
 export interface EvidenceContribution {
-    id: string; // Un ID único para la contribución
+    id: string;
     studentId: string;
     studentName: string;
     
@@ -13,13 +13,22 @@ export interface EvidenceContribution {
     studyDesign: string;
     
     // Múltiples perlas (cada una con su id y contenido)
-    perlas: Record<string, string>; // { perla_evaluacion: "...", perla_tratamiento: "..." }
+    perlas: Record<string, string>;
     
-    // Legacy: kept for backward compatibility with old contributions
+    // Legacy: backward compatibility
     perlaClinica?: string;
     
-    // Limitaciones y pensamiento crítico
+    // Limitaciones (incluye metodología, transferibilidad, gaps)
     limitaciones: string;
+    
+    // Campos estructurados opcionales (para Entrenamiento)
+    dosis?: {
+        intensidad?: string;
+        volumen?: string;
+        frecuencia?: string;
+        duracion?: string;
+        tipoContraccion?: string;
+    };
     
     // Evaluación Docente
     status: TaskStatus;
@@ -33,20 +42,20 @@ export interface EvidenceContribution {
 export interface EvidenceArticle {
     id?: string;
     title: string;
-    url: string; // URL al drive o pubmed
+    url: string;
     category: ArticleCategory;
-    cif: string; // Contexto: Patología, Sistema, Movimiento, etc. según categoría
-    population: string; // Población o deporte
-    tags: string[]; // Etiquetas añadidas por IA o Docente
+    cif: string;
+    population: string;
+    tags: string[];
     
-    summary: string; // Resumen principal del artículo
-    finding: string; // Intervención, variable o mecanismo (campo adaptativo)
-    methodology: string; // Resultado principal o datos clave (campo adaptativo)
+    summary: string;
+    finding: string;
+    methodology: string;
     
     contributions: EvidenceContribution[];
     
     createdAt: number;
-    createdBy: string; // Nombre de quien lo creó originalmente
+    createdBy: string;
 }
 
 export interface EvidenceTask {
@@ -57,15 +66,12 @@ export interface EvidenceTask {
     articleTitle: string;
     articleUrl: string;
     
-    dueDate: number; // Timestamp
+    dueDate: number;
     status: TaskStatus;
     
-    // Si la tarea se refiere a un artículo que ya existe en la BD o uno nuevo
     articleId?: string;
-    
-    // Referencia a la contribución una vez enviada
     contributionId?: string;
     
-    assignedBy: string; // Nombre del docente
+    assignedBy: string;
     createdAt: number;
 }

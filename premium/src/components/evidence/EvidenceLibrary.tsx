@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { getEvidenceArticles, addContributionToArticle } from "@/services/evidence";
 import { EvidenceArticle, ArticleCategory } from "@/types/evidence";
-import { CATEGORY_CONFIGS } from "./EvidenceFormConfig";
+import { CATEGORY_CONFIGS, generateAutoTags } from "./EvidenceFormConfig";
 
 interface Props {
     currentUserId: string;
@@ -74,7 +74,15 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 a.population.toLowerCase().includes(q) || 
                 a.summary.toLowerCase().includes(q) ||
                 a.category.toLowerCase().includes(q) ||
-                a.tags.some(t => t.toLowerCase().includes(q))
+                (a.finding || '').toLowerCase().includes(q) ||
+                (a.methodology || '').toLowerCase().includes(q) ||
+                a.tags.some(t => t.toLowerCase().includes(q)) ||
+                a.contributions.some(c => 
+                    (c.perlaClinica || '').toLowerCase().includes(q) ||
+                    (c.resumenEstudiante || '').toLowerCase().includes(q) ||
+                    (c.limitaciones || '').toLowerCase().includes(q) ||
+                    Object.values(c.perlas || {}).some(p => p.toLowerCase().includes(q))
+                )
             );
         }
         setFilteredArticles(result);
@@ -142,7 +150,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 category: freeCategory,
                 cif: freeCif,
                 population: freePopulation,
-                tags: [],
+                tags: generateAutoTags({ category: freeCategory, cif: freeCif, population: freePopulation, finding: freeFinding, methodology: freeMethodology, summary: freeSummary }),
                 summary: freeSummary || `Artículo sobre ${freeCfg.label}`,
                 finding: freeFinding,
                 methodology: freeMethodology,
@@ -193,7 +201,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
 
     if (loading) return <div className="text-center py-10">Cargando biblioteca...</div>;
 
-    const categories = ["TODAS", "Clínica", "Biomecánica", "Fisiología", "Entrenamiento", "Anatomía", "Otro"];
+    const categories = ["TODAS", "Clínica", "Biomecánica", "Fisiología", "Neurociencia del Dolor", "Entrenamiento", "Prevención / RTS", "Anatomía", "Otro"];
 
     return (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
