@@ -25,6 +25,10 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
     const [resumen, setResumen] = useState("");
     const [perlas, setPerlas] = useState<Record<string, string>>({});
     const [limitaciones, setLimitaciones] = useState("");
+    const [limitMetodo, setLimitMetodo] = useState("");
+    const [limitTransfer, setLimitTransfer] = useState("");
+    const [limitFalta, setLimitFalta] = useState("");
+    const [nivelConfianza, setNivelConfianza] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => { loadTasks(); }, [studentId]);
@@ -41,6 +45,8 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
         setPopulation(""); setContextField(""); setStudyDesign("");
         setFinding(""); setMethodology(""); setResumen("");
         setPerlas({}); setLimitaciones("");
+        setLimitMetodo(""); setLimitTransfer(""); setLimitFalta("");
+        setNivelConfianza("");
     };
 
     const cfg = CATEGORY_CONFIGS[category];
@@ -52,7 +58,6 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
     const submitAnalysis = async () => {
         if (!selectedTask) return;
         
-        // Validate required fields
         const requiredPerlas = cfg.perlas.filter(p => p.required);
         const missingPerlas = requiredPerlas.filter(p => !(perlas[p.id] || '').trim());
         
@@ -68,13 +73,22 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
         setIsSubmitting(true);
         try {
             const contribId = `contrib_${Date.now()}`;
+            // Combine limitations into one rich text
+            const allLimitations = [
+                limitMetodo ? `[METODOLOGÍA] ${limitMetodo}` : '',
+                limitTransfer ? `[TRANSFERIBILIDAD] ${limitTransfer}` : '',
+                limitFalta ? `[FALTA INVESTIGAR] ${limitFalta}` : '',
+                limitaciones ? `[GENERAL] ${limitaciones}` : '',
+            ].filter(Boolean).join('\n\n');
+
             const contribution = {
                 id: contribId, studentId, studentName,
                 resumenEstudiante: resumen,
                 studyDesign,
                 perlas,
-                perlaClinica: Object.values(perlas).join(' | '), // backward compat
-                limitaciones,
+                perlaClinica: Object.values(perlas).join(' | '),
+                limitaciones: allLimitations || limitaciones,
+                nivelConfianza,
                 status: 'REVISION' as const,
                 createdAt: Date.now(), updatedAt: Date.now()
             };
@@ -118,12 +132,11 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
         pink: 'from-pink-600 to-rose-700', slate: 'from-slate-600 to-gray-700'
     };
 
-    // Count filled fields for progress
-    const totalSteps = 5 + cfg.perlas.filter(p => p.required).length;
-    const filledSteps = [contextField, population, finding, resumen, limitaciones]
+    const totalFields = 6 + cfg.perlas.filter(p => p.required).length;
+    const filledFields = [contextField, population, finding, resumen, limitMetodo || limitaciones, nivelConfianza]
         .filter(v => v.trim()).length
         + cfg.perlas.filter(p => p.required && (perlas[p.id] || '').trim()).length;
-    const progress = selectedTask ? Math.round((filledSteps / totalSteps) * 100) : 0;
+    const progress = selectedTask ? Math.round((filledFields / totalFields) * 100) : 0;
 
     return (
         <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-2xl p-6 shadow-lg mb-8">
@@ -144,7 +157,7 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
                                     <div className="mt-2 text-xs font-bold bg-red-100 text-red-700 inline-block px-3 py-1 rounded-full">❌ Rechazado — Requiere corrección</div>
                                 )}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 shrink-0">
                                 {t.articleUrl && (
                                     <a href={t.articleUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">📄 Ver Artículo</a>
                                 )}
@@ -159,141 +172,192 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
 
             {/* ─── ADAPTIVE ANALYSIS FORM MODAL ─── */}
             {selectedTask && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-4">
                         {/* Header */}
-                        <div className={`bg-gradient-to-r ${colorMap[cfg.color] || colorMap.slate} p-5 sticky top-0 z-10`}>
+                        <div className={`bg-gradient-to-r ${colorMap[cfg.color] || colorMap.slate} p-5 sticky top-0 z-10 rounded-t-2xl`}>
                             <div className="flex justify-between items-start text-white">
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <h3 className="font-black text-lg">📋 Ficha de Análisis Científico</h3>
-                                    <p className="text-white/70 text-sm mt-0.5">{selectedTask.articleTitle}</p>
+                                    <p className="text-white/70 text-sm mt-0.5 truncate">{selectedTask.articleTitle}</p>
                                 </div>
-                                <button onClick={() => setSelectedTask(null)} className="text-white/60 hover:text-white text-lg font-bold ml-4">✕</button>
+                                <button onClick={() => setSelectedTask(null)} className="text-white/60 hover:text-white text-xl font-bold ml-4 shrink-0">✕</button>
                             </div>
-                            {/* Progress bar */}
-                            <div className="mt-3 bg-white/20 rounded-full h-2 overflow-hidden">
-                                <div className="bg-white h-full rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                            <div className="mt-3 bg-white/20 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-white h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
                             </div>
                             <p className="text-white/60 text-xs mt-1">{progress}% completado</p>
                         </div>
 
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 md:p-8 space-y-8">
                             {/* ──── STEP 1: Category ──── */}
-                            <div>
-                                <label className="block text-sm font-black text-gray-800 mb-2">
-                                    <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-lg text-xs mr-2">PASO 1</span>
-                                    ¿De qué tipo es este artículo?
-                                </label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-black">PASO 1</span>
+                                    <h4 className="font-black text-gray-800">¿De qué tipo es este artículo?</h4>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {(Object.keys(CATEGORY_CONFIGS) as ArticleCategory[]).map(cat => {
                                         const c = CATEGORY_CONFIGS[cat];
                                         const isActive = category === cat;
                                         return (
                                             <button key={cat} type="button" onClick={() => { setCategory(cat); setPerlas({}); }}
-                                                className={`p-3 rounded-xl border-2 text-left transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-md ring-1 ring-indigo-200' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-                                                <div className="text-xl">{c.icon}</div>
-                                                <div className={`text-xs font-bold mt-1 ${isActive ? 'text-indigo-800' : 'text-gray-600'}`}>{c.label}</div>
+                                                className={`p-4 rounded-xl border-2 text-left transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-lg ring-2 ring-indigo-200' : 'border-gray-200 hover:border-gray-300 bg-white hover:shadow-sm'}`}>
+                                                <div className="text-2xl mb-1">{c.icon}</div>
+                                                <div className={`text-xs font-bold leading-tight ${isActive ? 'text-indigo-800' : 'text-gray-600'}`}>{c.label}</div>
                                             </button>
                                         );
                                     })}
                                 </div>
-                            </div>
+                            </section>
 
                             <hr className="border-gray-100" />
 
                             {/* ──── STEP 2: Classification ──── */}
-                            <div>
-                                <label className="block text-sm font-black text-gray-800 mb-3">
-                                    <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-lg text-xs mr-2">PASO 2</span>
-                                    Clasifica el artículo
-                                </label>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">{cfg.contextLabel} *</label>
-                                        <p className="text-[10px] text-gray-400 mb-1">{cfg.contextHelp}</p>
-                                        <input value={contextField} onChange={e => setContextField(e.target.value)} placeholder={cfg.contextPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 mb-1">Población / Deporte *</label>
-                                        <p className="text-[10px] text-gray-400 mb-1">¿En quién se hizo el estudio?</p>
-                                        <input value={population} onChange={e => setPopulation(e.target.value)} placeholder="Ej: Deportistas jóvenes, Adultos mayores..." className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-black">PASO 2</span>
+                                    <h4 className="font-black text-gray-800">Clasifica el artículo</h4>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">{cfg.contextLabel} *</label>
+                                            <p className="text-[11px] text-gray-400 mb-1.5">{cfg.contextHelp}</p>
+                                            <input value={contextField} onChange={e => setContextField(e.target.value)} placeholder={cfg.contextPlaceholder} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">Población / Deporte *</label>
+                                            <p className="text-[11px] text-gray-400 mb-1.5">¿En quién se hizo el estudio o a quién aplica?</p>
+                                            <input value={population} onChange={e => setPopulation(e.target.value)} placeholder="Ej: Deportistas jóvenes, Adultos mayores..." className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 mb-1">Diseño del Estudio</label>
-                                        <p className="text-[10px] text-gray-400 mb-1">¿Qué tipo de estudio es?</p>
-                                        <select value={studyDesign} onChange={e => setStudyDesign(e.target.value)} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none bg-white">
-                                            <option value="">— Seleccionar —</option>
+                                        <p className="text-[11px] text-gray-400 mb-1.5">¿Qué tipo de diseño metodológico usaron?</p>
+                                        <select value={studyDesign} onChange={e => setStudyDesign(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400 outline-none bg-white">
+                                            <option value="">— Seleccionar tipo de estudio —</option>
                                             {cfg.studyDesigns.map(d => <option key={d} value={d}>{d}</option>)}
                                         </select>
                                     </div>
                                 </div>
-                            </div>
+                            </section>
+
+                            <hr className="border-gray-100" />
 
                             {/* ──── STEP 3: Content Analysis ──── */}
-                            <div>
-                                <label className="block text-sm font-black text-gray-800 mb-3">
-                                    <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-lg text-xs mr-2">PASO 3</span>
-                                    Analiza el contenido
-                                </label>
-                                <div className="space-y-4">
-                                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
-                                        <label className="block text-xs font-bold text-slate-600 mb-1">{cfg.summaryPrompt} *</label>
-                                        <textarea value={resumen} onChange={e => setResumen(e.target.value)} rows={4} placeholder={cfg.summaryPlaceholder} className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" />
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-black">PASO 3</span>
+                                    <h4 className="font-black text-gray-800">Analiza el contenido</h4>
+                                </div>
+                                <div className="space-y-5">
+                                    {/* Resumen propio */}
+                                    <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">{cfg.summaryPrompt} *</label>
+                                        <p className="text-[11px] text-gray-400 mb-2">Escribe con tus propias palabras, no copies y pegues del artículo.</p>
+                                        <textarea value={resumen} onChange={e => setResumen(e.target.value)} rows={6} placeholder={cfg.summaryPlaceholder} className="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none leading-relaxed" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
-                                            <label className="block text-xs font-bold text-gray-600 mb-1">{cfg.findingLabel} *</label>
-                                            <p className="text-[10px] text-gray-400 mb-2">{cfg.findingHelp}</p>
-                                            <textarea value={finding} onChange={e => setFinding(e.target.value)} rows={3} placeholder={cfg.findingPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" />
-                                        </div>
-                                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
-                                            <label className="block text-xs font-bold text-gray-600 mb-1">{cfg.methodLabel}</label>
-                                            <textarea value={methodology} onChange={e => setMethodology(e.target.value)} rows={3} placeholder={cfg.methodPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" />
-                                        </div>
+                                    {/* Finding */}
+                                    <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">{cfg.findingLabel} *</label>
+                                        <p className="text-[11px] text-gray-400 mb-2">{cfg.findingHelp}</p>
+                                        <textarea value={finding} onChange={e => setFinding(e.target.value)} rows={5} placeholder={cfg.findingPlaceholder} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none leading-relaxed" />
+                                    </div>
+                                    {/* Methodology / Result */}
+                                    <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">{cfg.methodLabel}</label>
+                                        <p className="text-[11px] text-gray-400 mb-2">Incluye datos numéricos si el artículo los tiene (%, p-value, IC, tamaño del efecto, etc.)</p>
+                                        <textarea value={methodology} onChange={e => setMethodology(e.target.value)} rows={5} placeholder={cfg.methodPlaceholder} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none leading-relaxed" />
                                     </div>
                                 </div>
-                            </div>
+                            </section>
+
+                            <hr className="border-gray-100" />
 
                             {/* ──── STEP 4: PERLAS ──── */}
-                            <div>
-                                <label className="block text-sm font-black text-gray-800 mb-3">
-                                    <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg text-xs mr-2">PASO 4</span>
-                                    💎 Tus Perlas de Aplicación
-                                </label>
-                                <div className="space-y-4">
-                                    {cfg.perlas.map((p, i) => (
-                                        <div key={p.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 p-5 rounded-xl relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-100/50 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                                            <div className="relative z-10">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className="text-xl">{p.icon}</span>
-                                                    <span className="font-black text-emerald-800 text-sm">{p.label} {p.required && <span className="text-red-400">*</span>}</span>
-                                                </div>
-                                                <p className="text-xs text-emerald-600 mb-2">{p.prompt}</p>
-                                                <textarea 
-                                                    value={perlas[p.id] || ''} 
-                                                    onChange={e => setPerlaValue(p.id, e.target.value)} 
-                                                    rows={3} 
-                                                    placeholder={p.placeholder} 
-                                                    className="w-full border border-emerald-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-400 outline-none bg-white/80" 
-                                                />
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-xs font-black">PASO 4</span>
+                                    <h4 className="font-black text-gray-800">💎 Tus Perlas de Aplicación</h4>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-4 -mt-2">Aquí es donde demuestras tu razonamiento profesional. No basta con resumir: debes explicar <strong>qué harías y por qué</strong>.</p>
+                                <div className="space-y-5">
+                                    {cfg.perlas.map(p => (
+                                        <div key={p.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 p-5 rounded-xl">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xl">{p.icon}</span>
+                                                <span className="font-black text-emerald-800 text-sm">{p.label} {p.required && <span className="text-red-400">*</span>}</span>
                                             </div>
+                                            <p className="text-xs text-emerald-700 mb-3">{p.prompt}</p>
+                                            <textarea 
+                                                value={perlas[p.id] || ''} 
+                                                onChange={e => setPerlaValue(p.id, e.target.value)} 
+                                                rows={5} 
+                                                placeholder={p.placeholder} 
+                                                className="w-full border border-emerald-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-emerald-400 outline-none bg-white/80 leading-relaxed" 
+                                            />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
 
-                            {/* ──── STEP 5: Limitations ──── */}
-                            <div className="bg-orange-50 border-2 border-orange-200 p-5 rounded-xl">
-                                <label className="block text-sm font-black text-orange-800 mb-1">
-                                    <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-lg text-xs mr-2">PASO 5</span>
-                                    ⚠️ {cfg.limitPrompt} *
-                                </label>
-                                <textarea value={limitaciones} onChange={e => setLimitaciones(e.target.value)} rows={3} placeholder={cfg.limitPlaceholder} className="w-full border border-orange-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-orange-400 outline-none bg-white/80 mt-2" />
-                            </div>
+                            <hr className="border-gray-100" />
+
+                            {/* ──── STEP 5: Critical Analysis ──── */}
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="bg-orange-600 text-white px-2.5 py-1 rounded-lg text-xs font-black">PASO 5</span>
+                                    <h4 className="font-black text-gray-800">⚠️ Análisis Crítico y Limitaciones</h4>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-4 -mt-2">No basta con decir &quot;la muestra es pequeña&quot;. Analiza <strong>por qué</strong> eso importa y <strong>cómo</strong> afecta tu confianza en los resultados.</p>
+                                
+                                <div className="space-y-4">
+                                    {/* Limitación Metodológica */}
+                                    <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-orange-800 mb-1">🔬 Limitaciones METODOLÓGICAS *</label>
+                                        <p className="text-[11px] text-orange-600 mb-2">¿Hay problemas con el diseño del estudio, la muestra, las mediciones, o el análisis estadístico?</p>
+                                        <textarea value={limitMetodo} onChange={e => setLimitMetodo(e.target.value)} rows={4} placeholder="Ej: La muestra fue de 15 personas (baja potencia estadística), no hubo grupo control, no especifican si fue ciego, usaron cuestionario auto-reportado en vez de medición objetiva..." className="w-full border border-orange-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-orange-400 outline-none bg-white/80 leading-relaxed" />
+                                    </div>
+
+                                    {/* Transferibilidad */}
+                                    <div className="bg-amber-50 border border-amber-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-amber-800 mb-1">🔄 TRANSFERIBILIDAD a tu contexto</label>
+                                        <p className="text-[11px] text-amber-600 mb-2">¿Los resultados aplican a TU población? ¿Qué diferencias hay entre los sujetos del estudio y tus usuarios?</p>
+                                        <textarea value={limitTransfer} onChange={e => setLimitTransfer(e.target.value)} rows={4} placeholder="Ej: El estudio fue en deportistas de elite masculinos de 25 años, pero yo trabajo con adolescentes karatekas de 14 años, por ende la respuesta al entrenamiento podría ser distinta porque..." className="w-full border border-amber-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-amber-400 outline-none bg-white/80 leading-relaxed" />
+                                    </div>
+
+                                    {/* Qué falta */}
+                                    <div className="bg-yellow-50 border border-yellow-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-yellow-800 mb-1">❓ ¿Qué FALTA por investigar?</label>
+                                        <p className="text-[11px] text-yellow-700 mb-2">¿Qué preguntas quedan sin responder? ¿Qué investigación futura sería necesaria?</p>
+                                        <textarea value={limitFalta} onChange={e => setLimitFalta(e.target.value)} rows={3} placeholder="Ej: No evaluaron el efecto a largo plazo (>6 meses), falta comparar con otros protocolos activos, no midieron adherencia ni satisfacción del paciente..." className="w-full border border-yellow-300 rounded-xl px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-yellow-400 outline-none bg-white/80 leading-relaxed" />
+                                    </div>
+
+                                    {/* Nivel de Confianza */}
+                                    <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl">
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">📊 Tu VEREDICTO: ¿Qué tan confiable es este artículo?</label>
+                                        <p className="text-[11px] text-slate-500 mb-3">Considerando todo lo anterior, ¿con cuánta confianza aplicarías estos resultados?</p>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                            {[
+                                                { val: 'alta', label: '🟢 Alta', desc: 'Aplicaría sin dudas', bg: 'bg-emerald-100 border-emerald-300 text-emerald-800' },
+                                                { val: 'moderada', label: '🟡 Moderada', desc: 'Con precauciones', bg: 'bg-yellow-100 border-yellow-300 text-yellow-800' },
+                                                { val: 'baja', label: '🟠 Baja', desc: 'Con muchas reservas', bg: 'bg-orange-100 border-orange-300 text-orange-800' },
+                                                { val: 'muy_baja', label: '🔴 Muy Baja', desc: 'No recomendaría', bg: 'bg-red-100 border-red-300 text-red-800' },
+                                            ].map(opt => (
+                                                <button key={opt.val} type="button" onClick={() => setNivelConfianza(opt.val)}
+                                                    className={`p-3 rounded-xl border-2 text-center transition-all ${nivelConfianza === opt.val ? `${opt.bg} shadow-md ring-2 ring-offset-1` : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                                                    <div className="text-sm font-bold">{opt.label}</div>
+                                                    <div className="text-[10px] mt-0.5 text-gray-500">{opt.desc}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
 
                             {/* Submit */}
-                            <button onClick={submitAnalysis} disabled={isSubmitting} className="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white font-black py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-base">
+                            <button onClick={submitAnalysis} disabled={isSubmitting} className="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-slate-900 hover:to-black text-white font-black py-5 rounded-xl shadow-lg transition-all disabled:opacity-50 text-lg">
                                 {isSubmitting ? 'Enviando...' : `Enviar Análisis para Revisión → (${progress}%)`}
                             </button>
                         </div>
