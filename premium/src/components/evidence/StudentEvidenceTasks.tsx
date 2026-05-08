@@ -58,7 +58,7 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
         try {
             const contribId = `contrib_${Date.now()}`;
             const allLimitations = [limitMetodo ? `[METODOLOGÍA] ${limitMetodo}` : '', limitTransfer ? `[TRANSFERIBILIDAD] ${limitTransfer}` : '', limitFalta ? `[FALTA INVESTIGAR] ${limitFalta}` : ''].filter(Boolean).join('\n\n');
-            const dosis = cfg.hasDoseFields ? { intensidad: doseIntensidad, volumen: doseVolumen, frecuencia: doseFrecuencia, duracion: doseDuracion, tipoContraccion: doseTipoContraccion } : undefined;
+            const dosis = cfg.hasDoseFields ? { intensidad: doseIntensidad, volumen: doseVolumen, frecuencia: doseFrecuencia, duracion: doseDuracion, tipoContraccion: doseTipoContraccion } : null;
 
             const contribution = {
                 id: contribId, studentId, studentName, resumenEstudiante: resumen, studyDesign, perlas,
@@ -72,7 +72,7 @@ export function StudentEvidenceTasks({ studentId, studentName }: Props) {
             let articleId = selectedTask.articleId;
             if (!articleId) {
                 const newArticle: EvidenceArticle = {
-                    title: selectedTask.articleTitle, url: selectedTask.articleUrl,
+                    title: selectedTask.articleTitle, url: selectedTask.articleUrl || "",
                     category, cif: contextField, population, tags: autoTags,
                     summary: resumen, finding, methodology,
                     contributions: [contribution], createdAt: Date.now(), createdBy: studentName,
