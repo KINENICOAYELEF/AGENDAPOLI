@@ -393,24 +393,39 @@ export function AdminEvidenceManager() {
                                     { label: 'Condición / CIF', value: reviewArticle.cif, color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
                                     { label: 'Etiquetas', value: reviewArticle.tags?.join(', ') || 'Sin etiquetas', color: 'bg-slate-50 text-slate-700 border-slate-200' }
                                 ].map(m => (
-                                    <div key={m.label} className={`p-3 rounded-xl border ${m.color}`}>
+                                    <div key={m.label} className={`p-3 rounded-xl border ${m.color} break-words`}>
                                         <div className="text-[10px] font-bold uppercase tracking-wider opacity-60">{m.label}</div>
-                                        <div className="text-sm font-semibold mt-0.5">{m.value || '—'}</div>
+                                        <div className="text-xs sm:text-sm font-semibold mt-0.5 line-clamp-3" title={m.value}>{m.value || '—'}</div>
                                     </div>
                                 ))}
+                            </div>
+                            
+                            {/* Actions / Export */}
+                            <div className="flex justify-end">
+                                <button onClick={() => {
+                                    const text = `ANÁLISIS DE EVIDENCIA\nArtículo: ${reviewArticle.title}\nEstudiante: ${reviewContribution.studentName}\n\nResumen:\n${reviewArticle.summary}\n\nResumen del estudiante:\n${reviewContribution.resumenEstudiante}\n\nPerlas:\n${Object.entries(reviewContribution.perlas || {}).map(([k, v]) => `${k}:\n${v}`).join('\n\n')}\n\nLimitaciones:\n${reviewContribution.limitaciones}`;
+                                    const blob = new Blob([text], { type: 'text/plain' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `Analisis_${reviewContribution.studentName.replace(/\s+/g, '_')}_${Date.now()}.txt`;
+                                    a.click();
+                                }} className="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 flex items-center gap-1">
+                                    ⬇️ Descargar Análisis (.txt)
+                                </button>
                             </div>
                             
                             {/* Summary */}
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
                                 <h4 className="font-bold text-gray-800 text-sm uppercase tracking-wider mb-2">Resumen del Estudio</h4>
-                                <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{reviewArticle.summary}</p>
+                                <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed break-words">{reviewArticle.summary}</p>
                             </div>
 
                             {/* Student's own summary */}
                             {reviewContribution.resumenEstudiante && (
                                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
                                     <h4 className="font-bold text-slate-700 text-sm mb-2">📝 Resumen del Estudiante</h4>
-                                    <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">{reviewContribution.resumenEstudiante}</p>
+                                    <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed break-words">{reviewContribution.resumenEstudiante}</p>
                                 </div>
                             )}
 
@@ -426,11 +441,11 @@ export function AdminEvidenceManager() {
                                 <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
                                     <h4 className="font-bold text-orange-800 text-sm mb-2">📊 Dosis del Protocolo</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                                        {reviewContribution.dosis.intensidad && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Intensidad</span>{reviewContribution.dosis.intensidad}</div>}
-                                        {reviewContribution.dosis.volumen && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Volumen</span>{reviewContribution.dosis.volumen}</div>}
-                                        {reviewContribution.dosis.frecuencia && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Frecuencia</span>{reviewContribution.dosis.frecuencia}</div>}
-                                        {reviewContribution.dosis.duracion && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Duración</span>{reviewContribution.dosis.duracion}</div>}
-                                        {reviewContribution.dosis.tipoContraccion && <div className="bg-white p-2 rounded-lg border border-orange-100"><span className="text-[10px] font-bold text-orange-500 block">Contracción</span>{reviewContribution.dosis.tipoContraccion}</div>}
+                                        {reviewContribution.dosis.intensidad && <div className="bg-white p-2 rounded-lg border border-orange-100 break-words"><span className="text-[10px] font-bold text-orange-500 block">Intensidad</span><div className="text-xs mt-0.5">{reviewContribution.dosis.intensidad}</div></div>}
+                                        {reviewContribution.dosis.volumen && <div className="bg-white p-2 rounded-lg border border-orange-100 break-words"><span className="text-[10px] font-bold text-orange-500 block">Volumen</span><div className="text-xs mt-0.5">{reviewContribution.dosis.volumen}</div></div>}
+                                        {reviewContribution.dosis.frecuencia && <div className="bg-white p-2 rounded-lg border border-orange-100 break-words"><span className="text-[10px] font-bold text-orange-500 block">Frecuencia</span><div className="text-xs mt-0.5">{reviewContribution.dosis.frecuencia}</div></div>}
+                                        {reviewContribution.dosis.duracion && <div className="bg-white p-2 rounded-lg border border-orange-100 break-words"><span className="text-[10px] font-bold text-orange-500 block">Duración</span><div className="text-xs mt-0.5">{reviewContribution.dosis.duracion}</div></div>}
+                                        {reviewContribution.dosis.tipoContraccion && <div className="bg-white p-2 rounded-lg border border-orange-100 break-words"><span className="text-[10px] font-bold text-orange-500 block">Contracción</span><div className="text-xs mt-0.5">{reviewContribution.dosis.tipoContraccion}</div></div>}
                                     </div>
                                 </div>
                             )}

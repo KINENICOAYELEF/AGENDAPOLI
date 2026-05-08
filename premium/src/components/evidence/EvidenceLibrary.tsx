@@ -317,15 +317,19 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
 
                                     {/* Contributions */}
                                     {approvedContribs.length > 0 && (
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <div className="w-1 h-5 bg-gradient-to-b from-emerald-500 to-emerald-200 rounded-full"></div>
-                                                <h4 className="text-xs font-black text-emerald-600 uppercase tracking-widest">Perlas Clínicas y Aplicaciones</h4>
-                                            </div>
-                                            <div className="space-y-4">
+                                        <details className="group mt-4 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                                            <summary className="cursor-pointer list-none p-4 flex items-center justify-between select-none hover:bg-gray-100 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-5 bg-gradient-to-b from-emerald-500 to-emerald-200 rounded-full"></div>
+                                                    <h4 className="text-sm font-black text-emerald-600 uppercase tracking-widest">Ver Perlas Clínicas y Aplicaciones ({approvedContribs.length})</h4>
+                                                </div>
+                                                <span className="text-emerald-500 font-bold group-open:rotate-180 transition-transform">▼</span>
+                                            </summary>
+                                            <div className="p-4 pt-0 space-y-4">
                                                 {approvedContribs.map(c => {
                                                     const hasNewPerlas = c.perlas && Object.keys(c.perlas).length > 0;
                                                     const catCfg = CATEGORY_CONFIGS[article.category] || CATEGORY_CONFIGS['Otro'];
+                                                    const showNota = currentUserRole === 'DOCENTE' || currentUserId === c.studentId;
                                                     return (
                                                     <div key={c.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-5 relative overflow-hidden">
                                                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -338,7 +342,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                         <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}{c.studyDesign ? ` · ${c.studyDesign}` : ''}</div>
                                                                     </div>
                                                                 </div>
-                                                                {c.nota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm">{c.nota.toFixed(1)}</div>}
+                                                                {c.nota && showNota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm" title="Calificación (Solo visible para ti y docentes)">{c.nota.toFixed(1)}</div>}
                                                             </div>
                                                             {/* Resumen del estudiante */}
                                                             {c.resumenEstudiante && (
@@ -396,7 +400,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                     );
                                                 })}
                                             </div>
-                                        </div>
+                                        </details>
                                     )}
 
                                     {currentUserRole === 'INTERNO' && !article.contributions.some(c => c.studentId === currentUserId) && (
