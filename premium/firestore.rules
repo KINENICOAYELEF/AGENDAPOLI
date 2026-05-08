@@ -97,5 +97,23 @@ service cloud.firestore {
       // Eliminación solo por DOCENTE
       allow delete: if isDocente();
     }
+
+    // --------------------------------------------------------------------
+    // 4. Biblioteca de Evidencia y Tareas (Journal Club)
+    // --------------------------------------------------------------------
+    match /evidence_tasks/{taskId} {
+      allow create: if isDocente();
+      // El docente ve todas, el interno solo ve las suyas
+      allow read: if isDocente() || (isInterno() && resource.data.studentId == request.auth.uid);
+      // El docente puede actualizar (ej: poner nota). El interno también para subir su análisis (pasar a REVISION)
+      allow update: if isDocente() || (isInterno() && resource.data.studentId == request.auth.uid);
+      allow delete: if isDocente();
+    }
+
+    match /evidence_articles/{articleId} {
+      // Todos pueden crear, leer y actualizar (para aportar sus perlas clínicas)
+      allow create, read, update: if isDocente() || isInterno();
+      allow delete: if isDocente();
+    }
   }
 }

@@ -25,6 +25,15 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
     const [limitaciones, setLimitaciones] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Add Free Article Modal
+    const [isAddingFree, setIsAddingFree] = useState(false);
+    const [freeTitle, setFreeTitle] = useState("");
+    const [freeUrl, setFreeUrl] = useState("");
+    const [freeCategory, setFreeCategory] = useState<ArticleCategory>("Clínica");
+    const [freePopulation, setFreePopulation] = useState("");
+    const [freeCif, setFreeCif] = useState("");
+    const [freeSummary, setFreeSummary] = useState("");
+
     // Add Tags Logic
     const [addingTagsTo, setAddingTagsTo] = useState<string | null>(null);
     const [newTagStr, setNewTagStr] = useState("");
@@ -96,6 +105,58 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
         }
     };
 
+    const submitFreeArticle = async () => {
+        if (!freeTitle.trim() || !freeSummary.trim() || !perla.trim() || !freePopulation.trim() || !freeCif.trim()) {
+            alert("Por favor completa todos los campos requeridos.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const contrib = {
+                id: `contrib_${Date.now()}`,
+                studentId: currentUserId,
+                studentName: currentUserName,
+                perlaClinica: perla,
+                limitaciones,
+                status: currentUserRole === 'DOCENTE' ? ('APPROVED' as const) : ('REVISION' as const),
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+
+            const newArticle: EvidenceArticle = {
+                title: freeTitle,
+                url: freeUrl,
+                category: freeCategory,
+                cif: freeCif,
+                population: freePopulation,
+                tags: [],
+                summary: freeSummary,
+                contributions: [contrib],
+                createdAt: Date.now(),
+                createdBy: currentUserName,
+            };
+
+            await import('@/services/evidence').then(m => m.saveEvidenceArticle(newArticle));
+            alert(currentUserRole === 'DOCENTE' ? "Artículo publicado exitosamente." : "Aporte enviado correctamente. Está en revisión.");
+            
+            setIsAddingFree(false);
+            setFreeTitle("");
+            setFreeUrl("");
+            setFreeSummary("");
+            setFreePopulation("");
+            setFreeCif("");
+            setPerla("");
+            setLimitaciones("");
+            
+            loadData();
+        } catch (e: any) {
+            alert("Error al enviar aporte libre: " + e.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleAddTags = async (article: EvidenceArticle) => {
         if (!newTagStr.trim()) {
             setAddingTagsTo(null);
@@ -128,27 +189,39 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
             
             {/* Buscador y Filtros */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <div className="flex-1">
-                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Buscador Global</label>
-                    <input 
-                        type="text" 
-                        value={searchTerm} 
-                        onChange={e => setSearchTerm(e.target.value)} 
-                        placeholder="Buscar por patología, título, intervención..." 
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2"
-                    />
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div className="flex-1">
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Buscador Global</label>
+                        <input 
+                            type="text" 
+                            value={searchTerm} 
+                            onChange={e => setSearchTerm(e.target.value)} 
+                            placeholder="Buscar por patología, título, intervención..." 
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2"
+                        />
+                    </div>
+                    <div className="w-full md:w-64">
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Categoría</label>
+                        <select 
+                            value={categoryFilter} 
+                            onChange={e => setCategoryFilter(e.target.value)} 
+                            className="w-full border border-slate-300 rounded-lg px-4 py-2"
+                        >
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
                 </div>
-                <div className="w-full md:w-64">
-                    <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Categoría</label>
-                    <select 
-                        value={categoryFilter} 
-                        onChange={e => setCategoryFilter(e.target.value)} 
-                        className="w-full border border-slate-300 rounded-lg px-4 py-2"
-                    >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                </div>
+                
+                <button 
+                    onClick={() => {
+                        setFreeTitle(""); setFreeUrl(""); setFreeSummary(""); setFreePopulation(""); setFreeCif(""); setPerla(""); setLimitaciones("");
+                        setIsAddingFree(true);
+                    }} 
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-colors"
+                >
+                    + Aportar Artículo Libre
+                </button>
             </div>
 
             {/* Lista de Artículos */}
@@ -276,6 +349,67 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
 
                             <button onClick={submitContribution} disabled={isSubmitting} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-lg">
                                 Enviar Aporte para Revisión →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD FREE ARTICLE MODAL */}
+            {isAddingFree && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div className="bg-indigo-600 p-4 sticky top-0 flex justify-between items-center text-white z-10">
+                            <h3 className="font-bold">Aportar Nuevo Artículo a la Biblioteca</h3>
+                            <button onClick={() => setIsAddingFree(false)} className="text-indigo-200 hover:text-white">✕ Cancelar</button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Título del Artículo / Tema</label>
+                                    <input value={freeTitle} onChange={e => setFreeTitle(e.target.value)} placeholder="Ej: Effectiveness of heavy slow resistance training..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Enlace al Artículo (Opcional)</label>
+                                    <input value={freeUrl} onChange={e => setFreeUrl(e.target.value)} placeholder="https://..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Categoría Principal</label>
+                                    <select value={freeCategory} onChange={e => setFreeCategory(e.target.value as ArticleCategory)} className="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="Clínica">Clínica (Tto/Eval)</option>
+                                        <option value="Biomecánica">Biomecánica</option>
+                                        <option value="Fisiología">Fisiología</option>
+                                        <option value="Entrenamiento">Entrenamiento</option>
+                                        <option value="Anatomía">Anatomía</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Población / Deporte</label>
+                                    <input value={freePopulation} onChange={e => setFreePopulation(e.target.value)} placeholder="Ej: Corredores, Población General..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Patología o Condición (CIF)</label>
+                                    <input value={freeCif} onChange={e => setFreeCif(e.target.value)} placeholder="Ej: Tendinopatía Patelar..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Resumen Clave (3-5 líneas)</label>
+                                    <textarea value={freeSummary} onChange={e => setFreeSummary(e.target.value)} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2 resize-none" placeholder="El estudio abordó..." />
+                                </div>
+                            </div>
+
+                            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                <label className="block text-sm font-bold mb-1 text-emerald-800">💎 Aplicación Práctica (La Perla Clínica)</label>
+                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} className="w-full border border-emerald-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="Mañana lo usaría para..." />
+                            </div>
+
+                            <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                                <label className="block text-sm font-bold mb-1 text-orange-800">⚠️ Limitaciones / Cuidados</label>
+                                <textarea value={limitaciones} onChange={e => setLimitaciones(e.target.value)} rows={3} className="w-full border border-orange-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Ojo con..." />
+                            </div>
+
+                            <button onClick={submitFreeArticle} disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-lg">
+                                Enviar Aporte Libre →
                             </button>
                         </div>
                     </div>

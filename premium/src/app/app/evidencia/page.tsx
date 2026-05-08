@@ -3,6 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { EvidenceLibrary } from "@/components/evidence/EvidenceLibrary";
 import { StudentEvidenceTasks } from "@/components/evidence/StudentEvidenceTasks";
+import { AdminEvidenceManager } from "@/components/evidence/AdminEvidenceManager";
 
 export default function EvidenciaPage() {
     const { user, loading } = useAuth();
@@ -18,6 +19,12 @@ export default function EvidenciaPage() {
 
             {user.role === 'INTERNO' && (
                 <StudentEvidenceTasks studentId={user.uid} studentName={user.displayName || user.email || "Estudiante"} />
+            )}
+            
+            {user.role === 'DOCENTE' && (
+                <div className="mb-8">
+                    <AdminEvidenceManager />
+                </div>
             )}
 
             <EvidenceLibrary currentUserId={user.uid} currentUserRole={user.role} currentUserName={user.displayName || user.email || 'Anónimo'} />

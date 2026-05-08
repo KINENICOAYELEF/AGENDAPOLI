@@ -14,7 +14,6 @@ import { PendingUsersManager } from "@/components/PendingUsersManager";
 import { ActiveUsersManager } from "@/components/ActiveUsersManager";
 import { InternAssignmentManager } from "@/components/InternAssignmentManager";
 import { SimuladorDocentePanel } from "@/components/SimuladorDocentePanel";
-import { AdminEvidenceManager } from "@/components/evidence/AdminEvidenceManager";
 
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
@@ -122,9 +121,6 @@ export default function AdminDocentePage() {
 
             {/* Panel de Simulador de Examen Clínico */}
             <SimuladorDocentePanel />
-
-            {/* Gestor de Tareas de Evidencia */}
-            <AdminEvidenceManager />
 
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 
