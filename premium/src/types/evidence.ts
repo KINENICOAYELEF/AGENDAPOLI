@@ -24,11 +24,13 @@ export interface EvidenceArticle {
     title: string;
     url: string; // URL al drive o pubmed
     category: ArticleCategory;
-    cif: string; // Clasificación CIF o Patología
+    cif: string; // Contexto: Patología, Sistema, Movimiento, etc. según categoría
     population: string; // Población o deporte
     tags: string[]; // Etiquetas añadidas por IA o Docente
     
     summary: string; // Resumen principal del artículo
+    finding: string; // Intervención, variable o mecanismo (campo adaptativo)
+    methodology: string; // Resultado principal o datos clave (campo adaptativo)
     
     contributions: EvidenceContribution[];
     

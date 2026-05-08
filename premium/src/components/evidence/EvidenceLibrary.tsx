@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getEvidenceArticles, addContributionToArticle } from "@/services/evidence";
 import { EvidenceArticle, ArticleCategory } from "@/types/evidence";
+import { CATEGORY_CONFIGS } from "./EvidenceFormConfig";
 
 interface Props {
     currentUserId: string;
@@ -33,6 +34,8 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
     const [freePopulation, setFreePopulation] = useState("");
     const [freeCif, setFreeCif] = useState("");
     const [freeSummary, setFreeSummary] = useState("");
+    const [freeFinding, setFreeFinding] = useState("");
+    const [freeMethodology, setFreeMethodology] = useState("");
 
     // Add Tags Logic
     const [addingTagsTo, setAddingTagsTo] = useState<string | null>(null);
@@ -108,8 +111,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
     };
 
     const submitFreeArticle = async () => {
-        if (!freeTitle.trim() || !freeSummary.trim() || !perla.trim() || !freePopulation.trim() || !freeCif.trim()) {
-            alert("Por favor completa todos los campos requeridos.");
+        const freeCfg = CATEGORY_CONFIGS[freeCategory];
+        if (!freeTitle.trim() || !perla.trim() || !freePopulation.trim() || !freeCif.trim() || !freeFinding.trim()) {
+            alert("Por favor completa todos los campos obligatorios.");
             return;
         }
 
@@ -133,7 +137,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 cif: freeCif,
                 population: freePopulation,
                 tags: [],
-                summary: freeSummary,
+                summary: freeSummary || `Artículo sobre ${freeCfg.label}`,
+                finding: freeFinding,
+                methodology: freeMethodology,
                 contributions: [contrib],
                 createdAt: Date.now(),
                 createdBy: currentUserName,
@@ -143,13 +149,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
             alert(currentUserRole === 'DOCENTE' ? "Artículo publicado exitosamente." : "Aporte enviado correctamente. Está en revisión.");
             
             setIsAddingFree(false);
-            setFreeTitle("");
-            setFreeUrl("");
-            setFreeSummary("");
-            setFreePopulation("");
-            setFreeCif("");
-            setPerla("");
-            setLimitaciones("");
+            setFreeTitle(""); setFreeUrl(""); setFreeSummary(""); setFreePopulation("");
+            setFreeCif(""); setFreeFinding(""); setFreeMethodology("");
+            setPerla(""); setLimitaciones("");
             
             loadData();
         } catch (e: any) {
@@ -387,65 +389,108 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
             )}
 
             {/* ADD FREE ARTICLE MODAL */}
-            {isAddingFree && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="bg-indigo-600 p-4 sticky top-0 flex justify-between items-center text-white z-10">
-                            <h3 className="font-bold">Aportar Nuevo Artículo a la Biblioteca</h3>
-                            <button onClick={() => setIsAddingFree(false)} className="text-indigo-200 hover:text-white">✕ Cancelar</button>
+            {isAddingFree && (() => {
+                const freeCfg = CATEGORY_CONFIGS[freeCategory];
+                const colorMap: Record<string, string> = {
+                    emerald: 'from-emerald-600 to-teal-700', blue: 'from-blue-600 to-cyan-700',
+                    violet: 'from-violet-600 to-purple-700', orange: 'from-orange-500 to-red-600',
+                    pink: 'from-pink-600 to-rose-700', slate: 'from-slate-600 to-gray-700'
+                };
+                return (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className={`bg-gradient-to-r ${colorMap[freeCfg.color] || colorMap.slate} p-5 sticky top-0 z-10`}>
+                            <div className="flex justify-between items-start text-white">
+                                <div>
+                                    <h3 className="font-black text-lg">Aportar Nuevo Artículo a la Biblioteca</h3>
+                                    <p className="text-white/70 text-sm">{freeCfg.icon} {freeCfg.label}</p>
+                                </div>
+                                <button onClick={() => setIsAddingFree(false)} className="text-white/60 hover:text-white text-lg font-bold">✕</button>
+                            </div>
                         </div>
                         <div className="p-6 space-y-5">
+                            {/* Category selector */}
+                            <div>
+                                <label className="block text-sm font-black text-gray-700 mb-2">1️⃣ ¿De qué tipo es este artículo?</label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {(Object.keys(CATEGORY_CONFIGS) as ArticleCategory[]).map(cat => {
+                                        const c = CATEGORY_CONFIGS[cat];
+                                        const isActive = freeCategory === cat;
+                                        return (
+                                            <button key={cat} type="button" onClick={() => setFreeCategory(cat)}
+                                                className={`p-3 rounded-xl border-2 text-left transition-all ${isActive ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                                                <div className="text-lg">{c.icon}</div>
+                                                <div className={`text-xs font-bold mt-1 ${isActive ? 'text-indigo-800' : 'text-gray-600'}`}>{c.label}</div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-100" />
+
+                            {/* Title & URL */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Título del Artículo / Tema *</label>
+                                    <input value={freeTitle} onChange={e => setFreeTitle(e.target.value)} placeholder="Ej: Effectiveness of heavy slow resistance training..." className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Enlace al Artículo (Opcional)</label>
+                                    <input value={freeUrl} onChange={e => setFreeUrl(e.target.value)} placeholder="https://..." className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                </div>
+                            </div>
+
+                            {/* Adaptive Metadata */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Título del Artículo / Tema</label>
-                                    <input value={freeTitle} onChange={e => setFreeTitle(e.target.value)} placeholder="Ej: Effectiveness of heavy slow resistance training..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Enlace al Artículo (Opcional)</label>
-                                    <input value={freeUrl} onChange={e => setFreeUrl(e.target.value)} placeholder="https://..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">{freeCfg.contextLabel} *</label>
+                                    <p className="text-[10px] text-gray-400 mb-1">{freeCfg.contextHelp}</p>
+                                    <input value={freeCif} onChange={e => setFreeCif(e.target.value)} placeholder={freeCfg.contextPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Categoría Principal</label>
-                                    <select value={freeCategory} onChange={e => setFreeCategory(e.target.value as ArticleCategory)} className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                        <option value="Clínica">Clínica (Tto/Eval)</option>
-                                        <option value="Biomecánica">Biomecánica</option>
-                                        <option value="Fisiología">Fisiología</option>
-                                        <option value="Entrenamiento">Entrenamiento</option>
-                                        <option value="Anatomía">Anatomía</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Población / Deporte *</label>
+                                    <input value={freePopulation} onChange={e => setFreePopulation(e.target.value)} placeholder="Ej: Corredores, Población General..." className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                </div>
+                            </div>
+
+                            {/* Adaptive Content Fields */}
+                            <div className="space-y-4">
+                                <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                                    <label className="block text-xs font-bold text-gray-600 mb-1">{freeCfg.findingLabel} *</label>
+                                    <p className="text-[10px] text-gray-400 mb-2">{freeCfg.findingHelp}</p>
+                                    <textarea value={freeFinding} onChange={e => setFreeFinding(e.target.value)} rows={3} placeholder={freeCfg.findingPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" />
+                                </div>
+                                <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                                    <label className="block text-xs font-bold text-gray-600 mb-1">{freeCfg.methodLabel}</label>
+                                    <textarea value={freeMethodology} onChange={e => setFreeMethodology(e.target.value)} rows={3} placeholder={freeCfg.methodPlaceholder} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Población / Deporte</label>
-                                    <input value={freePopulation} onChange={e => setFreePopulation(e.target.value)} placeholder="Ej: Corredores, Población General..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Patología o Condición (CIF)</label>
-                                    <input value={freeCif} onChange={e => setFreeCif(e.target.value)} placeholder="Ej: Tendinopatía Patelar..." className="w-full border border-gray-300 rounded-lg px-3 py-2" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold mb-1 text-gray-700">Resumen Clave (3-5 líneas)</label>
-                                    <textarea value={freeSummary} onChange={e => setFreeSummary(e.target.value)} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2 resize-none" placeholder="El estudio abordó..." />
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Resumen Libre (Opcional)</label>
+                                    <textarea value={freeSummary} onChange={e => setFreeSummary(e.target.value)} rows={2} className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="Notas adicionales..." />
                                 </div>
                             </div>
 
-                            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-                                <label className="block text-sm font-bold mb-1 text-emerald-800">💎 Aplicación Práctica (La Perla Clínica)</label>
-                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} className="w-full border border-emerald-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="Mañana lo usaría para..." />
+                            {/* Perla */}
+                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 p-5 rounded-xl">
+                                <label className="block text-sm font-black text-emerald-800 mb-1">💎 {freeCfg.perlaPrompt}</label>
+                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} placeholder={freeCfg.perlaPlaceholder} className="w-full border border-emerald-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-400 outline-none bg-white/80" />
                             </div>
 
-                            <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
-                                <label className="block text-sm font-bold mb-1 text-orange-800">⚠️ Limitaciones / Cuidados</label>
-                                <textarea value={limitaciones} onChange={e => setLimitaciones(e.target.value)} rows={3} className="w-full border border-orange-300 rounded-lg px-3 py-2 resize-none focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Ojo con..." />
+                            {/* Limitations */}
+                            <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
+                                <label className="block text-sm font-bold text-orange-800 mb-1">⚠️ {freeCfg.limitPrompt}</label>
+                                <textarea value={limitaciones} onChange={e => setLimitaciones(e.target.value)} rows={3} placeholder={freeCfg.limitPlaceholder} className="w-full border border-orange-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-orange-400 outline-none bg-white/80" />
                             </div>
 
-                            <button onClick={submitFreeArticle} disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-lg">
-                                Enviar Aporte Libre →
+                            <button onClick={submitFreeArticle} disabled={isSubmitting} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black py-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-base">
+                                {isSubmitting ? 'Enviando...' : 'Enviar Aporte →'}
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
         </div>
     );
