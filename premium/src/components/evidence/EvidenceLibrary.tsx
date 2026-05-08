@@ -91,6 +91,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 id: `contrib_${Date.now()}`,
                 studentId: currentUserId,
                 studentName: currentUserName,
+                resumenEstudiante: '',
+                studyDesign: '',
+                perlas: { perla_principal: perla } as Record<string, string>,
                 perlaClinica: perla,
                 limitaciones,
                 status: 'REVISION' as const,
@@ -123,6 +126,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 id: `contrib_${Date.now()}`,
                 studentId: currentUserId,
                 studentName: currentUserName,
+                resumenEstudiante: freeSummary,
+                studyDesign: '',
+                perlas: { perla_principal: perla } as Record<string, string>,
                 perlaClinica: perla,
                 limitaciones,
                 status: currentUserRole === 'DOCENTE' ? ('APPROVED' as const) : ('REVISION' as const),
@@ -307,7 +313,10 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                 <h4 className="text-xs font-black text-emerald-600 uppercase tracking-widest">Perlas Clínicas y Aplicaciones</h4>
                                             </div>
                                             <div className="space-y-4">
-                                                {approvedContribs.map(c => (
+                                                {approvedContribs.map(c => {
+                                                    const hasNewPerlas = c.perlas && Object.keys(c.perlas).length > 0;
+                                                    const catCfg = CATEGORY_CONFIGS[article.category] || CATEGORY_CONFIGS['Otro'];
+                                                    return (
                                                     <div key={c.id} className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-5 relative overflow-hidden">
                                                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                                                         <div className="relative z-10">
@@ -316,30 +325,53 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                     <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-black">{(c.studentName || '?').charAt(0).toUpperCase()}</div>
                                                                     <div>
                                                                         <span className="font-bold text-emerald-900 text-sm">{c.studentName}</span>
-                                                                        <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}</div>
+                                                                        <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}{c.studyDesign ? ` · ${c.studyDesign}` : ''}</div>
                                                                     </div>
                                                                 </div>
                                                                 {c.nota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm">{c.nota.toFixed(1)}</div>}
                                                             </div>
-                                                            <div className="mb-3">
-                                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">💎 APLICACIÓN PRÁCTICA</div>
-                                                                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{c.perlaClinica}</p>
-                                                            </div>
+                                                            {/* Resumen del estudiante */}
+                                                            {c.resumenEstudiante && (
+                                                                <div className="mb-3 bg-white/60 p-3 rounded-lg border border-emerald-100">
+                                                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">📝 RESUMEN DEL ESTUDIANTE</div>
+                                                                    <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{c.resumenEstudiante}</p>
+                                                                </div>
+                                                            )}
+                                                            {/* Perlas */}
+                                                            {hasNewPerlas ? (
+                                                                <div className="space-y-2 mb-3">
+                                                                    {Object.entries(c.perlas).map(([perlaId, content]) => {
+                                                                        const perlaCfg = catCfg.perlas.find(p => p.id === perlaId);
+                                                                        return (
+                                                                            <div key={perlaId} className="bg-white/70 p-3 rounded-lg border border-emerald-100">
+                                                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">{perlaCfg?.icon || '💎'} {perlaCfg?.label || perlaId}</div>
+                                                                                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{content}</p>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            ) : c.perlaClinica && (
+                                                                <div className="mb-3">
+                                                                    <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">💎 APLICACIÓN PRÁCTICA</div>
+                                                                    <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{c.perlaClinica}</p>
+                                                                </div>
+                                                            )}
                                                             {c.limitaciones && (
-                                                                <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mt-3">
+                                                                <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mt-2">
                                                                     <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">⚠️ LIMITACIONES</div>
                                                                     <p className="text-xs text-gray-700 leading-relaxed">{c.limitaciones}</p>
                                                                 </div>
                                                             )}
                                                             {c.feedbackDocente && (
-                                                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-3">
+                                                                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg mt-2">
                                                                     <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">🎓 FEEDBACK DOCENTE</div>
                                                                     <p className="text-xs text-gray-700 leading-relaxed italic">{c.feedbackDocente}</p>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -473,8 +505,8 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
 
                             {/* Perla */}
                             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 p-5 rounded-xl">
-                                <label className="block text-sm font-black text-emerald-800 mb-1">💎 {freeCfg.perlaPrompt}</label>
-                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} placeholder={freeCfg.perlaPlaceholder} className="w-full border border-emerald-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-400 outline-none bg-white/80" />
+                                <label className="block text-sm font-black text-emerald-800 mb-1">💎 {freeCfg.perlas[0]?.prompt || 'Aplicación Práctica'}</label>
+                                <textarea value={perla} onChange={e => setPerla(e.target.value)} rows={4} placeholder={freeCfg.perlas[0]?.placeholder || 'Cómo lo aplicarías...'} className="w-full border border-emerald-300 rounded-xl px-3 py-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-400 outline-none bg-white/80" />
                             </div>
 
                             {/* Limitations */}

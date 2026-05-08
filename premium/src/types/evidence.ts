@@ -6,9 +6,20 @@ export interface EvidenceContribution {
     studentId: string;
     studentName: string;
     
-    // Contenido del estudiante
-    perlaClinica: string; // ¿Cómo aplicarías esto con tus usuarios?
-    limitaciones: string; // ¿Qué cuidados hay que tener?
+    // Resumen propio del estudiante
+    resumenEstudiante: string;
+    
+    // Diseño del estudio identificado
+    studyDesign: string;
+    
+    // Múltiples perlas (cada una con su id y contenido)
+    perlas: Record<string, string>; // { perla_evaluacion: "...", perla_tratamiento: "..." }
+    
+    // Legacy: kept for backward compatibility with old contributions
+    perlaClinica?: string;
+    
+    // Limitaciones y pensamiento crítico
+    limitaciones: string;
     
     // Evaluación Docente
     status: TaskStatus;
