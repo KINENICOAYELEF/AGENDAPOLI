@@ -134,6 +134,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         } finally {
             setIsGrounding(false);
         }
+    };
+
     const [activeFullscreen, setActiveFullscreen] = useState<'subjetivas' | 'objetivas' | null>(null);
     const [showHelp, setShowHelp] = useState<'subjetivas' | 'objetivas' | null>(null);
 
