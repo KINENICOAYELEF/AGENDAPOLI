@@ -217,58 +217,115 @@ export function AdminEvidenceManager() {
         }
     };
 
-    const handleDownloadAnalysis = () => {
+    const exportAnalysis = (format: 'txt' | 'json' | 'md') => {
         if (!reviewArticle || !reviewContribution) return;
 
-        const text = `--- INFORME DE ANÁLISIS DE EVIDENCIA (IA READY) ---
+        const safeStudentName = reviewContribution.studentName.replace(/\s+/g, '_');
+        const safeTitle = reviewArticle.title.substring(0, 30).replace(/[^a-z0-9]/gi, '_');
+        const filename = `Analisis_${safeStudentName}_${safeTitle}`;
+
+        let content = "";
+        let mimeType = "text/plain";
+
+        if (format === 'json') {
+            const data = {
+                article: {
+                    title: reviewArticle.title,
+                    url: reviewArticle.url,
+                    category: reviewArticle.category,
+                    population: reviewArticle.population,
+                    cif: reviewArticle.cif,
+                    tags: reviewArticle.tags,
+                    docente_summary: reviewArticle.summary,
+                    docente_finding: reviewArticle.finding,
+                    docente_methodology: reviewArticle.methodology
+                },
+                student_analysis: {
+                    name: reviewContribution.studentName,
+                    summary: reviewContribution.resumenEstudiante,
+                    study_design: reviewContribution.studyDesign,
+                    perlas: reviewContribution.perlas,
+                    dosis: reviewContribution.dosis,
+                    limitaciones: reviewContribution.limitaciones,
+                    nota: reviewContribution.nota,
+                    feedback: reviewContribution.feedbackDocente,
+                    createdAt: new Date(reviewContribution.createdAt).toISOString()
+                },
+                export_date: new Date().toISOString()
+            };
+            content = JSON.stringify(data, null, 2);
+            mimeType = "application/json";
+        } else if (format === 'md') {
+            content = `# ANÁLISIS DE EVIDENCIA: ${reviewArticle.title}
+            
+> **Estudiante:** ${reviewContribution.studentName}
+> **Fecha de Análisis:** ${new Date(reviewContribution.createdAt).toLocaleDateString()}
+> **Estado:** ${reviewContribution.status} | **Nota:** ${reviewContribution.nota || 'Pendiente'}
+
+## 1. Información del Artículo
+- **URL:** [Ver Artículo](${reviewArticle.url || '#'})
+- **Categoría:** \`${reviewArticle.category}\`
+- **Población:** ${reviewArticle.population}
+- **Condición / CIF:** ${reviewArticle.cif}
+- **Diseño del Estudio:** ${reviewContribution.studyDesign || 'No especificado'}
+- **Etiquetas:** ${reviewArticle.tags?.map(t => `\`${t}\``).join(', ') || 'Sin etiquetas'}
+
+## 2. Resumen Docente (Fase 3)
+${reviewArticle.summary}
+
+### Hallazgo Clave
+${reviewArticle.finding}
+
+### Metodología
+${reviewArticle.methodology}
+
+---
+
+## 3. Aporte del Estudiante
+### Resumen Personal
+${reviewContribution.resumenEstudiante}
+
+### Perlas Clínicas y Aplicación
+${Object.entries(reviewContribution.perlas || {}).map(([key, val]) => `#### ${key}\n${val}`).join('\n\n')}
+
+### Dosificación / Parámetros
+${reviewContribution.dosis ? Object.entries(reviewContribution.dosis).filter(([_,v]) => !!v).map(([k, v]) => `- **${k.toUpperCase()}:** ${v}`).join('\n') : '*No aplica o no especificado*'}
+
+### Análisis Crítico y Limitaciones
+${reviewContribution.limitaciones}
+
+---
+
+## 4. Retroalimentación Docente
+**Feedback:** ${reviewContribution.feedbackDocente || '*Sin feedback todavía*'}
+`;
+            mimeType = "text/markdown";
+        } else {
+            content = `--- INFORME DE ANÁLISIS DE EVIDENCIA (TX) ---
 FECHA EXPORTACIÓN: ${new Date().toLocaleString()}
 
 [ARTÍCULO]
 Título: ${reviewArticle.title}
-URL: ${reviewArticle.url || 'No especificada'}
+URL: ${reviewArticle.url || 'N/A'}
 Categoría: ${reviewArticle.category}
-Población: ${reviewArticle.population}
-CIF/Condición: ${reviewArticle.cif}
-Etiquetas: ${reviewArticle.tags?.join(', ') || 'Sin etiquetas'}
-Diseño del Estudio: ${reviewContribution.studyDesign || 'No especificado'}
 
-[RESUMEN ESTRUCTURADO (FASE 3)]
-${reviewArticle.summary}
+[DOCENTE]
+Resumen: ${reviewArticle.summary}
+Hallazgo: ${reviewArticle.finding}
 
-[HALLAZGO CLAVE]
-${reviewArticle.finding}
+[ESTUDIANTE: ${reviewContribution.studentName}]
+Resumen Estudiante: ${reviewContribution.resumenEstudiante}
+Perlas: ${Object.entries(reviewContribution.perlas || {}).map(([k,v]) => `${k}: ${v}`).join(' | ')}
+Dosis: ${reviewContribution.dosis ? JSON.stringify(reviewContribution.dosis) : 'N/A'}
+Limitaciones: ${reviewContribution.limitaciones}
+`;
+        }
 
-[METODOLOGÍA]
-${reviewArticle.methodology}
-
---------------------------------------------------
-[ANÁLISIS DEL ESTUDIANTE: ${reviewContribution.studentName.toUpperCase()}]
---------------------------------------------------
-
-[RESUMEN PERSONAL DEL ESTUDIANTE]
-${reviewContribution.resumenEstudiante}
-
-[PERLAS CLÍNICAS Y APLICACIÓN PRÁCTICA]
-${Object.entries(reviewContribution.perlas || {}).map(([key, val]) => `### ${key.toUpperCase()}:\n${val}`).join('\n\n')}
-
-[DOSIFICACIÓN / PARÁMETROS ESTRUCTURADOS]
-${reviewContribution.dosis ? Object.entries(reviewContribution.dosis).filter(([_,v]) => !!v).map(([k, v]) => `- ${k.toUpperCase()}: ${v}`).join('\n') : 'No aplica o no especificado'}
-
-[ANÁLISIS CRÍTICO Y LIMITACIONES]
-${reviewContribution.limitaciones}
-
-[EVALUACIÓN DOCENTE]
-Nota: ${reviewContribution.nota || 'Pendiente'}
-Feedback: ${reviewContribution.feedbackDocente || 'Sin feedback todavía'}
-
---- FIN DEL INFORME ---`;
-
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([content], { type: mimeType + ";charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const safeName = reviewArticle.title.substring(0, 30).replace(/[^a-z0-9]/gi, '_');
-        a.download = `Analisis_IA_${reviewContribution.studentName.replace(/\s+/g, '_')}_${safeName}.txt`;
+        a.download = `${filename}.${format}`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -525,14 +582,31 @@ Feedback: ${reviewContribution.feedbackDocente || 'Sin feedback todavía'}
                             </div>
                             
                             {/* Actions / Export */}
-                            <div className="flex justify-end">
-                                <button 
-                                    onClick={handleDownloadAnalysis} 
-                                    className="group flex items-center gap-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-xl text-xs font-black border border-indigo-100 hover:border-indigo-600 transition-all shadow-sm"
-                                >
-                                    <span className="text-lg group-hover:scale-110 transition-transform">⬇️</span>
-                                    DESCARGAR INFORME ESTRUCTURADO (PRO IA)
-                                </button>
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                                <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Exportar para IA:</div>
+                                <div className="flex gap-2 w-full sm:w-auto">
+                                    <button 
+                                        onClick={() => exportAnalysis('txt')} 
+                                        className="flex-1 sm:flex-none bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black border border-indigo-200 transition-all shadow-sm"
+                                        title="Formato de texto plano estructurado"
+                                    >
+                                        📄 .TXT
+                                    </button>
+                                    <button 
+                                        onClick={() => exportAnalysis('md')} 
+                                        className="flex-1 sm:flex-none bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black border border-indigo-200 transition-all shadow-sm"
+                                        title="Formato Markdown (ideal para chatear con IA)"
+                                    >
+                                        Ⓜ️ .MD
+                                    </button>
+                                    <button 
+                                        onClick={() => exportAnalysis('json')} 
+                                        className="flex-1 sm:flex-none bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black border border-indigo-200 transition-all shadow-sm"
+                                        title="Formato JSON (datos puros para procesar)"
+                                    >
+                                        📦 .JSON
+                                    </button>
+                                </div>
                             </div>
                             
                             {/* Summary */}
