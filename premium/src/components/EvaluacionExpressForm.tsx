@@ -136,8 +136,34 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         }
     };
 
+    const [activeFullscreen, setActiveFullscreen] = useState<'subjetivas' | 'objetivas' | null>(null);
+
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-center items-end md:items-center">
+            {activeFullscreen && (
+                <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-in slide-in-from-bottom-5">
+                    <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+                        <h3 className="font-black text-slate-800 flex items-center gap-2">
+                            {activeFullscreen === 'subjetivas' ? (
+                                <><span className="text-blue-500">💬</span> Notas de Entrevista</>
+                            ) : (
+                                <><span className="text-emerald-500">🩺</span> Notas de Examen Físico</>
+                            )}
+                        </h3>
+                        <button onClick={() => setActiveFullscreen(null)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm">
+                            Listo
+                        </button>
+                    </div>
+                    <textarea 
+                        autoFocus
+                        className="flex-1 w-full p-6 text-base resize-none focus:outline-none bg-white"
+                        placeholder={activeFullscreen === 'subjetivas' ? "Anota libremente lo que el paciente te cuenta..." : "Anota libremente tus hallazgos de evaluación..."}
+                        value={activeFullscreen === 'subjetivas' ? notasSubjetivas : notasObjetivas}
+                        onChange={e => activeFullscreen === 'subjetivas' ? setNotasSubjetivas(e.target.value) : setNotasObjetivas(e.target.value)}
+                    />
+                </div>
+            )}
+
             <div className="bg-white w-full md:max-w-5xl md:h-[90vh] h-[95vh] md:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50 shrink-0">
@@ -145,7 +171,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                         <h2 className="text-xl font-black text-indigo-900 flex items-center gap-2">
                             <span>⚡</span> Evaluación Inicial (Modo Express)
                         </h2>
-                        <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA las ordene. Luego finaliza P3 y P4 en casa.</p>
+                        <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA las ordene. Posterior a la evaluación, en otro momento, realiza el diagnóstico completo.</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={() => handleSave()} disabled={loading} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors">
@@ -167,28 +193,42 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             
                             <div className="space-y-6">
                                 <div>
-                                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2 mb-2">
-                                        <span className="text-blue-500">💬</span> Notas de Entrevista (Subjetivo)
-                                    </label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                            <span className="text-blue-500">💬</span> Notas de Entrevista (Subjetivo)
+                                        </label>
+                                        <button onClick={() => setActiveFullscreen('subjetivas')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                            Ampliar
+                                        </button>
+                                    </div>
                                     <textarea 
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-300 transition-all shadow-inner"
                                         placeholder="Anota libremente lo que el paciente te cuenta..."
-                                        rows={4}
+                                        rows={6}
                                         value={notasSubjetivas}
                                         onChange={e => setNotasSubjetivas(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('subjetivas') }}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2 mb-2">
-                                        <span className="text-emerald-500">🩺</span> Notas de Examen Físico (Objetivo)
-                                    </label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                            <span className="text-emerald-500">🩺</span> Notas de Examen Físico (Objetivo)
+                                        </label>
+                                        <button onClick={() => setActiveFullscreen('objetivas')} className="text-xs text-emerald-500 font-bold hover:text-emerald-700 md:hidden flex items-center gap-1">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                            Ampliar
+                                        </button>
+                                    </div>
                                     <textarea 
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-emerald-50 focus:border-emerald-300 transition-all shadow-inner"
                                         placeholder="Anota libremente tus hallazgos de evaluación..."
-                                        rows={4}
+                                        rows={6}
                                         value={notasObjetivas}
                                         onChange={e => setNotasObjetivas(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('objetivas') }}
                                     />
                                 </div>
                             </div>
