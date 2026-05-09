@@ -54,7 +54,7 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             topP: params.topP,
             topK: params.topK,
             maxOutputTokens: params.maxOutputTokens || 16384,
-            responseMimeType: params.responseMimeType || "application/json"
+            responseMimeType: enableGrounding ? "text/plain" : (params.responseMimeType || "application/json")
         }
     };
 
