@@ -227,56 +227,105 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                         </div>
 
                         {/* Box de Estructuración (Coach) */}
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-y-auto">
-                            <h3 className="font-black text-slate-800 mb-4">📋 Resultados Estructurados</h3>
+                        <div className="bg-slate-100 p-1 md:p-5 rounded-2xl flex-1 overflow-y-auto">
                             {!structuredResult && !isAiProcessing && (
-                                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-medium text-center">
-                                    Presiona "Estructurar Notas con IA" para limpiar tus apuntes y recibir feedback como preguntas faltantes.
+                                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-medium text-center bg-white rounded-xl border border-dashed border-slate-300 p-8">
+                                    Presiona "Estructurar Notas con IA" para limpiar tus apuntes y recibir tu Análisis Clínico (SINS, Hipótesis y Preguntas Faltantes).
                                 </div>
                             )}
+                            
                             {isAiProcessing && (
-                                <div className="h-full flex items-center justify-center text-indigo-500 animate-pulse font-bold">
-                                    🤖 Analizando tus apuntes clínicos...
+                                <div className="h-full flex flex-col items-center justify-center text-indigo-500 font-bold bg-white rounded-xl border border-indigo-100 p-8 shadow-sm">
+                                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                                    Analizando clínicamente tus apuntes...
                                 </div>
                             )}
+                            
                             {structuredResult && (
                                 <div className="space-y-4">
+                                    {/* 1. Alertas Docentes (Coach) */}
                                     {structuredResult.sugerenciasFaltantes && structuredResult.sugerenciasFaltantes.length > 0 && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                                            <h4 className="text-amber-800 font-black text-xs uppercase mb-2">💡 Sugerencias Faltantes (Coach Clínico)</h4>
-                                            <ul className="list-disc pl-4 text-xs text-amber-700 font-medium space-y-1">
-                                                {structuredResult.sugerenciasFaltantes.map((sug: string, i: number) => <li key={i}>{sug}</li>)}
-                                            </ul>
+                                        <div className="bg-white border-l-4 border-amber-500 rounded-xl p-4 shadow-sm">
+                                            <h4 className="text-amber-800 font-black text-sm flex items-center gap-2 mb-3">
+                                                <span>💡</span> Coach Clínico: Evaluaciones Faltantes
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {structuredResult.sugerenciasFaltantes.map((sug: any, i: number) => (
+                                                    <div key={i} className="bg-amber-50/50 p-3 rounded-lg">
+                                                        <div className="font-bold text-amber-900 text-xs mb-1">Falta: {sug.pregunta}</div>
+                                                        <div className="text-amber-700 text-xs">{sug.por_que}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
+
+                                    {/* 2. SINS y Foco */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Foco Principal</h4>
+                                            <div className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                                <span className="text-blue-500">📍</span> {structuredResult.focoPrincipal}
+                                            </div>
+                                        </div>
+                                        
+                                        {structuredResult.sins && (
+                                            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Análisis S.I.N.S</h4>
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div><span className="text-slate-400 font-medium">Severidad:</span> <strong className="text-slate-700">{structuredResult.sins.severidad}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium">Irritabilidad:</span> <strong className="text-slate-700">{structuredResult.sins.irritabilidad}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium">Naturaleza:</span> <strong className="text-slate-700">{structuredResult.sins.naturaleza}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium">Estadio:</span> <strong className="text-slate-700">{structuredResult.sins.estadio}</strong></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 3. Hipótesis */}
+                                    {structuredResult.hipotesis_orientativas && structuredResult.hipotesis_orientativas.length > 0 && (
+                                        <div className="bg-white border border-indigo-100 rounded-xl p-4 shadow-sm">
+                                            <h4 className="text-indigo-800 font-black text-sm flex items-center gap-2 mb-3">
+                                                <span>🎯</span> Hipótesis Orientativas
+                                            </h4>
+                                            <div className="space-y-3">
+                                                {structuredResult.hipotesis_orientativas.map((hip: any, i: number) => (
+                                                    <div key={i} className="flex gap-3">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black shrink-0">{i+1}</div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-800 text-xs mb-0.5">{hip.titulo}</div>
+                                                            <div className="text-slate-600 text-[11px] leading-relaxed">{hip.fundamento}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 4. Resumen Limpio */}
+                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
+                                        <div>
+                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-1">Entrevista (Subjetivo)</h4>
+                                            <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                                {structuredResult.relatoEstructurado}
+                                            </div>
+                                        </div>
+                                        {structuredResult.anamnesisRemota && structuredResult.anamnesisRemota !== "Sin datos registrados" && (
+                                            <div className="pt-3 border-t border-slate-100">
+                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-1">Antecedentes</h4>
+                                                <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                                    {structuredResult.anamnesisRemota}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="pt-3 border-t border-slate-100">
+                                            <h4 className="text-emerald-500 font-bold text-[10px] uppercase tracking-wider mb-1">Examen Físico (Objetivo)</h4>
+                                            <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                                {structuredResult.examenFisico}
+                                            </div>
+                                        </div>
+                                    </div>
                                     
-                                    <div>
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Foco Principal Detectado</h4>
-                                        <div className="text-sm font-bold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg inline-block">
-                                            {structuredResult.focoPrincipal}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Entrevista Estructurada</h4>
-                                        <div className="text-xs text-slate-700 bg-blue-50/50 border border-blue-100 p-3 rounded-xl whitespace-pre-line leading-relaxed">
-                                            {structuredResult.relatoEstructurado}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Anamnesis Remota</h4>
-                                        <div className="text-xs text-slate-700 bg-indigo-50/50 border border-indigo-100 p-3 rounded-xl whitespace-pre-line leading-relaxed">
-                                            {structuredResult.anamnesisRemota}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Examen Físico Organizado</h4>
-                                        <div className="text-xs text-slate-700 bg-emerald-50/50 border border-emerald-100 p-3 rounded-xl whitespace-pre-line leading-relaxed">
-                                            {structuredResult.examenFisico}
-                                        </div>
-                                    </div>
                                 </div>
                             )}
                         </div>

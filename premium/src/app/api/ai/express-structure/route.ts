@@ -8,7 +8,20 @@ const ExpressStructureSchema = z.object({
     relatoEstructurado: z.string().describe("El texto de la entrevista, ordenado en viñetas o párrafos limpios y profesionales."),
     anamnesisRemota: z.string().describe("Antecedentes médicos, cirugías, fármacos, extraídos del texto."),
     examenFisico: z.string().describe("El examen físico estructurado (ROM, MMT, Pruebas Especiales, Palpación)."),
-    sugerenciasFaltantes: z.array(z.string()).describe("Lista de preguntas o evaluaciones cruciales que el kinesiólogo olvidó hacer, basándose en la queja principal (banderas rojas, etc.)")
+    sins: z.object({
+        severidad: z.string(),
+        irritabilidad: z.string(),
+        naturaleza: z.string(),
+        estadio: z.string()
+    }).describe("Análisis SINS del caso"),
+    hipotesis_orientativas: z.array(z.object({
+        titulo: z.string(),
+        fundamento: z.string()
+    })).describe("1 a 3 hipótesis diagnósticas kinesiológicas"),
+    sugerenciasFaltantes: z.array(z.object({
+        pregunta: z.string(),
+        por_que: z.string()
+    })).describe("Lista de preguntas o evaluaciones cruciales que el kinesiólogo olvidó hacer, con su razón clínica.")
 });
 
 export async function POST(req: Request) {
@@ -17,15 +30,14 @@ export async function POST(req: Request) {
 
         const inputHash = await generateSHA256(`express:${notasSubjetivas}:${notasObjetivas}`);
 
-        const systemInstruction = `Eres un asistente clínico experto y Tutor Clínico Pedagógico de nivel avanzado. Tu rol es asistir a un kinesiólogo/fisioterapeuta procesando sus "apuntes rápidos" tomados durante una sesión.
+        const systemInstruction = `Eres un asistente clínico experto y Tutor Clínico Pedagógico de nivel avanzado. Tu rol es asistir a un kinesiólogo procesando sus "apuntes rápidos" (que incluyen tanto historia clínica como examen físico) tomados durante una sesión exprés.
 Tu objetivo es:
 1. Estructurar y redactar profesionalmente estos apuntes en un formato clínico de alto nivel.
-2. Separar claramente lo que es historia actual, antecedentes remotos, y examen físico.
-3. Actuar como un "Coach Clínico": 
-   - Analiza la información de forma exhaustiva.
-   - Identifica "vacíos de información" clínicos (ej: no se descartaron banderas rojas, faltan factores psicosociales (sueño, estrés), no se evalúo la carga laboral/deportiva, o faltan pruebas físicas clave para descartar hipótesis).
-   - En 'sugerenciasFaltantes', entrega entre 3 y 5 preguntas o evaluaciones cruciales y modernas que el clínico olvidó hacer, explicando brevemente el "por qué" clínico de cada una.
-4. NO INVENTES DATOS. Si una sección está vacía, indica "Sin datos registrados".`;
+2. Extraer y clasificar el SINS (Severidad, Irritabilidad, Naturaleza, Estadio/Tiempo).
+3. Sugerir 1 a 3 hipótesis orientativas basadas en el relato y examen físico.
+4. Actuar como un "Coach Clínico": Analiza la información exhaustivamente e identifica "vacíos de información" clínicos (ej: no descartó banderas rojas, faltan factores psicosociales, no evaluó fuerza). 
+5. En 'sugerenciasFaltantes', entrega entre 3 y 5 preguntas o evaluaciones cruciales que el clínico olvidó, explicando el "por qué" clínico de cada una.
+6. NO INVENTES DATOS. Si el examen físico o antecedentes están vacíos, indica "Sin datos registrados".`;
 
         const userPrompt = `A continuación los apuntes rápidos del clínico.
 
@@ -35,14 +47,25 @@ ${notasSubjetivas || 'Sin notas subjetivas'}
 --- NOTAS OBJETIVAS (Examen Físico) ---
 ${notasObjetivas || 'Sin notas objetivas'}
 
-Por favor, estructura esto EXACTAMENTE en el siguiente formato JSON. No incluyas markdown, no incluyas texto fuera del JSON. Debes incluir las 5 claves:
+Por favor, estructura esto EXACTAMENTE en el siguiente formato JSON. No incluyas markdown, no incluyas texto fuera del JSON. Debes incluir las 7 claves principales:
 
 {
   "focoPrincipal": "string (Región o queja principal)",
   "relatoEstructurado": "string (Texto de entrevista ordenado)",
   "anamnesisRemota": "string (Antecedentes extraídos o 'Sin antecedentes registrados')",
   "examenFisico": "string (Examen físico estructurado o 'Sin datos registrados')",
-  "sugerenciasFaltantes": ["string", "string"]
+  "sins": {
+    "severidad": "string (Leve/Moderada/Severa)",
+    "irritabilidad": "string (Baja/Media/Alta)",
+    "naturaleza": "string (Mecánica/Neuropática/Nociplástica/Inflamatoria)",
+    "estadio": "string (Agudo/Subagudo/Crónico)"
+  },
+  "hipotesis_orientativas": [
+    { "titulo": "string", "fundamento": "string" }
+  ],
+  "sugerenciasFaltantes": [
+    { "pregunta": "string (La pregunta o evaluación que falta)", "por_que": "string (El razonamiento docente)" }
+  ]
 }`;
 
         const result = await executeAIAction({
