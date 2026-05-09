@@ -33,7 +33,15 @@ ${notasSubjetivas || 'Sin notas subjetivas'}
 --- NOTAS OBJETIVAS (Examen Físico) ---
 ${notasObjetivas || 'Sin notas objetivas'}
 
-Por favor, estructura esto en el formato JSON requerido.`;
+Por favor, estructura esto EXACTAMENTE en el siguiente formato JSON. No incluyas markdown, no incluyas texto fuera del JSON. Debes incluir las 5 claves:
+
+{
+  "focoPrincipal": "string (Región o queja principal)",
+  "relatoEstructurado": "string (Texto de entrevista ordenado)",
+  "anamnesisRemota": "string (Antecedentes extraídos o 'Sin antecedentes registrados')",
+  "examenFisico": "string (Examen físico estructurado o 'Sin datos registrados')",
+  "sugerenciasFaltantes": ["string", "string"]
+}`;
 
         const result = await executeAIAction({
             screen: 'EXPRESS',
