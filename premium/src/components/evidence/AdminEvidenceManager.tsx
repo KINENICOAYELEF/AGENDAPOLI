@@ -172,6 +172,51 @@ export function AdminEvidenceManager() {
         }
     };
 
+    const toggleHide = async () => {
+        if (!reviewArticle || !reviewContribution) return;
+        setIsSubmitting(true);
+        try {
+            const newHiddenStatus = !reviewContribution.isHidden;
+            const updatedContribs = reviewArticle.contributions.map(c => 
+                c.id === reviewContribution.id ? { ...c, isHidden: newHiddenStatus } : c
+            );
+            await updateContributionInArticle(reviewArticle.id!, updatedContribs);
+            setReviewContribution({ ...reviewContribution, isHidden: newHiddenStatus });
+            alert(newHiddenStatus ? "👁️ Aporte ocultado de la biblioteca." : "👁️ Aporte ahora es visible.");
+            loadData();
+        } catch (e: any) {
+            alert("Error: " + e.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!reviewTask || !reviewArticle || !reviewContribution) return;
+        if (!confirm("⚠️ ¿Estás seguro? Se eliminará este aporte permanentemente tanto de la biblioteca como del historial del alumno.")) return;
+        
+        setIsSubmitting(true);
+        try {
+            // Eliminar aporte del artículo
+            const updatedContribs = reviewArticle.contributions.filter(c => c.id !== reviewContribution.id);
+            await updateContributionInArticle(reviewArticle.id!, updatedContribs);
+            
+            // Eliminar la tarea
+            const { deleteEvidenceTask } = await import("@/services/evidence");
+            await deleteEvidenceTask(reviewTask.id!);
+
+            alert("🗑️ Aporte eliminado correctamente.");
+            setReviewTask(null);
+            setReviewArticle(null);
+            setReviewContribution(null);
+            loadData();
+        } catch (e: any) {
+            alert("Error al eliminar: " + e.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const pendingReviews = tasks.filter(t => t.status === 'REVISION');
     const pendingTasks = tasks.filter(t => t.status === 'PENDING');
     const completedTasks = tasks.filter(t => t.status === 'APPROVED');
@@ -340,11 +385,13 @@ export function AdminEvidenceManager() {
                                                 <th className="p-3">Artículo</th>
                                                 <th className="p-3">Límite</th>
                                                 <th className="p-3">Estado</th>
+                                                <th className="p-3 text-right">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
                                             {tasks.map(t => {
                                                 const isOverdue = t.status === 'PENDING' && t.dueDate < Date.now();
+                                                const hasAnalysis = t.status !== 'PENDING';
                                                 return (
                                                     <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50/50' : ''}`}>
                                                         <td className="p-3 font-semibold text-gray-900">{t.studentName}</td>
@@ -360,6 +407,15 @@ export function AdminEvidenceManager() {
                                                             }`}>
                                                                 {isOverdue && t.status === 'PENDING' ? '⏰ Atrasado' : statusLabel[t.status] || t.status}
                                                             </span>
+                                                        </td>
+                                                        <td className="p-3 text-right">
+                                                            {hasAnalysis ? (
+                                                                <button onClick={() => openReviewModal(t)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                                                                    🔍 Re-revisar
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400 italic">Sin entrega</span>
+                                                            )}
                                                         </td>
                                                     </tr>
                                                 );
@@ -379,7 +435,19 @@ export function AdminEvidenceManager() {
                     <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
                         <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-5 sticky top-0 flex justify-between items-center text-white z-10">
                             <div>
-                                <h3 className="font-black text-lg">Revisión de Análisis</h3>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-black text-lg">Revisión de Análisis</h3>
+                                    {reviewContribution.status === 'APPROVED' && (
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${reviewContribution.isHidden ? 'bg-amber-400 text-amber-900' : 'bg-emerald-400 text-emerald-900'}`}>
+                                            {reviewContribution.isHidden ? 'Aprobado (Oculto)' : 'Aprobado (Visible)'}
+                                        </span>
+                                    )}
+                                    {reviewContribution.status === 'REJECTED' && (
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-400 text-red-900">
+                                            Rechazado
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-indigo-200 text-sm">{reviewTask.studentName} — {reviewTask.articleTitle}</p>
                             </div>
                             <button onClick={() => { setReviewTask(null); setReviewArticle(null); setReviewContribution(null); }} className="text-indigo-200 hover:text-white text-lg font-bold">✕</button>
@@ -522,10 +590,33 @@ export function AdminEvidenceManager() {
 
                                 <div className="flex gap-3">
                                     <button onClick={() => submitReview('APPROVED')} disabled={isSubmitting} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl shadow-sm disabled:opacity-50 transition-colors">
-                                        ✅ Aprobar y Publicar
+                                        ✅ {reviewContribution.status === 'APPROVED' ? 'Actualizar Aprobación' : 'Aprobar y Publicar'}
                                     </button>
                                     <button onClick={() => submitReview('REJECTED')} disabled={isSubmitting} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl shadow-sm disabled:opacity-50 transition-colors">
-                                        ❌ Rechazar (Rehacer)
+                                        ❌ {reviewContribution.status === 'REJECTED' ? 'Mantener Rechazo' : 'Rechazar (Rehacer)'}
+                                    </button>
+                                </div>
+
+                                {/* Danger Zone / Extra Actions */}
+                                <div className="pt-4 border-t border-gray-100 flex flex-wrap gap-3">
+                                    <button 
+                                        onClick={toggleHide} 
+                                        disabled={isSubmitting || reviewContribution.status !== 'APPROVED'} 
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs transition-all border ${
+                                            reviewContribution.isHidden 
+                                                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                                        } disabled:opacity-30`}
+                                    >
+                                        {reviewContribution.isHidden ? '👁️ Mostrar en Biblioteca' : '👁️ Ocultar en Biblioteca'}
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={handleDelete} 
+                                        disabled={isSubmitting} 
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-xs transition-all border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-30"
+                                    >
+                                        🗑️ Eliminar Aporte
                                     </button>
                                 </div>
                             </div>

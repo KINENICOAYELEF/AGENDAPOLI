@@ -34,6 +34,7 @@ export interface EvidenceContribution {
     status: TaskStatus;
     nota?: number;
     feedbackDocente?: string;
+    isHidden?: boolean; // Permite ocultar el aporte sin eliminarlo
     
     createdAt: number;
     updatedAt: number;

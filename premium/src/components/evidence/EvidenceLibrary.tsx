@@ -252,7 +252,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                     </div>
                 ) : (
                     filteredArticles.map(article => {
-                        const approvedContribs = article.contributions.filter(c => c.status === 'APPROVED');
+                        const approvedContribs = article.contributions.filter(c => 
+                            c.status === 'APPROVED' && (!c.isHidden || currentUserRole === 'DOCENTE' || currentUserId === c.studentId)
+                        );
                         const allContribs = article.contributions;
                         if (approvedContribs.length === 0 && currentUserRole !== 'DOCENTE') return null;
 
@@ -338,7 +340,10 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xs font-black">{(c.studentName || '?').charAt(0).toUpperCase()}</div>
                                                                     <div>
-                                                                        <span className="font-bold text-emerald-900 text-sm">{c.studentName}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-bold text-emerald-900 text-sm">{c.studentName}</span>
+                                                                            {c.isHidden && <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">Oculto</span>}
+                                                                        </div>
                                                                         <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}{c.studyDesign ? ` · ${c.studyDesign}` : ''}</div>
                                                                     </div>
                                                                 </div>
