@@ -25,7 +25,14 @@ Reglas:
 3. Si buscas un medicamento, indica su principio activo, uso principal, mecanismo de acción básico y efectos adversos relevantes para kinesiología (ej: mareos, sangrado, dolor muscular).
 4. Si buscas un síndrome o técnica quirúrgica, resume en qué consiste y precauciones postoperatorias.`;
 
-        const userPrompt = `Por favor, investiga y explica lo siguiente en contexto clínico: "${query}"`;
+        const userPrompt = `Por favor, investiga y explica lo siguiente en contexto clínico: "${query}"
+
+Por favor, entrega tu respuesta EXACTAMENTE en el siguiente formato JSON. No incluyas markdown, no incluyas texto fuera del JSON. Debes incluir las 2 claves:
+
+{
+  "respuesta": "string (Tu explicación detallada)",
+  "fuentes_utilizadas": ["string", "string"] (Lista de URLs o fuentes consultadas, si las hay)
+}`;
 
         const result = await executeAIAction({
             screen: 'EXPRESS',
