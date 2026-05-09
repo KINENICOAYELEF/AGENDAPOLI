@@ -853,6 +853,11 @@ export interface OrtopedicasConfig {
 
 export interface EvaluacionInicial extends BaseEvaluacion {
     type: 'INITIAL';
+    expressDraft?: {
+        notasSubjetivas: string;
+        notasObjetivas: string;
+        structuredResult: any;
+    };
     // PANTALLA 1: ENTREVISTA INTEGRAL (FASE 2.2.X ACTUALIZADA)
     interview?: {
         // V3 (Fase 8)

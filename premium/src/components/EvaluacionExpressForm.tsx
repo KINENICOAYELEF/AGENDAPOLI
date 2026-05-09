@@ -25,14 +25,16 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isGrounding, setIsGrounding] = useState(false);
 
+    const initialDataAny = initialData as any;
+
     // State for the text areas
-    const [notasSubjetivas, setNotasSubjetivas] = useState(initialData?.expressDraft?.notasSubjetivas || '');
-    const [notasObjetivas, setNotasObjetivas] = useState(initialData?.expressDraft?.notasObjetivas || '');
+    const [notasSubjetivas, setNotasSubjetivas] = useState(initialDataAny?.expressDraft?.notasSubjetivas || '');
+    const [notasObjetivas, setNotasObjetivas] = useState(initialDataAny?.expressDraft?.notasObjetivas || '');
     const [groundingQuery, setGroundingQuery] = useState('');
     const [groundingResult, setGroundingResult] = useState<any>(null);
 
     // Draft local de la IA estructurada
-    const [structuredResult, setStructuredResult] = useState<any>(initialData?.expressDraft?.structuredResult || null);
+    const [structuredResult, setStructuredResult] = useState<any>(initialDataAny?.expressDraft?.structuredResult || null);
 
     const handleSave = async (silent = false) => {
         if (!globalActiveYear || !user) return;
