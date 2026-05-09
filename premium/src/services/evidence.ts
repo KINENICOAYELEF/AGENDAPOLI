@@ -37,6 +37,10 @@ export const updateContributionInArticle = async (articleId: string, contributio
     await updateDoc(ref, { contributions });
 };
 
+export const deleteEvidenceArticle = async (articleId: string) => {
+    await deleteDoc(doc(db, 'evidence_articles', articleId));
+};
+
 // ─── TASKS ───
 
 export const createEvidenceTask = async (task: EvidenceTask): Promise<string> => {

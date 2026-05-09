@@ -283,7 +283,21 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                             <span className="bg-white/15 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-semibold">🏥 {article.cif}</span>
                                             {article.tags.filter(t => t !== article.category && t !== article.cif && t !== article.population).slice(0, 5).map(t => <span key={t} className="bg-white/10 px-2 py-0.5 rounded-full text-xs">{t}</span>)}
                                             {currentUserRole === 'DOCENTE' && (
-                                                <button onClick={() => setAddingTagsTo(article.id!)} className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full text-xs transition-colors">+ Tag</button>
+                                                <>
+                                                    <button onClick={() => setAddingTagsTo(article.id!)} className="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full text-xs transition-colors">+ Tag</button>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (confirm("⚠️ ¿Estás seguro de eliminar este artículo y TODOS sus aportes permanentemente?")) {
+                                                                const { deleteEvidenceArticle } = await import("@/services/evidence");
+                                                                await deleteEvidenceArticle(article.id!);
+                                                                onArticleUpdate?.(); // Refrescar lista
+                                                            }
+                                                        }} 
+                                                        className="bg-red-500/30 hover:bg-red-500/50 text-white px-2 py-0.5 rounded-full text-xs transition-colors ml-auto"
+                                                    >
+                                                        🗑️ Eliminar
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                         

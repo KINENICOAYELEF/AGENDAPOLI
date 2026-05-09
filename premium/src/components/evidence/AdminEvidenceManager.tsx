@@ -522,13 +522,28 @@ Limitaciones: ${reviewContribution.limitaciones}
                                                             </span>
                                                         </td>
                                                         <td className="p-3 text-right">
-                                                            {hasAnalysis ? (
-                                                                <button onClick={() => openReviewModal(t)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
-                                                                    🔍 Re-revisar
+                                                            <div className="flex justify-end gap-2">
+                                                                {hasAnalysis ? (
+                                                                    <button onClick={() => openReviewModal(t)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                                                                        🔍 Re-revisar
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400 italic">Sin entrega</span>
+                                                                )}
+                                                                <button 
+                                                                    onClick={async () => {
+                                                                        if (confirm("¿Eliminar esta tarea permanentemente?")) {
+                                                                            const { deleteEvidenceTask } = await import("@/services/evidence");
+                                                                            await deleteEvidenceTask(t.id!);
+                                                                            loadData();
+                                                                        }
+                                                                    }}
+                                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    title="Eliminar tarea"
+                                                                >
+                                                                    🗑️
                                                                 </button>
-                                                            ) : (
-                                                                <span className="text-xs text-gray-400 italic">Sin entrega</span>
-                                                            )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );
