@@ -188,9 +188,9 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
 
     const handleInsertTemplate = (type: 'subjetivas' | 'objetivas') => {
         if (type === 'subjetivas') {
-            setNotasSubjetivas(prev => prev ? prev + '\n\n' + plantillas.subjetivas : plantillas.subjetivas);
+            setNotasSubjetivas((prev: string) => prev ? prev + '\n\n' + plantillas.subjetivas : plantillas.subjetivas);
         } else {
-            setNotasObjetivas(prev => prev ? prev + '\n\n' + plantillas.objetivas : plantillas.objetivas);
+            setNotasObjetivas((prev: string) => prev ? prev + '\n\n' + plantillas.objetivas : plantillas.objetivas);
         }
     };
 
