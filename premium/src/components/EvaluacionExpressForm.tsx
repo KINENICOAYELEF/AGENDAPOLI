@@ -158,102 +158,83 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-slate-50 flex flex-col lg:flex-row gap-6">
-                    
-                    {/* Columna Izquierda: Input */}
-                    <div className="flex-1 flex flex-col gap-6">
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1">
-                            <h3 className="font-black text-slate-800 mb-2 flex items-center gap-2"><span className="text-blue-500">💬</span> Notas de Entrevista (Subjetivo)</h3>
-                            <textarea 
-                                className="w-full flex-1 bg-slate-50/50 border border-slate-200 rounded-xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all mb-4"
-                                placeholder="Anota libremente lo que el paciente te cuenta..."
-                                value={notasSubjetivas}
-                                onChange={e => setNotasSubjetivas(e.target.value)}
-                            />
+                <div className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+                    <div className="max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col gap-10">
+                        
+                        {/* Box de Entrada de Datos */}
+                        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60">
+                            <h3 className="font-black text-slate-800 text-lg mb-6 text-center">Apuntes Clínicos</h3>
+                            
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2 mb-2">
+                                        <span className="text-blue-500">💬</span> Notas de Entrevista (Subjetivo)
+                                    </label>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-300 transition-all shadow-inner"
+                                        placeholder="Anota libremente lo que el paciente te cuenta..."
+                                        rows={4}
+                                        value={notasSubjetivas}
+                                        onChange={e => setNotasSubjetivas(e.target.value)}
+                                    />
+                                </div>
 
-                            <h3 className="font-black text-slate-800 mb-2 flex items-center gap-2"><span className="text-emerald-500">🩺</span> Notas de Examen Físico (Objetivo)</h3>
-                            <textarea 
-                                className="w-full flex-1 bg-slate-50/50 border border-slate-200 rounded-xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all"
-                                placeholder="Anota libremente tus hallazgos de evaluación..."
-                                value={notasObjetivas}
-                                onChange={e => setNotasObjetivas(e.target.value)}
-                            />
+                                <div>
+                                    <label className="font-bold text-slate-700 text-sm flex items-center gap-2 mb-2">
+                                        <span className="text-emerald-500">🩺</span> Notas de Examen Físico (Objetivo)
+                                    </label>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-emerald-50 focus:border-emerald-300 transition-all shadow-inner"
+                                        placeholder="Anota libremente tus hallazgos de evaluación..."
+                                        rows={4}
+                                        value={notasObjetivas}
+                                        onChange={e => setNotasObjetivas(e.target.value)}
+                                    />
+                                </div>
+                            </div>
 
-                            <div className="mt-6 flex justify-center">
+                            <div className="mt-8">
                                 <button 
                                     onClick={handleAIEstructurar} 
                                     disabled={isAiProcessing || (!notasSubjetivas && !notasObjetivas)}
-                                    className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl shadow-md w-full flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                                    className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 px-6 rounded-2xl shadow-xl shadow-slate-900/10 hover:shadow-slate-900/20 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
                                 >
-                                    {isAiProcessing ? 'Procesando con IA...' : '✨ Estructurar Notas con IA'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Columna Derecha: IA Feedback */}
-                    <div className="flex-1 flex flex-col gap-6">
-                        
-                        {/* Box de Grounding */}
-                        <div className="bg-gradient-to-br from-indigo-50 to-white p-5 rounded-2xl border border-indigo-100 shadow-sm shrink-0">
-                            <h3 className="font-black text-indigo-900 mb-2 flex items-center gap-2">🔍 Consultar Web (Google Grounding)</h3>
-                            <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    className="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100"
-                                    placeholder="Fármaco, patología, escala..."
-                                    value={groundingQuery}
-                                    onChange={e => setGroundingQuery(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleAIGrounding()}
-                                />
-                                <button 
-                                    onClick={handleAIGrounding} 
-                                    disabled={isGrounding || !groundingQuery}
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 rounded-lg disabled:opacity-50"
-                                >
-                                    Buscar
-                                </button>
-                            </div>
-                            {groundingResult && (
-                                <div className="mt-4 bg-white p-3 rounded-xl border border-indigo-100 text-sm">
-                                    <p className="text-slate-700 font-medium whitespace-pre-line">{groundingResult.respuesta}</p>
-                                    {groundingResult.fuentes_utilizadas && groundingResult.fuentes_utilizadas.length > 0 && (
-                                        <div className="mt-2 text-xs text-indigo-400">
-                                            Fuentes: {groundingResult.fuentes_utilizadas.join(', ')}
-                                        </div>
+                                    {isAiProcessing ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Procesando con Inteligencia Clínica...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-xl">✨</span> Generar Análisis Clínico y Estructura
+                                        </>
                                     )}
-                                </div>
-                            )}
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Box de Estructuración (Coach) */}
-                        <div className="bg-slate-100 p-1 md:p-5 rounded-2xl flex-1 overflow-y-auto">
-                            {!structuredResult && !isAiProcessing && (
-                                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-medium text-center bg-white rounded-xl border border-dashed border-slate-300 p-8">
-                                    Presiona "Estructurar Notas con IA" para limpiar tus apuntes y recibir tu Análisis Clínico (SINS, Hipótesis y Preguntas Faltantes).
+                        {/* IA Feedback / Dashboard */}
+                        {structuredResult && (
+                            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="text-center mb-8">
+                                    <span className="inline-flex items-center justify-center bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-3">
+                                        Resultados Estructurados
+                                    </span>
+                                    <h3 className="font-black text-slate-900 text-2xl">Síntesis Clínica</h3>
                                 </div>
-                            )}
-                            
-                            {isAiProcessing && (
-                                <div className="h-full flex flex-col items-center justify-center text-indigo-500 font-bold bg-white rounded-xl border border-indigo-100 p-8 shadow-sm">
-                                    <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-                                    Analizando clínicamente tus apuntes...
-                                </div>
-                            )}
-                            
-                            {structuredResult && (
-                                <div className="space-y-4">
+
+                                <div className="space-y-6">
                                     {/* 1. Alertas Docentes (Coach) */}
                                     {structuredResult.sugerenciasFaltantes && structuredResult.sugerenciasFaltantes.length > 0 && (
-                                        <div className="bg-white border-l-4 border-amber-500 rounded-xl p-4 shadow-sm">
-                                            <h4 className="text-amber-800 font-black text-sm flex items-center gap-2 mb-3">
+                                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-2xl p-6 shadow-sm">
+                                            <h4 className="text-amber-900 font-black text-base flex items-center gap-2 mb-4">
                                                 <span>💡</span> Coach Clínico: Evaluaciones Faltantes
                                             </h4>
-                                            <div className="space-y-3">
+                                            <div className="grid gap-3">
                                                 {structuredResult.sugerenciasFaltantes.map((sug: any, i: number) => (
-                                                    <div key={i} className="bg-amber-50/50 p-3 rounded-lg">
-                                                        <div className="font-bold text-amber-900 text-xs mb-1">Falta: {sug.pregunta}</div>
-                                                        <div className="text-amber-700 text-xs">{sug.por_que}</div>
+                                                    <div key={i} className="bg-white/60 p-4 rounded-xl border border-amber-200/50">
+                                                        <div className="font-black text-amber-900 text-sm mb-1">{sug.pregunta}</div>
+                                                        <div className="text-amber-700 text-sm leading-relaxed">{sug.por_que}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -261,22 +242,22 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                     )}
 
                                     {/* 2. SINS y Foco */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Foco Principal</h4>
-                                            <div className="text-sm font-black text-slate-800 flex items-center gap-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Foco Principal Detectado</h4>
+                                            <div className="text-base font-black text-slate-800 flex items-center gap-2">
                                                 <span className="text-blue-500">📍</span> {structuredResult.focoPrincipal}
                                             </div>
                                         </div>
                                         
                                         {structuredResult.sins && (
-                                            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Análisis S.I.N.S</h4>
-                                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                                    <div><span className="text-slate-400 font-medium">Severidad:</span> <strong className="text-slate-700">{structuredResult.sins.severidad}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium">Irritabilidad:</span> <strong className="text-slate-700">{structuredResult.sins.irritabilidad}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium">Naturaleza:</span> <strong className="text-slate-700">{structuredResult.sins.naturaleza}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium">Estadio:</span> <strong className="text-slate-700">{structuredResult.sins.estadio}</strong></div>
+                                            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-3">Análisis S.I.N.S</h4>
+                                                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
+                                                    <div><span className="text-slate-400 font-medium block text-xs">Severidad</span> <strong className="text-slate-800">{structuredResult.sins.severidad}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium block text-xs">Irritabilidad</span> <strong className="text-slate-800">{structuredResult.sins.irritabilidad}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium block text-xs">Naturaleza</span> <strong className="text-slate-800">{structuredResult.sins.naturaleza}</strong></div>
+                                                    <div><span className="text-slate-400 font-medium block text-xs">Estadio</span> <strong className="text-slate-800">{structuredResult.sins.estadio}</strong></div>
                                                 </div>
                                             </div>
                                         )}
@@ -284,17 +265,17 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
 
                                     {/* 3. Hipótesis */}
                                     {structuredResult.hipotesis_orientativas && structuredResult.hipotesis_orientativas.length > 0 && (
-                                        <div className="bg-white border border-indigo-100 rounded-xl p-4 shadow-sm">
-                                            <h4 className="text-indigo-800 font-black text-sm flex items-center gap-2 mb-3">
+                                        <div className="bg-indigo-50/50 border border-indigo-100/50 rounded-2xl p-6">
+                                            <h4 className="text-indigo-900 font-black text-base flex items-center gap-2 mb-4">
                                                 <span>🎯</span> Hipótesis Orientativas
                                             </h4>
-                                            <div className="space-y-3">
+                                            <div className="grid gap-4">
                                                 {structuredResult.hipotesis_orientativas.map((hip: any, i: number) => (
-                                                    <div key={i} className="flex gap-3">
-                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black shrink-0">{i+1}</div>
+                                                    <div key={i} className="flex gap-4 bg-white p-4 rounded-xl shadow-sm border border-indigo-50">
+                                                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-black shrink-0">{i+1}</div>
                                                         <div>
-                                                            <div className="font-bold text-slate-800 text-xs mb-0.5">{hip.titulo}</div>
-                                                            <div className="text-slate-600 text-[11px] leading-relaxed">{hip.fundamento}</div>
+                                                            <div className="font-black text-slate-800 text-sm mb-1">{hip.titulo}</div>
+                                                            <div className="text-slate-600 text-sm leading-relaxed">{hip.fundamento}</div>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -303,32 +284,73 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                     )}
 
                                     {/* 4. Resumen Limpio */}
-                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                                        <h4 className="text-slate-800 font-black text-base flex items-center gap-2 border-b border-slate-100 pb-3">
+                                            <span>📝</span> Apuntes Estructurados
+                                        </h4>
                                         <div>
-                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-1">Entrevista (Subjetivo)</h4>
-                                            <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Entrevista (Subjetivo)</h4>
+                                            <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
                                                 {structuredResult.relatoEstructurado}
                                             </div>
                                         </div>
                                         {structuredResult.anamnesisRemota && structuredResult.anamnesisRemota !== "Sin datos registrados" && (
-                                            <div className="pt-3 border-t border-slate-100">
-                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-1">Antecedentes</h4>
-                                                <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                            <div className="pt-4 border-t border-slate-100">
+                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Antecedentes</h4>
+                                                <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
                                                     {structuredResult.anamnesisRemota}
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="pt-3 border-t border-slate-100">
-                                            <h4 className="text-emerald-500 font-bold text-[10px] uppercase tracking-wider mb-1">Examen Físico (Objetivo)</h4>
-                                            <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <h4 className="text-emerald-500 font-bold text-[10px] uppercase tracking-wider mb-2">Examen Físico (Objetivo)</h4>
+                                            <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
                                                 {structuredResult.examenFisico}
                                             </div>
                                         </div>
                                     </div>
-                                    
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Box de Grounding */}
+                        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 shadow-xl text-white">
+                            <h3 className="font-black text-white text-lg mb-2 flex items-center gap-2">🔍 Grounding Clínico</h3>
+                            <p className="text-indigo-200 text-sm mb-6">Consulta patologías, test especiales o fármacos. Todo validado mediante Google Search.</p>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <input 
+                                    type="text" 
+                                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                                    placeholder="Ej: Signos de alerta en dolor lumbar..."
+                                    value={groundingQuery}
+                                    onChange={e => setGroundingQuery(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAIGrounding()}
+                                />
+                                <button 
+                                    onClick={handleAIGrounding} 
+                                    disabled={isGrounding || !groundingQuery}
+                                    className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-6 py-3 rounded-xl disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    {isGrounding ? 'Buscando...' : 'Consultar'}
+                                </button>
+                            </div>
+
+                            {groundingResult && (
+                                <div className="mt-6 bg-white/5 backdrop-blur-sm p-5 rounded-2xl border border-white/10 text-sm animate-in fade-in slide-in-from-top-4">
+                                    <p className="text-indigo-50 font-medium whitespace-pre-line leading-relaxed">{groundingResult.respuesta}</p>
+                                    {groundingResult.fuentes_utilizadas && groundingResult.fuentes_utilizadas.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-white/10 text-xs text-indigo-300 font-medium flex flex-wrap gap-2 items-center">
+                                            <span>Fuentes:</span>
+                                            {groundingResult.fuentes_utilizadas.map((f: string, i: number) => (
+                                                <span key={i} className="bg-white/10 px-2 py-1 rounded-md">{f}</span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </div>
             </div>
