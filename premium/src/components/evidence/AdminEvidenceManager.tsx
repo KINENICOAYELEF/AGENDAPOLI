@@ -217,6 +217,62 @@ export function AdminEvidenceManager() {
         }
     };
 
+    const handleDownloadAnalysis = () => {
+        if (!reviewArticle || !reviewContribution) return;
+
+        const text = `--- INFORME DE ANÁLISIS DE EVIDENCIA (IA READY) ---
+FECHA EXPORTACIÓN: ${new Date().toLocaleString()}
+
+[ARTÍCULO]
+Título: ${reviewArticle.title}
+URL: ${reviewArticle.url || 'No especificada'}
+Categoría: ${reviewArticle.category}
+Población: ${reviewArticle.population}
+CIF/Condición: ${reviewArticle.cif}
+Etiquetas: ${reviewArticle.tags?.join(', ') || 'Sin etiquetas'}
+Diseño del Estudio: ${reviewContribution.studyDesign || 'No especificado'}
+
+[RESUMEN ESTRUCTURADO (FASE 3)]
+${reviewArticle.summary}
+
+[HALLAZGO CLAVE]
+${reviewArticle.finding}
+
+[METODOLOGÍA]
+${reviewArticle.methodology}
+
+--------------------------------------------------
+[ANÁLISIS DEL ESTUDIANTE: ${reviewContribution.studentName.toUpperCase()}]
+--------------------------------------------------
+
+[RESUMEN PERSONAL DEL ESTUDIANTE]
+${reviewContribution.resumenEstudiante}
+
+[PERLAS CLÍNICAS Y APLICACIÓN PRÁCTICA]
+${Object.entries(reviewContribution.perlas || {}).map(([key, val]) => `### ${key.toUpperCase()}:\n${val}`).join('\n\n')}
+
+[DOSIFICACIÓN / PARÁMETROS ESTRUCTURADOS]
+${reviewContribution.dosis ? Object.entries(reviewContribution.dosis).filter(([_,v]) => !!v).map(([k, v]) => `- ${k.toUpperCase()}: ${v}`).join('\n') : 'No aplica o no especificado'}
+
+[ANÁLISIS CRÍTICO Y LIMITACIONES]
+${reviewContribution.limitaciones}
+
+[EVALUACIÓN DOCENTE]
+Nota: ${reviewContribution.nota || 'Pendiente'}
+Feedback: ${reviewContribution.feedbackDocente || 'Sin feedback todavía'}
+
+--- FIN DEL INFORME ---`;
+
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeName = reviewArticle.title.substring(0, 30).replace(/[^a-z0-9]/gi, '_');
+        a.download = `Analisis_IA_${reviewContribution.studentName.replace(/\s+/g, '_')}_${safeName}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const pendingReviews = tasks.filter(t => t.status === 'REVISION');
     const pendingTasks = tasks.filter(t => t.status === 'PENDING');
     const completedTasks = tasks.filter(t => t.status === 'APPROVED');
@@ -470,16 +526,12 @@ export function AdminEvidenceManager() {
                             
                             {/* Actions / Export */}
                             <div className="flex justify-end">
-                                <button onClick={() => {
-                                    const text = `ANÁLISIS DE EVIDENCIA\nArtículo: ${reviewArticle.title}\nEstudiante: ${reviewContribution.studentName}\n\nResumen:\n${reviewArticle.summary}\n\nResumen del estudiante:\n${reviewContribution.resumenEstudiante}\n\nPerlas:\n${Object.entries(reviewContribution.perlas || {}).map(([k, v]) => `${k}:\n${v}`).join('\n\n')}\n\nLimitaciones:\n${reviewContribution.limitaciones}`;
-                                    const blob = new Blob([text], { type: 'text/plain' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `Analisis_${reviewContribution.studentName.replace(/\s+/g, '_')}_${Date.now()}.txt`;
-                                    a.click();
-                                }} className="text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg transition-colors border border-gray-200 flex items-center gap-1">
-                                    ⬇️ Descargar Análisis (.txt)
+                                <button 
+                                    onClick={handleDownloadAnalysis} 
+                                    className="group flex items-center gap-2 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white px-4 py-2 rounded-xl text-xs font-black border border-indigo-100 hover:border-indigo-600 transition-all shadow-sm"
+                                >
+                                    <span className="text-lg group-hover:scale-110 transition-transform">⬇️</span>
+                                    DESCARGAR INFORME ESTRUCTURADO (PRO IA)
                                 </button>
                             </div>
                             
