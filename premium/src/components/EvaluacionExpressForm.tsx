@@ -138,22 +138,50 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [showHelp, setShowHelp] = useState<'subjetivas' | 'objetivas' | null>(null);
 
     const plantillas = {
-        subjetivas: `• Motivo de consulta: [escribir]
-• Antigüedad del dolor: [días/meses]
-• Comportamiento 24h: [mañana/noche/actividad]
-• Mecanismo de lesión: [trauma/insidioso]
-• Factores agravantes/mitigantes: [escribir]
+        subjetivas: `[PERFIL Y DEPORTE]
+• Deporte/Nivel: [escribir]
+• Momento temporada: [pre/competencia/descanso]
 
---- Anamnesis Remota ---
-• Antecedentes médicos: [escribir]
-• Fármacos: [escribir]
-• Quirúrgicos: [escribir]`,
-        objetivas: `• Inspección/Postura: [escribir]
-• ROM Activo/Pasivo: [escribir]
-• Fuerza (MMT): [escribir]
-• Pruebas Especiales: [escribir]
-• Palpación: [escribir]
-• Evaluación funcional: [escribir]`
+[HISTORIA DE LA CONDICIÓN]
+• Motivo de consulta principal: [escribir]
+• Mapa de síntomas / Tipo de dolor: [nociceptivo / neuropático / nociplástico]
+• Mecanismo (Cinemática): [agudo / sobreuso]
+• Comportamiento 24h: [AM / PM / Nocturno / Actividad / Reposo]
+• Agravantes (Mec/No mecánicos): [escribir]
+• Mitigantes: [escribir]
+
+[BANDERAS Y FACTORES]
+• Banderas Rojas: [descartadas / presentes - escribir]
+• Banderas Amarillas (Miedo/Creencias): [escribir]
+• Sueño y estrés: [escribir]
+
+[ANAMNESIS REMOTA]
+• Lesiones previas: [escribir]
+• Cirugías/Fármacos: [escribir]
+• Expectativas (RTP/RTS): [escribir]`,
+        objetivas: `[INSPECCIÓN GLOBAL]
+• Postura/Atrofias: [escribir]
+• Patrón de marcha/carrera: [escribir]
+
+[SCREENING FUNCIONAL BASE]
+• Movimientos globales (Sentadilla/Drop Jump/Y-Balance): [escribir]
+
+[EVALUACIÓN ARTICULAR Y MUSCULAR]
+• ROM (Dolor/Restricciones/End-feel): [escribir]
+• Fuerza (MVIC/Dinamometría/LSI%): [escribir]
+• Resistencia/Tolerancia carga: [escribir]
+• Control neuromuscular: [escribir]
+
+[PRUEBAS ESPECIALES (Clústers)]
+• Test 1: [resultado]
+• Test 2: [resultado]
+
+[NEUROLÓGICA Y NEURODINAMIA]
+• Miotomas/Dermatomas/Reflejos: [escribir]
+• Neurodinamia (Slump/SLR/ULNT): [escribir]
+
+[PALPACIÓN]
+• Sensibilidad/Puntos Gatillo: [escribir]`
     };
 
     const handleInsertTemplate = (type: 'subjetivas' | 'objetivas') => {
@@ -232,9 +260,15 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                             <div className="relative">
                                                 <button onClick={() => setShowHelp(showHelp === 'subjetivas' ? null : 'subjetivas')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
                                                 {showHelp === 'subjetivas' && (
-                                                    <div className="absolute left-0 mt-2 w-64 p-3 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95">
-                                                        <strong className="text-white block mb-1">Tips Clínicos:</strong>
-                                                        Recuerda indagar en comportamiento del dolor en 24h, descartar banderas rojas (pérdida de peso, dolor nocturno constante), y preguntar por estrés o alteraciones de sueño.
+                                                    <div className="absolute left-0 mt-2 w-72 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
+                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Basados en Evidencia (Subjetivo):</strong>
+                                                        <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                                                            <li>Identifica banderas rojas (dolor nocturno, pérdida de peso, síntomas neurológicos bilaterales).</li>
+                                                            <li>Identifica banderas amarillas (Cuestionarios STarT Back, OREBRO, Kinesiofobia).</li>
+                                                            <li>Analiza mecanismo lesional: Cinemática del trauma o patrón de sobreuso.</li>
+                                                            <li>Clasifica el dolor: Nociceptivo vs Neuropático vs Nociplástico.</li>
+                                                            <li>Determina S.I.N.S.S: Severidad, Irritabilidad, Naturaleza, Estadio y Estabilidad.</li>
+                                                        </ul>
                                                     </div>
                                                 )}
                                             </div>
@@ -267,9 +301,14 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                             <div className="relative">
                                                 <button onClick={() => setShowHelp(showHelp === 'objetivas' ? null : 'objetivas')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
                                                 {showHelp === 'objetivas' && (
-                                                    <div className="absolute left-0 mt-2 w-64 p-3 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95">
-                                                        <strong className="text-white block mb-1">Tips Clínicos:</strong>
-                                                        Intenta ser ordenado: Inspección, Evaluación Articular (ROM), Muscular (Fuerza), Especial ortopédica, Neurológica y Funcional.
+                                                    <div className="absolute left-0 mt-2 w-72 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
+                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Basados en Evidencia (Objetivo):</strong>
+                                                        <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                                                            <li>Prioriza Clústers de pruebas (ej. Laslett, Hawkins+Neer) sobre tests aislados por baja especificidad.</li>
+                                                            <li>Dinamometría: Evalúa fuerza isométrica máxima y calcula Simetría (LSI %).</li>
+                                                            <li>Neurodinamia: Considera diferenciación estructural (Slump, ULNT, SLR).</li>
+                                                            <li>Cuantifica el dolor y rango: Evalúa modificación de síntomas tras intervenciones de prueba.</li>
+                                                        </ul>
                                                     </div>
                                                 )}
                                             </div>
