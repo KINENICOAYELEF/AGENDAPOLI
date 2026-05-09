@@ -12,9 +12,10 @@ export default function EvidenciaPage() {
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">📚 Biblioteca de Evidencia</h1>
-                <p className="text-gray-600">Journal Club y repositorio colaborativo de la evidencia clínica.</p>
+            <div className="mb-8">
+                <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+                    📚 Biblioteca de Evidencia
+                </h1>
             </div>
 
             {user.role === 'INTERNO' && (
