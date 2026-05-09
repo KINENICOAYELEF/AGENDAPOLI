@@ -5,6 +5,7 @@ import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { Evaluacion, Evolucion, Proceso } from "@/types/clinica";
 import { EvaluacionForm } from "./EvaluacionForm";
+import { EvaluacionExpressForm } from "./EvaluacionExpressForm";
 import { EvolucionForm } from "./EvolucionForm";
 import { ReadOnlyEvaluacion } from "./evaluacion-steps/ReadOnlyEvaluacion";
 import {
@@ -38,7 +39,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [view, setView] = useState<'timeline' | 'formEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol' | 'readEval' | 'historyEvol'>('timeline');
+    const [view, setView] = useState<'timeline' | 'formEval' | 'formExpressEval' | 'formReeval' | 'formEvol' | 'editEval' | 'editEvol' | 'readEval' | 'historyEvol'>('timeline');
     const [activeTab, setActiveTab] = useState<'timeline' | 'outcomes'>('timeline');
     const [selectedEval, setSelectedEval] = useState<Evaluacion | null>(null);
     const [selectedEvol, setSelectedEvol] = useState<Evolucion | null>(null);
@@ -131,6 +132,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     if (view !== 'timeline') {
         const isEvalInitial = view === 'formEval' || (view === 'editEval' && selectedEval?.type === 'INITIAL');
         const isReeval = view === 'formReeval' || (view === 'editEval' && selectedEval?.type === 'REEVALUATION');
+        const isExpress = view === 'formExpressEval';
 
         return (
             <div className="fixed inset-0 z-[9999] bg-white w-screen h-[100dvh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4">
@@ -140,6 +142,15 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             usuariaId={personaUsuariaId}
                             procesoId={proceso.id!}
                             type={isReeval ? 'REEVALUATION' : 'INITIAL'}
+                            initialData={selectedEval}
+                            onClose={() => setView('timeline')}
+                            onSaveSuccess={handleEvalSaved}
+                        />
+                    )}
+                    {isExpress && (
+                        <EvaluacionExpressForm
+                            usuariaId={personaUsuariaId}
+                            procesoId={proceso.id!}
                             initialData={selectedEval}
                             onClose={() => setView('timeline')}
                             onSaveSuccess={handleEvalSaved}
@@ -242,6 +253,15 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                     <ClipboardIcon className="w-4 h-4" />
                     Eval Inicial (Nuevo Caso)
                 </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => { setSelectedEval(null); setView('formExpressEval'); }}
+                        className="flex-1 min-w-[140px] bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                    >
+                        <span>⚡</span>
+                        Eval Inicial (Express)
+                    </button>
+                )}
             </div>
 
             {/* Pestañas de Navegación del Proceso */}

@@ -26,10 +26,11 @@ interface GeminiCallParams {
     thinkingBudget?: number;
     responseMimeType?: string;
     maxOutputTokens?: number;
+    enableGrounding?: boolean;
 }
 
 export async function callGemini(params: GeminiCallParams): Promise<string> {
-    const { systemInstruction, userPrompt, temperature = 0.2 } = params;
+    const { systemInstruction, userPrompt, temperature = 0.2, enableGrounding } = params;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -56,6 +57,10 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
             responseMimeType: params.responseMimeType || "application/json"
         }
     };
+
+    if (enableGrounding) {
+        requestPayload.tools = [{ googleSearch: {} }];
+    }
 
     if (systemInstruction) {
         requestPayload.systemInstruction = {
@@ -195,6 +200,7 @@ export interface AIExecutionOptions<T> {
     responseMimeType?: string;
     maxOutputTokens?: number;
     skipGuardrails?: boolean; // e.g. SIMULADOR needs to mention EMG/TENS in clinical history context
+    enableGrounding?: boolean;
 }
 
 export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
@@ -237,7 +243,8 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 thinkingLevel: modelInfo.thinkingLevel,
                 thinkingBudget: modelInfo.thinkingBudget,
                 responseMimeType: opts.responseMimeType,
-                maxOutputTokens: opts.maxOutputTokens
+                maxOutputTokens: opts.maxOutputTokens,
+                enableGrounding: opts.enableGrounding
             });
 
             // Validacion vacia/truncada local
