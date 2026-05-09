@@ -290,7 +290,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                             if (confirm("⚠️ ¿Estás seguro de eliminar este artículo y TODOS sus aportes permanentemente?")) {
                                                                 const { deleteEvidenceArticle } = await import("@/services/evidence");
                                                                 await deleteEvidenceArticle(article.id!);
-                                                                onArticleUpdate?.(); // Refrescar lista
+                                                                loadData(); // Refrescar lista
                                                             }
                                                         }} 
                                                         className="bg-red-500/30 hover:bg-red-500/50 text-white px-2 py-0.5 rounded-full text-xs transition-colors ml-auto"
