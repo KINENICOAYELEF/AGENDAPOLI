@@ -24,6 +24,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [loading, setLoading] = useState(false);
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isGrounding, setIsGrounding] = useState(false);
+    const [isEditingIA, setIsEditingIA] = useState(false);
 
     const initialDataAny = initialData as any;
 
@@ -506,10 +507,15 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                         <h4 className="font-black text-indigo-900 text-lg flex items-center gap-2">
                                             <span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA
                                         </h4>
-                                        <button onClick={() => setActiveFullscreen('razonamientoIA')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
-                                            Ampliar
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setIsEditingIA(!isEditingIA)} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs flex items-center transition-colors">
+                                                {isEditingIA ? '👁️ Ver Lectura' : '✏️ Editar'}
+                                            </button>
+                                            <button onClick={() => setActiveFullscreen('razonamientoIA')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
+                                                Ampliar
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                            </button>
+                                        </div>
                                     </div>
                                     
                                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex gap-3 text-amber-800 text-sm">
@@ -517,13 +523,36 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                         <p><strong>Aviso:</strong> El razonamiento de IA es solo una orientación clínica y debe ser confirmado, ajustado o descartado por el profesional tratante. <strong>Puedes editar este texto antes de guardar.</strong></p>
                                     </div>
 
-                                    <textarea 
-                                        className="w-full bg-white border border-indigo-200 rounded-2xl p-6 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all shadow-inner leading-relaxed text-slate-700"
-                                        rows={15}
-                                        value={razonamientoIA}
-                                        onChange={e => setRazonamientoIA(e.target.value)}
-                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('razonamientoIA') }}
-                                    />
+                                    {isEditingIA ? (
+                                        <textarea 
+                                            className="w-full bg-white border border-indigo-200 rounded-2xl p-6 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all shadow-inner leading-relaxed text-slate-700"
+                                            rows={20}
+                                            value={razonamientoIA}
+                                            onChange={e => setRazonamientoIA(e.target.value)}
+                                            onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('razonamientoIA') }}
+                                        />
+                                    ) : (
+                                        <div className="w-full bg-white border border-indigo-100 rounded-2xl p-6 text-sm shadow-sm leading-relaxed text-slate-700 max-h-[600px] overflow-y-auto">
+                                            {razonamientoIA.split('\n').map((line, index) => {
+                                                if (line.startsWith('## ')) {
+                                                    return <h4 key={index} className="text-indigo-900 font-black mt-6 mb-3 text-base border-b border-indigo-50 pb-2">{line.replace('## ', '')}</h4>;
+                                                }
+                                                if (line.startsWith('- ')) {
+                                                    return <div key={index} className="flex gap-2 mb-2 ml-2">
+                                                        <span className="text-indigo-400 font-bold">•</span>
+                                                        <span className="text-slate-600">{line.replace('- ', '')}</span>
+                                                    </div>;
+                                                }
+                                                if (line.trim() === '') {
+                                                    return <div key={index} className="h-2"></div>;
+                                                }
+                                                if (line.startsWith('“') || line.startsWith('"')) {
+                                                    return <p key={index} className="italic text-slate-500 mt-4 border-l-2 border-indigo-200 pl-3">{line}</p>;
+                                                }
+                                                return <p key={index} className="mb-2 text-slate-600 font-medium">{line}</p>;
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
