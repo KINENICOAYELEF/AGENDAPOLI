@@ -27,14 +27,14 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
 
     const initialDataAny = initialData as any;
 
-    // State for the text areas
-    const [notasSubjetivas, setNotasSubjetivas] = useState(initialDataAny?.expressDraft?.notasSubjetivas || '');
-    const [notasObjetivas, setNotasObjetivas] = useState(initialDataAny?.expressDraft?.notasObjetivas || '');
+    // State for the 3 text areas and AI output
+    const [anamnesisProxima, setAnamnesisProxima] = useState(initialDataAny?.expressDraft?.anamnesisProxima || initialDataAny?.expressDraft?.notasSubjetivas || '');
+    const [anamnesisRemota, setAnamnesisRemota] = useState(initialDataAny?.expressDraft?.anamnesisRemota || '');
+    const [evaluacionFisica, setEvaluacionFisica] = useState(initialDataAny?.expressDraft?.evaluacionFisica || initialDataAny?.expressDraft?.notasObjetivas || '');
+    const [razonamientoIA, setRazonamientoIA] = useState(initialDataAny?.expressDraft?.razonamientoIA || initialDataAny?.expressDraft?.structuredResult || '');
+
     const [groundingQuery, setGroundingQuery] = useState('');
     const [groundingResult, setGroundingResult] = useState<any>(null);
-
-    // Draft local de la IA estructurada
-    const [structuredResult, setStructuredResult] = useState<any>(initialDataAny?.expressDraft?.structuredResult || null);
 
     const handleSave = async (silent = false) => {
         if (!globalActiveYear || !user) return;
@@ -53,26 +53,27 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 audit: { createdBy: user.uid, createdAt: new Date().toISOString() }
             };
 
-            basePayload.expressDraft = { notasSubjetivas, notasObjetivas, structuredResult };
+            basePayload.expressDraft = { 
+                anamnesisProxima, 
+                anamnesisRemota, 
+                evaluacionFisica, 
+                razonamientoIA 
+            };
 
-            // Inyectar a la evaluación regular si hay estructuración para que puedan continuar
-            if (structuredResult) {
+            // Inject to regular evaluation so they can continue later
+            if (razonamientoIA) {
                 if (!basePayload.interview) basePayload.interview = { v4: { focos: [] } };
                 if (!basePayload.interview.v4) basePayload.interview.v4 = { focos: [] };
                 if (basePayload.interview.v4.focos.length === 0) {
                     basePayload.interview.v4.focos.push({
                         id: generateId(),
                         isPrincipal: true,
-                        region: structuredResult.focoPrincipal,
-                        notaRapida: structuredResult.relatoEstructurado
+                        region: "Definido por IA",
+                        notaRapida: razonamientoIA
                     });
                 } else {
-                    basePayload.interview.v4.focos[0].notaRapida = structuredResult.relatoEstructurado;
+                    basePayload.interview.v4.focos[0].notaRapida = razonamientoIA;
                 }
-                
-                // Examen fisico
-                if (!basePayload.guidedExam) basePayload.guidedExam = {};
-                basePayload.guidedExam.observation = structuredResult.examenFisico; // guardamos en uno de los campos libres
             }
 
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
@@ -92,23 +93,24 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     // Auto-save
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (notasSubjetivas || notasObjetivas) handleSave(true);
+            if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA) handleSave(true);
         }, 5000);
         return () => clearTimeout(timer);
-    }, [notasSubjetivas, notasObjetivas, structuredResult]);
+    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA]);
 
-    const handleAIEstructurar = async () => {
-        if (!notasSubjetivas && !notasObjetivas) return alert("Escribe algo primero en las notas.");
+    const handleRazonarIA = async () => {
+        if (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica) return alert("Escribe algo primero en las notas.");
         setIsAiProcessing(true);
         try {
             const res = await fetch('/api/ai/express-structure', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ notasSubjetivas, notasObjetivas, userId: user?.uid })
+                body: JSON.stringify({ anamnesisProxima, anamnesisRemota, evaluacionFisica, userId: user?.uid })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Error AI');
-            setStructuredResult(data.data);
+            // The API now returns standard markdown text
+            setRazonamientoIA(data.data);
         } catch (e: any) {
             alert("Error procesando IA: " + e.message);
         } finally {
@@ -136,61 +138,166 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         }
     };
 
-    const [activeFullscreen, setActiveFullscreen] = useState<'subjetivas' | 'objetivas' | null>(null);
-    const [showHelp, setShowHelp] = useState<'subjetivas' | 'objetivas' | null>(null);
+    const [activeFullscreen, setActiveFullscreen] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | 'razonamientoIA' | null>(null);
+    const [showHelp, setShowHelp] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | null>(null);
 
     const plantillas = {
-        subjetivas: `[PERFIL Y DEPORTE]
-• Deporte/Nivel: [escribir]
-• Momento temporada: [pre/competencia/descanso]
+        anamnesisProxima: `■ MOTIVO DE CONSULTA
+[Registrar palabras textuales de la persona. Qué le molesta, qué le preocupa y por qué consulta ahora]
 
-[HISTORIA DE LA CONDICIÓN]
-• Motivo de consulta principal: [escribir]
-• Mapa de síntomas / Tipo de dolor: [nociceptivo / neuropático / nociplástico]
-• Mecanismo (Cinemática): [agudo / sobreuso]
-• Comportamiento 24h: [AM / PM / Nocturno / Actividad / Reposo]
-• Agravantes (Mec/No mecánicos): [escribir]
-• Mitigantes: [escribir]
+■ OBJETIVO / EXPECTATIVA
+[Qué quiere lograr, en qué plazo, qué actividad quiere recuperar y qué espera del tratamiento]
 
-[BANDERAS Y FACTORES]
-• Banderas Rojas: [descartadas / presentes - escribir]
-• Banderas Amarillas (Miedo/Creencias): [escribir]
-• Sueño y estrés: [escribir]
+■ CONTEXTO ACTUAL
+[Edad, ocupación, deporte/actividad física, nivel de actividad, demandas laborales, familiares o deportivas actuales]
 
-[ANAMNESIS REMOTA]
-• Lesiones previas: [escribir]
-• Cirugías/Fármacos: [escribir]
-• Expectativas (RTP/RTS): [escribir]`,
-        objetivas: `[INSPECCIÓN GLOBAL]
-• Postura/Atrofias: [escribir]
-• Patrón de marcha/carrera: [escribir]
+■ INICIO Y EVOLUCIÓN
+[Desde cuándo, cómo empezó, si fue traumático/progresivo, si mejora, empeora, fluctúa o está en meseta]
 
-[SCREENING FUNCIONAL BASE]
-• Movimientos globales (Sentadilla/Drop Jump/Y-Balance): [escribir]
+■ MECANISMO O CAMBIO DE CARGA
+[Caída, golpe, torsión, sobrecarga, cambio de entrenamiento, aumento de volumen/intensidad, retorno a actividad, cambio laboral o inicio sin causa clara]
 
-[EVALUACIÓN ARTICULAR Y MUSCULAR]
-• ROM (Dolor/Restricciones/End-feel): [escribir]
-• Fuerza (MVIC/Dinamometría/LSI%): [escribir]
-• Resistencia/Tolerancia carga: [escribir]
-• Control neuromuscular: [escribir]
+■ LOCALIZACIÓN Y EXTENSIÓN
+[Zona principal, zonas secundarias, puntual/difuso, superficial/profundo, unilateral/bilateral]
 
-[PRUEBAS ESPECIALES (Clústers)]
-• Test 1: [resultado]
-• Test 2: [resultado]
+■ IRRADIACIÓN / SÍNTOMAS NEUROLÓGICOS
+[Si corre a otra zona, hormigueo, adormecimiento, corriente, pérdida de fuerza, cambios de sensibilidad o sensación extraña]
 
-[NEUROLÓGICA Y NEURODINAMIA]
-• Miotomas/Dermatomas/Reflejos: [escribir]
-• Neurodinamia (Slump/SLR/ULNT): [escribir]
+■ CARÁCTER DEL SÍNTOMA
+[Punzante, quemante, eléctrico, opresivo, tirantez, rigidez, pesadez, bloqueo, inestabilidad, fatiga, debilidad]
 
-[PALPACIÓN]
-• Sensibilidad/Puntos Gatillo: [escribir]`
+■ INTENSIDAD
+[Actual / peor 24 h / mejor 24 h / durante la actividad más limitante]
+
+■ COMPORTAMIENTO MECÁNICO
+[Qué movimientos, posiciones, cargas, gestos o repeticiones lo aumentan, reducen o reproducen]
+
+■ ATENUANTES Y AGRAVANTES
+[Qué lo mejora y qué lo empeora: reposo, movimiento, carga, calor/frío, sueño, estrés, medicamentos, entrenamiento]
+
+■ COMPORTAMIENTO 24 HORAS
+[Mañana, tarde/noche, después de actividad, al día siguiente, rigidez matinal, despertar nocturno, sueño reparador/no reparador]
+
+■ SEVERIDAD FUNCIONAL
+[Qué no puede hacer o evita: AVD, trabajo, deporte, entrenamiento, sueño, vida social, participación familiar]
+
+■ IRRITABILIDAD
+[Qué tan fácil se gatilla, cuánto demora en calmarse, si deja “rastro” después y cuánto dura]
+
+■ MANEJO PREVIO Y RESPUESTA
+[Medicamentos, reposo, kinesiterapia previa, ejercicios, infiltraciones, imágenes, automanejo y respuesta]
+
+■ CREENCIAS / PREOCUPACIONES
+[Qué cree que tiene, qué cree que lo causó, qué teme, qué cree que pasaría si se mueve o carga]
+
+■ SEGURIDAD CLÍNICA
+[Trauma importante, fiebre, baja de peso, dolor nocturno no mecánico, síntomas neurológicos progresivos, alteración esfinteriana, antecedentes oncológicos, infección, mareos severos, síntomas vasculares u otros signos de alerta]
+
+■ NOTAS RELEVANTES
+[Información libre que no calza en los campos anteriores]`,
+        anamnesisRemota: `■ ANTECEDENTES MÉDICOS
+[Enfermedades relevantes, condiciones crónicas, cardiovasculares, metabólicas, reumatológicas, neurológicas, hormonales u otras]
+
+■ ANTECEDENTES MUSCULOESQUELÉTICOS
+[Lesiones previas, dolores recurrentes, cirugías, fracturas, esguinces, luxaciones, episodios similares y recuperación]
+
+■ MEDICAMENTOS Y PRECAUCIONES
+[Medicamentos actuales, anticoagulantes, corticoides, analgésicos, antiinflamatorios, automedicación, osteoporosis, embarazo, prótesis, hiperlaxitud u otras precauciones]
+
+■ EXÁMENES / IMÁGENES / DIAGNÓSTICOS PREVIOS
+[Rx, RM, ecografía, TAC, laboratorio, EMG, diagnóstico médico, fecha y relación clínica con el problema actual]
+
+■ HISTORIA DE TRATAMIENTOS
+[Qué tratamientos tuvo, qué funcionó, qué no funcionó, adherencia, experiencias negativas o positivas]
+
+■ PERFIL DE ACTIVIDAD FÍSICA / DEPORTE
+[Deporte, frecuencia, volumen, intensidad, años de práctica, nivel, superficie, calzado, temporada, competencia cercana, cambios recientes]
+
+■ CONTEXTO LABORAL / ACADÉMICO
+[Tipo de trabajo, posturas, carga física, horas, turnos, pausas, estrés laboral, licencia, posibilidad de modificar tareas]
+
+■ SUEÑO Y RECUPERACIÓN
+[Horas, calidad, despertares, descanso percibido, fatiga, recuperación post entrenamiento o post jornada]
+
+■ HÁBITOS GENERALES
+[Actividad física fuera del deporte, sedentarismo, alimentación general, hidratación, tabaco, alcohol u otros factores relevantes]
+
+■ ESTADO EMOCIONAL Y ESTRÉS
+[Estrés sostenido, ansiedad, ánimo bajo, frustración, miedo, preocupación, eventos vitales relevantes]
+
+■ RED DE APOYO Y CONTEXTO SOCIAL
+[Con quién vive, quién lo ayuda, cuidador principal si aplica, apoyo familiar, aislamiento, responsabilidades de cuidado, barreras económicas, traslado, tiempo disponible]
+
+■ ADULTO MAYOR / FRAGILIDAD SI APLICA
+[Caídas previas, miedo a caer, uso de bastón/andador, independencia en AVD, independencia instrumental, vive solo/a, cuidador, polifarmacia, mareos, pérdida de peso, deterioro cognitivo sospechado]
+
+■ FACTORES CONTEXTUALES RELEVANTES
+[Barreras de acceso, distancia, transporte, adherencia probable, apoyo del entorno, presión laboral/deportiva/familiar]
+
+■ NOTAS REMOTAS RELEVANTES
+[Información libre relevante para interpretar el caso]`,
+        evaluacionFisica: `■ SÍNTOMA BASE PREVIO
+[Dolor/síntoma actual, ubicación, intensidad, fatiga, confianza, irritabilidad antes de evaluar]
+
+■ OBSERVACIÓN GENERAL
+[Postura, marcha, protección, actitud frente al movimiento, asimetrías, edema, cambios de color, cicatrices, atrofia]
+
+■ TAREA FUNCIONAL PRINCIPAL
+[Sentarse/pararse, caminar, escaleras, agacharse, levantar carga, correr, saltar, lanzar, patear, gesto laboral o deportivo relevante]
+
+■ MOVIMIENTO ACTIVO
+[Rango, calidad, dolor, rigidez, compensaciones, miedo, velocidad, control, reproducción del síntoma]
+
+■ MOVIMIENTO PASIVO
+[Rango, dolor, resistencia, sensación terminal, diferencia lado a lado, reproducción del síntoma]
+
+■ MOVIMIENTOS REPETIDOS / SOSTENIDOS
+[Respuesta con repetición, acumulación, centralización/periferización si aplica, fatiga, recuperación]
+
+■ FUERZA ISOMÉTRICA
+[Músculo/gesto evaluado, ángulo, dolor, fuerza percibida/medida, inhibición, diferencia lado a lado]
+
+■ FUERZA DINÁMICA / CAPACIDAD
+[Carga, repeticiones, control, velocidad, fatiga, dolor durante, dolor después, tolerancia al volumen]
+
+■ CONTROL MOTOR
+[Coordinación, estrategia de movimiento, rigidez protectora, control lumbopélvico, escapular, cadera, rodilla, pie u otra región]
+
+■ PALPACIÓN / SENSIBILIDAD
+[Zona sensible, temperatura, edema, tono, dolor a presión, sensibilidad local/difusa, relación con síntoma principal]
+
+■ SCREENING NEUROLÓGICO
+[Sensibilidad, fuerza por miotomas, reflejos, coordinación, signos de déficit neurológico o progresión]
+
+■ PRUEBAS NEURODINÁMICAS SI APLICA
+[Test usado, respuesta, diferenciación estructural, comparación lado a lado, reproducción del síntoma]
+
+■ TESTS ORTOPÉDICOS / CLUSTERS
+[Test usados solo según hipótesis, resultado, si reproduce el síntoma, si cambia o no la toma de decisiones]
+
+■ CONTRIBUYENTES REGIONALES
+[Regiones vecinas que podrían influir: columna, cadera, tobillo, pie, tórax, hombro, cuello, etc.]
+
+■ PRUEBAS FUNCIONALES / DEPORTIVAS
+[Prueba usada, rendimiento, dolor, asimetría, confianza, tolerancia, limitante principal]
+
+■ MEDIDAS DE RESULTADO
+[PSFS, NRS/EVA, LEFS, QuickDASH, NDI, ODI, VISA, KOOS u otra escala usada]
+
+■ RESPUESTA POST EVALUACIÓN
+[Cambio del síntoma, fatiga, irritabilidad posterior, tolerancia general, signos de alerta durante/después]
+
+■ HALLAZGOS PRINCIPALES
+[Qué hallazgos sí explican el problema, qué hallazgos no calzan, qué falta evaluar]`
     };
 
-    const handleInsertTemplate = (type: 'subjetivas' | 'objetivas') => {
-        if (type === 'subjetivas') {
-            setNotasSubjetivas((prev: string) => prev ? prev + '\n\n' + plantillas.subjetivas : plantillas.subjetivas);
+    const handleInsertTemplate = (type: 'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica') => {
+        if (type === 'anamnesisProxima') {
+            setAnamnesisProxima((prev: string) => prev ? prev + '\n\n' + plantillas.anamnesisProxima : plantillas.anamnesisProxima);
+        } else if (type === 'anamnesisRemota') {
+            setAnamnesisRemota((prev: string) => prev ? prev + '\n\n' + plantillas.anamnesisRemota : plantillas.anamnesisRemota);
         } else {
-            setNotasObjetivas((prev: string) => prev ? prev + '\n\n' + plantillas.objetivas : plantillas.objetivas);
+            setEvaluacionFisica((prev: string) => prev ? prev + '\n\n' + plantillas.evaluacionFisica : plantillas.evaluacionFisica);
         }
     };
 
@@ -200,16 +307,17 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-in slide-in-from-bottom-5">
                     <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
                         <h3 className="font-black text-slate-800 flex items-center gap-2">
-                            {activeFullscreen === 'subjetivas' ? (
-                                <><span className="text-blue-500">💬</span> Notas de Entrevista</>
-                            ) : (
-                                <><span className="text-emerald-500">🩺</span> Notas de Examen Físico</>
-                            )}
+                            {activeFullscreen === 'anamnesisProxima' && <><span className="text-blue-500">💬</span> Anamnesis Próxima</>}
+                            {activeFullscreen === 'anamnesisRemota' && <><span className="text-purple-500">📚</span> Anamnesis Remota / Contexto</>}
+                            {activeFullscreen === 'evaluacionFisica' && <><span className="text-emerald-500">🩺</span> Evaluación Física</>}
+                            {activeFullscreen === 'razonamientoIA' && <><span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA</>}
                         </h3>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => handleInsertTemplate(activeFullscreen)} className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1">
-                                📋 Plantilla
-                            </button>
+                            {activeFullscreen !== 'razonamientoIA' && (
+                                <button onClick={() => handleInsertTemplate(activeFullscreen)} className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1">
+                                    📋 Plantilla
+                                </button>
+                            )}
                             <button onClick={() => setActiveFullscreen(null)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm">
                                 Listo
                             </button>
@@ -218,9 +326,19 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                     <textarea 
                         autoFocus
                         className="flex-1 w-full p-6 text-base resize-none focus:outline-none bg-white"
-                        placeholder={activeFullscreen === 'subjetivas' ? "Anota libremente lo que el paciente te cuenta..." : "Anota libremente tus hallazgos de evaluación..."}
-                        value={activeFullscreen === 'subjetivas' ? notasSubjetivas : notasObjetivas}
-                        onChange={e => activeFullscreen === 'subjetivas' ? setNotasSubjetivas(e.target.value) : setNotasObjetivas(e.target.value)}
+                        placeholder="Anota libremente..."
+                        value={
+                            activeFullscreen === 'anamnesisProxima' ? anamnesisProxima :
+                            activeFullscreen === 'anamnesisRemota' ? anamnesisRemota :
+                            activeFullscreen === 'evaluacionFisica' ? evaluacionFisica :
+                            razonamientoIA
+                        }
+                        onChange={e => {
+                            if (activeFullscreen === 'anamnesisProxima') setAnamnesisProxima(e.target.value);
+                            else if (activeFullscreen === 'anamnesisRemota') setAnamnesisRemota(e.target.value);
+                            else if (activeFullscreen === 'evaluacionFisica') setEvaluacionFisica(e.target.value);
+                            else setRazonamientoIA(e.target.value);
+                        }}
                     />
                 </div>
             )}
@@ -232,7 +350,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                         <h2 className="text-xl font-black text-indigo-900 flex items-center gap-2">
                             <span>⚡</span> Evaluación Inicial (Modo Express)
                         </h2>
-                        <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA las ordene. Posterior a la evaluación, en otro momento, realiza el diagnóstico completo.</p>
+                        <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA razone las hipótesis.</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={() => handleSave()} disabled={loading} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors">
@@ -253,73 +371,100 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             <h3 className="font-black text-slate-800 text-lg mb-6 text-center">Apuntes Clínicos</h3>
                             
                             <div className="space-y-6">
+                                {/* Anamnesis Próxima */}
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
                                         <div className="flex items-center gap-2">
                                             <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                                                <span className="text-blue-500">💬</span> Entrevista (Subjetivo)
+                                                <span className="text-blue-500">💬</span> Anamnesis Próxima
                                             </label>
                                             <div className="relative">
-                                                <button onClick={() => setShowHelp(showHelp === 'subjetivas' ? null : 'subjetivas')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
-                                                {showHelp === 'subjetivas' && (
-                                                    <div className="absolute left-0 mt-2 w-72 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
-                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Basados en Evidencia (Subjetivo):</strong>
-                                                        <ul className="list-disc pl-4 space-y-1 text-slate-300">
-                                                            <li>Identifica banderas rojas (dolor nocturno, pérdida de peso, síntomas neurológicos bilaterales).</li>
-                                                            <li>Identifica banderas amarillas (Cuestionarios STarT Back, OREBRO, Kinesiofobia).</li>
-                                                            <li>Analiza mecanismo lesional: Cinemática del trauma o patrón de sobreuso.</li>
-                                                            <li>Clasifica el dolor: Nociceptivo vs Neuropático vs Nociplástico.</li>
-                                                            <li>Determina S.I.N.S.S: Severidad, Irritabilidad, Naturaleza, Estadio y Estabilidad.</li>
-                                                        </ul>
+                                                <button onClick={() => setShowHelp(showHelp === 'anamnesisProxima' ? null : 'anamnesisProxima')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
+                                                {showHelp === 'anamnesisProxima' && (
+                                                    <div className="absolute z-50 mt-2 w-[85vw] max-w-sm -left-4 md:left-auto md:-right-2 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
+                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Clínicos:</strong>
+                                                        <p className="text-slate-300">Registra motivo de consulta, S.I.N.S.S, comportamiento del síntoma 24h, mapa de dolor y factores agravantes/mitigantes.</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button onClick={() => handleInsertTemplate('subjetivas')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-3 rounded-lg flex items-center gap-1 transition-colors">
+                                            <button onClick={() => handleInsertTemplate('anamnesisProxima')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-3 rounded-lg flex items-center gap-1 transition-colors">
                                                 📋 Plantilla
                                             </button>
-                                            <button onClick={() => setActiveFullscreen('subjetivas')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
+                                            <button onClick={() => setActiveFullscreen('anamnesisProxima')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                                             </button>
                                         </div>
                                     </div>
                                     <textarea 
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-300 transition-all shadow-inner"
-                                        placeholder="Anota libremente lo que el paciente te cuenta..."
-                                        rows={6}
-                                        value={notasSubjetivas}
-                                        onChange={e => setNotasSubjetivas(e.target.value)}
-                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('subjetivas') }}
+                                        placeholder="Anota libremente la historia del paciente..."
+                                        rows={5}
+                                        value={anamnesisProxima}
+                                        onChange={e => setAnamnesisProxima(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('anamnesisProxima') }}
                                     />
                                 </div>
 
+                                {/* Anamnesis Remota */}
                                 <div className="pt-2">
                                     <div className="flex justify-between items-center mb-2">
                                         <div className="flex items-center gap-2">
                                             <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
-                                                <span className="text-emerald-500">🩺</span> Examen Físico (Objetivo)
+                                                <span className="text-purple-500">📚</span> Anamnesis Remota / Contexto
                                             </label>
                                             <div className="relative">
-                                                <button onClick={() => setShowHelp(showHelp === 'objetivas' ? null : 'objetivas')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
-                                                {showHelp === 'objetivas' && (
-                                                    <div className="absolute left-0 mt-2 w-72 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl z-10 border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
-                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Basados en Evidencia (Objetivo):</strong>
-                                                        <ul className="list-disc pl-4 space-y-1 text-slate-300">
-                                                            <li>Prioriza Clústers de pruebas (ej. Laslett, Hawkins+Neer) sobre tests aislados por baja especificidad.</li>
-                                                            <li>Dinamometría: Evalúa fuerza isométrica máxima y calcula Simetría (LSI %).</li>
-                                                            <li>Neurodinamia: Considera diferenciación estructural (Slump, ULNT, SLR).</li>
-                                                            <li>Cuantifica el dolor y rango: Evalúa modificación de síntomas tras intervenciones de prueba.</li>
-                                                        </ul>
+                                                <button onClick={() => setShowHelp(showHelp === 'anamnesisRemota' ? null : 'anamnesisRemota')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
+                                                {showHelp === 'anamnesisRemota' && (
+                                                    <div className="absolute z-50 mt-2 w-[85vw] max-w-sm -left-4 md:left-auto md:-right-2 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
+                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Clínicos:</strong>
+                                                        <p className="text-slate-300">Antecedentes médicos, cirugías, fármacos, nivel de actividad física, sueño, estrés, red de apoyo y banderas rojas/amarillas.</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button onClick={() => handleInsertTemplate('objetivas')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-3 rounded-lg flex items-center gap-1 transition-colors">
+                                            <button onClick={() => handleInsertTemplate('anamnesisRemota')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-3 rounded-lg flex items-center gap-1 transition-colors">
                                                 📋 Plantilla
                                             </button>
-                                            <button onClick={() => setActiveFullscreen('objetivas')} className="text-xs text-emerald-500 font-bold hover:text-emerald-700 md:hidden flex items-center gap-1">
+                                            <button onClick={() => setActiveFullscreen('anamnesisRemota')} className="text-xs text-purple-500 font-bold hover:text-purple-700 md:hidden flex items-center gap-1">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-purple-50 focus:border-purple-300 transition-all shadow-inner"
+                                        placeholder="Antecedentes médicos, deporte, estilo de vida..."
+                                        rows={4}
+                                        value={anamnesisRemota}
+                                        onChange={e => setAnamnesisRemota(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('anamnesisRemota') }}
+                                    />
+                                </div>
+
+                                {/* Evaluación Física */}
+                                <div className="pt-2">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <label className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                                <span className="text-emerald-500">🩺</span> Evaluación Física
+                                            </label>
+                                            <div className="relative">
+                                                <button onClick={() => setShowHelp(showHelp === 'evaluacionFisica' ? null : 'evaluacionFisica')} className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 flex items-center justify-center text-xs font-bold transition-colors">?</button>
+                                                {showHelp === 'evaluacionFisica' && (
+                                                    <div className="absolute z-50 mt-2 w-[85vw] max-w-sm -left-4 md:left-auto md:-right-2 p-4 bg-slate-800 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700 animate-in fade-in zoom-in-95 leading-relaxed">
+                                                        <strong className="text-white block mb-2 text-sm border-b border-slate-600 pb-1">💡 Tips Clínicos:</strong>
+                                                        <p className="text-slate-300">Prioriza clústers ortopédicos, ROM pasivo/activo, control motor, fuerza (MMT/Dinamometría), neurodinamia y evaluación funcional.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => handleInsertTemplate('evaluacionFisica')} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1 px-3 rounded-lg flex items-center gap-1 transition-colors">
+                                                📋 Plantilla
+                                            </button>
+                                            <button onClick={() => setActiveFullscreen('evaluacionFisica')} className="text-xs text-emerald-500 font-bold hover:text-emerald-700 md:hidden flex items-center gap-1">
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                                             </button>
                                         </div>
@@ -327,133 +472,62 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                     <textarea 
                                         className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-emerald-50 focus:border-emerald-300 transition-all shadow-inner"
                                         placeholder="Anota libremente tus hallazgos de evaluación..."
-                                        rows={6}
-                                        value={notasObjetivas}
-                                        onChange={e => setNotasObjetivas(e.target.value)}
-                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('objetivas') }}
+                                        rows={5}
+                                        value={evaluacionFisica}
+                                        onChange={e => setEvaluacionFisica(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('evaluacionFisica') }}
                                     />
                                 </div>
                             </div>
 
                             <div className="mt-8">
                                 <button 
-                                    onClick={handleAIEstructurar} 
-                                    disabled={isAiProcessing || (!notasSubjetivas && !notasObjetivas)}
+                                    onClick={handleRazonarIA} 
+                                    disabled={isAiProcessing || (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica)}
                                     className="w-full bg-slate-900 hover:bg-black text-white font-black py-4 px-6 rounded-2xl shadow-xl shadow-slate-900/10 hover:shadow-slate-900/20 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
                                 >
                                     {isAiProcessing ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Procesando con Inteligencia Clínica...
+                                            Razonando con IA Clínica...
                                         </>
                                     ) : (
                                         <>
-                                            <span className="text-xl">✨</span> Generar Análisis Clínico y Estructura
+                                            <span className="text-xl">✨</span> Razonar con IA
                                         </>
                                     )}
                                 </button>
                             </div>
-                        </div>
 
-                        {/* IA Feedback / Dashboard */}
-                        {structuredResult && (
-                            <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="text-center mb-8">
-                                    <span className="inline-flex items-center justify-center bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-3">
-                                        Resultados Estructurados
-                                    </span>
-                                    <h3 className="font-black text-slate-900 text-2xl">Síntesis Clínica</h3>
-                                </div>
-
-                                <div className="space-y-6">
-                                    {/* 1. Alertas Docentes (Coach) */}
-                                    {structuredResult.sugerenciasFaltantes && structuredResult.sugerenciasFaltantes.length > 0 && (
-                                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-2xl p-6 shadow-sm">
-                                            <h4 className="text-amber-900 font-black text-base flex items-center gap-2 mb-4">
-                                                <span>💡</span> Coach Clínico: Evaluaciones Faltantes
-                                            </h4>
-                                            <div className="grid gap-3">
-                                                {structuredResult.sugerenciasFaltantes.map((sug: any, i: number) => (
-                                                    <div key={i} className="bg-white/60 p-4 rounded-xl border border-amber-200/50">
-                                                        <div className="font-black text-amber-900 text-sm mb-1">{sug.pregunta}</div>
-                                                        <div className="text-amber-700 text-sm leading-relaxed">{sug.por_que}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* 2. SINS y Foco */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Foco Principal Detectado</h4>
-                                            <div className="text-base font-black text-slate-800 flex items-center gap-2">
-                                                <span className="text-blue-500">📍</span> {structuredResult.focoPrincipal}
-                                            </div>
-                                        </div>
-                                        
-                                        {structuredResult.sins && (
-                                            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-3">Análisis S.I.N.S</h4>
-                                                <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm">
-                                                    <div><span className="text-slate-400 font-medium block text-xs">Severidad</span> <strong className="text-slate-800">{structuredResult.sins.severidad}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium block text-xs">Irritabilidad</span> <strong className="text-slate-800">{structuredResult.sins.irritabilidad}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium block text-xs">Naturaleza</span> <strong className="text-slate-800">{structuredResult.sins.naturaleza}</strong></div>
-                                                    <div><span className="text-slate-400 font-medium block text-xs">Estadio</span> <strong className="text-slate-800">{structuredResult.sins.estadio}</strong></div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* 3. Hipótesis */}
-                                    {structuredResult.hipotesis_orientativas && structuredResult.hipotesis_orientativas.length > 0 && (
-                                        <div className="bg-indigo-50/50 border border-indigo-100/50 rounded-2xl p-6">
-                                            <h4 className="text-indigo-900 font-black text-base flex items-center gap-2 mb-4">
-                                                <span>🎯</span> Hipótesis Orientativas
-                                            </h4>
-                                            <div className="grid gap-4">
-                                                {structuredResult.hipotesis_orientativas.map((hip: any, i: number) => (
-                                                    <div key={i} className="flex gap-4 bg-white p-4 rounded-xl shadow-sm border border-indigo-50">
-                                                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-black shrink-0">{i+1}</div>
-                                                        <div>
-                                                            <div className="font-black text-slate-800 text-sm mb-1">{hip.titulo}</div>
-                                                            <div className="text-slate-600 text-sm leading-relaxed">{hip.fundamento}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* 4. Resumen Limpio */}
-                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-                                        <h4 className="text-slate-800 font-black text-base flex items-center gap-2 border-b border-slate-100 pb-3">
-                                            <span>📝</span> Apuntes Estructurados
+                            {/* Razonamiento Sugerido por IA */}
+                            {razonamientoIA && (
+                                <div className="mt-8 pt-8 border-t border-slate-200">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="font-black text-indigo-900 text-lg flex items-center gap-2">
+                                            <span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA
                                         </h4>
-                                        <div>
-                                            <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Entrevista (Subjetivo)</h4>
-                                            <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                                                {structuredResult.relatoEstructurado}
-                                            </div>
-                                        </div>
-                                        {structuredResult.anamnesisRemota && structuredResult.anamnesisRemota !== "Sin datos registrados" && (
-                                            <div className="pt-4 border-t border-slate-100">
-                                                <h4 className="text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">Antecedentes</h4>
-                                                <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                                                    {structuredResult.anamnesisRemota}
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <h4 className="text-emerald-500 font-bold text-[10px] uppercase tracking-wider mb-2">Examen Físico (Objetivo)</h4>
-                                            <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                                                {structuredResult.examenFisico}
-                                            </div>
-                                        </div>
+                                        <button onClick={() => setActiveFullscreen('razonamientoIA')} className="text-xs text-indigo-500 font-bold hover:text-indigo-700 md:hidden flex items-center gap-1">
+                                            Ampliar
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                        </button>
                                     </div>
+                                    
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex gap-3 text-amber-800 text-sm">
+                                        <span className="text-xl">⚠️</span>
+                                        <p><strong>Aviso:</strong> El razonamiento de IA es solo una orientación clínica y debe ser confirmado, ajustado o descartado por el profesional tratante. <strong>Puedes editar este texto antes de guardar.</strong></p>
+                                    </div>
+
+                                    <textarea 
+                                        className="w-full bg-white border border-indigo-200 rounded-2xl p-6 text-sm resize-none focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all shadow-inner leading-relaxed text-slate-700"
+                                        rows={15}
+                                        value={razonamientoIA}
+                                        onChange={e => setRazonamientoIA(e.target.value)}
+                                        onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('razonamientoIA') }}
+                                    />
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                        </div>
 
                         {/* Box de Grounding */}
                         <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 shadow-xl text-white">
