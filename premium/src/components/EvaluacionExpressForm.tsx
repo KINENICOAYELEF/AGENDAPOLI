@@ -533,7 +533,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                         />
                                     ) : (
                                         <div className="w-full bg-white border border-indigo-100 rounded-2xl p-6 text-sm shadow-sm leading-relaxed text-slate-700 max-h-[600px] overflow-y-auto">
-                                            {razonamientoIA.split('\n').map((line, index) => {
+                                            {String(razonamientoIA).split('\n').map((line: string, index: number) => {
                                                 if (line.startsWith('## ')) {
                                                     return <h4 key={index} className="text-indigo-900 font-black mt-6 mb-3 text-base border-b border-indigo-50 pb-2">{line.replace('## ', '')}</h4>;
                                                 }
