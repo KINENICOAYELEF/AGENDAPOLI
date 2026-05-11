@@ -103,8 +103,8 @@ Analiza usando este formato y devuelve el resultado EXACTAMENTE con estos encabe
 [Listar 2 a 5 variables funcionales medibles (repeticiones, ROM sin dolor, TUT, calidad de movimiento, etc.), biológicamente alcanzables a corto plazo]
 
 ## 12. Defensa de Caso (Perspectiva Tradicional vs. Contemporánea)
-- Enfoque Clásico (Qué podría esperar una comisión evaluadora tradicional): [Mencionar diagnósticos patoanatómicos de los 90s/00s, uso de agentes físicos pasivos, corrección postural estática o pruebas ortopédicas específicas que solían ser el "Gold Standard"].
-- Transición y Argumentación (Cómo defender el plan moderno): [Breve argumento respetuoso para justificar por qué se prioriza la tolerancia a la carga y la función sobre el modelo biomédico tradicional, sin invalidar bruscamente la otra postura].
+- Enfoque Clásico (Qué podría esperar una comisión tradicional): [Mencionar diagnósticos patoanatómicos de los 90s/00s, uso de agentes físicos pasivos, corrección postural estática o pruebas ortopédicas que solían ser el "Gold Standard"].
+- Transición y Argumentación (Cómo defender el plan moderno): [Breve argumento respetuoso para justificar por qué se prioriza la tolerancia a la carga y la función sobre el modelo biomédico tradicional, basándose en evidencia actual de kinesiología MSK y deportiva].
 
 Cierra con esta frase textual:
 “Este razonamiento es una orientación clínica basada en la información registrada. Debe ser confirmado, ajustado o descartado por el profesional tratante según la evolución, la evaluación presencial y el contexto de la persona.”`;
