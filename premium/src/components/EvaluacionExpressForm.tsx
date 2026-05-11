@@ -23,6 +23,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const isEditMode = !!initialData;
     const [loading, setLoading] = useState(false);
     const [isAiProcessing, setIsAiProcessing] = useState(false);
+    const [isPlannerLoading, setIsPlannerLoading] = useState(false);
+    const [plannerResult, setPlannerResult] = useState<string | null>(null);
     const [isGrounding, setIsGrounding] = useState(false);
     const [isEditingIA, setIsEditingIA] = useState(false);
 
@@ -139,7 +141,27 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         }
     };
 
-    const [activeFullscreen, setActiveFullscreen] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | 'razonamientoIA' | null>(null);
+    const handlePlanEval = async () => {
+        if (!anamnesisProxima && !anamnesisRemota) return alert("Registra la anamnesis primero para planificar la evaluación.");
+        setIsPlannerLoading(true);
+        setPlannerResult(null);
+        try {
+            const res = await fetch('/api/ai/eval-planner', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ anamnesisProxima, anamnesisRemota })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Error AI Planner');
+            setPlannerResult(data.data);
+        } catch (e: any) {
+            alert("Error en Planificador: " + e.message);
+        } finally {
+            setIsPlannerLoading(false);
+        }
+    };
+
+    const [activeFullscreen, setActiveFullscreen] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | 'razonamientoIA' | 'plannerResult' | null>(null);
     const [showHelp, setShowHelp] = useState<'anamnesisProxima' | 'anamnesisRemota' | 'evaluacionFisica' | null>(null);
 
     const plantillas = {
@@ -312,9 +334,10 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             {activeFullscreen === 'anamnesisRemota' && <><span className="text-purple-500">📚</span> Anamnesis Remota / Contexto</>}
                             {activeFullscreen === 'evaluacionFisica' && <><span className="text-emerald-500">🩺</span> Evaluación Física</>}
                             {activeFullscreen === 'razonamientoIA' && <><span className="text-indigo-500">🤖</span> Razonamiento sugerido por IA</>}
+                            {activeFullscreen === 'plannerResult' && <><span className="text-amber-500">💡</span> Recomendación de Evaluación</>}
                         </h3>
                         <div className="flex items-center gap-2">
-                            {activeFullscreen !== 'razonamientoIA' && (
+                            {activeFullscreen !== 'razonamientoIA' && activeFullscreen !== 'plannerResult' && (
                                 <button onClick={() => handleInsertTemplate(activeFullscreen)} className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1">
                                     📋 Plantilla
                                 </button>
@@ -332,14 +355,16 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             activeFullscreen === 'anamnesisProxima' ? anamnesisProxima :
                             activeFullscreen === 'anamnesisRemota' ? anamnesisRemota :
                             activeFullscreen === 'evaluacionFisica' ? evaluacionFisica :
-                            razonamientoIA
+                            activeFullscreen === 'razonamientoIA' ? razonamientoIA :
+                            plannerResult || ''
                         }
                         onChange={e => {
                             if (activeFullscreen === 'anamnesisProxima') setAnamnesisProxima(e.target.value);
                             else if (activeFullscreen === 'anamnesisRemota') setAnamnesisRemota(e.target.value);
                             else if (activeFullscreen === 'evaluacionFisica') setEvaluacionFisica(e.target.value);
-                            else setRazonamientoIA(e.target.value);
+                            else if (activeFullscreen === 'razonamientoIA') setRazonamientoIA(e.target.value);
                         }}
+                        readOnly={activeFullscreen === 'plannerResult'}
                     />
                 </div>
             )}
@@ -442,6 +467,50 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                         onChange={e => setAnamnesisRemota(e.target.value)}
                                         onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('anamnesisRemota') }}
                                     />
+                                </div>
+                                
+                                {/* AI Planner Button and Result */}
+                                <div className="pt-4 pb-2">
+                                    {!plannerResult ? (
+                                        <button 
+                                            onClick={handlePlanEval}
+                                            disabled={isPlannerLoading || (!anamnesisProxima && !anamnesisRemota)}
+                                            className="w-full py-4 border-2 border-dashed border-indigo-200 rounded-2xl text-indigo-600 font-bold text-sm hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                                        >
+                                            {isPlannerLoading ? (
+                                                <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                                            ) : (
+                                                <span>💡 Planificar Evaluación con IA (Basado en Anamnesis)</span>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <div className="bg-white border-2 border-indigo-100 rounded-2xl overflow-hidden shadow-sm animate-in zoom-in-95 duration-200">
+                                            <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center">
+                                                <h4 className="text-xs font-black text-indigo-900 flex items-center gap-2 uppercase tracking-wider">
+                                                    <span className="text-base">💡</span> Recomendación de Evaluación
+                                                </h4>
+                                                <div className="flex gap-2">
+                                                    <button onClick={handlePlanEval} className="text-[10px] text-indigo-600 font-bold hover:underline">Recalcular</button>
+                                                    <button onClick={() => setPlannerResult(null)} className="text-[10px] text-slate-400 font-bold hover:text-slate-600">Ocultar</button>
+                                                </div>
+                                            </div>
+                                            <div className="p-5 text-[13px] leading-relaxed text-slate-700 max-h-[300px] overflow-y-auto bg-white/50 backdrop-blur-sm">
+                                                {plannerResult.split('\n').map((line, i) => {
+                                                    if (line.startsWith('## ')) return <h5 key={i} className="text-indigo-900 font-bold mt-4 mb-2 border-b border-indigo-50 pb-1">{line.replace('## ', '')}</h5>;
+                                                    if (line.startsWith('- ')) return <div key={i} className="flex gap-2 mb-1.5 ml-1"><span className="text-indigo-400">•</span><span>{line.replace('- ', '')}</span></div>;
+                                                    if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ') || line.startsWith('4. ') || line.startsWith('5. ')) return <div key={i} className="font-bold text-slate-800 mt-3 mb-1">{line}</div>;
+                                                    if (line.trim() === '') return <div key={i} className="h-1"></div>;
+                                                    return <p key={i} className="mb-1">{line}</p>;
+                                                })}
+                                            </div>
+                                            <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                                <button onClick={() => setActiveFullscreen('plannerResult')} className="text-[10px] text-indigo-500 font-bold flex items-center gap-1 hover:text-indigo-700">
+                                                    Ver en Pantalla Completa
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Evaluación Física */}
