@@ -42,9 +42,10 @@ export async function POST(req: Request) {
 
 ### ✅ REGLAS DE RAZONAMIENTO CLÍNICO:
 1. DIAGNÓSTICO FUNCIONAL Y DIFERENCIAL (CIF / JOSPT): 
-   - La hipótesis principal debe formularse como un patrón CIF (ej. "Dolor con déficit de control motor") + [Diagnóstico médico probable SIN SIGLAS]. 
-   - CRÍTICO: Las "Hipótesis alternativas" deben ser mínimamente 2 y deben ser DIAGNÓSTICOS DIFERENCIALES REALES que compitan con el principal (ej. Radiculopatía cervical, Artropatía, Lesión labral, etc.). 
-   - FUNDAMENTACIÓN: Cada hipótesis (principal y alternativas) debe incluir un breve fundamento que integre obligatoriamente datos de la entrevista (historia/mecanismo) Y hallazgos del examen físico.
+   - Debes presentar exactamente 3 hipótesis clínicas, ordenadas de la más probable a la menos probable.
+   - La hipótesis principal (la más probable) debe formularse como un patrón CIF (ej. "Dolor con déficit de control motor") + [Diagnóstico médico probable SIN SIGLAS]. 
+   - CRÍTICO: Las "Hipótesis alternativas" (la 2da y 3ra en probabilidad) deben ser DIAGNÓSTICOS DIFERENCIALES REALES que compitan con el principal (ej. Radiculopatía cervical, Artropatía, Lesión labral, etc.). 
+   - FUNDAMENTACIÓN: Cada una de las 3 hipótesis debe incluir un breve fundamento que integre obligatoriamente datos de la entrevista (historia/mecanismo) Y hallazgos del examen físico.
 2. CONTEXTO PSICOSOCIAL DEPORTIVO: En atletas ansiosos por retornar, enfoca el análisis en su disposición psicológica ("Readiness"), gestión de expectativas y el riesgo de ignorar los criterios de progresión.
 3. MÉTRICAS FUNCIONALES OBJETIVAS (Fase-dependientes): Prioriza variables de rendimiento funcional clínicamente accesibles. En fase aguda: ROM libre de dolor, tolerancia al TUT. En fase avanzada: calidad de ejecución en test funcionales, asimetrías de movimiento.
 4. TERAPIA ACTIVA: El plan inicial prioriza analgesia inducida por ejercicio y capacidad de carga.
@@ -71,12 +72,12 @@ Analiza usando este formato y devuelve el resultado EXACTAMENTE con estos encabe
 - Datos que lo apoyan:
 - Datos que no calzan o generan duda:
 
-## 4. Patrones clínicos y Diagnósticos Diferenciales
-- Patrón principal (CIF/JOSPT): [Patrón CIF] + [Diagnóstico médico completo SIN SIGLAS].
+## 4. Patrones clínicos y Diagnósticos Diferenciales (Ordenados por probabilidad)
+- Hipótesis 1 - Principal (Más probable): [Patrón CIF] + [Diagnóstico médico completo SIN SIGLAS].
   - Fundamento: [Justificación cruzando historia clínica y examen físico].
-- Hipótesis alternativa 1 (Diagnóstico diferencial real): [Diagnóstico completo SIN SIGLAS].
+- Hipótesis 2 - Alternativa (Probabilidad moderada): [Diagnóstico completo SIN SIGLAS].
   - Fundamento: [Justificación cruzando historia clínica y examen físico].
-- Hipótesis alternativa 2 (Diagnóstico diferencial real): [Diagnóstico completo SIN SIGLAS].
+- Hipótesis 3 - Alternativa (Menos probable): [Diagnóstico completo SIN SIGLAS].
   - Fundamento: [Justificación cruzando historia clínica y examen físico].
 - Datos faltantes para diferenciar: [Pruebas específicas que descartarían las alternativas]
 
