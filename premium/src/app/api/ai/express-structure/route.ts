@@ -99,7 +99,7 @@ Analiza usando este formato y devuelve el resultado EXACTAMENTE con estos encabe
 ## 10. Qué falta preguntar o evaluar
 [Listar evaluaciones funcionales congruentes con la fase de la lesión]
 
-## 11. Indicadores para próxima sesión
+## 11. Indicadores para próximas sesiones
 [Listar 2 a 5 variables funcionales medibles (repeticiones, ROM sin dolor, TUT, calidad de movimiento, etc.), biológicamente alcanzables a corto plazo]
 
 Cierra con esta frase textual:
