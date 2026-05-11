@@ -129,6 +129,7 @@ ${evaluacionFisica || 'Información no registrada'}`;
             promptVersion: 'v2.0.0',
             temperature: 0.2,
             responseMimeType: 'text/plain',
+            skipGuardrails: true,
             validator: (data) => data // Retornar el string en markdown
         });
 
