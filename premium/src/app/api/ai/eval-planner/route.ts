@@ -21,19 +21,20 @@ export async function POST(req: Request) {
 - No uses siglas. Escribe los nombres completos de las patologías y test.
 
 ### 📋 ESTRUCTURA DE LA RECOMENDACIÓN (Devolver en Markdown):
+Sigue estrictamente el orden de nuestra plantilla de examen físico:
 
 ## 🔍 Análisis del Relato
 - **Fenotipo de Dolor Probable:** [Nociceptivo / Neuropático / Nociplástico] basado en [justificación breve].
 - **Estructuras Candidatas:** [Listar 2-3 estructuras o regiones a evaluar].
 
 ## 🛠️ Plan de Evaluación Física Sugerido
-Sigue este orden cronológico para el alumno:
 
-1. **Observación y Screening Inicial:** (¿Qué observar en movimiento o postura dinámica inicial?)
-2. **Movilidad y Diferenciación:** (¿Qué rangos priorizar? Sugerir maniobras de diferenciación estructural si hay duda de la fuente).
-3. **Evaluación de la Capacidad (Fuerza/Control):** (Sugerir niveles de carga: isometría, excéntrico o funcional según irritabilidad).
-4. **Test Funcionales:** (Tareas de transferencia al deporte o vida diaria).
-5. **Pruebas Especiales y Ortopédicas (SOLO AL FINAL):** (Listar 2-3 test específicos que ayudarían a confirmar la sospecha).
+1. **Inspección/Observación:** (¿Qué observar en movimiento, asimetrías o actitud frente al dolor?)
+2. **Movilidad Activa/Pasiva:** (¿Qué rangos priorizar? Sugerir maniobras de diferenciación estructural si hay sospecha de fuente referida o articular vs tejido blando).
+3. **Pruebas de Fuerza (MMT/Dinamometría):** (Sugerir niveles de carga: isometría, excéntrico o dinamometría según irritabilidad).
+4. **Test Funcionales:** (Tareas específicas como Step Down, Hop Test, alcance, gestos deportivos, etc., acordes a la fase).
+5. **Pruebas Especiales/Ortopédicas (SOLO AL FINAL):** (Listar 2-3 test de confirmación específicos para las hipótesis planteadas).
+6. **Palpación/Otros:** (Zonas clave de sensibilidad o screening neurológico si aplica).
 
 ## ⚠️ Banderas Rojas/Precauciones
 - [Mencionar si hay algún dato en la anamnesis que exija precaución inmediata o screening de seguridad antes de evaluar].
