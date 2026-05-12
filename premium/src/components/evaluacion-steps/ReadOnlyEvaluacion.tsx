@@ -2,6 +2,7 @@ import React from 'react';
 import { Evaluacion } from '@/types/clinica';
 import { humanize, humanizeKey, hiddenKeys } from '@/utils/humanizer';
 import { formatSafeDate } from '@/lib/firebase-utils';
+import { BeautifulClinicalMarkdown } from '../EvaluacionExpressForm';
 
 interface ReadOnlyEvaluacionProps {
     evaluacion: Evaluacion;
@@ -357,6 +358,11 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                 );
                             })()}
                             </>
+                        ) : ev.expressDraft?.anamnesisProxima ? (
+                            <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
+                                <h4 className="text-[11px] font-black text-indigo-700 uppercase mb-2 tracking-widest">Relato y Motivo de Consulta</h4>
+                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.anamnesisProxima}</p>
+                            </div>
                         ) : ev.interview?.v4?.experienciaPersona?.relatoLibre || ev.interview?.v4?.anamnesisProxima?.motivoPrincipalConsulta ? (
                             <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
                                 <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.interview.v4.experienciaPersona?.relatoLibre || ev.interview.v4.anamnesisProxima?.motivoPrincipalConsulta}</p>
@@ -462,6 +468,11 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                         <div className="flex flex-wrap gap-1">{p15.modificadores_clinicos.map((m: string, i: number) => <span key={i} className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{m}</span>)}</div>
                                     </div>
                                 )}
+                            </div>
+                        ) : ev.expressDraft?.anamnesisRemota ? (
+                            <div className="p-5 bg-slate-50 rounded-xl border border-slate-100">
+                                <h4 className="text-[11px] font-black text-sky-700 uppercase mb-2 tracking-widest">Antecedentes Remotos</h4>
+                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.anamnesisRemota}</p>
                             </div>
                         ) : (
                             <div className="text-sm text-slate-500 italic flex items-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -672,6 +683,11 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                     {p2_text}
                                 </p>
                             </div>
+                        ) : ev.expressDraft?.evaluacionFisica ? (
+                            <div className="p-5 rounded-xl border border-slate-100 bg-amber-50/30">
+                                <h4 className="text-[11px] font-black text-amber-700 uppercase mb-2 tracking-widest">Examen Físico</h4>
+                                <p className="text-sm text-slate-700 font-medium whitespace-pre-wrap leading-relaxed">{ev.expressDraft.evaluacionFisica}</p>
+                            </div>
                         ) : (
                             <div className="text-sm text-slate-500 italic flex items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                 Examen físico aún no sintetizado.
@@ -868,6 +884,11 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        ) : ev.expressDraft?.razonamientoIA ? (
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-purple-700 uppercase tracking-widest border-b pb-2">Razonamiento Clínico IA</h4>
+                                <BeautifulClinicalMarkdown text={ev.expressDraft.razonamientoIA} />
                             </div>
                         ) : ev.geminiDiagnostic?.narrativeDiagnosis ? (
                             <div>

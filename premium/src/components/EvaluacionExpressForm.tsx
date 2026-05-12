@@ -291,13 +291,15 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [groundingQuery, setGroundingQuery] = useState('');
     const [groundingResult, setGroundingResult] = useState<any>(null);
 
+    const [persistentDocId] = useState(() => initialData?.id || generateId());
+
     const handleSave = async (silent = false) => {
         if (!globalActiveYear || !user) return;
         try {
             if (!silent) setLoading(true);
-            const targetId = initialData?.id || generateId();
+            const targetId = persistentDocId;
 
-            const basePayload: any = initialData || {
+            const basePayload: any = initialData ? { ...initialData } : {
                 id: targetId,
                 usuariaId,
                 procesoId,
@@ -632,7 +634,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50 shrink-0">
                     <div>
                         <h2 className="text-xl font-black text-indigo-900 flex items-center gap-2">
-                            <span>⚡</span> Evaluación Inicial (Modo Express)
+                            <span>⚡</span> Evaluación Inicial (Docente)
                         </h2>
                         <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA razone las hipótesis.</p>
                     </div>

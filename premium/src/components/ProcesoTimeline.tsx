@@ -259,7 +259,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         className="flex-1 min-w-[140px] bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                     >
                         <span>⚡</span>
-                        Eval Inicial (Express)
+                        Eval Inicial (Docente)
                     </button>
                 )}
             </div>
@@ -372,8 +372,20 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                         }}
                                                         className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
                                                     >
-                                                        ✏️ Editar
+                                                        ✏️ Editar Completo
                                                     </button>
+                                                    {isEval && isAdmin && (item.data as any).expressDraft && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedEval(item.data as Evaluacion);
+                                                                setView('formExpressEval');
+                                                            }}
+                                                            className="text-[10px] font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                        >
+                                                            ⚡ Editar (Docente)
+                                                        </button>
+                                                    )}
                                                     {isAdmin && !isEval && (
                                                         <button
                                                             onClick={async (e) => {
