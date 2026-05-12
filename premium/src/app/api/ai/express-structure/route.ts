@@ -107,8 +107,9 @@ Analiza usando este formato y devuelve el resultado EXACTAMENTE con estos encabe
 ## 10. Qué falta preguntar o evaluar
 [Listar evaluaciones funcionales congruentes con la fase de la lesión]
 
-## 11. Indicadores para próxima sesión
-[Listar 2 a 5 variables funcionales medibles y biológicamente alcanzables a corto plazo]
+## 11. Indicadores para próximas sesiones (Corto y Mediano Plazo)
+- Corto Plazo (Próximas 1 a 3 sesiones): [Listar 2 variables funcionales de respuesta aguda. PROHIBIDO proponer hipertrofia, aumento de fuerza real o mejoras de rendimiento a gran escala. Enfócate estrictamente en, ejemplos: modulación del dolor, mejora en la tolerancia subjetiva a la carga (RPE), disminución de la evitación, o ejecución de la tarea con menor compensación motora].
+- Mediano Plazo (3 a 6 semanas): [Listar 2 variables de adaptación crónica. Aquí SÍ debes incluir: ejemplos_verdaderas ganancias de fuerza muscular, adaptaciones neuromusculares, aumento significativo del rango de movimiento, o mejoras reales de rendimiento (ej. aumento del 20% en distancia de marcha o repeticiones de Sit-to-Stand)].
 
 ## 12. Defensa de Caso (Perspectiva Tradicional vs. Contemporánea)
 - Enfoque Clásico: [Qué esperaría escuchar una comisión tradicional: diagnósticos puramente estructurales, patologización de hallazgos biomecánicos estáticos, o prescripción pasiva].

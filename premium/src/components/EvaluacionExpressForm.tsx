@@ -50,6 +50,7 @@ export function BeautifulClinicalMarkdown({ text }: { text: string }) {
         if (t.includes('seguridad') || t.includes('banderas rojas')) return 'border-t-amber-500';
         if (t.includes('evaluación integral') || t.includes('coexistentes')) return 'border-t-purple-600';
         if (t.includes('escalas') || t.includes('cuestionarios') || t.includes('proms')) return 'border-t-teal-600';
+        if (t.includes('indicadores') || t.includes('sesión') || t.includes('sesiones')) return 'border-t-emerald-500';
         return 'border-t-slate-600';
     };
 
@@ -213,6 +214,24 @@ export function BeautifulClinicalMarkdown({ text }: { text: string }) {
                                         <div key={idx} className="ml-6 pl-3 border-l-2 border-indigo-400 text-xs text-slate-600 py-1.5 my-1.5 bg-slate-50/50 rounded-r font-medium">
                                             <strong className="text-slate-700 font-bold">{label} </strong>
                                             {content.trim()}
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Corto Plazo')) {
+                                    const content = trimmed.replace(/^- Corto Plazo[^:]*:/, '').trim();
+                                    return (
+                                        <div key={idx} className="bg-emerald-50/40 border border-emerald-100 rounded-xl p-3.5 my-2.5">
+                                            <span className="font-black text-emerald-800 block text-[10px] uppercase tracking-wider mb-1">Corto Plazo (1 a 3 sesiones)</span>
+                                            <span className="text-slate-700 text-xs font-medium leading-relaxed">{content}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Mediano Plazo')) {
+                                    const content = trimmed.replace(/^- Mediano Plazo[^:]*:/, '').trim();
+                                    return (
+                                        <div key={idx} className="bg-blue-50/40 border border-blue-100 rounded-xl p-3.5 my-2.5">
+                                            <span className="font-black text-blue-800 block text-[10px] uppercase tracking-wider mb-1">Mediano Plazo (3 a 6 semanas)</span>
+                                            <span className="text-slate-700 text-xs font-medium leading-relaxed">{content}</span>
                                         </div>
                                     );
                                 }
