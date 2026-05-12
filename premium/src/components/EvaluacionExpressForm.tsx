@@ -297,7 +297,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     // ===== P3/P4 CLINICAL PLANNING STATE =====
     const initP4 = initialDataAny?.expressDraft?.p4_plan || {};
     const [diagnosticoNarrativo, setDiagnosticoNarrativo] = useState(initP4.diagnostico_narrativo || '');
-    const [objetivoGeneral, setObjetivoGeneral] = useState(initP4.objetivo_general || '');
+    const [objetivoGeneral, setObjetivoGeneral] = useState<any>(initP4.objetivo_general || { problema_principal_caso: '', opciones_sugeridas: [], seleccionado: '' });
     const [objetivosSmart, setObjetivosSmart] = useState<Array<{id: string, texto: string, plazo: string, prioridad: string, variable_base: string, basal: string, meta: string}>>(
         initP4.objetivos_smart || []
     );
@@ -312,9 +312,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         historia_natural: '', comparativa_adherencia: '',
         categoria: '', justificacion: ''
     });
-    const [pilares, setPilares] = useState<Array<{titulo: string, prioridad: number, justificacion: string, objetivos_operacionales: string[], foco_que_aborda: string[]}>>(
-        initP4.pilares_intervencion || []
-    );
+    const [fases, setFases] = useState<any[]>(initP4.fases_rehabilitacion || []);
     const [reglasReeval, setReglasReeval] = useState<{
         signo_comparable: string; razon_signo: string;
         variables_seguimiento: string[]; frecuencia: string;
@@ -358,7 +356,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                     objetivo_general: objetivoGeneral,
                     objetivos_smart: objetivosSmart,
                     pronostico,
-                    pilares_intervencion: pilares,
+                    fases_rehabilitacion: fases,
                     reglas_reevaluacion: reglasReeval,
                     clasificacion_dolor: clasificacionDolor
                 }
@@ -400,7 +398,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA || diagnosticoNarrativo || objetivosSmart.length > 0) handleSave(true);
         }, 5000);
         return () => clearTimeout(timer);
-    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, pilares, reglasReeval, clasificacionDolor]);
+    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, fases, reglasReeval, clasificacionDolor]);
 
     // Publish objectives to Proceso.activeObjectiveSet
     const handlePublishObjectives = async () => {
@@ -963,7 +961,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             objetivoGeneral={objetivoGeneral} setObjetivoGeneral={setObjetivoGeneral}
                             objetivosSmart={objetivosSmart} setObjetivosSmart={setObjetivosSmart}
                             pronostico={pronostico} setPronostico={setPronostico}
-                            pilares={pilares} setPilares={setPilares}
+                            fases={fases} setFases={setFases}
                             reglasReeval={reglasReeval} setReglasReeval={setReglasReeval}
                             collapsed={p4Collapsed} setCollapsed={setP4Collapsed}
                             onPublish={handlePublishObjectives} isPublishing={isPublishing} publishSuccess={publishSuccess}
@@ -972,44 +970,6 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             anamnesisRemota={anamnesisRemota}
                             evaluacionFisica={evaluacionFisica}
                         />
-
-                        {/* Box de Grounding */}
-                        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 shadow-xl text-white">
-                            <h3 className="font-black text-white text-lg mb-2 flex items-center gap-2">🔍 Grounding Clínico</h3>
-                            <p className="text-indigo-200 text-sm mb-6">Consulta patologías, test especiales o fármacos. Todo validado mediante Google Search.</p>
-                            
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input 
-                                    type="text" 
-                                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                                    placeholder="Ej: Signos de alerta en dolor lumbar..."
-                                    value={groundingQuery}
-                                    onChange={e => setGroundingQuery(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleAIGrounding()}
-                                />
-                                <button 
-                                    onClick={handleAIGrounding} 
-                                    disabled={isGrounding || !groundingQuery}
-                                    className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-6 py-3 rounded-xl disabled:opacity-50 transition-colors shadow-lg shadow-indigo-500/20"
-                                >
-                                    {isGrounding ? 'Buscando...' : 'Consultar'}
-                                </button>
-                            </div>
-
-                            {groundingResult && (
-                                <div className="mt-6 bg-white/5 backdrop-blur-sm p-5 rounded-2xl border border-white/10 text-sm animate-in fade-in slide-in-from-top-4">
-                                    <p className="text-indigo-50 font-medium whitespace-pre-line leading-relaxed">{groundingResult.respuesta}</p>
-                                    {groundingResult.fuentes_utilizadas && groundingResult.fuentes_utilizadas.length > 0 && (
-                                        <div className="mt-4 pt-4 border-t border-white/10 text-xs text-indigo-300 font-medium flex flex-wrap gap-2 items-center">
-                                            <span>Fuentes:</span>
-                                            {groundingResult.fuentes_utilizadas.map((f: string, i: number) => (
-                                                <span key={i} className="bg-white/10 px-2 py-1 rounded-md">{f}</span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
 
                     </div>
                 </div>

@@ -65,9 +65,11 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     }
     else if (screen === 'EXPRESS_V2' && aiAction === 'EXPRESS_PLAN') {
         cacheBucket = 'express_plan_cache';
+        // Most powerful model first for clinical planning quality
         orderedModels = [
-            { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
-            { modelId: 'gemini-2.5-flash' }
+            { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
+            { modelId: 'gemini-2.5-flash' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'P4' && aiAction === 'P4_PREMIUM') {
