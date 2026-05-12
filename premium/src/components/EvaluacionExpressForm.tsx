@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { useYear } from "@/context/YearContext";
 import { useAuth } from "@/context/AuthContext";
 import { sanitizeForFirestoreDeep } from "@/lib/firebase-utils";
+import { ClinicalPlanningSection } from "./ClinicalPlanningSection";
 
 export interface EvaluacionExpressFormProps {
     usuariaId: string;
@@ -293,6 +294,43 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
 
     const [persistentDocId] = useState(() => initialData?.id || generateId());
 
+    // ===== P3/P4 CLINICAL PLANNING STATE =====
+    const initP4 = initialDataAny?.expressDraft?.p4_plan || {};
+    const [diagnosticoNarrativo, setDiagnosticoNarrativo] = useState(initP4.diagnostico_narrativo || '');
+    const [objetivoGeneral, setObjetivoGeneral] = useState(initP4.objetivo_general || '');
+    const [objetivosSmart, setObjetivosSmart] = useState<Array<{id: string, texto: string, plazo: string, prioridad: string, variable_base: string, basal: string, meta: string}>>(
+        initP4.objetivos_smart || []
+    );
+    const [pronostico, setPronostico] = useState<{
+        corto_plazo: string; mediano_plazo: string; largo_plazo: string;
+        factores_a_favor: string[]; factores_en_contra: string[];
+        historia_natural: string; comparativa_adherencia: string;
+        categoria: string; justificacion: string;
+    }>(initP4.pronostico || {
+        corto_plazo: '', mediano_plazo: '', largo_plazo: '',
+        factores_a_favor: [], factores_en_contra: [],
+        historia_natural: '', comparativa_adherencia: '',
+        categoria: '', justificacion: ''
+    });
+    const [pilares, setPilares] = useState<Array<{titulo: string, prioridad: number, justificacion: string, objetivos_operacionales: string[], foco_que_aborda: string[]}>>(
+        initP4.pilares_intervencion || []
+    );
+    const [reglasReeval, setReglasReeval] = useState<{
+        signo_comparable: string; razon_signo: string;
+        variables_seguimiento: string[]; frecuencia: string;
+        criterio_mejora: string; criterio_estancamiento: string;
+    }>(initP4.reglas_reevaluacion || {
+        signo_comparable: '', razon_signo: '',
+        variables_seguimiento: [], frecuencia: '',
+        criterio_mejora: '', criterio_estancamiento: ''
+    });
+    const [clasificacionDolor, setClasificacionDolor] = useState<{
+        categoria: string; subtipo: string; fundamento: string; confianza: string;
+    }>(initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '' });
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishSuccess, setPublishSuccess] = useState(false);
+    const [p4Collapsed, setP4Collapsed] = useState<Record<string, boolean>>({});
+
     const handleSave = async (silent = false) => {
         if (!globalActiveYear || !user) return;
         try {
@@ -314,7 +352,16 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 anamnesisProxima, 
                 anamnesisRemota, 
                 evaluacionFisica, 
-                razonamientoIA 
+                razonamientoIA,
+                p4_plan: {
+                    diagnostico_narrativo: diagnosticoNarrativo,
+                    objetivo_general: objetivoGeneral,
+                    objetivos_smart: objetivosSmart,
+                    pronostico,
+                    pilares_intervencion: pilares,
+                    reglas_reevaluacion: reglasReeval,
+                    clasificacion_dolor: clasificacionDolor
+                }
             };
 
             // Inject to regular evaluation so they can continue later
@@ -347,13 +394,55 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         }
     };
 
-    // Auto-save
+    // Auto-save (includes P4 data)
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA) handleSave(true);
+            if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA || diagnosticoNarrativo || objetivosSmart.length > 0) handleSave(true);
         }, 5000);
         return () => clearTimeout(timer);
-    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA]);
+    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, pilares, reglasReeval, clasificacionDolor]);
+
+    // Publish objectives to Proceso.activeObjectiveSet
+    const handlePublishObjectives = async () => {
+        if (!globalActiveYear || !user || !procesoId) return;
+        if (objetivosSmart.length === 0) return alert("Agrega al menos un objetivo SMART antes de publicar.");
+        setIsPublishing(true);
+        try {
+            // First save current state
+            await handleSave(true);
+            const versionId = `v2_${Date.now().toString(36)}`;
+            const procesoRef = doc(db, "programs", globalActiveYear, "procesos", procesoId);
+            const updatePayload = sanitizeForFirestoreDeep({
+                estado: 'ACTIVO',
+                activeEvaluationId: persistentDocId,
+                activeEvaluationIndexId: persistentDocId,
+                activeObjectiveSetVersionId: versionId,
+                diagnosisVigente: diagnosticoNarrativo,
+                caseSnapshot: {
+                    summary: diagnosticoNarrativo,
+                    diagnosticoNarrativo: diagnosticoNarrativo,
+                    lastUpdated: new Date().toISOString(),
+                },
+                activeObjectiveSet: {
+                    versionId,
+                    updatedAt: new Date().toISOString(),
+                    objectives: objetivosSmart.map(o => ({
+                        id: o.id || generateId(),
+                        label: o.texto,
+                        status: 'activo' as const
+                    }))
+                },
+                updatedAt: new Date().toISOString()
+            });
+            await setDoc(procesoRef, updatePayload, { merge: true });
+            setPublishSuccess(true);
+            setTimeout(() => setPublishSuccess(false), 4000);
+        } catch (err: any) {
+            alert("Error publicando objetivos: " + err.message);
+        } finally {
+            setIsPublishing(false);
+        }
+    };
 
     const handleRazonarIA = async () => {
         if (!anamnesisProxima && !anamnesisRemota && !evaluacionFisica) return alert("Escribe algo primero en las notas.");
@@ -863,6 +952,19 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             )}
 
                         </div>
+
+                        {/* Clinical Planning P3/P4 Section */}
+                        <ClinicalPlanningSection
+                            clasificacionDolor={clasificacionDolor} setClasificacionDolor={setClasificacionDolor}
+                            diagnosticoNarrativo={diagnosticoNarrativo} setDiagnosticoNarrativo={setDiagnosticoNarrativo}
+                            objetivoGeneral={objetivoGeneral} setObjetivoGeneral={setObjetivoGeneral}
+                            objetivosSmart={objetivosSmart} setObjetivosSmart={setObjetivosSmart}
+                            pronostico={pronostico} setPronostico={setPronostico}
+                            pilares={pilares} setPilares={setPilares}
+                            reglasReeval={reglasReeval} setReglasReeval={setReglasReeval}
+                            collapsed={p4Collapsed} setCollapsed={setP4Collapsed}
+                            onPublish={handlePublishObjectives} isPublishing={isPublishing} publishSuccess={publishSuccess}
+                        />
 
                         {/* Box de Grounding */}
                         <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 md:p-8 shadow-xl text-white">
