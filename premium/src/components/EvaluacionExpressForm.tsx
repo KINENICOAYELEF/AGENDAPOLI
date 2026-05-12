@@ -727,7 +727,10 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                         </h2>
                         <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA razone las hipótesis.</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <button onClick={() => handleSave(true)} disabled={loading} className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
+                            <span>💾</span> {loading ? 'Guardando...' : 'Guardar Borrador'}
+                        </button>
                         <button onClick={() => handleSave()} disabled={loading} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors">
                             {loading ? 'Guardando...' : 'Guardar y Cerrar'}
                         </button>
@@ -964,6 +967,10 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             reglasReeval={reglasReeval} setReglasReeval={setReglasReeval}
                             collapsed={p4Collapsed} setCollapsed={setP4Collapsed}
                             onPublish={handlePublishObjectives} isPublishing={isPublishing} publishSuccess={publishSuccess}
+                            razonamientoIA={razonamientoIA}
+                            anamnesisProxima={anamnesisProxima}
+                            anamnesisRemota={anamnesisRemota}
+                            evaluacionFisica={evaluacionFisica}
                         />
 
                         {/* Box de Grounding */}

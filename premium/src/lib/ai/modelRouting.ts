@@ -17,7 +17,8 @@ export type AIAction =
     | 'SIM_EVALUATE'
     | 'SIM_COMMISSION'
     | 'EXPRESS_STRUCTURE'
-    | 'EXPRESS_GROUNDING';
+    | 'EXPRESS_GROUNDING'
+    | 'EXPRESS_PLAN';
 
 export interface ModelRoute {
     modelId: string;
@@ -57,6 +58,13 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
     } 
     else if (screen === 'P4' && aiAction === 'P4_BASE') {
         cacheBucket = 'p4_base_ai_cache';
+        orderedModels = [
+            { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
+            { modelId: 'gemini-2.5-flash' }
+        ];
+    }
+    else if (screen === 'EXPRESS_V2' && aiAction === 'EXPRESS_PLAN') {
+        cacheBucket = 'express_plan_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
             { modelId: 'gemini-2.5-flash' }

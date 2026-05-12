@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -40,13 +40,51 @@ interface Props {
     collapsed: Record<string, boolean>;
     setCollapsed: (v: any) => void;
     onPublish: () => void; isPublishing: boolean; publishSuccess: boolean;
+    razonamientoIA?: string;
+    anamnesisProxima?: string; anamnesisRemota?: string; evaluacionFisica?: string;
+    onAiGenerate?: (data: any) => void;
 }
 
 export function ClinicalPlanningSection(props: Props) {
     const { clasificacionDolor, setClasificacionDolor, diagnosticoNarrativo, setDiagnosticoNarrativo,
         objetivoGeneral, setObjetivoGeneral, objetivosSmart, setObjetivosSmart,
         pronostico, setPronostico, pilares, setPilares, reglasReeval, setReglasReeval,
-        collapsed, setCollapsed, onPublish, isPublishing, publishSuccess } = props;
+        collapsed, setCollapsed, onPublish, isPublishing, publishSuccess,
+        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica, onAiGenerate } = props;
+
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    const handleGenerateAi = async () => {
+        const context = [razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica].filter(Boolean).join('\n\n');
+        if (!context.trim()) return alert('Primero genera el Razonamiento con IA en la sección de evaluación.');
+        setIsAiLoading(true);
+        setAiError(null);
+        // Open all sections so user can see results
+        setCollapsed({});
+        try {
+            const res = await fetch('/api/ai/express-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica })
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.message || 'Error IA Plan');
+            const d = json.data;
+            if (d.clasificacion_dolor) setClasificacionDolor(d.clasificacion_dolor);
+            if (d.diagnostico_narrativo) setDiagnosticoNarrativo(d.diagnostico_narrativo);
+            if (d.objetivo_general) setObjetivoGeneral(d.objetivo_general);
+            if (d.objetivos_smart?.length) setObjetivosSmart(d.objetivos_smart.map((o: any) => ({ id: generateId(), texto: o.texto || o, plazo: o.plazo || '', prioridad: o.prioridad || '', variable_base: o.variable_base || '', basal: o.basal || '', meta: o.meta || '' })));
+            if (d.pronostico) setPronostico({ corto_plazo: d.pronostico.corto_plazo || '', mediano_plazo: d.pronostico.mediano_plazo || '', largo_plazo: d.pronostico.largo_plazo || '', factores_a_favor: d.pronostico.factores_a_favor || [], factores_en_contra: d.pronostico.factores_en_contra || [], historia_natural: d.pronostico.historia_natural || '', comparativa_adherencia: d.pronostico.comparativa_adherencia || '', categoria: d.pronostico.categoria || '', justificacion: d.pronostico.justificacion || '' });
+            if (d.pilares?.length) setPilares(d.pilares.map((p: any) => ({ titulo: p.titulo || '', prioridad: p.prioridad || 1, justificacion: p.justificacion || '', objetivos_operacionales: p.objetivos_operacionales || [], foco_que_aborda: p.foco_que_aborda || [] })));
+            if (d.reglas_reevaluacion) setReglasReeval({ signo_comparable: d.reglas_reevaluacion.signo_comparable || '', razon_signo: d.reglas_reevaluacion.razon_signo || '', variables_seguimiento: d.reglas_reevaluacion.variables_seguimiento || [], frecuencia: d.reglas_reevaluacion.frecuencia || '', criterio_mejora: d.reglas_reevaluacion.criterio_mejora || '', criterio_estancamiento: d.reglas_reevaluacion.criterio_estancamiento || '' });
+            if (onAiGenerate) onAiGenerate(d);
+        } catch (e: any) {
+            setAiError(e.message);
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
 
     const toggle = (k: string) => setCollapsed((p: any) => ({ ...p, [k]: !p[k] }));
     const tc = "w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all min-h-[50px]";
@@ -55,9 +93,14 @@ export function ClinicalPlanningSection(props: Props) {
 
     return (
         <div className="bg-gradient-to-b from-indigo-50/30 to-emerald-50/30 rounded-3xl p-6 md:p-8 shadow-sm border border-indigo-100/60">
-            <div className="text-center mb-6">
+            <div className="text-center mb-5">
                 <h3 className="font-black text-slate-800 text-lg">Síntesis, Diagnóstico y Plan Clínico</h3>
-                <p className="text-xs text-slate-500 mt-1">Completa la planificación clínica basándote en tu razonamiento. Estos campos son educativos y vinculan los objetivos con las evoluciones futuras.</p>
+                <p className="text-xs text-slate-500 mt-1 mb-4">Completa la planificación clínica basándote en tu razonamiento. Estos campos son educativos y vinculan los objetivos con las evoluciones futuras.</p>
+                <button onClick={handleGenerateAi} disabled={isAiLoading} className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:shadow-none">
+                    {isAiLoading ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generando Plan Clínico con IA...</>) : (<><span className="text-base">🧠</span> Generar Diagnóstico y Plan con IA</>)}
+                </button>
+                {aiError && <p className="text-xs text-rose-600 mt-2 font-medium">{aiError}</p>}
+                {isAiLoading && <p className="text-[10px] text-slate-400 mt-2">Esto puede tomar 15-30 segundos. La IA leerá el razonamiento clínico y completará todas las secciones automáticamente.</p>}
             </div>
             <div className="flex flex-col gap-4">
 
