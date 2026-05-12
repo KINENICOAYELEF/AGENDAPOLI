@@ -259,7 +259,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         className="flex-1 min-w-[140px] bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                     >
                         <span>⚡</span>
-                        Eval Inicial (Docente)
+                        Eval Inicial v2
                     </button>
                 )}
             </div>
@@ -383,7 +383,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                             }}
                                                             className="text-[10px] font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
                                                         >
-                                                            ⚡ Editar (Docente)
+                                                            ⚡ Editar v2
                                                         </button>
                                                     )}
                                                     {isAdmin && !isEval && (
