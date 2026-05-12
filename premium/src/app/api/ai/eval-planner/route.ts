@@ -13,10 +13,11 @@ export async function POST(req: Request) {
 ### 🚫 RESTRICCIONES ESTRICTAS (PROHIBIDO HACER ESTO):
 1. PROHIBIDO usar siglas (ej. usa "Dolor de Hombro Relacionado al Manguito Rotador", jamás "RCRSP").
 2. PROHIBIDO separar diagnósticos del mismo "Término Paraguas" para que compitan entre sí (ej. No puedes poner Tendinopatía como Hipótesis 1 y Bursitis/Pinzamiento como Hipótesis 2). Las Alternativas deben ser patologías anatómicamente distintas (ej. Radiculopatía, Artropatía, Inestabilidad).
-3. PROHIBIDO inventar categorías CIF. Debes usar SOLO estas: [Dolor con déficit de movilidad], [Dolor con déficit de fuerza/control motor], [Dolor con irradiación/referido], o [Dolor con déficit de coordinación/estabilidad].
+3. PROHIBIDO inventar categorías CIF. Debes usar SOLO estas (con o sin la palabra "Dolor" dependiendo de si el paciente presenta dolor): [Dolor/Déficit de movilidad], [Dolor/Déficit de fuerza y control motor], [Dolor/Déficit con irradiación/neuropático], o [Dolor/Déficit de coordinación/estabilidad funcional].
 4. PROHIBIDO usar la postura estática o "posición de reposo" como justificativo principal en el Paso 1.
 5. PROHIBIDO afirmar que las pruebas ortopédicas/especiales (Paso 7) "confirman un diagnóstico", "aíslan estructuras" o "confirman zonas de conflicto". Descríbelas ÚNICAMENTE como "pruebas de provocación de síntomas".
-6. PROHIBIDO indicar que la palpación (Paso 8) "confirma" una patología estructural. 
+6. PROHIBIDO indicar que la palpación (Paso 8) "confirma" una patología estructural.
+7. PROHIBIDO ESTRICTAMENTE usar las palabras "Kinesiofobia", "Catastrofización" o "Depresión" bajo cualquier circunstancia, a menos que el alumno haya reportado el uso de cuestionarios validados (TSK, PCS). Usa "miedo a caer" o "creencias limitantes".
 
 ### ✅ REGLAS DE RAZONAMIENTO CLÍNICO:
 - FEEDBACK DE ENTREVISTA: Inicia formulando 5 preguntas críticas, directas y formales que el alumno olvidó hacer en la anamnesis (ej. banderas rojas específicas, comportamiento nocturno, parestesias).
@@ -59,7 +60,7 @@ Genera el resultado EXACTAMENTE con este formato y encabezados (usa markdown ##)
 - Paso 4: Fuerza, capacidad y tolerancia a la carga (Isometría funcional, etc.).
 - Paso 5: Evaluación neurovascular y somatosensorial (Screening periférico/radicular).
 - Paso 6: Control motor y sensoriomotor (Tests de modificación o asistencia manual).
-- Paso 7: Pruebas ortopédicas dirigidas (Aclarar que SOLO miden provocación e irritabilidad).
+- Paso 7: Pruebas ortopédicas dirigidas (Aclarar que SOLO miden provocación e irritabilidad. Si el paciente NO tiene dolor estructural o es un caso de fragilidad geriátrica, indica explícitamente: "No aplica justificado por ausencia de dolor estructural").
 - Paso 8: Palpación dirigida (Para mapear sensibilidad y tolerancia, no para diagnosticar tendones).
 - Paso 9: Pruebas funcionales exigentes (Tolerancia a fatiga, volumen o control bajo carga).
 
