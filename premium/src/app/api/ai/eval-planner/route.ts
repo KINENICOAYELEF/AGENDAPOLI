@@ -16,16 +16,18 @@ export async function POST(req: Request) {
 3. PROHIBIDO separar diagnósticos del mismo "Término Paraguas" para que compitan entre sí. Las Alternativas deben ser patologías anatómicamente/clínicamente distintas.
 4. PROHIBIDO inventar categorías CIF. Usa SOLO estas (con o sin la palabra "Dolor" según corresponda): [Déficit de movilidad], [Déficit de fuerza/control motor], [Déficit con irradiación/neuropático], o [Déficit de coordinación/estabilidad].
 5. PROHIBIDO clasificar un Fenotipo de Dolor si el paciente reporta dolor 0/10. En ese caso, escribe OBLIGATORIAMENTE: "Ausencia de dolor - Cuadro Funcional/Motor".
-6. PROHIBIDO ESTRICTAMENTE usar palabras como "Kinesiofobia", "Catastrofización" o "Depresión". Usa descriptores conductuales (ej. "miedo a caer", "creencias limitantes", "evitación").
+6. PROHIBIDO ESTRICTAMENTE usar palabras como "Kinesiofobia", "Catastrofización" o "Depresión" sin una escala validada. Usa descriptores conductuales (ej. "miedo a caer", "creencias limitantes", "evitación").
 7. PROHIBIDO afirmar que las pruebas ortopédicas/especiales "confirman un diagnóstico". Descríbelas ÚNICAMENTE como "pruebas de provocación de síntomas".
 8. PROHIBIDO omitir la viñeta "- Batería:" en el plan de 9 pasos.
+9. PROHIBIDO recomendar escalas de dolor (ej. PCS, TSK, DN4, VAS) si el fenotipo es "Ausencia de dolor".
 
 ### ✅ REGLAS DE RAZONAMIENTO CLÍNICO:
 - FEEDBACK DE ENTREVISTA: Inicia formulando 5 preguntas críticas que el alumno olvidó hacer.
 - HIPÓTESIS CLÍNICAS (Mínimo 3): Diagnóstico clínico macro. Formato: [Categoría CIF] + (Diagnóstico Médico Completo SIN SIGLAS).
 - HIPÓTESIS SECUNDARIAS / MECANICISTAS (Mínimo 2): Contribuyentes de movimiento o tejido blando (ej. Disfunción de control motor, Déficit de movilidad torácica).
 - PLAN DE EVALUACIÓN (9 Pasos): CADA PASO debe tener EXACTAMENTE 4 viñetas (Batería, Justificación, Interdependencia, Interpretación).
-- EVALUACIÓN INTEGRAL (RIESGOS OCULTOS): Identifica condiciones en la anamnesis remota o contexto (ej. caídas previas en adultos mayores, lesiones antiguas severas, cirugías) que, aunque no sean el motivo de consulta actual, exijan evaluación obligatoria para prevenir morbilidad o recidivas.
+- EVALUACIÓN INTEGRAL (RIESGOS OCULTOS): Identifica condiciones en la anamnesis remota o contexto que exijan evaluación obligatoria para prevenir morbilidad o recidivas, independiente del motivo de consulta actual.
+- ESCALAS Y CUESTIONARIOS (PROMs): Sugiere exactamente 4 instrumentos validados: 2 Escalas Regionales/Específicas, 1 Escala Psicosocial o de Riesgo, y 1 Escala Funcional Rápida.
 
 Genera el resultado EXACTAMENTE con este formato y encabezados (usa markdown ##):
 
@@ -104,9 +106,19 @@ Genera el resultado EXACTAMENTE con este formato y encabezados (usa markdown ##)
 - Precauciones durante la evaluación: [Qué pruebas omitir si hay riesgo].
 
 ## 5. Evaluación Integral y Riesgos Coexistentes (Fuera del Motivo de Consulta)
-- Hallazgo en Anamnesis Remota/Contexto: [Ej. Cirugía previa de LCA, Edad avanzada con antecedente de caída, Sedentarismo severo].
-- Riesgo Clínico Subyacente: [Ej. Alteración biomecánica residual, Riesgo de fractura, Sarcopenia].
-- Recomendación de Evaluación Extra: [Indica 1 o 2 test específicos que el alumno DEBE incluir para evaluar este riesgo periférico, ej. TUG, Y-Balance Test, Dinamometría global].`;
+- Hallazgo en Anamnesis Remota/Contexto: [Ej. Cirugía previa, Edad avanzada, Sedentarismo severo].
+- Riesgo Clínico Subyacente: [Riesgo periférico derivado del hallazgo].
+- Recomendación de Evaluación Extra: [Test específicos a incluir para evaluar este riesgo].
+
+## 6. Escalas y Cuestionarios Recomendados (PROMs)
+1. Escala Regional / Específica 1: [Nombre completo y sigla, ej. KOOS, Oswestry, SPADI].
+   - Justificación: [Por qué aplica a la macroestructura de este caso].
+2. Escala Regional / Específica 2: [Nombre completo y sigla de una segunda opción complementaria, ej. IKDC, Roland Morris, DASH].
+   - Justificación: [Qué aspecto adicional o perspectiva funcional diferente aporta respecto a la primera].
+3. Escala Psicosocial o de Riesgo: [Nombre completo y sigla, ej. TSK-11, PCS, DN4, Örebro. Si el paciente no tiene dolor, sugiere FES-I u otra pertinente].
+   - Justificación: [Qué variable psicosocial, neuropática o de miedo evaluará].
+4. Escala Funcional Rápida (Monitoreo Sesión a Sesión): [Nombre completo y sigla, ej. PSFS, GROC, SANE].
+   - Justificación: [Cómo se usará intra/inter sesión de forma ágil].`;
 
         const userPrompt = `DATOS DE LA ANAMNESIS:
 
