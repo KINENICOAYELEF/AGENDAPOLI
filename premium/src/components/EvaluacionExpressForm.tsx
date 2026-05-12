@@ -16,6 +16,239 @@ export interface EvaluacionExpressFormProps {
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
+export function BeautifulClinicalMarkdown({ text }: { text: string }) {
+    if (!text) return null;
+
+    const sections: { title: string; contentLines: string[] }[] = [];
+    let currentSection: { title: string; contentLines: string[] } | null = null;
+
+    text.split('\n').forEach(line => {
+        if (line.startsWith('## ')) {
+            currentSection = {
+                title: line.replace('## ', '').trim(),
+                contentLines: []
+            };
+            sections.push(currentSection);
+        } else if (currentSection) {
+            currentSection.contentLines.push(line);
+        } else {
+            if (line.trim()) {
+                currentSection = {
+                    title: 'Orientación General',
+                    contentLines: [line]
+                };
+                sections.push(currentSection);
+            }
+        }
+    });
+
+    const getBorderColor = (title: string) => {
+        const t = title.toLowerCase();
+        if (t.includes('feedback') || t.includes('entrevista')) return 'border-t-blue-500';
+        if (t.includes('análisis') || t.includes('fenotipificación')) return 'border-t-indigo-600';
+        if (t.includes('plan de evaluación') || t.includes('densidad')) return 'border-t-emerald-600';
+        if (t.includes('seguridad') || t.includes('banderas rojas')) return 'border-t-amber-500';
+        if (t.includes('evaluación integral') || t.includes('coexistentes')) return 'border-t-purple-600';
+        if (t.includes('escalas') || t.includes('cuestionarios') || t.includes('proms')) return 'border-t-teal-600';
+        return 'border-t-slate-600';
+    };
+
+    return (
+        <div className="space-y-6 text-slate-700">
+            {sections.map((sec, sIdx) => {
+                const isPlanSection = sec.title.toLowerCase().includes('plan de evaluación') || sec.title.toLowerCase().includes('alta densidad');
+                
+                let contentNode: React.ReactNode = null;
+
+                if (isPlanSection) {
+                    const pasos: any[] = [];
+                    let currentPaso: any = null;
+                    let lastAttribute: string | null = null;
+
+                    sec.contentLines.forEach(line => {
+                        const trimmed = line.trim();
+                        if (trimmed.startsWith('- Paso ')) {
+                            if (currentPaso) pasos.push(currentPaso);
+                            currentPaso = {
+                                header: trimmed.replace(/^- /, ''),
+                                bateria: '',
+                                justificacion: '',
+                                interdependencia: '',
+                                interpretacion: '',
+                                otherLines: []
+                            };
+                            lastAttribute = null;
+                        } else if (currentPaso) {
+                            if (trimmed.startsWith('- Batería:') || trimmed.startsWith('Batería:')) {
+                                currentPaso.bateria = trimmed.replace(/^-? ?Batería:/, '').trim();
+                                lastAttribute = 'bateria';
+                            } else if (trimmed.startsWith('- Justificación:') || trimmed.startsWith('Justificación:')) {
+                                currentPaso.justificacion = trimmed.replace(/^-? ?Justificación:/, '').trim();
+                                lastAttribute = 'justificacion';
+                            } else if (trimmed.startsWith('- Interdependencia Regional:') || trimmed.startsWith('Interdependencia Regional:') || trimmed.startsWith('- Interdependencia:') || trimmed.startsWith('Interdependencia:')) {
+                                currentPaso.interdependencia = trimmed.replace(/^-? ?Interdependencia( Regional)?:/, '').trim();
+                                lastAttribute = 'interdependencia';
+                            } else if (trimmed.startsWith('- Interpretación:') || trimmed.startsWith('Interpretación:')) {
+                                currentPaso.interpretacion = trimmed.replace(/^-? ?Interpretación:/, '').trim();
+                                lastAttribute = 'interpretacion';
+                            } else if (trimmed) {
+                                if (lastAttribute === 'bateria') currentPaso.bateria += ' ' + trimmed;
+                                else if (lastAttribute === 'justificacion') currentPaso.justificacion += ' ' + trimmed;
+                                else if (lastAttribute === 'interdependencia') currentPaso.interdependencia += ' ' + trimmed;
+                                else if (lastAttribute === 'interpretacion') currentPaso.interpretacion += ' ' + trimmed;
+                                else currentPaso.otherLines.push(line);
+                            }
+                        }
+                    });
+                    if (currentPaso) pasos.push(currentPaso);
+
+                    contentNode = (
+                        <div className="mt-4 space-y-4">
+                            {pasos.map((paso, pIdx) => (
+                                <div key={pIdx} className="bg-white border border-slate-200/80 rounded-xl p-4 transition-all hover:shadow-xs shadow-2xs">
+                                    <div className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2 mb-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                                        <span>{paso.header}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {paso.bateria && (
+                                            <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-100/80">
+                                                <span className="font-black text-[10px] uppercase tracking-wider text-indigo-600 block mb-1">Batería de Pruebas</span>
+                                                <span className="text-xs text-slate-700 leading-relaxed font-medium">{paso.bateria}</span>
+                                            </div>
+                                        )}
+                                        {paso.justificacion && (
+                                            <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-100/80">
+                                                <span className="font-black text-[10px] uppercase tracking-wider text-emerald-600 block mb-1">Justificación</span>
+                                                <span className="text-xs text-slate-700 leading-relaxed">{paso.justificacion}</span>
+                                            </div>
+                                        )}
+                                        {paso.interdependencia && (
+                                            <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-100/80">
+                                                <span className="font-black text-[10px] uppercase tracking-wider text-amber-600 block mb-1">Interdependencia Regional</span>
+                                                <span className="text-xs text-slate-700 leading-relaxed">{paso.interdependencia}</span>
+                                            </div>
+                                        )}
+                                        {paso.interpretacion && (
+                                            <div className="bg-slate-50/70 p-3 rounded-lg border border-slate-100/80">
+                                                <span className="font-black text-[10px] uppercase tracking-wider text-purple-600 block mb-1">Interpretación</span>
+                                                <span className="text-xs text-slate-700 leading-relaxed">{paso.interpretacion}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {paso.otherLines && paso.otherLines.length > 0 && (
+                                        <div className="mt-2 text-[11px] text-slate-500">
+                                            {paso.otherLines.map((ol: string, oIdx: number) => <p key={oIdx}>{ol}</p>)}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    );
+                } else {
+                    contentNode = (
+                        <div className="mt-2 text-slate-700 leading-relaxed space-y-2">
+                            {sec.contentLines.map((line, idx) => {
+                                const trimmed = line.trim();
+                                if (!trimmed) return <div key={idx} className="h-1" />;
+                                if (trimmed.startsWith('### ')) {
+                                    return <h4 key={idx} className="text-xs font-black text-slate-900 mt-5 mb-2 uppercase tracking-wider border-b border-slate-100 pb-1.5">{trimmed.replace('### ', '')}</h4>;
+                                }
+                                if (trimmed.startsWith('- Fenotipo de Dolor Dominante:')) {
+                                    return (
+                                        <div key={idx} className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 my-2.5">
+                                            <span className="font-black text-indigo-900 block text-[10px] uppercase tracking-wider mb-0.5">Fenotipo de Dolor Dominante</span>
+                                            <span className="text-indigo-950 font-bold text-xs">{trimmed.replace('- Fenotipo de Dolor Dominante:', '').trim()}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Breve justificación:')) {
+                                    return (
+                                        <div key={idx} className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border-l-2 border-slate-300 mb-3 font-medium">
+                                            <span className="font-bold text-slate-800 block text-[10px] uppercase tracking-wider mb-0.5">Justificación del Fenotipo</span>
+                                            {trimmed.replace('- Breve justificación:', '').trim()}
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Hallazgo en Anamnesis Remota/Contexto:')) {
+                                    return (
+                                        <div key={idx} className="bg-purple-50/50 border border-purple-100 rounded-t-xl p-3 mt-3 text-xs">
+                                            <span className="font-black text-purple-900 block text-[10px] uppercase tracking-wider mb-0.5">Hallazgo de Contexto</span>
+                                            <span className="text-slate-800 font-bold">{trimmed.replace('- Hallazgo en Anamnesis Remota/Contexto:', '').trim()}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Riesgo Clínico Subyacente:')) {
+                                    return (
+                                        <div key={idx} className="bg-purple-50/30 border-x border-purple-100 px-3 py-2 text-xs">
+                                            <span className="font-black text-purple-800 block text-[10px] uppercase tracking-wider mb-0.5">Riesgo Subyacente</span>
+                                            <span className="text-slate-700">{trimmed.replace('- Riesgo Clínico Subyacente:', '').trim()}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Recomendación de Evaluación Extra:')) {
+                                    return (
+                                        <div key={idx} className="bg-purple-50/50 border border-purple-100 rounded-b-xl p-3 mb-3 text-xs">
+                                            <span className="font-black text-purple-900 block text-[10px] uppercase tracking-wider mb-0.5">Evaluación Complementaria Recomendada</span>
+                                            <span className="text-slate-800 font-medium">{trimmed.replace('- Recomendación de Evaluación Extra:', '').trim()}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.match(/^[0-9]+\./)) {
+                                    const match = trimmed.match(/^([0-9]+\.)(.*)/);
+                                    const num = match ? match[1] : '';
+                                    const rest = match ? match[2] : trimmed;
+                                    return (
+                                        <div key={idx} className="flex gap-2.5 mt-3.5 mb-1.5 items-start">
+                                            <span className="bg-slate-200 text-slate-800 font-black text-[10px] px-1.5 py-0.5 rounded shrink-0 mt-0.5">{num}</span>
+                                            <span className="text-xs font-bold text-slate-800">{rest.trim()}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- Fundamento:') || trimmed.startsWith('- Justificación:')) {
+                                    const prefixMatch = trimmed.match(/^- (Fundamento:|Justificación:)(.*)/);
+                                    const label = prefixMatch ? prefixMatch[1] : '';
+                                    const content = prefixMatch ? prefixMatch[2] : trimmed;
+                                    return (
+                                        <div key={idx} className="ml-6 pl-3 border-l-2 border-indigo-400 text-xs text-slate-600 py-1.5 my-1.5 bg-slate-50/50 rounded-r font-medium">
+                                            <strong className="text-slate-700 font-bold">{label} </strong>
+                                            {content.trim()}
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('- ')) {
+                                    return (
+                                        <div key={idx} className="flex gap-2 mb-1.5 ml-2 text-xs items-start">
+                                            <span className="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
+                                            <span className="text-slate-600 font-medium">{trimmed.replace(/^- /, '')}</span>
+                                        </div>
+                                    );
+                                }
+                                if (trimmed.startsWith('“') || trimmed.startsWith('"')) {
+                                    return <p key={idx} className="italic text-slate-500 text-xs mt-3 border-l-2 border-slate-300 pl-3 py-0.5">{trimmed}</p>;
+                                }
+                                return <p key={idx} className="text-xs text-slate-700 mb-1 leading-relaxed font-medium">{line}</p>;
+                            })}
+                        </div>
+                    );
+                }
+
+                return (
+                    <div key={sIdx} className={`bg-white rounded-2xl shadow-xs border border-slate-200/60 overflow-hidden border-t-4 ${getBorderColor(sec.title)}`}>
+                        <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">{sec.title}</h3>
+                        </div>
+                        <div className="p-5">
+                            {contentNode}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+
 export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClose, onSaveSuccess }: EvaluacionExpressFormProps) {
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
@@ -347,25 +580,31 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             </button>
                         </div>
                     </div>
-                    <textarea 
-                        autoFocus
-                        className="flex-1 w-full p-6 text-base resize-none focus:outline-none bg-white"
-                        placeholder="Anota libremente..."
-                        value={
-                            activeFullscreen === 'anamnesisProxima' ? anamnesisProxima :
-                            activeFullscreen === 'anamnesisRemota' ? anamnesisRemota :
-                            activeFullscreen === 'evaluacionFisica' ? evaluacionFisica :
-                            activeFullscreen === 'razonamientoIA' ? razonamientoIA :
-                            plannerResult || ''
-                        }
-                        onChange={e => {
-                            if (activeFullscreen === 'anamnesisProxima') setAnamnesisProxima(e.target.value);
-                            else if (activeFullscreen === 'anamnesisRemota') setAnamnesisRemota(e.target.value);
-                            else if (activeFullscreen === 'evaluacionFisica') setEvaluacionFisica(e.target.value);
-                            else if (activeFullscreen === 'razonamientoIA') setRazonamientoIA(e.target.value);
-                        }}
-                        readOnly={activeFullscreen === 'plannerResult'}
-                    />
+                    {activeFullscreen === 'plannerResult' ? (
+                        <div className="flex-1 w-full overflow-y-auto p-4 md:p-8 bg-slate-50/60">
+                            <div className="max-w-4xl mx-auto">
+                                <BeautifulClinicalMarkdown text={plannerResult || ''} />
+                            </div>
+                        </div>
+                    ) : (
+                        <textarea 
+                            autoFocus
+                            className="flex-1 w-full p-6 text-base resize-none focus:outline-none bg-white leading-relaxed text-slate-700"
+                            placeholder="Anota libremente..."
+                            value={
+                                activeFullscreen === 'anamnesisProxima' ? anamnesisProxima :
+                                activeFullscreen === 'anamnesisRemota' ? anamnesisRemota :
+                                activeFullscreen === 'evaluacionFisica' ? evaluacionFisica :
+                                razonamientoIA || ''
+                            }
+                            onChange={e => {
+                                if (activeFullscreen === 'anamnesisProxima') setAnamnesisProxima(e.target.value);
+                                else if (activeFullscreen === 'anamnesisRemota') setAnamnesisRemota(e.target.value);
+                                else if (activeFullscreen === 'evaluacionFisica') setEvaluacionFisica(e.target.value);
+                                else if (activeFullscreen === 'razonamientoIA') setRazonamientoIA(e.target.value);
+                            }}
+                        />
+                    )}
                 </div>
             )}
 
@@ -494,14 +733,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                                     <button onClick={() => setPlannerResult(null)} className="text-[10px] text-slate-400 font-bold hover:text-slate-600">Ocultar</button>
                                                 </div>
                                             </div>
-                                            <div className="p-5 text-[13px] leading-relaxed text-slate-700 max-h-[300px] overflow-y-auto bg-white/50 backdrop-blur-sm">
-                                                {plannerResult.split('\n').map((line, i) => {
-                                                    if (line.startsWith('## ')) return <h5 key={i} className="text-indigo-900 font-bold mt-4 mb-2 border-b border-indigo-50 pb-1">{line.replace('## ', '')}</h5>;
-                                                    if (line.startsWith('- ')) return <div key={i} className="flex gap-2 mb-1.5 ml-1"><span className="text-indigo-400">•</span><span>{line.replace('- ', '')}</span></div>;
-                                                    if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ') || line.startsWith('4. ') || line.startsWith('5. ')) return <div key={i} className="font-bold text-slate-800 mt-3 mb-1">{line}</div>;
-                                                    if (line.trim() === '') return <div key={i} className="h-1"></div>;
-                                                    return <p key={i} className="mb-1">{line}</p>;
-                                                })}
+                                            <div className="p-4 md:p-5 max-h-[500px] overflow-y-auto bg-slate-50/60 backdrop-blur-sm">
+                                                <BeautifulClinicalMarkdown text={plannerResult} />
                                             </div>
                                             <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex justify-end">
                                                 <button onClick={() => setActiveFullscreen('plannerResult')} className="text-[10px] text-indigo-500 font-bold flex items-center gap-1 hover:text-indigo-700">
@@ -601,25 +834,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                                             onFocus={() => { if(window.innerWidth < 768) setActiveFullscreen('razonamientoIA') }}
                                         />
                                     ) : (
-                                        <div className="w-full bg-white border border-indigo-100 rounded-2xl p-6 text-sm shadow-sm leading-relaxed text-slate-700 max-h-[600px] overflow-y-auto">
-                                            {String(razonamientoIA).split('\n').map((line: string, index: number) => {
-                                                if (line.startsWith('## ')) {
-                                                    return <h4 key={index} className="text-indigo-900 font-black mt-6 mb-3 text-base border-b border-indigo-50 pb-2">{line.replace('## ', '')}</h4>;
-                                                }
-                                                if (line.startsWith('- ')) {
-                                                    return <div key={index} className="flex gap-2 mb-2 ml-2">
-                                                        <span className="text-indigo-400 font-bold">•</span>
-                                                        <span className="text-slate-600">{line.replace('- ', '')}</span>
-                                                    </div>;
-                                                }
-                                                if (line.trim() === '') {
-                                                    return <div key={index} className="h-2"></div>;
-                                                }
-                                                if (line.startsWith('“') || line.startsWith('"')) {
-                                                    return <p key={index} className="italic text-slate-500 mt-4 border-l-2 border-indigo-200 pl-3">{line}</p>;
-                                                }
-                                                return <p key={index} className="mb-2 text-slate-600 font-medium">{line}</p>;
-                                            })}
+                                        <div className="w-full bg-slate-50/60 rounded-2xl p-4 md:p-5 text-sm max-h-[600px] overflow-y-auto border border-slate-100">
+                                            <BeautifulClinicalMarkdown text={String(razonamientoIA)} />
                                         </div>
                                     )}
                                 </div>
