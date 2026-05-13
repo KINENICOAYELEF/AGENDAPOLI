@@ -99,7 +99,7 @@ export function ClinicalPlanningSection(props: Props) {
 
                 {/* B. Diagnóstico Kinesiológico */}
                 <Section id="B" title="Diagnóstico Kinesiológico (2 Párrafos)" icon="📝" collapsed={isC('B')} toggle={toggle}>
-                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="Párrafo 1: Presentación y estructura corporal...&#10;&#10;Párrafo 2: Deficiencias funcionales, limitación en la actividad y restricción en la participación..." minRows={8} />
+                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="Párrafo 1: Contexto, anamnesis, patrón reportado (agravantes/atenuantes) y alteraciones de estructura reales...&#10;&#10;Párrafo 2: Resumen exhaustivo del examen físico (test ortopédicos, ROM, fuerza/control), limitaciones en la actividad y restricciones en la participación..." minRows={8} />
                 </Section>
 
                 {/* C. Objetivo General */}
@@ -165,7 +165,7 @@ export function ClinicalPlanningSection(props: Props) {
                             <div className="px-4 pb-4 pt-2 space-y-2 border-t border-slate-100 text-xs">
                                 {f.objetivos_operacionales?.length > 0 && <div><span className="font-bold text-purple-600">Objetivos Operacionales:</span><ul className="mt-1 space-y-0.5">{f.objetivos_operacionales.map((x: string, j: number) => <li key={j} className="text-slate-600">▸ {x}</li>)}</ul></div>}
                                 {f.intervenciones?.length > 0 && <div><span className="font-bold text-emerald-600">Intervenciones:</span><ul className="mt-1 space-y-0.5">{f.intervenciones.map((x: string, j: number) => <li key={j} className="text-slate-600">• {x}</li>)}</ul></div>}
-                                {f.dosificacion_contemporanea?.length > 0 && <div><span className="font-bold text-blue-600">Dosificación:</span><ul className="mt-1 space-y-0.5">{(Array.isArray(f.dosificacion_contemporanea) ? f.dosificacion_contemporanea : [f.dosificacion_contemporanea]).map((x: string, j: number) => <li key={j} className="text-slate-600">→ {x}</li>)}</ul></div>}
+                                {f.tips_dosificacion?.length > 0 && <div><span className="font-bold text-blue-600">Tips de Dosificación / Rangos:</span><ul className="mt-1 space-y-0.5">{(Array.isArray(f.tips_dosificacion) ? f.tips_dosificacion : [f.tips_dosificacion]).map((x: string, j: number) => <li key={j} className="text-slate-600">→ {x}</li>)}</ul></div>}
                                 {f.criterios_progresion?.length > 0 && <div className="bg-emerald-50 rounded-lg p-2"><span className="font-bold text-emerald-700">Criterios de Progresión:</span><ul className="mt-1 space-y-0.5">{f.criterios_progresion.map((x: string, j: number) => <li key={j} className="text-emerald-800">✓ {x}</li>)}</ul></div>}
                             </div>
                         </details>

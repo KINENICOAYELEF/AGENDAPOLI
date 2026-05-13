@@ -28,7 +28,7 @@ NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación 
 ═══ REGLA CERO — LENGUAJE CLÍNICO CONTEMPORÁNEO (INQUEBRANTABLE) ═══
 PROHIBIDO el uso de terminología médica obsoleta o estructuralista pura.
 1. PROHIBIDO usar la palabra "Síndrome" para patologías musculoesqueléticas mecánicas (Ej. DEBES usar "Dolor Patelofemoral", NUNCA "Síndrome de Dolor Patelofemoral". Usar "Dolor Lumbar", NUNCA "Síndrome Lumbar").
-2. PROHIBIDO usar el sufijo "-itis" a menos que sea inflamatorio sistémico (Ej. DEBES usar "Tendinopatía", NUNCA "Tendinitis").
+2. PROHIBIDO usar el sufijo "-itis" a menos que sea inflamatorio sistémico (Ej. usar "Tendinopatía", NUNCA "Tendinitis").
 3. PROHIBIDO usar "Condromalacia", usar "Dolor Patelofemoral".
 
 ═══ REGLA 1 — CLASIFICACIÓN DEL DOLOR ═══
@@ -36,63 +36,54 @@ PROHIBIDO el uso de terminología médica obsoleta o estructuralista pura.
    - "categoria": "Nociceptivo", "Neuropático", "Nociplástico" o "Mixto".
    - "subtipo": (Mecánico, Isquémico, Radicular, etc.).
    - "fundamento": Máximo 3 líneas cruzando anamnesis con examen físico.
-   - "duda_y_descarte": Si hay datos discordantes, ESTRUCTURAR ASÍ: "Duda clínica: [X síntoma]. Para confirmar o descartar [Condición Y], se debe realizar [Prueba Z]". Si el evaluador ya la descartó, escribir: "Duda resuelta: [Condición Y] descartada mediante [Prueba Z]".
+   - "duda_y_descarte": Si hay datos discordantes: "Duda clínica: [X síntoma]. Para confirmar/descartar [Condición Y], realizar [Prueba Z]". Si ya se descartó en la evaluación: "Duda resuelta: [Condición Y] descartada mediante [Prueba Z]".
    - "confianza": "Alta", "Moderada" o "Baja".
 
-═══ REGLA 2 — DIAGNÓSTICO KINESIOLÓGICO (ESTRUCTURA DE 2 PÁRRAFOS) ═══
-2. "diagnostico_narrativo": Redactar EXACTAMENTE en dos párrafos fluidos, sin usar viñetas ni símbolos especiales (como cuadrados o guiones).
-   - Párrafo 1 (Presentación y Estructura): [Paciente, edad, sexo] consulta por [motivo principal]. Presenta un cuadro clínico compatible con [Diagnóstico Kinesiológico Contemporáneo], caracterizado a nivel estructural por [Mencionar SOLO alteraciones estructurales reales y confirmadas, ej. desgarro, edema. Si NO hay, escribir: "sin alteraciones estructurales confirmadas al momento de la evaluación"]. 
-   - Párrafo 2 (Función, Actividad y Contexto): Esta condición genera deficiencias funcionales en [listar las deficiencias evaluadas: dolor, ROM, fuerza, control motor], lo que limita su capacidad para [actividad específica limitada, ej. bajar escaleras] y restringe su participación en [rol deportivo, laboral o social]. Este cuadro se ve influenciado por factores contextuales [positivos/negativos detectados en la anamnesis].
+═══ REGLA 2 — DIAGNÓSTICO KINESIOLÓGICO (EXHAUSTIVO Y FLUIDO) ═══
+2. "diagnostico_narrativo": Redactar en máximo 2 párrafos fluidos y cohesivos. DEBE remarcar TODO lo importante encontrado.
+   - Párrafo 1 (Contexto, Anamnesis y Estructura): [Paciente, edad, contexto] consulta por [motivo y evolución]. El mecanismo o patrón reportado en la anamnesis indica [mencionar agravantes/atenuantes clave]. Presenta un cuadro clínico compatible con [Diagnóstico Contemporáneo], caracterizado a nivel estructural por [Solo alteraciones reales confirmadas, ej. desgarro. Si no hay, omitir este punto].
+   - Párrafo 2 (Hallazgos del Examen Físico y Función): La examinación física destaca [Resumir exhaustivamente los hallazgos críticos: qué test ortopédicos fueron positivos, déficits exactos de ROM, fallas específicas de fuerza/control motor evaluadas]. Estas deficiencias limitan directamente su capacidad para [actividad afectada] y restringen su participación en [rol]. A nivel contextual, influyen [factores biopsicosociales relevantes].
 
-═══ REGLA 3 — OBJETIVO GENERAL ═══
+═══ REGLA 3 — OBJETIVO GENERAL (TRADUCCIÓN DEL PROBLEMA) ═══
 3. "objetivo_general":
-   - "problema_principal": En 1-2 líneas, el problema funcional primario que motivó la consulta.
-   - "opciones_sugeridas": Redactar 3 opciones de Objetivo General REALES. Las 3 deben apuntar directamente a resolver el problema principal del paciente, pero variando ligeramente la estrategia o el enfoque narrativo (ej. una más enfocada en la autonomía del paciente, otra en el rendimiento de la tarea). Deben usar verbos resolutivos (Restaurar, Lograr, Recuperar, Facilitar).
-   - "seleccionado": Indicar cuál de las 3 opciones es la más certera para el caso y por qué.
+   - "problema_principal": En 1-2 líneas, define exactamente qué le impide al paciente hacer lo que desea o necesita.
+   - "opciones_sugeridas": Redactar 3 o 4 opciones. Las opciones NO DEBEN ser "vías" distintas, sino variaciones de redacción que resuelvan EXACTAMENTE el "problema_principal" (transformar el problema en un logro positivo). Deben usar verbos resolutivos (Lograr, Restaurar, Recuperar, Facilitar). Ej: Si el problema es incapacidad de saltar por dolor, las opciones deben ser variaciones de "Restaurar el salto sin dolor para...".
+   - "seleccionado": Indicar la mejor opción redactada.
 
-═══ REGLA 4 — OBJETIVOS ESPECÍFICOS SMART (ORDEN Y RIGOR) ═══
-4. "objetivos_smart": Generar 1 objetivo SMART por cada deficiencia o limitación, respetando el siguiente ORDEN JERÁRQUICO OBLIGATORIO:
-   1° Objetivos de Modulación de Síntomas/Dolor.
-   2° Objetivos de Movilidad/ROM.
-   3° Objetivos de Fuerza/Control Motor.
-   4° Objetivos Funcionales/Participación (Gesto específico).
-   5° Objetivos de Educación/Autoeficacia (Basado en la evidencia y creencias del paciente, ej. educación en neurociencia, gestión de carga).
-   - REGLA DE ORO INQUEBRANTABLE: SOLO genera objetivos para variables EXPLÍCITAMENTE evaluadas o reportadas. 
-   - FORMATO ESTRICTO: "[Verbo de Acción] + [Variable Clínica/Educativa] + desde [Valor Basal o estado evaluado actual] hasta [Valor Meta] + en [Plazo Temporal]."
-   - PROHIBIDO incluir el "cómo" o la intervención dentro del objetivo.
+═══ REGLA 4 — OBJETIVOS ESPECÍFICOS SMART (FIDELIDAD DE MÉTRICA) ═══
+4. "objetivos_smart": Generar 1 objetivo SMART por cada deficiencia o limitación, respetando este orden: 1° Dolor/Modulación, 2° Movilidad, 3° Fuerza/Control, 4° Función/Gesto, 5° Educación.
+   - REGLA DE ORO INQUEBRANTABLE: La métrica de cambio DEBE ser el instrumento, test o escala EXACTA que el kinesiólogo usó en la examinación física o anamnesis. Si se evaluó con "Test de Lunge", la meta debe ser en "Test de Lunge". PROHIBIDO inventar métricas genéricas si hay un test específico reportado.
+   - FORMATO ESTRICTO: "[Verbo de Acción] + [Variable] medida con [Test/Escala exacta de la evaluación] + desde [Valor Basal evaluado] hasta [Valor Meta] + en [Plazo Temporal]."
+   - Para Educación: "[Verbo] + [Concepto a educar justificado por la entrevista] + en [Plazo]."
    - VERBOS PERMITIDOS: Reducir, Aumentar, Mejorar, Restaurar, Recuperar, Incrementar, Optimizar, Normalizar, Desarrollar, Fortalecer, Alcanzar, Lograr.
    - VERBOS PROHIBIDOS: Eliminar, Erradicar, Curar, Suprimir.
    - JSON por objetivo: { "texto": "..." } — SOLO eso.
 
 ═══ REGLA 5 — PRONÓSTICO BIOPSICOSOCIAL ═══
-5. "pronostico": Mantener la respuesta CONCISA en viñetas cortas.
+5. "pronostico": Formato conciso en viñetas.
    - "corto_plazo" (0-4 sem), "mediano_plazo" (4-12 sem), "largo_plazo" (>12 sem)
-   - "factores_a_favor": Mínimo 3 factores en viñetas cortas.
-   - "factores_en_contra": Mínimo 2 factores en viñetas cortas.
-   - "historia_natural": 1 línea sobre qué pasaría sin intervención.
-   - "categoria": Ej. "Favorable", "Reservado", "Desfavorable", etc.
+   - "factores_a_favor": Mínimo 3 factores.
+   - "factores_en_contra": Mínimo 2 factores.
+   - "historia_natural": Qué pasaría sin intervención.
+   - "categoria": Ej. "Favorable", "Reservado", etc.
 
-═══ REGLA 6 — FASES DE REHABILITACIÓN (NOMENCLATURA OBLIGATORIA) ═══
-6. "fases_rehabilitacion": 4 FASES con los siguientes nombres OBLIGATORIOS:
-   - "Fase 1: Modulación de Síntomas".
-   - "Fase 2: Recuperación de Movilidad y Control Motor".
-   - "Fase 3: Aumento de Capacidad y Fuerza".
-   - "Fase 4: Reintegro Funcional / Deportivo".
-   Para cada fase generar:
+═══ REGLA 6 — FASES DE REHABILITACIÓN (RANGOS Y TIPS) ═══
+6. "fases_rehabilitacion": 4 FASES obligatorias: "Fase 1: Modulación de Síntomas", "Fase 2: Recuperación de Movilidad y Control Motor", "Fase 3: Aumento de Capacidad y Fuerza", "Fase 4: Reintegro Funcional / Deportivo".
+   Para cada fase:
    - "fase": Número (1-4).
    - "nombre": Nombre OBLIGATORIO según la lista anterior.
    - "duracion_estimada": Ej: "Semanas 1-3".
-   - "objetivos_operacionales": QUÉ se buscará lograr físicamente en esta fase.
-   - "intervenciones": 3 a 5 ejercicios específicos con parámetros.
-   - "dosificacion_contemporanea": OBLIGATORIO prescribir usando RPE, RIR, o TUT. Prohibido usar "3x10" genérico.
-   - "criterios_progresion": 2 métricas claras para avanzar de fase.
+   - "objetivos_operacionales": Qué se buscará lograr físicamente.
+   - "intervenciones": 3 a 5 ejercicios o estrategias activas.
+   - "tips_dosificacion": PROHIBIDO dar series y repeticiones fijas (ej. no usar "3x10"). DEBES proporcionar rangos terapéuticos, focos mecánicos o métricas de esfuerzo (ej. RPE 7-8, TUT 40 seg, RIR 2, enfoque excéntrico lento).
+   - "criterios_progresion": 2 métricas claras para avanzar.
 
 ═══ REGLA 7 — REEVALUACIÓN Y MÉTRICAS DE AVANCE ═══
 7. "reglas_reevaluacion":
-   - "metrica_subjetiva": Medición reportada por el paciente intra/inter sesión (ej. EVA/NPRS al realizar una tarea específica, RPE percibido).
-   - "metrica_objetiva": Medición clínica pura (ej. grados de dorsiflexión en Test de Lunge, asimetría de fuerza en dinamometría, tiempo en test de equilibrio).
-   - "metrica_funcional_participacion": Una métrica que EMULE el gesto o actividad real a la que el paciente desea reintegrarse (ej. dolor al replicar postura de combate, tiempo de caminata sin claudicación simulando ir de compras).
-   - "criterio_estancamiento": Qué señal clínica o de tiempo indicará que se debe derivar a médico o replantear completamente el tratamiento.
+   - "metrica_subjetiva": Medición reportada por el paciente (ej. EVA al realizar la tarea índice).
+   - "metrica_objetiva": Medición clínica pura vinculada a los test del examen físico (ej. grados de asimetría, cm en test funcional).
+   - "metrica_funcional_participacion": Métrica que emule el gesto real al que desea reintegrarse (ej. dolor al replicar postura de combate o gesto laboral).
+   - "criterio_estancamiento": Qué señal clínica indica derivación o replanteo total.
 
 ═══ REGLAS DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan, asume lo clínicamente más probable.
@@ -106,9 +97,9 @@ const expectedJsonStructure = `{
   "clasificacion_dolor": { "categoria": "...", "subtipo": "...", "fundamento": "...", "duda_y_descarte": "...", "confianza": "..." },
   "diagnostico_narrativo": "Párrafo 1...\\n\\nPárrafo 2...",
   "objetivo_general": { "problema_principal": "...", "opciones_sugeridas": ["...", "...", "..."], "seleccionado": "..." },
-  "objetivos_smart": [{ "texto": "Reducir... desde X hasta Y en Z semanas." }],
+  "objetivos_smart": [{ "texto": "Reducir... medida con... desde X hasta Y en Z semanas." }],
   "pronostico": { "corto_plazo": "...", "mediano_plazo": "...", "largo_plazo": "...", "factores_a_favor": ["..."], "factores_en_contra": ["..."], "historia_natural": "...", "categoria": "..." },
-  "fases_rehabilitacion": [{ "fase": 1, "nombre": "Fase 1: Modulación de Síntomas", "duracion_estimada": "...", "objetivos_operacionales": ["..."], "intervenciones": ["..."], "dosificacion_contemporanea": ["..."], "criterios_progresion": ["..."] }],
+  "fases_rehabilitacion": [{ "fase": 1, "nombre": "Fase 1: Modulación de Síntomas", "duracion_estimada": "...", "objetivos_operacionales": ["..."], "intervenciones": ["..."], "tips_dosificacion": ["..."], "criterios_progresion": ["..."] }],
   "reglas_reevaluacion": { "metrica_subjetiva": "...", "metrica_objetiva": "...", "metrica_funcional_participacion": "...", "criterio_estancamiento": "..." }
 }`;
 
@@ -144,7 +135,7 @@ ${context}`;
             systemInstruction: EXPRESS_PLAN_SYSTEM,
             userPrompt,
             inputHash: `express_plan_${Buffer.from(context).length}`,
-            promptVersion: 'v2.2_no_tools_clean_rules',
+            promptVersion: 'v2.3_metrics_fidelity_ranges',
             temperature: 0.3,
             validator: (data: any) => {
                 if (typeof data === 'string') {
@@ -157,7 +148,7 @@ ${context}`;
                         ...f,
                         objetivos_operacionales: f?.objetivos_operacionales || [],
                         intervenciones: f?.intervenciones || [],
-                        dosificacion_contemporanea: f?.dosificacion_contemporanea || f?.tips_dosificacion || [],
+                        tips_dosificacion: f?.tips_dosificacion || f?.dosificacion_contemporanea || [],
                         criterios_progresion: f?.criterios_progresion || f?.progresiones || [],
                     }));
                 }
@@ -176,7 +167,7 @@ ${context}`;
                 if (data?.objetivo_general) {
                     data.objetivo_general.problema_principal = data.objetivo_general.problema_principal || data.objetivo_general.problema_principal_caso || '';
                 }
-                // Force delete herramientas if still injected
+                // Cleanup removed fields
                 if (data?.herramientas_complementarias) delete data.herramientas_complementarias;
                 return data;
             }
