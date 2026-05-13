@@ -98,23 +98,16 @@ export function ClinicalPlanningSection(props: Props) {
                 </Section>
 
                 {/* B. Diagnóstico Kinesiológico */}
-                <Section id="B" title="Diagnóstico Kinesiológico (2 Párrafos)" icon="📝" collapsed={isC('B')} toggle={toggle}>
-                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="Párrafo 1: Contexto, anamnesis, patrón reportado (agravantes/atenuantes) y alteraciones de estructura reales...&#10;&#10;Párrafo 2: Resumen exhaustivo del examen físico (test ortopédicos, ROM, fuerza/control), limitaciones en la actividad y restricciones en la participación..." minRows={8} />
+                <Section id="B" title="Diagnóstico Kinesiológico (Estructura CIF)" icon="📝" collapsed={isC('B')} toggle={toggle}>
+                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="[Paciente] presenta un cuadro compatible con... A nivel estructural... Presenta DEFICIENCIAS EN... Esto provoca LIMITACIONES EN... Generando RESTRICCIONES EN... FACTORES PERSONALES/AMBIENTALES NEGATIVOS (BARRERAS)... FACTORES PERSONALES/AMBIENTALES POSITIVOS (FACILITADORES)..." minRows={8} />
                 </Section>
 
                 {/* C. Objetivo General */}
-                <Section id="C" title="Objetivo General" icon="🎯" collapsed={isC('C')} toggle={toggle}>
+                <Section id="C" title="Objetivo General (Único y Resolutivo)" icon="🎯" collapsed={isC('C')} toggle={toggle}>
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Problema Principal</label>
-                        <AutoTextarea value={objetivoGeneral?.problema_principal || objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal: v })} minRows={2} /></div>
-                    {objetivoGeneral?.opciones_sugeridas?.length > 0 && (<div>
-                        <label className="block text-xs font-bold text-slate-500 mb-2">Opciones Sugeridas (selecciona una para editar abajo)</label>
-                        <div className="space-y-2">{objetivoGeneral.opciones_sugeridas.map((op: string, i: number) => (
-                            <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${objetivoGeneral.seleccionado === op ? 'border-indigo-400 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:bg-slate-50'}`}>
-                                <input type="radio" name="obj_gen" checked={objetivoGeneral.seleccionado === op} onChange={() => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: op })} className="mt-1 accent-indigo-600" />
-                                <span className="text-sm text-slate-700 leading-relaxed">{op}</span>
-                            </label>))}</div></div>)}
-                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Seleccionado / Definitivo</label>
-                        <AutoTextarea value={objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: v })} placeholder="Escribe o edita el objetivo general definitivo..." minRows={3} /></div>
+                        <AutoTextarea value={objetivoGeneral?.problema_principal || objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal: v })} placeholder="Incapacidad funcional principal que motivó la consulta..." minRows={2} /></div>
+                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Maestro</label>
+                        <AutoTextarea value={objetivoGeneral?.objetivo_maestro || objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, objetivo_maestro: v })} placeholder="[Verbo de resolución] la capacidad de [Actividad/Participación] aumentando la tolerancia a la carga y disminuyendo los síntomas, en un plazo de [X semanas]..." minRows={3} /></div>
                 </Section>
 
                 {/* D. Objetivos SMART */}

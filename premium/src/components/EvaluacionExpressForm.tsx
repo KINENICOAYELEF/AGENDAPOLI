@@ -298,7 +298,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     // ===== P3/P4 CLINICAL PLANNING STATE =====
     const initP4 = initialDataAny?.expressDraft?.p4_plan || {};
     const [diagnosticoNarrativo, setDiagnosticoNarrativo] = useState(initP4.diagnostico_narrativo || '');
-    const [objetivoGeneral, setObjetivoGeneral] = useState<any>(initP4.objetivo_general || { problema_principal_caso: '', opciones_sugeridas: [], seleccionado: '' });
+    const [objetivoGeneral, setObjetivoGeneral] = useState<any>(initP4.objetivo_general || { problema_principal: '', objetivo_maestro: '' });
     const [objetivosSmart, setObjetivosSmart] = useState<Array<{id: string, texto: string, plazo: string, prioridad: string, variable_base: string, basal: string, meta: string}>>(
         initP4.objetivos_smart || []
     );
