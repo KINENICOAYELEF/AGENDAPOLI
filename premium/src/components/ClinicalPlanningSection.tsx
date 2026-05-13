@@ -30,7 +30,6 @@ interface Props {
     onPublish: () => void; isPublishing: boolean; publishSuccess: boolean;
     razonamientoIA?: string;
     anamnesisProxima?: string; anamnesisRemota?: string; evaluacionFisica?: string;
-    herramientas?: any[]; setHerramientas?: (v: any) => void;
 }
 
 export function ClinicalPlanningSection(props: Props) {
@@ -38,8 +37,7 @@ export function ClinicalPlanningSection(props: Props) {
         objetivoGeneral, setObjetivoGeneral, objetivosSmart, setObjetivosSmart,
         pronostico, setPronostico, fases, setFases, reglasReeval, setReglasReeval,
         collapsed, setCollapsed, onPublish, isPublishing, publishSuccess,
-        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica,
-        herramientas = [], setHerramientas } = props;
+        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica } = props;
 
     const [isGenerating, setIsGenerating] = useState(false);
     const toggle = useCallback((id: string) => setCollapsed((prev: any) => ({ ...prev, [id]: !prev[id] })), [setCollapsed]);
@@ -64,18 +62,15 @@ export function ClinicalPlanningSection(props: Props) {
             if (d.pronostico) setPronostico(d.pronostico);
             if (d.fases_rehabilitacion) setFases(d.fases_rehabilitacion);
             if (d.reglas_reevaluacion) setReglasReeval(d.reglas_reevaluacion);
-            if (d.herramientas_complementarias && setHerramientas) setHerramientas(d.herramientas_complementarias);
-            setCollapsed({ A: false, B: false, C: false, D: false, E: false, F: false, G: false, H: false });
+            setCollapsed({ A: false, B: false, C: false, D: false, E: false, F: false, G: false });
         } catch (err: any) { alert('Error: ' + err.message); } finally { setIsGenerating(false); }
     };
-
-    const catIcon: Record<string, string> = { 'Terapia Manual': '🤲', 'Tejido Blando': '💆', 'Agente Físico': '❄️', 'Educación': '📚', 'Modulación de Síntomas': '⚡' };
 
     return (
         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 space-y-6">
             <div className="text-center">
                 <h3 className="font-black text-slate-800 text-lg flex items-center justify-center gap-2">🧠 Síntesis, Diagnóstico y Plan Clínico</h3>
-                <p className="text-xs text-slate-500 mt-1">Clasificación CIF, objetivos SMART, fases de rehabilitación y reevaluación</p>
+                <p className="text-xs text-slate-500 mt-1">Diagnóstico funcional en 2 párrafos, SMART ordenados jerárquicamente, fases y reevaluación</p>
             </div>
             <button onClick={handleGenerateAi} disabled={isGenerating || (!razonamientoIA && !anamnesisProxima)} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                 {isGenerating ? (<><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generando Plan Clínico...</>) : (<><span className="text-xl">🧠</span> Generar Diagnóstico y Plan con IA</>)}
@@ -103,8 +98,8 @@ export function ClinicalPlanningSection(props: Props) {
                 </Section>
 
                 {/* B. Diagnóstico Kinesiológico */}
-                <Section id="B" title="Diagnóstico Kinesiológico" icon="📝" collapsed={isC('B')} toggle={toggle}>
-                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="[Paciente] presenta disfunción funcional compatible con [Diagnóstico Contemporáneo], caracterizado a nivel estructural por [X, solo si hay daño confirmado], lo que genera deficiencias funcionales de [listar]. Estas deficiencias limitan su capacidad para [actividad] y restringen su participación en [rol]. Contextualmente, se ve influenciado por [factores]." minRows={8} />
+                <Section id="B" title="Diagnóstico Kinesiológico (2 Párrafos)" icon="📝" collapsed={isC('B')} toggle={toggle}>
+                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="Párrafo 1: Presentación y estructura corporal...&#10;&#10;Párrafo 2: Deficiencias funcionales, limitación en la actividad y restricción en la participación..." minRows={8} />
                 </Section>
 
                 {/* C. Objetivo General */}
@@ -112,13 +107,13 @@ export function ClinicalPlanningSection(props: Props) {
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Problema Principal</label>
                         <AutoTextarea value={objetivoGeneral?.problema_principal || objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal: v })} minRows={2} /></div>
                     {objetivoGeneral?.opciones_sugeridas?.length > 0 && (<div>
-                        <label className="block text-xs font-bold text-slate-500 mb-2">Vías Clínicas Sugeridas (selecciona una para editar abajo)</label>
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Opciones Sugeridas (selecciona una para editar abajo)</label>
                         <div className="space-y-2">{objetivoGeneral.opciones_sugeridas.map((op: string, i: number) => (
                             <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${objetivoGeneral.seleccionado === op ? 'border-indigo-400 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:bg-slate-50'}`}>
                                 <input type="radio" name="obj_gen" checked={objetivoGeneral.seleccionado === op} onChange={() => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: op })} className="mt-1 accent-indigo-600" />
                                 <span className="text-sm text-slate-700 leading-relaxed">{op}</span>
                             </label>))}</div></div>)}
-                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Definitivo (editable)</label>
+                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Seleccionado / Definitivo</label>
                         <AutoTextarea value={objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: v })} placeholder="Escribe o edita el objetivo general definitivo..." minRows={3} /></div>
                 </Section>
 
@@ -155,7 +150,7 @@ export function ClinicalPlanningSection(props: Props) {
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">Historia Natural</label>
                             <AutoTextarea value={pronostico.historia_natural || ''} onChange={(v: string) => setPronostico({ ...pronostico, historia_natural: v })} minRows={2} /></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">Categoría</label>
-                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" value={pronostico.categoria || ''} onChange={e => setPronostico({ ...pronostico, categoria: e.target.value })} placeholder='Ej: Favorable, Reservado dependiente de adherencia' /></div>
+                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" value={pronostico.categoria || ''} onChange={e => setPronostico({ ...pronostico, categoria: e.target.value })} placeholder='Ej: Favorable, Reservado' /></div>
                     </div>
                 </Section>
 
@@ -178,41 +173,28 @@ export function ClinicalPlanningSection(props: Props) {
                     {fases.length === 0 && <p className="text-center text-slate-400 text-sm py-4">Genera con IA para ver las fases</p>}
                 </Section>
 
-                {/* G. Herramientas Complementarias */}
-                <Section id="G" title={`Herramientas Complementarias (${herramientas.length})`} icon="🧰" collapsed={isC('G')} toggle={toggle}>
-                    {herramientas.length > 0 ? (
-                        <div className="space-y-3">{herramientas.map((h: any, i: number) => (
-                            <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-lg">{catIcon[h.categoria] || '🔧'}</span>
-                                    <span className="text-xs font-bold text-slate-400 uppercase">{h.categoria}</span>
-                                </div>
-                                <p className="font-bold text-sm text-slate-800">{h.herramienta}</p>
-                                <p className="text-xs text-slate-600 mt-1">{h.justificacion}</p>
-                                <p className="text-xs text-indigo-700 mt-1 font-medium">Aplicación: {h.aplicacion}</p>
-                                {h.nota_evidencia && <p className="text-xs text-slate-400 mt-1 italic">{h.nota_evidencia}</p>}
+                {/* G. Reevaluación */}
+                <Section id="G" title="Reevaluación y Métricas" icon="🔄" collapsed={isC('G')} toggle={toggle}>
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs font-bold text-indigo-600 mb-1">Métrica Subjetiva</label>
+                            <AutoTextarea value={reglasReeval.metrica_subjetiva || ''} onChange={(v: string) => setReglasReeval({ ...reglasReeval, metrica_subjetiva: v })} placeholder="EVA/NPRS al realizar una tarea específica, RPE percibido..." minRows={2} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-emerald-600 mb-1">Métrica Objetiva</label>
+                            <AutoTextarea value={reglasReeval.metrica_objetiva || ''} onChange={(v: string) => setReglasReeval({ ...reglasReeval, metrica_objetiva: v })} placeholder="Grados en Lunge Test, asimetría de fuerza en dinamometría..." minRows={2} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-purple-600 mb-1">Métrica Funcional / Participación</label>
+                            <AutoTextarea value={reglasReeval.metrica_funcional_participacion || ''} onChange={(v: string) => setReglasReeval({ ...reglasReeval, metrica_funcional_participacion: v })} placeholder="Gesto emulado, claudicación simulando ir de compras..." minRows={2} />
+                        </div>
+                        {reglasReeval.criterio_estancamiento !== undefined && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2">
+                                <label className="block text-xs font-bold text-amber-700 mb-1">⚠️ Criterio de Estancamiento / Derivación</label>
+                                <AutoTextarea className="bg-transparent border-0 p-0 text-xs text-amber-900 focus:ring-0" value={reglasReeval.criterio_estancamiento || ''} onChange={(v: string) => setReglasReeval({ ...reglasReeval, criterio_estancamiento: v })} placeholder="Señal clínica o de tiempo para derivar o replantear..." minRows={2} />
                             </div>
-                        ))}</div>
-                    ) : <p className="text-center text-slate-400 text-sm py-4">Genera con IA para ver herramientas</p>}
-                </Section>
-
-                {/* H. Reevaluación */}
-                <Section id="H" title="Reevaluación" icon="🔄" collapsed={isC('H')} toggle={toggle}>
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-                        <p className="text-sm"><span className="font-bold text-indigo-700">Signo Comparable:</span> <span className="text-indigo-900">{reglasReeval.signo_comparable || '—'}</span></p>
+                        )}
                     </div>
-                    {reglasReeval.variables_seguimiento?.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-xl p-3">
-                            <label className="block text-xs font-bold text-slate-500 mb-1">Variables de Seguimiento</label>
-                            <ul className="space-y-0.5">{reglasReeval.variables_seguimiento.map((v: string, i: number) => <li key={i} className="text-xs text-slate-700">• {v}</li>)}</ul>
-                        </div>
-                    )}
-                    {reglasReeval.criterio_estancamiento && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                            <label className="block text-xs font-bold text-amber-700 mb-1">⚠️ Criterio de Estancamiento / Derivación</label>
-                            <p className="text-xs text-amber-800">{reglasReeval.criterio_estancamiento}</p>
-                        </div>
-                    )}
                 </Section>
             </div>
 

@@ -314,19 +314,13 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         categoria: '', justificacion: ''
     });
     const [fases, setFases] = useState<any[]>(initP4.fases_rehabilitacion || []);
-    const [reglasReeval, setReglasReeval] = useState<{
-        signo_comparable: string; razon_signo: string;
-        variables_seguimiento: string[]; frecuencia: string;
-        criterio_mejora: string; criterio_estancamiento: string;
-    }>(initP4.reglas_reevaluacion || {
-        signo_comparable: '', razon_signo: '',
-        variables_seguimiento: [], frecuencia: '',
-        criterio_mejora: '', criterio_estancamiento: ''
+    const [reglasReeval, setReglasReeval] = useState<any>(initP4.reglas_reevaluacion || {
+        metrica_subjetiva: '', metrica_objetiva: '',
+        metrica_funcional_participacion: '', criterio_estancamiento: ''
     });
     const [clasificacionDolor, setClasificacionDolor] = useState<any>(
         initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '', duda_y_descarte: '' }
     );
-    const [herramientas, setHerramientas] = useState<any[]>(initP4.herramientas_complementarias || []);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState(false);
     const [p4Collapsed, setP4Collapsed] = useState<Record<string, boolean>>({});
@@ -361,8 +355,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                     pronostico,
                     fases_rehabilitacion: fases,
                     reglas_reevaluacion: reglasReeval,
-                    clasificacion_dolor: clasificacionDolor,
-                    herramientas_complementarias: herramientas
+                    clasificacion_dolor: clasificacionDolor
                 }
             };
 
@@ -406,7 +399,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA || diagnosticoNarrativo || objetivosSmart.length > 0) handleSave(true);
         }, 5000);
         return () => clearTimeout(timer);
-    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, fases, reglasReeval, clasificacionDolor, herramientas]);
+    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, fases, reglasReeval, clasificacionDolor]);
 
     // Publish objectives to Proceso.activeObjectiveSet
     const handlePublishObjectives = async () => {
@@ -977,7 +970,6 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             anamnesisProxima={anamnesisProxima}
                             anamnesisRemota={anamnesisRemota}
                             evaluacionFisica={evaluacionFisica}
-                            herramientas={herramientas} setHerramientas={setHerramientas}
                         />
 
                     </div>
