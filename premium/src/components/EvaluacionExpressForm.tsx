@@ -275,6 +275,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     
     const isEditMode = !!initialData;
     const [loading, setLoading] = useState(false);
+    const [savingDraft, setSavingDraft] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isPlannerLoading, setIsPlannerLoading] = useState(false);
     const [plannerResult, setPlannerResult] = useState<string | null>(null);
@@ -329,10 +330,11 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     const [publishSuccess, setPublishSuccess] = useState(false);
     const [p4Collapsed, setP4Collapsed] = useState<Record<string, boolean>>({});
 
-    const handleSave = async (silent = false) => {
+    const handleSave = async (silent = false, isDraft = false) => {
         if (!globalActiveYear || !user) return;
         try {
-            if (!silent) setLoading(true);
+            if (isDraft) setSavingDraft('saving');
+            else if (!silent) setLoading(true);
             const targetId = persistentDocId;
 
             const basePayload: any = initialData ? { ...initialData } : {
@@ -381,12 +383,16 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, sanitizeForFirestoreDeep(basePayload), { merge: true });
 
-            if (!silent) {
+            if (isDraft) {
+                setSavingDraft('saved');
+                setTimeout(() => setSavingDraft('idle'), 2000);
+            } else if (!silent) {
                 if (onSaveSuccess) onSaveSuccess(basePayload, !isEditMode);
             }
         } catch (error: any) {
             console.error("Error saving Express Evaluation:", error);
-            if (!silent) alert("Error al guardar: " + error.message);
+            if (!silent && !isDraft) alert("Error al guardar: " + error.message);
+            if (isDraft) setSavingDraft('idle');
         } finally {
             if (!silent) setLoading(false);
         }
@@ -726,8 +732,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                         <p className="text-xs text-indigo-600 font-medium mt-1">Toma notas libres y deja que la IA razone las hipótesis.</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap justify-end">
-                        <button onClick={() => handleSave(true)} disabled={loading} className="px-3 py-2 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5">
-                            <span>💾</span> {loading ? 'Guardando...' : 'Guardar Borrador'}
+                        <button onClick={() => handleSave(false, true)} disabled={savingDraft === 'saving'} className={`px-3 py-2 border rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 ${savingDraft === 'saved' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-indigo-200 hover:bg-indigo-50 text-indigo-700'}`}>
+                            {savingDraft === 'saving' ? (<><div className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" /> Guardando...</>) : savingDraft === 'saved' ? (<><span>✅</span> Guardado</>) : (<><span>💾</span> Guardar Borrador</>)}
                         </button>
                         <button onClick={() => handleSave()} disabled={loading} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors">
                             {loading ? 'Guardando...' : 'Guardar y Cerrar'}
