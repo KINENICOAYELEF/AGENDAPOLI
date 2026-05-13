@@ -5,9 +5,6 @@ const BANNED_TERMS = [
     "taping",
     "vendaje neuromuscular",
     "kinesiotape",
-    "electroterapia",
-    "emg",
-    "tens",
     "corrientes interferenciales",
     "ultrasonido terapeutico"
 ];
