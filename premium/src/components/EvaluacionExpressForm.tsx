@@ -323,9 +323,9 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
         variables_seguimiento: [], frecuencia: '',
         criterio_mejora: '', criterio_estancamiento: ''
     });
-    const [clasificacionDolor, setClasificacionDolor] = useState<{
-        categoria: string; subtipo: string; fundamento: string; confianza: string;
-    }>(initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '', duda_mezcla: '', sugerencia_diferencial: '' });
+    const [clasificacionDolor, setClasificacionDolor] = useState<any>(
+        initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '', duda_y_descarte: '' }
+    );
     const [herramientas, setHerramientas] = useState<any[]>(initP4.herramientas_complementarias || []);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState(false);

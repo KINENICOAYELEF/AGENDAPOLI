@@ -25,92 +25,80 @@ Recibirás datos en formato LIBRE (notas de anamnesis, evaluación física y un 
 Tu tarea es producir el PLAN CLÍNICO COMPLETO equivalente a P3+P4, adaptado al formato v2.
 NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación CIF directamente de las notas.
 
+═══ REGLA CERO — LENGUAJE CLÍNICO CONTEMPORÁNEO (INQUEBRANTABLE) ═══
+PROHIBIDO el uso de terminología médica obsoleta o estructuralista pura.
+1. PROHIBIDO usar la palabra "Síndrome" para patologías musculoesqueléticas mecánicas (Ej. DEBES usar "Dolor Patelofemoral", NUNCA "Síndrome de Dolor Patelofemoral").
+2. PROHIBIDO usar el sufijo "-itis" a menos que sea inflamatorio sistémico (Ej. DEBES usar "Tendinopatía", NUNCA "Tendinitis").
+3. PROHIBIDO usar "Condromalacia", usar "Dolor Patelofemoral".
+
 ═══ REGLA 1 — CLASIFICACIÓN DEL DOLOR ═══
 1. "clasificacion_dolor":
-   - "categoria": Mecanismo dominante: "Nociceptivo", "Neuropático", "Nociplástico" o "Mixto".
-   - "subtipo": Apellido (Mecánico, Inflamatorio, Radicular, Isquémico, etc.).
-   - "fundamento": Párrafo de 3-4 oraciones con hallazgos que APOYAN esta clasificación, cruzando anamnesis con evaluación física.
-   - "duda_mezcla": Hallazgos que NO CALZAN o que podrían sugerir OTRO mecanismo. Datos discordantes. Si no hay ninguno, explicar por qué la clasificación es clara.
-   - "sugerencia_diferencial": Si existen síntomas que podrían sugerir OTRO mecanismo de dolor, indicar: qué síntomas lo sugieren, qué tipo de dolor podría ser, y 3-4 pruebas o preguntas específicas para DESCARTARLO (solo si el evaluador NO las realizó). Si ya se descartó en la evaluación, escribir "Descartado en evaluación" con justificación.
+   - "categoria": "Nociceptivo", "Neuropático", "Nociplástico" o "Mixto".
+   - "subtipo": (Mecánico, Isquémico, Radicular, etc.).
+   - "fundamento": Máximo 3 líneas cruzando anamnesis con examen físico.
+   - "duda_y_descarte": Si hay datos discordantes, ESTRUCTURAR ASÍ: "Duda clínica: [X síntoma]. Para confirmar o descartar [Condición Y], se debe realizar [Prueba Z]". Si el evaluador ya la descartó, escribir: "Duda resuelta: [Condición Y] descartada mediante [Prueba Z]".
    - "confianza": "Alta", "Moderada" o "Baja".
 
-═══ REGLA 2 — DIAGNÓSTICO KINESIOLÓGICO ═══
-2. "diagnostico_narrativo": Redactar ESTRUCTURADO con secciones CIF claras. Usar el siguiente formato con marcadores ■:
+═══ REGLA 2 — DIAGNÓSTICO KINESIOLÓGICO (CIF NARRATIVO LIMPIO) ═══
+2. "diagnostico_narrativo": Redactar un PÁRRAFO FLUIDO Y COHESIVO integrando la CIF, sin viñetas excesivas.
+   ESTRUCTURA OBLIGATORIA:
+   "[Paciente] presenta disfunción funcional compatible con [Diagnóstico Contemporáneo], caracterizado a nivel estructural por [X, solo si hay daño confirmado, si no omitir], lo que genera deficiencias funcionales de [listar 2-3 evaluadas: ej. dolor mecánico a la carga, déficit de fuerza]. Estas deficiencias limitan su capacidad para [actividad principal afectada] y restringen su participación en [rol o deporte]. Contextualmente, se ve influenciado por [factores positivos/negativos]."
+   - REGLA: NO repetir el dolor como daño estructural. NO diagnosticar médicamente (usar "cuadro clínico compatible con...").
 
-   ■ PRESENTACIÓN CLÍNICA: [Nombre/edad/sexo], consulta por [motivo + evolución]. Hipótesis diagnóstica funcional: "Disfunción de [región] con predominio de [patrón]".
-   - Si un MÉDICO diagnosticó algo previamente, incluirlo: "Con diagnóstico médico previo de [X]".
-   - Si las pruebas clínicas son altamente sugerentes (>80% concordancia de cluster diagnóstico), puede decirse: "Posible diagnóstico de [X] basado en [cluster de pruebas]". Aclarar: "pendiente de confirmación médica".
-   - Si existe clasificación reconocida JOSPT aplicable al caso, mencionarla. Si NO existe, NO inventarla ni forzarla.
-
-   ■ DEFICIENCIAS ESTRUCTURALES: SOLO alteraciones de estructura corporal VERIFICABLES y REALES: desgarro confirmado, cicatriz activa, fractura consolidada, deformidad articular objetiva, aumento de volumen articular medible. PROHIBIDO listar dolor como alteración estructural. Si NO hay alteraciones estructurales confirmadas, escribir "Sin alteraciones estructurales confirmadas al momento de la evaluación."
-
-   ■ DEFICIENCIAS FUNCIONALES: Déficits de función corporal. Cubrir TODOS los dominios relevantes: Dolor (localización, intensidad, comportamiento), Rango de movimiento (activo, pasivo), Fuerza muscular (por grupo, escala Daniels), Control motor (patrones alterados), Propiocepción y equilibrio, Resistencia muscular local, Capacidad cardiorrespiratoria, Función sensoriomotora (coordinación, agilidad), Función neurológica periférica, Regulación del tono muscular. Cada deficiencia con severidad y lateralidad.
-
-   ■ LIMITACIONES EN LA ACTIVIDAD: Actividades concretas afectadas con impacto funcional.
-
-   ■ RESTRICCIONES EN LA PARTICIPACIÓN: Roles y contextos afectados.
-
-   ■ FACTORES CONTEXTUALES: Positivos y negativos (personales + ambientales).
-
-   REGLAS:
-   - PROHIBIDO términos obsoletos: "Tendinitis" (usar "tendinopatía"), "Condromalacia" (usar terminología CIF).
-   - Separar SIEMPRE estructural de funcional.
-   - NO diagnosticar como kinesiólogo. Usar "Presentación funcional compatible con..." o "Posible diagnóstico pendiente de confirmación médica".
-
-═══ REGLA 3 — OBJETIVO GENERAL (CON OPCIONES) ═══
+═══ REGLA 3 — OBJETIVO GENERAL (VÍAS CLÍNICAS ATINGENTES) ═══
 3. "objetivo_general":
-   - "problema_principal_caso": En 2-3 líneas, el PROBLEMA CENTRAL.
-   - "opciones_sugeridas": 4 opciones AMPLIAS con ENFOQUES DISTINTOS (Funcional, Reintegro, BPS Integral, Preventivo).
-   PROHIBIDO mencionar variables específicas (dolor, ROM, fuerza) → eso va en SMART.
-   - "seleccionado": La opción más completa e integradora.
+   - "problema_principal": En 1-2 líneas, el problema funcional primario que motivó la consulta.
+   - "opciones_sugeridas": Generar 3 a 4 opciones de objetivo general. Estas alternativas NO DEBEN ser genéricas. Deben ser VÍAS CLÍNICAS DISTINTAS pero 100% ATINGENTES para resolver el problema principal de ESTE paciente (Ej. Vía de readaptación funcional conservadora, Vía de reintegro deportivo acelerado, Vía enfocada en automanejo guiado).
+   - "seleccionado": Indicar cuál de las opciones es la más atingente y segura según el contexto actual del paciente.
 
-═══ REGLA 4 — OBJETIVOS ESPECÍFICOS SMART ═══
-4. "objetivos_smart": Generar TODOS los objetivos necesarios para resolver integralmente el caso. NO HAY LÍMITE FIJO: genera tantos como deficiencias, limitaciones y factores modificables se hayan identificado.
-   REGLA DE COBERTURA: 1 deficiencia = mínimo 1 SMART. Si una deficiencia tiene 2 variables (dolor + rigidez) = 2 SMART separados.
-   FORMATO ESTRICTO (sin excepciones): "[Verbo] + [UNA variable medible] + de [valor basal] a [valor meta] + en [plazo temporal]."
-   PROHIBIDO incluir "mediante" o estrategias de intervención en el objetivo. El "cómo" va en las Fases.
-   VERBOS PERMITIDOS: Reducir, Aumentar, Mejorar, Restaurar, Recuperar, Incrementar, Optimizar, Normalizar, Desarrollar, Fortalecer, Alcanzar, Lograr.
-   VERBOS PROHIBIDOS: Eliminar, Erradicar, Curar, Suprimir.
-   JSON por objetivo: { "texto": "..." } — SOLO eso.
+═══ REGLA 4 — OBJETIVOS ESPECÍFICOS SMART (ESTRICTA FIDELIDAD A LA EVALUACIÓN) ═══
+4. "objetivos_smart": Generar 1 objetivo SMART por cada deficiencia funcional y limitación identificada.
+   - REGLA DE ORO INQUEBRANTABLE: SOLO puedes generar un objetivo para variables que fueron EXPLÍCITAMENTE evaluadas o reportadas en la anamnesis o examen físico. PROHIBIDO inventar objetivos para ROM, fuerza o control motor si no hay datos de ello en el caso.
+   - FORMATO ARQUITECTÓNICO: "[Verbo de Acción] + [Variable Clínica] + desde [Valor Basal] hasta [Valor Meta] + en [Plazo Temporal]."
+   - Si se evaluó la variable pero no hay valor numérico exacto (ej. fuerza disminuida por dolor), usar: "desde [estado limitante actual evaluado] hasta [meta funcional]".
+   - PROHIBIDO: Usar el "cómo" o la intervención dentro del objetivo (ej. no usar "mediante ejercicios de fuerza").
+   - VERBOS PERMITIDOS: Reducir, Aumentar, Mejorar, Restaurar, Recuperar, Incrementar, Optimizar, Normalizar, Desarrollar, Fortalecer, Alcanzar, Lograr.
+   - VERBOS PROHIBIDOS: Eliminar, Erradicar, Curar, Suprimir.
+   - JSON por objetivo: { "texto": "..." } — SOLO eso.
 
 ═══ REGLA 5 — PRONÓSTICO BIOPSICOSOCIAL ═══
-5. "pronostico": CADA campo MÍNIMO 3-4 LÍNEAS.
+5. "pronostico": Mantener la respuesta CONCISA en viñetas cortas.
    - "corto_plazo" (0-4 sem), "mediano_plazo" (4-12 sem), "largo_plazo" (>12 sem)
-   - "factores_a_favor": MÍNIMO 3 factores CONCRETOS.
-   - "factores_en_contra": MÍNIMO 2 factores CONCRETOS.
-   - "historia_natural": Qué pasará si NO se trata.
-   - "comparativa_adherencia": Alta adherencia vs abandono.
-   - "categoria": "favorable" / "favorable con vigilancia" / "reservado" / "reservado dependiente" / "desfavorable" / "incierto"
-   - "justificacion": Síntesis integradora.
+   - "factores_a_favor": Mínimo 3 factores en viñetas cortas.
+   - "factores_en_contra": Mínimo 2 factores en viñetas cortas.
+   - "historia_natural": 1 línea sobre qué pasaría sin intervención.
+   - "categoria": Ej. "Favorable", "Reservado dependiente de adherencia", etc.
 
-═══ REGLA 6 — FASES DE REHABILITACIÓN ═══
-6. "fases_rehabilitacion": 4 FASES. Cada fase DEBE cubrir el 100% de los objetivos específicos. Para CADA fase:
-   - "fase", "nombre", "foco_principal", "objetivo_fisiologico", "duracion_estimada", "criterios_entrada"
-   - "objetivos_operacionales": Array de objetivos operacionales concretos. Indica QUÉ se hará para avanzar hacia los objetivos específicos. Un objetivo específico puede tener MÚLTIPLES operacionales en diferentes fases.
-   - "intervenciones": MÍNIMO 5 intervenciones ESPECÍFICAS con parámetros.
-   - "tips_dosificacion": 3-5 tips MODERNOS (RPE, RIR, Tempo, TUT). PROHIBIDO "3x15 convencional".
-   - "progresiones": MÍNIMO 3 criterios de progresión.
-   - "criterios_avance": Criterios MEDIBLES.
-   - "criterios_regresion": Señales de alarma.
-   - "errores_frecuentes": 2-3 errores de kinesiólogo novato.
-   - "sesiones_tipo": 2 sesiones tipo ~60 min.
+═══ REGLA 6 — FASES DE REHABILITACIÓN (NOMENCLATURA OBLIGATORIA) ═══
+6. "fases_rehabilitacion": 4 FASES con los siguientes nombres OBLIGATORIOS:
+   - "Fase 1: Modulación de Síntomas".
+   - "Fase 2: Recuperación de Movilidad y Control Motor".
+   - "Fase 3: Aumento de Capacidad y Fuerza".
+   - "Fase 4: Reintegro Funcional / Deportivo".
+   Para cada fase:
+   - "fase": Número (1-4).
+   - "nombre": Nombre OBLIGATORIO según la lista anterior.
+   - "duracion_estimada": Ej: "Semanas 1-3".
+   - "objetivos_operacionales": QUÉ se hará concretamente para avanzar hacia los objetivos específicos.
+   - "intervenciones": 3 a 5 ejercicios específicos con parámetros.
+   - "dosificacion_contemporanea": OBLIGATORIO usar RPE, RIR, o TUT. Prohibido "3x10" genérico.
+   - "criterios_progresion": 2 métricas claras para avanzar de fase.
 
-═══ REGLA 7 — HERRAMIENTAS COMPLEMENTARIAS ═══
-7. "herramientas_complementarias": Array de herramientas ADJUNTAS al ejercicio terapéutico activo (pilar central).
-   CATEGORÍAS:
-   a) TERAPIA MANUAL: Movilización articular (Maitland, Mulligan MWM), movilización neurodinámica, movilización de tejido blando funcional.
-   b) MANEJO DE TEJIDO BLANDO: Foam rolling/auto-masaje (como herramienta de auto-regulación), masaje deportivo funcional, técnicas instrumentadas (IASTM). PROHIBIDO: "liberación miofascial", "trigger points", "puntos gatillo".
-   c) AGENTES FÍSICOS (visión contemporánea): Crioterapia: uso selectivo (evidencia actual cuestiona uso sistemático post-lesión, puede retrasar remodelación tisular, considerar solo para manejo sintomático agudo). Termoterapia: como facilitador pre-ejercicio. BFR: evidencia creciente para hipertrofia con cargas bajas en fases tempranas. PROHIBIDO: ultrasonido, TENS, electroterapia convencional, láser.
-   d) EDUCACIÓN: Neurociencia del dolor, autoeficacia, exposición gradual al movimiento.
+═══ REGLA 7 — HERRAMIENTAS COMPLEMENTARIAS (VISIÓN CONTEMPORÁNEA) ═══
+7. "herramientas_complementarias": Coadyuvantes al ejercicio activo (ventana terapéutica).
+   - PERMITIDO Y AVALADO (Evidencia 2024-2026): TENS, Termoterapia y Crioterapia (usados estrictamente para modulación de síntomas y facilitar movimiento).
+   - PERMITIDO: "Tratamiento / Manejo del dolor miofascial" (Enfoque contemporáneo neurofisiológico), Educación en neurociencia, BFR, Movilización articular (Maitland/Mulligan).
+   - PROHIBIDO: Usar los términos "Liberación Miofascial", "Desactivación de puntos gatillo" o "Trigger Points".
    Para CADA: { "herramienta", "categoria", "justificacion", "aplicacion", "nota_evidencia" }
 
 ═══ REGLA 8 — REEVALUACIÓN ═══
 8. "reglas_reevaluacion":
-   - "signo_comparable", "razon_signo", "signos_comparables" (array), "variables_seguimiento", "frecuencia", "criterio_mejora", "criterio_estancamiento", "alertas_derivacion"
+   - "signo_comparable": Un test o movimiento explícito (reportado en la evaluación) que reproduce el síntoma principal para medir sesión a sesión.
+   - "variables_seguimiento": Métricas a medir (ej. ROM activo, EVA a la carga).
+   - "criterio_estancamiento": Cuándo derivar o replantear el plan.
 
 ═══ REGLAS DE CALIDAD ═══
 - NUNCA inventes datos. Si faltan, asume lo clínicamente más probable.
-- NO resumas cuando dice "extenso". Cumple los mínimos.
 - Redacción clínica útil con valor docente.
 - En deportistas: incluir terminología de readaptación deportiva.
 - PROHIBIDO incluir citas, autores o bibliografía.
@@ -118,14 +106,14 @@ NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación 
 `;
 
 const expectedJsonStructure = `{
-  "clasificacion_dolor": { "categoria": "...", "subtipo": "...", "fundamento": "...", "duda_mezcla": "...", "sugerencia_diferencial": "...", "confianza": "..." },
-  "diagnostico_narrativo": "■ PRESENTACIÓN CLÍNICA: ...\\n■ DEFICIENCIAS ESTRUCTURALES: ...\\n■ DEFICIENCIAS FUNCIONALES: ...\\n■ LIMITACIONES EN LA ACTIVIDAD: ...\\n■ RESTRICCIONES EN LA PARTICIPACIÓN: ...\\n■ FACTORES CONTEXTUALES: ...",
-  "objetivo_general": { "problema_principal_caso": "...", "opciones_sugeridas": ["...", "...", "...", "..."], "seleccionado": "..." },
-  "objetivos_smart": [{ "texto": "Reducir... de X a Y en Z semanas." }],
-  "pronostico": { "corto_plazo": "...", "mediano_plazo": "...", "largo_plazo": "...", "factores_a_favor": ["..."], "factores_en_contra": ["..."], "historia_natural": "...", "comparativa_adherencia": "...", "categoria": "...", "justificacion": "..." },
-  "fases_rehabilitacion": [{ "fase": 1, "nombre": "...", "foco_principal": "...", "objetivo_fisiologico": "...", "duracion_estimada": "...", "criterios_entrada": "...", "objetivos_operacionales": ["..."], "intervenciones": ["..."], "tips_dosificacion": ["..."], "progresiones": ["..."], "criterios_avance": "...", "criterios_regresion": "...", "errores_frecuentes": ["..."], "sesiones_tipo": [{"titulo": "...", "duracion": "~60 min", "estructura": ["..."]}] }],
+  "clasificacion_dolor": { "categoria": "...", "subtipo": "...", "fundamento": "...", "duda_y_descarte": "...", "confianza": "..." },
+  "diagnostico_narrativo": "[Paciente] presenta disfunción funcional compatible con...",
+  "objetivo_general": { "problema_principal": "...", "opciones_sugeridas": ["Vía 1...", "Vía 2...", "Vía 3..."], "seleccionado": "..." },
+  "objetivos_smart": [{ "texto": "Reducir... desde X hasta Y en Z semanas." }],
+  "pronostico": { "corto_plazo": "...", "mediano_plazo": "...", "largo_plazo": "...", "factores_a_favor": ["..."], "factores_en_contra": ["..."], "historia_natural": "...", "categoria": "..." },
+  "fases_rehabilitacion": [{ "fase": 1, "nombre": "Fase 1: Modulación de Síntomas", "duracion_estimada": "...", "objetivos_operacionales": ["..."], "intervenciones": ["..."], "dosificacion_contemporanea": ["..."], "criterios_progresion": ["..."] }],
   "herramientas_complementarias": [{ "herramienta": "...", "categoria": "...", "justificacion": "...", "aplicacion": "...", "nota_evidencia": "..." }],
-  "reglas_reevaluacion": { "signo_comparable": "...", "razon_signo": "...", "signos_comparables": [{"evaluacion": "...", "tipo": "...", "justificacion": "..."}], "variables_seguimiento": ["..."], "frecuencia": "...", "criterio_mejora": "...", "criterio_estancamiento": "...", "alertas_derivacion": ["..."] }
+  "reglas_reevaluacion": { "signo_comparable": "...", "variables_seguimiento": ["..."], "criterio_estancamiento": "..." }
 }`;
 
 export async function POST(req: Request) {
@@ -160,33 +148,38 @@ ${context}`;
             systemInstruction: EXPRESS_PLAN_SYSTEM,
             userPrompt,
             inputHash: `express_plan_${Buffer.from(context).length}`,
-            promptVersion: 'v2.0_approved',
+            promptVersion: 'v2.1_user_rules',
             temperature: 0.3,
             validator: (data: any) => {
                 if (typeof data === 'string') {
                     const clean = data.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
                     return JSON.parse(clean);
                 }
+                // Sanitize fases
                 if (data?.fases_rehabilitacion && Array.isArray(data.fases_rehabilitacion)) {
                     data.fases_rehabilitacion = data.fases_rehabilitacion.map((f: any) => ({
                         ...f,
                         objetivos_operacionales: f?.objetivos_operacionales || [],
-                        intervenciones_complementarias: f?.intervenciones_complementarias || [],
-                        tips_dosificacion: f?.tips_dosificacion || [],
-                        sesiones_tipo: f?.sesiones_tipo || [],
-                        errores_frecuentes: f?.errores_frecuentes || [],
-                        progresiones: f?.progresiones || [],
+                        intervenciones: f?.intervenciones || [],
+                        dosificacion_contemporanea: f?.dosificacion_contemporanea || f?.tips_dosificacion || [],
+                        criterios_progresion: f?.criterios_progresion || f?.progresiones || [],
                     }));
                 }
+                // Sanitize reevaluacion
                 if (data?.reglas_reevaluacion) {
-                    data.reglas_reevaluacion.signos_comparables = (data.reglas_reevaluacion.signos_comparables || []).map((sc: any) => ({
-                        evaluacion: sc?.evaluacion || '', tipo: sc?.tipo || '', justificacion: sc?.justificacion || '',
-                    }));
-                    data.reglas_reevaluacion.alertas_derivacion = data.reglas_reevaluacion.alertas_derivacion || [];
+                    data.reglas_reevaluacion.variables_seguimiento = data.reglas_reevaluacion.variables_seguimiento || [];
+                    data.reglas_reevaluacion.criterio_estancamiento = data.reglas_reevaluacion.criterio_estancamiento || '';
                 }
+                // Sanitize herramientas
                 if (!data?.herramientas_complementarias) data.herramientas_complementarias = [];
-                if (!data?.clasificacion_dolor?.duda_mezcla) data.clasificacion_dolor.duda_mezcla = '';
-                if (!data?.clasificacion_dolor?.sugerencia_diferencial) data.clasificacion_dolor.sugerencia_diferencial = '';
+                // Sanitize clasificacion — merge old field names if present
+                if (data?.clasificacion_dolor) {
+                    data.clasificacion_dolor.duda_y_descarte = data.clasificacion_dolor.duda_y_descarte || data.clasificacion_dolor.duda_mezcla || '';
+                }
+                // Sanitize objetivo_general — merge old field name
+                if (data?.objetivo_general) {
+                    data.objetivo_general.problema_principal = data.objetivo_general.problema_principal || data.objetivo_general.problema_principal_caso || '';
+                }
                 return data;
             }
         });
