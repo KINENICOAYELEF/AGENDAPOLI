@@ -47,6 +47,10 @@ export function ClinicalPlanningSection(props: Props) {
     const removeSmart = (id: string) => setObjetivosSmart(objetivosSmart.filter((o: any) => o.id !== id));
     const addSmart = () => setObjetivosSmart([...objetivosSmart, { id: genId(), texto: '' }]);
 
+    const updateFase = (idx: number, patch: any) => setFases(fases.map((f: any, i: number) => i === idx ? { ...f, ...patch } : f));
+    const removeFase = (idx: number) => setFases(fases.filter((_: any, i: number) => i !== idx));
+    const addFase = () => setFases([...fases, { fase: fases.length + 1, nombre: `Fase ${fases.length + 1}: Nueva Fase`, duracion_estimada: 'Semanas...', objetivos_operacionales: [], intervenciones: [], tips_dosificacion: [], criterios_progresion: [] }]);
+
     const handleGenerateAi = async () => {
         if (!razonamientoIA && !anamnesisProxima && !evaluacionFisica) return alert("Primero genera el razonamiento con IA.");
         setIsGenerating(true);
@@ -106,8 +110,8 @@ export function ClinicalPlanningSection(props: Props) {
                 <Section id="C" title="Objetivo General (Único y Resolutivo)" icon="🎯" collapsed={isC('C')} toggle={toggle}>
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Problema Principal</label>
                         <AutoTextarea value={objetivoGeneral?.problema_principal || objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal: v })} placeholder="Incapacidad funcional principal que motivó la consulta..." minRows={2} /></div>
-                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Maestro</label>
-                        <AutoTextarea value={objetivoGeneral?.objetivo_maestro || objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, objetivo_maestro: v })} placeholder="[Verbo de resolución] la capacidad de [Actividad/Participación] aumentando la tolerancia a la carga y disminuyendo los síntomas, en un plazo de [X semanas]..." minRows={3} /></div>
+                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General</label>
+                        <AutoTextarea value={objetivoGeneral?.objetivo_general || objetivoGeneral?.objetivo_maestro || objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, objetivo_general: v, objetivo_maestro: v })} placeholder="[Verbo de resolución] + [Problema principal] + [Restricción en la participación principal]..." minRows={3} /></div>
                 </Section>
 
                 {/* D. Objetivos SMART */}
@@ -149,21 +153,38 @@ export function ClinicalPlanningSection(props: Props) {
 
                 {/* F. Fases de Rehabilitación */}
                 <Section id="F" title={`Fases de Rehabilitación (${fases.length})`} icon="🏋️" collapsed={isC('F')} toggle={toggle}>
-                    {fases.map((f: any, i: number) => (
-                        <details key={i} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 overflow-hidden">
-                            <summary className="px-4 py-3 cursor-pointer font-bold text-sm text-indigo-800 hover:bg-slate-100 transition-colors flex items-center gap-2">
-                                <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">{f.fase}</span>
-                                {f.nombre} <span className="text-xs font-normal text-slate-400 ml-auto">{f.duracion_estimada}</span>
-                            </summary>
-                            <div className="px-4 pb-4 pt-2 space-y-2 border-t border-slate-100 text-xs">
-                                {f.objetivos_operacionales?.length > 0 && <div><span className="font-bold text-purple-600">Objetivos Operacionales:</span><ul className="mt-1 space-y-0.5">{f.objetivos_operacionales.map((x: string, j: number) => <li key={j} className="text-slate-600">▸ {x}</li>)}</ul></div>}
-                                {f.intervenciones?.length > 0 && <div><span className="font-bold text-emerald-600">Intervenciones:</span><ul className="mt-1 space-y-0.5">{f.intervenciones.map((x: string, j: number) => <li key={j} className="text-slate-600">• {x}</li>)}</ul></div>}
-                                {f.tips_dosificacion?.length > 0 && <div><span className="font-bold text-blue-600">Tips de Dosificación / Rangos:</span><ul className="mt-1 space-y-0.5">{(Array.isArray(f.tips_dosificacion) ? f.tips_dosificacion : [f.tips_dosificacion]).map((x: string, j: number) => <li key={j} className="text-slate-600">→ {x}</li>)}</ul></div>}
-                                {f.criterios_progresion?.length > 0 && <div className="bg-emerald-50 rounded-lg p-2"><span className="font-bold text-emerald-700">Criterios de Progresión:</span><ul className="mt-1 space-y-0.5">{f.criterios_progresion.map((x: string, j: number) => <li key={j} className="text-emerald-800">✓ {x}</li>)}</ul></div>}
-                            </div>
-                        </details>
-                    ))}
-                    {fases.length === 0 && <p className="text-center text-slate-400 text-sm py-4">Genera con IA para ver las fases</p>}
+                    <div className="space-y-4">
+                        {fases.map((f: any, i: number) => (
+                            <details key={i} className="bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 overflow-hidden group/fase">
+                                <summary className="px-4 py-3 cursor-pointer font-bold text-sm text-indigo-800 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                                    <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">{f.fase || i + 1}</span>
+                                    <span>{f.nombre || `Fase ${i + 1}`}</span> 
+                                    <span className="text-xs font-normal text-slate-400 ml-auto">{f.duracion_estimada}</span>
+                                    <span className="text-xs text-indigo-400 ml-2 group-open/fase:hidden">✎ Editar</span>
+                                </summary>
+                                <div className="p-4 space-y-3 border-t border-slate-100 bg-white/60">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div><label className="block text-[10px] font-bold text-slate-400 mb-0.5">Nombre de la Fase</label>
+                                            <input className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-900" value={f.nombre || ''} onChange={e => updateFase(i, { nombre: e.target.value })} /></div>
+                                        <div><label className="block text-[10px] font-bold text-slate-400 mb-0.5">Duración Estimada</label>
+                                            <input className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700" value={f.duracion_estimada || ''} onChange={e => updateFase(i, { duracion_estimada: e.target.value })} placeholder="Ej: Semanas 1-2" /></div>
+                                    </div>
+                                    <div><label className="block text-[10px] font-bold text-purple-600 mb-0.5">Objetivos Operacionales (uno por línea)</label>
+                                        <AutoTextarea className="text-xs" value={(f.objetivos_operacionales || []).join('\n')} onChange={(v: string) => updateFase(i, { objetivos_operacionales: v.split('\n').filter(l => l.trim()) })} minRows={2} /></div>
+                                    <div><label className="block text-[10px] font-bold text-emerald-600 mb-0.5">Intervenciones Activas (una por línea)</label>
+                                        <AutoTextarea className="text-xs" value={(f.intervenciones || []).join('\n')} onChange={(v: string) => updateFase(i, { intervenciones: v.split('\n').filter(l => l.trim()) })} minRows={2} /></div>
+                                    <div><label className="block text-[10px] font-bold text-blue-600 mb-0.5">Tips de Dosificación / Prescripción (uno por línea)</label>
+                                        <AutoTextarea className="text-xs" value={(Array.isArray(f.tips_dosificacion) ? f.tips_dosificacion : [f.tips_dosificacion]).filter(Boolean).join('\n')} onChange={(v: string) => updateFase(i, { tips_dosificacion: v.split('\n').filter(l => l.trim()) })} minRows={2} /></div>
+                                    <div><label className="block text-[10px] font-bold text-emerald-700 mb-0.5">Criterios de Progresión (uno por línea)</label>
+                                        <AutoTextarea className="text-xs bg-emerald-50/50 border-emerald-100" value={(f.criterios_progresion || []).join('\n')} onChange={(v: string) => updateFase(i, { criterios_progresion: v.split('\n').filter(l => l.trim()) })} minRows={2} /></div>
+                                    <div className="pt-1 flex justify-end">
+                                        <button onClick={() => removeFase(i)} className="text-[11px] text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition-colors">✕ Eliminar Fase</button>
+                                    </div>
+                                </div>
+                            </details>
+                        ))}
+                    </div>
+                    <button onClick={addFase} className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 font-bold text-xs hover:bg-slate-50 hover:border-slate-300 transition-colors mt-3">+ Agregar Fase</button>
                 </Section>
 
                 {/* G. Reevaluación */}

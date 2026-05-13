@@ -225,8 +225,8 @@ NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación 
    - "confianza": "Alta", "Moderada" o "Baja".
 
 ═══ REGLA 2 — DIAGNÓSTICO KINESIOLÓGICO (ESTRUCTURA CIF EXHAUSTIVA) ═══
-2. "diagnostico_narrativo": Redactar un diagnóstico completo, integrando TODOS los hallazgos clínicos de la evaluación. Es OBLIGATORIO usar la siguiente estructura y frases conectoras exactas:
-   - "[Paciente, edad] presenta un cuadro compatible con [Diagnóstico Kinesiológico / Médico actual]..." (Si aplica, sumar: "...clasificado funcionalmente según JOSPT como [Clasificación JOSPT]").
+2. "diagnostico_narrativo": Redactar un diagnóstico narrativo completo e integrado. Utiliza la siguiente estructura y conectores lógicos en mayúsculas:
+   - "[Paciente, edad] presenta un cuadro compatible con [Diagnóstico Kinesiológico / Médico funcional actual]..." (Si existe en la evaluación previa una clasificación aplicable, sumar: "...clasificado de forma congruente con [Clasificación de subgrupo funcional si aplica]").
    - "A nivel estructural, [Mencionar daño de tejido/imagen si existe. Si no: 'no presenta alteraciones estructurales severas confirmadas']."
    - "Presenta DEFICIENCIAS EN [listar exhaustivamente: variables de dolor, métricas de ROM limitadas, déficits de fuerza/control reportados EN LA EVALUACIÓN]."
    - "Esto provoca LIMITACIONES EN [listar las actividades y tareas específicas que no puede realizar o le duelen]."
@@ -234,11 +234,11 @@ NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación 
    - "Se identifican como FACTORES PERSONALES/AMBIENTALES NEGATIVOS (BARRERAS): [listar]."
    - "Y como FACTORES PERSONALES/AMBIENTALES POSITIVOS (FACILITADORES): [listar]."
 
-═══ REGLA 3 — OBJETIVO GENERAL (ÚNICO Y RESOLUTIVO) ═══
+═══ REGLA 3 — OBJETIVO GENERAL (RESOLUTIVO Y BASADO EN CARGA) ═══
 3. "objetivo_general":
    - "problema_principal": En 1-2 líneas, qué incapacidad funcional principal motivó la consulta.
-   - "objetivo_maestro": UN SOLO objetivo. Toma el "problema_principal" y tradúcelo a un logro funcional en positivo.
-     - FORMATO: "[Verbo de resolución] la capacidad de [Actividad/Participación] aumentando la tolerancia a la carga y disminuyendo los síntomas, en un plazo de [X semanas]." (PROHIBIDO incluir "sin valgo" o "alineación correcta").
+   - "objetivo_general": UN SOLO objetivo maestro. PROHIBIDO dar opciones o usar la palabra "Maestro".
+     - FORMATO OBLIGATORIO: "[Verbo de resolución] + [Problema principal del paciente] + [Restricción en la participación principal afectada], aumentando la tolerancia a la carga y disminuyendo los síntomas, en un plazo de [X semanas]." (PROHIBIDO incluir "sin valgo" o "alineación correcta").
 
 ═══ REGLA 4 — OBJETIVOS ESPECÍFICOS SMART (CALCO DE LA EVALUACIÓN) ═══
 4. "objetivos_smart": 1 objetivo por cada deficiencia/limitación clave.
@@ -249,7 +249,7 @@ NO tienes el Case Organizer de P3 estructurado. Debes INFERIR la clasificación 
 
 ═══ REGLA 5 — PRONÓSTICO BIOPSICOSOCIAL ═══
 5. "pronostico":
-   - "corto_plazo", "mediano_plazo", "largo_plazo", "factores_a_favor" (array), "factores_en_contra" (array), "historia_natural", "categoria"
+   - "corto_plazo", "mediano_plazo", "largo_plazo", "factores_a_favor" (array), "factores_en_contra" (array), "categoria" (Nota: NO rellenar ni inventar la historia natural).
 
 ═══ REGLA 6 — FASES DE REHABILITACIÓN (DOSIFICACIÓN CONTEMPORÁNEA) ═══
 6. "fases_rehabilitacion": 4 fases: Modulación de Síntomas, Recuperación de Movilidad y Control, Aumento de Capacidad y Fuerza, Reintegro Funcional.
