@@ -2,15 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 
 const genId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
-// Auto-expanding textarea
 const AutoTextarea = ({ value, onChange, placeholder, className, minRows = 3 }: any) => {
     const ref = useRef<HTMLTextAreaElement>(null);
-    useEffect(() => {
-        if (ref.current) {
-            ref.current.style.height = 'auto';
-            ref.current.style.height = Math.max(ref.current.scrollHeight, minRows * 24) + 'px';
-        }
-    }, [value, minRows]);
+    useEffect(() => { if (ref.current) { ref.current.style.height = 'auto'; ref.current.style.height = Math.max(ref.current.scrollHeight, minRows * 24) + 'px'; } }, [value, minRows]);
     return <textarea ref={ref} className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-100 leading-relaxed overflow-hidden ${className || ''}`} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder} />;
 };
 
@@ -36,6 +30,7 @@ interface Props {
     onPublish: () => void; isPublishing: boolean; publishSuccess: boolean;
     razonamientoIA?: string;
     anamnesisProxima?: string; anamnesisRemota?: string; evaluacionFisica?: string;
+    herramientas?: any[]; setHerramientas?: (v: any) => void;
 }
 
 export function ClinicalPlanningSection(props: Props) {
@@ -43,16 +38,16 @@ export function ClinicalPlanningSection(props: Props) {
         objetivoGeneral, setObjetivoGeneral, objetivosSmart, setObjetivosSmart,
         pronostico, setPronostico, fases, setFases, reglasReeval, setReglasReeval,
         collapsed, setCollapsed, onPublish, isPublishing, publishSuccess,
-        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica } = props;
+        razonamientoIA, anamnesisProxima, anamnesisRemota, evaluacionFisica,
+        herramientas = [], setHerramientas } = props;
 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [razonamientoDx, setRazonamientoDx] = useState('');
     const toggle = useCallback((id: string) => setCollapsed((prev: any) => ({ ...prev, [id]: !prev[id] })), [setCollapsed]);
     const isC = (id: string) => collapsed[id] !== false;
 
-    const updateSmart = (id: string, field: string, val: string) => setObjetivosSmart(objetivosSmart.map((o: any) => o.id === id ? { ...o, [field]: val } : o));
+    const updateSmart = (id: string, val: string) => setObjetivosSmart(objetivosSmart.map((o: any) => o.id === id ? { ...o, texto: val } : o));
     const removeSmart = (id: string) => setObjetivosSmart(objetivosSmart.filter((o: any) => o.id !== id));
-    const addSmart = () => setObjetivosSmart([...objetivosSmart, { id: genId(), texto: '', plazo: '3-4 sem', prioridad: 'Media', variable_base: '', basal: '', meta: '', cluster: '' }]);
+    const addSmart = () => setObjetivosSmart([...objetivosSmart, { id: genId(), texto: '' }]);
 
     const handleGenerateAi = async () => {
         if (!razonamientoIA && !anamnesisProxima && !evaluacionFisica) return alert("Primero genera el razonamiento con IA.");
@@ -64,17 +59,17 @@ export function ClinicalPlanningSection(props: Props) {
             const d = json.data;
             if (d.clasificacion_dolor) setClasificacionDolor(d.clasificacion_dolor);
             if (d.diagnostico_narrativo) setDiagnosticoNarrativo(d.diagnostico_narrativo);
-            if (d.razonamiento_diagnostico) setRazonamientoDx(d.razonamiento_diagnostico);
             if (d.objetivo_general) setObjetivoGeneral(d.objetivo_general);
             if (d.objetivos_smart) setObjetivosSmart(d.objetivos_smart.map((o: any) => ({ ...o, id: genId() })));
             if (d.pronostico) setPronostico(d.pronostico);
             if (d.fases_rehabilitacion) setFases(d.fases_rehabilitacion);
             if (d.reglas_reevaluacion) setReglasReeval(d.reglas_reevaluacion);
-            setCollapsed({ A: false, B: false, C: false, D: false, E: false, F: false, G: false });
+            if (d.herramientas_complementarias && setHerramientas) setHerramientas(d.herramientas_complementarias);
+            setCollapsed({ A: false, B: false, C: false, D: false, E: false, F: false, G: false, H: false });
         } catch (err: any) { alert('Error: ' + err.message); } finally { setIsGenerating(false); }
     };
 
-    const prioColor = (p: string) => p === 'Alta' ? 'bg-red-100 text-red-700' : p === 'Baja' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-700';
+    const catIcon: Record<string, string> = { 'Terapia Manual': '🤲', 'Tejido Blando': '💆', 'Agente Físico': '❄️', 'Educación': '📚' };
 
     return (
         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/60 space-y-6">
@@ -95,12 +90,14 @@ export function ClinicalPlanningSection(props: Props) {
                                 <option value="">Seleccionar...</option>{['Nociceptivo', 'Neuropático', 'Nociplástico', 'Mixto'].map(o => <option key={o}>{o}</option>)}
                             </select></div>
                         <div><label className="block text-xs font-bold text-slate-500 mb-1">Subtipo</label>
-                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" value={clasificacionDolor.subtipo} onChange={e => setClasificacionDolor({ ...clasificacionDolor, subtipo: e.target.value })} placeholder="Mecánico, Inflamatorio..." /></div>
+                            <input className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" value={clasificacionDolor.subtipo} onChange={e => setClasificacionDolor({ ...clasificacionDolor, subtipo: e.target.value })} /></div>
                     </div>
                     <div><label className="block text-xs font-bold text-emerald-600 mb-1">✅ Hallazgos que apoyan esta clasificación</label>
-                        <AutoTextarea value={clasificacionDolor.fundamento} onChange={(v: string) => setClasificacionDolor({ ...clasificacionDolor, fundamento: v })} placeholder="Datos de anamnesis y evaluación que confirman..." minRows={4} /></div>
+                        <AutoTextarea value={clasificacionDolor.fundamento} onChange={(v: string) => setClasificacionDolor({ ...clasificacionDolor, fundamento: v })} minRows={4} /></div>
                     <div><label className="block text-xs font-bold text-amber-600 mb-1">⚠️ Datos que generan duda o sugieren mezcla</label>
-                        <AutoTextarea value={clasificacionDolor.duda_mezcla || ''} onChange={(v: string) => setClasificacionDolor({ ...clasificacionDolor, duda_mezcla: v })} placeholder="Hallazgos que no calzan, discordantes o que sugieren otro mecanismo..." minRows={3} /></div>
+                        <AutoTextarea value={clasificacionDolor.duda_mezcla || ''} onChange={(v: string) => setClasificacionDolor({ ...clasificacionDolor, duda_mezcla: v })} minRows={3} /></div>
+                    <div><label className="block text-xs font-bold text-blue-600 mb-1">🔍 Diagnóstico Diferencial — Pruebas sugeridas para descartar</label>
+                        <AutoTextarea value={clasificacionDolor.sugerencia_diferencial || ''} onChange={(v: string) => setClasificacionDolor({ ...clasificacionDolor, sugerencia_diferencial: v })} minRows={3} /></div>
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Confianza</label>
                         <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm" value={clasificacionDolor.confianza} onChange={e => setClasificacionDolor({ ...clasificacionDolor, confianza: e.target.value })}>
                             <option value="">Seleccionar...</option>{['Alta', 'Moderada', 'Baja'].map(o => <option key={o}>{o}</option>)}
@@ -109,54 +106,34 @@ export function ClinicalPlanningSection(props: Props) {
 
                 {/* B. Diagnóstico */}
                 <Section id="B" title="Diagnóstico Kinesiológico" icon="📝" collapsed={isC('B')} toggle={toggle}>
-                    <div><label className="block text-xs font-bold text-slate-500 mb-1">Diagnóstico Narrativo CIF</label>
-                        <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="[Nombre] presenta [deficiencias] que generan [limitaciones] y [restricciones] en contexto de [factores]..." minRows={6} /></div>
-                    {razonamientoDx && (<div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-                        <label className="block text-xs font-bold text-indigo-600 mb-1">💡 Razonamiento Diagnóstico (generado por IA)</label>
-                        <p className="text-sm text-indigo-800 leading-relaxed whitespace-pre-line">{razonamientoDx}</p>
-                    </div>)}
+                    <AutoTextarea value={diagnosticoNarrativo} onChange={setDiagnosticoNarrativo} placeholder="■ PRESENTACIÓN CLÍNICA: ...\n■ DEFICIENCIAS ESTRUCTURALES: ...\n■ DEFICIENCIAS FUNCIONALES: ...\n■ LIMITACIONES EN LA ACTIVIDAD: ...\n■ RESTRICCIONES EN LA PARTICIPACIÓN: ...\n■ FACTORES CONTEXTUALES: ..." minRows={10} />
                 </Section>
 
                 {/* C. Objetivo General */}
                 <Section id="C" title="Objetivo General" icon="🎯" collapsed={isC('C')} toggle={toggle}>
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Problema Principal del Caso</label>
-                        <AutoTextarea value={objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal_caso: v })} minRows={3} /></div>
+                        <AutoTextarea value={objetivoGeneral?.problema_principal_caso || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, problema_principal_caso: v })} minRows={2} /></div>
                     {objetivoGeneral?.opciones_sugeridas?.length > 0 && (<div>
-                        <label className="block text-xs font-bold text-slate-500 mb-2">Opciones Sugeridas (selecciona una)</label>
+                        <label className="block text-xs font-bold text-slate-500 mb-2">Opciones Sugeridas (selecciona una para editar abajo)</label>
                         <div className="space-y-2">{objetivoGeneral.opciones_sugeridas.map((op: string, i: number) => (
                             <label key={i} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${objetivoGeneral.seleccionado === op ? 'border-indigo-400 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:bg-slate-50'}`}>
                                 <input type="radio" name="obj_gen" checked={objetivoGeneral.seleccionado === op} onChange={() => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: op })} className="mt-1 accent-indigo-600" />
                                 <span className="text-sm text-slate-700 leading-relaxed">{op}</span>
                             </label>))}</div></div>)}
-                    {(!objetivoGeneral?.opciones_sugeridas || objetivoGeneral.opciones_sugeridas.length === 0) && (
-                        <AutoTextarea value={objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: v })} placeholder="Restaurar la capacidad funcional..." minRows={2} />)}
+                    <div><label className="block text-xs font-bold text-indigo-600 mb-1">Objetivo General Definitivo (editable)</label>
+                        <AutoTextarea value={objetivoGeneral?.seleccionado || ''} onChange={(v: string) => setObjetivoGeneral({ ...objetivoGeneral, seleccionado: v })} placeholder="Escribe o edita el objetivo general definitivo..." minRows={3} /></div>
                 </Section>
 
-                {/* D. Objetivos SMART — individual cards */}
+                {/* D. Objetivos SMART — textarea only */}
                 <Section id="D" title={`Objetivos Específicos SMART (${objetivosSmart.length})`} icon="📊" collapsed={isC('D')} toggle={toggle}>
                     <div className="space-y-3">
                         {objetivosSmart.map((obj: any, idx: number) => (
-                            <div key={obj.id} className="relative bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2 group">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">{idx + 1}</span>
-                                        {obj.cluster && <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">{obj.cluster}</span>}
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${prioColor(obj.prioridad)}`}>{obj.prioridad}</span>
-                                    </div>
+                            <div key={obj.id} className="relative bg-slate-50 rounded-xl p-4 border border-slate-200 group">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-black">{idx + 1}</span>
                                     <button onClick={() => removeSmart(obj.id)} className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 text-red-500 flex items-center justify-center text-xs transition-opacity" title="Quitar">✕</button>
                                 </div>
-                                <AutoTextarea value={obj.texto} onChange={(v: string) => updateSmart(obj.id, 'texto', v)} placeholder="Reducir el dolor de rodilla (EVA) de 7/10 a 3/10 en 4 semanas..." minRows={2} />
-                                <div className="flex gap-2 flex-wrap">
-                                    <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5" value={obj.plazo} onChange={e => updateSmart(obj.id, 'plazo', e.target.value)}>
-                                        <option value="">Plazo</option>{['1-2 sem', '3-4 sem', '5-8 sem', '9-12 sem', '>12 sem'].map(p => <option key={p}>{p}</option>)}
-                                    </select>
-                                    <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5" value={obj.prioridad} onChange={e => updateSmart(obj.id, 'prioridad', e.target.value)}>
-                                        {['Alta', 'Media', 'Baja'].map(p => <option key={p}>{p}</option>)}
-                                    </select>
-                                    <input className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 w-20" value={obj.variable_base} onChange={e => updateSmart(obj.id, 'variable_base', e.target.value)} placeholder="Variable" />
-                                    <input className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 w-16" value={obj.basal} onChange={e => updateSmart(obj.id, 'basal', e.target.value)} placeholder="Basal" />
-                                    <input className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 w-16" value={obj.meta} onChange={e => updateSmart(obj.id, 'meta', e.target.value)} placeholder="Meta" />
-                                </div>
+                                <AutoTextarea value={obj.texto} onChange={(v: string) => updateSmart(obj.id, v)} minRows={2} />
                             </div>
                         ))}
                     </div>
@@ -168,14 +145,13 @@ export function ClinicalPlanningSection(props: Props) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {[{ k: 'corto_plazo', l: 'Corto (0-4 sem)' }, { k: 'mediano_plazo', l: 'Mediano (4-12 sem)' }, { k: 'largo_plazo', l: 'Largo (>12 sem)' }].map(({ k, l }) => (
                             <div key={k}><label className="block text-xs font-bold text-slate-500 mb-1">{l}</label>
-                                <AutoTextarea value={(pronostico as any)[k]} onChange={(v: string) => setPronostico({ ...pronostico, [k]: v })} minRows={4} /></div>
-                        ))}
+                                <AutoTextarea value={(pronostico as any)[k]} onChange={(v: string) => setPronostico({ ...pronostico, [k]: v })} minRows={4} /></div>))}
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div><label className="block text-xs font-bold text-emerald-600 mb-1">Factores a Favor</label>
-                            <AutoTextarea value={(pronostico.factores_a_favor || []).join('\n')} onChange={(v: string) => setPronostico({ ...pronostico, factores_a_favor: v.split('\n').filter((l: string) => l.trim()) })} placeholder="Un factor por línea" minRows={3} /></div>
+                            <AutoTextarea value={(pronostico.factores_a_favor || []).join('\n')} onChange={(v: string) => setPronostico({ ...pronostico, factores_a_favor: v.split('\n').filter((l: string) => l.trim()) })} minRows={3} /></div>
                         <div><label className="block text-xs font-bold text-red-500 mb-1">Factores en Contra</label>
-                            <AutoTextarea value={(pronostico.factores_en_contra || []).join('\n')} onChange={(v: string) => setPronostico({ ...pronostico, factores_en_contra: v.split('\n').filter((l: string) => l.trim()) })} placeholder="Un factor por línea" minRows={3} /></div>
+                            <AutoTextarea value={(pronostico.factores_en_contra || []).join('\n')} onChange={(v: string) => setPronostico({ ...pronostico, factores_en_contra: v.split('\n').filter((l: string) => l.trim()) })} minRows={3} /></div>
                     </div>
                     <div><label className="block text-xs font-bold text-slate-500 mb-1">Historia Natural (sin tratamiento)</label>
                         <AutoTextarea value={pronostico.historia_natural} onChange={(v: string) => setPronostico({ ...pronostico, historia_natural: v })} minRows={3} /></div>
@@ -200,6 +176,7 @@ export function ClinicalPlanningSection(props: Props) {
                             <div className="px-4 pb-4 pt-2 space-y-2 border-t border-slate-100 text-xs">
                                 <p><span className="font-bold text-slate-500">Foco:</span> {f.foco_principal}</p>
                                 <p><span className="font-bold text-slate-500">Obj. Fisiológico:</span> {f.objetivo_fisiologico}</p>
+                                {f.objetivos_operacionales?.length > 0 && <div><span className="font-bold text-purple-600">Objetivos Operacionales:</span><ul className="mt-1 space-y-0.5">{f.objetivos_operacionales.map((x: string, j: number) => <li key={j} className="text-slate-600">▸ {x}</li>)}</ul></div>}
                                 {f.intervenciones?.length > 0 && <div><span className="font-bold text-emerald-600">Intervenciones:</span><ul className="mt-1 space-y-0.5">{f.intervenciones.map((x: string, j: number) => <li key={j} className="text-slate-600">• {x}</li>)}</ul></div>}
                                 {f.tips_dosificacion?.length > 0 && <div><span className="font-bold text-blue-600">Dosificación:</span><ul className="mt-1 space-y-0.5">{f.tips_dosificacion.map((x: string, j: number) => <li key={j} className="text-slate-600">→ {x}</li>)}</ul></div>}
                                 {(f.criterios_avance || f.criterios_regresion) && <div className="grid grid-cols-2 gap-2">
@@ -214,8 +191,26 @@ export function ClinicalPlanningSection(props: Props) {
                     {fases.length === 0 && <p className="text-center text-slate-400 text-sm py-4">Genera con IA para ver las fases</p>}
                 </Section>
 
-                {/* G. Reevaluación — compact */}
-                <Section id="G" title="Reevaluación" icon="🔄" collapsed={isC('G')} toggle={toggle}>
+                {/* G. Herramientas Complementarias */}
+                <Section id="G" title={`Herramientas Complementarias (${herramientas.length})`} icon="🧰" collapsed={isC('G')} toggle={toggle}>
+                    {herramientas.length > 0 ? (
+                        <div className="space-y-3">{herramientas.map((h: any, i: number) => (
+                            <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-lg">{catIcon[h.categoria] || '🔧'}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase">{h.categoria}</span>
+                                </div>
+                                <p className="font-bold text-sm text-slate-800">{h.herramienta}</p>
+                                <p className="text-xs text-slate-600 mt-1">{h.justificacion}</p>
+                                <p className="text-xs text-indigo-700 mt-1 font-medium">Aplicación: {h.aplicacion}</p>
+                                {h.nota_evidencia && <p className="text-xs text-slate-400 mt-1 italic">{h.nota_evidencia}</p>}
+                            </div>
+                        ))}</div>
+                    ) : <p className="text-center text-slate-400 text-sm py-4">Genera con IA para ver herramientas</p>}
+                </Section>
+
+                {/* H. Reevaluación */}
+                <Section id="H" title="Reevaluación" icon="🔄" collapsed={isC('H')} toggle={toggle}>
                     <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-1">
                         <p className="text-sm"><span className="font-bold text-indigo-700">Signo Comparable:</span> <span className="text-indigo-900">{reglasReeval.signo_comparable || '—'}</span></p>
                         <p className="text-xs text-indigo-700">{reglasReeval.razon_signo}</p>

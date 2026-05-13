@@ -325,7 +325,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     });
     const [clasificacionDolor, setClasificacionDolor] = useState<{
         categoria: string; subtipo: string; fundamento: string; confianza: string;
-    }>(initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '' });
+    }>(initP4.clasificacion_dolor || { categoria: '', subtipo: '', fundamento: '', confianza: '', duda_mezcla: '', sugerencia_diferencial: '' });
+    const [herramientas, setHerramientas] = useState<any[]>(initP4.herramientas_complementarias || []);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishSuccess, setPublishSuccess] = useState(false);
     const [p4Collapsed, setP4Collapsed] = useState<Record<string, boolean>>({});
@@ -360,7 +361,8 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                     pronostico,
                     fases_rehabilitacion: fases,
                     reglas_reevaluacion: reglasReeval,
-                    clasificacion_dolor: clasificacionDolor
+                    clasificacion_dolor: clasificacionDolor,
+                    herramientas_complementarias: herramientas
                 }
             };
 
@@ -404,7 +406,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             if (anamnesisProxima || anamnesisRemota || evaluacionFisica || razonamientoIA || diagnosticoNarrativo || objetivosSmart.length > 0) handleSave(true);
         }, 5000);
         return () => clearTimeout(timer);
-    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, fases, reglasReeval, clasificacionDolor]);
+    }, [anamnesisProxima, anamnesisRemota, evaluacionFisica, razonamientoIA, diagnosticoNarrativo, objetivoGeneral, objetivosSmart, pronostico, fases, reglasReeval, clasificacionDolor, herramientas]);
 
     // Publish objectives to Proceso.activeObjectiveSet
     const handlePublishObjectives = async () => {
@@ -975,6 +977,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                             anamnesisProxima={anamnesisProxima}
                             anamnesisRemota={anamnesisRemota}
                             evaluacionFisica={evaluacionFisica}
+                            herramientas={herramientas} setHerramientas={setHerramientas}
                         />
 
                     </div>
