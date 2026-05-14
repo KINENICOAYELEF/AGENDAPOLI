@@ -35,6 +35,8 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
     const { globalActiveYear } = useYear();
     const { user } = useAuth();
     const isAdmin = (user?.role as string) === 'ADMIN' || (user?.role as string) === 'DOCENTE';
+    const isInterno = (user?.role as string) === 'INTERNO';
+    const canUseV2 = isAdmin || isInterno;
 
     const [items, setItems] = useState<TimelineItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -246,20 +248,33 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                     <ArrowPathIcon className="w-4 h-4" />
                     Reevaluación
                 </button>
-                <button
-                    onClick={() => { setSelectedEval(null); setView('formEval'); }}
-                    className="flex-1 min-w-[140px] bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-                >
-                    <ClipboardIcon className="w-4 h-4" />
-                    Eval Inicial (Nuevo Caso)
-                </button>
-                {isAdmin && (
+
+                {/* Botón v2: Oficial/Recomendado para Docentes e Internos */}
+                {canUseV2 && (
                     <button
                         onClick={() => { setSelectedEval(null); setView('formExpressEval'); }}
-                        className="flex-1 min-w-[140px] bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                        className="flex-1 min-w-[140px] bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 border border-purple-400/30 relative overflow-hidden group/btnv2 animate-pulse"
                     >
-                        <span>⚡</span>
-                        Eval Inicial v2
+                        <span className="absolute top-0 right-0 bg-amber-400 text-slate-900 font-black text-[8px] px-1.5 py-0.5 rounded-bl tracking-widest uppercase shadow-sm">
+                            Oficial
+                        </span>
+                        <span className="flex h-2 w-2 relative shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-300 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-200"></span>
+                        </span>
+                        <span>⚡ Eval Inicial v2</span>
+                    </button>
+                )}
+
+                {/* Botón Antiguo: Oculto para Internos para evitar confusión, visible solo para Docente/Admin si lo necesitan */}
+                {isAdmin && (
+                    <button
+                        onClick={() => { setSelectedEval(null); setView('formEval'); }}
+                        className="flex-1 min-w-[140px] bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 opacity-80 hover:opacity-100"
+                        title="Formulario de Evaluación Inicial Antiguo (Heredado)"
+                    >
+                        <ClipboardIcon className="w-4 h-4 text-slate-400" />
+                        <span className="text-xs">Eval Inicial (Antiguo)</span>
                     </button>
                 )}
             </div>
@@ -374,7 +389,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                     >
                                                         ✏️ Editar Completo
                                                     </button>
-                                                    {isEval && isAdmin && (item.data as any).expressDraft && (
+                                                    {isEval && canUseV2 && (item.data as any).expressDraft && (
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
