@@ -267,7 +267,25 @@ Reglas:
 - Si el caso es adulto mayor, equilibrio, fragilidad o riesgo de caída, considera instrumentos funcionales o de seguridad como Short Physical Performance Battery, Timed Up and Go, Berg Balance Scale, Falls Efficacy Scale International, Activities-specific Balance Confidence Scale, 30 Second Chair Stand Test u otros pertinentes.
 - Si el caso es fuerza/capacidad sin dolor, prioriza medidas de función, fuerza, tolerancia, rendimiento o actividad.
 - Si el caso es rigidez/movilidad sin dolor, prioriza escalas funcionales y mediciones de rango relevantes.
-- Explica en una frase cómo el estudiante usaría la escala en la práctica.`;
+- Explica en una frase cómo el estudiante usaría la escala en la práctica.
+
+REGLA DE PRIORIZACIÓN DE HIPÓTESIS:
+Cuando el caso sea dolor anterior de rodilla, no pongas como hipótesis principal una estructura específica como tendón rotuliano, grasa de Hoffa, retináculo o cintilla iliotibial si la anamnesis describe dolor anterior/peripatelar, dolor con sedestación prolongada, escaleras, flexión mantenida o tareas de carga en flexión. En ese escenario, prioriza como macro “Dolor Patelofemoral” y deja tendón rotuliano, Hoffa u otras estructuras como diferenciales solo si el relato entrega datos claramente focales.
+
+No conviertas “colapso hacia adentro”, “valgo”, “mal control” o “rigidez de tobillo” en causa. Escríbelos siempre como observaciones o factores a verificar. Usa frases como: “estrategia de carga a observar”, “confianza durante la recepción”, “control durante tarea específica” o “posible factor asociado”.
+
+REGLA DE DOSIFICACIÓN DE PRUEBAS FUNCIONALES:
+Si el dolor relatado es igual o mayor a 6/10, si aparece desde el calentamiento, o si hay irritabilidad moderada/alta, no recomiendes saltos unipodales, pruebas máximas o fatiga al fallo como primera línea. Primero sugiere tareas graduadas, reproducibles y seguras: sentadilla parcial, step-down bajo, isométricos, sentarse-pararse, postura deportiva dosificada, aterrizajes bilaterales suaves o versiones submáximas del gesto deportivo.
+
+REGLA SOBRE PRUEBAS PATELARES:
+No recomiendes compresión patelar, Clarke/grind o test patelares aislados como batería central para dolor anterior de rodilla. Para sospecha de dolor patelofemoral, prioriza reproducción del dolor familiar durante sentadilla, step-down, escaleras, sedestación prolongada simulada si corresponde, o actividades que carguen la rodilla en flexión. Las pruebas patelares aisladas solo pueden mencionarse como baja prioridad y nunca como confirmatorias.
+
+REGLA SOBRE PALPACIÓN:
+No uses “puntos gatillo” como explicación central ni como hallazgo de alto peso. Si se palpa musculatura, debe ser para identificar sensibilidad concordante, irritabilidad local o relación con la función, no para diagnosticar una causa principal.
+
+REGLA DE PROMs:
+No recomiendes WOMAC en personas jóvenes/deportistas con dolor anterior de rodilla salvo sospecha clara de osteoartritis o población compatible. Para dolor anterior de rodilla o dolor patelofemoral, prioriza Kujala / Anterior Knee Pain Scale, KOOS-PF si está disponible, IKDC o LEFS según el objetivo funcional. 
+No recomiendes FABQ, TSK, PCS u Örebro solo porque la persona dice sentirse insegura, quiere volver al deporte o usa una rodillera. Úsalas solo si hay miedo desproporcionado, evitación clara, creencias limitantes, dolor persistente con impacto psicosocial o baja confianza que limite la exposición funcional. Si no hay eso, usa PSFS, SANE, IKDC, LEFS o una escala funcional/deportiva más pertinente.`;
 
         const userPrompt = `DATOS DE LA ANAMNESIS:
 
