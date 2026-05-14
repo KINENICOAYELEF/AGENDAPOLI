@@ -158,7 +158,9 @@ export function AdminEvidenceManager() {
             }
             
             // Update Task Status
-            await updateTaskStatus(reviewTask.id!, { status: newStatus === 'REJECTED' ? 'PENDING' : 'APPROVED' });
+            if (reviewTask.id && !reviewTask.id.startsWith('virtual_')) {
+                await updateTaskStatus(reviewTask.id!, { status: newStatus === 'REJECTED' ? 'PENDING' : 'APPROVED' });
+            }
             
             alert(newStatus === 'APPROVED' ? "✅ Análisis aprobado y publicado en la biblioteca." : "❌ Análisis rechazado. El estudiante deberá rehacerlo.");
             setReviewTask(null);
@@ -202,8 +204,10 @@ export function AdminEvidenceManager() {
             await updateContributionInArticle(reviewArticle.id!, updatedContribs);
             
             // Eliminar la tarea
-            const { deleteEvidenceTask } = await import("@/services/evidence");
-            await deleteEvidenceTask(reviewTask.id!);
+            if (reviewTask.id && !reviewTask.id.startsWith('virtual_')) {
+                const { deleteEvidenceTask } = await import("@/services/evidence");
+                await deleteEvidenceTask(reviewTask.id!);
+            }
 
             alert("🗑️ Aporte eliminado correctamente.");
             setReviewTask(null);
@@ -330,9 +334,34 @@ Limitaciones: ${reviewContribution.limitaciones}
         URL.revokeObjectURL(url);
     };
 
-    const pendingReviews = tasks.filter(t => t.status === 'REVISION');
-    const pendingTasks = tasks.filter(t => t.status === 'PENDING');
-    const completedTasks = tasks.filter(t => t.status === 'APPROVED');
+    const linkedContributionIds = new Set(tasks.map(t => t.contributionId).filter(Boolean));
+    const virtualTasks: EvidenceTask[] = [];
+    articles.forEach(article => {
+        if (!article.id) return;
+        (article.contributions || []).forEach(contrib => {
+            if (!linkedContributionIds.has(contrib.id)) {
+                virtualTasks.push({
+                    id: `virtual_${contrib.id}`,
+                    studentId: contrib.studentId,
+                    studentName: contrib.studentName || 'Estudiante',
+                    articleTitle: article.title,
+                    articleUrl: article.url || '',
+                    dueDate: contrib.createdAt,
+                    status: contrib.status,
+                    articleId: article.id,
+                    contributionId: contrib.id,
+                    assignedBy: 'Aporte Libre',
+                    createdAt: contrib.createdAt
+                });
+            }
+        });
+    });
+
+    const combinedTasks = [...tasks, ...virtualTasks].sort((a, b) => b.createdAt - a.createdAt);
+
+    const pendingReviews = combinedTasks.filter(t => t.status === 'REVISION');
+    const pendingTasks = combinedTasks.filter(t => t.status === 'PENDING');
+    const completedTasks = combinedTasks.filter(t => t.status === 'APPROVED');
 
     const statusLabel: Record<string, string> = {
         PENDING: 'Pendiente',
@@ -486,9 +515,9 @@ Limitaciones: ${reviewContribution.limitaciones}
 
                         {/* Full History Table */}
                         <div>
-                            <h4 className="font-bold text-gray-800 mb-3 text-sm">Historial Completo de Tareas ({tasks.length})</h4>
-                            {tasks.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-sm">Aún no has asignado tareas. Haz clic en "+ Asignar Nueva Lectura" para comenzar.</div>
+                            <h4 className="font-bold text-gray-800 mb-3 text-sm">Historial Completo de Tareas ({combinedTasks.length})</h4>
+                            {combinedTasks.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-sm">Aún no has asignado tareas ni hay aportes libres. Haz clic en "+ Asignar Nueva Lectura" para comenzar.</div>
                             ) : (
                                 <div className="overflow-x-auto rounded-xl border border-gray-200">
                                     <table className="w-full text-sm text-left">
@@ -496,18 +525,22 @@ Limitaciones: ${reviewContribution.limitaciones}
                                             <tr>
                                                 <th className="p-3">Estudiante</th>
                                                 <th className="p-3">Artículo</th>
-                                                <th className="p-3">Límite</th>
+                                                <th className="p-3">Límite / Fecha</th>
                                                 <th className="p-3">Estado</th>
                                                 <th className="p-3 text-right">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
-                                            {tasks.map(t => {
+                                            {combinedTasks.map(t => {
                                                 const isOverdue = t.status === 'PENDING' && t.dueDate < Date.now();
                                                 const hasAnalysis = t.status !== 'PENDING';
+                                                const isVirtual = t.id?.startsWith('virtual_');
                                                 return (
                                                     <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50/50' : ''}`}>
-                                                        <td className="p-3 font-semibold text-gray-900">{t.studentName}</td>
+                                                        <td className="p-3 font-semibold text-gray-900">
+                                                            {t.studentName}
+                                                            {isVirtual && <span className="ml-1.5 bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold px-1.5 py-0.5 rounded">Aporte Libre</span>}
+                                                        </td>
                                                         <td className="p-3 text-gray-700 max-w-[200px] truncate">{t.articleTitle}</td>
                                                         <td className="p-3">
                                                             <span className={isOverdue ? 'text-red-600 font-bold' : 'text-gray-600'}>{new Date(t.dueDate).toLocaleDateString()}</span>
@@ -532,6 +565,10 @@ Limitaciones: ${reviewContribution.limitaciones}
                                                                 )}
                                                                 <button 
                                                                     onClick={async () => {
+                                                                        if (isVirtual) {
+                                                                            alert("Esta es una contribución libre. Para eliminarla, haz clic en 'Re-revisar' y usa la opción 'Eliminar Aporte'.");
+                                                                            return;
+                                                                        }
                                                                         if (confirm("¿Eliminar esta tarea permanentemente?")) {
                                                                             const { deleteEvidenceTask } = await import("@/services/evidence");
                                                                             await deleteEvidenceTask(t.id!);

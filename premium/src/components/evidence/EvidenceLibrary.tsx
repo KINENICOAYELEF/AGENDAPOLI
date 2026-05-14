@@ -95,8 +95,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
         }
         setIsSubmitting(true);
         try {
+            const contribId = `contrib_${Date.now()}`;
             const contrib = {
-                id: `contrib_${Date.now()}`,
+                id: contribId,
                 studentId: currentUserId,
                 studentName: currentUserName,
                 resumenEstudiante: '',
@@ -109,6 +110,22 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 updatedAt: Date.now()
             };
             await addContributionToArticle(addingToArticle.id!, contrib);
+
+            // Create a corresponding task so the teacher sees it in pending reviews
+            const { createEvidenceTask } = await import('@/services/evidence');
+            await createEvidenceTask({
+                studentId: currentUserId,
+                studentName: currentUserName,
+                articleTitle: addingToArticle.title,
+                articleUrl: addingToArticle.url || '',
+                dueDate: Date.now(),
+                status: 'REVISION',
+                articleId: addingToArticle.id,
+                contributionId: contribId,
+                assignedBy: 'Aporte Libre',
+                createdAt: Date.now()
+            });
+
             alert("Aporte enviado correctamente. Está pendiente de revisión docente.");
             setAddingToArticle(null);
             setPerla("");
@@ -130,8 +147,9 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
 
         setIsSubmitting(true);
         try {
+            const contribId = `contrib_${Date.now()}`;
             const contrib = {
-                id: `contrib_${Date.now()}`,
+                id: contribId,
                 studentId: currentUserId,
                 studentName: currentUserName,
                 resumenEstudiante: freeSummary,
@@ -159,7 +177,24 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 createdBy: currentUserName,
             };
 
-            await import('@/services/evidence').then(m => m.saveEvidenceArticle(newArticle));
+            const { saveEvidenceArticle, createEvidenceTask } = await import('@/services/evidence');
+            const articleId = await saveEvidenceArticle(newArticle);
+
+            if (currentUserRole !== 'DOCENTE') {
+                await createEvidenceTask({
+                    studentId: currentUserId,
+                    studentName: currentUserName,
+                    articleTitle: freeTitle,
+                    articleUrl: freeUrl || '',
+                    dueDate: Date.now(),
+                    status: 'REVISION',
+                    articleId: articleId,
+                    contributionId: contribId,
+                    assignedBy: 'Aporte Libre',
+                    createdAt: Date.now()
+                });
+            }
+
             alert(currentUserRole === 'DOCENTE' ? "Artículo publicado exitosamente." : "Aporte enviado correctamente. Está en revisión.");
             
             setIsAddingFree(false);
@@ -252,11 +287,10 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                     </div>
                 ) : (
                     filteredArticles.map(article => {
-                        const approvedContribs = article.contributions.filter(c => 
-                            c.status === 'APPROVED' && (!c.isHidden || currentUserRole === 'DOCENTE' || currentUserId === c.studentId)
+                        const visibleContribs = article.contributions.filter(c => 
+                            currentUserRole === 'DOCENTE' || c.status === 'APPROVED' || currentUserId === c.studentId
                         );
-                        const allContribs = article.contributions;
-                        if (approvedContribs.length === 0 && currentUserRole !== 'DOCENTE') return null;
+                        if (visibleContribs.length === 0 && currentUserRole !== 'DOCENTE') return null;
 
                         const categoryColors: Record<string, string> = {
                             'Clínica': 'from-emerald-600 to-teal-700',
@@ -312,7 +346,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                         <h3 className="text-xl font-black leading-tight mb-2">{article.title}</h3>
                                         <div className="flex items-center gap-4 text-sm text-white/70">
                                             <span className="flex items-center gap-1">✏️ {article.createdBy}</span>
-                                            <span className="flex items-center gap-1">💬 {approvedContribs.length} aporte{approvedContribs.length !== 1 ? 's' : ''}</span>
+                                            <span className="flex items-center gap-1">💬 {visibleContribs.length} aporte{visibleContribs.length !== 1 ? 's' : ''}</span>
                                             {article.url && (
                                                 <a href={article.url} target="_blank" rel="noreferrer" className="text-white/90 hover:text-white flex items-center gap-1 underline underline-offset-2">🔗 Ver documento</a>
                                             )}
@@ -332,17 +366,17 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                     </div>
 
                                     {/* Contributions */}
-                                    {approvedContribs.length > 0 && (
+                                    {visibleContribs.length > 0 && (
                                         <details className="group mt-4 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
                                             <summary className="cursor-pointer list-none p-4 flex items-center justify-between select-none hover:bg-gray-100 transition-colors">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-1 h-5 bg-gradient-to-b from-emerald-500 to-emerald-200 rounded-full"></div>
-                                                    <h4 className="text-sm font-black text-emerald-600 uppercase tracking-widest">Ver Perlas Clínicas y Aplicaciones ({approvedContribs.length})</h4>
+                                                    <h4 className="text-sm font-black text-emerald-600 uppercase tracking-widest">Ver Perlas Clínicas y Aplicaciones ({visibleContribs.length})</h4>
                                                 </div>
                                                 <span className="text-emerald-500 font-bold group-open:rotate-180 transition-transform">▼</span>
                                             </summary>
                                             <div className="p-4 pt-0 space-y-4">
-                                                {approvedContribs.map(c => {
+                                                {visibleContribs.map(c => {
                                                     const hasNewPerlas = c.perlas && Object.keys(c.perlas).length > 0;
                                                     const catCfg = CATEGORY_CONFIGS[article.category] || CATEGORY_CONFIGS['Otro'];
                                                     const showNota = currentUserRole === 'DOCENTE' || currentUserId === c.studentId;
@@ -356,6 +390,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                     <div>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-bold text-emerald-900 text-sm">{c.studentName}</span>
+                                                                            {c.status !== 'APPROVED' && <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${c.status === 'REVISION' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>{c.status === 'REVISION' ? 'En Revisión' : 'Rechazado'}</span>}
                                                                             {c.isHidden && <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">Oculto</span>}
                                                                         </div>
                                                                         <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}{c.studyDesign ? ` · ${c.studyDesign}` : ''}</div>
