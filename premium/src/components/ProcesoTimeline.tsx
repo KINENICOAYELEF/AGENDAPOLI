@@ -374,21 +374,23 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                         (item.data as Evolucion).sessionGoal || "Sin objetivo definido"}
                                                 </div>
                                                 <div className="flex flex-col gap-1 items-end shrink-0">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (isEval) {
-                                                                setSelectedEval(item.data as Evaluacion);
-                                                                setView('editEval');
-                                                            } else {
-                                                                setSelectedEvol(item.data as Evolucion);
-                                                                setView('editEvol');
-                                                            }
-                                                        }}
-                                                        className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
-                                                    >
-                                                        ✏️ Editar Completo
-                                                    </button>
+                                                    {(!isEval || isAdmin) && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (isEval) {
+                                                                    setSelectedEval(item.data as Evaluacion);
+                                                                    setView('editEval');
+                                                                } else {
+                                                                    setSelectedEvol(item.data as Evolucion);
+                                                                    setView('editEvol');
+                                                                }
+                                                            }}
+                                                            className="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
+                                                        >
+                                                            ✏️ Editar Completo
+                                                        </button>
+                                                    )}
                                                     {isEval && canUseV2 && (item.data as any).expressDraft && (
                                                         <button
                                                             onClick={(e) => {
