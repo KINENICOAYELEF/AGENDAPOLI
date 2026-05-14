@@ -288,7 +288,7 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                 ) : (
                     filteredArticles.map(article => {
                         const visibleContribs = article.contributions.filter(c => 
-                            currentUserRole === 'DOCENTE' || c.status === 'APPROVED' || currentUserId === c.studentId
+                            currentUserRole === 'DOCENTE' || ((c.status === 'APPROVED' || currentUserId === c.studentId) && !c.isHidden)
                         );
                         if (visibleContribs.length === 0 && currentUserRole !== 'DOCENTE') return null;
 
@@ -357,12 +357,32 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                 {/* Body */}
                                 <div className="bg-white p-6">
                                     {/* Summary Section */}
-                                    <div className="mb-6">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-1 h-5 bg-gradient-to-b from-gray-400 to-gray-200 rounded-full"></div>
-                                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Resumen del Estudio</h4>
+                                    <div className="mb-6 space-y-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-1 h-5 bg-gradient-to-b from-gray-400 to-gray-200 rounded-full"></div>
+                                                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">Resumen del Estudio</h4>
+                                            </div>
+                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-gray-100">{article.summary}</p>
                                         </div>
-                                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-gray-100">{article.summary}</p>
+
+                                        {article.finding && (
+                                            <div className="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-50">
+                                                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                    <span>🎯</span> HALLAZGO CLAVE / RECOMENDACIÓN
+                                                </div>
+                                                <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">{article.finding}</p>
+                                            </div>
+                                        )}
+
+                                        {article.methodology && (
+                                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                    <span>🔬</span> METODOLOGÍA / DISEÑO
+                                                </div>
+                                                <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">{article.methodology}</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Contributions */}
@@ -396,7 +416,24 @@ export function EvidenceLibrary({ currentUserId, currentUserName, currentUserRol
                                                                         <div className="text-[10px] text-emerald-600">{new Date(c.createdAt).toLocaleDateString()}{c.studyDesign ? ` · ${c.studyDesign}` : ''}</div>
                                                                     </div>
                                                                 </div>
-                                                                {c.nota && showNota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm" title="Calificación (Solo visible para ti y docentes)">{c.nota.toFixed(1)}</div>}
+                                                                <div className="flex items-center gap-2">
+                                                                    {currentUserRole === 'DOCENTE' && (
+                                                                        <button 
+                                                                            onClick={async () => {
+                                                                                const newHidden = !c.isHidden;
+                                                                                const updatedContribs = article.contributions.map(x => x.id === c.id ? { ...x, isHidden: newHidden } : x);
+                                                                                const { saveEvidenceArticle } = await import('@/services/evidence');
+                                                                                await saveEvidenceArticle({ ...article, contributions: updatedContribs });
+                                                                                loadData();
+                                                                            }}
+                                                                            className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${c.isHidden ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-white/80 hover:bg-white text-gray-500 hover:text-gray-700 border border-emerald-100'}`}
+                                                                            title={c.isHidden ? "Mostrar aporte a estudiantes" : "Ocultar aporte de estudiantes"}
+                                                                        >
+                                                                            {c.isHidden ? "👁️ Mostrar" : "👁️ Ocultar"}
+                                                                        </button>
+                                                                    )}
+                                                                    {c.nota && showNota && <div className="bg-white px-3 py-1.5 rounded-xl text-sm font-black text-emerald-700 border border-emerald-200 shadow-sm" title="Calificación (Solo visible para ti y docentes)">{c.nota.toFixed(1)}</div>}
+                                                                </div>
                                                             </div>
                                                             {/* Resumen del estudiante */}
                                                             {c.resumenEstudiante && (
