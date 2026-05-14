@@ -66,8 +66,8 @@ export function EvaluacionesManager({ usuariaId, usuariaName, proceso, remoteHis
 
     if (view === 'formulario') {
         return (
-            <div className="fixed inset-0 z-[9999] bg-white w-screen h-[100dvh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4">
-                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50">
+            <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
+                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50 overflow-y-auto">
                     <EvaluacionForm
                         usuariaId={usuariaId}
                         procesoId={proceso.id!}

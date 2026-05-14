@@ -118,8 +118,8 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
 
     if (view === 'readEval' && selectedEval) {
         return (
-            <div className="fixed inset-0 z-[9999] bg-white w-screen h-[100dvh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4">
-                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50">
+            <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
+                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50 overflow-y-auto">
                     <ReadOnlyEvaluacion
                         evaluacion={selectedEval}
                         usuariaName={personaUsuariaName}
@@ -137,8 +137,8 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
         const isExpress = view === 'formExpressEval';
 
         return (
-            <div className="fixed inset-0 z-[9999] bg-white w-screen h-[100dvh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-4">
-                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50">
+            <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200 overscroll-none">
+                <div className="w-full flex-1 h-full text-slate-500 font-medium bg-slate-50 overflow-y-auto">
                     {(isEvalInitial || isReeval) && (
                         <EvaluacionForm
                             usuariaId={personaUsuariaId}

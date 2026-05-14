@@ -667,9 +667,9 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-center items-end md:items-center">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-center items-end md:items-center overscroll-none">
             {activeFullscreen && (
-                <div className="fixed inset-0 z-[60] bg-white flex flex-col animate-in slide-in-from-bottom-5">
+                <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-in fade-in duration-150 overscroll-none">
                     <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
                         <h3 className="font-black text-slate-800 flex items-center gap-2">
                             {activeFullscreen === 'anamnesisProxima' && <><span className="text-blue-500">💬</span> Anamnesis Próxima</>}
@@ -717,7 +717,7 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
                 </div>
             )}
 
-            <div className="bg-white w-full md:max-w-5xl md:h-[90vh] h-[95vh] md:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
+            <div className="bg-white w-full md:max-w-5xl md:h-[90vh] h-full max-h-[96dvh] md:rounded-3xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50 shrink-0">
                     <div>
