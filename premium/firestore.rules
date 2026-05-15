@@ -123,8 +123,10 @@ service cloud.firestore {
     match /evidence_tasks/{taskId} {
       // Estudiantes ven sus propias tareas; docentes ven todas
       allow read: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
-      // Solo docentes pueden crear o eliminar tareas
-      allow create, delete: if isDocente();
+      // Docentes pueden crear tareas. Estudiantes pueden crear tareas para sus propios aportes libres.
+      allow create: if isDocente() || (isAuthenticated() && request.resource.data.studentId == request.auth.uid);
+      // Solo docentes pueden eliminar tareas
+      allow delete: if isDocente();
       // Estudiantes actualizan su tarea al enviarla; docentes pueden editar todo
       allow update: if isDocente() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
     }
