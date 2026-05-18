@@ -124,7 +124,7 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                         evaluacion={selectedEval}
                         usuariaName={personaUsuariaName}
                         onClose={() => setView('timeline')}
-                        onEdit={() => setView('editEval')}
+                        onEdit={() => setView('formExpressEval')}
                     />
                 </div>
             </div>

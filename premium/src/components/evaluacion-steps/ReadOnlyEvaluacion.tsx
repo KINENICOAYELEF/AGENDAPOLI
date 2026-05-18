@@ -115,10 +115,8 @@ export function ReadOnlyEvaluacion({ evaluacion, usuariaName, onClose, onEdit }:
                                     <span className="flex items-center gap-1.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> {ev.clinicianResponsible}</span>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap gap-3">
-                                <button onClick={onEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center shadow-sm hover:shadow">
-                                    <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                    Cargar Editor Completo
+                                <button onClick={onEdit} className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center shadow-sm hover:shadow">
+                                    ⚡ Editar v2
                                 </button>
                             </div>
                         </div>
