@@ -65,12 +65,16 @@ export async function guardarIntento(intento: Omit<SimuladorIntento, 'id' | 'fec
 export async function getIntentosEstudiante(userId: string, maxResults = 20) {
     const q = query(
         collection(db, COLLECTION),
-        where('userId', '==', userId),
-        orderBy('fecha', 'desc'),
-        limit(maxResults)
+        where('userId', '==', userId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as SimuladorIntento));
+    const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as SimuladorIntento));
+    results.sort((a, b) => {
+        const timeA = a.fecha?.toDate?.()?.getTime() || 0;
+        const timeB = b.fecha?.toDate?.()?.getTime() || 0;
+        return timeB - timeA;
+    });
+    return results.slice(0, maxResults);
 }
 
 // ─── Get all attempts (docente view) ───

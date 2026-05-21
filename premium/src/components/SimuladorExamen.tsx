@@ -107,6 +107,33 @@ export function SimuladorExamen() {
     };
     const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
+    const persistAttempt = async (evalData = evaluationData, commData = commissionData) => {
+        if (!user) return;
+        if (timerRef.current) clearInterval(timerRef.current);
+        localStorage.removeItem(STORAGE_KEY);
+        try {
+            await guardarIntento({
+                userId: user.uid,
+                userEmail: user.email || '',
+                userName: user.displayName || user.email || 'Anónimo',
+                area: setupForm.area || 'aleatoria',
+                dificultad: setupForm.dificultad || 'intermedio',
+                practiceMode,
+                pacienteNombre: caseData?.ficha_visible?.nombre || '',
+                motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
+                puntajeGlobal: evalData?.puntaje_global ?? 0,
+                notaChilena: evalData?.nota_chilena ?? 0,
+                nivel: evalData?.nivel ?? '—',
+                puntajeComision: commData?.puntaje_comision_global ?? 0,
+                notaComision: commData?.nota_chilena_comision ?? 0,
+                scorecard: (evalData?.scorecard || {}) as any,
+                tiempoSegundos: timer,
+            });
+        } catch (fbErr) {
+            console.error('[Simulador] Error guardando en Firebase:', fbErr);
+        }
+    };
+
     // ═══ PROTECCIÓN ANTI-SALIDA (beforeunload + popstate + history sentinel) ═══
     const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
     const isReview = phase === 'RESULTS' && reviewPhase !== null;
@@ -266,7 +293,12 @@ export function SimuladorExamen() {
     };
     const handleReasoningContinue = () => {
         const next = getNextPhase('REASONING');
-        if (next) setPhase(next);
+        if (next) {
+            setPhase(next);
+            if (next === 'RESULTS') {
+                persistAttempt();
+            }
+        }
     };
 
     const handleExamSubmit = async () => {
@@ -328,7 +360,12 @@ export function SimuladorExamen() {
             setEvaluationData(data);
             setCommissionAnswers(new Array(data.preguntas_comision?.length || 0).fill(''));
             const next = getNextPhase('CONSTRUCTION');
-            if (next) setPhase(next);
+            if (next) {
+                setPhase(next);
+                if (next === 'RESULTS') {
+                    persistAttempt(data);
+                }
+            }
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     };
@@ -344,28 +381,7 @@ export function SimuladorExamen() {
                 respuestas_estudiante: commissionAnswers,
             }, user.uid);
             setCommissionData(data);
-            if (timerRef.current) clearInterval(timerRef.current);
-            localStorage.removeItem(STORAGE_KEY);
-            // Persist to Firebase
-            try {
-                await guardarIntento({
-                    userId: user.uid,
-                    userEmail: user.email || '',
-                    userName: user.displayName || user.email || 'Anónimo',
-                    area: setupForm.area || 'aleatoria',
-                    dificultad: setupForm.dificultad || 'intermedio',
-                    practiceMode,
-                    pacienteNombre: caseData?.ficha_visible?.nombre || '',
-                    motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
-                    puntajeGlobal: evaluationData.puntaje_global,
-                    notaChilena: evaluationData.nota_chilena,
-                    nivel: evaluationData.nivel,
-                    puntajeComision: data.puntaje_comision_global,
-                    notaComision: data.nota_chilena_comision,
-                    scorecard: evaluationData.scorecard as any,
-                    tiempoSegundos: timer,
-                });
-            } catch (fbErr) { console.error('[Simulador] Error guardando en Firebase:', fbErr); }
+            await persistAttempt(evaluationData, data);
             setPhase('RESULTS');
         } catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
@@ -724,7 +740,7 @@ export function SimuladorExamen() {
                                 </div>
                             </div>
                             <button onClick={handleReasoningContinue} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                Continuar al Examen Físico →
+                                {getNextPhase('REASONING') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : 'Continuar al Examen Físico →'}
                             </button>
                         </div>
                     )}
@@ -865,11 +881,16 @@ export function SimuladorExamen() {
                                     }
                                     setError('');
                                     const next = getNextPhase('REASONING2');
-                                    if (next) setPhase(next);
+                                    if (next) {
+                                        setPhase(next);
+                                        if (next === 'RESULTS') {
+                                            persistAttempt();
+                                        }
+                                    }
                                 }}
                                 className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm"
                             >
-                                Planificar Intervenciones →
+                                {getNextPhase('REASONING2') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : 'Planificar Intervenciones →'}
                             </button>
                         )}
                     </div>
@@ -1028,7 +1049,7 @@ export function SimuladorExamen() {
                         </div>
                         {!isReview && (
                             <button onClick={handleEvaluate} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                                📤 Enviar a Comisión Evaluadora
+                                {getNextPhase('CONSTRUCTION') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : '📤 Enviar a Comisión Evaluadora'}
                             </button>
                         )}
                     </div>
