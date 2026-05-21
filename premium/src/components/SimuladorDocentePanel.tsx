@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getIntentosDocente, eliminarIntento, getTareaConfig, guardarTareaConfig } from '@/services/simuladorFirebase';
 import type { SimuladorIntento, SimuladorTareaConfig } from '@/services/simuladorFirebase';
@@ -210,37 +210,88 @@ export function SimuladorDocentePanel() {
                                 const fecha = int.fecha ? int.fecha.toDate() : new Date();
                                 const isExpanded = expandedId === int.id;
                                 return (
-                                    <tr key={int.id} className={`hover:bg-slate-50 cursor-pointer transition ${isExpanded ? 'bg-amber-50/50' : ''}`}
-                                        onClick={() => setExpandedId(isExpanded ? null : (int.id || null))}>
-                                        <td className="px-4 py-3">
-                                            <div className="font-bold text-slate-800">{int.userName || 'Anónimo'}</div>
-                                            <div className="text-[10px] text-slate-400">{int.userEmail}</div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="text-slate-700">{int.pacienteNombre || '—'}</div>
-                                            <div className="text-[10px] text-slate-400">{int.area || 'aleatoria'} · {int.dificultad || 'intermedio'}</div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`font-black text-lg ${(int.notaChilena || 0) >= 4.0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {int.notaChilena?.toFixed(1) || '—'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                                int.nivel?.includes('Distinción') ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-                                                int.nivel === 'Aprobado' ? 'text-blue-700 bg-blue-50 border-blue-200' :
-                                                int.nivel?.includes('Recuperable') ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                                                'text-red-700 bg-red-50 border-red-200'
-                                            }`}>{int.nivel || '—'}</span>
-                                        </td>
-                                        <td className="px-4 py-3 font-bold">{int.notaComision?.toFixed(1) || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-500">{formatTime(int.tiempoSegundos || 0)}</td>
-                                        <td className="px-4 py-3 text-slate-400 text-xs">{fecha.toLocaleDateString('es-CL')}</td>
-                                        <td className="px-4 py-3">
-                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(int.id!); }}
-                                                className="text-xs text-red-400 hover:text-red-600 font-bold">🗑</button>
-                                        </td>
-                                    </tr>
+                                    <Fragment key={int.id}>
+                                        <tr className={`hover:bg-slate-50 cursor-pointer transition ${isExpanded ? 'bg-amber-50/50 border-b-0' : ''}`}
+                                            onClick={() => setExpandedId(isExpanded ? null : (int.id || null))}>
+                                            <td className="px-4 py-3">
+                                                <div className="font-bold text-slate-800">{int.userName || 'Anónimo'}</div>
+                                                <div className="text-[10px] text-slate-400">{int.userEmail}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-slate-700">{int.pacienteNombre || '—'}</div>
+                                                <div className="text-[10px] text-slate-400">{int.area || 'aleatoria'} · {int.dificultad || 'intermedio'}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`font-black text-lg ${(int.notaChilena || 0) >= 4.0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                    {int.notaChilena?.toFixed(1) || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                                    int.nivel?.includes('Distinción') ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                                                    int.nivel === 'Aprobado' ? 'text-blue-700 bg-blue-50 border-blue-200' :
+                                                    int.nivel?.includes('Recuperable') ? 'text-amber-700 bg-amber-50 border-amber-200' :
+                                                    'text-red-700 bg-red-50 border-red-200'
+                                                }`}>{int.nivel || '—'}</span>
+                                            </td>
+                                            <td className="px-4 py-3 font-bold">{int.notaComision?.toFixed(1) || '—'}</td>
+                                            <td className="px-4 py-3 text-slate-500">{formatTime(int.tiempoSegundos || 0)}</td>
+                                            <td className="px-4 py-3 text-slate-400 text-xs">{fecha.toLocaleDateString('es-CL')}</td>
+                                            <td className="px-4 py-3">
+                                                <button onClick={(e) => { e.stopPropagation(); handleDelete(int.id!); }}
+                                                    className="text-xs text-red-400 hover:text-red-600 font-bold">🗑</button>
+                                            </td>
+                                        </tr>
+                                        {isExpanded && (
+                                            <tr className="bg-slate-50/50">
+                                                <td colSpan={8} className="px-6 py-4 border-b border-slate-200">
+                                                    <div className="space-y-4 max-w-4xl">
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                                                            <div>
+                                                                <span className="font-semibold text-slate-500 block">Modo de Práctica:</span>
+                                                                <span className="font-bold text-slate-700 capitalize">{int.practiceMode || 'completo'}</span>
+                                                            </div>
+                                                            <div className="col-span-3">
+                                                                <span className="font-semibold text-slate-500 block">Motivo de Consulta:</span>
+                                                                <span className="text-slate-700">{int.motivoConsulta || '—'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="font-bold text-xs text-slate-600 mb-2 uppercase tracking-wider">Detalle de Calificación (Scorecard)</h5>
+                                                            {int.scorecard && Object.keys(int.scorecard).length > 0 ? (
+                                                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                    <table className="w-full text-left text-xs">
+                                                                        <thead>
+                                                                            <tr className="bg-slate-100/80 text-slate-500 uppercase tracking-wider font-semibold border-b">
+                                                                                <th className="px-3 py-2">Competencia</th>
+                                                                                <th className="px-3 py-2 w-20 text-center">Puntaje</th>
+                                                                                <th className="px-3 py-2">Retroalimentación / Comentario</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-slate-100">
+                                                                            {Object.entries(int.scorecard).map(([key, sc]) => (
+                                                                                <tr key={key} className="hover:bg-slate-50/30">
+                                                                                    <td className="px-3 py-2 font-semibold text-slate-700">{SCORECARD_LABELS[key] || key.replace(/_/g, ' ')}</td>
+                                                                                    <td className="px-3 py-2 text-center font-bold">
+                                                                                        <span className={`px-1.5 py-0.5 rounded ${sc.puntaje >= 60 ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'}`}>
+                                                                                            {sc.puntaje}/100
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2 text-slate-600 italic">{sc.comentario || 'Sin comentario.'}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-slate-400 italic text-xs">No hay desglose de scorecard para este intento.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </Fragment>
                                 );
                             })}
                         </tbody>
