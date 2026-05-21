@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getIntentosDocente, eliminarIntento, getTareaConfig, guardarTareaConfig } from '@/services/simuladorFirebase';
+import { getIntentosDocente, eliminarIntento, getTareaConfig, guardarTareaConfig, exportarIntentoPDF } from '@/services/simuladorFirebase';
 import type { SimuladorIntento, SimuladorTareaConfig } from '@/services/simuladorFirebase';
 
 const SCORECARD_LABELS: Record<string, string> = {
@@ -256,8 +256,16 @@ export function SimuladorDocentePanel() {
                                                                 <span className="text-slate-700">{int.motivoConsulta || '—'}</span>
                                                             </div>
                                                         </div>
-                                                        <div>
-                                                            <h5 className="font-bold text-xs text-slate-600 mb-2 uppercase tracking-wider">Detalle de Calificación (Scorecard)</h5>
+                                                        <div className="space-y-2">
+                                                            <div className="flex justify-between items-center">
+                                                                <h5 className="font-bold text-xs text-slate-600 uppercase tracking-wider">Detalle de Calificación (Scorecard)</h5>
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); exportarIntentoPDF(int); }}
+                                                                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                                                >
+                                                                    📄 Exportar Reporte Completo (PDF)
+                                                                </button>
+                                                            </div>
                                                             {int.scorecard && Object.keys(int.scorecard).length > 0 ? (
                                                                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                                                                     <table className="w-full text-left text-xs">

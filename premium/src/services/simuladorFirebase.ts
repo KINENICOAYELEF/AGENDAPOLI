@@ -27,6 +27,13 @@ export interface SimuladorIntento {
     fecha: Timestamp;
     // Optional: full data for docente review
     resumenTrabajo?: string;
+    // Full details for PDF export
+    erroresCriticos?: any[];
+    aciertosDestacados?: any[];
+    areasMejora?: string[];
+    perlaDocente?: string;
+    commissionAnswers?: string[];
+    preguntasComision?: any[];
 }
 
 export interface SimuladorTareaConfig {
@@ -227,4 +234,138 @@ export async function verificarCumplimiento(
         creditosExtraAcumulados: Math.max(0, creditos),
         descripcion,
     };
+}
+
+// ─── Export attempt to PDF format ───
+export function exportarIntentoPDF(int: SimuladorIntento) {
+    if (typeof window === 'undefined') return;
+
+    const notaFinal = int.notaComision
+        ? ((int.notaChilena * 0.7) + (int.notaComision * 0.3)).toFixed(1)
+        : int.notaChilena?.toFixed(1);
+
+    const formatTimeHelper = (s: number) => 
+        `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    const labels: Record<string, string> = {
+        entrevista: 'Entrevista',
+        razonamiento_previo: 'Razonamiento I',
+        razonamiento_integrador: 'Razonamiento II',
+        examen_fisico: 'Examen Físico',
+        intervencion_paciente: 'Intervención',
+        diagnostico: 'Diagnóstico',
+        objetivos: 'Objetivos',
+        plan_fases: 'Plan por Fases',
+        reevaluacion: 'Reevaluación',
+        intervencion: 'Intervención (legado)',
+    };
+
+    const scorecardRows = Object.entries(int.scorecard || {}).map(([k, v]) =>
+        `<tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;">${labels[k] || k.replace(/_/g, ' ').toUpperCase()}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:14px;color:${(v as any).puntaje >= 60 ? '#059669' : '#dc2626'}">${(v as any).puntaje}/100</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;font-style:italic;">${(v as any).comentario || '—'}</td>
+        </tr>`
+    ).join('');
+
+    const erroresHTML = (int.erroresCriticos || []).map((e: any) =>
+        `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;">
+            <strong style="color:#991b1b;">[${e.fase}]</strong> ${e.error}<br/>
+            <span style="font-size:12px;color:#64748b;">→ ${e.explicacion_docente}</span>
+        </div>`
+    ).join('');
+
+    const aciertosHTML = (int.aciertosDestacados || []).map((a: any) =>
+        `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;">
+            <strong style="color:#166534;">[${a.fase}]</strong> ${a.acierto}<br/>
+            <span style="font-size:12px;color:#64748b;">→ ${a.por_que_importa}</span>
+        </div>`
+    ).join('');
+
+    const areasHTML = (int.areasMejora || []).map((a: string) =>
+        `<li style="font-size:13px;margin-bottom:4px;color:#334155;">${a}</li>`
+    ).join('');
+
+    const comisionHTML = int.notaComision && int.preguntasComision ? int.preguntasComision.map((q: any, i: number) => {
+        const answer = int.commissionAnswers?.[i] || '—';
+        return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px;">
+            <p style="font-weight:700;color:#1e293b;margin:0 0 4px;">P${i+1}: ${q.pregunta}</p>
+            <p style="font-size:13px;color:#334155;margin:0 0 4px;"><strong>Respuesta estudiante:</strong> ${answer}</p>
+        </div>`;
+    }).join('') : '';
+
+    const fechaStr = int.fecha ? (int.fecha.toDate ? int.fecha.toDate() : new Date(int.fecha as any)).toLocaleDateString('es-CL') : new Date().toLocaleDateString('es-CL');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador - ${int.userName}</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
+    h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f59e0b;padding-bottom:16px;margin-bottom:24px;}
+    .nota-box{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 24px;text-align:center;}
+    .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
+    @media print{body{padding:20px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="header">
+        <div>
+            <h1>🎓 Reporte de Simulación Clínica</h1>
+            <p style="margin:4px 0;font-size:13px;color:#64748b;">Historial de Intentos · ${fechaStr}</p>
+            <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${int.userName} (${int.userEmail}) · <strong>Tiempo:</strong> ${formatTimeHelper(int.tiempoSegundos || 0)}</p>
+            <p style="margin:2px 0;font-size:13px;"><strong>Modo de Práctica:</strong> <span style="text-transform:capitalize;font-weight:bold;">${int.practiceMode || 'completo'}</span></p>
+        </div>
+        <div class="nota-box">
+            <div class="nota-big">${notaFinal}</div>
+            <div style="font-size:12px;font-weight:700;color:#92400e;">NOTA FINAL</div>
+        </div>
+    </div>
+    <h2>📋 Caso Clínico</h2>
+    <div class="grid2">
+        <div><strong>Paciente:</strong> ${int.pacienteNombre || '—'}</div>
+        <div><strong>Área:</strong> ${int.area || 'Aleatoria'}</div>
+        <div><strong>Dificultad:</strong> ${int.dificultad || 'Intermedio'}</div>
+    </div>
+    <p style="font-size:14px;margin-top:8px;"><strong>Motivo de Consulta:</strong> ${int.motivoConsulta || '—'}</p>
+    
+    <h2>📊 Scorecard por Competencia</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Competencia</th>
+                <th style="text-align:center;">Puntaje</th>
+                <th>Retroalimentación</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${scorecardRows || '<tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8;">No hay desglose disponible.</td></tr>'}
+        </tbody>
+    </table>
+    
+    <div class="grid2" style="margin-top:20px;">
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;color:#1e293b;">${int.puntajeGlobal}/100</div>
+            <div style="font-size:11px;color:#64748b;">Puntaje Evaluación (70%)</div>
+        </div>
+        ${int.notaComision ? `
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;color:#1e293b;">${int.puntajeComision}/100</div>
+            <div style="font-size:11px;color:#64748b;">Puntaje Comisión (30%)</div>
+        </div>` : ''}
+    </div>
+    
+    ${erroresHTML ? `<h2>❌ Errores Críticos</h2>${erroresHTML}` : ''}
+    ${aciertosHTML ? `<h2>✅ Aciertos Destacados</h2>${aciertosHTML}` : ''}
+    ${areasHTML ? `<h2>📈 Áreas de Mejora</h2><ul>${areasHTML}</ul>` : ''}
+    ${int.perlaDocente ? `<h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${int.perlaDocente}</p>` : ''}
+    ${comisionHTML ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}` : ''}
+    
+    <div class="no-print" style="text-align:center;margin-top:32px;">
+        <button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar / Imprimir Reporte</button>
+    </div>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+        w.document.write(html);
+        w.document.close();
+    }
 }

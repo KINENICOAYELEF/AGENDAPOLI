@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getIntentosEstudiante } from '@/services/simuladorFirebase';
+import { getIntentosEstudiante, exportarIntentoPDF } from '@/services/simuladorFirebase';
 import type { SimuladorIntento } from '@/services/simuladorFirebase';
 
 const SCORECARD_LABELS: Record<string, string> = {
@@ -109,6 +109,12 @@ export function SimuladorHistorial({ onClose }: { onClose: () => void }) {
                                                 <span className="text-slate-500">Comisión:</span> <strong>{int.notaComision?.toFixed(1) || 'N/A'}</strong>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); exportarIntentoPDF(int); }}
+                                            className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                        >
+                                            📄 Exportar Reporte Completo (PDF)
+                                        </button>
                                     </div>
                                 )}
                             </div>

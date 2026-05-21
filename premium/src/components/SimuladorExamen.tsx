@@ -128,6 +128,13 @@ export function SimuladorExamen() {
                 notaComision: commData?.nota_chilena_comision ?? 0,
                 scorecard: (evalData?.scorecard || {}) as any,
                 tiempoSegundos: timer,
+                // Extra fields for rich export
+                erroresCriticos: evalData?.errores_criticos || [],
+                aciertosDestacados: evalData?.aciertos_destacados || [],
+                areasMejora: evalData?.areas_mejora || [],
+                perlaDocente: evalData?.perla_docente || '',
+                commissionAnswers: commissionAnswers || [],
+                preguntasComision: evalData?.preguntas_comision || [],
             });
         } catch (fbErr) {
             console.error('[Simulador] Error guardando en Firebase:', fbErr);
