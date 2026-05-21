@@ -135,6 +135,20 @@ export function SimuladorExamen() {
                 perlaDocente: evalData?.perla_docente || '',
                 commissionAnswers: commissionAnswers || [],
                 preguntasComision: evalData?.preguntas_comision || [],
+                // 100% complete session log
+                fullSessionData: {
+                    setupForm,
+                    studentQuestions,
+                    respuestasPaciente: interviewData?.respuestas_paciente || '',
+                    reasoning,
+                    examSelections,
+                    hallazgosRevelados: examData?.hallazgos_revelados || null,
+                    reasoning2,
+                    interventions,
+                    construction,
+                    commissionAnswers,
+                    preguntasComision: evalData?.preguntas_comision || [],
+                }
             });
         } catch (fbErr) {
             console.error('[Simulador] Error guardando en Firebase:', fbErr);

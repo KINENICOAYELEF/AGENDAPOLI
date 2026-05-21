@@ -34,6 +34,7 @@ export interface SimuladorIntento {
     perlaDocente?: string;
     commissionAnswers?: string[];
     preguntasComision?: any[];
+    fullSessionData?: any;
 }
 
 export interface SimuladorTareaConfig {
@@ -296,10 +297,172 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
 
     const fechaStr = int.fecha ? (int.fecha.toDate ? int.fecha.toDate() : new Date(int.fecha as any)).toLocaleDateString('es-CL') : new Date().toLocaleDateString('es-CL');
 
+    // ─── Generate complete session trace ───
+    let interactiveHTML = '';
+    if (int.fullSessionData) {
+        const sd = int.fullSessionData;
+        
+        // Anamnesis / Entrevista
+        let entrevistaSection = '';
+        if (sd.studentQuestions || sd.respuestasPaciente) {
+            entrevistaSection = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">🗣️ Fase 1: Anamnesis / Entrevista</h4>
+                    <p style="margin:0 0 6px;"><strong>Preguntas formuladas por el estudiante:</strong></p>
+                    <p style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;color:#334155;white-space:pre-wrap;margin:0 0 14px;">${sd.studentQuestions || '—'}</p>
+                    <p style="margin:0 0 6px;"><strong>Respuestas del paciente (IA):</strong></p>
+                    <p style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;color:#334155;white-space:pre-wrap;margin:0;">${sd.respuestasPaciente || '—'}</p>
+                </div>
+            `;
+        }
+
+        // Razonamiento I
+        let razonamiento1Section = '';
+        if (sd.reasoning) {
+            const r1 = sd.reasoning;
+            const hipotesisList = (r1.hipotesis || []).map((h: string, idx: number) => `<li><strong>Hipótesis ${idx + 1}:</strong> ${h || '—'}</li>`).join('');
+            razonamiento1Section = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">🧠 Fase 2: Razonamiento Clínico Inicial</h4>
+                    <p style="margin:0 0 6px;"><strong>Hipótesis diagnósticas planteadas:</strong></p>
+                    <ul style="margin:0 0 14px;padding-left:20px;color:#334155;">${hipotesisList}</ul>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;border-top:1px solid #f1f5f9;padding-top:10px;">
+                        <div><strong>Clasificación del Dolor:</strong><br/><span style="color:#475569;">${r1.clasificacion_dolor || '—'}</span></div>
+                        <div><strong>Irritabilidad:</strong><br/><span style="color:#475569;">${r1.irritabilidad || '—'}</span></div>
+                        <div><strong>Banderas Rojas:</strong><br/><span style="color:#475569;">${r1.banderas_rojas || '—'}</span></div>
+                        <div><strong>Factores BPS (Biológico-Psicológico-Social):</strong><br/><span style="color:#475569;">${r1.factores_bps || '—'}</span></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Examen Físico
+        let examenSection = '';
+        if (sd.examSelections || sd.hallazgosRevelados) {
+            const selections = Object.entries(sd.examSelections || {}).filter(([_, v]: any) => v.selected);
+            const selectionsHTML = selections.length > 0 ? selections.map(([k, v]: any) => `
+                <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:8px;">
+                    <p style="margin:0 0 4px;font-weight:700;color:#1e293b;text-transform:capitalize;font-size:12px;">🔍 ${k.replace(/_/g, ' ')}</p>
+                    <p style="margin:0 0 4px;color:#475569;font-size:11px;"><strong>Justificación:</strong> ${v.justificacion || '—'}</p>
+                    <p style="margin:0;color:#475569;font-size:11px;"><strong>Pruebas específicas:</strong> ${v.pruebas || '—'}</p>
+                </div>
+            `).join('') : '<p style="color:#94a3b8;font-style:italic;">Ningún módulo seleccionado.</p>';
+
+            const findingsHTML = sd.hallazgosRevelados && Object.keys(sd.hallazgosRevelados).length > 0 
+                ? Object.entries(sd.hallazgosRevelados).map(([mod, findings]: any) => `
+                    <div style="margin-bottom:8px;padding-left:10px;border-left:2px solid #0f766e;">
+                        <strong style="text-transform:capitalize;color:#0f766e;font-size:12px;">${mod.replace(/_/g, ' ')}:</strong>
+                        <span style="color:#334155;font-size:12px;">${findings}</span>
+                    </div>
+                `).join('') 
+                : '<p style="color:#94a3b8;font-style:italic;">Sin hallazgos revelados.</p>';
+
+            examenSection = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">🔍 Fase 3: Examen Físico</h4>
+                    <p style="margin:0 0 8px;"><strong>Módulos seleccionados y justificaciones:</strong></p>
+                    <div style="margin-bottom:14px;">${selectionsHTML}</div>
+                    <p style="margin:0 0 8px;"><strong>Resultados de las pruebas clínicas (IA):</strong></p>
+                    <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin:0;">${findingsHTML}</div>
+                </div>
+            `;
+        }
+
+        // Razonamiento II
+        let razonamiento2Section = '';
+        if (sd.reasoning2) {
+            const r2 = sd.reasoning2;
+            razonamiento2Section = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">🔄 Fase 4: Razonamiento Integrador</h4>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div><strong>¿Se confirman las hipótesis iniciales?:</strong><br/><span style="color:#475569;">${r2.hipotesis_confirmadas || '—'}</span></div>
+                        <div><strong>Clasificación Actualizada:</strong><br/><span style="color:#475569;">${r2.clasificacion_actualizada || '—'}</span></div>
+                        <div><strong>Diagnóstico Presuntivo (CIF / Kinesiológico):</strong><br/><span style="color:#475569;">${r2.diagnostico_presuntivo || '—'}</span></div>
+                        <div><strong>Hallazgos Clave de la Evaluación:</strong><br/><span style="color:#475569;">${r2.hallazgos_clave || '—'}</span></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Intervenciones
+        let intervencionesSection = '';
+        if (sd.interventions && sd.interventions.length > 0) {
+            const intListHTML = sd.interventions.map((i: any, idx: number) => `
+                <tr style="background:${idx % 2 === 0 ? 'white' : '#f8fafc'};">
+                    <td style="padding:6px;border:1px solid #e2e8f0;font-size:11px;"><strong>${i.tecnica || '—'}</strong></td>
+                    <td style="padding:6px;border:1px solid #e2e8f0;font-size:11px;">${i.objetivo_tecnica || '—'}</td>
+                    <td style="padding:6px;border:1px solid #e2e8f0;font-size:11px;">${i.dosis || '—'}</td>
+                    <td style="padding:6px;border:1px solid #e2e8f0;font-size:10px;color:#475569;">
+                        Terapeuta: ${i.posicion_terapeuta || '—'}<br/>
+                        Paciente: ${i.posicion_paciente || '—'}
+                    </td>
+                    <td style="padding:6px;border:1px solid #e2e8f0;font-size:10px;color:#475569;font-style:italic;">${i.instrucciones_paciente || '—'}</td>
+                </tr>
+            `).join('');
+
+            intervencionesSection = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:12px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">🛠️ Fase 5: Plan de Intervención / Ejercicios</h4>
+                    <table style="width:100%;border-collapse:collapse;margin:0;">
+                        <thead>
+                            <tr style="background:#cbd5e1;color:#1e293b;text-align:left;font-weight:700;">
+                                <th style="padding:6px;border:1px solid #cbd5e1;font-size:11px;">Técnica</th>
+                                <th style="padding:6px;border:1px solid #cbd5e1;font-size:11px;">Objetivo</th>
+                                <th style="padding:6px;border:1px solid #cbd5e1;font-size:11px;">Dosis</th>
+                                <th style="padding:6px;border:1px solid #cbd5e1;font-size:11px;">Posicionamiento</th>
+                                <th style="padding:6px;border:1px solid #cbd5e1;font-size:11px;">Instrucciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${intListHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Construcción de Reporte
+        let construccionSection = '';
+        if (sd.construction) {
+            const c = sd.construction;
+            construccionSection = `
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;font-size:13px;margin-bottom:16px;">
+                    <h4 style="margin:0 0 10px;color:#1e3a8a;font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;">📝 Fase 6: Diagnóstico y Objetivos (CIF)</h4>
+                    <p style="margin:0 0 6px;"><strong>Diagnóstico Kinesiológico / CIF:</strong></p>
+                    <p style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;color:#334155;white-space:pre-wrap;margin:0 0 12px;">${c.diagnostico || '—'}</p>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                        <div><strong>Objetivo General:</strong><br/><span style="color:#475569;">${c.objetivo_general || '—'}</span></div>
+                        <div><strong>Objetivos Específicos:</strong><br/><span style="color:#475569;">${c.objetivos_especificos || '—'}</span></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                        <div><strong>Objetivos Operacionales:</strong><br/><span style="color:#475569;">${c.objetivos_operacionales || '—'}</span></div>
+                        <div><strong>Plan por Fases:</strong><br/><span style="color:#475569;">${c.plan_fases || '—'}</span></div>
+                    </div>
+                    <div><strong>Criterios de Reevaluación y Alta:</strong><br/><span style="color:#475569;">${c.reevaluacion || '—'}</span></div>
+                </div>
+            `;
+        }
+
+        interactiveHTML = `
+            <div style="page-break-before: always; height: 1px;"></div>
+            <h2 style="font-size:18px;color:#1e3a8a;border-bottom:3px solid #3b82f6;padding-bottom:6px;margin-top:40px;">📝 Registro Completo de la Sesión (Respuestas del Alumno)</h2>
+            <p style="font-size:12px;color:#64748b;margin-bottom:20px;">A continuación se detalla todo el trabajo interactivo realizado por el estudiante durante la simulación.</p>
+            ${entrevistaSection}
+            ${razonamiento1Section}
+            ${examenSection}
+            ${razonamiento2Section}
+            ${intervencionesSection}
+            ${construccionSection}
+        `;
+    }
+
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador - ${int.userName}</title>
     <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
     body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
     h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
+    h3{font-size:14px;color:#1e3a8a;margin-top:20px;}
     .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f59e0b;padding-bottom:16px;margin-bottom:24px;}
     .nota-box{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 24px;text-align:center;}
     .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;}
@@ -358,6 +521,8 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
     ${int.perlaDocente ? `<h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${int.perlaDocente}</p>` : ''}
     ${comisionHTML ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}` : ''}
     
+    ${interactiveHTML}
+
     <div class="no-print" style="text-align:center;margin-top:32px;">
         <button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar / Imprimir Reporte</button>
     </div>
