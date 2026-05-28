@@ -111,6 +111,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         🏥 Pasantía 2º Año
                     </Link>
                     )}
+                    {user.role === "DOCENTE" && (
+                        <Link href="/app/cuestionarios" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-purple-300 font-semibold">
+                            📝 Cuestionarios (Beta)
+                        </Link>
+                    )}
                     <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300 font-bold mt-4 border-t border-slate-800 pt-4">
                         🎓 Simulador Examen
                     </Link>
