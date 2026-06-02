@@ -352,30 +352,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
                 }
                 
                 if (msg.setupComplete) {
-                    console.log("Setup complete! Sending context priming...");
-                    
-                    // ═══ CAPA 2: PRIMING via client_content ═══
-                    // Seed a fake initial exchange so the model is ALREADY in patient
-                    // mode before the student speaks their first word. This dramatically
-                    // reduces the chance of disclaimers because the model's first turn
-                    // is already "in character" and subsequent turns follow that pattern.
-                    ws.send(JSON.stringify({
-                        clientContent: {
-                            turns: [
-                                {
-                                    role: "user",
-                                    parts: [{ text: "Buenos días, soy su kinesiólogo. Cuénteme, ¿en qué le puedo ayudar hoy?" }]
-                                },
-                                {
-                                    role: "model",
-                                    parts: [{ text: "Buenos días. Mire, vengo porque me mandaron para acá por un dolor que tengo hace un tiempo ya. Ojalá me pueda ayudar." }]
-                                }
-                            ],
-                            turnComplete: true
-                        }
-                    }));
-                    console.log("Context priming sent. Session ready.");
-                    
+                    console.log("Setup complete! Sockets ready.");
                     setupDoneRef.current = true;
                     setConnectionState('connected');
                     return;
