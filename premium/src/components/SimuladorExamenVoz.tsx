@@ -214,7 +214,7 @@ export function SimuladorExamenVoz() {
     const isReview = phase === 'RESULTS' && reviewPhase !== null;
 
     // ═══ localStorage AUTOSAVE ═══
-    const STORAGE_KEY = 'simulador_autosave';
+    const STORAGE_KEY = 'simulador_voz_autosave';
     useEffect(() => {
         if (phase === 'SETUP' || phase === 'RESULTS') return;
         try {
