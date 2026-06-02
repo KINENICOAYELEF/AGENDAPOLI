@@ -37,24 +37,39 @@ interface GeminiLiveMessage {
 
 const LIVE_MODEL = "models/gemini-3.1-flash-live-preview";
 
+// ═══ CAPA 3: TRANSCRIPT CLEANING ═══
+// Last line of defense — strip any disclaimers that slip through in the transcription.
+// The audio may still play the disclaimer (we can't unsay spoken words), but the
+// written transcript fed to subsequent evaluation phases will be clean.
 const DISCLAIMER_PATTERNS = [
-    /esta información no constituye consejo médico ni diagnóstico,? y no reemplaza la consulta con un profesional de la salud\.?/gi,
-    /es importante acudir a un médico o buscar atención sanitaria\.?/gi,
-    /el actor está interpretando un personaje en una simulación\.?/gi,
-    /este (servicio|contenido) no proporciona.{0,200}(médic|salud|profesional)\.?/gi,
-    /siempre (busque|consulte).{0,150}profesional de (la )?salud\.?/gi,
-    /no (puedo|debo) (dar|proporcionar|ofrecer).{0,100}(consejo|asesoramiento|diagnóstico) médic[o|a]\.?/gi,
-    /consulte? (con )?(un |a un )?profesional.{0,80}(médic|salud)\.?/gi,
-    /para (más )?información médica.{0,100}profesional\.?/gi,
-    /(esta información|esto) no (es|constituye|reemplaza).{0,200}(asesoramiento|consejo|diagnóstico|consulta)\.?/gi
+    // Direct disclaimer phrases
+    /esta información no constituye consejo médico[^.]*\./gi,
+    /no (puedo|debo|me es posible) (dar|proporcionar|ofrecer|brindar)[^.]*?(consejo|asesoramiento|diagnóstico|recomendaci[oó]n)[^.]*\./gi,
+    /(siempre )?(busque|consulte|acuda|visite)[^.]*?profesional[^.]*\./gi,
+    /es importante (que )?(acud|consult|visit)[^.]*?(médic|profesional|doctor)[^.]*\./gi,
+    /(este|esta) (servicio|herramienta|plataforma|conversaci[oó]n|informaci[oó]n|contenido)[^.]*?no (proporciona|reemplaza|sustituye|constituye)[^.]*\./gi,
+    /no reemplaza (la )?consulta[^.]*\./gi,
+    /para (más )?informaci[oó]n[^.]*?profesional[^.]*\./gi,
+    // Meta-references to simulation/acting
+    /el actor[^.]*?personaje[^.]*\./gi,
+    /esto es una simulaci[oó]n[^.]*\./gi,
+    /soy (un modelo|una inteligencia|una IA)[^.]*\./gi,
+    // Spoken Spanish variations (voice output tends to use these)
+    /le recomiendo (que )?(consulte|acuda|visite|busque)[^.]*?(médic|doctor|profesional|especialista)[^.]*\./gi,
+    /no estoy capacitad[oa][^.]*\./gi,
+    /no tengo la capacidad[^.]*\./gi,
+    /recuerde que[^.]*?profesional[^.]*\./gi,
 ];
 
 function stripDisclaimers(text: string): string {
     let cleaned = text;
     for (const pattern of DISCLAIMER_PATTERNS) {
+        // Reset lastIndex for global regexes reused across calls
+        pattern.lastIndex = 0;
         cleaned = cleaned.replace(pattern, '');
     }
-    return cleaned.trim();
+    // Collapse multiple spaces and trim
+    return cleaned.replace(/\s{2,}/g, ' ').trim();
 }
 
 export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGeminiLiveProps = {}) {
@@ -337,7 +352,30 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
                 }
                 
                 if (msg.setupComplete) {
-                    console.log("Setup complete! Sockets ready.");
+                    console.log("Setup complete! Sending context priming...");
+                    
+                    // ═══ CAPA 2: PRIMING via client_content ═══
+                    // Seed a fake initial exchange so the model is ALREADY in patient
+                    // mode before the student speaks their first word. This dramatically
+                    // reduces the chance of disclaimers because the model's first turn
+                    // is already "in character" and subsequent turns follow that pattern.
+                    ws.send(JSON.stringify({
+                        clientContent: {
+                            turns: [
+                                {
+                                    role: "user",
+                                    parts: [{ text: "Buenos días, soy su kinesiólogo. Cuénteme, ¿en qué le puedo ayudar hoy?" }]
+                                },
+                                {
+                                    role: "model",
+                                    parts: [{ text: "Buenos días. Mire, vengo porque me mandaron para acá por un dolor que tengo hace un tiempo ya. Ojalá me pueda ayudar." }]
+                                }
+                            ],
+                            turnComplete: true
+                        }
+                    }));
+                    console.log("Context priming sent. Session ready.");
+                    
                     setupDoneRef.current = true;
                     setConnectionState('connected');
                     return;
