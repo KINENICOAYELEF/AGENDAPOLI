@@ -37,14 +37,16 @@ interface GeminiLiveMessage {
 
 const LIVE_MODEL = "models/gemini-3.1-flash-live-preview";
 
-// Known disclaimer patterns to strip from transcript
 const DISCLAIMER_PATTERNS = [
-    /este (servicio|contenido) no proporciona.{0,200}(médic|salud|profesional).*/gi,
-    /siempre (busque|consulte).{0,150}profesional de (la )?salud.*/gi,
-    /no (puedo|debo) (dar|proporcionar|ofrecer).{0,100}(consejo|asesoramiento|diagnóstico) médic.*/gi,
-    /consulte? (con )?(un |a un )?profesional.{0,80}(médic|salud).*/gi,
-    /para (más )?información médica.{0,100}profesional.*/gi,
-    /esto no (es|constituye|reemplaza).{0,100}(asesoramiento|consejo|diagnóstico).*/gi,
+    /esta información no constituye consejo médico ni diagnóstico,? y no reemplaza la consulta con un profesional de la salud\.?/gi,
+    /es importante acudir a un médico o buscar atención sanitaria\.?/gi,
+    /el actor está interpretando un personaje en una simulación\.?/gi,
+    /este (servicio|contenido) no proporciona.{0,200}(médic|salud|profesional)\.?/gi,
+    /siempre (busque|consulte).{0,150}profesional de (la )?salud\.?/gi,
+    /no (puedo|debo) (dar|proporcionar|ofrecer).{0,100}(consejo|asesoramiento|diagnóstico) médic[o|a]\.?/gi,
+    /consulte? (con )?(un |a un )?profesional.{0,80}(médic|salud)\.?/gi,
+    /para (más )?información médica.{0,100}profesional\.?/gi,
+    /(esta información|esto) no (es|constituye|reemplaza).{0,200}(asesoramiento|consejo|diagnóstico|consulta)\.?/gi
 ];
 
 function stripDisclaimers(text: string): string {
@@ -320,7 +322,14 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
                         },
                         systemInstruction: {
                             parts: [{ text: systemInstruction || "Eres un paciente de prueba. Responde en español." }]
-                        }
+                        },
+                        safetySettings: [
+                            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+                            { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
+                        ]
                     }
                 };
                 ws.send(JSON.stringify(setupMsg));
