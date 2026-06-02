@@ -274,9 +274,24 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
             return;
         }
 
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        let apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
         if (!apiKey) {
-            console.error("No NEXT_PUBLIC_GEMINI_API_KEY found in environment variables.");
+            console.log("No NEXT_PUBLIC_GEMINI_API_KEY found. Fetching fallback key from backend...");
+            try {
+                const res = await fetch('/api/ai/key');
+                if (res.ok) {
+                    const data = await res.json();
+                    apiKey = data.apiKey;
+                } else {
+                    console.error("Backend API key route returned status:", res.status);
+                }
+            } catch (e) {
+                console.error("Failed to fetch API key from backend:", e);
+            }
+        }
+
+        if (!apiKey) {
+            console.error("No Gemini API key found in environment or backend.");
             setConnectionState('error');
             return;
         }
