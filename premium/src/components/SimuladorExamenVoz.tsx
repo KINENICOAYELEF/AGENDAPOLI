@@ -713,6 +713,22 @@ export function SimuladorExamenVoz() {
                                 Conectando con el paciente...
                             </div>
                         )}
+                        {!isReview && connectionState === 'error' && (
+                            <div className="space-y-3">
+                                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-800 text-sm">
+                                    <p className="font-bold mb-2">⚠️ Error al conectar con el simulador de voz</p>
+                                    <p className="mb-2">Por favor verifica lo siguiente:</p>
+                                    <ul className="list-disc list-inside space-y-1 ml-1">
+                                        <li><strong>Reiniciar Servidor:</strong> Si acabas de agregar la API Key al archivo `.env.local`, debes detener tu terminal (`Ctrl + C`) y volver a ejecutar `npm run dev` para que Next.js la detecte.</li>
+                                        <li><strong>Permisos del Navegador:</strong> Asegúrate de haber otorgado permisos de micrófono a la página en la barra de direcciones de tu navegador.</li>
+                                        <li><strong>Conexión a Internet:</strong> Verifica que no tengas bloqueadores de WebSockets o proxies que impidan la conexión a los servidores de Google Gemini Live.</li>
+                                    </ul>
+                                </div>
+                                <button onClick={connect} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-md text-lg">
+                                    Reintentar Conexión de Voz
+                                </button>
+                            </div>
+                        )}
                         {!isReview && connectionState === 'connected' && (
                             <div className="space-y-4">
                                 <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-2xl border-2 border-slate-200 relative overflow-hidden">
