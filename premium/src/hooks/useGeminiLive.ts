@@ -43,6 +43,7 @@ const LIVE_MODEL = "models/gemini-3.1-flash-live-preview";
 // written transcript fed to subsequent evaluation phases will be clean.
 const DISCLAIMER_PATTERNS = [
     // Direct disclaimer phrases
+    /este es un servicio de información de salud y bienestar[^.]*?no constituye un diagnóstico ni consejo médico[^.]*?siempre debe consultar a un profesional de la salud\.?/gi,
     /esta información no constituye consejo médico[^.]*\./gi,
     /no (puedo|debo|me es posible) (dar|proporcionar|ofrecer|brindar)[^.]*?(consejo|asesoramiento|diagnóstico|recomendaci[oó]n)[^.]*\./gi,
     /(siempre )?(busque|consulte|acuda|visite)[^.]*?profesional[^.]*\./gi,
