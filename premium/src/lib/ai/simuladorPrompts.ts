@@ -202,7 +202,7 @@ DEBES responder con EXACTAMENTE esta estructura JSON:
         "comentario_general_clinica": "string"
     }
 }
-\`;
+`;
 
 // ─────────────────────────────────────────────────────────────
 // CALL 3: Hallazgos del examen físico
