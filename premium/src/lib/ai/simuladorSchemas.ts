@@ -89,6 +89,34 @@ export const SimInterviewSchema = z.object({
 });
 export type SimInterviewType = z.infer<typeof SimInterviewSchema>;
 
+// Call 2.5: Feedback del Docente Maestro (Post-Entrevista)
+export const SimInterviewFeedbackSchema = z.object({
+    comunicacion_avanzada: z.object({
+        puntaje: z.number().min(0).max(100),
+        resumenes_reflexivos: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        senalizacion_signposting: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        efecto_nocebo: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        empatia_manejo_incertidumbre: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        ritmo_embudo: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        comentario_general_comunicacion: z.string()
+    }),
+    razonamiento_clinico_entrevista: z.object({
+        puntaje: z.number().min(0).max(100),
+        hilo_conductor_logica: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        alicia_sins_irritabilidad: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        espectro_banderas: z.object({
+            rojas_amarillas: z.boolean(),
+            azules_negras: z.boolean(),
+            feedback: z.string()
+        }),
+        historial_tratamientos_expectativas: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        carga_alostatica_sistemica: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        mecanismo_lesion: z.object({ logrado: z.boolean(), feedback: z.string() }),
+        comentario_general_clinica: z.string()
+    })
+});
+export type SimInterviewFeedbackType = z.infer<typeof SimInterviewFeedbackSchema>;
+
 // Call 3: Hallazgos del examen + análisis de omisiones
 export const SimExamSchema = z.object({
     hallazgos_revelados: z.record(z.string(), z.string()).describe("Key = nombre del módulo seleccionado, Value = hallazgos narrativos clínicos"),

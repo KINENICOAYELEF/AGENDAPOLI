@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGeminiLive } from '@/hooks/useGeminiLive';
 import { generateDynamicPatientPrompt, getVoiceForPersona } from '@/utils/patientPrompts';
-import type { SimCaseType, SimInterviewType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
+import type { SimCaseType, SimInterviewType, SimInterviewFeedbackType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
 import { guardarIntento, getTareaConfig, verificarCumplimiento } from '@/services/simuladorFirebase';
 import { SimuladorHistorial } from './SimuladorHistorial';
 
@@ -79,7 +79,9 @@ export function SimuladorExamenVoz() {
     const [examData, setExamData] = useState<SimExamType | null>(null);
     const [evaluationData, setEvaluationData] = useState<SimEvaluationType | null>(null);
     const [commissionData, setCommissionData] = useState<SimCommissionType | null>(null);
+    const [interviewFeedbackData, setInterviewFeedbackData] = useState<SimInterviewFeedbackType | null>(null);
     const [showInterviewAnalysis, setShowInterviewAnalysis] = useState(false);
+    const [showCommunicationFeedback, setShowCommunicationFeedback] = useState(false);
 
     // Student Work
     const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '' });
@@ -145,6 +147,18 @@ export function SimuladorExamenVoz() {
             // Sobreescribimos la respuesta del paciente del backend con la transcripción real que ocurrió por voz
             data.respuestas_paciente = finalTranscriptText;
             setInterviewData(data);
+
+            // Fetch the advanced Teacher feedback
+            try {
+                const feedbackData = await simFetch('interview_feedback', {
+                    perfil_secreto: caseData.perfil_secreto,
+                    preguntas_estudiante: finalTranscriptText,
+                }, user.uid);
+                setInterviewFeedbackData(feedbackData);
+                setShowCommunicationFeedback(true);
+            } catch (err) {
+                console.error("Failed to fetch advanced interview feedback:", err);
+            }
 
             const next = getNextPhase('INTERVIEW');
             if (next) setPhase(next);
@@ -219,13 +233,13 @@ export function SimuladorExamenVoz() {
         if (phase === 'SETUP' || phase === 'RESULTS') return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                phase, timer, caseData, interviewData, examData, evaluationData, commissionData,
+                phase, timer, caseData, interviewData, interviewFeedbackData, examData, evaluationData, commissionData,
                 studentQuestions, reasoning, reasoning2, interventions, construction,
-                examSelections, commissionAnswers, practiceMode, showInterviewAnalysis,
+                examSelections, commissionAnswers, practiceMode, showInterviewAnalysis, showCommunicationFeedback,
                 savedAt: Date.now(),
             }));
         } catch {}
-    }, [phase, studentQuestions, reasoning, reasoning2, interventions, construction, examSelections, commissionAnswers, timer, caseData, commissionData, evaluationData, examData, interviewData, practiceMode, showInterviewAnalysis]);
+    }, [phase, studentQuestions, reasoning, reasoning2, interventions, construction, examSelections, commissionAnswers, timer, caseData, commissionData, evaluationData, examData, interviewData, interviewFeedbackData, practiceMode, showInterviewAnalysis, showCommunicationFeedback]);
 
     // Auto-restore on mount
     useEffect(() => {
@@ -237,6 +251,7 @@ export function SimuladorExamenVoz() {
             if (data.phase && data.caseData) {
                 setCaseData(data.caseData);
                 setInterviewData(data.interviewData || null);
+                setInterviewFeedbackData(data.interviewFeedbackData || null);
                 setExamData(data.examData || null);
                 setEvaluationData(data.evaluationData || null);
                 setCommissionData(data.commissionData || null);
@@ -249,6 +264,7 @@ export function SimuladorExamenVoz() {
                 setCommissionAnswers(data.commissionAnswers || []);
                 setPracticeMode(data.practiceMode || 'completo');
                 setShowInterviewAnalysis(data.showInterviewAnalysis || false);
+                setShowCommunicationFeedback(data.showCommunicationFeedback || false);
                 setTimer(data.timer || 0);
                 setPhase(data.phase);
                 startTimer(false);
@@ -506,8 +522,8 @@ export function SimuladorExamenVoz() {
     const handleReset = () => {
         if (timerRef.current) clearInterval(timerRef.current);
         localStorage.removeItem(STORAGE_KEY);
-        setPhase('SETUP'); setCaseData(null); setInterviewData(null); setExamData(null);
-        setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false);
+        setPhase('SETUP'); setCaseData(null); setInterviewData(null); setInterviewFeedbackData(null); setExamData(null);
+        setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false); setShowCommunicationFeedback(false);
         setStudentQuestions(''); setTimer(0); setError('');
         setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
@@ -555,6 +571,59 @@ export function SimuladorExamenVoz() {
                     </div>
                 </div>
             )}
+
+            {/* ════════ ADVANCED COMMUNICATION FEEDBACK MODAL (DIMENSION 1) ════════ */}
+            {showCommunicationFeedback && interviewFeedbackData && (
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3 border-b pb-4">
+                            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">🎓</div>
+                            <div>
+                                <h3 className="font-black text-xl text-slate-900">Tu Desempeño Comunicacional</h3>
+                                <p className="text-sm text-slate-500">Evaluación Docente de Habilidades Blandas (Dimensión 1)</p>
+                            </div>
+                            <div className="ml-auto text-right">
+                                <div className={`text-2xl font-black ${interviewFeedbackData.comunicacion_avanzada.puntaje >= 80 ? 'text-emerald-600' : interviewFeedbackData.comunicacion_avanzada.puntaje >= 60 ? 'text-amber-500' : 'text-red-600'}`}>
+                                    {interviewFeedbackData.comunicacion_avanzada.puntaje}/100
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-slate-600 italic">"{interviewFeedbackData.comunicacion_avanzada.comentario_general_comunicacion}"</p>
+
+                        <div className="space-y-3">
+                            {[
+                                { key: 'resumenes_reflexivos', label: 'Resúmenes Reflexivos', icon: '🔄', data: interviewFeedbackData.comunicacion_avanzada.resumenes_reflexivos },
+                                { key: 'senalizacion_signposting', label: 'Señalización (Signposting)', icon: '🚦', data: interviewFeedbackData.comunicacion_avanzada.senalizacion_signposting },
+                                { key: 'efecto_nocebo', label: 'Cero Efecto Nocebo', icon: '🛡️', data: interviewFeedbackData.comunicacion_avanzada.efecto_nocebo },
+                                { key: 'empatia_manejo_incertidumbre', label: 'Empatía y Manejo Incertidumbre', icon: '🤝', data: interviewFeedbackData.comunicacion_avanzada.empatia_manejo_incertidumbre },
+                                { key: 'ritmo_embudo', label: 'Ritmo y Embudo', icon: '⏳', data: interviewFeedbackData.comunicacion_avanzada.ritmo_embudo },
+                            ].map(item => (
+                                <div key={item.key} className={`border rounded-xl p-3 flex gap-3 ${item.data.logrado ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                                    <div className="text-xl">{item.icon}</div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-sm text-slate-800">{item.label}</span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.data.logrado ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'}`}>
+                                                {item.data.logrado ? 'LOGRADO' : 'FALLIDO'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-600">{item.data.feedback}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setShowCommunicationFeedback(false)}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all"
+                        >
+                            Continuar al Razonamiento Clínico →
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
@@ -858,6 +927,36 @@ export function SimuladorExamenVoz() {
                                         </div>
                                     ))}
                                 </div>
+
+                                {interviewFeedbackData && (
+                                    <div className="mt-5 pt-5 border-t border-amber-200">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className="font-bold text-slate-800">🧠 Razonamiento MSK Avanzado (Dimensión 2)</h4>
+                                            <span className={`text-sm font-bold px-2 py-1 rounded-full ${interviewFeedbackData.razonamiento_clinico_entrevista.puntaje >= 80 ? 'bg-emerald-100 text-emerald-700' : interviewFeedbackData.razonamiento_clinico_entrevista.puntaje >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                Score: {interviewFeedbackData.razonamiento_clinico_entrevista.puntaje}/100
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 italic mb-3">"{interviewFeedbackData.razonamiento_clinico_entrevista.comentario_general_clinica}"</p>
+                                        
+                                        <div className="space-y-2">
+                                            {[
+                                                { key: 'hilo_conductor_logica', label: 'Hilo Conductor y Lógica', data: interviewFeedbackData.razonamiento_clinico_entrevista.hilo_conductor_logica },
+                                                { key: 'alicia_sins_irritabilidad', label: 'ALICIA + SINS + Irritabilidad', data: interviewFeedbackData.razonamiento_clinico_entrevista.alicia_sins_irritabilidad },
+                                                { key: 'espectro_banderas', label: 'Espectro de Banderas', data: { logrado: interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.rojas_amarillas && interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.azules_negras, feedback: interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.feedback } },
+                                                { key: 'historial_tratamientos_expectativas', label: 'Historial y Expectativas', data: interviewFeedbackData.razonamiento_clinico_entrevista.historial_tratamientos_expectativas },
+                                                { key: 'carga_alostatica_sistemica', label: 'Carga Alostática / Trabajo', data: interviewFeedbackData.razonamiento_clinico_entrevista.carga_alostatica_sistemica },
+                                                { key: 'mecanismo_lesion', label: 'Mecanismo de Lesión', data: interviewFeedbackData.razonamiento_clinico_entrevista.mecanismo_lesion },
+                                            ].map(item => (
+                                                <div key={item.key} className="flex gap-2 text-sm border-b border-amber-100 pb-2 last:border-0">
+                                                    <span className="mt-0.5 text-lg leading-none">{item.data.logrado ? '✅' : '❌'}</span>
+                                                    <div>
+                                                        <strong className="text-slate-700">{item.label}:</strong> <span className="text-slate-600">{item.data.feedback}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <button onClick={handleReasoningContinue} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
                                 {getNextPhase('REASONING') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : 'Continuar al Examen Físico →'}

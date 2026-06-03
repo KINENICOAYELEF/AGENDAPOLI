@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { executeAIAction } from '@/lib/ai/geminiClient';
-import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT } from '@/lib/ai/simuladorPrompts';
-import { SimCaseSchema, SimInterviewSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema } from '@/lib/ai/simuladorSchemas';
+import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_INTERVIEW_FEEDBACK_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT } from '@/lib/ai/simuladorPrompts';
+import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema } from '@/lib/ai/simuladorSchemas';
 
 // Vercel: allow up to 120s for complex AI calls
 export const maxDuration = 120;
@@ -101,6 +101,36 @@ Responde como el paciente descrito arriba. Además genera el "analisis_oculto" c
                     promptVersion: 'sim_v1',
                     temperature: 0.5,
                     validator: (data) => SimInterviewSchema.parse(data),
+                    skipGuardrails: true,
+                });
+                break;
+            }
+
+            // ─── CALL 2.5: Interview Feedback (Docente Maestro) ───
+            case 'interview_feedback': {
+                const { perfil_secreto, preguntas_estudiante } = payload;
+                const userPrompt = `
+PERFIL DEL PACIENTE Y LA VERDAD OCULTA DEL CASO:
+Personalidad: ${perfil_secreto.personalidad}
+Historia completa: ${perfil_secreto.historia_completa}
+Datos ocultos: ${JSON.stringify(perfil_secreto.datos_ocultos)}
+Antecedentes: ${perfil_secreto.antecedentes_relevantes?.join(', ') || 'Ninguno'}
+BPS oculto: ${JSON.stringify(perfil_secreto.bps_oculto)}
+
+TRANSCRIPCIÓN COMPLETA DE LA ENTREVISTA (ESTUDIANTE Y PACIENTE):
+${preguntas_estudiante}
+
+Evalúa esta transcripción con la rigurosidad de un Docente Maestro de postgrado.
+`;
+                result = await executeAIAction({
+                    screen: 'SIMULADOR',
+                    action: 'SIM_INTERVIEW_FEEDBACK',
+                    systemInstruction: SIM_INTERVIEW_FEEDBACK_PROMPT,
+                    userPrompt,
+                    inputHash: `sim_intfb_${Date.now()}_${userId}`,
+                    promptVersion: 'sim_v1',
+                    temperature: 0.2,
+                    validator: (data) => SimInterviewFeedbackSchema.parse(data),
                     skipGuardrails: true,
                 });
                 break;
