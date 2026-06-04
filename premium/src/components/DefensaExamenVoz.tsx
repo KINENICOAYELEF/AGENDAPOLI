@@ -291,19 +291,41 @@ export function DefensaExamenVoz() {
 
             {/* RESULTS */}
             {phase === 'RESULTS' && evaluationData && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-                    <div className="text-center pb-6 border-b">
-                        <div className="text-5xl mb-4">🏆</div>
-                        <h2 className="text-3xl font-black text-slate-900">Resultado Final: {evaluationData.puntaje_global}/100</h2>
+                <div className="bg-white rounded-2xl p-8 border max-w-4xl mx-auto shadow-sm animate-fade-in">
+                    <div className="text-center mb-10">
+                        <div className="text-6xl mb-4">{evaluationData.puntaje_global >= 60 ? '🏆' : '📚'}</div>
+                        <h2 className="text-3xl font-black text-slate-800">
+                            Nota: {evaluationData.nota_chilena?.toFixed(1) || 'N/A'} 
+                            <span className="text-lg text-slate-500 block font-normal mt-1">({evaluationData.puntaje_global}/100 Puntos)</span>
+                        </h2>
                         <p className="text-slate-500 font-medium">Defensa de Grado</p>
                     </div>
 
-                    <div className="space-y-4">
-                        <h3 className="font-bold text-xl text-slate-800">Feedback de la Comisión</h3>
-                        <p className="text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">{evaluationData.feedback_final}</p>
+                    <div className="mb-8 p-6 bg-slate-50 rounded-xl border">
+                        <h3 className="font-bold text-slate-800 text-xl mb-3">Feedback General de la Comisión</h3>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{evaluationData.feedback_final}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {evaluationData.rubrica_detallada && (
+                        <div className="mb-8">
+                            <h3 className="font-bold text-slate-800 text-xl mb-4">Desglose de Evaluación</h3>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {Object.entries(evaluationData.rubrica_detallada).map(([key, data]: [string, any]) => (
+                                    <div key={key} className="bg-white border p-4 rounded-xl shadow-sm">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold text-slate-800 capitalize">{key.replace(/_/g, ' ')}</h4>
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${data.puntaje >= 60 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                                                {data.puntaje}/100
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-slate-600">{data.comentario}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-4">
                         <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                             <h4 className="font-bold text-emerald-800 mb-2">✅ Aciertos</h4>
                             <ul className="list-disc list-inside text-sm text-emerald-700 space-y-1">

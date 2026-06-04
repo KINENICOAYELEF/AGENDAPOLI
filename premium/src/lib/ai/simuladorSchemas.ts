@@ -176,7 +176,14 @@ export type SimEvaluationType = z.infer<typeof SimEvaluationSchema>;
 
 export const SimDefenseEvaluationSchema = z.object({
     puntaje_global: z.number().min(0).max(100),
-    feedback_final: z.string(),
+    nota_chilena: z.number().min(1).max(7).describe("Nota de 1.0 a 7.0 (donde 4.0 es el 60% de 100)"),
+    feedback_final: z.string().describe("Feedback cualitativo extenso y constructivo sobre el desempeño general"),
+    rubrica_detallada: z.object({
+        problema_y_diagnostico: z.object({ puntaje: z.number(), comentario: z.string() }),
+        objetivos: z.object({ puntaje: z.number(), comentario: z.string() }),
+        plan_operacional: z.object({ puntaje: z.number(), comentario: z.string() }),
+        defensa_oral_y_respuestas: z.object({ puntaje: z.number(), comentario: z.string() }),
+    }),
     aciertos: z.array(z.string()),
     errores: z.array(z.string()),
 });
