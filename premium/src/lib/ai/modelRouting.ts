@@ -17,6 +17,7 @@ export type AIAction =
     | 'SIM_EXAM'
     | 'SIM_EVALUATE'
     | 'SIM_COMMISSION'
+    | 'SIM_EVAL_DEFENSE'
     | 'EXPRESS_STRUCTURE'
     | 'EXPRESS_GROUNDING'
     | 'EXPRESS_PLAN';

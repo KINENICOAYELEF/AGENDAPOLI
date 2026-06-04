@@ -124,6 +124,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             🎤 Simulador Voz (Admin)
                         </Link>
                     )}
+                    {user.role === "DOCENTE" && (
+                        <Link href="/app/defensa-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-300 font-bold mt-2">
+                            🗣️ Defensa Comisión (Voz)
+                        </Link>
+                    )}
                     <Link href="/app/evidencia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-blue-300 font-bold mt-2">
                         📚 Biblioteca Científica
                     </Link>
