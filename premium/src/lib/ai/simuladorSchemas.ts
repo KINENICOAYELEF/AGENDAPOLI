@@ -23,8 +23,8 @@ export const SimCaseSchema = z.object({
             dato: z.string(),
             solo_si_preguntan: z.string().describe("La pregunta que debe hacer el estudiante para que salga este dato"),
         })).describe("Datos clínicamente importantes que el paciente solo revela si preguntan directamente"),
-        antecedentes_relevantes: z.array(z.string()),
-        medicamentos: z.array(z.string()),
+        antecedentes_relevantes: z.union([z.array(z.string()), z.string()]).transform(val => Array.isArray(val) ? val : [val]),
+        medicamentos: z.union([z.array(z.string()), z.string()]).transform(val => Array.isArray(val) ? val : [val]),
         bps_oculto: z.object({
             sueno: z.string(),
             estres: z.string(),
