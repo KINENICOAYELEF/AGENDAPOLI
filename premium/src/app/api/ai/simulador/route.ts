@@ -279,7 +279,8 @@ CASO CLÍNICO:
 ${JSON.stringify(caso_resumen)}
 
 CONSTRUCCIÓN DEL ESTUDIANTE:
-Diagnóstico: ${construccion.diagnostico}
+Problema Principal: ${construccion.problema_principal}
+Diagnóstico CIF: ${construccion.diagnostico}
 Objetivo General: ${construccion.objetivo_general}
 Objetivos Específicos: ${construccion.objetivos_especificos}
 Objetivos Operacionales: ${construccion.objetivos_operacionales}

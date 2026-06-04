@@ -35,7 +35,7 @@ export function DefensaExamenVoz() {
 
     // Student Work
     const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'avanzado', descripcion: '' });
-    const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
+    const [construction, setConstruction] = useState({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
 
     // Voice connection for Commission
     const { connect, disconnect, connectionState, isMicOpen, toggleMic, isSpeaking, volume, transcript } = useGeminiLive({
@@ -107,7 +107,7 @@ export function DefensaExamenVoz() {
         disconnect();
         setPhase('SETUP'); setCaseData(null); setEvaluationData(null);
         setTimer(0); setError('');
-        setConstruction({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
+        setConstruction({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
     };
 
     return (
@@ -210,7 +210,12 @@ export function DefensaExamenVoz() {
                     <h3 className="font-bold text-slate-800 text-xl">🏗️ Construcción Clínica</h3>
                     <p className="text-sm text-slate-500">En base al caso clínico superior, redacta tu propuesta. Una vez listo, pasarás a la defensa oral.</p>
                     
-                    <div><label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (Problema Principal)</label><textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({...c, diagnostico: e.target.value}))} rows={3} className="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Diagnóstico basado en CIF..." /></div>
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                        <label className="block text-sm font-bold text-amber-900 mb-1">Problema Kinesiológico Principal</label>
+                        <p className="text-xs text-amber-700 mb-2">💡 El problema principal NO es solo "dolor". Es la disfunción o limitación clave que impide al paciente realizar su actividad. Ej: <em>Incapacidad para lanzar el balón por debilidad glútea y dolor</em>.</p>
+                        <textarea value={construction.problema_principal} onChange={e => setConstruction(c => ({...c, problema_principal: e.target.value}))} rows={2} className="w-full border-amber-200 focus:border-amber-400 focus:ring-amber-400 rounded-lg px-3 py-2 text-sm" placeholder="Escribe el problema principal aquí..." />
+                    </div>
+                    <div><label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (CIF)</label><textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({...c, diagnostico: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Diagnóstico detallado basado en CIF..." /></div>
                     <div><label className="block text-sm font-semibold text-slate-600 mb-1">Objetivo General</label><textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({...c, objetivo_general: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" /></div>
                     <div><label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Específicos</label><textarea value={construction.objetivos_especificos} onChange={e => setConstruction(c => ({...c, objetivos_especificos: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" /></div>
                     <div><label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Operacionales</label><textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({...c, objetivos_operacionales: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" /></div>
