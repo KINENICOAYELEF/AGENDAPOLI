@@ -119,11 +119,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300 font-bold mt-4 border-t border-slate-800 pt-4">
                         🎓 Simulador Examen
                     </Link>
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/simulador-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-orange-300 font-bold mt-2">
-                            🎤 Simulador Voz (Admin)
-                        </Link>
-                    )}
+                    <Link href="/app/simulador-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-orange-300 font-bold mt-2">
+                        🎤 Simulador Voz (Beta)
+                    </Link>
                     {user.role === "DOCENTE" && (
                         <Link href="/app/defensa-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-300 font-bold mt-2">
                             🗣️ Defensa Comisión (Voz)
