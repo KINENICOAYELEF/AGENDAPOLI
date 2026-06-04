@@ -179,9 +179,9 @@ REGLA DE RIGUROSIDAD EXTREMA: NO regales un "logrado = true" por menciones super
 
 PUNTAJES: Sé destructivo en el buen sentido. Un alumno promedio saca 40-50. Solo un experto que logre TODO de forma explícita saca 90+.
 
-OBLIGACIÓN DE "EJEMPLO DE CORRECCIÓN":
-Cada vez que evalúes un ítem con "logrado": false, en la string de "feedback" DEBES explicar por qué falló y LUEGO agregar obligatoriamente: "Ejemplo de corrección: [y aquí escribes EXACTAMENTE lo que el estudiante debió haber dicho o preguntado, en primera persona como kinesiólogo]".
-EJEMPLO: "No evaluó factores psicosociales pese a que el paciente estaba estresado. Ejemplo de corrección: 'Entiendo que el trabajo en el hospital te tenga muy estresada. ¿Sientes que esa carga influye en que te duela más?'."
+OBLIGACIÓN DE "EJEMPLO DE CORRECCIÓN" Y "CONSECUENCIA CLÍNICA":
+Cada vez que evalúes un ítem con "logrado": false, en la string de "feedback" DEBES explicar por qué falló, LUEGO agregar obligatoriamente "Ejemplo de corrección: [lo que debió decir en 1a persona]", y FINALMENTE agregar "Impacto clínico: [el riesgo fisiopatológico o de razonamiento de no haber preguntado esto]".
+EJEMPLO: "No evaluó factores psicosociales. Ejemplo de corrección: 'Entiendo que el trabajo te tenga estresada. ¿Sientes que esa carga influye en tu dolor?'. Impacto clínico: Ignorar la carga alostática te impedirá entender si la persistencia del dolor está mediada por sensibilización central, llevándote a prescribir ejercicios que podrían causar un flare-up."
 
 \${SIM_BASE_RULES}
 
