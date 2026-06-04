@@ -834,13 +834,17 @@ export function SimuladorExamenVoz() {
                 </div>
             )}
 
+            {/* ════════ CONTEXTO CONTINUO (POST-ENTREVISTA) ════════ */}
+            {phase !== 'SETUP' && phase !== 'INTERVIEW' && !loading && interviewData && (
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-4">
+                    <h3 className="font-bold text-green-800 mb-2">💬 Respuestas del Paciente</h3>
+                    <p className="text-sm text-green-900 whitespace-pre-wrap">{interviewData.respuestas_paciente}</p>
+                </div>
+            )}
+
             {/* ════════ PHASE: REASONING ════════ */}
             {(phase === 'REASONING' || reviewPhase === 'REASONING') && !loading && interviewData && (
                 <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-                        <h3 className="font-bold text-green-800 mb-2">💬 Respuestas del Paciente</h3>
-                        <p className="text-sm text-green-900 whitespace-pre-wrap">{interviewData.respuestas_paciente}</p>
-                    </div>
 
                     {!showInterviewAnalysis ? (
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
@@ -971,20 +975,22 @@ export function SimuladorExamenVoz() {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
                     <h3 className="font-bold text-slate-800">🔍 Planificación del Examen Físico</h3>
                     <p className="text-xs text-slate-500">Selecciona los módulos que incluirías, justifica cada uno, y especifica qué pruebas harías.</p>
-                    {EXAM_MODULES.map(m => (
-                        <div key={m.key} className={`border rounded-xl p-4 transition-all ${examSelections[m.key].selected ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200'}`}>
-                            <label className={`flex items-center gap-2 ${isReview ? '' : 'cursor-pointer'}`}>
-                                <input type="checkbox" checked={examSelections[m.key].selected} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], selected: e.target.checked } }))} disabled={isReview} className="w-4 h-4 rounded accent-blue-600" />
+                    {EXAM_MODULES.map(m => {
+                        const isSelected = examSelections[m.key].selected || !!examSelections[m.key].justificacion || !!examSelections[m.key].pruebas;
+                        return (
+                        <div key={m.key} className={`border rounded-xl p-4 transition-all ${isSelected ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200'}`}>
+                            <label className={`flex items-center gap-2 mb-2 ${isReview ? '' : 'cursor-pointer'}`}>
+                                <input type="checkbox" checked={isSelected} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], selected: e.target.checked } }))} disabled={isReview} className="w-4 h-4 rounded accent-blue-600" />
                                 <span className="font-semibold text-sm text-slate-800">{m.label}</span>
                             </label>
-                            {examSelections[m.key].selected && (
-                                <div className="mt-3 space-y-2 pl-6">
-                                    <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value } }))} readOnly={isReview} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value } }))} readOnly={isReview} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                            {(!isReview || isSelected) && (
+                                <div className="space-y-2 pl-6">
+                                    <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value, selected: true } }))} readOnly={isReview} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none transition-all ${isReview ? 'bg-slate-50 cursor-default' : 'hover:border-blue-300'}`} />
+                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value, selected: true } }))} readOnly={isReview} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none transition-all ${isReview ? 'bg-slate-50 cursor-default' : 'hover:border-blue-300'}`} />
                                 </div>
                             )}
                         </div>
-                    ))}
+                    )})}
                     {!isReview && (
                         <button onClick={handleExamSubmit} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
                             Evaluar al Paciente →
