@@ -1033,6 +1033,18 @@ export function SimuladorExamenVoz() {
                         )}
                     </div>
 
+                    {/* Razonamiento previo del estudiante */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                        <h4 className="font-bold text-slate-800 mb-3 text-sm">🧠 Tu Razonamiento Previo (Fase 1)</h4>
+                        <div className="space-y-2 text-sm text-slate-700">
+                            <p><strong>Hipótesis Orientativas:</strong> {reasoning.hipotesis.filter(h => h.trim()).join(' | ') || 'Ninguna ingresada'}</p>
+                            <p><strong>Clasificación del Dolor:</strong> {reasoning.clasificacion_dolor || 'No ingresada'}</p>
+                            <p><strong>Irritabilidad:</strong> {reasoning.irritabilidad || 'No ingresada'}</p>
+                            <p><strong>Banderas Rojas:</strong> {reasoning.banderas_rojas || 'Ninguna ingresada'}</p>
+                            <p><strong>Factores BPS:</strong> {reasoning.factores_bps || 'Ninguno ingresado'}</p>
+                        </div>
+                    </div>
+
                     {/* Formulario de integración */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
                         <h3 className="font-bold text-slate-800">🧠 Tu Integración Clínica</h3>
@@ -1078,21 +1090,6 @@ export function SimuladorExamenVoz() {
                                 readOnly={isReview}
                                 placeholder="Ej: Dolor 7/10 en polo inferior rotuliano a palpación. Decline squat +++ (reproduce síntoma principal). ROM completo. Valgo dinámico marcado en single leg squat. MMT cuádriceps 4/5."
                                 rows={3}
-                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                4. Diagnóstico presuntivo (borrador CIF)
-                                <span className="font-normal text-slate-400 ml-1">(en 2-3 líneas; lo desarrollarás completamente en la siguiente etapa)</span>
-                            </label>
-                            <textarea
-                                value={reasoning2.diagnostico_presuntivo}
-                                onChange={e => setReasoning2(r => ({ ...r, diagnostico_presuntivo: e.target.value }))}
-                                readOnly={isReview}
-                                placeholder="Ej: Paciente con Tendinopatía rotuliana bilateral de predominio izquierdo (Nociceptivo + componente Nociplástico leve), con déficit de fuerza de cuádriceps y control motor en cadena cinética cerrada, que limita actividad deportiva y genera restricción en participación en competencias de voleibol."
-                                rows={4}
                                 className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
                             />
                         </div>
