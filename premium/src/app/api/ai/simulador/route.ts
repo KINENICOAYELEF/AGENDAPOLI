@@ -192,9 +192,9 @@ TRABAJO COMPLETO DEL ESTUDIANTE:
 ${trabajo_estudiante.preguntas_entrevista || '(No registradas)'}
 
 == RAZONAMIENTO CLÍNICO I (Post-Entrevista) ==
-Hipótesis orientativas: ${JSON.stringify(trabajo_estudiante.hipotesis || [])}
-Clasificación dolor tentativa: ${trabajo_estudiante.clasificacion_dolor || 'No completó'}
-Irritabilidad estimada: ${trabajo_estudiante.irritabilidad || 'No completó'}
+Hipótesis orientativas: ${JSON.stringify(trabajo_estudiante.hipotesis_previas || [])}
+Clasificación dolor tentativa: ${trabajo_estudiante.clasificacion_dolor_previa || 'No completó'}
+Irritabilidad estimada: ${trabajo_estudiante.irritabilidad_previa || 'No completó'}
 Banderas detectadas: ${JSON.stringify(trabajo_estudiante.banderas || {})}
 
 == RAZONAMIENTO CLÍNICO II (Post-Examen Físico) ==
