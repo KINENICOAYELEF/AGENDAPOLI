@@ -170,10 +170,10 @@ export function SimuladorExamenVoz() {
     }, [user, caseData, disconnect, formattedTranscript, getNextPhase]);
 
     useEffect(() => {
-        if (phase === 'INTERVIEW' && timer >= 600 && connectionState === 'connected') {
+        if (phase === 'INTERVIEW' && timer >= 600 && connectionState === 'connected' && !loading) {
             handleEndVoiceInterview();
         }
-    }, [timer, phase, connectionState, handleEndVoiceInterview]);
+    }, [timer, phase, connectionState, loading, handleEndVoiceInterview]);
 
     const persistAttempt = async (evalData = evaluationData, commData = commissionData) => {
         if (!user) return;
@@ -768,7 +768,7 @@ export function SimuladorExamenVoz() {
                                 <p className="text-sm text-slate-500">Límite de tiempo: 10 minutos. Habla natural con el paciente.</p>
                             </div>
                             <div className={`px-4 py-2 rounded-xl font-bold font-mono text-lg ${timer >= 540 ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-slate-100 text-slate-700'}`}>
-                                {Math.floor((600 - timer) / 60)}:{(600 - timer) % 60 < 10 ? '0' : ''}{(600 - timer) % 60} min restantes
+                                {Math.floor(Math.max(0, 600 - timer) / 60)}:{Math.max(0, 600 - timer) % 60 < 10 ? '0' : ''}{Math.max(0, 600 - timer) % 60} min restantes
                             </div>
                         </div>
 
