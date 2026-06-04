@@ -749,26 +749,7 @@ export function SimuladorExamenVoz() {
                             📊 Mi Historial
                         </button>
                     </div>
-                    {/* Practice Mode Selector */}
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-600 mb-2">Modo de práctica</label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {([
-                                { key: 'completo', label: '🎓 Examen Completo', desc: 'Todas las fases (5 llamadas IA)' },
-                                { key: 'entrevista', label: '🗣️ Solo Entrevista', desc: 'Entrevista + Razonamiento I (2 llamadas)' },
-                                { key: 'examen', label: '🔬 Solo Examen Físico', desc: 'Examen + Razonamiento II (2 llamadas)' },
-                                { key: 'intervencion', label: '💊 Solo Intervención', desc: 'Intervención + Escritura (1 llamada)' },
-                                { key: 'escritura', label: '📝 Solo Escritura', desc: 'Diagnóstico, Objetivos, Plan (1 llamada)' },
-                                { key: 'comision', label: '🎤 Solo Comisión', desc: 'Defensa oral (2 llamadas)' },
-                            ] as { key: PracticeMode; label: string; desc: string }[]).map(mode => (
-                                <button key={mode.key} onClick={() => setPracticeMode(mode.key)}
-                                    className={`text-left p-3 rounded-xl border-2 transition-all ${practiceMode === mode.key ? 'border-amber-400 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}>
-                                    <div className="font-bold text-xs text-slate-800">{mode.label}</div>
-                                    <div className="text-[10px] text-slate-500 mt-0.5">{mode.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Practice Mode Selector (Removed as requested, defaults to completo) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal</label>
