@@ -29,12 +29,12 @@ ${SIM_BASE_RULES}
 
 INSTRUCCIONES PARA GENERAR EL CASO:
 1. Crea un paciente ficticio REALISTA con nombre, edad, sexo, ocupación, contexto deportivo.
-2. El "perfil_secreto" contiene TODA la historia que el paciente conoce pero NO dice espontáneamente.
+2. El "perfil_secreto" contiene TODA la historia que el paciente conoce pero NO dice espontáneamente. DEBE SER EXHAUSTIVA Y LARGA.
 3. Incluye "datos_ocultos" clínicamente CRÍTICOS que el paciente solo revela si le preguntan directamente.
-4. Los "hallazgos_todos_modulos" deben ser 100% COHERENTES con la historia. Son los resultados reales de un examen físico completo.
-5. La "rubrica_ideal" es la referencia contra la que se evaluará al estudiante.
+4. Los "hallazgos_todos_modulos" deben ser 100% COHERENTES con la historia y basarse en KINESIOLOGÍA MUSCULOESQUELÉTICA Y DEPORTIVA CONTEMPORÁNEA (ej: pruebas funcionales modernas, dinamometría, control motor, descartar banderas rojas). DEBEN SER MUY DETALLADOS y largos.
+5. La "rubrica_ideal" es la referencia contra la que se evaluará al estudiante. Debe tener fuerte sustento en EVIDENCIA CIENTÍFICA ACTUAL.
 6. Incluye "errores_disenados": trampas sutiles que un estudiante novato no detectaría.
-7. La dificultad del caso debe coincidir con lo pedido.
+7. La dificultad del caso debe coincidir con lo pedido. HAZ EL CASO LARGO Y DENSO CLÍNICAMENTE.
 
 DEBES responder con EXACTAMENTE esta estructura JSON (respeta cada key y tipo):
 {

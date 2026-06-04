@@ -145,18 +145,31 @@ export function DefensaExamenVoz() {
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal</label>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal principal</label>
                             <select value={setupForm.area} onChange={e => setSetupForm(p => ({ ...p, area: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
                                 <option value="">Aleatoria</option>
-                                <option value="hombro">Hombro</option><option value="rodilla">Rodilla</option><option value="columna_lumbar">Columna Lumbar</option>
+                                <option value="columna_cervical">Columna Cervical</option>
+                                <option value="hombro">Hombro</option>
+                                <option value="codo">Codo</option>
+                                <option value="muneca_mano">Muñeca / Mano</option>
+                                <option value="columna_toracica">Columna Torácica</option>
+                                <option value="columna_lumbar">Columna Lumbar</option>
+                                <option value="cadera_pelvis">Cadera / Pelvis</option>
+                                <option value="rodilla">Rodilla</option>
+                                <option value="tobillo_pie">Tobillo / Pie</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Dificultad</label>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Nivel de Exigencia</label>
                             <select value={setupForm.dificultad} onChange={e => setSetupForm(p => ({ ...p, dificultad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
-                                <option value="avanzado">Avanzado (Complejo)</option>
-                                <option value="intermedio">Intermedio</option>
+                                <option value="avanzado">Examen de Grado (Complejo, comorbilidades)</option>
+                                <option value="intermedio">Pre-clínica (Enfocado en 1 sola articulación)</option>
                             </select>
+                        </div>
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Temática Específica (Opcional)</label>
+                            <input type="text" value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Deportista de fin de semana con lesión de LCA, o Adulto mayor con artrosis de rodilla..." className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none" />
+                            <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
                         </div>
                     </div>
                     <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all">
@@ -226,6 +239,12 @@ export function DefensaExamenVoz() {
                     {connectionState === 'connecting' && (
                         <div className="w-full bg-blue-100 text-blue-700 font-bold py-4 rounded-xl text-center">
                             Conectando con la Comisión Evaluadora...
+                        </div>
+                    )}
+                    {connectionState === 'error' && (
+                        <div className="w-full bg-red-100 text-red-700 font-bold py-4 rounded-xl text-center">
+                            Error de conexión o fallo de red. Por favor, reintenta.
+                            <button onClick={connect} className="ml-4 underline hover:text-red-900">Reintentar</button>
                         </div>
                     )}
                     {connectionState === 'connected' && (
