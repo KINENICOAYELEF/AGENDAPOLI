@@ -388,8 +388,16 @@ Evalúa RIGUROSAMENTE. El estudiante debe demostrar razonamiento de nivel profes
 Debes devolver EXACTAMENTE este JSON:
 {
   "puntaje_global": 0,
+  "nota_chilena": 0,
   "feedback_final": "string",
+  "rubrica_detallada": {
+    "problema_y_diagnostico": { "puntaje": 0, "comentario": "string" },
+    "objetivos": { "puntaje": 0, "comentario": "string" },
+    "plan_operacional": { "puntaje": 0, "comentario": "string" },
+    "defensa_oral_y_respuestas": { "puntaje": 0, "comentario": "string" }
+  },
   "aciertos": ["string"],
-  "errores": ["string"]
+  "errores": ["string"],
+  "temas_a_estudiar": ["string"]
 }
 `;

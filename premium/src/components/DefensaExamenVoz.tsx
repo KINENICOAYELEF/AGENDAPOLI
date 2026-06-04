@@ -269,7 +269,7 @@ export function DefensaExamenVoz() {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
                     <div className="flex justify-between items-center">
                         <h3 className="font-bold text-slate-800 text-xl">🎤 Comisión de Defensa</h3>
-                        <div className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-sm">Responde 10 preguntas</div>
+                        <div className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-sm">Responde 15 preguntas</div>
                     </div>
 
                     {connectionState === 'disconnected' && (
