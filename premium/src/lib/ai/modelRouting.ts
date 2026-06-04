@@ -13,6 +13,7 @@ export type AIAction =
     | 'GENERAL'
     | 'SIM_GENERATE'
     | 'SIM_INTERVIEW'
+    | 'SIM_INTERVIEW_FEEDBACK'
     | 'SIM_EXAM'
     | 'SIM_EVALUATE'
     | 'SIM_COMMISSION'
