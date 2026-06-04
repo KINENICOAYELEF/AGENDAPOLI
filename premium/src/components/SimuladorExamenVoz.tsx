@@ -491,6 +491,33 @@ export function SimuladorExamenVoz() {
                 ${ev ? `<p style="font-size:12px;margin:2px 0;"><span style="color:${ev.puntaje >= 60 ? '#059669' : '#dc2626'};font-weight:800;">${ev.puntaje}/100</span> — ${ev.comentario}</p>` : ''}
             </div>`;
         }).join('') : '';
+        
+        // Detailed blocks for full log
+        const transcriptHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;white-space:pre-wrap;font-size:13px;color:#334155;max-height:300px;overflow-y:auto;">${interviewData?.respuestas_paciente || '(Sin interacción)'}</div>`;
+        const razonamientoHTML = `<div style="margin-bottom:16px;font-size:13px;color:#334155;">
+            <p style="margin-bottom:4px;"><strong>Fase 1 (Hipótesis):</strong> ${reasoning.hipotesis.filter(h=>h.trim()).join(', ') || 'Ninguna'}</p>
+            <p style="margin-bottom:4px;"><strong>Banderas Rojas:</strong> ${reasoning.banderas_rojas || 'Ninguna'} | <strong>Factores BPS:</strong> ${reasoning.factores_bps || 'Ninguna'}</p>
+            <p style="margin-bottom:4px;"><strong>Fase 2 (Integradas):</strong> ${reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
+            <p style="margin-bottom:4px;"><strong>Hallazgos Clave:</strong> ${reasoning2.hallazgos_clave || 'No ingresados'}</p>
+            <p style="margin-bottom:0;"><strong>Mecanismo/Dolor:</strong> ${reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
+        </div>`;
+        const examenHTML = examData ? Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => 
+            `<div style="margin-bottom:8px;"><strong style="font-size:13px;color:#0f766e;">${mod}</strong><p style="margin:2px 0 0;font-size:13px;color:#334155;white-space:pre-wrap;">${findings}</p></div>`
+        ).join('') : '<p style="font-size:13px;color:#64748b;">No se revelaron hallazgos.</p>';
+        const intervencionesHTML = interventions.filter(i=>i.tecnica.trim()).map(int => 
+            `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:8px;font-size:13px;color:#166534;">
+                <strong>Técnica:</strong> ${int.tecnica}<br/>
+                <strong>Objetivo:</strong> ${int.objetivo_tecnica}<br/>
+                <strong>Dosis:</strong> ${int.dosis}
+            </div>`
+        ).join('') || '<p style="font-size:13px;color:#64748b;">Ninguna ingresada.</p>';
+        const construccionHTML = `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e3a8a;">
+            <p style="margin-bottom:6px;"><strong>Diagnóstico CIF:</strong> ${construction.diagnostico}</p>
+            <p style="margin-bottom:6px;"><strong>Objetivo General:</strong> ${construction.objetivo_general}</p>
+            <p style="margin-bottom:6px;white-space:pre-wrap;"><strong>Objetivos Específicos:</strong><br/>${construction.objetivos_especificos}</p>
+            <p style="margin-bottom:0;white-space:pre-wrap;"><strong>Plan de Fases:</strong><br/>${construction.plan_fases}</p>
+        </div>`;
+
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador</title>
         <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
         body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
@@ -500,25 +527,48 @@ export function SimuladorExamenVoz() {
         .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
         table{width:100%;border-collapse:collapse;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
         @media print{body{padding:20px;} .no-print{display:none;}}
+        .page-break { page-break-before: always; }
         </style></head><body>
         <div class="header"><div><h1>🎓 Simulador de Examen Clínico</h1><p style="margin:4px 0;font-size:13px;color:#64748b;">Reporte de Evaluación · ${new Date().toLocaleDateString('es-CL')}</p>
         <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${user?.displayName || user?.email || 'N/A'} · <strong>Tiempo:</strong> ${formatTime(timer)}</p></div>
         <div class="nota-box"><div class="nota-big">${notaFinal}</div><div style="font-size:12px;font-weight:700;color:#92400e;">NOTA FINAL</div></div></div>
+        
         <h2>📋 Caso Clínico</h2>
         <div class="grid2"><div><strong>Paciente:</strong> ${caseData.ficha_visible.nombre}</div><div><strong>Edad:</strong> ${caseData.ficha_visible.edad}</div>
         <div><strong>Ocupación:</strong> ${caseData.ficha_visible.ocupacion}</div><div><strong>Actividad:</strong> ${caseData.ficha_visible.deporte_actividad}</div></div>
         <p><strong>Motivo:</strong> ${caseData.ficha_visible.motivo_consulta}</p>
+        
         <h2>📊 Scorecard por Competencia</h2>
         <table><thead><tr><th>Competencia</th><th>Puntaje</th><th>Comentario</th></tr></thead><tbody>${scorecardRows}</tbody></table>
         <div class="grid2" style="margin-top:16px;">
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${evaluationData.puntaje_global}/100</div><div style="font-size:11px;color:#64748b;">Evaluación (70%)</div></div>
         ${commissionData ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${commissionData.puntaje_comision_global}/100</div><div style="font-size:11px;color:#64748b;">Comisión (30%)</div></div>` : ''}
         </div>
+        
         <h2>❌ Errores Críticos</h2>${erroresHTML || '<p style="color:#94a3b8;font-size:13px;">Ninguno detectado.</p>'}
         <h2>✅ Aciertos Destacados</h2>${aciertosHTML || '<p style="color:#94a3b8;font-size:13px;">—</p>'}
         ${evaluationData.areas_mejora?.length ? `<h2>📈 Áreas de Mejora</h2><ul>${evaluationData.areas_mejora.map((a: string) => `<li style="font-size:13px;margin-bottom:4px;">${a}</li>`).join('')}</ul>` : ''}
         <h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${evaluationData.perla_docente}</p>
         ${commissionData ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}<div style="background:#f8fafc;border-radius:10px;padding:14px;margin-top:8px;"><p style="font-size:13px;font-style:italic;color:#475569;">${commissionData.feedback_final}</p></div>` : ''}
+        
+        <div class="page-break"></div>
+        <div style="border-bottom:3px solid #0f172a;padding-bottom:12px;margin-bottom:24px;"><h1>📚 Bitácora Completa de la Sesión</h1><p style="margin:4px 0 0;font-size:13px;color:#64748b;">Registro detallado de todo lo ingresado por el alumno.</p></div>
+        
+        <h2>🗣️ Transcripción de la Entrevista</h2>
+        ${transcriptHTML}
+        
+        <h2>🧠 Razonamiento Clínico</h2>
+        ${razonamientoHTML}
+        
+        <h2>🔍 Hallazgos del Examen Físico</h2>
+        ${examenHTML}
+        
+        <h2>💊 Intervenciones Propuestas</h2>
+        ${intervencionesHTML}
+        
+        <h2>🏗️ Construcción Clínica</h2>
+        ${construccionHTML}
+
         <div class="no-print" style="text-align:center;margin-top:32px;"><button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar como PDF</button></div>
         </body></html>`;
         const w = window.open('', '_blank');
@@ -1369,6 +1419,84 @@ export function SimuladorExamenVoz() {
                     )}
                         </>
                     )}
+
+                    {/* Resumen Clínico Previo y Hallazgos (Colapsable para Comisión) */}
+                    {practiceMode !== 'comision' && (
+                        <details className="bg-slate-50 border border-slate-200 rounded-2xl group" open>
+                            <summary className="font-bold text-slate-800 outline-none flex justify-between items-center cursor-pointer p-5 select-none">
+                                <span>📚 Tu Trabajo Previo (Click para revisar antes de responder)</span>
+                                <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                            </summary>
+                            
+                            <div className="px-5 pb-5 space-y-6 border-t border-slate-200 pt-4 cursor-default">
+                                {interviewData && (
+                                    <div>
+                                        <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
+                                        <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
+                                            {interviewData.respuestas_paciente}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h4 className="font-semibold text-sm text-slate-700 mb-2">Razonamiento Previo (Fase 1 y 2):</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                        <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                            <span className="font-semibold text-slate-500 block mb-1">Fase 1: Hipótesis Orientativas:</span>
+                                            <ul className="list-disc pl-4 text-slate-700 mb-2">
+                                                {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
+                                                {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
+                                            </ul>
+                                            <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
+                                            <p><span className="font-semibold text-slate-500">Factores BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
+                                        </div>
+                                        <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                                            <p><span className="font-semibold text-slate-500">Fase 2: Hipótesis Integradas:</span> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
+                                            <p><span className="font-semibold text-slate-500">Fase 2: Hallazgos Clave:</span> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
+                                            <p><span className="font-semibold text-slate-500">Mecanismo Dolor Actualizado:</span> {reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                                    <h4 className="font-bold text-emerald-800 mb-2 text-sm">💊 Intervenciones Propuestas:</h4>
+                                    <div className="space-y-3">
+                                        {interventions.filter(i => i.tecnica.trim()).map((int, i) => (
+                                            <div key={i} className="text-xs bg-white border border-emerald-100 rounded-lg p-2">
+                                                <p className="font-bold text-emerald-700">Técnica: <span className="font-normal text-slate-700">{int.tecnica}</span></p>
+                                                <p className="font-bold text-emerald-700">Objetivo: <span className="font-normal text-slate-700">{int.objetivo_tecnica}</span></p>
+                                                <p className="font-bold text-emerald-700">Dosis: <span className="font-normal text-slate-700">{int.dosis}</span></p>
+                                            </div>
+                                        ))}
+                                        {interventions.filter(i => i.tecnica.trim()).length === 0 && <p className="text-xs text-slate-500">Ninguna ingresada</p>}
+                                    </div>
+                                </div>
+
+                                {examData && (
+                                    <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                                        <h3 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos del Examen Físico</h3>
+                                        {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
+                                            <div key={mod} className="mb-2">
+                                                <h4 className="font-semibold text-xs text-teal-700">{mod}</h4>
+                                                <p className="text-xs text-slate-700 whitespace-pre-wrap">{findings}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                                    <h3 className="font-bold text-blue-800 mb-3 text-sm">🏗️ Tu Construcción Clínica</h3>
+                                    <div className="text-xs space-y-2">
+                                        <p><strong className="text-blue-900">Diagnóstico:</strong> {construction.diagnostico}</p>
+                                        <p><strong className="text-blue-900">Objetivo General:</strong> {construction.objetivo_general}</p>
+                                        <p><strong className="text-blue-900">Objetivos Específicos:</strong><br/><span className="whitespace-pre-wrap">{construction.objetivos_especificos}</span></p>
+                                        <p><strong className="text-blue-900">Plan Fases:</strong><br/><span className="whitespace-pre-wrap">{construction.plan_fases}</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    )}
+
                     {/* Commission Questions */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
                         <h3 className="font-bold text-slate-800">🎤 Preguntas de la Comisión</h3>
