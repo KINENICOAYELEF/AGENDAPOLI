@@ -1190,73 +1190,94 @@ export function SimuladorExamenVoz() {
                             Continuar a Escritura Clínica →
                         </button>
                     )}
+                    </div>
                 </div>
             )}
 
             {/* ════════ PHASE: CONSTRUCTION ════════ */}
             {(phase === 'CONSTRUCTION' || reviewPhase === 'CONSTRUCTION') && !loading && examData && (
                 <div className="space-y-4">
-                    {/* Resumen Clínico Previo */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                        <h3 className="font-bold text-slate-800">📚 Historial del Caso</h3>
+                    {/* Resumen Clínico Previo y Hallazgos (Colapsable) */}
+                    <details className="bg-slate-50 border border-slate-200 rounded-2xl group" open>
+                        <summary className="font-bold text-slate-800 outline-none flex justify-between items-center cursor-pointer p-5 select-none">
+                            <span>📚 Historial Clínico y Hallazgos (Click para colapsar/expandir)</span>
+                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
                         
-                        {interviewData && (
+                        <div className="px-5 pb-5 space-y-6 border-t border-slate-200 pt-4 cursor-default">
+                            {interviewData && (
+                                <div>
+                                    <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
+                                    <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
+                                        {interviewData.respuestas_paciente}
+                                    </p>
+                                </div>
+                            )}
+
                             <div>
-                                <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
-                                <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
-                                    {interviewData.respuestas_paciente}
-                                </p>
+                                <h4 className="font-semibold text-sm text-slate-700 mb-2">Razonamiento Previo (Fase 1 y 2):</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                                        <span className="font-semibold text-slate-500 block mb-1">Fase 1: Hipótesis Orientativas:</span>
+                                        <ul className="list-disc pl-4 text-slate-700 mb-2">
+                                            {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
+                                            {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
+                                        </ul>
+                                        <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
+                                        <p><span className="font-semibold text-slate-500">Factores BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
+                                        <p><span className="font-semibold text-slate-500">Fase 2: Hipótesis Integradas:</span> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
+                                        <p><span className="font-semibold text-slate-500">Fase 2: Hallazgos Clave:</span> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
+                                        <p><span className="font-semibold text-slate-500">Mecanismo Dolor Actualizado:</span> {reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
+                                    </div>
+                                </div>
                             </div>
-                        )}
 
-                        <div>
-                            <h4 className="font-semibold text-sm text-slate-700 mb-2">Tu Razonamiento Previo:</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                <div className="bg-white p-3 rounded-xl border border-slate-200">
-                                    <span className="font-semibold text-slate-500 block mb-1">Hipótesis Orientativas:</span>
-                                    <ul className="list-disc pl-4 text-slate-700">
-                                        {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
-                                        {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
-                                    </ul>
-                                </div>
-                                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                                    <p><span className="font-semibold text-slate-500">Mecanismo de Dolor:</span> {reasoning.clasificacion_dolor || 'No especificado'}</p>
-                                    <p><span className="font-semibold text-slate-500">Irritabilidad:</span> {reasoning.irritabilidad || 'No especificado'}</p>
-                                    <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
-                                    <p><span className="font-semibold text-slate-500">Banderas Amarillas/BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                                <h4 className="font-bold text-emerald-800 mb-2 text-sm">💊 Intervenciones Propuestas:</h4>
+                                <div className="space-y-3">
+                                    {interventions.filter(i => i.tecnica.trim()).map((int, i) => (
+                                        <div key={i} className="text-xs bg-white border border-emerald-100 rounded-lg p-2">
+                                            <p className="font-bold text-emerald-700">Técnica: <span className="font-normal text-slate-700">{int.tecnica}</span></p>
+                                            <p className="font-bold text-emerald-700">Objetivo: <span className="font-normal text-slate-700">{int.objetivo_tecnica}</span></p>
+                                            <p className="font-bold text-emerald-700">Dosis: <span className="font-normal text-slate-700">{int.dosis}</span></p>
+                                        </div>
+                                    ))}
+                                    {interventions.filter(i => i.tecnica.trim()).length === 0 && <p className="text-xs text-slate-500">Ninguna ingresada</p>}
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    {/* Exam Results */}
-                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5">
-                        <h3 className="font-bold text-teal-800 mb-3">📊 Hallazgos del Examen Físico</h3>
-                        {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
-                            <div key={mod} className="mb-3">
-                                <h4 className="font-semibold text-sm text-teal-700">{mod}</h4>
-                                <p className="text-sm text-slate-700 whitespace-pre-wrap">{findings}</p>
+                            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                                <h3 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos del Examen Físico</h3>
+                                {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
+                                    <div key={mod} className="mb-2">
+                                        <h4 className="font-semibold text-xs text-teal-700">{mod}</h4>
+                                        <p className="text-xs text-slate-700 whitespace-pre-wrap">{findings}</p>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                    {/* Exam Analysis */}
-                    {(examData.analisis_examen.modulos_omitidos_relevantes.length > 0 || examData.analisis_examen.justificaciones_debiles.length > 0) && (
-                        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5">
-                            <h3 className="font-bold text-amber-800 mb-3">💡 Análisis de tu Examen</h3>
-                            {examData.analisis_examen.modulos_omitidos_relevantes.map((o, i) => (
-                                <div key={i} className="bg-white rounded-xl p-3 mb-2 border border-red-100">
-                                    <p className="font-semibold text-sm text-red-800">Omitiste: {o.modulo}</p>
-                                    <p className="text-xs text-slate-600">{o.por_que_era_necesario}</p>
+
+                            {(examData.analisis_examen.modulos_omitidos_relevantes.length > 0 || examData.analisis_examen.justificaciones_debiles.length > 0) && (
+                                <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                                    <h3 className="font-bold text-amber-800 mb-3 text-sm">💡 Análisis de tu Examen</h3>
+                                    {examData.analisis_examen.modulos_omitidos_relevantes.map((o, i) => (
+                                        <div key={i} className="bg-white rounded-lg p-2 mb-2 border border-red-100">
+                                            <p className="font-semibold text-xs text-red-800">Omitiste: {o.modulo}</p>
+                                            <p className="text-[11px] text-slate-600">{o.por_que_era_necesario}</p>
+                                        </div>
+                                    ))}
+                                    {examData.analisis_examen.justificaciones_debiles.map((j, i) => (
+                                        <div key={i} className="bg-white rounded-lg p-2 mb-2 border border-amber-100">
+                                            <p className="font-semibold text-xs text-amber-800">{j.modulo}: Justificación débil</p>
+                                            <p className="text-[11px] text-slate-600">{j.critica}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                            {examData.analisis_examen.justificaciones_debiles.map((j, i) => (
-                                <div key={i} className="bg-white rounded-xl p-3 mb-2 border border-amber-100">
-                                    <p className="font-semibold text-sm text-amber-800">{j.modulo}: Justificación débil</p>
-                                    <p className="text-xs text-slate-600">{j.critica}</p>
-                                </div>
-                            ))}
+                            )}
                         </div>
-                    )}
+                    </details>
+
                     {/* Construction Form */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
                         <h3 className="font-bold text-slate-800">🏗️ Construcción Clínica</h3>
@@ -1273,11 +1294,17 @@ export function SimuladorExamenVoz() {
                             <textarea value={construction.objetivos_especificos} onChange={e => setConstruction(c => ({ ...c, objetivos_especificos: e.target.value }))} readOnly={isReview} placeholder={"1. Disminuir dolor en región anterior de rodilla\n2. Aumentar rango de flexión de rodilla\n3. Mejorar fuerza de cuádriceps bilateral\n4. Restaurar control motor en cadena cinética cerrada"} rows={5} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Operacionales <span className="font-normal text-slate-400">(granulares, medibles, varios por específico)</span></label>
-                            <textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({ ...c, objetivos_operacionales: e.target.value }))} readOnly={isReview} placeholder={"OE1.1: Reducir EVA de 7/10 a 3/10 en reposo, en 4 semanas\nOE1.2: Reducir EVA en Decline squat de 8/10 a 4/10 en 6 semanas\nOE2.1: Aumentar flexión de rodilla de 90° a 130° en 6 semanas\nOE3.1: Aumentar MMT cuádriceps de 4/5 a 5/5 en 8 semanas\nOE4.1: Lograr Single Leg Squat sin valgo en 6 semanas"} rows={7} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                Objetivos Operacionales 
+                                <span className="font-normal text-slate-400 ml-1">(💡 TIPS COMISIÓN: deben ser granulares, tener plazos temporales, usar métricas clínicas como EVA/ROM, y abarcar todos los objetivos específicos)</span>
+                            </label>
+                            <textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({ ...c, objetivos_operacionales: e.target.value }))} readOnly={isReview} placeholder={"OE1.1: Reducir EVA de 7/10 a 3/10 en reposo, en 4 semanas\nOE1.2: Reducir EVA en Decline squat de 8/10 a 4/10 en 6 semanas\nOE2.1: Aumentar flexión de rodilla de 90° a 130° en 6 semanas\nOE3.1: Aumentar MMT cuádriceps de 4/5 a 5/5 en 8 semanas"} rows={7} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Plan de Intervención por Fases</label>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">
+                                Plan de Intervención por Fases
+                                <span className="font-normal text-slate-400 ml-1">(💡 TIPS COMISIÓN: debe ser coherente con las 2 intervenciones que declaraste en el paso anterior y seguir una progresión lógica de carga)</span>
+                            </label>
                             <textarea value={construction.plan_fases} onChange={e => setConstruction(c => ({ ...c, plan_fases: e.target.value }))} readOnly={isReview} placeholder="FASE 1 (Protección, sem 0-2): Educación en dolor, ejercicios isométricos RPE 3-4...&#10;FASE 2 (Recuperación, sem 2-6): Fortalecimiento concéntrico RPE 5-6...&#10;FASE 3 (Fortalecimiento, sem 6-10): ...&#10;FASE 4 (Reintegro, sem 10+): ..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
                         </div>
                         <div>
