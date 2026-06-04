@@ -97,7 +97,10 @@ export function SimuladorExamenVoz() {
     // Razonamiento 2: Post-examen físico (integración de hallazgos)
     const [reasoning2, setReasoning2] = useState({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
     // Intervenciones al paciente (fase nueva)
-    const [interventions, setInterventions] = useState([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+    const [interventions, setInterventions] = useState([
+        { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' },
+        { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }
+    ]);
     // Practice mode
     const [practiceMode, setPracticeMode] = useState<PracticeMode>('completo');
 
@@ -258,7 +261,10 @@ export function SimuladorExamenVoz() {
                 setStudentQuestions(data.studentQuestions || '');
                 setReasoning(data.reasoning || { hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
                 setReasoning2(data.reasoning2 || { hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
-                setInterventions(data.interventions || [{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+                setInterventions(data.interventions || [
+                    { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' },
+                    { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }
+                ]);
                 setConstruction(data.construction || { diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
                 if (data.examSelections) setExamSelections(data.examSelections);
                 setCommissionAnswers(data.commissionAnswers || []);
@@ -1121,17 +1127,25 @@ export function SimuladorExamenVoz() {
 
             {/* ════════ PHASE: INTERVENTION ════════ */}
             {(phase === 'INTERVENTION' || reviewPhase === 'INTERVENTION') && !loading && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
-                    <h3 className="font-bold text-slate-800">💊 Intervenciones Kinesiológicas al Paciente</h3>
-                    <p className="text-xs text-slate-500">Describe 2-3 intervenciones que realizarías en esta sesión. Detalla como si le estuvieras explicando al paciente qué vas a hacer.</p>
-                    {interventions.map((int, idx) => (
-                        <div key={idx} className="border border-emerald-200 rounded-xl p-4 space-y-3 bg-emerald-50/30">
-                            <div className="flex justify-between items-center">
-                                <span className="font-bold text-sm text-emerald-800">Intervención {idx + 1}</span>
-                                {idx > 0 && !isReview && (
-                                    <button onClick={() => setInterventions(prev => prev.filter((_, i) => i !== idx))} className="text-xs text-red-500 hover:text-red-700 font-bold">✕ Eliminar</button>
-                                )}
-                            </div>
+                <div className="space-y-4">
+                    {/* Contexto: Integración Clínica */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4">
+                        <h4 className="font-bold text-slate-800 mb-3 text-sm">🧠 Tu Integración Clínica (Contexto)</h4>
+                        <div className="space-y-2 text-sm text-slate-700">
+                            <p><strong>Hipótesis Integradas:</strong> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
+                            <p><strong>Hallazgos Clave:</strong> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
+                            <p><strong>Clasificación del Dolor:</strong> {reasoning2.clasificacion_actualizada || 'No ingresada'}</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+                        <h3 className="font-bold text-slate-800">💊 Intervenciones Kinesiológicas al Paciente</h3>
+                        <p className="text-xs text-slate-500">Describe 2 intervenciones que realizarías en esta sesión. Detalla como si le estuvieras explicando al paciente qué vas a hacer.</p>
+                        {interventions.map((int, idx) => (
+                            <div key={idx} className="border border-emerald-200 rounded-xl p-4 space-y-3 bg-emerald-50/30">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-sm text-emerald-800">Intervención {idx + 1}</span>
+                                </div>
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 mb-1">Técnica / Intervención</label>
                                 <input value={int.tecnica} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], tecnica: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Ejercicio isométrico de cuádriceps en cadena cerrada" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
@@ -1160,18 +1174,19 @@ export function SimuladorExamenVoz() {
                             </div>
                         </div>
                     ))}
-                    {!isReview && interventions.length < 4 && (
-                        <button onClick={() => setInterventions(prev => [...prev, { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }])} className="w-full border-2 border-dashed border-emerald-300 text-emerald-600 font-bold py-2 rounded-xl hover:bg-emerald-50 transition-all text-sm">
-                            + Agregar otra intervención
-                        </button>
-                    )}
                     {!isReview && (
                         <button onClick={() => {
-                            if (interventions.filter(i => i.tecnica.trim()).length === 0) { setError('Agrega al menos una intervención.'); return; }
+                            if (interventions.some(i => !i.tecnica.trim() || !i.objetivo_tecnica.trim())) { 
+                                setError('Debes describir las 2 intervenciones (al menos técnica y objetivo).'); 
+                                return; 
+                            }
                             setError('');
                             const next = getNextPhase('INTERVENTION');
-                            if (next) setPhase(next);
-                        }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                            if (next) {
+                                setPhase(next);
+                                if (next === 'RESULTS') persistAttempt();
+                            }
+                        }} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
                             Continuar a Escritura Clínica →
                         </button>
                     )}
