@@ -28,6 +28,8 @@ export function DefensaExamenVoz() {
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [aiHint, setAiHint] = useState<string>('');
+    const [loadingHint, setLoadingHint] = useState(false);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -77,6 +79,30 @@ export function DefensaExamenVoz() {
         }
         setError('');
         setPhase('COMMISSION_VOICE');
+    };
+
+    const handleGetAiHint = async () => {
+        if (!caseData) return;
+        setLoadingHint(true);
+        try {
+            const res = await fetch('/api/ai/suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generarPistaProblemaPrincipal',
+                    context: {
+                        historia: caseData.perfil_secreto.historia_completa,
+                        hallazgos: caseData.hallazgos_todos_modulos
+                    }
+                })
+            });
+            const data = await res.json();
+            if (data.result) setAiHint(data.result);
+        } catch (e) {
+            setAiHint('No se pudo obtener la pista en este momento.');
+        } finally {
+            setLoadingHint(false);
+        }
     };
 
     const handleEndDefense = async () => {
@@ -211,8 +237,22 @@ export function DefensaExamenVoz() {
                     <p className="text-sm text-slate-500">En base al caso clínico superior, redacta tu propuesta. Una vez listo, pasarás a la defensa oral.</p>
                     
                     <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                        <label className="block text-sm font-bold text-amber-900 mb-1">Problema Kinesiológico Principal</label>
-                        <p className="text-xs text-amber-700 mb-2">💡 El problema principal NO es solo "dolor". Es la disfunción o limitación clave que impide al paciente realizar su actividad. Ej: <em>Incapacidad para lanzar el balón por debilidad glútea y dolor</em>.</p>
+                        <div className="flex justify-between items-start mb-2">
+                            <div>
+                                <label className="block text-sm font-bold text-amber-900 mb-1">Problema Kinesiológico Principal</label>
+                                <p className="text-xs text-amber-700">💡 El problema principal NO es solo "dolor". Es la disfunción o limitación clave que impide al paciente realizar su actividad. Ej: <em>Incapacidad para lanzar el balón por debilidad glútea y dolor</em>.</p>
+                            </div>
+                            <button onClick={handleGetAiHint} disabled={loadingHint} className="ml-4 shrink-0 bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                {loadingHint ? 'Pensando...' : '🤖 Pedir pista al Docente IA'}
+                            </button>
+                        </div>
+                        
+                        {aiHint && (
+                            <div className="mb-3 bg-white p-3 rounded-lg border border-amber-200 text-sm text-amber-800 shadow-sm animate-fade-in">
+                                <strong>💡 Pista de la IA:</strong> {aiHint}
+                            </div>
+                        )}
+
                         <textarea value={construction.problema_principal} onChange={e => setConstruction(c => ({...c, problema_principal: e.target.value}))} rows={2} className="w-full border-amber-200 focus:border-amber-400 focus:ring-amber-400 rounded-lg px-3 py-2 text-sm" placeholder="Escribe el problema principal aquí..." />
                     </div>
                     <div><label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (CIF)</label><textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({...c, diagnostico: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Diagnóstico detallado basado en CIF..." /></div>

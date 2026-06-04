@@ -44,6 +44,11 @@ export async function POST(req: Request) {
                 systemInstruction = `${baseRole} Basado en todos los hallazgos de esta evaluación, sugiere un Pronóstico Médico-Kinésico y los Criterios de Alta proyectados. Devuelve un texto de máximo 3 oraciones.`;
                 prompt += "Genera un texto sugerido para el Pronóstico Funcional y los Criterios proyectados de Alta.";
                 break;
+            // --- FASE SIMULADOR DEFENSA ---
+            case 'generarPistaProblemaPrincipal':
+                systemInstruction = `Eres un tutor clínico experto. Analiza el caso provisto (historia y hallazgos) y dale una PISTA BREVE (1 o 2 líneas) al estudiante para ayudarle a identificar el Problema Kinesiológico Principal. NO le des la respuesta directa ni el diagnóstico. Hazle una pregunta orientadora o dile qué aspecto del caso debería mirar con atención (ej: 'Observa la relación entre el dolor en flexión y la debilidad del core descrita en el examen físico...'). Usa un tono pedagógico.`;
+                prompt += "Genera una pista clínica breve para que el estudiante deduzca el problema principal.";
+                break;
             default:
                 return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
         }
