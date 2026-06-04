@@ -174,6 +174,14 @@ export const SimEvaluationSchema = z.object({
 });
 export type SimEvaluationType = z.infer<typeof SimEvaluationSchema>;
 
+export const SimDefenseEvaluationSchema = z.object({
+    puntaje_global: z.number().min(0).max(100),
+    feedback_final: z.string(),
+    aciertos: z.array(z.string()),
+    errores: z.array(z.string()),
+});
+export type SimDefenseEvaluationType = z.infer<typeof SimDefenseEvaluationSchema>;
+
 // Call 5: Evaluación de respuestas de comisión
 export const SimCommissionSchema = z.object({
     evaluacion_respuestas: z.array(z.object({

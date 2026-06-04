@@ -385,5 +385,11 @@ Has evaluado al estudiante bajo los siguientes elementos:
 
 Evalúa RIGUROSAMENTE. El estudiante debe demostrar razonamiento de nivel profesional. Sé estricto con errores de concepto, inseguridades excesivas o justificaciones biomédicas obsoletas.
 
-Debes devolver un JSON usando la estructura SimEvaluationType: puntaje_global, scorecard (por competencias), errores (críticos), aciertos (destacados), areas_mejora, perla_docente y preguntas_comision (déjalo vacío).
+Debes devolver EXACTAMENTE este JSON:
+{
+  "puntaje_global": 0,
+  "feedback_final": "string",
+  "aciertos": ["string"],
+  "errores": ["string"]
+}
 `;

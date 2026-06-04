@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { executeAIAction } from '@/lib/ai/geminiClient';
 import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_INTERVIEW_FEEDBACK_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT, SIM_EVAL_DEFENSE_PROMPT } from '@/lib/ai/simuladorPrompts';
-import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema } from '@/lib/ai/simuladorSchemas';
+import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema, SimDefenseEvaluationSchema } from '@/lib/ai/simuladorSchemas';
 
 // Vercel: allow up to 120s for complex AI calls
 export const maxDuration = 120;
@@ -299,7 +299,7 @@ Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
                     inputHash: `sim_eval_def_${Date.now()}_${userId}`,
                     promptVersion: 'sim_v1',
                     temperature: 0.2,
-                    validator: (data) => SimEvaluationSchema.parse(data),
+                    validator: (data) => SimDefenseEvaluationSchema.parse(data),
                     skipGuardrails: true,
                 });
                 break;
