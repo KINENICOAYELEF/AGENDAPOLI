@@ -55,7 +55,34 @@ export interface CumplimientoResult {
     descripcion: string;
 }
 
+export interface DefensaVozIntento {
+    id?: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    pacienteNombre: string;
+    motivoConsulta: string;
+    area: string;
+    dificultad: string;
+    // Construcción del Estudiante
+    construccion: any; 
+    // Transcripción de la conversación (opcional pero recomendada)
+    transcripcion?: string;
+    // Resultados de Evaluación
+    puntajeGlobal: number;
+    notaChilena: number;
+    feedbackFinal: string;
+    aciertos: string[];
+    errores: string[];
+    temasAEstudiar: string[];
+    rubricaDetallada: any;
+    // Tiempo
+    tiempoSegundos: number;
+    fecha: Timestamp;
+}
+
 const COLLECTION = 'simulador_intentos';
+const COLLECTION_VOZ = 'defensas_voz_intentos';
 const CONFIG_DOC = 'simulador_config';
 const CONFIG_COLLECTION = 'settings';
 
@@ -67,6 +94,44 @@ export async function guardarIntento(intento: Omit<SimuladorIntento, 'id' | 'fec
         fecha: Timestamp.now(),
     });
     return ref.id;
+}
+
+export async function saveVoiceDefense(data: Omit<DefensaVozIntento, 'fecha'>): Promise<string> {
+    try {
+        const id = crypto.randomUUID();
+        const ref = doc(collection(db, COLLECTION_VOZ), id);
+        
+        const payload: DefensaVozIntento = {
+            ...data,
+            id,
+            fecha: Timestamp.now(),
+        };
+
+        await setDoc(ref, payload);
+        return id;
+    } catch (error) {
+        console.error("Error guardando la defensa de voz:", error);
+        throw error;
+    }
+}
+
+export async function getVoiceDefenses(userId?: string): Promise<DefensaVozIntento[]> {
+    try {
+        const colRef = collection(db, COLLECTION_VOZ);
+        let q;
+        if (userId) {
+            q = query(colRef, where('userId', '==', userId), orderBy('fecha', 'desc'));
+        } else {
+            // If no user ID provided, get all (e.g. for admin/docente)
+            q = query(colRef, orderBy('fecha', 'desc'));
+        }
+        
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => d.data() as DefensaVozIntento);
+    } catch (error) {
+        console.error("Error obteniendo defensas de voz:", error);
+        return [];
+    }
 }
 
 // ─── Get attempts for a student ───

@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useGeminiLive } from '@/hooks/useGeminiLive';
 import { generateCommissionPrompt } from '@/utils/patientPrompts';
 import type { SimCaseType } from '@/lib/ai/simuladorSchemas';
+import { saveVoiceDefense } from '@/services/simuladorFirebase';
+import { DefensaVozHistorial } from './DefensaVozHistorial';
 
 // ─── Types ───
 type SimPhase = 'SETUP' | 'CONSTRUCTION' | 'COMMISSION_VOICE' | 'RESULTS';
@@ -27,6 +29,7 @@ export function DefensaExamenVoz() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
+    const [showHistorial, setShowHistorial] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // AI Data
@@ -93,6 +96,30 @@ export function DefensaExamenVoz() {
                 transcripcion_defensa: transcriptText
             }, user.uid);
             
+            try {
+                await saveVoiceDefense({
+                    userId: user.uid,
+                    userEmail: user.email || '',
+                    userName: user.displayName || user.email?.split('@')[0] || 'Estudiante',
+                    pacienteNombre: caseData.ficha_visible.nombre,
+                    motivoConsulta: caseData.ficha_visible.motivo_consulta,
+                    area: setupForm.area || 'Aleatoria',
+                    dificultad: setupForm.dificultad,
+                    construccion: construction,
+                    transcripcion: transcriptText,
+                    puntajeGlobal: data.puntaje_global,
+                    notaChilena: data.nota_chilena,
+                    feedbackFinal: data.feedback_final,
+                    aciertos: data.aciertos || [],
+                    errores: data.errores || [],
+                    temasAEstudiar: data.rubrica_detallada?.temas_a_estudiar || [],
+                    rubricaDetallada: data.rubrica_detallada || {},
+                    tiempoSegundos: timer
+                });
+            } catch (err) {
+                console.error("Error guardando defensa en firebase:", err);
+            }
+
             setEvaluationData(data);
             setPhase('RESULTS');
         } catch (e) {
@@ -138,10 +165,17 @@ export function DefensaExamenVoz() {
             )}
 
             {/* SETUP */}
-            {phase === 'SETUP' && !loading && (
+            {phase === 'SETUP' && !loading && !showHistorial && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-                    <h2 className="text-lg font-bold text-slate-800">Generar Caso Clínico (Resuelto)</h2>
-                    <p className="text-sm text-slate-500">Recibirás un caso con la historia completa y el examen físico ya realizado. Tu deber será formular el plan y defenderlo oralmente.</p>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800">Generar Caso Clínico (Resuelto)</h2>
+                            <p className="text-sm text-slate-500">Recibirás un caso con la historia completa y el examen físico ya realizado. Tu deber será formular el plan y defenderlo oralmente.</p>
+                        </div>
+                        <button onClick={() => setShowHistorial(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
+                            📊 Historial
+                        </button>
+                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
