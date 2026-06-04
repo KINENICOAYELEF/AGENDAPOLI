@@ -189,8 +189,10 @@ export function DefensaExamenVoz() {
                             <p><strong>Motivo de consulta:</strong> {caseData.ficha_visible.motivo_consulta}</p>
                         </div>
                         <div>
-                            <p><strong>Historia Completa:</strong> {caseData.perfil_secreto.historia_completa}</p>
-                            <p><strong>Antecedentes:</strong> {caseData.perfil_secreto.antecedentes_relevantes?.join(', ')}</p>
+                            <p className="text-sm text-slate-700">
+                                <strong>Anamnesis Próxima:</strong> {caseData.perfil_secreto.historia_completa}<br />
+                                <strong>Anamnesis Remota:</strong> {caseData.perfil_secreto.antecedentes_relevantes?.join(', ') || 'Ninguno'}
+                            </p>
                         </div>
                     </div>
                     <div>

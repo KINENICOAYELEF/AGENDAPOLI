@@ -49,12 +49,12 @@ DEBES responder con EXACTAMENTE esta estructura JSON (respeta cada key y tipo):
     "tiempo_evolucion": "string"
   },
   "perfil_secreto": {
-    "historia_completa": "string — historia médica completa, todo lo que sabe pero NO dice espontáneamente",
+    "historia_completa": "string — Anamnesis Próxima: REDACTA UN TEXTO MUY EXTENSO Y DETALLADO (mínimo 3 a 4 párrafos). Describe con lujo de detalles el inicio del dolor, el comportamiento de los síntomas en 24 hrs, factores agravantes y mitigantes, y la cronología exacta de evolución. Todo lo que el paciente sabe pero NO dice espontáneamente.",
     "personalidad": "string (ej: ansioso, estoico, vago, emocional)",
     "datos_ocultos": [
       { "dato": "string", "solo_si_preguntan": "string — la pregunta que debe hacer el estudiante" }
     ],
-    "antecedentes_relevantes": ["string"],
+    "antecedentes_relevantes": ["string — Anamnesis Remota: REDACTA UN HISTORIAL EXTENSO. Incluye detalladamente antecedentes médicos, quirúrgicos, familiares, hábitos (tabaco, alcohol, actividad física), alergias y hospitalizaciones previas. OBLIGATORIO entregar abundante información, incluso si son negativos (ej: 'Niega cirugías, tabaquismo de 5 cig/día, etc')."],
     "medicamentos": ["string o vacío"],
     "bps_oculto": {
       "sueno": "string",
