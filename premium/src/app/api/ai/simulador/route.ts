@@ -51,11 +51,18 @@ export async function POST(req: Request) {
                 const { tipo, area, dificultad, descripcion } = payload;
                 const userPrompt = `
 Genera un caso clínico completo para un examen de kinesiología MSK/Deportiva.
-PARÁMETROS:
+PARÁMETROS FUNDAMENTALES:
 - Tipo de caso: ${tipo || 'aleatorio'}
 - Área corporal: ${area || 'aleatoria'}
 - Dificultad: ${dificultad || 'intermedio'}
 - Descripción adicional: ${descripcion || 'Ninguna, genera un caso interesante y desafiante'}
+
+INSTRUCCIÓN ESPECIAL DE DIFICULTAD (${dificultad || 'intermedio'}):
+${dificultad === 'Principiante' ? '- Genera un cuadro agudo, traumático o mecánico simple (ej. esguince reciente, desgarro muscular). Paciente colaborador, sin banderas amarillas complejas. Foco biomecánico.' : ''}
+${dificultad === 'Intermedio' ? '- Genera un cuadro subagudo o crónico con inicio insidioso. Sobrecarga repetitiva o mala gestión de carga. Paciente ligeramente ansioso o con factores BPS moderados.' : ''}
+${dificultad === 'Avanzado' ? '- OBLIGATORIO: Dolor crónico persistente, patologías degenerativas (ej. artrosis severa) o dolor nociplástico/neuropático. Banderas amarillas severas (kinesiofobia, catastrofización) o azules (licencias, estrés laboral extremo). Múltiples comorbilidades (ej. diabetes, obesidad, insomnio crónico).' : ''}
+
+REGLA DE VARIABILIDAD CRÓNICA: Si el tipo es 'aleatorio', prioriza patologías crónicas como tendinopatías de larga data, artrosis, dolor lumbar crónico o síndromes de dolor persistente, para evitar que todos los casos sean deportistas agudos.
 
 Devuelve el JSON completo del caso siguiendo ESTRICTAMENTE la estructura solicitada.
 `;

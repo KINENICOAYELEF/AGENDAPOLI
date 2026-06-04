@@ -165,18 +165,23 @@ DIMENSIÓN 1: COMUNICACIÓN TERAPÉUTICA DE ÉLITE (Soft Skills ++)
 - resumenes_reflexivos: ¿El alumno hizo pausas para resumir la historia (ej: "A ver si entendí bien...") para confirmar la info y validar al paciente?
 - senalizacion_signposting: Al cambiar de temas médicos (ej: pasar de dolor a preguntar por banderas rojas o cáncer), ¿avisó al paciente ("Ahora le haré preguntas generales...") o fue brusco?
 - efecto_nocebo: Castigo severo si usó jerga que asusta ("desgaste", "inestable", "roto", "grave"). Debe haber logrado = false si usó este lenguaje.
-- empatia_manejo_incertidumbre: ¿Validó emocionalmente el dolor? Si el paciente mostró miedo, ¿lo contuvo sin dar diagnósticos apresurados?
+- empatia_manejo_incertidumbre: ¿Validó emocionalmente el dolor? Si el paciente mostró miedo o frustración (ej. "estoy chata"), ¿lo contuvo verbalmente antes de pasar a preguntas técnicas?
 - ritmo_embudo: ¿Fue un flujo elegante de preguntas abiertas a cerradas, o pareció un interrogatorio policial cortando al paciente?
 
 DIMENSIÓN 2: RAZONAMIENTO CLÍNICO MSK PRO (Checklist Avanzado)
-- hilo_conductor_logica: Analiza la continuidad. ¿Las preguntas siguían una formulación de hipótesis lógica, o saltaban caóticamente (ej: pasar de preguntar dolor nocturno a preguntar en qué trabaja sin indagar la bandera roja)?
+REGLA DE RIGUROSIDAD EXTREMA: NO regales un "logrado = true" por menciones superficiales. Si el estudiante menciona el mecanismo de lesión pero NO pregunta por la carga exacta, el tiempo o la cinemática, es FALLIDO. Si menciona el dolor pero no mapea ALICIA casi completo, es FALLIDO.
+- hilo_conductor_logica: Analiza la continuidad. ¿Las preguntas siguían una formulación de hipótesis lógica, o saltaban caóticamente?
 - alicia_sins_irritabilidad: ¿Mapeó ALICIA completo? ¿Dedujo la Irritabilidad (latencia/cuánto demora en calmar el dolor)? ¿Evaluó Severidad y Naturaleza (nociceptivo vs neuropático/nociplástico)?
-- espectro_banderas: Evalúa Banderas Rojas/Amarillas y muy crucial: Azules/Negras (factores laborales, licencias, juicios pendientes).
-- historial_tratamientos_expectativas: ¿Preguntó qué cosas ha intentado antes y por qué el paciente cree que no le funcionaron? Metas funcionales centradas en el paciente.
-- carga_alostatica_sistemica: ¿Indagó cambios agudos en carga de entrenamiento/trabajo, sueño, estrés, calzado, superficie (o RED-S en mujeres)?
-- mecanismo_lesion: ¿Diferenció meticulosamente un microtrauma progresivo de un macrotrauma agudo?
+- espectro_banderas: Evalúa Banderas Rojas/Amarillas y muy crucial: Azules/Negras (factores laborales, licencias, juicios pendientes, ambiente de trabajo).
+- historial_tratamientos_expectativas: ¿Preguntó qué cosas ha intentado antes, fármacos, y cuáles son las metas reales del paciente?
+- carga_alostatica_sistemica: ¿Indagó cambios agudos en carga de entrenamiento/trabajo, sueño, estrés, o factores metabólicos?
+- mecanismo_lesion: OBLIGATORIO: ¿Diferenció meticulosamente un microtrauma progresivo de un macrotrauma agudo? ¿Preguntó por la carga, volumen o el gesto lesional exacto? Una simple mención de un deporte o movimiento NO basta para lograr esto.
 
-PUNTAJES: Sé muy exigente. Un alumno promedio saca 60. Solo un experto saca 90+.
+PUNTAJES: Sé destructivo en el buen sentido. Un alumno promedio saca 40-50. Solo un experto que logre TODO de forma explícita saca 90+.
+
+OBLIGACIÓN DE "EJEMPLO DE CORRECCIÓN":
+Cada vez que evalúes un ítem con "logrado": false, en la string de "feedback" DEBES explicar por qué falló y LUEGO agregar obligatoriamente: "Ejemplo de corrección: [y aquí escribes EXACTAMENTE lo que el estudiante debió haber dicho o preguntado, en primera persona como kinesiólogo]".
+EJEMPLO: "No evaluó factores psicosociales pese a que el paciente estaba estresado. Ejemplo de corrección: 'Entiendo que el trabajo en el hospital te tenga muy estresada. ¿Sientes que esa carga influye en que te duela más?'."
 
 \${SIM_BASE_RULES}
 
@@ -184,22 +189,22 @@ DEBES responder con EXACTAMENTE esta estructura JSON:
 {
     "comunicacion_avanzada": {
         "puntaje": 0,
-        "resumenes_reflexivos": { "logrado": false, "feedback": "string" },
-        "senalizacion_signposting": { "logrado": false, "feedback": "string" },
+        "resumenes_reflexivos": { "logrado": false, "feedback": "string — CRÍTICA. Si no lo logró, DEBE incluir 'Ejemplo de corrección: [lo que debió decir en 1a persona]'" },
+        "senalizacion_signposting": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
         "efecto_nocebo": { "logrado": false, "feedback": "string" },
-        "empatia_manejo_incertidumbre": { "logrado": false, "feedback": "string" },
-        "ritmo_embudo": { "logrado": false, "feedback": "string" },
-        "comentario_general_comunicacion": "string"
+        "empatia_manejo_incertidumbre": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "ritmo_embudo": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "comentario_general_comunicacion": "string — Mínimo 4 líneas. Evalúa la calidez humana y el profesionalismo."
     },
     "razonamiento_clinico_entrevista": {
         "puntaje": 0,
-        "hilo_conductor_logica": { "logrado": false, "feedback": "string" },
-        "alicia_sins_irritabilidad": { "logrado": false, "feedback": "string" },
-        "espectro_banderas": { "rojas_amarillas": false, "azules_negras": false, "feedback": "string" },
-        "historial_tratamientos_expectativas": { "logrado": false, "feedback": "string" },
-        "carga_alostatica_sistemica": { "logrado": false, "feedback": "string" },
-        "mecanismo_lesion": { "logrado": false, "feedback": "string" },
-        "comentario_general_clinica": "string"
+        "hilo_conductor_logica": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "alicia_sins_irritabilidad": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "espectro_banderas": { "rojas_amarillas": false, "azules_negras": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "historial_tratamientos_expectativas": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "carga_alostatica_sistemica": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "mecanismo_lesion": { "logrado": false, "feedback": "string — CRÍTICA + Ejemplo de corrección si falla" },
+        "comentario_general_clinica": "string — Mínimo 4 líneas. Concluye si el alumno entrevistó como un experto bajo un modelo Biopsicosocial y de Manejo de Carga moderno. NO seas suave."
     }
 }
 `;
