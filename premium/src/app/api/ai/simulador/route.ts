@@ -294,6 +294,7 @@ Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
 1. Calcula la nota_chilena: Escala de 1.0 a 7.0, donde el 60% de rendimiento equivale a un 4.0.
 2. Completa la rubrica_detallada desglosando el feedback cualitativo y el puntaje (0-100) para: Problema/Diagnóstico, Objetivos, Plan Operacional y Defensa Oral.
 3. El feedback_final debe ser extenso, justificando la nota.
+4. Identifica las debilidades del estudiante y genera una lista de 3 a 5 "temas_a_estudiar" concretos para que pueda repasar.
 `;
                 result = await executeAIAction({
                     screen: 'SIMULADOR',

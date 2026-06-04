@@ -186,6 +186,7 @@ export const SimDefenseEvaluationSchema = z.object({
     }),
     aciertos: z.array(z.string()),
     errores: z.array(z.string()),
+    temas_a_estudiar: z.array(z.string()).describe("Lista de 3 a 5 temas de estudio recomendados para el estudiante en base a sus debilidades en la defensa (Ej: 'Neurofisiología del dolor nociceptivo vs nociplástico')"),
 });
 export type SimDefenseEvaluationType = z.infer<typeof SimDefenseEvaluationSchema>;
 

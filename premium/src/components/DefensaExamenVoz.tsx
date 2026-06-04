@@ -339,6 +339,20 @@ export function DefensaExamenVoz() {
                             </ul>
                         </div>
                     </div>
+
+                    {evaluationData.temas_a_estudiar && evaluationData.temas_a_estudiar.length > 0 && (
+                        <div className="mt-8 bg-blue-50 p-6 rounded-xl border border-blue-100">
+                            <h3 className="font-bold text-blue-900 text-lg mb-3 flex items-center gap-2">
+                                <span>📚</span> Temas Recomendados para Estudiar
+                            </h3>
+                            <p className="text-sm text-blue-800 mb-4">Basado en tu desempeño en la defensa, la comisión te recomienda repasar fuertemente los siguientes temas:</p>
+                            <ul className="list-disc list-inside text-blue-900 space-y-2">
+                                {evaluationData.temas_a_estudiar.map((tema: string, idx: number) => (
+                                    <li key={idx} className="font-medium">{tema}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
