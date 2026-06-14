@@ -118,7 +118,23 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------------------
-    // 6. NUEVO: Biblioteca de Evidencia Clínica (Journal Club)
+    // 6. Defensa de Voz – Intentos (Defensa Comisión por Voz)
+    // --------------------------------------------------------------------
+    match /defensas_voz_intentos/{intentoId} {
+      // Cualquier usuario autenticado puede crear su propio intento.
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid;
+      // El estudiante lee solo sus propios intentos. El Docente lee todos.
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid || isDocente());
+      // Solo el Docente puede eliminar intentos.
+      allow delete: if isDocente();
+      // Los intentos son inmutables (no se pueden editar después de creados).
+      allow update: if false;
+    }
+
+    // --------------------------------------------------------------------
+    // 7. Biblioteca de Evidencia Clínica (Journal Club)
     // --------------------------------------------------------------------
     match /evidence_tasks/{taskId} {
       // Estudiantes ven sus propias tareas; docentes ven todas

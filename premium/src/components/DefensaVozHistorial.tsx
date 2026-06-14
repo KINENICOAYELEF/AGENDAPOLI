@@ -82,6 +82,36 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
                                         <p><span className="font-semibold text-slate-500">Área:</span> {selectedAttempt.area} ({selectedAttempt.dificultad})</p>
                                         <p><span className="font-semibold text-slate-500">Estudiante:</span> {selectedAttempt.userName}</p>
                                     </div>
+                                    
+                                    {/* Si el caso clínico completo está guardado, mostrarlo */}
+                                    {selectedAttempt.casoClinico && (
+                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4 space-y-3 text-xs">
+                                            <h4 className="font-bold text-blue-900 text-sm">Ficha Clínica Detallada (Caso Simulado)</h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div>
+                                                    <p><strong>Nombre:</strong> {selectedAttempt.casoClinico.fichaVisible?.nombre || selectedAttempt.pacienteNombre} ({selectedAttempt.casoClinico.fichaVisible?.edad || 'N/A'})</p>
+                                                    <p><strong>Ocupación/Deporte:</strong> {selectedAttempt.casoClinico.fichaVisible?.ocupacion || 'N/A'} / {selectedAttempt.casoClinico.fichaVisible?.deporte_actividad || 'N/A'}</p>
+                                                    <p><strong>Motivo de Consulta:</strong> {selectedAttempt.casoClinico.fichaVisible?.motivo_consulta || selectedAttempt.motivoConsulta}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-slate-700 leading-relaxed">
+                                                        <strong>Anamnesis Próxima:</strong> {selectedAttempt.casoClinico.perfilSecreto?.historia_completa || 'N/A'}<br />
+                                                        <strong>Anamnesis Remota:</strong> {selectedAttempt.casoClinico.perfilSecreto?.antecedentes_relevantes?.join(', ') || 'Ninguno'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {selectedAttempt.casoClinico.hallazgos && Object.keys(selectedAttempt.casoClinico.hallazgos).length > 0 && (
+                                                <div className="border-t border-blue-200 pt-2">
+                                                    <strong className="text-blue-800 block mb-1">Hallazgos del Examen Físico:</strong>
+                                                    <ul className="list-disc list-inside text-blue-950 space-y-0.5">
+                                                        {Object.entries(selectedAttempt.casoClinico.hallazgos).map(([k, v]) => (
+                                                            v && v !== 'Normal' ? <li key={k}><strong>{k.replace(/_/g, ' ')}:</strong> {v as string}</li> : null
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Construcción */}

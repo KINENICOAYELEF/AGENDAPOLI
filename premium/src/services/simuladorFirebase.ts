@@ -76,6 +76,12 @@ export interface DefensaVozIntento {
     errores: string[];
     temasAEstudiar: string[];
     rubricaDetallada: any;
+    // Caso clínico completo (para revisión docente)
+    casoClinico?: {
+        fichaVisible: any;
+        perfilSecreto: any;
+        hallazgos: any;
+    };
     // Tiempo
     tiempoSegundos: number;
     fecha: Timestamp;

@@ -112,9 +112,15 @@ export function DefensaExamenVoz() {
                     feedbackFinal: data.feedback_final,
                     aciertos: data.aciertos || [],
                     errores: data.errores || [],
-                    temasAEstudiar: data.rubrica_detallada?.temas_a_estudiar || [],
+                    temasAEstudiar: data.temas_a_estudiar || [],
                     rubricaDetallada: data.rubrica_detallada || {},
-                    tiempoSegundos: timer
+                    tiempoSegundos: timer,
+                    // Guardar caso clínico completo para registro docente
+                    casoClinico: {
+                        fichaVisible: caseData.ficha_visible,
+                        perfilSecreto: caseData.perfil_secreto,
+                        hallazgos: caseData.hallazgos_todos_modulos,
+                    }
                 });
             } catch (err) {
                 console.error("Error guardando defensa en firebase:", err);
@@ -206,10 +212,15 @@ export function DefensaExamenVoz() {
                             <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
                         </div>
                     </div>
-                    <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all">
+                    <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all font-sans text-sm">
                         📄 Recibir Caso Resuelto
                     </button>
                 </div>
+            )}
+
+            {/* HISTORIAL */}
+            {showHistorial && (
+                <DefensaVozHistorial onClose={() => setShowHistorial(false)} />
             )}
 
             {/* CASE CONTEXT (Visible in Construction & Commission) */}
