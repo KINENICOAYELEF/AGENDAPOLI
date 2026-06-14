@@ -35,6 +35,7 @@ export interface SimuladorIntento {
     commissionAnswers?: string[];
     preguntasComision?: any[];
     fullSessionData?: any;
+    interviewFeedbackData?: any;
 }
 
 export interface SimuladorTareaConfig {
@@ -84,7 +85,7 @@ export interface DefensaVozIntento {
     };
     // Tiempo
     tiempoSegundos: number;
-    fecha: Timestamp;
+    fecha?: Timestamp;
 }
 
 const COLLECTION = 'simulador_intentos';
@@ -126,10 +127,10 @@ export async function getVoiceDefenses(userId?: string): Promise<DefensaVozInten
         const colRef = collection(db, COLLECTION_VOZ);
         let q;
         if (userId) {
-            q = query(colRef, where('userId', '==', userId), orderBy('fecha', 'desc'));
+            q = query(colRef, where('userId', '==', userId), orderBy('fecha', 'desc'), limit(50));
         } else {
             // If no user ID provided, get all (e.g. for admin/docente)
-            q = query(colRef, orderBy('fecha', 'desc'));
+            q = query(colRef, orderBy('fecha', 'desc'), limit(50));
         }
         
         const snapshot = await getDocs(q);
@@ -593,6 +594,218 @@ export function exportarIntentoPDF(int: SimuladorIntento) {
     ${comisionHTML ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}` : ''}
     
     ${interactiveHTML}
+
+    <div class="no-print" style="text-align:center;margin-top:32px;">
+        <button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar / Imprimir Reporte</button>
+    </div>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) {
+        w.document.write(html);
+        w.document.close();
+    }
+}
+
+export async function deleteVoiceDefense(defenseId: string) {
+    await deleteDoc(doc(db, COLLECTION_VOZ, defenseId));
+}
+
+export function exportarDefensaVozPDF(attempt: DefensaVozIntento) {
+    if (typeof window === 'undefined') return;
+
+    const notaFinal = attempt.notaChilena?.toFixed(1) || '—';
+    const formatTimeHelper = (s: number) => 
+        `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    const scorecardRows = Object.entries(attempt.rubricaDetallada || {}).map(([k, val]: [string, any]) =>
+        `<tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;font-weight:600;text-transform:capitalize;">${k.replace(/_/g, ' ')}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:14px;color:${val.puntaje >= 60 ? '#059669' : '#dc2626'}">${val.puntaje}/100</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;font-style:italic;">${val.comentario || '—'}</td>
+        </tr>`
+    ).join('');
+
+    const aciertosHTML = (attempt.aciertos || []).map((a: string) =>
+        `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;color:#166534;">
+            ✓ ${a}
+        </div>`
+    ).join('');
+
+    const erroresHTML = (attempt.errores || []).map((e: string) =>
+        `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px;color:#991b1b;">
+            ✗ ${e}
+        </div>`
+    ).join('');
+
+    const temasHTML = (attempt.temasAEstudiar || []).map((t: string) =>
+        `<li style="font-size:13px;margin-bottom:4px;color:#334155;">${t}</li>`
+    ).join('');
+
+    const fechaStr = attempt.fecha 
+        ? (typeof attempt.fecha.toDate === 'function' ? attempt.fecha.toDate() : new Date(attempt.fecha as any)).toLocaleDateString('es-CL') 
+        : new Date().toLocaleDateString('es-CL');
+
+    // Clinical Case HTML
+    let casoHTML = '';
+    if (attempt.casoClinico) {
+        const f = attempt.casoClinico.fichaVisible || {};
+        const p = attempt.casoClinico.perfilSecreto || {};
+        const h = attempt.casoClinico.hallazgos || {};
+        
+        const findingsList = Object.entries(h)
+            .map(([k, v]) => v && v !== 'Normal' ? `<li style="font-size:12px;margin-bottom:2px;"><strong>${k.replace(/_/g, ' ')}:</strong> ${v}</li>` : '')
+            .filter(Boolean)
+            .join('');
+
+        casoHTML = `
+            <h2>📋 Ficha Clínica del Caso</h2>
+            <div class="grid2" style="font-size:13px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div><strong>Paciente:</strong> ${f.nombre || attempt.pacienteNombre || '—'} (${f.edad || '—'})</div>
+                <div><strong>Ocupación:</strong> ${f.ocupacion || '—'}</div>
+                <div><strong>Deporte/Actividad:</strong> ${f.deporte_actividad || '—'}</div>
+                <div><strong>Área:</strong> ${attempt.area || 'Aleatoria'} (${attempt.dificultad || 'Intermedio'})</div>
+            </div>
+            <p style="font-size:13px;margin:6px 0;"><strong>Motivo de Consulta:</strong> ${f.motivo_consulta || attempt.motivoConsulta || '—'}</p>
+            <p style="font-size:13px;margin:6px 0;line-height:1.4;"><strong>Anamnesis Próxima:</strong> ${p.historia_completa || '—'}</p>
+            ${p.antecedentes_relevantes && p.antecedentes_relevantes.length > 0 ? `<p style="font-size:13px;margin:6px 0;"><strong>Anamnesis Remota:</strong> ${p.antecedentes_relevantes.join(', ')}</p>` : ''}
+            ${findingsList ? `<p style="font-size:13px;margin:10px 0 4px;font-weight:bold;color:#0f766e;">Hallazgos del Examen Físico:</p><ul style="margin:0;padding-left:20px;color:#334155;">${findingsList}</ul>` : ''}
+        `;
+    } else {
+        casoHTML = `
+            <h2>📋 Caso Clínico</h2>
+            <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                <div><strong>Paciente:</strong> ${attempt.pacienteNombre || '—'}</div>
+                <div><strong>Área:</strong> ${attempt.area || 'Aleatoria'}</div>
+                <div><strong>Dificultad:</strong> ${attempt.dificultad || 'Intermedio'}</div>
+            </div>
+            <p style="font-size:13px;margin-top:8px;"><strong>Motivo de Consulta:</strong> ${attempt.motivoConsulta || '—'}</p>
+        `;
+    }
+
+    // Written construction HTML
+    const c = attempt.construccion || {};
+    const construccionHTML = `
+        <h2>📝 Propuesta de Planificación Escrita</h2>
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;font-size:13px;color:#1e3a8a;margin-bottom:16px;">
+            <p style="margin:0 0 10px;line-height:1.4;"><strong style="color:#1d4ed8;font-size:13px;">Problema Principal:</strong><br/><span style="color:#334155;">${c.problema_principal || '—'}</span></p>
+            <p style="margin:0 0 10px;line-height:1.4;"><strong style="color:#1d4ed8;font-size:13px;">Diagnóstico CIF:</strong><br/><span style="color:#334155;">${c.diagnostico || '—'}</span></p>
+            <p style="margin:0 0 10px;line-height:1.4;"><strong style="color:#1d4ed8;font-size:13px;">Objetivo General:</strong><br/><span style="color:#334155;">${c.objetivo_general || '—'}</span></p>
+            <p style="margin:0 0 10px;line-height:1.4;white-space:pre-wrap;"><strong style="color:#1d4ed8;font-size:13px;">Objetivos Específicos:</strong><br/><span style="color:#334155;">${c.objetivos_especificos || '—'}</span></p>
+            <p style="margin:0 0 10px;line-height:1.4;white-space:pre-wrap;"><strong style="color:#1d4ed8;font-size:13px;">Objetivos Operacionales:</strong><br/><span style="color:#334155;">${c.objetivos_operacionales || '—'}</span></p>
+            <p style="margin:0 0 10px;line-height:1.4;white-space:pre-wrap;"><strong style="color:#1d4ed8;font-size:13px;">Plan de Fases:</strong><br/><span style="color:#334155;">${c.plan_fases || '—'}</span></p>
+            <p style="margin:0;line-height:1.4;"><strong style="color:#1d4ed8;font-size:13px;">Reevaluación:</strong><br/><span style="color:#334155;">${c.reevaluacion || '—'}</span></p>
+        </div>
+    `;
+
+    // Audio Call Transcript HTML
+    let transcriptHTML = '';
+    if (attempt.transcripcion) {
+        const linesHTML = attempt.transcripcion.split('\n').map(line => {
+            const isEstudiante = line.startsWith('ESTUDIANTE:') || line.startsWith('ALUMNO:');
+            const isComision = line.startsWith('COMISIÓN:');
+            let label = 'Intervención';
+            let color = '#334155';
+            let bg = '#f8fafc';
+            let border = '#e2e8f0';
+            let text = line;
+            
+            if (isEstudiante) {
+                label = 'ESTUDIANTE';
+                color = '#1e3a8a';
+                bg = '#eff6ff';
+                border = '#bfdbfe';
+                text = line.replace('ESTUDIANTE:', '').replace('ALUMNO:', '').trim();
+            } else if (isComision) {
+                label = 'COMISIÓN';
+                color = '#b45309';
+                bg = '#fffbeb';
+                border = '#fde68a';
+                text = line.replace('COMISIÓN:', '').trim();
+            }
+            return `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;">
+                <span style="font-weight:bold;font-size:10px;color:${color};text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:2px;">${label}</span>
+                <span style="color:#334155;line-height:1.4;">${text}</span>
+            </div>`;
+        }).join('');
+
+        transcriptHTML = `
+            <h2>🗣️ Transcripción de la Defensa Oral (Audio)</h2>
+            <div style="max-height:500px;overflow-y:auto;padding-right:4px;">
+                ${linesHTML}
+            </div>
+        `;
+    } else {
+        transcriptHTML = `
+            <h2>🗣️ Transcripción de la Defensa Oral</h2>
+            <p style="font-size:13px;color:#94a3b8;font-style:italic;">No hay transcripción disponible para esta sesión.</p>
+        `;
+    }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Defensa de Comisión</title>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
+    h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #dc2626;padding-bottom:16px;margin-bottom:24px;}
+    .nota-box{background:linear-gradient(135deg,#fff5f5,#fee2e2);border:2px solid #dc2626;border-radius:12px;padding:16px 24px;text-align:center;}
+    .nota-big{font-size:36px;font-weight:900;color:#991b1b;}
+    table{width:100%;border-collapse:collapse;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
+    @media print{body{padding:20px;} .no-print{display:none;}}
+    .page-break { page-break-before: always; }
+    </style></head><body>
+    <div class="header">
+        <div>
+            <h1>🎤 Reporte de Defensa de Comisión (Voz)</h1>
+            <p style="margin:4px 0;font-size:13px;color:#64748b;">Simulador de Examen Clínico · ${fechaStr}</p>
+            <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${attempt.userName} (${attempt.userEmail})</p>
+            <p style="margin:2px 0;font-size:13px;"><strong>Duración del Examen:</strong> ${formatTimeHelper(attempt.tiempoSegundos)}</p>
+        </div>
+        <div class="nota-box">
+            <div class="nota-big">${notaFinal}</div>
+            <div style="font-size:12px;font-weight:700;color:#991b1b;">NOTA EXAMEN</div>
+        </div>
+    </div>
+    
+    ${casoHTML}
+    
+    <h2>📊 Retroalimentación y Scorecard de la Comisión</h2>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px;font-size:14px;color:#78350f;margin-bottom:16px;line-height:1.5;white-space:pre-wrap;">
+        <strong>Feedback General de la Comisión:</strong><br/>${attempt.feedbackFinal}
+    </div>
+    
+    <table style="margin-top:12px;">
+        <thead>
+            <tr>
+                <th>Criterio Evaluado</th>
+                <th style="text-align:center;width:100px;">Puntaje</th>
+                <th>Comentarios de la Comisión</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${scorecardRows || '<tr><td colspan="3" style="text-align:center;padding:12px;color:#94a3b8;">No hay desglose de rúbrica.</td></tr>'}
+        </tbody>
+    </table>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:24px;font-weight:900;color:#1e293b;">${attempt.puntajeGlobal}/100</div>
+            <div style="font-size:11px;color:#64748b;">Puntaje Global de la Comisión</div>
+        </div>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+            <div style="font-size:18px;font-weight:800;color:${attempt.notaChilena >= 4.0 ? '#15803d' : '#b91c1c'};">${attempt.notaChilena >= 4.0 ? 'APROBADO' : 'REPROBADO'}</div>
+            <div style="font-size:11px;color:#64748b;">Resultado</div>
+        </div>
+    </div>
+    
+    ${aciertosHTML ? `<h2>✅ Aciertos Destacados</h2>${aciertosHTML}` : ''}
+    ${erroresHTML ? `<h2>❌ Errores de Razonamiento</h2>${erroresHTML}` : ''}
+    ${temasHTML ? `<h2>📖 Temas Recomendados para Repaso</h2><ul style="margin:0;padding-left:20px;">${temasHTML}</ul>` : ''}
+    
+    <div class="page-break"></div>
+    ${construccionHTML}
+    
+    <div class="page-break"></div>
+    ${transcriptHTML}
 
     <div class="no-print" style="text-align:center;margin-top:32px;">
         <button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar / Imprimir Reporte</button>

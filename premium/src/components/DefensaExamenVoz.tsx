@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useGeminiLive } from '@/hooks/useGeminiLive';
+import { useGeminiLive, getAudioDevices } from '@/hooks/useGeminiLive';
 import { generateCommissionPrompt } from '@/utils/patientPrompts';
 import type { SimCaseType } from '@/lib/ai/simuladorSchemas';
-import { saveVoiceDefense } from '@/services/simuladorFirebase';
+import { saveVoiceDefense, exportarDefensaVozPDF } from '@/services/simuladorFirebase';
 import { DefensaVozHistorial } from './DefensaVozHistorial';
 
 // ─── Types ───
@@ -31,6 +31,18 @@ export function DefensaExamenVoz() {
     const [timer, setTimer] = useState(0);
     const [showHistorial, setShowHistorial] = useState(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+    const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+
+    useEffect(() => {
+        getAudioDevices().then(setAudioDevices).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -48,7 +60,8 @@ export function DefensaExamenVoz() {
             caseData.hallazgos_todos_modulos,
             construction
         ) : '',
-        voiceName: 'Orion' // Serious professor voice
+        voiceName: 'Orion',
+        audioDeviceId: selectedDeviceId || undefined
     });
 
     const formatTime = (seconds: number) => {
@@ -74,8 +87,8 @@ export function DefensaExamenVoz() {
     };
 
     const handleStartCommission = () => {
-        if (!construction.diagnostico.trim() || !construction.objetivo_general.trim()) {
-            setError('Debes completar al menos el diagnóstico y objetivo general.');
+        if (!construction.problema_principal.trim() || !construction.diagnostico.trim() || !construction.objetivo_general.trim()) {
+            setError('Debes completar al menos el problema principal, diagnóstico y objetivo general.');
             return;
         }
         setError('');
@@ -124,6 +137,7 @@ export function DefensaExamenVoz() {
                 });
             } catch (err) {
                 console.error("Error guardando defensa en firebase:", err);
+                setError('⚠️ Tus resultados se muestran abajo, pero hubo un problema al guardarlos en el historial. Toma una captura de pantalla por seguridad.');
             }
 
             setEvaluationData(data);
@@ -151,10 +165,10 @@ export function DefensaExamenVoz() {
                     <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🎤 Simulador de Defensa de Grado</h1>
                     <p className="text-gray-500 text-sm mt-1">Practica tu razonamiento oral frente a la comisión (Voz)</p>
                 </div>
-                {phase !== 'SETUP' && (
+                {phase !== 'SETUP' && phase !== 'RESULTS' && (
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-900 text-white font-mono px-4 py-2 rounded-xl text-lg shadow">{formatTime(timer)}</div>
-                        <button onClick={handleReset} className="text-xs text-red-500 hover:text-red-700 font-bold">Abandonar</button>
+                        <button onClick={() => { if (confirm('¿Estás seguro de abandonar? Se perderá todo el progreso de esta sesión.')) handleReset(); }} className="text-xs text-red-500 hover:text-red-700 font-bold">Abandonar</button>
                     </div>
                 )}
             </div>
@@ -212,6 +226,18 @@ export function DefensaExamenVoz() {
                             <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
                         </div>
                     </div>
+                    {audioDevices.length > 1 && (
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">🎤 Micrófono</label>
+                            <select value={selectedDeviceId} onChange={e => setSelectedDeviceId(e.target.value)} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
+                                <option value="">Predeterminado del sistema</option>
+                                {audioDevices.map(d => (
+                                    <option key={d.deviceId} value={d.deviceId}>{d.label || `Micrófono ${d.deviceId.slice(0,8)}`}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-400 mt-1">Selecciona el micrófono que quieres usar para la defensa oral.</p>
+                        </div>
+                    )}
                     <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all font-sans text-sm">
                         📄 Recibir Caso Resuelto
                     </button>
@@ -398,6 +424,49 @@ export function DefensaExamenVoz() {
                             </ul>
                         </div>
                     )}
+
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 border-t pt-6">
+                        <button
+                            onClick={() => {
+                                if (!user || !caseData || !evaluationData) return;
+                                const transcriptText = transcript.map(t => `${t.role === 'user' ? 'ESTUDIANTE' : 'COMISIÓN'}: ${t.text}`).join('\n');
+                                exportarDefensaVozPDF({
+                                    userId: user.uid,
+                                    userEmail: user.email || '',
+                                    userName: user.displayName || user.email?.split('@')[0] || 'Estudiante',
+                                    pacienteNombre: caseData.ficha_visible.nombre,
+                                    motivoConsulta: caseData.ficha_visible.motivo_consulta,
+                                    area: setupForm.area || 'Aleatoria',
+                                    dificultad: setupForm.dificultad,
+                                    construccion: construction,
+                                    transcripcion: transcriptText,
+                                    puntajeGlobal: evaluationData.puntaje_global,
+                                    notaChilena: evaluationData.nota_chilena,
+                                    feedbackFinal: evaluationData.feedback_final,
+                                    aciertos: evaluationData.aciertos || [],
+                                    errores: evaluationData.errores || [],
+                                    temasAEstudiar: evaluationData.temas_a_estudiar || [],
+                                    rubricaDetallada: evaluationData.rubrica_detallada || {},
+                                    tiempoSegundos: timer,
+                                    casoClinico: {
+                                        fichaVisible: caseData.ficha_visible,
+                                        perfilSecreto: caseData.perfil_secreto,
+                                        hallazgos: caseData.hallazgos_todos_modulos,
+                                    }
+                                });
+                            }}
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2"
+                        >
+                            📄 Exportar Reporte Completo (PDF)
+                        </button>
+                        
+                        <button
+                            onClick={handleReset}
+                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2"
+                        >
+                            🔄 Volver al Inicio
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

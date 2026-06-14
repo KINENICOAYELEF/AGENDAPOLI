@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getVoiceDefenses, DefensaVozIntento } from '@/services/simuladorFirebase';
+import { getVoiceDefenses, DefensaVozIntento, exportarDefensaVozPDF } from '@/services/simuladorFirebase';
 
 export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
     const { user } = useAuth();
@@ -75,7 +75,15 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
                                 
                                 {/* Resumen del Paciente */}
                                 <div>
-                                    <h3 className="text-lg font-black text-slate-800 mb-2 border-b pb-2">📋 Datos Clínicos</h3>
+                                    <div className="flex justify-between items-center border-b pb-2 mb-2">
+                                        <h3 className="text-lg font-black text-slate-800">📋 Datos Clínicos</h3>
+                                        <button
+                                            onClick={() => exportarDefensaVozPDF(selectedAttempt)}
+                                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                        >
+                                            📄 Exportar PDF
+                                        </button>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4 text-sm mt-3">
                                         <p><span className="font-semibold text-slate-500">Paciente:</span> {selectedAttempt.pacienteNombre}</p>
                                         <p><span className="font-semibold text-slate-500">Motivo:</span> {selectedAttempt.motivoConsulta}</p>
@@ -118,6 +126,12 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
                                 <div>
                                     <h3 className="text-lg font-black text-slate-800 mb-2 border-b pb-2">📝 Propuesta Escrita</h3>
                                     <div className="bg-slate-50 p-4 rounded-xl text-sm space-y-4">
+                                        {selectedAttempt.construccion?.problema_principal && (
+                                            <div>
+                                                <span className="font-bold text-rose-700">Problema Principal:</span>
+                                                <p className="mt-1 text-slate-700">{selectedAttempt.construccion.problema_principal}</p>
+                                            </div>
+                                        )}
                                         <div>
                                             <span className="font-bold text-indigo-700">Diagnóstico:</span>
                                             <p className="mt-1 text-slate-700">{selectedAttempt.construccion?.diagnostico}</p>
@@ -126,10 +140,28 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
                                             <span className="font-bold text-indigo-700">Objetivo General:</span>
                                             <p className="mt-1 text-slate-700">{selectedAttempt.construccion?.objetivo_general}</p>
                                         </div>
+                                        {selectedAttempt.construccion?.objetivos_especificos && (
+                                            <div>
+                                                <span className="font-bold text-indigo-700">Objetivos Específicos:</span>
+                                                <p className="mt-1 text-slate-700">{selectedAttempt.construccion.objetivos_especificos}</p>
+                                            </div>
+                                        )}
+                                        {selectedAttempt.construccion?.objetivos_operacionales && (
+                                            <div>
+                                                <span className="font-bold text-indigo-700">Objetivos Operacionales:</span>
+                                                <p className="mt-1 text-slate-700">{selectedAttempt.construccion.objetivos_operacionales}</p>
+                                            </div>
+                                        )}
                                         <div>
                                             <span className="font-bold text-indigo-700">Plan de Fases:</span>
                                             <p className="mt-1 text-slate-700 whitespace-pre-wrap">{selectedAttempt.construccion?.plan_fases}</p>
                                         </div>
+                                        {selectedAttempt.construccion?.reevaluacion && (
+                                            <div>
+                                                <span className="font-bold text-indigo-700">Reevaluación:</span>
+                                                <p className="mt-1 text-slate-700">{selectedAttempt.construccion.reevaluacion}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

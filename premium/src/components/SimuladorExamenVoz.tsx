@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useGeminiLive } from '@/hooks/useGeminiLive';
+import { useGeminiLive, getAudioDevices } from '@/hooks/useGeminiLive';
 import { generateDynamicPatientPrompt, getVoiceForPersona } from '@/utils/patientPrompts';
 import type { SimCaseType, SimInterviewType, SimInterviewFeedbackType, SimExamType, SimEvaluationType, SimCommissionType } from '@/lib/ai/simuladorSchemas';
 import { guardarIntento, getTareaConfig, verificarCumplimiento } from '@/services/simuladorFirebase';
@@ -69,9 +69,15 @@ export function SimuladorExamenVoz() {
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [showExitWarning, setShowExitWarning] = useState(false);
     const [showHistorial, setShowHistorial] = useState(false);
+    const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+    const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
     // Task compliance
     const [tareaAlerta, setTareaAlerta] = useState<{ descripcion: string; mensaje: string; creditos: number; frecuencia: number } | null>(null);
+
+    useEffect(() => {
+        getAudioDevices().then(setAudioDevices).catch(() => {});
+    }, []);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -118,7 +124,8 @@ export function SimuladorExamenVoz() {
 
     const { connect, disconnect, connectionState, transcript, isSpeaking, volume, isMicOpen, toggleMic } = useGeminiLive({
         systemInstruction: caseData ? generateDynamicPatientPrompt(setupForm.area, setupForm.dificultad, '', caseData.ficha_visible) : '',
-        voiceName: caseData ? getVoiceForPersona(caseData.ficha_visible.sexo || 'Mujer') : 'Aoede'
+        voiceName: caseData ? getVoiceForPersona(caseData.ficha_visible.sexo || 'Mujer') : 'Aoede',
+        audioDeviceId: selectedDeviceId || undefined
     });
 
     const formattedTranscript = transcript.map(t => `${t.role === 'user' ? 'Kinesiólogo' : 'Paciente'}: ${t.text}`).join('\n');
@@ -219,7 +226,8 @@ export function SimuladorExamenVoz() {
                     construction,
                     commissionAnswers,
                     preguntasComision: evalData?.preguntas_comision || [],
-                }
+                },
+                interviewFeedbackData: interviewFeedbackData || null,
             });
         } catch (fbErr) {
             console.error('[Simulador] Error guardando en Firebase:', fbErr);
@@ -584,7 +592,7 @@ export function SimuladorExamenVoz() {
         setReasoning({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
         setConstruction({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
-        setInterventions([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
+        setInterventions([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }, { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
         setCommissionAnswers([]); setReviewPhase(null); setPracticeMode('completo'); setShowHistorial(false);
         const init: Record<string, { selected: boolean; justificacion: string; pruebas: string }> = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
@@ -771,6 +779,17 @@ export function SimuladorExamenVoz() {
                         <label className="block text-sm font-semibold text-slate-600 mb-1">Descripción del caso (opcional)</label>
                         <textarea value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Joven deportista con dolor de rodilla bilateral..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
                     </div>
+                    {audioDevices.length > 1 && (
+                        <div className="sm:col-span-2">
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">🎤 Micrófono</label>
+                            <select value={selectedDeviceId} onChange={e => setSelectedDeviceId(e.target.value)} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none">
+                                <option value="">Predeterminado del sistema</option>
+                                {audioDevices.map(d => (
+                                    <option key={d.deviceId} value={d.deviceId}>{d.label || `Micrófono ${d.deviceId.slice(0,8)}`}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <button onClick={handleGenerate} disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
                         🎲 Generar Caso Aleatorio
                     </button>

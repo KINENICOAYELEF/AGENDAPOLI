@@ -5,6 +5,7 @@ type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 interface UseGeminiLiveProps {
     systemInstruction?: string;
     voiceName?: string;
+    audioDeviceId?: string;
 }
 
 interface Parts {
@@ -73,7 +74,7 @@ function stripDisclaimers(text: string): string {
     return cleaned.replace(/\s{2,}/g, ' ').trim();
 }
 
-export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGeminiLiveProps = {}) {
+export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDeviceId }: UseGeminiLiveProps = {}) {
     const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
     const [transcript, setTranscript] = useState<{ role: 'user' | 'model', text: string }[]>([]);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -88,11 +89,32 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
     const streamRef = useRef<MediaStream | null>(null);
     const processorRef = useRef<ScriptProcessorNode | null>(null);
     const setupDoneRef = useRef(false);
+    const activeSourcesRef = useRef<number>(0);
 
     // Sync state with ref for audio loop
     useEffect(() => {
         isMicOpenRef.current = isMicOpen;
     }, [isMicOpen]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+            if (processorRef.current && audioCtxRef.current) {
+                processorRef.current.disconnect();
+                audioCtxRef.current.close();
+            }
+            if (playbackCtxRef.current) {
+                playbackCtxRef.current.close();
+            }
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
 
     // Audio playback queue
     const playbackNextTimeRef = useRef<number>(0);
@@ -131,8 +153,13 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
         source.start(playbackNextTimeRef.current);
         playbackNextTimeRef.current += audioBuffer.duration;
         
+        activeSourcesRef.current += 1;
         source.onended = () => {
-            setIsSpeaking(false);
+            activeSourcesRef.current -= 1;
+            if (activeSourcesRef.current <= 0) {
+                activeSourcesRef.current = 0;
+                setIsSpeaking(false);
+            }
         };
     }, []);
 
@@ -209,6 +236,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
     const startMicrophone = useCallback(async (): Promise<boolean> => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+                deviceId: audioDeviceId ? { exact: audioDeviceId } : undefined,
                 sampleRate: 16000,
                 channelCount: 1,
                 echoCancellation: true,
@@ -278,10 +306,13 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
             console.error("Microphone error:", e);
             return false;
         }
-    }, []);
+    }, [audioDeviceId]);
 
     const connect = useCallback(async () => {
         if (connectionState !== 'disconnected') return;
+        setTranscript([]);
+        setIsMicOpen(true);
+        isMicOpenRef.current = true;
         setConnectionState('connecting');
         setupDoneRef.current = false;
 
@@ -377,7 +408,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
             console.error(e);
             setConnectionState('error');
         }
-    }, [systemInstruction, voiceName, connectionState, startMicrophone, handleServerMessage, stopMicrophone]);
+    }, [systemInstruction, voiceName, connectionState, startMicrophone, handleServerMessage, stopMicrophone, audioDeviceId]);
 
     const disconnect = useCallback(() => {
         if (wsRef.current) {
@@ -403,4 +434,16 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede" }: UseGem
         isMicOpen,
         toggleMic
     };
+}
+
+// Utility: enumerate available audio input devices
+export async function getAudioDevices(): Promise<MediaDeviceInfo[]> {
+    try {
+        // Request permission first (needed to get device labels)
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter(d => d.kind === 'audioinput');
+    } catch {
+        return [];
+    }
 }

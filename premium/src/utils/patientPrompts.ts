@@ -106,7 +106,9 @@ Hallazgos: ${JSON.stringify(hallazgos || {})}
 === PROPUESTAS ESCRITAS DEL ESTUDIANTE ===
 Diagnóstico Kinesiológico: ${construccion?.diagnostico || 'No especificó'}
 Problema Principal: ${construccion?.problema_principal || 'No especificó'}
+Objetivo General: ${construccion?.objetivo_general || 'No especificó'}
 Objetivos Específicos: ${construccion?.objetivos_especificos || 'No especificó'}
+Objetivos Operacionales: ${construccion?.objetivos_operacionales || 'No especificó'}
 Plan de Tratamiento: ${construccion?.plan_fases || 'No especificó'}
 Reevaluación: ${construccion?.reevaluacion || 'No especificó'}
 
