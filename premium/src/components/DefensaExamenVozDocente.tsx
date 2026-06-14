@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGeminiLive, getAudioDevices } from '@/hooks/useGeminiLive';
 import { generateCommissionPrompt } from '@/utils/patientPrompts';
@@ -23,6 +23,21 @@ async function simFetch(action: string, payload: unknown, userId: string) {
     return data.data;
 }
 
+// ─── Competency level badge colors ───
+const COMP_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    'Logrado': { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
+    'En desarrollo': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200' },
+    'No demostrado': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+};
+
+const COMP_LABELS: Record<string, string> = {
+    razonamiento_clinico: '🧠 Razonamiento Clínico',
+    comunicacion_profesional: '🗣️ Comunicación Profesional',
+    evidencia_cientifica: '📖 Evidencia Científica',
+    integracion_biopsicosocial: '🌐 Integración BPS',
+    dosificacion_prescripcion: '💊 Dosificación y Prescripción',
+};
+
 export function DefensaExamenVozDocente() {
     const { user } = useAuth();
     const [phase, setPhase] = useState<SimPhase>('SETUP');
@@ -34,6 +49,13 @@ export function DefensaExamenVozDocente() {
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
+    // ─── Docente config state ───
+    const [cantidadPreguntas, setCantidadPreguntas] = useState(15);
+    const [estiloComision, setEstiloComision] = useState<'individual' | 'comision_2'>('individual');
+    const [tiempoLimiteMin, setTiempoLimiteMin] = useState(0); // 0 = sin límite
+    const [instruccionesDocente, setInstruccionesDocente] = useState('');
+    const [showAdvanced, setShowAdvanced] = useState(false);
+
     useEffect(() => {
         getAudioDevices().then(setAudioDevices).catch(() => {});
     }, []);
@@ -44,6 +66,17 @@ export function DefensaExamenVozDocente() {
         };
     }, []);
 
+    // ─── Auto-end when time limit reached ───
+    const tiempoLimiteSec = tiempoLimiteMin * 60;
+    const timeExpiredRef = useRef(false);
+    useEffect(() => {
+        if (tiempoLimiteSec > 0 && timer >= tiempoLimiteSec && phase === 'COMMISSION_VOICE' && !timeExpiredRef.current) {
+            timeExpiredRef.current = true;
+            handleEndDefense();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timer, tiempoLimiteSec, phase]);
+
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
     const [evaluationData, setEvaluationData] = useState<any | null>(null);
@@ -52,17 +85,64 @@ export function DefensaExamenVozDocente() {
     const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'avanzado', descripcion: '' });
     const [construction, setConstruction] = useState({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
 
+    // ─── Commission config for prompt ───
+    const commissionConfig = useMemo(() => ({
+        cantidadPreguntas,
+        estiloComision,
+        tiempoLimiteMin: tiempoLimiteMin || undefined,
+        instruccionesDocente: instruccionesDocente.trim() || undefined,
+    }), [cantidadPreguntas, estiloComision, tiempoLimiteMin, instruccionesDocente]);
+
     // Voice connection for Commission
     const { connect, disconnect, connectionState, isMicOpen, toggleMic, isSpeaking, volume, transcript } = useGeminiLive({
         systemInstruction: caseData ? generateCommissionPrompt(
             caseData.ficha_visible,
             caseData.perfil_secreto,
             caseData.hallazgos_todos_modulos,
-            construction
+            construction,
+            commissionConfig
         ) : '',
         voiceName: 'Orion',
         audioDeviceId: selectedDeviceId || undefined
     });
+
+    // ─── Progress indicator: parse transcript for question numbers ───
+    const currentQuestion = useMemo(() => {
+        let lastQ = 0;
+        for (const t of transcript) {
+            if (t.role === 'model') {
+                // Match patterns like "Pregunta 5 de 15" or "[Klgo. Reyes] Pregunta 5 de 15"
+                const match = t.text.match(/Pregunta\s+(\d+)\s+de\s+(\d+)/i);
+                if (match) {
+                    const qNum = parseInt(match[1], 10);
+                    if (qNum > lastQ) lastQ = qNum;
+                }
+            }
+        }
+        return lastQ;
+    }, [transcript]);
+
+    // ─── Determine current phase label ───
+    const currentPhaseLabel = useMemo(() => {
+        if (currentQuestion === 0) return '';
+        const totalFases = 5;
+        const base = Math.floor(cantidadPreguntas / totalFases);
+        const resto = cantidadPreguntas % totalFases;
+        const faseSizes: number[] = [];
+        for (let i = 0; i < totalFases; i++) {
+            faseSizes.push(base + (i < resto ? 1 : 0));
+        }
+        let cursor = 1;
+        const faseNames = ['Ataque a Propuesta', 'Ciencias Básicas', 'Dosificación', 'Comorbilidades', 'Pronóstico'];
+        for (let i = 0; i < totalFases; i++) {
+            const end = cursor + faseSizes[i] - 1;
+            if (currentQuestion >= cursor && currentQuestion <= end) {
+                return faseNames[i];
+            }
+            cursor = end + 1;
+        }
+        return faseNames[4];
+    }, [currentQuestion, cantidadPreguntas]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -78,6 +158,7 @@ export function DefensaExamenVozDocente() {
             setCaseData(data);
             setPhase('CONSTRUCTION');
             setTimer(0);
+            timeExpiredRef.current = false;
             timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error desconocido');
@@ -127,6 +208,7 @@ export function DefensaExamenVozDocente() {
                     errores: data.errores || [],
                     temasAEstudiar: data.temas_a_estudiar || [],
                     rubricaDetallada: data.rubrica_detallada || {},
+                    competencias: data.competencias || undefined,
                     tiempoSegundos: timer,
                     // Guardar caso clínico completo para registro docente
                     casoClinico: {
@@ -154,8 +236,13 @@ export function DefensaExamenVozDocente() {
         disconnect();
         setPhase('SETUP'); setCaseData(null); setEvaluationData(null);
         setTimer(0); setError('');
+        timeExpiredRef.current = false;
         setConstruction({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
     };
+
+    // ─── Time remaining for countdown ───
+    const timeRemaining = tiempoLimiteSec > 0 ? Math.max(0, tiempoLimiteSec - timer) : null;
+    const timeWarning = timeRemaining !== null && timeRemaining <= 120; // last 2 minutes
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -163,11 +250,18 @@ export function DefensaExamenVozDocente() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🎤 Simulador de Defensa de Grado</h1>
-                    <p className="text-gray-500 text-sm mt-1">Practica tu razonamiento oral frente a la comisión (Voz)</p>
+                    <p className="text-gray-500 text-sm mt-1">Versión Docente — Practica tu razonamiento oral frente a la comisión (Voz)</p>
                 </div>
                 {phase !== 'SETUP' && phase !== 'RESULTS' && (
                     <div className="flex items-center gap-3">
-                        <div className="bg-slate-900 text-white font-mono px-4 py-2 rounded-xl text-lg shadow">{formatTime(timer)}</div>
+                        {/* Timer / Countdown */}
+                        {timeRemaining !== null ? (
+                            <div className={`font-mono px-4 py-2 rounded-xl text-lg shadow ${timeWarning ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-900 text-white'}`}>
+                                ⏱️ {formatTime(timeRemaining)}
+                            </div>
+                        ) : (
+                            <div className="bg-slate-900 text-white font-mono px-4 py-2 rounded-xl text-lg shadow">{formatTime(timer)}</div>
+                        )}
                         <button onClick={() => { if (confirm('¿Estás seguro de abandonar? Se perderá todo el progreso de esta sesión.')) handleReset(); }} className="text-xs text-red-500 hover:text-red-700 font-bold">Abandonar</button>
                     </div>
                 )}
@@ -226,6 +320,8 @@ export function DefensaExamenVozDocente() {
                             <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
                         </div>
                     </div>
+
+                    {/* Micrófono */}
                     {audioDevices.length > 1 && (
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">🎤 Micrófono</label>
@@ -238,6 +334,76 @@ export function DefensaExamenVozDocente() {
                             <p className="text-xs text-slate-400 mt-1">Selecciona el micrófono que quieres usar para la defensa oral.</p>
                         </div>
                     )}
+
+                    {/* ─── DOCENTE: Configuración avanzada ─── */}
+                    <div className="border-t border-slate-200 pt-4">
+                        <button 
+                            onClick={() => setShowAdvanced(!showAdvanced)} 
+                            className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                        >
+                            <span className={`transform transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>▶</span>
+                            ⚙️ Configuración Docente (Avanzada)
+                        </button>
+                        
+                        {showAdvanced && (
+                            <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    {/* Cantidad de preguntas */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-indigo-800 mb-1">Cantidad de Preguntas</label>
+                                        <select value={cantidadPreguntas} onChange={e => setCantidadPreguntas(Number(e.target.value))} className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none bg-white">
+                                            <option value={5}>5 (Rápida)</option>
+                                            <option value={10}>10 (Media)</option>
+                                            <option value={15}>15 (Estándar)</option>
+                                            <option value={20}>20 (Extensa)</option>
+                                            <option value={25}>25 (Intensiva)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Estilo de comisión */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-indigo-800 mb-1">Estilo de Comisión</label>
+                                        <select value={estiloComision} onChange={e => setEstiloComision(e.target.value as 'individual' | 'comision_2')} className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none bg-white">
+                                            <option value="individual">1 Evaluador (estricto)</option>
+                                            <option value="comision_2">2 Kinesiólogos (Klgo. Reyes + Klga. Muñoz)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Límite de tiempo */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-indigo-800 mb-1">Límite de Tiempo</label>
+                                        <select value={tiempoLimiteMin} onChange={e => setTiempoLimiteMin(Number(e.target.value))} className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none bg-white">
+                                            <option value={0}>Sin límite</option>
+                                            <option value={10}>10 minutos</option>
+                                            <option value={15}>15 minutos</option>
+                                            <option value={20}>20 minutos</option>
+                                            <option value={25}>25 minutos</option>
+                                            <option value={30}>30 minutos</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Instrucciones docente */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-indigo-800 mb-1">📝 Instrucciones adicionales al evaluador</label>
+                                    <textarea 
+                                        value={instruccionesDocente} 
+                                        onChange={e => setInstruccionesDocente(e.target.value)} 
+                                        rows={2} 
+                                        className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none bg-white" 
+                                        placeholder='Ej: "Enfócate en el modelo biopsicosocial", "Penaliza si menciona posturología", "Pregunta sobre biomecánica del hombro"...'
+                                    />
+                                    <p className="text-xs text-indigo-600 mt-1">Estas instrucciones se inyectan directamente al prompt del evaluador.</p>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="bg-white rounded-lg p-3 border border-indigo-200 text-xs text-indigo-700">
+                                    <strong>Resumen:</strong> {cantidadPreguntas} preguntas · {estiloComision === 'comision_2' ? '2 Kinesiólogos' : '1 Evaluador'} · {tiempoLimiteMin ? `${tiempoLimiteMin} min` : 'Sin límite'} {instruccionesDocente.trim() ? '· Con instrucciones extra' : ''}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all font-sans text-sm">
                         📄 Recibir Caso Resuelto
                     </button>
@@ -285,7 +451,7 @@ export function DefensaExamenVozDocente() {
                     
                     <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
                         <label className="block text-sm font-bold text-amber-900 mb-1">Problema Kinesiológico Principal</label>
-                        <p className="text-xs text-amber-700 mb-2">💡 El problema principal NO es solo "dolor". Es la disfunción o limitación clave que impide al paciente realizar su actividad. Ej: <em>Incapacidad para lanzar el balón por debilidad glútea y dolor</em>.</p>
+                        <p className="text-xs text-amber-700 mb-2">💡 El problema principal NO es solo &quot;dolor&quot;. Es la disfunción o limitación clave que impide al paciente realizar su actividad. Ej: <em>Incapacidad para lanzar el balón por debilidad glútea y dolor</em>.</p>
                         <textarea value={construction.problema_principal} onChange={e => setConstruction(c => ({...c, problema_principal: e.target.value}))} rows={2} className="w-full border-amber-200 focus:border-amber-400 focus:ring-amber-400 rounded-lg px-3 py-2 text-sm" placeholder="Escribe el problema principal aquí..." />
                     </div>
                     <div><label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (CIF)</label><textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({...c, diagnostico: e.target.value}))} rows={2} className="w-full border rounded-xl px-3 py-2 text-sm" placeholder="Diagnóstico detallado basado en CIF..." /></div>
@@ -306,8 +472,32 @@ export function DefensaExamenVozDocente() {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
                     <div className="flex justify-between items-center">
                         <h3 className="font-bold text-slate-800 text-xl">🎤 Comisión de Defensa</h3>
-                        <div className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-sm">Responde 15 preguntas</div>
+                        <div className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-sm">
+                            {estiloComision === 'comision_2' ? '2 Kinesiólogos' : '1 Evaluador'} · {cantidadPreguntas} preguntas
+                        </div>
                     </div>
+
+                    {/* ─── Progress Bar ─── */}
+                    {currentQuestion > 0 && (
+                        <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-bold text-slate-700">
+                                    Pregunta {currentQuestion} de {cantidadPreguntas}
+                                </span>
+                                {currentPhaseLabel && (
+                                    <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
+                                        {currentPhaseLabel}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2.5">
+                                <div 
+                                    className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (currentQuestion / cantidadPreguntas) * 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {connectionState === 'disconnected' && (
                         <button onClick={connect} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg">
@@ -332,7 +522,7 @@ export function DefensaExamenVozDocente() {
                                     <div className={`w-24 h-24 rounded-full transition-all duration-100 ${isSpeaking ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'} ${volume > 0.1 ? 'scale-[1.1]' : ''}`} />
                                 </div>
                                 <p className="mt-6 font-bold text-slate-600">
-                                    {isSpeaking ? 'El Profesor está hablando...' : 'Escuchando tu defensa...'}
+                                    {isSpeaking ? (estiloComision === 'comision_2' ? 'La comisión está hablando...' : 'El evaluador está hablando...') : 'Escuchando tu defensa...'}
                                 </p>
                             </div>
                             <div className="flex gap-3">
@@ -392,6 +582,29 @@ export function DefensaExamenVozDocente() {
                                         <p className="text-sm text-slate-600">{data.comentario}</p>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ─── COMPETENCIAS (#12) ─── */}
+                    {evaluationData.competencias && (
+                        <div className="mb-8">
+                            <h3 className="font-bold text-slate-800 text-xl mb-4">🏷️ Evaluación por Competencias</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {Object.entries(evaluationData.competencias).map(([key, data]: [string, any]) => {
+                                    const colors = COMP_COLORS[data.nivel] || COMP_COLORS['No demostrado'];
+                                    return (
+                                        <div key={key} className={`${colors.bg} border ${colors.border} rounded-xl p-4`}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-slate-800 text-sm">{COMP_LABELS[key] || key.replace(/_/g, ' ')}</h4>
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${colors.bg} ${colors.text} border ${colors.border}`}>
+                                                    {data.nivel}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-600 leading-relaxed">{data.comentario}</p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

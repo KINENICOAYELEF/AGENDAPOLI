@@ -83,6 +83,14 @@ export interface DefensaVozIntento {
         perfilSecreto: any;
         hallazgos: any;
     };
+    // Competencias evaluadas
+    competencias?: {
+        razonamiento_clinico: { nivel: string; comentario: string };
+        comunicacion_profesional: { nivel: string; comentario: string };
+        evidencia_cientifica: { nivel: string; comentario: string };
+        integracion_biopsicosocial: { nivel: string; comentario: string };
+        dosificacion_prescripcion: { nivel: string; comentario: string };
+    };
     // Tiempo
     tiempoSegundos: number;
     fecha?: Timestamp;

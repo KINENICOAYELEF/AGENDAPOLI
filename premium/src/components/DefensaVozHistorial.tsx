@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getVoiceDefenses, DefensaVozIntento, exportarDefensaVozPDF } from '@/services/simuladorFirebase';
+import DefensaVozProgresion from './DefensaVozProgresion';
 
 export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
     const { user } = useAuth();
     const [history, setHistory] = useState<DefensaVozIntento[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedAttempt, setSelectedAttempt] = useState<DefensaVozIntento | null>(null);
+    const [activeTab, setActiveTab] = useState<'historial' | 'progresion'>('historial');
 
     useEffect(() => {
         if (!user) return;
@@ -27,19 +29,53 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-fade-in">
                 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">🗣️ Historial de Defensas de Voz</h2>
-                        <p className="text-sm text-slate-500">
-                            {user?.role === 'DOCENTE' ? 'Viendo intentos de todos los estudiantes' : 'Tus intentos previos'}
-                        </p>
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 shrink-0">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">🗣️ Historial de Defensas de Voz</h2>
+                            <p className="text-sm text-slate-500">
+                                {user?.role === 'DOCENTE' ? 'Viendo intentos de todos los estudiantes' : 'Tus intentos previos'}
+                            </p>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-white shadow-sm border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition">
+                            Cerrar Historial
+                        </button>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-700 bg-white shadow-sm border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-semibold transition">
-                        Cerrar Historial
-                    </button>
+                    {/* Tabs */}
+                    <div className="flex gap-1 bg-slate-200 rounded-lg p-0.5">
+                        <button
+                            onClick={() => setActiveTab('historial')}
+                            className={`flex-1 text-sm font-bold py-1.5 rounded-md transition-all ${
+                                activeTab === 'historial' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            📋 Historial
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('progresion')}
+                            className={`flex-1 text-sm font-bold py-1.5 rounded-md transition-all ${
+                                activeTab === 'progresion' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            📈 Mi Progresión
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
+                {activeTab === 'progresion' ? (
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <DefensaVozProgresion
+                            intentos={history.map(h => ({
+                                fecha: h.fecha,
+                                puntajeGlobal: h.puntajeGlobal,
+                                notaChilena: h.notaChilena,
+                                rubricaDetallada: h.rubricaDetallada,
+                                competencias: (h as any).competencias,
+                            }))}
+                        />
+                    </div>
+                ) : (
                 <div className="flex-1 flex overflow-hidden">
                     
                     {/* List */}
@@ -227,6 +263,7 @@ export function DefensaVozHistorial({ onClose }: { onClose: () => void }) {
                         )}
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

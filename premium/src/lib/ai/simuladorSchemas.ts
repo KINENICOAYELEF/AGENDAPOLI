@@ -187,6 +187,13 @@ export const SimDefenseEvaluationSchema = z.object({
     aciertos: z.array(z.string()),
     errores: z.array(z.string()),
     temas_a_estudiar: z.array(z.string()).describe("Lista de 3 a 5 temas de estudio recomendados para el estudiante en base a sus debilidades en la defensa (Ej: 'Neurofisiología del dolor nociceptivo vs nociplástico')"),
+    competencias: z.object({
+        razonamiento_clinico: z.object({ nivel: z.enum(['Logrado', 'En desarrollo', 'No demostrado']), comentario: z.string() }),
+        comunicacion_profesional: z.object({ nivel: z.enum(['Logrado', 'En desarrollo', 'No demostrado']), comentario: z.string() }),
+        evidencia_cientifica: z.object({ nivel: z.enum(['Logrado', 'En desarrollo', 'No demostrado']), comentario: z.string() }),
+        integracion_biopsicosocial: z.object({ nivel: z.enum(['Logrado', 'En desarrollo', 'No demostrado']), comentario: z.string() }),
+        dosificacion_prescripcion: z.object({ nivel: z.enum(['Logrado', 'En desarrollo', 'No demostrado']), comentario: z.string() }),
+    }).describe("Evaluación por competencias transversales del estudiante"),
 });
 export type SimDefenseEvaluationType = z.infer<typeof SimDefenseEvaluationSchema>;
 
