@@ -50,7 +50,7 @@ export function DefensaExamenVozDocente() {
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
     // ─── Docente config state ───
-    const [cantidadPreguntas, setCantidadPreguntas] = useState(15);
+    const cantidadPreguntas = 15;
     const [estiloComision, setEstiloComision] = useState<'individual' | 'comision_2'>('individual');
     const [tiempoLimiteMin, setTiempoLimiteMin] = useState(0); // 0 = sin límite
     const [instruccionesDocente, setInstruccionesDocente] = useState('');
@@ -348,18 +348,6 @@ export function DefensaExamenVozDocente() {
                         {showAdvanced && (
                             <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    {/* Cantidad de preguntas */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-indigo-800 mb-1">Cantidad de Preguntas</label>
-                                        <select value={cantidadPreguntas} onChange={e => setCantidadPreguntas(Number(e.target.value))} className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none bg-white">
-                                            <option value={5}>5 (Rápida)</option>
-                                            <option value={10}>10 (Media)</option>
-                                            <option value={15}>15 (Estándar)</option>
-                                            <option value={20}>20 (Extensa)</option>
-                                            <option value={25}>25 (Intensiva)</option>
-                                        </select>
-                                    </div>
-
                                     {/* Estilo de comisión */}
                                     <div>
                                         <label className="block text-sm font-semibold text-indigo-800 mb-1">Estilo de Comisión</label>
