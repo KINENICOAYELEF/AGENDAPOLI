@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useGeminiLive, getAudioDevices } from '@/hooks/useGeminiLive';
-import { generateCommissionPrompt } from '@/utils/patientPrompts';
+import { generateCommissionPrompt, generateInterrogacionRapidaPrompt } from '@/utils/patientPrompts';
 import type { SimCaseType } from '@/lib/ai/simuladorSchemas';
 import { saveVoiceDefense, exportarDefensaVozPDF } from '@/services/simuladorFirebase';
 import { DefensaVozHistorial } from './DefensaVozHistorial';
@@ -55,6 +55,7 @@ export function DefensaExamenVozDocente() {
     const [tiempoLimiteMin, setTiempoLimiteMin] = useState(0); // 0 = sin límite
     const [instruccionesDocente, setInstruccionesDocente] = useState('');
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [simMode, setSimMode] = useState<'DEFENSA_COMPLETA' | 'INTERROGACION_RAPIDA'>('DEFENSA_COMPLETA');
 
     useEffect(() => {
         getAudioDevices().then(setAudioDevices).catch(() => {});
@@ -95,13 +96,15 @@ export function DefensaExamenVozDocente() {
 
     // Voice connection for Commission
     const { connect, disconnect, connectionState, isMicOpen, toggleMic, isSpeaking, volume, transcript } = useGeminiLive({
-        systemInstruction: caseData ? generateCommissionPrompt(
-            caseData.ficha_visible,
-            caseData.perfil_secreto,
-            caseData.hallazgos_todos_modulos,
-            construction,
-            commissionConfig
-        ) : '',
+        systemInstruction: simMode === 'INTERROGACION_RAPIDA' 
+            ? generateInterrogacionRapidaPrompt(setupForm.area)
+            : (caseData ? generateCommissionPrompt(
+                caseData.ficha_visible,
+                caseData.perfil_secreto,
+                caseData.hallazgos_todos_modulos,
+                construction,
+                commissionConfig
+            ) : ''),
         voiceName: 'Orion',
         audioDeviceId: selectedDeviceId || undefined
     });
@@ -152,6 +155,15 @@ export function DefensaExamenVozDocente() {
 
     const handleGenerate = async () => {
         if (!user) return;
+        
+        if (simMode === 'INTERROGACION_RAPIDA') {
+            setPhase('COMMISSION_VOICE');
+            setTimer(0);
+            timeExpiredRef.current = false;
+            timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+            return;
+        }
+
         setLoading(true); setError('');
         try {
             const data = await simFetch('generate', setupForm, user.uid);
@@ -177,15 +189,30 @@ export function DefensaExamenVozDocente() {
     };
 
     const handleEndDefense = async () => {
-        if (!user || !caseData) return;
+        if (!user) return;
+        if (simMode === 'DEFENSA_COMPLETA' && !caseData) return;
         disconnect(); // end call
         if (timerRef.current) clearInterval(timerRef.current);
         
         setLoading(true); setError('');
         try {
             const transcriptText = transcript.map(t => `${t.role === 'user' ? 'ESTUDIANTE' : 'COMISIÓN'}: ${t.text}`).join('\n');
+            
+            if (simMode === 'INTERROGACION_RAPIDA') {
+                setEvaluationData({ 
+                    puntaje_global: 100, 
+                    nota_chilena: 7.0, 
+                    feedback_final: "Modo rápido finalizado. La evaluación automatizada para este modo está en desarrollo. Revisa la transcripción debajo para ver tu desempeño.",
+                    rubrica_detallada: null,
+                    competencias: null
+                });
+                setPhase('RESULTS');
+                setLoading(false);
+                return;
+            }
+
             const data = await simFetch('evaluate-defense', {
-                caso_resumen: { ficha: caseData.ficha_visible, hallazgos: caseData.hallazgos_todos_modulos },
+                caso_resumen: { ficha: caseData!.ficha_visible, hallazgos: caseData!.hallazgos_todos_modulos },
                 construccion: construction,
                 transcripcion_defensa: transcriptText
             }, user.uid);
@@ -195,8 +222,8 @@ export function DefensaExamenVozDocente() {
                     userId: user.uid,
                     userEmail: user.email || '',
                     userName: user.displayName || user.email?.split('@')[0] || 'Estudiante',
-                    pacienteNombre: caseData.ficha_visible.nombre,
-                    motivoConsulta: caseData.ficha_visible.motivo_consulta,
+                    pacienteNombre: caseData!.ficha_visible.nombre,
+                    motivoConsulta: caseData!.ficha_visible.motivo_consulta,
                     area: setupForm.area || 'Aleatoria',
                     dificultad: setupForm.dificultad,
                     construccion: construction,
@@ -212,9 +239,9 @@ export function DefensaExamenVozDocente() {
                     tiempoSegundos: timer,
                     // Guardar caso clínico completo para registro docente
                     casoClinico: {
-                        fichaVisible: caseData.ficha_visible,
-                        perfilSecreto: caseData.perfil_secreto,
-                        hallazgos: caseData.hallazgos_todos_modulos,
+                        fichaVisible: caseData!.ficha_visible,
+                        perfilSecreto: caseData!.perfil_secreto,
+                        hallazgos: caseData!.hallazgos_todos_modulos,
                     }
                 });
             } catch (err) {
@@ -291,6 +318,27 @@ export function DefensaExamenVozDocente() {
                         </button>
                     </div>
                     
+                    {/* Modo Selector */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <label className="block text-sm font-bold text-slate-700 mb-3">Modo de Simulación</label>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button 
+                                onClick={() => setSimMode('DEFENSA_COMPLETA')}
+                                className={`flex-1 p-3 rounded-lg border-2 text-left transition-all ${simMode === 'DEFENSA_COMPLETA' ? 'border-amber-500 bg-amber-50' : 'border-transparent bg-white hover:border-slate-300'}`}
+                            >
+                                <div className="font-bold text-slate-800 text-sm">Defensa Completa</div>
+                                <div className="text-xs text-slate-500 mt-1">Recibes caso escrito, construyes propuesta y defiendes ante la comisión.</div>
+                            </button>
+                            <button 
+                                onClick={() => setSimMode('INTERROGACION_RAPIDA')}
+                                className={`flex-1 p-3 rounded-lg border-2 text-left transition-all ${simMode === 'INTERROGACION_RAPIDA' ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-white hover:border-slate-300'}`}
+                            >
+                                <div className="font-bold text-slate-800 text-sm">Interrogación Rápida ⚡</div>
+                                <div className="text-xs text-slate-500 mt-1">Examen oral directo de 7 a 10 preguntas. Sin escribir propuestas.</div>
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal principal</label>
@@ -307,18 +355,23 @@ export function DefensaExamenVozDocente() {
                                 <option value="tobillo_pie">Tobillo / Pie</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Nivel de Exigencia</label>
-                            <select value={setupForm.dificultad} onChange={e => setSetupForm(p => ({ ...p, dificultad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
-                                <option value="avanzado">Examen de Grado (Complejo, comorbilidades)</option>
-                                <option value="intermedio">Pre-clínica (Enfocado en 1 sola articulación)</option>
-                            </select>
-                        </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Temática Específica (Opcional)</label>
-                            <input type="text" value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Deportista de fin de semana con lesión de LCA, o Adulto mayor con artrosis de rodilla..." className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none" />
-                            <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
-                        </div>
+                        
+                        {simMode === 'DEFENSA_COMPLETA' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Nivel de Exigencia</label>
+                                    <select value={setupForm.dificultad} onChange={e => setSetupForm(p => ({ ...p, dificultad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
+                                        <option value="avanzado">Examen de Grado (Complejo, comorbilidades)</option>
+                                        <option value="intermedio">Pre-clínica (Enfocado en 1 sola articulación)</option>
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Temática Específica (Opcional)</label>
+                                    <input type="text" value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Deportista de fin de semana con lesión de LCA, o Adulto mayor con artrosis de rodilla..." className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none" />
+                                    <p className="text-xs text-slate-400 mt-1">Si dejas esto en blanco, la IA inventará la historia clínica basada en el área y la dificultad.</p>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Micrófono */}
@@ -392,8 +445,8 @@ export function DefensaExamenVozDocente() {
                         )}
                     </div>
 
-                    <button onClick={handleGenerate} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all font-sans text-sm">
-                        📄 Recibir Caso Resuelto
+                    <button onClick={handleGenerate} disabled={loading} className={`w-full text-white font-bold py-3 rounded-xl transition-all font-sans text-sm ${simMode === 'INTERROGACION_RAPIDA' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-900 hover:bg-slate-800'}`}>
+                        {simMode === 'INTERROGACION_RAPIDA' ? '⚡ Iniciar Interrogación Rápida' : '📄 Recibir Caso Resuelto'}
                     </button>
                 </div>
             )}
@@ -459,9 +512,11 @@ export function DefensaExamenVozDocente() {
             {phase === 'COMMISSION_VOICE' && !loading && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
                     <div className="flex justify-between items-center">
-                        <h3 className="font-bold text-slate-800 text-xl">🎤 Comisión de Defensa</h3>
+                        <h3 className="font-bold text-slate-800 text-xl">🎤 {simMode === 'INTERROGACION_RAPIDA' ? 'Interrogación Rápida' : 'Comisión de Defensa'}</h3>
                         <div className="px-3 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-sm">
-                            {estiloComision === 'comision_2' ? '2 Kinesiólogos' : '1 Evaluador'} · {cantidadPreguntas} preguntas
+                            {simMode === 'INTERROGACION_RAPIDA' 
+                                ? '1 Evaluador · 7-10 preguntas' 
+                                : `${estiloComision === 'comision_2' ? '2 Kinesiólogos' : '1 Evaluador'} · ${cantidadPreguntas} preguntas`}
                         </div>
                     </div>
 
@@ -470,9 +525,9 @@ export function DefensaExamenVozDocente() {
                         <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-sm font-bold text-slate-700">
-                                    Pregunta {currentQuestion} de {cantidadPreguntas}
+                                    {simMode === 'INTERROGACION_RAPIDA' ? `Pregunta ${currentQuestion}` : `Pregunta ${currentQuestion} de ${cantidadPreguntas}`}
                                 </span>
-                                {currentPhaseLabel && (
+                                {currentPhaseLabel && simMode !== 'INTERROGACION_RAPIDA' && (
                                     <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
                                         {currentPhaseLabel}
                                     </span>
@@ -481,7 +536,7 @@ export function DefensaExamenVozDocente() {
                             <div className="w-full bg-slate-200 rounded-full h-2.5">
                                 <div 
                                     className="bg-gradient-to-r from-amber-400 to-amber-600 h-2.5 rounded-full transition-all duration-500"
-                                    style={{ width: `${Math.min(100, (currentQuestion / cantidadPreguntas) * 100)}%` }}
+                                    style={{ width: `${Math.min(100, (currentQuestion / (simMode === 'INTERROGACION_RAPIDA' ? 7 : cantidadPreguntas)) * 100)}%` }}
                                 />
                             </div>
                         </div>
@@ -627,39 +682,41 @@ export function DefensaExamenVozDocente() {
                     )}
 
                     <div className="mt-8 flex flex-col sm:flex-row gap-4 border-t pt-6">
-                        <button
-                            onClick={() => {
-                                if (!user || !caseData || !evaluationData) return;
-                                const transcriptText = transcript.map(t => `${t.role === 'user' ? 'ESTUDIANTE' : 'COMISIÓN'}: ${t.text}`).join('\n');
-                                exportarDefensaVozPDF({
-                                    userId: user.uid,
-                                    userEmail: user.email || '',
-                                    userName: user.displayName || user.email?.split('@')[0] || 'Estudiante',
-                                    pacienteNombre: caseData.ficha_visible.nombre,
-                                    motivoConsulta: caseData.ficha_visible.motivo_consulta,
-                                    area: setupForm.area || 'Aleatoria',
-                                    dificultad: setupForm.dificultad,
-                                    construccion: construction,
-                                    transcripcion: transcriptText,
-                                    puntajeGlobal: evaluationData.puntaje_global,
-                                    notaChilena: evaluationData.nota_chilena,
-                                    feedbackFinal: evaluationData.feedback_final,
-                                    aciertos: evaluationData.aciertos || [],
-                                    errores: evaluationData.errores || [],
-                                    temasAEstudiar: evaluationData.temas_a_estudiar || [],
-                                    rubricaDetallada: evaluationData.rubrica_detallada || {},
-                                    tiempoSegundos: timer,
-                                    casoClinico: {
-                                        fichaVisible: caseData.ficha_visible,
-                                        perfilSecreto: caseData.perfil_secreto,
-                                        hallazgos: caseData.hallazgos_todos_modulos,
-                                    }
-                                });
-                            }}
-                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2"
-                        >
-                            📄 Exportar Reporte Completo (PDF)
-                        </button>
+                        {simMode !== 'INTERROGACION_RAPIDA' && (
+                            <button
+                                onClick={() => {
+                                    if (!user || !caseData || !evaluationData) return;
+                                    const transcriptText = transcript.map(t => `${t.role === 'user' ? 'ESTUDIANTE' : 'COMISIÓN'}: ${t.text}`).join('\n');
+                                    exportarDefensaVozPDF({
+                                        userId: user.uid,
+                                        userEmail: user.email || '',
+                                        userName: user.displayName || user.email?.split('@')[0] || 'Estudiante',
+                                        pacienteNombre: caseData.ficha_visible.nombre,
+                                        motivoConsulta: caseData.ficha_visible.motivo_consulta,
+                                        area: setupForm.area || 'Aleatoria',
+                                        dificultad: setupForm.dificultad,
+                                        construccion: construction,
+                                        transcripcion: transcriptText,
+                                        puntajeGlobal: evaluationData.puntaje_global,
+                                        notaChilena: evaluationData.nota_chilena,
+                                        feedbackFinal: evaluationData.feedback_final,
+                                        aciertos: evaluationData.aciertos || [],
+                                        errores: evaluationData.errores || [],
+                                        temasAEstudiar: evaluationData.temas_a_estudiar || [],
+                                        rubricaDetallada: evaluationData.rubrica_detallada || {},
+                                        tiempoSegundos: timer,
+                                        casoClinico: {
+                                            fichaVisible: caseData.ficha_visible,
+                                            perfilSecreto: caseData.perfil_secreto,
+                                            hallazgos: caseData.hallazgos_todos_modulos,
+                                        }
+                                    });
+                                }}
+                                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2"
+                            >
+                                📄 Exportar Reporte Completo (PDF)
+                            </button>
+                        )}
                         
                         <button
                             onClick={handleReset}
