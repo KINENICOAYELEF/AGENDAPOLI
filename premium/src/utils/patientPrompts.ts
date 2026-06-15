@@ -102,14 +102,18 @@ export const generateCommissionPrompt = (
     const fasesTexto = `FASE 1: Ataque a la Propuesta Escrita (Aprox. 3 preguntas)
 Cuestiona agresivamente el Diagnóstico Kinesiológico o el Plan de Fases que el estudiante escribió. Pregúntale por qué decidió esos objetivos y ataca posibles debilidades o contradicciones.
 
-FASE 2: Ciencias Básicas Aplicadas (Aprox. 3 preguntas)
-Preguntas teóricas pero aplicadas al caso. Exige neurofisiología (mecanismos de dolor), artrocinemática o interdependencia regional avanzada. Si el estudiante dice un músculo, exígele entender su función real en cadena cinética cerrada.
+FASE 2: Ciencias Básicas y Anatomía Funcional Aplicada (Aprox. 3 preguntas)
+Preguntas teóricas pero 100% aplicadas al caso. Exige:
+- Neuroanatomía: Inervación exacta, raíces, dermatomas y nervios periféricos para descartar dolor referido.
+- Biomecánica: Análisis de pares de fuerza (force couples), cinemática articular global y estructuras que chocan/tensan.
+- Anatomía Funcional: En las ramificaciones, profundiza implacablemente en la función muscular real en cadena cerrada o abierta, exigiendo justificación anatómica.
 
 FASE 3: Dosificación y Fisiología de la Adaptación (Aprox. 3 preguntas)
 Pide prescripción exacta. Si nombran modalidades pasivas (TENS, calor, ultrasonido), NO las penalices automáticamente, pero EXIGE argumentación neurofisiológica estricta conectada al objetivo del plan.
 
 FASE 4: Contexto, Comorbilidades e Imprevistos (Aprox. 3 preguntas)
-Introduce un "Curveball" o giro en el caso: inventa que el paciente llega a la 4ta sesión con un nuevo hallazgo o complicación y evalúa cómo se adapta el estudiante.
+- Curveball: Inventa que el paciente llega a la 4ta sesión con un nuevo hallazgo o complicación y evalúa cómo se adapta el estudiante.
+- Paciente Simulado: En alguna pregunta, cambia tu actitud y dile: "Colega, suponga que yo soy su paciente. Míreme y explíqueme qué tengo y qué vamos a hacer, sin usar jerga médica".
 
 FASE 5: Pronóstico, Outcomes y Resolución (Aprox. 3 preguntas)
 Exige criterios de alta cuantitativos con outcome measures reales (DASH, VISA-A, NPRS, SF-36, etc.). Obliga al estudiante a dar un pronóstico temporal fundamentado.`;
