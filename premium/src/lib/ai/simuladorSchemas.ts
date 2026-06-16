@@ -214,16 +214,16 @@ export type SimCommissionType = z.infer<typeof SimCommissionSchema>;
 
 // Entrenamiento Diario
 export const SimTrainingEvaluationSchema = z.object({
-    puntaje: z.number().min(1).max(7).describe("Nota de 1.0 a 7.0 (donde 4.0 es el 60% de 100)"),
+    puntaje: z.coerce.number().min(1).max(7).describe("Nota de 1.0 a 7.0 (donde 4.0 es el 60% de 100)"),
     radarScores: z.object({
-        biomecanica: z.number().min(1).max(100),
-        diagnostico: z.number().min(1).max(100),
-        neurofisiologia: z.number().min(1).max(100),
-        dosificacion: z.number().min(1).max(100),
-        terapiaManual: z.number().min(1).max(100),
+        biomecanica: z.coerce.number().min(0).max(100),
+        diagnostico: z.coerce.number().min(0).max(100),
+        neurofisiologia: z.coerce.number().min(0).max(100),
+        dosificacion: z.coerce.number().min(0).max(100),
+        terapiaManual: z.coerce.number().min(0).max(100),
     }),
     feedback: z.array(z.string()).describe("Lista de cosas que hizo bien"),
     errores: z.array(z.string()).describe("Lista de errores conceptuales cometidos"),
-    estiloCognitivoSugerido: z.enum(['ANALÍTICO', 'METAFÓRICO', 'PRAGMÁTICO', 'NEUTRO']).describe("El estilo de aprendizaje detectado basado en sus respuestas"),
+    estiloCognitivoSugerido: z.string().describe("El estilo de aprendizaje detectado basado en sus respuestas: ANALÍTICO, METAFÓRICO, PRAGMÁTICO o NEUTRO"),
 });
 export type SimTrainingEvaluationType = z.infer<typeof SimTrainingEvaluationSchema>;
