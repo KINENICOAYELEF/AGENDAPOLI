@@ -63,16 +63,18 @@ export default function EntrenamientoDiarioVoz() {
             const { topic, historicalErrors: errors } = await selectOptimalTopicForUser(user.uid);
             setCurrentTopic(topic);
             setHistoricalErrors(errors);
-            
-            // Esperar un momento a que el state de systemInstruction se actualice
-            setTimeout(() => {
-                connect();
-            }, 500);
         } catch (error) {
             console.error(error);
             setSessionState('IDLE');
         }
     };
+
+    // Escuchar el estado para conectar el mic cuando currentTopic ya esté en el estado de React
+    useEffect(() => {
+        if (sessionState === 'CONNECTING' && currentTopic && connectionState === 'disconnected') {
+            connect();
+        }
+    }, [sessionState, currentTopic, connectionState, connect]);
 
     // Escuchar el estado de conexión para cambiar a IN_PROGRESS
     useEffect(() => {
@@ -89,7 +91,10 @@ export default function EntrenamientoDiarioVoz() {
         setSessionState('COMPLETED');
         
         if (user && currentTopic) {
-            if (transcript.length < 50) {
+            // Formatear la transcripción a texto
+            const transcriptText = transcript.map(t => `${t.role === 'user' ? 'Estudiante' : 'Tutor'}: ${t.text}`).join('\n');
+
+            if (transcriptText.length < 50) {
                 alert("La sesión fue muy corta para ser evaluada correctamente.");
                 setSessionState('IDLE');
                 return;
@@ -102,7 +107,7 @@ export default function EntrenamientoDiarioVoz() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'evaluate-training',
-                        payload: { transcript },
+                        payload: { transcript: transcriptText },
                         userId: user.uid
                     })
                 });
@@ -120,7 +125,8 @@ export default function EntrenamientoDiarioVoz() {
                         evalData.puntaje, 
                         evalData.errores,
                         evalData.radarScores,
-                        evalData.estiloCognitivoSugerido
+                        evalData.estiloCognitivoSugerido,
+                        transcriptText
                     );
                     await loadProfile(); 
                 }
@@ -266,6 +272,21 @@ export default function EntrenamientoDiarioVoz() {
                             Finalizar y Evaluar
                         </button>
                     </div>
+
+                    {/* Caja de Transcripción */}
+                    {transcript.length > 0 && (
+                        <div className="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-200 max-h-80 overflow-y-auto shadow-inner">
+                            <h4 className="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider">Transcripción en vivo</h4>
+                            <div className="space-y-4">
+                                {transcript.map((msg, idx) => (
+                                    <div key={idx} className={`p-4 rounded-xl text-sm ${msg.role === 'user' ? 'bg-indigo-100 text-indigo-900 ml-12 shadow-sm' : 'bg-white text-slate-800 border border-slate-200 mr-12 shadow-sm'}`}>
+                                        <strong className="block text-xs mb-1 opacity-50 uppercase tracking-wide">{msg.role === 'user' ? 'Tú (Estudiante)' : 'Tutor Clínico'}</strong>
+                                        {msg.text}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

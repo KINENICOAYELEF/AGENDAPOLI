@@ -18,6 +18,7 @@ export interface TopicProgress {
     ultimoPuntaje: number;
     erroresHistoricos: string[];
     radarUltimo: RadarScores | null;
+    ultimoTranscript?: string | null;
 }
 
 export interface UserTrainingProfile {
@@ -98,7 +99,8 @@ export const saveTrainingSession = async (
     puntaje: number, // Nota de 1.0 a 7.0
     errores: string[],
     radarScores: RadarScores,
-    nuevoEstiloCognitivo?: string
+    nuevoEstiloCognitivo?: string,
+    transcriptText?: string
 ) => {
     const profileRef = doc(db, 'training_profiles', userId);
     const profile = await getUserTrainingProfile(userId);
@@ -110,7 +112,8 @@ export const saveTrainingSession = async (
         ultimoRepaso: null,
         ultimoPuntaje: 0,
         erroresHistoricos: [],
-        radarUltimo: null
+        radarUltimo: null,
+        ultimoTranscript: null
     };
 
     // Actualizar stats
@@ -128,7 +131,8 @@ export const saveTrainingSession = async (
         ultimoRepaso: Timestamp.now(),
         ultimoPuntaje: puntaje,
         erroresHistoricos: nuevosErrores,
-        radarUltimo: radarScores
+        radarUltimo: radarScores,
+        ultimoTranscript: transcriptText || topicData.ultimoTranscript || null
     };
 
     profile.temas[topicId] = updatedTopicData;
