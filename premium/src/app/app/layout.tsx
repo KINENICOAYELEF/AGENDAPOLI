@@ -127,9 +127,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             🧪 Sim. Voz (Docente Edición)
                         </Link>
                     )}
-                    <Link href="/app/entrenamiento-diario" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-400 font-bold mt-2">
-                        ⚡ Entrenamiento Diario
-                    </Link>
+                    {user.role === 'DOCENTE' && (
+                        <Link href="/app/entrenamiento-diario" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-400 font-bold mt-2 border-t border-slate-800 pt-4">
+                            ⚡ Entrenamiento Diario (BETA DOCENTE)
+                        </Link>
+                    )}
                     <Link href="/app/defensa-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-300 font-bold mt-2">
                         🗣️ Defensa Comisión (Voz)
                     </Link>
