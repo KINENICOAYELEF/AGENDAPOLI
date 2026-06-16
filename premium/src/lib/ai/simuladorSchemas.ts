@@ -211,3 +211,19 @@ export const SimCommissionSchema = z.object({
     feedback_final: z.string().describe("Párrafo final de 3-4 líneas con retroalimentación general de la defensa"),
 });
 export type SimCommissionType = z.infer<typeof SimCommissionSchema>;
+
+// Entrenamiento Diario
+export const SimTrainingEvaluationSchema = z.object({
+    puntaje: z.number().min(1).max(7).describe("Nota de 1.0 a 7.0 (donde 4.0 es el 60% de 100)"),
+    radarScores: z.object({
+        biomecanica: z.number().min(1).max(100),
+        diagnostico: z.number().min(1).max(100),
+        neurofisiologia: z.number().min(1).max(100),
+        dosificacion: z.number().min(1).max(100),
+        terapiaManual: z.number().min(1).max(100),
+    }),
+    feedback: z.array(z.string()).describe("Lista de cosas que hizo bien"),
+    errores: z.array(z.string()).describe("Lista de errores conceptuales cometidos"),
+    estiloCognitivoSugerido: z.enum(['ANALÍTICO', 'METAFÓRICO', 'PRAGMÁTICO', 'NEUTRO']).describe("El estilo de aprendizaje detectado basado en sus respuestas"),
+});
+export type SimTrainingEvaluationType = z.infer<typeof SimTrainingEvaluationSchema>;

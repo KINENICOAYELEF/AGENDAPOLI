@@ -1,21 +1,44 @@
-import { db } from '../firebase/config';
+import { db } from '@/lib/firebase';
 import { collection, doc, setDoc, getDoc, updateDoc, arrayUnion, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { CLINICAL_TOPICS, ClinicalTopic } from '../utils/clinicalTopics';
 
+export interface RadarScores {
+    biomecanica: number;
+    diagnostico: number;
+    neurofisiologia: number;
+    dosificacion: number;
+    terapiaManual: number;
+}
+
 export interface TopicProgress {
     topicId: string;
-    puntajePromedio: number;
+    puntajePromedio: number; // Escala 1.0 a 7.0
     vecesCompletado: number;
     ultimoRepaso: Timestamp | null;
     ultimoPuntaje: number;
     erroresHistoricos: string[];
+    radarUltimo: RadarScores | null;
 }
 
 export interface UserTrainingProfile {
     userId: string;
     temas: Record<string, TopicProgress>;
-    sesionesCompletadasEstaSemana: number;
+    retosCompletadosTotal: number; // Progreso en el camino de 40 retos
     ultimaSesionSemana: Timestamp | null;
+    sesionesCompletadasEstaSemana: number; // Retos completados en la semana actual
+    estiloCognitivo: string; // 'ANALÍTICO' | 'METAFÓRICO' | 'PRAGMÁTICO' | 'NEUTRO'
+}
+
+// Función auxiliar para determinar si dos fechas pertenecen a la misma semana (Lunes a Domingo)
+function isSameWeek(d1: Date, d2: Date): boolean {
+    const getMonday = (d: Date) => {
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // ajustar si es Domingo
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday.getTime();
+    };
+    return getMonday(new Date(d1)) === getMonday(new Date(d2));
 }
 
 // Inicializar el perfil de un usuario si no existe
@@ -25,26 +48,29 @@ export const getUserTrainingProfile = async (userId: string): Promise<UserTraini
 
     if (docSnap.exists()) {
         const data = docSnap.data() as UserTrainingProfile;
-        // Reiniciar el contador semanal si pasó a otra semana
-        // Por simplicidad, chequearemos si la ultima sesion fue hace mas de 7 dias o en otra semana
-        // (La lógica real de "nueva semana" puede requerir librerías como date-fns, aquí usaremos una aproximación)
-        const now = new Date();
-        const lastSessionDate = data.ultimaSesionSemana ? data.ultimaSesionSemana.toDate() : new Date(0);
         
-        const isSameWeek = (d1: Date, d2: Date) => {
-            const getWeek = (d: Date) => {
-                const date = new Date(d.getTime());
-                date.setHours(0, 0, 0, 0);
-                date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-                const week1 = new Date(date.getFullYear(), 0, 4);
-                return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-            };
-            return d1.getFullYear() === d2.getFullYear() && getWeek(d1) === getWeek(d2);
-        };
-
-        if (!isSameWeek(now, lastSessionDate)) {
+        // Migration safety
+        if (data.retosCompletadosTotal === undefined) {
+            data.retosCompletadosTotal = Object.values(data.temas).reduce((acc, t) => acc + t.vecesCompletado, 0);
+        }
+        if (!data.estiloCognitivo) {
+            data.estiloCognitivo = 'NEUTRO';
+        }
+        
+        // Verificar reinicio semanal
+        if (data.ultimaSesionSemana) {
+            const lastSessionDate = data.ultimaSesionSemana.toDate();
+            const now = new Date();
+            if (!isSameWeek(lastSessionDate, now)) {
+                data.sesionesCompletadasEstaSemana = 0;
+                await updateDoc(docRef, { sesionesCompletadasEstaSemana: 0 });
+            }
+        } else {
             data.sesionesCompletadasEstaSemana = 0;
-            // No hacemos updateDoc acá para no gastar writes innecesarios hasta que complete una.
+        }
+        
+        if (data.sesionesCompletadasEstaSemana === undefined) {
+            data.sesionesCompletadasEstaSemana = 0;
         }
 
         return data;
@@ -54,8 +80,10 @@ export const getUserTrainingProfile = async (userId: string): Promise<UserTraini
     const initialProfile: UserTrainingProfile = {
         userId,
         temas: {},
+        retosCompletadosTotal: 0,
+        ultimaSesionSemana: null,
         sesionesCompletadasEstaSemana: 0,
-        ultimaSesionSemana: null
+        estiloCognitivo: 'NEUTRO'
     };
     
     // Lo guardamos
@@ -67,8 +95,10 @@ export const getUserTrainingProfile = async (userId: string): Promise<UserTraini
 export const saveTrainingSession = async (
     userId: string,
     topicId: string,
-    puntaje: number,
-    errores: string[]
+    puntaje: number, // Nota de 1.0 a 7.0
+    errores: string[],
+    radarScores: RadarScores,
+    nuevoEstiloCognitivo?: string
 ) => {
     const profileRef = doc(db, 'training_profiles', userId);
     const profile = await getUserTrainingProfile(userId);
@@ -79,14 +109,16 @@ export const saveTrainingSession = async (
         vecesCompletado: 0,
         ultimoRepaso: null,
         ultimoPuntaje: 0,
-        erroresHistoricos: []
+        erroresHistoricos: [],
+        radarUltimo: null
     };
 
     // Actualizar stats
     const nuevasVeces = topicData.vecesCompletado + 1;
-    const nuevoPromedio = ((topicData.puntajePromedio * topicData.vecesCompletado) + puntaje) / nuevasVeces;
+    const puntajeActualReal = topicData.puntajePromedio === 0 ? puntaje : topicData.puntajePromedio;
+    const nuevoPromedio = ((puntajeActualReal * topicData.vecesCompletado) + puntaje) / nuevasVeces;
     
-    // Mantener solo los últimos 10 errores históricos para no reventar Firestore
+    // Mantener solo los últimos 10 errores históricos
     const nuevosErrores = [...new Set([...errores, ...topicData.erroresHistoricos])].slice(0, 10);
 
     const updatedTopicData: TopicProgress = {
@@ -95,37 +127,57 @@ export const saveTrainingSession = async (
         vecesCompletado: nuevasVeces,
         ultimoRepaso: Timestamp.now(),
         ultimoPuntaje: puntaje,
-        erroresHistoricos: nuevosErrores
+        erroresHistoricos: nuevosErrores,
+        radarUltimo: radarScores
     };
 
     profile.temas[topicId] = updatedTopicData;
-    profile.sesionesCompletadasEstaSemana += 1;
+    profile.retosCompletadosTotal += 1;
+    
+    // Calcular sesiones semanales incrementando
+    const now = new Date();
+    let nuevasSesionesSemana = 1;
+    if (profile.ultimaSesionSemana) {
+        const lastSessionDate = profile.ultimaSesionSemana.toDate();
+        if (isSameWeek(lastSessionDate, now)) {
+            nuevasSesionesSemana = (profile.sesionesCompletadasEstaSemana || 0) + 1;
+        }
+    }
+    profile.sesionesCompletadasEstaSemana = nuevasSesionesSemana;
     profile.ultimaSesionSemana = Timestamp.now();
 
-    await updateDoc(profileRef, {
+    const updates: any = {
         [`temas.${topicId}`]: updatedTopicData,
-        sesionesCompletadasEstaSemana: profile.sesionesCompletadasEstaSemana,
-        ultimaSesionSemana: profile.ultimaSesionSemana
-    });
+        retosCompletadosTotal: profile.retosCompletadosTotal,
+        ultimaSesionSemana: profile.ultimaSesionSemana,
+        sesionesCompletadasEstaSemana: profile.sesionesCompletadasEstaSemana
+    };
+
+    // Actualizar perfil cognitivo si la IA lo sugiere
+    if (nuevoEstiloCognitivo && nuevoEstiloCognitivo !== profile.estiloCognitivo) {
+        updates.estiloCognitivo = nuevoEstiloCognitivo;
+    }
+
+    await updateDoc(profileRef, updates);
 };
 
-// Algoritmo de Repetición Espaciada
-// Decide qué tema le toca hoy al usuario basándose en sus debilidades y temas no vistos
+// Algoritmo de Repetición Espaciada y Camino Personal
 export const selectOptimalTopicForUser = async (userId: string): Promise<{ topic: ClinicalTopic, historicalErrors: string[] }> => {
     const profile = await getUserTrainingProfile(userId);
     
     const seenTopicIds = Object.keys(profile.temas);
     const unseenTopics = CLINICAL_TOPICS.filter(t => !seenTopicIds.includes(t.id));
 
-    // Si hay temas nuevos que nunca ha visto, 50% de probabilidad de mostrarle uno nuevo
-    if (unseenTopics.length > 0 && Math.random() > 0.5) {
-        const randomUnseen = unseenTopics[Math.floor(Math.random() * unseenTopics.length)];
-        return { topic: randomUnseen, historicalErrors: [] };
+    // Si aún no completa los 40 retos básicos, prioriza siempre avanzar en los no vistos (ruta estricta)
+    // Seleccionamos secuencialmente el primer tema no visto.
+    if (unseenTopics.length > 0) {
+        // En una ruta estructurada de 40 pasos, simplemente le damos el primero que no haya visto.
+        return { topic: unseenTopics[0], historicalErrors: [] };
     }
 
-    // Si no cayó en temas nuevos (o ya vió todos), buscamos sus DEBILIDADES
-    // Una debilidad es un tema donde su último puntaje fue menor a 70, o su promedio es bajo
-    const weakTopics = Object.values(profile.temas).filter(t => t.ultimoPuntaje < 70 || t.puntajePromedio < 70);
+    // SI YA VIO LOS 40 TEMAS (MODO REFUERZO)
+    // Buscar sus DEBILIDADES (nota menor a 4.0 o promedio bajo)
+    const weakTopics = Object.values(profile.temas).filter(t => t.ultimoPuntaje < 4.0 || t.puntajePromedio < 4.0);
     
     if (weakTopics.length > 0) {
         // Ordenar del peor al "menos peor"
@@ -136,13 +188,13 @@ export const selectOptimalTopicForUser = async (userId: string): Promise<{ topic
         return { topic, historicalErrors: worstTopicProgress.erroresHistoricos };
     }
 
-    // Si no tiene debilidades (wow!), buscar el tema que hace más tiempo no repasa (Repetición Espaciada Pura)
+    // Si no tiene debilidades graves, buscar el tema que hace más tiempo no repasa (Repetición Espaciada Pura)
     if (seenTopicIds.length > 0) {
         const allSeen = Object.values(profile.temas);
         allSeen.sort((a, b) => {
             const timeA = a.ultimoRepaso ? a.ultimoRepaso.toMillis() : 0;
             const timeB = b.ultimoRepaso ? b.ultimoRepaso.toMillis() : 0;
-            return timeA - timeB; // El de menor tiempo es el más antiguo
+            return timeA - timeB; 
         });
         const oldestTopicProgress = allSeen[0];
         const topic = CLINICAL_TOPICS.find(t => t.id === oldestTopicProgress.topicId)!;

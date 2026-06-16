@@ -1,59 +1,252 @@
-// Temario esencial de práctica profesional Kinesiología MSK y Deportiva
-// Basado en evidencia contemporánea y razonamiento clínico avanzado.
-
 export interface ClinicalTopic {
     id: string;
-    area: string;
     nombre: string;
-    focoPrincipal: string; // Qué debe evaluar la IA en este tema
+    focoPrincipal: string;
+    categoria: 'Hombro' | 'CodoMano' | 'Columna' | 'Cadera' | 'Rodilla' | 'TobilloPie' | 'Muscular' | 'NervioPeriferico';
 }
 
 export const CLINICAL_TOPICS: ClinicalTopic[] = [
-    // ─── COLUMNA CERVICAL Y TORÁCICA ───
-    { id: 'cervical_radiculopatia', area: 'Columna Cervical', nombre: 'Radiculopatía Cervical (C5-C7)', focoPrincipal: 'Diagnóstico diferencial con síndrome de desfiladero torácico, evaluación de dermatomas/miotomas, y neurodinámica del miembro superior.' },
-    { id: 'cervical_whiplash', area: 'Columna Cervical', nombre: 'Trastorno Asociado al Latigazo Cervical (WAD)', focoPrincipal: 'Manejo de banderas amarillas, evaluación de control motor cervical profundo, y dosificación en etapa aguda vs crónica.' },
-    { id: 'cervical_cefalea', area: 'Columna Cervical', nombre: 'Cefalea Cervicogénica', focoPrincipal: 'Test de flexión-rotación cervical, diagnóstico diferencial con migrañas/cefaleas tensionales, y terapia manual.' },
-    
-    // ─── COLUMNA LUMBAR Y PELVIS ───
-    { id: 'lumbar_inespecifico_cronico', area: 'Columna Lumbar', nombre: 'Dolor Lumbar Inespecífico Crónico', focoPrincipal: 'Educación en neurociencia del dolor, identificación de factores psicosociales (STarT Back), y exposición gradual.' },
-    { id: 'lumbar_radicular', area: 'Columna Lumbar', nombre: 'Síndrome Radicular Lumbar (L4-S1)', focoPrincipal: 'Slump test vs SLR, diferenciación con dolor referido somático, e indicación de centralización de síntomas.' },
-    { id: 'lumbar_espondilolistesis', area: 'Columna Lumbar', nombre: 'Espondilolistesis Lumbar Sintomática', focoPrincipal: 'Evaluación de control motor lumbopélvico, sesgo de flexión vs extensión, y criterios de derivación.' },
-    { id: 'pelvis_sacroiliaca', area: 'Cadera / Pelvis', nombre: 'Disfunción de la Articulación Sacroilíaca', focoPrincipal: 'Cluster de Laslett, descarte de dolor lumbar discogénico, y manejo con control motor.' },
-    
-    // ─── HOMBRO ───
-    { id: 'hombro_manguito_rotador', area: 'Hombro', nombre: 'Tendinopatía / Síndrome Subacromial del Manguito Rotador', focoPrincipal: 'Evaluación de discinesia escapular, test de modificación de síntomas, y ejercicios de carga excéntrica/isométrica.' },
-    { id: 'hombro_inestabilidad', area: 'Hombro', nombre: 'Inestabilidad Anterior de Hombro (Post-luxación)', focoPrincipal: 'Evaluación de aprensión/reubicación, tiempos de reparación capsular, y readaptación propioceptiva.' },
-    { id: 'hombro_congelado', area: 'Hombro', nombre: 'Capsulitis Adhesiva (Hombro Congelado)', focoPrincipal: 'Fases clínicas (congelamiento vs rigidez), manejo del dolor vs ganancia de ROM, y descarte de banderas rojas (tumores apicales).' },
-    { id: 'hombro_slap', area: 'Hombro', nombre: 'Lesión SLAP en Deportista de Lanzamiento', focoPrincipal: 'Biomecánica de la fase de aceleración/desaceleración, déficit de rotación interna (GIRD), y progresión de retorno al lanzamiento.' },
+    // --- HOMBRO ---
+    {
+        id: "h1",
+        nombre: "Dolor Subacromial (Manguito Rotador - Tendinopatía Reactiva)",
+        focoPrincipal: "Exigir diferenciación aguda/reactiva, control del dolor y modificación de carga (isométricos).",
+        categoria: "Hombro"
+    },
+    {
+        id: "h2",
+        nombre: "Dolor Subacromial (Tendinopatía Degenerativa / Desgarro Parcial)",
+        focoPrincipal: "Exigir fortalecimiento progresivo (isotónicos concéntricos/excéntricos), clusters de Manguito Rotador.",
+        categoria: "Hombro"
+    },
+    {
+        id: "h3",
+        nombre: "Inestabilidad Anterior de Hombro (Traumática)",
+        focoPrincipal: "Evaluar test de aprensión/reubicación, tiempos de cicatrización capsular y control motor escapulotorácico.",
+        categoria: "Hombro"
+    },
+    {
+        id: "h4",
+        nombre: "Hombro Congelado (Capsulitis Adhesiva)",
+        focoPrincipal: "Evaluar reconocimiento clínico primario, fases (congelamiento vs rigidez), y priorizar analgesia y educación.",
+        categoria: "Hombro"
+    },
+    {
+        id: "h5",
+        nombre: "Lesión SLAP",
+        focoPrincipal: "Evaluar test ortopédicos combinados (O'Brien, Crank), y justificar estabilización dinámica vs reposo relativo.",
+        categoria: "Hombro"
+    },
 
-    // ─── CODO Y MANO ───
-    { id: 'codo_epicondilalgia', area: 'Codo', nombre: 'Epicondilalgia Lateral (Codo de Tenista)', focoPrincipal: 'Carga tendinosa (tendinopatía reactiva vs degenerativa), test de prensión indolora, y diferenciación con atrapamiento radial.' },
-    { id: 'mano_tunel_carpiano', area: 'Muñeca / Mano', nombre: 'Síndrome del Túnel Carpiano', focoPrincipal: 'Diagnóstico diferencial de atrapamientos múltiples (Double Crush), tests provocativos (Phalen/Tinel), y neurodinámica del mediano.' },
-    { id: 'mano_de_quervain', area: 'Muñeca / Mano', nombre: 'Tenosinovitis de De Quervain', focoPrincipal: 'Manejo de carga en pulgar, test de Finkelstein, y dosificación de ejercicios de tendón.' },
+    // --- CODO Y MANO ---
+    {
+        id: "cm1",
+        nombre: "Epicondilalgia Lateral (Codo de Tenista)",
+        focoPrincipal: "Evaluar dosificación FITT-VP para extensor radial corto del carpo, diferenciando de compresión del nervio interóseo posterior.",
+        categoria: "CodoMano"
+    },
+    {
+        id: "cm2",
+        nombre: "Epicondilalgia Medial (Codo de Golfista)",
+        focoPrincipal: "Descartar afectación del nervio cubital (diagnóstico diferencial) y dosificar carga en flexores/pronadores.",
+        categoria: "CodoMano"
+    },
+    {
+        id: "cm3",
+        nombre: "Tenosinovitis de De Quervain",
+        focoPrincipal: "Exigir test de Finkelstein (SpIn/SnOut), y control motor del Aductor Largo y Extensor Corto del pulgar.",
+        categoria: "CodoMano"
+    },
 
-    // ─── CADERA ───
-    { id: 'cadera_artrosis', area: 'Cadera / Pelvis', nombre: 'Artrosis de Cadera (Leve a Moderada)', focoPrincipal: 'Criterios clínicos de artrosis (dolor inguinal, restricción ROM), ejercicio terapéutico vs reemplazo articular, y manejo de peso.' },
-    { id: 'cadera_pinzamiento', area: 'Cadera / Pelvis', nombre: 'Pinzamiento Fémoro-Acetabular (FAI)', focoPrincipal: 'Test de FADIR/FABER, modificación de la actividad deportiva, y manejo de la fuerza de abductores profundos.' },
-    { id: 'cadera_gtps', area: 'Cadera / Pelvis', nombre: 'Síndrome Doloroso del Trocánter Mayor (GTPS)', focoPrincipal: 'Compresión vs tensión del tendón glúteo, posturas a evitar (adducción), y carga progresiva isométrica.' },
+    // --- COLUMNA (CERVICAL, TORÁCICA, LUMBAR, PELVIS) ---
+    {
+        id: "col1",
+        nombre: "Dolor Cervical Irradiado (Radiculopatía C5-C6)",
+        focoPrincipal: "Exigir Cluster de Wainner completo y abordaje neurodinámico (movilización vs deslizamiento).",
+        categoria: "Columna"
+    },
+    {
+        id: "col2",
+        nombre: "Cefalea Cervicogénica",
+        focoPrincipal: "Exigir test de flexión-rotación cervical y abordaje de Terapia Manual (Maitland/Mulligan) en cervicales altas.",
+        categoria: "Columna"
+    },
+    {
+        id: "col3",
+        nombre: "Dolor Lumbar Inespecífico Crónico (Nociplástico Dominante)",
+        focoPrincipal: "Exigir educación en Neurociencia del Dolor, exclusión de daño estructural grave y exposición gradual al movimiento.",
+        categoria: "Columna"
+    },
+    {
+        id: "col4",
+        nombre: "Radiculopatía Lumbar (L4-L5 / L5-S1)",
+        focoPrincipal: "Evaluar evaluación de miotomas/dermatomas estrictos, test de elevación pierna recta (SLR) y fenómeno de centralización.",
+        categoria: "Columna"
+    },
+    {
+        id: "col5",
+        nombre: "Inestabilidad Clínica Lumbar y Control Motor",
+        focoPrincipal: "Evaluar reconocimiento clínico de la bisagra inestable, y justificar FITT-VP para estabilizadores profundos (TrA, multífidos).",
+        categoria: "Columna"
+    },
+    {
+        id: "col6",
+        nombre: "Disfunción de Articulación Sacroilíaca",
+        focoPrincipal: "Exigir el Cluster de Laslett (al menos 3 de 5 positivos) y diferenciación con dolor referido de la columna lumbar inferior.",
+        categoria: "Columna"
+    },
+    {
+        id: "col7",
+        nombre: "Estenosis Foraminal Lumbar (Claudicación Neurogénica)",
+        focoPrincipal: "Exigir diferenciación con claudicación vascular, posición de alivio (flexión) y prescripción aeróbica tolerada.",
+        categoria: "Columna"
+    },
 
-    // ─── RODILLA ───
-    { id: 'rodilla_patelofemoral', area: 'Rodilla', nombre: 'Síndrome de Dolor Patelofemoral (SDPF)', focoPrincipal: 'Biomecánica de cadena cinética (cadera vs pie), valgo dinámico, y modificación de los niveles de estrés articular.' },
-    { id: 'rodilla_lca_postqx', area: 'Rodilla', nombre: 'Post-operatorio LCA (Fase Retorno al Deporte)', focoPrincipal: 'Criterios de alta cuantitativos (LSI > 90%, Hop Tests), miedo a la re-lesión (Kinesiophobia), y calidad de movimiento.' },
-    { id: 'rodilla_tendinopatia_rotuliana', area: 'Rodilla', nombre: 'Tendinopatía Rotuliana (Rodilla de Saltador)', focoPrincipal: 'Isométricos para analgesia (Efecto Rio), ejercicios HSR (Heavy Slow Resistance), y manejo de almacenamiento de energía.' },
-    { id: 'rodilla_artrosis', area: 'Rodilla', nombre: 'Artrosis de Rodilla', focoPrincipal: 'Criterios clínicos, prescripción de ejercicio aeróbico y de fuerza cuadricipital (GLAD), y manejo del dolor nociplástico asociado.' },
-    { id: 'rodilla_menisco', area: 'Rodilla', nombre: 'Lesión Meniscal Degenerativa vs Aguda', focoPrincipal: 'Test de Thessaly, decisión quirúrgica vs conservadora en mayores de 40, y carga progresiva.' },
+    // --- CADERA ---
+    {
+        id: "cad1",
+        nombre: "Dolor Articular de Cadera (Artrosis Temprana)",
+        focoPrincipal: "Evaluar rotación interna limitada, test FABER/FADIR, y dosificación para movilidad y fuerza capsular.",
+        categoria: "Cadera"
+    },
+    {
+        id: "cad2",
+        nombre: "Tendinopatía Glútea (Síndrome de Dolor Trocantérico Mayor)",
+        focoPrincipal: "Exigir comprensión de la carga compresiva (evitar aducción) y dosificación de glúteo medio/menor.",
+        categoria: "Cadera"
+    },
+    {
+        id: "cad3",
+        nombre: "Pinzamiento Fémoro-Acetabular (FAI)",
+        focoPrincipal: "Justificar evaluación radiológica vs clínica, evitar posiciones de atrapamiento agudo (flexión máxima + rotación).",
+        categoria: "Cadera"
+    },
 
-    // ─── TOBILLO Y PIE ───
-    { id: 'tobillo_esguince_agudo', area: 'Tobillo / Pie', nombre: 'Esguince Lateral de Tobillo (Agudo)', focoPrincipal: 'Reglas de Ottawa para descarte de fractura, protección y carga óptima (POLICE), y prevención de inestabilidad crónica.' },
-    { id: 'tobillo_inestabilidad_cronica', area: 'Tobillo / Pie', nombre: 'Inestabilidad Crónica de Tobillo', focoPrincipal: 'Déficit propioceptivo, fuerza de eversos, y control postural dinámico (Star Excursion Balance Test).' },
-    { id: 'pie_fascitis', area: 'Tobillo / Pie', nombre: 'Fascitis Plantar (Fasciopatía)', focoPrincipal: 'Diagnóstico diferencial anatómico, efecto Windlass, ejercicios de carga alta (Rathleff), y manejo de la rigidez matinal.' },
-    { id: 'tobillo_tendinopatia_aquiliana', area: 'Tobillo / Pie', nombre: 'Tendinopatía Aquiliana (Porción media vs Insercional)', focoPrincipal: 'Diferenciación en tratamiento de insercional (evitar dorsiflexión máxima) vs porción media, protocolo de Alfredson modificado.' },
+    // --- RODILLA ---
+    {
+        id: "rod1",
+        nombre: "Dolor Patelofemoral",
+        focoPrincipal: "Rechazar concepto de 'síndrome' inespecífico. Exigir sobrecarga local patelar y control motor de cadera (glúteos).",
+        categoria: "Rodilla"
+    },
+    {
+        id: "rod2",
+        nombre: "Tendinopatía Rotuliana (Degenerativa)",
+        focoPrincipal: "Evaluar HSR (Heavy Slow Resistance), ejercicios isoinerciales, dolor focal en el polo inferior en carga.",
+        categoria: "Rodilla"
+    },
+    {
+        id: "rod3",
+        nombre: "Artrosis de Rodilla (OA)",
+        focoPrincipal: "Priorizar fortalecimiento de cuádriceps, capacidad aeróbica y manejo del miedo-evitación, según guías OARSI.",
+        categoria: "Rodilla"
+    },
+    {
+        id: "rod4",
+        nombre: "Lesión Meniscal Degenerativa",
+        focoPrincipal: "Descartar bloqueo articular mecánico agudo (bandera roja quirúrgica), promover carga progresiva y propiocepción.",
+        categoria: "Rodilla"
+    },
+    {
+        id: "rod5",
+        nombre: "Síndrome de Fricción de la Banda Iliotibial",
+        focoPrincipal: "Asociar a sobrecarga por estrés tensil distal, control motor de cadera en plano frontal/transversal.",
+        categoria: "Rodilla"
+    },
 
-    // ─── LESIONES MUSCULARES Y DEPORTIVAS GENERALES ───
-    { id: 'muscular_isquiotibial', area: 'Pierna / Muslo', nombre: 'Desgarro Isquiotibial en Sprinter', focoPrincipal: 'Mecanismo de lesión (fase de oscilación terminal), ejercicios de alargamiento excéntrico (Nordic/Askling), y criterios de retorno.' },
-    { id: 'muscular_desgarro_gemelo', area: 'Pierna / Muslo', nombre: 'Lesión del Tríceps Sural (Tennis Leg)', focoPrincipal: 'Diferenciación gastrocnemio vs sóleo, tiempos biológicos de cicatrización, y carga progresiva en flexión plantar.' },
-    { id: 'deporte_sobreentrenamiento', area: 'Sistémico', nombre: 'Síndrome de Sobreentrenamiento (RED-S)', focoPrincipal: 'Banderas rojas metabólicas/psicológicas, manejo multidisciplinario, e interrogatorio de carga vs recuperación.' },
-    
-    // ─── DOLOR COMPLEJO ───
-    { id: 'dolor_nociplastico', area: 'Sistémico', nombre: 'Dolor Nociplástico Dominante (Fibromialgia / Sensibilización)', focoPrincipal: 'Criterios de clasificación del dolor, educación terapéutica del dolor, ejercicios aeróbicos graduales, y modulación autonómica.' }
+    // --- TOBILLO Y PIE ---
+    {
+        id: "tob1",
+        nombre: "Esguince de Tobillo Agudo (Ligamento Talofibular Anterior)",
+        focoPrincipal: "Exigir aplicación estricta de Criterios de Ottawa y modelo POLICE (evitar RICE pasivo absoluto).",
+        categoria: "TobilloPie"
+    },
+    {
+        id: "tob2",
+        nombre: "Inestabilidad Crónica de Tobillo",
+        focoPrincipal: "Exigir evaluación con CAIT o Cumberland, priorizar control sensoriomotor y tiempo de reacción muscular (fuerza reactiva).",
+        categoria: "TobilloPie"
+    },
+    {
+        id: "tob3",
+        nombre: "Tendinopatía Aquiliana (Porción Media)",
+        focoPrincipal: "Evaluar protocolo Alfredson vs HSR, dosificando repeticiones lentas y pesadas, diferenciando de bursitis retrocalcánea.",
+        categoria: "TobilloPie"
+    },
+    {
+        id: "tob4",
+        nombre: "Fascitis/Fasciopatía Plantar",
+        focoPrincipal: "Evaluar carga tensil en flexión dorsal con dedos en extensión (Windlass), fortalecer fascia con cargas isométricas progresivas.",
+        categoria: "TobilloPie"
+    },
+    {
+        id: "tob5",
+        nombre: "Síndrome de Estrés Tibial Medial",
+        focoPrincipal: "Identificar factores de carga por volumen de trote y evaluar control excéntrico de flexores plantares y tibial posterior.",
+        categoria: "TobilloPie"
+    },
+
+    // --- LESIONES MUSCULARES ---
+    {
+        id: "mus1",
+        nombre: "Desgarro de Isquiotibiales (Bíceps Femoral)",
+        focoPrincipal: "Razonamiento en cicatrización aguda vs excéntricos en elongación tardía (ej: Nordic, peso muerto rumano).",
+        categoria: "Muscular"
+    },
+    {
+        id: "mus2",
+        nombre: "Desgarro de Gemelo Interno (Tennis Leg)",
+        focoPrincipal: "Descartar TVP (Trombosis Venosa Profunda - Bandera Roja), dosificación para tríceps sural con rodilla extendida.",
+        categoria: "Muscular"
+    },
+    {
+        id: "mus3",
+        nombre: "Desgarro de Recto Femoral",
+        focoPrincipal: "Evaluar mecanismo de lesión (chute/sprint), cicatrización del tendón central y excéntricos de cuádriceps en flexión de cadera.",
+        categoria: "Muscular"
+    },
+    {
+        id: "mus4",
+        nombre: "Desgarro de Aductores (Ingle de Deportista)",
+        focoPrincipal: "Razonamiento diferencial con pubalgia o patología intraarticular de cadera. Fortalecimiento en cadenas cruzadas (Copenhague).",
+        categoria: "Muscular"
+    },
+    {
+        id: "mus5",
+        nombre: "Desgarro de Pectoral Mayor (Mecanismo Excéntrico)",
+        focoPrincipal: "Reconocer defecto anatómico post-agudo, diferenciar lesión de unión miotendinosa, y pautar progresión isocinética/isométrica.",
+        categoria: "Muscular"
+    },
+
+    // --- NERVIOS PERIFÉRICOS (ATRAPAMIENTOS) ---
+    {
+        id: "ner1",
+        nombre: "Síndrome del Túnel Carpiano",
+        focoPrincipal: "Exigir test de Phalen/Tinel, evaluación de fuerza de eminencia tenar y neurodinámica del nervio mediano.",
+        categoria: "NervioPeriferico"
+    },
+    {
+        id: "ner2",
+        nombre: "Síndrome del Túnel Cubital",
+        focoPrincipal: "Exigir evaluación en flexión prolongada de codo, síntomas en 4to y 5to dedo, neurodinámica del nervio ulnar.",
+        categoria: "NervioPeriferico"
+    },
+    {
+        id: "ner3",
+        nombre: "Síndrome Piriforme (Atrapamiento Glúteo Profundo)",
+        focoPrincipal: "Diferenciar radicalmente de una radiculopatía lumbar, evaluar dolor a la palpación profunda y tensión en rotación interna.",
+        categoria: "NervioPeriferico"
+    },
+    {
+        id: "ner4",
+        nombre: "Atrapamiento del Nervio Ciático Poplíteo Externo (Peroneo Común)",
+        focoPrincipal: "Identificar factor de riesgo (Ej: esguince de tobillo severo, cruce de piernas prolongado), evaluar marcha en steppage y dorsiflexión.",
+        categoria: "NervioPeriferico"
+    },
+    {
+        id: "ner5",
+        nombre: "Síndrome del Desfiladero Torácico (Thoracic Outlet Syndrome)",
+        focoPrincipal: "Exigir test de Roos o Adson, diferenciación clara entre vascular vs neurogénico verdadero, control motor escapular.",
+        categoria: "NervioPeriferico"
+    }
 ];
