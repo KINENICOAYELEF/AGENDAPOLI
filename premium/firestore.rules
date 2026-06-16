@@ -155,5 +155,13 @@ service cloud.firestore {
       // Solo docentes pueden eliminar artículos
       allow delete: if isDocente();
     }
+
+    // --------------------------------------------------------------------
+    // 8. Perfiles de Entrenamiento Diario (Tutoría Socrática)
+    // --------------------------------------------------------------------
+    match /training_profiles/{userId} {
+      // El estudiante lee y escribe su propio perfil. El Docente lee todos.
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+    }
   }
 }
