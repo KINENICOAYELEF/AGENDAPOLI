@@ -173,10 +173,10 @@ export const selectOptimalTopicForUser = async (userId: string): Promise<{ topic
     const unseenTopics = CLINICAL_TOPICS.filter(t => !seenTopicIds.includes(t.id));
 
     // Si aún no completa los 40 retos básicos, prioriza siempre avanzar en los no vistos (ruta estricta)
-    // Seleccionamos secuencialmente el primer tema no visto.
     if (unseenTopics.length > 0) {
-        // En una ruta estructurada de 40 pasos, simplemente le damos el primero que no haya visto.
-        return { topic: unseenTopics[0], historicalErrors: [] };
+        // Seleccionamos un tema aleatorio entre los no vistos, para evitar que se repita siempre el mismo si abandona la sesión
+        const randomIndex = Math.floor(Math.random() * unseenTopics.length);
+        return { topic: unseenTopics[randomIndex], historicalErrors: [] };
     }
 
     // SI YA VIO LOS 40 TEMAS (MODO REFUERZO)
