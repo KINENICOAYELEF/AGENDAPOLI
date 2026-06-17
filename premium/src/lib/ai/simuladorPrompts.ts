@@ -452,7 +452,7 @@ Adem√°s de la nota y el radar, debes inferir el ESTILO COGNITIVO DEL ALUMNO bas√
 
 Debes devolver EXACTAMENTE este JSON:
 {
-  "puntaje": 0,
+  "puntaje": 4.0, // NOTA EN ESCALA CHILENA DE 1.0 a 7.0 (donde 4.0 es el 60% de 100).
   "radarScores": {
     "biomecanica": 0,
     "diagnostico": 0,
