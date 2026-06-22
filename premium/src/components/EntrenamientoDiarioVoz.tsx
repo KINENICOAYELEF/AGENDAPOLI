@@ -28,7 +28,8 @@ export default function EntrenamientoDiarioVoz() {
         volume,
         isMicOpen,
         toggleMic,
-        transcript
+        transcript,
+        clearTranscript
     } = useGeminiLive({
         systemInstruction: currentTopic 
             ? generateSocraticTutorPrompt(currentTopic.nombre, currentTopic.focoPrincipal, historicalErrors, profile?.estiloCognitivo || 'NEUTRO')
@@ -59,6 +60,7 @@ export default function EntrenamientoDiarioVoz() {
         if (!user) return;
         setSessionState('CONNECTING');
         setEvaluationResult(null);
+        clearTranscript();
         try {
             const { topic, historicalErrors: errors } = await selectOptimalTopicForUser(user.uid);
             setCurrentTopic(topic);
@@ -80,7 +82,7 @@ export default function EntrenamientoDiarioVoz() {
     useEffect(() => {
         if (connectionState === 'connected' && sessionState === 'CONNECTING') {
             setSessionState('IN_PROGRESS');
-        } else if (connectionState === 'error') {
+        } else if (connectionState === 'error' && sessionState === 'CONNECTING') {
             setSessionState('IDLE');
             alert('Error al conectar con el tutor.');
         }
@@ -260,14 +262,23 @@ export default function EntrenamientoDiarioVoz() {
                             </div>
                         </div>
                         <p className="mt-8 font-bold text-lg text-slate-700">
-                            {isSpeaking ? 'El tutor está evaluando tu respuesta...' : 'El tutor te escucha, defiende tu postura...'}
+                            {connectionState === 'connecting' ? 'Reconectando con el Tutor...' :
+                             connectionState === 'error' ? 'Error al reconectar. Intenta nuevamente.' :
+                             connectionState === 'disconnected' ? 'Conexión con el tutor perdida.' :
+                             isSpeaking ? 'El tutor está evaluando tu respuesta...' : 'El tutor te escucha, defiende tu postura...'}
                         </p>
                     </div>
 
                     <div className="flex gap-4">
-                        <button onClick={toggleMic} className={`flex-1 font-bold py-4 rounded-xl transition-all text-lg ${isMicOpen ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>
-                            {isMicOpen ? '🔇 Silenciar Micrófono' : '🔊 Hablar'}
-                        </button>
+                        {connectionState === 'disconnected' ? (
+                            <button onClick={connect} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg flex items-center justify-center gap-2">
+                                📶 Conexión Perdida: Reconectar y Continuar
+                            </button>
+                        ) : (
+                            <button onClick={toggleMic} className={`flex-1 font-bold py-4 rounded-xl transition-all text-lg ${isMicOpen ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>
+                                {isMicOpen ? '🔇 Silenciar Micrófono' : '🔊 Hablar'}
+                            </button>
+                        )}
                         <button onClick={handleEndSession} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg">
                             Finalizar y Evaluar
                         </button>

@@ -53,7 +53,7 @@ export function DefensaExamenVoz() {
     const [construction, setConstruction] = useState({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
 
     // Voice connection for Commission
-    const { connect, disconnect, connectionState, isMicOpen, toggleMic, isSpeaking, volume, transcript } = useGeminiLive({
+    const { connect, disconnect, connectionState, isMicOpen, toggleMic, isSpeaking, volume, transcript, clearTranscript } = useGeminiLive({
         systemInstruction: caseData ? generateCommissionPrompt(
             caseData.ficha_visible,
             caseData.perfil_secreto,
@@ -74,6 +74,7 @@ export function DefensaExamenVoz() {
         if (!user) return;
         setLoading(true); setError('');
         try {
+            clearTranscript();
             const data = await simFetch('generate', setupForm, user.uid);
             setCaseData(data);
             setPhase('CONSTRUCTION');
@@ -152,6 +153,7 @@ export function DefensaExamenVoz() {
     const handleReset = () => {
         if (timerRef.current) clearInterval(timerRef.current);
         disconnect();
+        clearTranscript();
         setPhase('SETUP'); setCaseData(null); setEvaluationData(null);
         setTimer(0); setError('');
         setConstruction({ problema_principal: '', diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
@@ -310,9 +312,15 @@ export function DefensaExamenVoz() {
                     </div>
 
                     {connectionState === 'disconnected' && (
-                        <button onClick={connect} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg">
-                            Iniciar Defensa (Conectar Micrófono)
-                        </button>
+                        transcript.length > 0 ? (
+                            <button onClick={connect} disabled={loading} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg flex items-center justify-center gap-2">
+                                📶 Conexión Perdida: Reconectar y Continuar Defensa
+                            </button>
+                        ) : (
+                            <button onClick={connect} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg">
+                                Iniciar Defensa (Conectar Micrófono)
+                            </button>
+                        )
                     )}
                     {connectionState === 'connecting' && (
                         <div className="w-full bg-blue-100 text-blue-700 font-bold py-4 rounded-xl text-center">

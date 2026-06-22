@@ -77,6 +77,16 @@ function stripDisclaimers(text: string): string {
 export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDeviceId }: UseGeminiLiveProps = {}) {
     const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
     const [transcript, setTranscript] = useState<{ role: 'user' | 'model', text: string }[]>([]);
+    const transcriptRef = useRef<{ role: 'user' | 'model', text: string }[]>([]);
+
+    useEffect(() => {
+        transcriptRef.current = transcript;
+    }, [transcript]);
+
+    const clearTranscript = useCallback(() => {
+        setTranscript([]);
+    }, []);
+
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [volume, setVolume] = useState(0);
     const [isMicOpen, setIsMicOpen] = useState(true);
@@ -310,7 +320,6 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
 
     const connect = useCallback(async () => {
         if (connectionState !== 'disconnected') return;
-        setTranscript([]);
         setIsMicOpen(true);
         isMicOpenRef.current = true;
         setConnectionState('connecting');
@@ -352,6 +361,16 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
             wsRef.current = ws;
 
             ws.onopen = () => {
+                let finalInstruction = systemInstruction || "Eres un paciente de prueba. Responde en español.";
+                
+                if (transcriptRef.current.length > 0) {
+                    const historyText = transcriptRef.current
+                        .map(t => `${t.role === 'user' ? 'Estudiante' : 'Evaluador/Comisión'}: ${t.text}`)
+                        .join('\n');
+                    
+                    finalInstruction += `\n\n[CONTEXTO HISTÓRICO DE LA SESIÓN - CONTINUACIÓN]\nEsta es una reconexión tras una caída del canal. El alumno y tú ya estaban en medio de la sesión. NO saludes ni vuelvas a presentarte. Revisa la última intervención y continúa la conversación desde ese punto de manera natural basándote en el siguiente historial previo:\n${historyText}`;
+                }
+
                 const setupMsg = {
                     setup: {
                         model: LIVE_MODEL,
@@ -366,7 +385,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
                             }
                         },
                         systemInstruction: {
-                            parts: [{ text: systemInstruction || "Eres un paciente de prueba. Responde en español." }]
+                            parts: [{ text: finalInstruction }]
                         }
                     }
                 };
@@ -429,6 +448,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
         disconnect,
         connectionState,
         transcript,
+        clearTranscript,
         isSpeaking,
         volume,
         isMicOpen,
