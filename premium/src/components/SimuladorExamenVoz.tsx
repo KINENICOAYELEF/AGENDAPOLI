@@ -501,7 +501,7 @@ export function SimuladorExamenVoz() {
         }).join('') : '';
         
         // Detailed blocks for full log
-        const transcriptHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;white-space:pre-wrap;font-size:13px;color:#334155;max-height:300px;overflow-y:auto;">${interviewData?.respuestas_paciente || '(Sin interacción)'}</div>`;
+        const transcriptHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;white-space:pre-wrap;font-size:13px;color:#334155;">${interviewData?.respuestas_paciente || '(Sin interacción)'}</div>`;
         const razonamientoHTML = `<div style="margin-bottom:16px;font-size:13px;color:#334155;">
             <p style="margin-bottom:4px;"><strong>Fase 1 (Hipótesis):</strong> ${reasoning.hipotesis.filter(h=>h.trim()).join(', ') || 'Ninguna'}</p>
             <p style="margin-bottom:4px;"><strong>Banderas Rojas:</strong> ${reasoning.banderas_rojas || 'Ninguna'} | <strong>Factores BPS:</strong> ${reasoning.factores_bps || 'Ninguna'}</p>

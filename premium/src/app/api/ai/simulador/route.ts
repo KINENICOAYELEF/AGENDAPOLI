@@ -1,7 +1,39 @@
 import { NextResponse } from 'next/server';
-import { executeAIAction } from '@/lib/ai/geminiClient';
+import { executeAIAction, callGemini } from '@/lib/ai/geminiClient';
 import { SIM_GENERATE_PROMPT, SIM_INTERVIEW_PROMPT, SIM_INTERVIEW_FEEDBACK_PROMPT, SIM_EXAM_PROMPT, SIM_EVALUATE_PROMPT, SIM_COMMISSION_PROMPT, SIM_EVAL_DEFENSE_PROMPT, SIM_EVAL_TRAINING_PROMPT } from '@/lib/ai/simuladorPrompts';
 import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamSchema, SimEvaluationSchema, SimCommissionSchema, SimDefenseEvaluationSchema, SimTrainingEvaluationSchema } from '@/lib/ai/simuladorSchemas';
+
+async function cleanVoiceTranscript(rawTranscript: string): Promise<string> {
+    if (!rawTranscript || rawTranscript.trim().length < 10) return rawTranscript;
+
+    const systemInstruction = `Eres un asistente docente experto en kinesiología. Tu tarea es corregir, limpiar y pulir la transcripción de audio (de voz a texto) de una conversación de examen entre un Alumno y la Comisión o Tutor.
+El sistema de transcripción de voz a veces comete errores ortográficos, repite frases, inserta palabras que el alumno no dijo, o transcribe ruidos de fondo.
+
+INSTRUCCIONES DE LIMPIEZA:
+1. Corrige palabras mal escritas o mal transcritas (ej. "nocipectivo" -> "nociceptivo", "infraspinoso" -> "infraespinoso", "tens" -> "TENS", "gird" -> "GIRD").
+2. Elimina tartamudeos, repeticiones duplicadas de palabras y muletillas innecesarias.
+3. Elimina oraciones o fragmentos sin sentido que parezcan ruidos de transcripción o alucinaciones.
+4. Mantén estrictamente el formato de diálogo original (ej: "ESTUDIANTE: ..." y "COMISIÓN: ...").
+5. Conserva el significado clínico y técnico original de lo que dijo el estudiante sin resumir ni cambiar el fondo de sus respuestas.
+
+Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respetando el formato de turnos.`;
+
+    const userPrompt = `Limpia y corrige la siguiente transcripción:\n\n${rawTranscript}`;
+
+    try {
+        const cleanedText = await callGemini({
+            systemInstruction,
+            userPrompt,
+            modelId: 'gemini-2.5-flash-lite',
+            temperature: 0.1,
+            responseMimeType: 'text/plain'
+        });
+        return cleanedText || rawTranscript;
+    } catch (err) {
+        console.error("Error al limpiar transcripción con Gemini Lite:", err);
+        return rawTranscript; // Fallback to raw transcript on failure
+    }
+}
 
 // Vercel: allow up to 120s for complex AI calls
 export const maxDuration = 120;
@@ -274,6 +306,7 @@ Genera la evaluación detallada para cada respuesta y el feedback final.
             // ─── CALL: Evaluate Voice Defense ───
             case 'evaluate-defense': {
                 const { caso_resumen, construccion, transcripcion_defensa } = payload;
+                const cleanedTranscript = await cleanVoiceTranscript(transcripcion_defensa);
                 const userPrompt = `
 CASO CLÍNICO:
 ${JSON.stringify(caso_resumen)}
@@ -288,7 +321,7 @@ Plan de Fases: ${construccion.plan_fases}
 Reevaluación: ${construccion.reevaluacion}
 
 TRANSCRIPCIÓN DE LA DEFENSA ORAL CON LA COMISIÓN:
-${transcripcion_defensa}
+${cleanedTranscript}
 
 Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
 1. Calcula la nota_chilena: Escala de 1.0 a 7.0, donde el 60% de rendimiento equivale a un 4.0.
@@ -307,6 +340,10 @@ Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
                     validator: (data) => SimDefenseEvaluationSchema.parse(data),
                     skipGuardrails: true,
                 });
+                result.data = {
+                    ...result.data,
+                    cleanedTranscript
+                };
                 break;
             }
 
@@ -314,9 +351,10 @@ Evalúa el desempeño integral del estudiante (Construcción + Defensa Oral).
             // ─── CALL 7: Daily Training Evaluation ───
             case 'evaluate-training': {
                 const { transcript } = payload;
+                const cleanedTranscript = await cleanVoiceTranscript(transcript);
                 const userPrompt = `
 TRANSCRIPCIÓN COMPLETA DE LA SESIÓN DE ENTRENAMIENTO:
-${transcript}
+${cleanedTranscript}
 
 Evalúa la sesión y extrae el JSON requerido.
 `;
@@ -331,6 +369,10 @@ Evalúa la sesión y extrae el JSON requerido.
                     validator: (data) => SimTrainingEvaluationSchema.parse(data),
                     skipGuardrails: true,
                 });
+                result.data = {
+                    ...result.data,
+                    cleanedTranscript
+                };
                 break;
             }
 

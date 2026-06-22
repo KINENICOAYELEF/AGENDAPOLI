@@ -128,7 +128,7 @@ export default function EntrenamientoDiarioVoz() {
                         evalData.errores,
                         evalData.radarScores,
                         evalData.estiloCognitivoSugerido,
-                        transcriptText
+                        evalData.cleanedTranscript || transcriptText
                     );
                     await loadProfile(); 
                 }

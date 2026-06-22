@@ -120,7 +120,7 @@ export function DefensaExamenVoz() {
                     area: setupForm.area || 'Aleatoria',
                     dificultad: setupForm.dificultad,
                     construccion: construction,
-                    transcripcion: transcriptText,
+                    transcripcion: data.cleanedTranscript || transcriptText,
                     puntajeGlobal: data.puntaje_global,
                     notaChilena: data.nota_chilena,
                     feedbackFinal: data.feedback_final,

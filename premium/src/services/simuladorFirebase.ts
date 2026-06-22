@@ -739,7 +739,7 @@ export function exportarDefensaVozPDF(attempt: DefensaVozIntento) {
 
         transcriptHTML = `
             <h2>🗣️ Transcripción de la Defensa Oral (Audio)</h2>
-            <div style="max-height:500px;overflow-y:auto;padding-right:4px;">
+            <div style="padding-right:4px;">
                 ${linesHTML}
             </div>
         `;
