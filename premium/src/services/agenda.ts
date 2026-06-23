@@ -250,5 +250,34 @@ export const AgendaService = {
             updatedAt: new Date().toISOString()
         });
         await updateDoc(docRef, sanitizedUpdate);
+    },
+
+    /**
+     * Actualiza el interno asignado en todas las citas futuras programadas (SCHEDULED) de un paciente.
+     */
+    async updateFutureCitasIntern(year: string, usuariaId: string, newInternId: string | null): Promise<void> {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const citasRef = collection(db, 'programs', year, 'citas');
+        const q = query(
+            citasRef,
+            where('usuariaId', '==', usuariaId),
+            where('status', '==', 'SCHEDULED')
+        );
+        const snapshot = await getDocs(q);
+        const docsToUpdate = snapshot.docs.filter(d => {
+            const data = d.data() as Cita;
+            return data.date >= todayStr;
+        });
+
+        if (docsToUpdate.length > 0) {
+            const batch = writeBatch(db);
+            docsToUpdate.forEach(d => {
+                batch.update(d.ref, {
+                    internoPlanificadoId: newInternId || null,
+                    updatedAt: new Date().toISOString()
+                });
+            });
+            await batch.commit();
+        }
     }
 };

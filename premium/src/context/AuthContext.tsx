@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, onSnapshot, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { getDocCounted, setDocCounted } from "@/services/firestore";
 
@@ -10,6 +10,12 @@ export type Role = "DOCENTE" | "INTERNO" | "PENDING";
 
 export interface AppUser extends User {
     role: Role;
+    lastActiveAt?: string;
+    createdAt?: any;
+    bloqueoActivo?: boolean;
+    bloqueoPacienteId?: string;
+    bloqueoPacienteName?: string;
+    bloqueoProcesoId?: string;
 }
 
 interface AuthContextType {
@@ -31,40 +37,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let unsubDoc: (() => void) | undefined = undefined;
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Consultar su documento en Firestore
                 try {
                     const userDocRef = doc(db, "users", firebaseUser.uid);
-                    const userDocSnap = await getDocCounted(userDocRef);
 
-                    let userRole: Role = "PENDING";
+                    // Suscribirse a cambios en tiempo real del perfil
+                    unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
+                        let userRole: Role = "PENDING";
+                        let additionalData = {};
 
-                    if (userDocSnap.exists()) {
-                        userRole = userDocSnap.data().role as Role;
-                    } else {
-                        // Primer inicio de sesión histórico: Creamos el documento "PENDING"
-                        await setDocCounted(userDocRef, {
-                            displayName: firebaseUser.displayName || "",
-                            email: firebaseUser.email || "",
-                            role: "PENDING",
-                            createdAt: serverTimestamp(),
-                        });
-                    }
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            userRole = data.role as Role;
+                            additionalData = data;
+                        } else {
+                            // Primer inicio de sesión histórico: Creamos el documento "PENDING"
+                            await setDocCounted(userDocRef, {
+                                displayName: firebaseUser.displayName || "",
+                                email: firebaseUser.email || "",
+                                role: "PENDING",
+                                createdAt: serverTimestamp(),
+                            });
+                        }
 
-                    // Inyectamos el rol al objeto User de Firebase de forma estricta extendiéndolo localmente
-                    setUser({ ...firebaseUser, role: userRole } as AppUser);
+                        setUser({
+                            ...firebaseUser,
+                            role: userRole,
+                            ...additionalData
+                        } as unknown as AppUser);
+                        setLoading(false);
+                    }, (error) => {
+                        console.error("Error en onSnapshot de usuario:", error);
+                        setUser({ ...firebaseUser, role: "PENDING" } as AppUser);
+                        setLoading(false);
+                    });
+
+                    // Registrar actividad de forma asíncrona
+                    updateDoc(userDocRef, {
+                        lastActiveAt: new Date().toISOString()
+                    }).catch(err => console.error("Error actualizando lastActiveAt:", err));
+
                 } catch (error) {
-                    console.error("Error sincronizando rol desde Firestore:", error);
-                    setUser({ ...firebaseUser, role: "PENDING" } as AppUser); // Fallback seguro
+                    console.error("Error en flujo de autenticación:", error);
+                    setUser({ ...firebaseUser, role: "PENDING" } as AppUser);
+                    setLoading(false);
                 }
             } else {
+                if (unsubDoc) {
+                    unsubDoc();
+                    unsubDoc = undefined;
+                }
                 setUser(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (unsubDoc) unsubDoc();
+        };
     }, []);
 
     const logout = async () => {

@@ -36,8 +36,8 @@ service cloud.firestore {
     // 1. Colección de Perfiles de Usuario
     // --------------------------------------------------------------------
     match /users/{userId} {
-      // Privacidad: El dueño lee su documento, El Docente lee todos los documentos.
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente());
+      // Privacidad: El dueño lee su documento, El Docente/Interno lee todos los documentos para listados de staff.
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isDocente() || isInterno());
       
       // Prevención de Elevación de Rol:
       // Se permite registrarse inicialmente como "PENDING" (Fase 9).
@@ -45,8 +45,11 @@ service cloud.firestore {
                     && request.auth.uid == userId 
                     && request.resource.data.role == "PENDING";
                     
-      // Los Docentes/Admins pueden actualizar roles para aprobar solicitudes.
-      allow update: if isDocente();
+      // Los Docentes pueden actualizar cualquier campo. Los usuarios pueden actualizar su propio perfil excepto su rol.
+      allow update: if isAuthenticated() && (
+                      isDocente() || 
+                      (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+                    );
       
       // Eliminación deshabilitada por seguridad histórica.
       allow delete: if false;

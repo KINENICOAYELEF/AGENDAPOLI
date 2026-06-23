@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { PersonaUsuaria } from "@/types/personaUsuaria";
-import { doc } from "firebase/firestore";
+import { doc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { useYear } from "@/context/YearContext";
 import { ProcesosManager } from "@/components/ProcesosManager";
 import { humanize } from "@/utils/humanizer";
+import { AgendaService } from "@/services/agenda";
+import { ProcesosService } from "@/services/procesos";
+import { Proceso } from "@/types/clinica";
 
 // Simple unificador de ID UUID/Timestamp para nuevas creaciones
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -29,6 +32,104 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
 
     const [loading, setLoading] = useState(false);
     const [internos, setInternos] = useState<AppUser[]>([]);
+
+    const [activeProceso, setActiveProceso] = useState<Proceso | null>(null);
+    const [hasNoFutureSessions, setHasNoFutureSessions] = useState(false);
+
+    const checkFutureSessions = async (proceso: Proceso) => {
+        if (!globalActiveYear || !proceso.id) return;
+        try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const citasRef = collection(db, 'programs', globalActiveYear, 'citas');
+            const q = query(
+                citasRef,
+                where('procesoId', '==', proceso.id),
+                where('status', '==', 'SCHEDULED'),
+                where('date', '>=', todayStr)
+            );
+            const snap = await getDocs(q);
+            setHasNoFutureSessions(snap.size === 0);
+        } catch (e) {
+            console.error("Error checking future sessions:", e);
+        }
+    };
+
+    useEffect(() => {
+        if (isEditMode && initialData?.id && globalActiveYear) {
+            ProcesosService.getByPersona(globalActiveYear, initialData.id)
+                .then(data => {
+                    const active = data.find(p => p.estado === 'ACTIVO');
+                    if (active) {
+                        setActiveProceso(active);
+                        checkFutureSessions(active);
+                    } else {
+                        setActiveProceso(null);
+                        setHasNoFutureSessions(false);
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [initialData, globalActiveYear, isEditMode]);
+
+    const handleExtendSessions = async () => {
+        if (!globalActiveYear || !activeProceso) return;
+        try {
+            setLoading(true);
+            const today = new Date();
+            const newEndDate = new Date(today.getTime() + 8 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            const updatedProceso = {
+                ...activeProceso,
+                attendancePlan: {
+                    ...activeProceso.attendancePlan,
+                    daysOfWeek: activeProceso.attendancePlan?.daysOfWeek || [],
+                    time: activeProceso.attendancePlan?.time || "18:00",
+                    durationMin: activeProceso.attendancePlan?.durationMin || 50,
+                    startDate: activeProceso.attendancePlan?.startDate || new Date().toISOString().split('T')[0],
+                    excludeHolidays: activeProceso.attendancePlan?.excludeHolidays ?? true,
+                    status: 'ACTIVO' as const,
+                    assignedInternIds: activeProceso.attendancePlan?.assignedInternIds || [],
+                    endDate: newEndDate
+                },
+                updatedAt: new Date().toISOString()
+            };
+            await ProcesosService.save(globalActiveYear, updatedProceso);
+            await AgendaService.ensureSchedule(globalActiveYear, updatedProceso, 8);
+            alert("Se han extendido las sesiones por 8 semanas.");
+            setActiveProceso(updatedProceso);
+            checkFutureSessions(updatedProceso);
+        } catch (e) {
+            console.error(e);
+            alert("Error al extender las sesiones.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFinishProcess = async () => {
+        if (!globalActiveYear || !activeProceso) return;
+        const confirmFinish = window.confirm("¿Estás seguro de finalizar el proceso de este usuario y darlo de alta?");
+        if (!confirmFinish) return;
+        try {
+            setLoading(true);
+            const todayStr = new Date().toISOString();
+            const updatedProceso = {
+                ...activeProceso,
+                estado: 'ALTA' as const,
+                fechaAlta: todayStr,
+                updatedAt: todayStr
+            };
+            await ProcesosService.save(globalActiveYear, updatedProceso);
+            await AgendaService.cancelFutureSchedule(globalActiveYear, activeProceso.id!);
+            alert("El proceso ha sido finalizado y las citas futuras han sido canceladas.");
+            setActiveProceso(null);
+            setHasNoFutureSessions(false);
+        } catch (e) {
+            console.error(e);
+            alert("Error al finalizar el proceso.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         UsersService.getInterns().then(setInternos).catch(console.error);
@@ -165,6 +266,15 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
             // Usamos nuestra capa Telemetría para inyectar a Firestore
             await setDocCounted(docRef, payload, { merge: true });
 
+            // Si el interno asignado cambió y es modo edición, propagar a citas futuras
+            if (isEditMode && initialData?.meta?.assignedInternId !== formData.meta?.assignedInternId) {
+                await AgendaService.updateFutureCitasIntern(
+                    globalActiveYear,
+                    targetId,
+                    formData.meta?.assignedInternId || null
+                );
+            }
+
             onSaveSuccess(payload, !isEditMode);
         } catch (error) {
             console.error("Error al guardar Persona Usuaria", error);
@@ -189,6 +299,37 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
 
     return (
         <form onSubmit={handleSave} className="space-y-6">
+            {hasNoFutureSessions && activeProceso && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 mb-4">
+                    <div className="flex items-start gap-3">
+                        <span className="text-2xl mt-0.5">⚠️</span>
+                        <div>
+                            <h4 className="font-bold text-amber-900 text-sm">Fin de Calendario / Sesiones</h4>
+                            <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                                Esta persona usuaria no tiene citas futuras programadas bajo su proceso activo <strong>"{activeProceso.motivoIngresoLibre}"</strong>.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 self-end md:self-auto">
+                        <button
+                            type="button"
+                            onClick={handleExtendSessions}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-1.5"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            Extender Sesiones (+8 Semanas)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleFinishProcess}
+                            className="bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-bold text-xs px-4 py-2.5 rounded-xl transition-all"
+                        >
+                            Finalizar Proceso (Alta)
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* --- A) IDENTIFICACIÓN Y DATOS BASE --- */}
