@@ -17,14 +17,15 @@ interface NotificationItem {
     id: string;
     type: "PENDING_EVOLUTION" | "INACTIVE_INTERN";
     message: string;
-    patientId: string;
-    patientName: string;
-    procesoId: string;
+    patientId?: string;
+    patientName?: string;
+    procesoId?: string;
     internId?: string;
     internName?: string;
     daysCount: number;
     resolved: boolean;
     lastEvoText: string;
+    assignedPatients?: Array<{ id: string; name: string }>;
 }
 
 export function NotificationCenter() {
@@ -94,6 +95,8 @@ export function NotificationCenter() {
             // Filtrar procesos activos
             const activeProcesos = procesos.filter(p => p.estado === "ACTIVO");
 
+            // --- ALERTA 1: EVOLUCIONES PENDIENTES (> 7 días) ---
+            // Iteramos sobre los procesos clínicos de los pacientes
             activeProcesos.forEach(proc => {
                 const patient = patients.find(pat => pat.id === proc.personaUsuariaId);
                 if (!patient) return;
@@ -101,10 +104,9 @@ export function NotificationCenter() {
                 const assignedInternId = patient.meta?.assignedInternId || proc.primaryInternId || proc.attendancePlan?.primaryInternId;
                 const assignedInternName = patient.meta?.assignedInternName || proc.createdByName;
 
-                // Obtener evoluciones firmadas (CLOSED) para este proceso
                 const procEvos = evoluciones.filter(e => e.procesoId === proc.id && e.status === "CLOSED");
                 
-                // Calcular última evolución e información de autor
+                // Calcular última evolución del paciente
                 let lastEvoDate: Date;
                 let lastEvoText = "";
                 
@@ -124,7 +126,6 @@ export function NotificationCenter() {
                     lastEvoText = "Sin evoluciones registradas en este periodo";
                 }
 
-                // --- ALERTA 1: EVOLUCIONES PENDIENTES (> 7 días) ---
                 const diffTime = Math.abs(today.getTime() - lastEvoDate.getTime());
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
@@ -148,61 +149,91 @@ export function NotificationCenter() {
                         });
                     }
                 }
-
-                // --- ALERTA 2: INTERNO INACTIVO (> 14 días) - SOLO DOCENTES ---
-                if (user.role === "DOCENTE" && assignedInternId) {
-                    const intern = interns.find(i => i.uid === assignedInternId);
-                    let isInactive = false;
-                    let lastActiveDays = 0;
-                    let inactiveMessage = "";
-
-                    if (!intern) {
-                        // Caso A: El interno ya no figura en la base de datos de usuarios activos o no tiene el rol de interno
-                        isInactive = true;
-                        lastActiveDays = 999; // Prioridad alta
-                        inactiveMessage = `El interno asignado originalmente (${assignedInternName || "ID: " + assignedInternId}) ya no se encuentra registrado como interno activo.`;
-                    } else {
-                        // Caso B: El interno sí existe, verificamos su última actividad
-                        if (intern.lastActiveAt) {
-                            const lastActive = new Date(intern.lastActiveAt);
-                            const inactiveDiff = Math.abs(today.getTime() - lastActive.getTime());
-                            lastActiveDays = Math.floor(inactiveDiff / (1000 * 60 * 60 * 24));
-                            isInactive = lastActiveDays > 14;
-                            inactiveMessage = `Interno ${intern.displayName || intern.email} inactivo hace ${lastActiveDays} días.`;
-                        } else if (intern.createdAt) {
-                            // Caso C: No tiene lastActiveAt pero fue creado hace tiempo
-                            const createdDate = new Date((intern.createdAt as any).seconds ? (intern.createdAt as any).seconds * 1000 : intern.createdAt);
-                            const createdDiff = Math.abs(today.getTime() - createdDate.getTime());
-                            lastActiveDays = Math.floor(createdDiff / (1000 * 60 * 60 * 24));
-                            isInactive = lastActiveDays > 14;
-                            inactiveMessage = `Interno ${intern.displayName || intern.email} sin actividad registrada y creado hace ${lastActiveDays} días.`;
-                        } else {
-                            // Caso D: No tiene registros de conexión ni creación (nunca ha ingresado)
-                            isInactive = true;
-                            lastActiveDays = 999; // Prioridad alta
-                            inactiveMessage = `Interno ${intern.displayName || intern.email} sin registros de actividad (nunca ha ingresado).`;
-                        }
-                    }
-
-                    if (isInactive) {
-                        list.push({
-                            id: `inactive_${proc.id}`,
-                            type: "INACTIVE_INTERN",
-                            message: inactiveMessage,
-                            patientId: patient.id!,
-                            patientName: patient.identity.fullName,
-                            procesoId: proc.id!,
-                            internId: assignedInternId,
-                            internName: intern ? (intern.displayName || intern.email || undefined) : (assignedInternName || undefined),
-                            daysCount: lastActiveDays,
-                            resolved: false,
-                            lastEvoText
-                        });
-                    }
-                }
             });
 
-            // Ordenar por gravedad (más días transcurridos primero)
+            // --- ALERTA 2: INTERNOS INACTIVOS (SOLO DOCENTES) ---
+            // Monitorear directamente la actividad académica y de uso de la plataforma de los internos
+            if (user.role === "DOCENTE") {
+                interns.forEach(intern => {
+                    let daysSinceLastActive = 999;
+                    let lastActiveText = "Nunca ingresó";
+
+                    // 1. Días desde último ingreso/actividad en plataforma
+                    if (intern.lastActiveAt) {
+                        const lastActiveDate = new Date(intern.lastActiveAt);
+                        daysSinceLastActive = Math.floor(Math.abs(today.getTime() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24));
+                        lastActiveText = `${daysSinceLastActive} días`;
+                    } else if (intern.createdAt) {
+                        const createdDate = new Date((intern.createdAt as any).seconds ? (intern.createdAt as any).seconds * 1000 : intern.createdAt);
+                        daysSinceLastActive = Math.floor(Math.abs(today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                        lastActiveText = `Creado hace ${daysSinceLastActive} días (sin ingresos)`;
+                    }
+
+                    // 2. Días desde su última evolución clínica cerrada
+                    const internEvos = evoluciones.filter(e => 
+                        e.status === "CLOSED" && 
+                        (e.clinicianResponsible === intern.uid || 
+                         e.audit?.closedBy === intern.uid || 
+                         e.audit?.createdBy === intern.uid)
+                    );
+
+                    let daysSinceLastEvo = 999;
+                    let lastEvoText = "Sin evoluciones registradas";
+
+                    if (internEvos.length > 0) {
+                        const sortedEvos = [...internEvos].sort((a, b) => {
+                            const dateA = new Date(a.sessionAt || (a as any).fechaHoraAtencion);
+                            const dateB = new Date(b.sessionAt || (b as any).fechaHoraAtencion);
+                            return dateB.getTime() - dateA.getTime();
+                        });
+                        const lastEvo = sortedEvos[0];
+                        const lastEvoDate = new Date(lastEvo.sessionAt || (lastEvo as any).fechaHoraAtencion);
+                        daysSinceLastEvo = Math.floor(Math.abs(today.getTime() - lastEvoDate.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        const pat = patients.find(p => p.id === lastEvo.usuariaId);
+                        lastEvoText = `Última evolución: hace ${daysSinceLastEvo} días (${pat?.identity.fullName || "Paciente eliminado"})`;
+                    }
+
+                    // 3. Determinar inactividad: > 14 días sin ingresar O > 14 días sin evolucionar
+                    const isInactiveActiveAt = daysSinceLastActive > 14;
+                    const isInactiveEvolutions = daysSinceLastEvo > 14;
+
+                    if (isInactiveActiveAt || isInactiveEvolutions) {
+                        // Obtener pacientes activos que este interno tiene asignados
+                        const assignedPatients = patients.filter(pat => {
+                            const isAssigned = pat.meta?.assignedInternId === intern.uid;
+                            const hasActiveProc = activeProcesos.some(p => p.personaUsuariaId === pat.id);
+                            return isAssigned && hasActiveProc;
+                        }).map(p => ({
+                            id: p.id!,
+                            name: p.identity.fullName
+                        }));
+
+                        let message = "";
+                        if (isInactiveActiveAt && isInactiveEvolutions) {
+                            message = `Inactivo: sin ingresos en ${lastActiveText} y sin registrar evoluciones en los últimos ${daysSinceLastEvo === 999 ? "14+" : daysSinceLastEvo} días.`;
+                        } else if (isInactiveActiveAt) {
+                            message = `Inactivo: sin ingresos a la plataforma en los últimos ${lastActiveText}.`;
+                        } else {
+                            message = `Inactivo: sin registrar evoluciones clínicas en los últimos ${daysSinceLastEvo} días.`;
+                        }
+
+                        list.push({
+                            id: `inactive_${intern.uid}`,
+                            type: "INACTIVE_INTERN",
+                            message,
+                            daysCount: Math.min(daysSinceLastActive, daysSinceLastEvo), // Usado para ordenar
+                            internId: intern.uid,
+                            internName: intern.displayName || intern.email || undefined,
+                            resolved: false,
+                            lastEvoText,
+                            assignedPatients
+                        });
+                    }
+                });
+            }
+
+            // Ordenar por gravedad o relevancia
             list.sort((a, b) => b.daysCount - a.daysCount);
             setNotifications(list);
 
@@ -224,16 +255,13 @@ export function NotificationCenter() {
     // Acción: Advertir/Bloquear acceso al interno
     const handleRestrictAccess = async (item: NotificationItem) => {
         if (!item.internId) return;
-        const confirmBlock = window.confirm(`¿Estás seguro de restringir el acceso temporal al interno "${item.internName}" hasta que regularice la evolución de "${item.patientName}"?`);
+        const confirmBlock = window.confirm(`¿Estás seguro de restringir el acceso temporal al interno "${item.internName}" hasta que regularice su situación clínica?`);
         if (!confirmBlock) return;
 
         try {
             const userRef = doc(db, "users", item.internId);
             await updateDoc(userRef, {
                 bloqueoActivo: true,
-                bloqueoPacienteId: item.patientId,
-                bloqueoPacienteName: item.patientName,
-                bloqueoProcesoId: item.procesoId,
                 bloqueadoAt: new Date().toISOString()
             });
             alert(`Acceso restringido temporalmente para el interno ${item.internName}.`);
@@ -278,39 +306,6 @@ export function NotificationCenter() {
         }
     };
 
-    // Acción: Finalizar Proceso del paciente
-    const handleFinishProcess = async (procesoId: string) => {
-        if (!globalActiveYear) return;
-        const confirmFinish = window.confirm("¿Estás seguro de dar de alta el proceso de este paciente? Esto cancelará sus citas futuras.");
-        if (!confirmFinish) return;
-
-        try {
-            setLoading(true);
-            const todayStr = new Date().toISOString();
-            const procSnap = await getDocs(query(collection(db, "programs", globalActiveYear, "procesos"), where("id", "==", procesoId)));
-            if (procSnap.empty) return;
-            const procData = procSnap.docs[0].data() as Proceso;
-
-            const updatedProceso = {
-                ...procData,
-                estado: "ALTA" as const,
-                fechaAlta: todayStr,
-                updatedAt: todayStr
-            };
-
-            await ProcesosService.save(globalActiveYear, updatedProceso);
-            await AgendaService.cancelFutureSchedule(globalActiveYear, procesoId);
-
-            alert("El proceso del paciente ha sido finalizado y sus citas futuras fueron canceladas.");
-            fetchAlerts();
-        } catch (e) {
-            console.error(e);
-            alert("Error al finalizar el proceso.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     // Contadores reales para los tabs
     const countEvolutions = notifications.filter(n => n.type === "PENDING_EVOLUTION").length;
     const countInactive = notifications.filter(n => n.type === "INACTIVE_INTERN").length;
@@ -323,12 +318,12 @@ export function NotificationCenter() {
             ? item.type === "PENDING_EVOLUTION" 
             : item.type === "INACTIVE_INTERN";
             
-        // Filtro por buscador (nombre paciente, nombre interno, mensaje o última evo)
+        // Filtro por buscador
         const queryClean = searchQuery.toLowerCase().trim();
         if (queryClean === "") return matchTab;
 
         const matchSearch = 
-            item.patientName.toLowerCase().includes(queryClean) ||
+            (item.patientName && item.patientName.toLowerCase().includes(queryClean)) ||
             (item.internName && item.internName.toLowerCase().includes(queryClean)) ||
             item.message.toLowerCase().includes(queryClean) ||
             item.lastEvoText.toLowerCase().includes(queryClean);
@@ -360,7 +355,7 @@ export function NotificationCenter() {
 
             {/* Dropdown Panel */}
             {isOpen && (
-                <div className="absolute right-0 mt-3 w-[420px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl z-[1000] overflow-hidden flex flex-col max-h-[580px] transition-all duration-300">
+                <div className="absolute right-0 mt-3 w-[440px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl z-[1000] overflow-hidden flex flex-col max-h-[580px] transition-all duration-300">
                     
                     {/* Header */}
                     <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -473,16 +468,10 @@ export function NotificationCenter() {
                                         badgeColorClass = "bg-amber-100 text-amber-700 border-amber-200";
                                     }
                                 } else {
-                                    // Para internos inactivos
-                                    if (item.daysCount === 999) {
-                                        cardBgClass = "bg-rose-50/30 border-rose-200 hover:bg-rose-50/60";
-                                        badgeText = "Inactivo/Sin registro";
-                                        badgeColorClass = "bg-rose-100 text-rose-700 border-rose-200";
-                                    } else {
-                                        cardBgClass = "bg-slate-50/70 border-slate-200 hover:bg-slate-50/90 hover:border-slate-300";
-                                        badgeText = "Inactivo";
-                                        badgeColorClass = "bg-slate-200 text-slate-700 border-slate-300";
-                                    }
+                                    // Alertas de Internos Inactivos
+                                    cardBgClass = "bg-slate-50/70 border-slate-200 hover:bg-slate-50/95 hover:border-slate-300";
+                                    badgeText = "Interno Inactivo";
+                                    badgeColorClass = "bg-slate-200 text-slate-700 border-slate-300";
                                 }
 
                                 return (
@@ -493,46 +482,187 @@ export function NotificationCenter() {
                                         <div className="flex justify-between items-start gap-2">
                                             {/* Badge de Estado y Días */}
                                             <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeColorClass}`}>
-                                                {badgeText} {item.daysCount !== 999 && `• ${item.daysCount} días`}
+                                                {badgeText}
                                             </span>
                                             
-                                            {/* Link de Next.js para evitar el reinicio de la página */}
-                                            <Link 
-                                                href={`/app/usuarios?openFicha=${item.patientId}`} 
-                                                onClick={() => setIsOpen(false)}
-                                                className="text-[11px] font-extrabold text-indigo-600 hover:underline hover:text-indigo-800 transition flex items-center gap-0.5"
-                                                title="Ver Expediente Clínico"
-                                            >
-                                                Ver Ficha 📂
-                                            </Link>
-                                        </div>
-
-                                        {/* Información y Mensaje */}
-                                        <div className="space-y-1">
-                                            <p className="text-xs text-slate-800 leading-normal font-semibold">
-                                                Paciente: <span className="font-extrabold text-slate-950">{item.patientName}</span>
-                                            </p>
-                                            
-                                            {item.internName && (
-                                                <p className="text-[11px] text-slate-600 font-medium">
-                                                    Interno a cargo: <span className="font-bold text-slate-800">{item.internName}</span>
-                                                </p>
+                                            {item.type === "PENDING_EVOLUTION" && item.patientId && (
+                                                <Link 
+                                                    href={`/app/usuarios?openFicha=${item.patientId}`} 
+                                                    onClick={() => setIsOpen(false)}
+                                                    className="text-[11px] font-extrabold text-indigo-600 hover:underline hover:text-indigo-800 transition flex items-center gap-0.5"
+                                                    title="Ver Expediente Clínico"
+                                                >
+                                                    Ver Ficha 📂
+                                                </Link>
                                             )}
-
-                                            <p className="text-[11px] text-slate-500 italic font-medium leading-normal pl-2 border-l border-slate-300">
-                                                {item.message}
-                                            </p>
                                         </div>
 
-                                        {/* Detalle de Última Evolución */}
-                                        <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 bg-white/40 p-1.5 rounded-lg border border-slate-100/50">
-                                            <span>📊</span> {item.lastEvoText}
-                                        </div>
+                                        {/* Información y Mensaje para Alertas de Evolución */}
+                                        {item.type === "PENDING_EVOLUTION" && (
+                                            <>
+                                                <div className="space-y-1">
+                                                    <p className="text-xs text-slate-800 leading-normal font-semibold">
+                                                        Paciente: <span className="font-extrabold text-slate-950">{item.patientName}</span>
+                                                    </p>
+                                                    
+                                                    {item.internName && (
+                                                        <p className="text-[11px] text-slate-600 font-medium">
+                                                            Interno a cargo: <span className="font-bold text-slate-800">{item.internName}</span>
+                                                        </p>
+                                                    )}
+
+                                                    <p className="text-[11px] text-slate-500 italic font-medium leading-normal pl-2 border-l border-slate-300">
+                                                        {item.message}
+                                                    </p>
+                                                </div>
+
+                                                <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5 bg-white/40 p-1.5 rounded-lg border border-slate-100/50">
+                                                    <span>📊</span> {item.lastEvoText}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Información y Mensaje para Alertas de Interno Inactivo */}
+                                        {item.type === "INACTIVE_INTERN" && (
+                                            <div className="space-y-2">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs text-slate-800 leading-normal font-extrabold">
+                                                        👤 Interno: <span className="text-slate-950 font-black">{item.internName}</span>
+                                                    </p>
+                                                    <p className="text-[11px] text-rose-600 font-bold leading-normal bg-rose-50/50 p-2 rounded-lg border border-rose-100">
+                                                        ⚠️ {item.message}
+                                                    </p>
+                                                </div>
+
+                                                <div className="text-[10px] text-slate-500 font-semibold bg-white/60 p-2 rounded-lg border border-slate-100 flex flex-col gap-1">
+                                                    <span className="text-slate-400">Trazabilidad de desempeño:</span>
+                                                    <span className="flex items-center gap-1 text-slate-700">📊 {item.lastEvoText}</span>
+                                                </div>
+
+                                                {/* Listado de Pacientes Asignados para Reasignación Directa */}
+                                                {item.assignedPatients && item.assignedPatients.length > 0 ? (
+                                                    <div className="mt-2 space-y-1.5">
+                                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                                                            Pacientes asignados actualmente ({item.assignedPatients.length}):
+                                                        </p>
+                                                        <div className="space-y-1.5 pl-1">
+                                                            {item.assignedPatients.map(pat => (
+                                                                <div key={pat.id} className="flex items-center justify-between gap-2 bg-white/50 border border-slate-100 p-2 rounded-lg text-[11px] text-slate-700 font-medium">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-bold text-slate-900">{pat.name}</span>
+                                                                        <Link
+                                                                            href={`/app/usuarios?openFicha=${pat.id}`}
+                                                                            onClick={() => setIsOpen(false)}
+                                                                            className="text-[9px] text-indigo-600 hover:underline font-extrabold w-fit"
+                                                                        >
+                                                                            Ver Ficha 📂
+                                                                        </Link>
+                                                                    </div>
+
+                                                                    {/* Selector de Reasignación */}
+                                                                    {reassigningPatientId === pat.id ? (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <select
+                                                                                onChange={(e) => {
+                                                                                    if (e.target.value) {
+                                                                                        handleReassign(pat.id, e.target.value);
+                                                                                    }
+                                                                                }}
+                                                                                defaultValue=""
+                                                                                className="text-[9px] font-black bg-white text-slate-700 border border-indigo-200 rounded p-1"
+                                                                            >
+                                                                                <option value="" disabled>Reasignar a...</option>
+                                                                                {allInterns
+                                                                                    .filter(i => i.uid !== item.internId)
+                                                                                    .map(i => (
+                                                                                        <option key={i.uid} value={i.uid}>
+                                                                                            {i.displayName || i.email}
+                                                                                        </option>
+                                                                                    ))}
+                                                                            </select>
+                                                                            <button 
+                                                                                onClick={() => setReassigningPatientId(null)}
+                                                                                className="text-[9px] text-slate-400 hover:text-slate-600 font-bold px-1"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => setReassigningPatientId(pat.id)}
+                                                                            className="bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-[9px] font-extrabold text-indigo-600 px-2 py-1 rounded transition"
+                                                                        >
+                                                                            Reasignar 🔄
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-[10px] text-slate-400 italic font-medium">
+                                                        Sin pacientes activos asignados actualmente.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Botones de acción Docente */}
                                         {user?.role === "DOCENTE" && (
                                             <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-100/60">
                                                 {item.type === "PENDING_EVOLUTION" && item.internId && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleRestrictAccess(item)}
+                                                            disabled={isBlocked}
+                                                            className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                                                                isBlocked
+                                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                                    : "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 active:scale-95"
+                                                            }`}
+                                                        >
+                                                            {isBlocked ? "🔴 Restringido temporalmente" : "⚠️ Advertir Limitación"}
+                                                        </button>
+
+                                                        {reassigningPatientId === item.patientId ? (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <select
+                                                                    onChange={(e) => {
+                                                                        if (e.target.value) {
+                                                                            handleReassign(item.patientId!, e.target.value);
+                                                                        }
+                                                                    }}
+                                                                    defaultValue=""
+                                                                    className="text-[10px] font-bold bg-white text-slate-700 border border-slate-200 rounded-lg p-1.5 focus:border-indigo-400"
+                                                                >
+                                                                    <option value="" disabled>Seleccionar Interno...</option>
+                                                                    {allInterns
+                                                                        .filter(i => i.uid !== item.internId)
+                                                                        .map(i => (
+                                                                            <option key={i.uid} value={i.uid}>
+                                                                                {i.displayName || i.email}
+                                                                            </option>
+                                                                        ))}
+                                                                </select>
+                                                                <button 
+                                                                    onClick={() => setReassigningPatientId(null)}
+                                                                    className="text-[10px] text-slate-400 hover:text-slate-600 font-bold px-1"
+                                                                >
+                                                                    Cancelar
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setReassigningPatientId(item.patientId!)}
+                                                                className="bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 text-[10px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95"
+                                                            >
+                                                                Reasignar Paciente
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                                
+                                                {item.type === "INACTIVE_INTERN" && item.internId && (
                                                     <button
                                                         onClick={() => handleRestrictAccess(item)}
                                                         disabled={isBlocked}
@@ -543,52 +673,6 @@ export function NotificationCenter() {
                                                         }`}
                                                     >
                                                         {isBlocked ? "🔴 Restringido temporalmente" : "⚠️ Advertir Limitación"}
-                                                    </button>
-                                                )}
-                                                
-                                                {/* Selector de Reasignación Rápida */}
-                                                {reassigningPatientId === item.patientId ? (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <select
-                                                            onChange={(e) => {
-                                                                if (e.target.value) {
-                                                                    handleReassign(item.patientId, e.target.value);
-                                                                }
-                                                            }}
-                                                            defaultValue=""
-                                                            className="text-[10px] font-bold bg-white text-slate-700 border border-slate-200 rounded-lg p-1.5 focus:border-indigo-400"
-                                                        >
-                                                            <option value="" disabled>Seleccionar Interno...</option>
-                                                            {allInterns
-                                                                .filter(i => i.uid !== item.internId)
-                                                                .map(i => (
-                                                                    <option key={i.uid} value={i.uid}>
-                                                                        {i.displayName || i.email}
-                                                                    </option>
-                                                                ))}
-                                                        </select>
-                                                        <button 
-                                                            onClick={() => setReassigningPatientId(null)}
-                                                            className="text-[10px] text-slate-400 hover:text-slate-600 font-bold px-1"
-                                                        >
-                                                            Cancelar
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => setReassigningPatientId(item.patientId)}
-                                                        className="bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 text-[10px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95"
-                                                    >
-                                                        Reasignar Paciente
-                                                    </button>
-                                                )}
-                                                
-                                                {item.type === "INACTIVE_INTERN" && (
-                                                    <button
-                                                        onClick={() => handleFinishProcess(item.procesoId)}
-                                                        className="bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold px-3 py-1.5 rounded-lg transition active:scale-95"
-                                                    >
-                                                        Dar de Alta
                                                     </button>
                                                 )}
                                             </div>
