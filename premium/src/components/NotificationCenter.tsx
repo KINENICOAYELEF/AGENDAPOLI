@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -151,37 +152,52 @@ export function NotificationCenter() {
                 // --- ALERTA 2: INTERNO INACTIVO (> 14 días) - SOLO DOCENTES ---
                 if (user.role === "DOCENTE" && assignedInternId) {
                     const intern = interns.find(i => i.uid === assignedInternId);
-                    if (intern) {
-                        let isInactive = false;
-                        let lastActiveDays = 0;
+                    let isInactive = false;
+                    let lastActiveDays = 0;
+                    let inactiveMessage = "";
 
+                    if (!intern) {
+                        // Caso A: El interno ya no figura en la base de datos de usuarios activos o no tiene el rol de interno
+                        isInactive = true;
+                        lastActiveDays = 999; // Prioridad alta
+                        inactiveMessage = `El interno asignado originalmente (${assignedInternName || "ID: " + assignedInternId}) ya no se encuentra registrado como interno activo.`;
+                    } else {
+                        // Caso B: El interno sí existe, verificamos su última actividad
                         if (intern.lastActiveAt) {
                             const lastActive = new Date(intern.lastActiveAt);
                             const inactiveDiff = Math.abs(today.getTime() - lastActive.getTime());
                             lastActiveDays = Math.floor(inactiveDiff / (1000 * 60 * 60 * 24));
                             isInactive = lastActiveDays > 14;
+                            inactiveMessage = `Interno ${intern.displayName || intern.email} inactivo hace ${lastActiveDays} días.`;
                         } else if (intern.createdAt) {
+                            // Caso C: No tiene lastActiveAt pero fue creado hace tiempo
                             const createdDate = new Date((intern.createdAt as any).seconds ? (intern.createdAt as any).seconds * 1000 : intern.createdAt);
                             const createdDiff = Math.abs(today.getTime() - createdDate.getTime());
                             lastActiveDays = Math.floor(createdDiff / (1000 * 60 * 60 * 24));
                             isInactive = lastActiveDays > 14;
+                            inactiveMessage = `Interno ${intern.displayName || intern.email} sin actividad registrada y creado hace ${lastActiveDays} días.`;
+                        } else {
+                            // Caso D: No tiene registros de conexión ni creación (nunca ha ingresado)
+                            isInactive = true;
+                            lastActiveDays = 999; // Prioridad alta
+                            inactiveMessage = `Interno ${intern.displayName || intern.email} sin registros de actividad (nunca ha ingresado).`;
                         }
+                    }
 
-                        if (isInactive) {
-                            list.push({
-                                id: `inactive_${proc.id}`,
-                                type: "INACTIVE_INTERN",
-                                message: `Interno inactivo hace ${lastActiveDays} días con tratamiento activo.`,
-                                patientId: patient.id!,
-                                patientName: patient.identity.fullName,
-                                procesoId: proc.id!,
-                                internId: assignedInternId,
-                                internName: intern.displayName || intern.email || undefined,
-                                daysCount: lastActiveDays,
-                                resolved: false,
-                                lastEvoText
-                            });
-                        }
+                    if (isInactive) {
+                        list.push({
+                            id: `inactive_${proc.id}`,
+                            type: "INACTIVE_INTERN",
+                            message: inactiveMessage,
+                            patientId: patient.id!,
+                            patientName: patient.identity.fullName,
+                            procesoId: proc.id!,
+                            internId: assignedInternId,
+                            internName: intern ? (intern.displayName || intern.email || undefined) : (assignedInternName || undefined),
+                            daysCount: lastActiveDays,
+                            resolved: false,
+                            lastEvoText
+                        });
                     }
                 }
             });
@@ -457,9 +473,16 @@ export function NotificationCenter() {
                                         badgeColorClass = "bg-amber-100 text-amber-700 border-amber-200";
                                     }
                                 } else {
-                                    cardBgClass = "bg-slate-50/70 border-slate-200 hover:bg-slate-50/90 hover:border-slate-300";
-                                    badgeText = "Inactivo";
-                                    badgeColorClass = "bg-slate-200 text-slate-700 border-slate-300";
+                                    // Para internos inactivos
+                                    if (item.daysCount === 999) {
+                                        cardBgClass = "bg-rose-50/30 border-rose-200 hover:bg-rose-50/60";
+                                        badgeText = "Inactivo/Sin registro";
+                                        badgeColorClass = "bg-rose-100 text-rose-700 border-rose-200";
+                                    } else {
+                                        cardBgClass = "bg-slate-50/70 border-slate-200 hover:bg-slate-50/90 hover:border-slate-300";
+                                        badgeText = "Inactivo";
+                                        badgeColorClass = "bg-slate-200 text-slate-700 border-slate-300";
+                                    }
                                 }
 
                                 return (
@@ -470,18 +493,18 @@ export function NotificationCenter() {
                                         <div className="flex justify-between items-start gap-2">
                                             {/* Badge de Estado y Días */}
                                             <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeColorClass}`}>
-                                                {badgeText} • {item.daysCount} días
+                                                {badgeText} {item.daysCount !== 999 && `• ${item.daysCount} días`}
                                             </span>
                                             
-                                            {/* Link a la ficha clínica del paciente */}
-                                            <a 
+                                            {/* Link de Next.js para evitar el reinicio de la página */}
+                                            <Link 
                                                 href={`/app/usuarios?openFicha=${item.patientId}`} 
                                                 onClick={() => setIsOpen(false)}
                                                 className="text-[11px] font-extrabold text-indigo-600 hover:underline hover:text-indigo-800 transition flex items-center gap-0.5"
                                                 title="Ver Expediente Clínico"
                                             >
                                                 Ver Ficha 📂
-                                            </a>
+                                            </Link>
                                         </div>
 
                                         {/* Información y Mensaje */}
@@ -574,13 +597,13 @@ export function NotificationCenter() {
                                         {/* Botones de acción Interno */}
                                         {user?.role === "INTERNO" && item.type === "PENDING_EVOLUTION" && (
                                             <div className="pt-1 flex justify-end">
-                                                <a
+                                                <Link
                                                     href={`/app/usuarios?openFicha=${item.patientId}`}
                                                     className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3.5 py-1.5 rounded-lg hover:bg-indigo-100 transition active:scale-95"
                                                     onClick={() => setIsOpen(false)}
                                                 >
                                                     ✍️ Registrar Evolución Pendiente
-                                                </a>
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
