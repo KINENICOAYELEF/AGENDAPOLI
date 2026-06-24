@@ -8,14 +8,15 @@ async function cleanVoiceTranscript(rawTranscript: string): Promise<string> {
 
     const systemInstruction = `Eres un asistente de inteligencia artificial especializado en kinesiología y terapia física. Tu tarea exclusiva es corregir, limpiar y reconstruir de manera impecable la transcripción de texto (de voz a texto) de una conversación de examen o entrenamiento clínico entre el Estudiante (o Alumno) y el Tutor (o Comisión).
 
-El sistema de reconocimiento de voz de la API comete errores ortográficos graves, duplica palabras o frases debido al retraso del micrófono, introduce palabras aleatorias que el hablante no dijo, o corta frases.
+El sistema de reconocimiento de voz de la API comete errores ortográficos graves, duplica palabras o frases debido al retraso del micrófono, introduce palabras aleatorias que el hablante no dijo (por ejemplo, transcribir "tonterías" en lugar de "sentadillas"), o corta frases.
 
 INSTRUCCIONES CRÍTICAS DE LIMPIEZA:
-1. **Corrección de Jerga Técnica y Kinesiología:** Corrige de forma exhaustiva términos médicos o kinesiológicos mal transcritos en español (ejemplos: "nocipectivo" -> "nociceptivo", "infraspinoso" -> "infraespinoso", "supraespinoso" -> "supraespinoso", "manguito rotador", "tens" -> "TENS", "gird" -> "GIRD", "artrocinemática", "neurofisiología", "dosificación", "evaluación").
-2. **Eliminación de Duplicaciones y Tartamudeos:** Elimina frases o palabras repetidas de forma consecutiva generadas por el flujo del micrófono (ej: "yo dije que yo dije que hiciéramos" -> "yo dije que hiciéramos").
-3. **Flujo y Gramática Natural:** Repara la coherencia y gramática de las oraciones sin alterar la intención original del hablante. Si una frase quedó inconclusa o mal estructurada por el transcriptor, reescríbela de forma gramaticalmente correcta.
-4. **Preservar Prefijos de Diálogo:** Mantén estrictamente los prefijos y formato del diálogo original del texto de entrada (por ejemplo, si el texto usa "Estudiante:" y "Tutor:", mantén "Estudiante:" y "Tutor:"; si usa "ESTUDIANTE:" y "COMISIÓN:", mantén esos).
-5. **No Resumir:** No resumas el contenido. Conserva cada turno de habla completo y con toda su argumentación clínica original.
+1. **Deducción por Contexto del Tutor (Crucial):** El Tutor IA escucha el audio real del Estudiante y le responde de manera coherente. Si el Estudiante dice algo que se transcribió como absurdo o inconexo (ej. "tonterías") y el Tutor le responde hablando del tema real (ej. "Exacto, las sentadillas..."), deduce la palabra correcta que el estudiante realmente pronunció (en este caso, "sentadillas") y corrígela en el turno del Estudiante. Utiliza activamente las respuestas del Tutor para corregir homófonos y ejercicios clínicos mal transcritos.
+2. **Corrección de Jerga Técnica y Kinesiología:** Corrige de forma exhaustiva términos médicos o kinesiológicos mal transcritos en español (ejemplos: "nocipectivo" -> "nociceptivo", "infraspinoso" -> "infraespinoso", "supraespinoso" -> "supraespinoso", "manguito rotador", "tens" -> "TENS", "gird" -> "GIRD", "artrocinemática", "neurofisiología", "dosificación", "evaluación").
+3. **Eliminación de Duplicaciones y Tartamudeos:** Elimina frases o palabras repetidas de forma consecutiva generadas por el flujo del micrófono (ej: "yo dije que yo dije que hiciéramos" -> "yo dije que hiciéramos").
+4. **Flujo y Gramática Natural:** Repara la coherencia y gramática de las oraciones sin alterar la intención original del hablante. Si una frase quedó inconclusa o mal estructurada por el transcriptor, reescríbela de forma gramaticalmente correcta.
+5. **Preservar Prefijos de Diálogo:** Mantén estrictamente los prefijos y formato del diálogo original del texto de entrada (por ejemplo, si el texto usa "Estudiante:" y "Tutor:", mantén "Estudiante:" y "Tutor:"; si usa "ESTUDIANTE:" y "COMISIÓN:", mantén esos).
+6. **No Resumir:** No resumas el contenido. Conserva cada turno de habla completo y con toda su argumentación clínica original.
 
 Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respetando el formato de turnos.`;
 
@@ -32,7 +33,21 @@ Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respeta
         return cleanedText || rawTranscript;
     } catch (err) {
         console.error("Error al limpiar transcripción con Gemini 2.5 Flash:", err);
-        return rawTranscript; // Fallback to raw transcript on failure
+        // Fallback resiliente: Si se agota la cuota del Flash completo, intentar con Flash Lite
+        try {
+            console.log("Intentando fallback de limpieza con gemini-2.5-flash-lite...");
+            const fallbackText = await callGemini({
+                systemInstruction,
+                userPrompt,
+                modelId: 'gemini-2.5-flash-lite',
+                temperature: 0.1,
+                responseMimeType: 'text/plain'
+            });
+            return fallbackText || rawTranscript;
+        } catch (fallbackErr) {
+            console.error("Error en fallback de limpieza con Gemini 2.5 Flash Lite:", fallbackErr);
+            return rawTranscript; // Fallback final a la transcripción cruda
+        }
     }
 }
 
