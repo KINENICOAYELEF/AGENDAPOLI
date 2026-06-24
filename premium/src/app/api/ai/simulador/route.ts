@@ -26,14 +26,14 @@ Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respeta
         const cleanedText = await callGemini({
             systemInstruction,
             userPrompt,
-            modelId: 'gemini-2.5-flash', // Usar el modelo Flash completo para mayor calidad de corrección
+            modelId: 'gemini-3.1-flash-lite-preview', // Usar el modelo con 500 RPD por defecto para cuidar la cuota
             temperature: 0.1,
             responseMimeType: 'text/plain'
         });
         return cleanedText || rawTranscript;
     } catch (err) {
-        console.error("Error al limpiar transcripción con Gemini 2.5 Flash:", err);
-        // Fallback resiliente: Si se agota la cuota del Flash completo, intentar con Flash Lite
+        console.error("Error al limpiar transcripción con Gemini 3.1 Flash Lite:", err);
+        // Fallback resiliente 1: Intentar con gemini-2.5-flash-lite (20 RPD)
         try {
             console.log("Intentando fallback de limpieza con gemini-2.5-flash-lite...");
             const fallbackText = await callGemini({
@@ -46,7 +46,21 @@ Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respeta
             return fallbackText || rawTranscript;
         } catch (fallbackErr) {
             console.error("Error en fallback de limpieza con Gemini 2.5 Flash Lite:", fallbackErr);
-            return rawTranscript; // Fallback final a la transcripción cruda
+            // Fallback resiliente 2: Intentar con gemini-2.5-flash (20 RPD)
+            try {
+                console.log("Intentando fallback de limpieza con gemini-2.5-flash...");
+                const fallbackText2 = await callGemini({
+                    systemInstruction,
+                    userPrompt,
+                    modelId: 'gemini-2.5-flash',
+                    temperature: 0.1,
+                    responseMimeType: 'text/plain'
+                });
+                return fallbackText2 || rawTranscript;
+            } catch (fallbackErr2) {
+                console.error("Error en fallback final de limpieza con Gemini 2.5 Flash:", fallbackErr2);
+                return rawTranscript; // Fallback final a la transcripción cruda
+            }
         }
     }
 }

@@ -63,7 +63,8 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p4_base_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'low' },
-            { modelId: 'gemini-2.5-flash' }
+            { modelId: 'gemini-2.5-flash' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'EXPRESS_V2' && aiAction === 'EXPRESS_PLAN') {
@@ -79,7 +80,8 @@ export function resolveModelRoute(screen: string, aiAction: AIAction): RouteReso
         cacheBucket = 'p4_premium_ai_cache';
         orderedModels = [
             { modelId: 'gemini-3-flash-preview', thinkingLevel: 'medium' },
-            { modelId: 'gemini-2.5-flash' }
+            { modelId: 'gemini-2.5-flash' },
+            { modelId: 'gemini-3.1-flash-lite-preview' }
         ];
     }
     else if (screen === 'SIMULADOR') {
