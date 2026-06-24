@@ -467,7 +467,7 @@ Para mantener la compatibilidad con el gráfico de Radar acumulado del alumno, t
 4. dosificacion: Capacidad para prescribir ejercicio usando FITT-VP, RIR/RPE y progresión detallada de cargas.
 5. terapiaManual: Fundamentos y justificación biomecánica o neurofisiológica de técnicas manuales (ej. Maitland, Mulligan).
 
-Si un eje del radar NO fue evaluado o no guarda relación con el tema tratado, asígnale 100 puntos en ese eje (para no castigar ni sesgar el promedio acumulado del estudiante).
+Si un eje del radar NO fue evaluado o no guarda relación directa con el tema tratado en el diálogo, asígnale EXACTAMENTE -1 en ese eje (ej: "terapiaManual": -1). No le asignes 100 ni 0. Debe ser -1.
 
 === INFERENCIA DE ESTILO COGNITIVO ===
 Infiere el estilo cognitivo preponderante del estudiante en esta sesión:
