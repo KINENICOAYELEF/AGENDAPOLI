@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { getUserTrainingProfile, selectOptimalTopicForUser, saveTrainingSession, UserTrainingProfile } from '../services/entrenamientoFirebase';
 import { generateSocraticTutorPrompt } from '../utils/patientPrompts';
-import { ClinicalTopic } from '../utils/clinicalTopics';
+import { CLINICAL_TOPICS, ClinicalTopic } from '../utils/clinicalTopics';
 import { ResponsiveRadar } from '@nivo/radar';
 
 export default function EntrenamientoDiarioVoz() {
@@ -20,6 +20,11 @@ export default function EntrenamientoDiarioVoz() {
     const [evaluating, setEvaluating] = useState(false);
     const [evaluationResult, setEvaluationResult] = useState<any>(null);
 
+    // Accordion and modal states for selectable Topic Bank
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+    const [selectedTopic, setSelectedTopic] = useState<ClinicalTopic | null>(null);
+    const [showTopicModal, setShowTopicModal] = useState(false);
+
     const {
         connect,
         disconnect,
@@ -32,7 +37,13 @@ export default function EntrenamientoDiarioVoz() {
         clearTranscript
     } = useGeminiLive({
         systemInstruction: currentTopic 
-            ? generateSocraticTutorPrompt(currentTopic.nombre, currentTopic.focoPrincipal, historicalErrors, profile?.estiloCognitivo || 'NEUTRO')
+            ? generateSocraticTutorPrompt(
+                currentTopic.nombre, 
+                currentTopic.focoPrincipal, 
+                historicalErrors, 
+                profile?.estiloCognitivo || 'NEUTRO',
+                user?.displayName ? user.displayName.split(' ')[0] : 'Colega'
+              )
             : '',
         voiceName: 'Orion' // Tutor
     });
@@ -56,6 +67,7 @@ export default function EntrenamientoDiarioVoz() {
         }
     };
 
+    // Auto-selected recommended challenge
     const handleStartSession = async () => {
         if (!user) return;
         setSessionState('CONNECTING');
@@ -69,6 +81,20 @@ export default function EntrenamientoDiarioVoz() {
             console.error(error);
             setSessionState('IDLE');
         }
+    };
+
+    // Selected specific topic challenge
+    const handleStartTopicSession = async (topic: ClinicalTopic) => {
+        if (!user) return;
+        setShowTopicModal(false);
+        setCurrentTopic(topic);
+        setSessionState('CONNECTING');
+        setEvaluationResult(null);
+        clearTranscript();
+        
+        const histProgress = profile?.temas[topic.id];
+        const errors = histProgress?.erroresHistoricos || [];
+        setHistoricalErrors(errors);
     };
 
     // Escuchar el estado para conectar el mic cuando currentTopic ya esté en el estado de React
@@ -152,7 +178,83 @@ export default function EntrenamientoDiarioVoz() {
     const retosPendientes = Math.max(0, metaSemanal - retosCompletados);
     const mostrarAlertaPersistente = retosPendientes > 3;
 
-    // Preparar data del Radar
+    // Calcular radar acumulado histórico
+    const computeCumulativeRadar = (temas: Record<string, any>) => {
+        const totals = {
+            biomecanica: 0,
+            diagnostico: 0,
+            neurofisiologia: 0,
+            dosificacion: 0,
+            terapiaManual: 0,
+        };
+        const counts = {
+            biomecanica: 0,
+            diagnostico: 0,
+            neurofisiologia: 0,
+            dosificacion: 0,
+            terapiaManual: 0,
+        };
+
+        Object.values(temas).forEach((t: any) => {
+            if (t.radarUltimo) {
+                (Object.keys(totals) as Array<keyof typeof totals>).forEach((key) => {
+                    const score = t.radarUltimo[key];
+                    if (score !== undefined && score !== null) {
+                        totals[key] += score;
+                        counts[key] += 1;
+                    }
+                });
+            }
+        });
+
+        const hasAnyData = Object.values(counts).some(c => c > 0);
+
+        return {
+            scores: {
+                biomecanica: counts.biomecanica > 0 ? Math.round(totals.biomecanica / counts.biomecanica) : 0,
+                diagnostico: counts.diagnostico > 0 ? Math.round(totals.diagnostico / counts.diagnostico) : 0,
+                neurofisiologia: counts.neurofisiologia > 0 ? Math.round(totals.neurofisiologia / counts.neurofisiologia) : 0,
+                dosificacion: counts.dosificacion > 0 ? Math.round(totals.dosificacion / counts.dosificacion) : 0,
+                terapiaManual: counts.terapiaManual > 0 ? Math.round(totals.terapiaManual / counts.terapiaManual) : 0,
+            },
+            hasAnyData
+        };
+    };
+
+    const histRadar = computeCumulativeRadar(profile.temas);
+
+    // Determinar la competencia más débil
+    let weakestArea = null;
+    if (histRadar.hasAnyData) {
+        const subjects = [
+            { key: 'biomecanica', label: 'Biomecánica', categoryName: 'Biomecánica' },
+            { key: 'diagnostico', label: 'Diagnóstico', categoryName: 'Diagnóstico Diferencial' },
+            { key: 'neurofisiologia', label: 'Neurofisiología', categoryName: 'Neurofisiología' },
+            { key: 'dosificacion', label: 'Dosificación', categoryName: 'Dosificación y Reparación' },
+            { key: 'terapiaManual', label: 'Terapia Manual', categoryName: 'Bases del Tratamiento' },
+        ];
+        
+        let minScore = 101;
+        let minSubj: { key: string; label: string; categoryName: string } | null = null;
+        for (const subj of subjects) {
+            const val = histRadar.scores[subj.key as keyof typeof histRadar.scores];
+            if (val < minScore) {
+                minScore = val;
+                minSubj = subj;
+            }
+        }
+        
+        if (minSubj && minScore < 85) {
+            weakestArea = {
+                key: minSubj.key,
+                label: minSubj.label,
+                categoryName: minSubj.categoryName,
+                score: minScore
+            };
+        }
+    }
+
+    // Preparar data del Radar de la sesión actual
     const radarData = evaluationResult ? [
         { subject: 'Biomecánica', score: evaluationResult.radarScores.biomecanica },
         { subject: 'Diagnóstico', score: evaluationResult.radarScores.diagnostico },
@@ -160,6 +262,42 @@ export default function EntrenamientoDiarioVoz() {
         { subject: 'Dosificación', score: evaluationResult.radarScores.dosificacion },
         { subject: 'Terapia Manual', score: evaluationResult.radarScores.terapiaManual },
     ] : [];
+
+    // Preparar data del Radar acumulado histórico
+    const cumulativeRadarData = [
+        { subject: 'Biomecánica', score: histRadar.scores.biomecanica },
+        { subject: 'Diagnóstico', score: histRadar.scores.diagnostico },
+        { subject: 'Neurofisiología', score: histRadar.scores.neurofisiologia },
+        { subject: 'Dosificación', score: histRadar.scores.dosificacion },
+        { subject: 'Terapia Manual', score: histRadar.scores.terapiaManual },
+    ];
+
+    const categoriesList = [
+        { id: 'anatomia', name: 'Anatomía Funcional', label: '1. Anatomía Funcional y Artrocinemática' },
+        { id: 'semiologia', name: 'Semiología', label: '2. Semiología y Significado Tisular' },
+        { id: 'biomecanica', name: 'Biomecánica', label: '3. Biomecánica del Mecanismo Lesional' },
+        { id: 'diagnostico', name: 'Diagnóstico Diferencial', label: '4. Diagnóstico Diferencial y Pruebas Clínicas' },
+        { id: 'neurofisiologia', name: 'Neurofisiología', label: '5. Neurofisiología del Dolor' },
+        { id: 'bases', name: 'Bases del Tratamiento', label: '6. Bases Teóricas del Tratamiento' },
+        { id: 'dosificacion', name: 'Dosificación y Reparación', label: '7. Dosificación, Pronóstico y Reparación' },
+    ];
+
+    const getCategoryProgress = (categoryName: string) => {
+        const topics = CLINICAL_TOPICS.filter(t => t.categoria === categoryName);
+        const completed = topics.filter(t => profile.temas[t.id] !== undefined);
+        return {
+            total: topics.length,
+            completed: completed.length
+        };
+    };
+
+    const getTopicsByCategory = (categoryName: string) => {
+        return CLINICAL_TOPICS.filter(t => t.categoria === categoryName);
+    };
+
+    const toggleCategory = (catId: string) => {
+        setExpandedCategory(expandedCategory === catId ? null : catId);
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -173,7 +311,7 @@ export default function EntrenamientoDiarioVoz() {
                             <h3 className="text-sm font-bold text-red-800">Atención: Retraso Crítico</h3>
                             <div className="mt-1 text-sm text-red-700">
                                 Tienes {retosPendientes} interrogaciones pendientes esta semana. Recuerda que la consistencia es clave para fijar el conocimiento clínico.
-                            </div>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -211,28 +349,169 @@ export default function EntrenamientoDiarioVoz() {
 
             {/* Main Action Area */}
             {sessionState === 'IDLE' && (
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-10 text-center text-white shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                    
-                    {retosCompletados >= metaSemanal ? (
-                        <>
-                            <div className="text-5xl mb-4">🏆</div>
-                            <h3 className="text-2xl font-bold mb-2">¡Meta Semanal Alcanzada!</h3>
-                            <p className="text-indigo-200 mb-6 max-w-lg mx-auto">Has completado tus {metaSemanal} retos semanales de razonamiento clínico. Tu cerebro está en forma.</p>
-                            <button onClick={handleStartSession} className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl transition-all border border-white/20">
-                                Seguir practicando (Opcional)
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <div className="text-5xl mb-4">🧠</div>
-                            <h3 className="text-3xl font-bold mb-2">Interrogatorio del Día</h3>
-                            <p className="text-indigo-200 mb-8 max-w-lg mx-auto">El algoritmo te asignará uno de los 40 temas clínicos (o reforzará uno débil). El tutor te exigirá fundamentar con evidencia y razonamiento.</p>
-                            <button onClick={handleStartSession} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-10 rounded-2xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] text-lg hover:scale-105 active:scale-95">
-                                ▶ Iniciar Reto {retosCompletados + 1}
-                            </button>
-                        </>
-                    )}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column: Challenges, Weakness Banner, and Selectable Topic Bank */}
+                    <div className="lg:col-span-2 space-y-6">
+                        
+                        {/* Weakest Area Alerter */}
+                        {weakestArea && (
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 p-5 rounded-2xl shadow-sm">
+                                <div className="flex gap-3">
+                                    <span className="text-2xl">⚠️</span>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-amber-800">Sugerencia de Refuerzo Clínico</h4>
+                                        <p className="mt-1 text-sm text-amber-700">
+                                            Tu área con menor promedio histórico en el radar es <strong className="font-bold text-amber-900">{weakestArea.label}</strong> ({weakestArea.score}%). 
+                                            Te sugerimos priorizar la práctica de temas en la categoría <strong className="font-bold text-amber-900">{weakestArea.categoryName}</strong>.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Interactive Topic Bank */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">Banco de Temas Clínicos</h3>
+                                    <p className="text-slate-500 text-sm">Explora los 163 temas de interrogación y selecciona tu área a entrenar.</p>
+                                </div>
+                                <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-1.5 text-xs text-indigo-700 font-bold">
+                                    {Object.keys(profile.temas).length} / 163 Temas Vistos
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {categoriesList.map(cat => {
+                                    const progress = getCategoryProgress(cat.name);
+                                    const isExpanded = expandedCategory === cat.id;
+                                    const catTopics = getTopicsByCategory(cat.name);
+
+                                    return (
+                                        <div key={cat.id} className="border border-slate-100 rounded-2xl overflow-hidden transition-all duration-200">
+                                            {/* Header */}
+                                            <button 
+                                                onClick={() => toggleCategory(cat.id)}
+                                                className={`w-full flex justify-between items-center p-4 text-left transition-all ${isExpanded ? 'bg-slate-50 border-b border-slate-100' : 'hover:bg-slate-50/55 bg-white'}`}
+                                            >
+                                                <div>
+                                                    <span className="font-bold text-slate-800 text-sm md:text-base">{cat.label}</span>
+                                                    <span className="ml-2 text-xs text-slate-500 font-medium">({progress.completed} / {progress.total} completados)</span>
+                                                </div>
+                                                <span className={`text-slate-400 font-bold text-lg transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                                                    ▶
+                                                </span>
+                                            </button>
+
+                                            {/* Body */}
+                                            {isExpanded && (
+                                                <div className="bg-white p-3 max-h-96 overflow-y-auto divide-y divide-slate-100">
+                                                    {catTopics.map(topic => {
+                                                        const attempt = profile.temas[topic.id];
+                                                        const isCompleted = attempt !== undefined;
+                                                        return (
+                                                            <div 
+                                                                key={topic.id}
+                                                                onClick={() => {
+                                                                    setSelectedTopic(topic);
+                                                                    setShowTopicModal(true);
+                                                                }}
+                                                                className="flex justify-between items-center py-3 px-2 hover:bg-indigo-50/40 rounded-xl cursor-pointer group transition-all duration-150"
+                                                            >
+                                                                <div className="pr-4 flex-1">
+                                                                    <div className="font-semibold text-slate-700 text-sm group-hover:text-indigo-700 transition-colors">
+                                                                        {topic.nombre}
+                                                                    </div>
+                                                                    <p className="text-slate-400 text-xs line-clamp-1 mt-0.5">
+                                                                        {topic.focoPrincipal}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex-shrink-0">
+                                                                    {isCompleted ? (
+                                                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${attempt.ultimoPuntaje >= 4.0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                                                            Nota: {attempt.ultimoPuntaje.toFixed(1)}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="px-2.5 py-1 text-xs font-semibold rounded-lg border bg-slate-50 text-slate-400 border-slate-200">
+                                                                            Pendiente
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Cumulative Radar & Quick Recommendation Button */}
+                    <div className="space-y-6">
+                        {/* Suggested / Auto Challenge card */}
+                        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                            <div>
+                                <div className="text-3xl mb-3">⚡</div>
+                                <h3 className="text-xl font-bold mb-1">Entrenamiento Inteligente</h3>
+                                <p className="text-indigo-200 text-xs leading-relaxed">
+                                    El algoritmo de repetición espaciada seleccionará el mejor tema para ti en base a tus debilidades y temas pendientes.
+                                </p>
+                            </div>
+                            <div className="mt-4">
+                                <button 
+                                    onClick={handleStartSession} 
+                                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-[1.02] active:scale-[0.98] text-sm"
+                                >
+                                    Iniciar Reto Recomendado
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Cumulative Radar Chart */}
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                            <h4 className="font-bold text-slate-800 text-base mb-1 text-center">Rendimiento Acumulado</h4>
+                            <p className="text-slate-500 text-xs text-center mb-4">Promedio general en tu radar de competencias</p>
+                            
+                            {histRadar.hasAnyData ? (
+                                <div className="h-[280px]">
+                                    <ResponsiveRadar
+                                        data={cumulativeRadarData}
+                                        keys={['score']}
+                                        indexBy="subject"
+                                        maxValue={100}
+                                        margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+                                        curve="linearClosed"
+                                        borderWidth={2}
+                                        borderColor={{ from: 'color' }}
+                                        gridLevels={5}
+                                        gridShape="circular"
+                                        gridLabelOffset={12}
+                                        enableDots={true}
+                                        dotSize={6}
+                                        dotColor={{ theme: 'background' }}
+                                        dotBorderWidth={1.5}
+                                        dotBorderColor={{ from: 'color' }}
+                                        enableDotLabel={true}
+                                        dotLabel="value"
+                                        dotLabelYOffset={-10}
+                                        colors={['#6366f1']}
+                                        fillOpacity={0.25}
+                                        blendMode="multiply"
+                                        animate={true}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="py-12 px-4 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
+                                    <div className="text-3xl mb-2">📊</div>
+                                    <p className="text-xs font-medium">Tu radar histórico aparecerá aquí una vez que completes tu primera sesión.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -388,6 +667,83 @@ export default function EntrenamientoDiarioVoz() {
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Modal de Detalle de Tema */}
+            {showTopicModal && selectedTopic && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-start">
+                            <div>
+                                <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold rounded-lg text-xs">
+                                    {selectedTopic.categoria}
+                                </span>
+                                <h3 className="text-lg font-bold text-slate-800 mt-2">{selectedTopic.nombre}</h3>
+                            </div>
+                            <button 
+                                onClick={() => setShowTopicModal(false)}
+                                className="text-slate-400 hover:text-slate-600 text-xl font-bold bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 overflow-y-auto space-y-4">
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Foco del Entrenamiento</h4>
+                                <p className="text-slate-700 text-sm leading-relaxed">
+                                    {selectedTopic.focoPrincipal}
+                                </p>
+                            </div>
+
+                            {/* Historial de Errores */}
+                            {profile.temas[selectedTopic.id]?.erroresHistoricos && profile.temas[selectedTopic.id].erroresHistoricos.length > 0 && (
+                                <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+                                    <h4 className="text-xs font-bold text-red-800 flex items-center gap-1.5 mb-1.5">
+                                        <span>⚠️</span> Debilidades Detectadas en Intentos Anteriores:
+                                    </h4>
+                                    <ul className="list-disc pl-5 text-red-700 text-xs space-y-1">
+                                        {profile.temas[selectedTopic.id].erroresHistoricos.map((err, i) => (
+                                            <li key={i}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Estadísticas de Intentos */}
+                            {profile.temas[selectedTopic.id] && (
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Veces Completado</span>
+                                        <span className="text-lg font-bold text-slate-700 mt-0.5 block">{profile.temas[selectedTopic.id].vecesCompletado}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nota Promedio</span>
+                                        <span className="text-lg font-bold text-slate-700 mt-0.5 block">{profile.temas[selectedTopic.id].puntajePromedio.toFixed(1)}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
+                            <button 
+                                onClick={() => setShowTopicModal(false)}
+                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-all text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={() => handleStartTopicSession(selectedTopic)}
+                                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)] text-sm"
+                            >
+                                Iniciar Interrogación
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
