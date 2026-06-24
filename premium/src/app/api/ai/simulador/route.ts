@@ -6,31 +6,32 @@ import { SimCaseSchema, SimInterviewSchema, SimInterviewFeedbackSchema, SimExamS
 async function cleanVoiceTranscript(rawTranscript: string): Promise<string> {
     if (!rawTranscript || rawTranscript.trim().length < 10) return rawTranscript;
 
-    const systemInstruction = `Eres un asistente docente experto en kinesiología. Tu tarea es corregir, limpiar y pulir la transcripción de audio (de voz a texto) de una conversación de examen entre un Alumno y la Comisión o Tutor.
-El sistema de transcripción de voz a veces comete errores ortográficos, repite frases, inserta palabras que el alumno no dijo, o transcribe ruidos de fondo.
+    const systemInstruction = `Eres un asistente de inteligencia artificial especializado en kinesiología y terapia física. Tu tarea exclusiva es corregir, limpiar y reconstruir de manera impecable la transcripción de texto (de voz a texto) de una conversación de examen o entrenamiento clínico entre el Estudiante (o Alumno) y el Tutor (o Comisión).
 
-INSTRUCCIONES DE LIMPIEZA:
-1. Corrige palabras mal escritas o mal transcritas (ej. "nocipectivo" -> "nociceptivo", "infraspinoso" -> "infraespinoso", "tens" -> "TENS", "gird" -> "GIRD").
-2. Elimina tartamudeos, repeticiones duplicadas de palabras y muletillas innecesarias.
-3. Elimina oraciones o fragmentos sin sentido que parezcan ruidos de transcripción o alucinaciones.
-4. Mantén estrictamente el formato de diálogo original (ej: "ESTUDIANTE: ..." y "COMISIÓN: ...").
-5. Conserva el significado clínico y técnico original de lo que dijo el estudiante sin resumir ni cambiar el fondo de sus respuestas.
+El sistema de reconocimiento de voz de la API comete errores ortográficos graves, duplica palabras o frases debido al retraso del micrófono, introduce palabras aleatorias que el hablante no dijo, o corta frases.
+
+INSTRUCCIONES CRÍTICAS DE LIMPIEZA:
+1. **Corrección de Jerga Técnica y Kinesiología:** Corrige de forma exhaustiva términos médicos o kinesiológicos mal transcritos en español (ejemplos: "nocipectivo" -> "nociceptivo", "infraspinoso" -> "infraespinoso", "supraespinoso" -> "supraespinoso", "manguito rotador", "tens" -> "TENS", "gird" -> "GIRD", "artrocinemática", "neurofisiología", "dosificación", "evaluación").
+2. **Eliminación de Duplicaciones y Tartamudeos:** Elimina frases o palabras repetidas de forma consecutiva generadas por el flujo del micrófono (ej: "yo dije que yo dije que hiciéramos" -> "yo dije que hiciéramos").
+3. **Flujo y Gramática Natural:** Repara la coherencia y gramática de las oraciones sin alterar la intención original del hablante. Si una frase quedó inconclusa o mal estructurada por el transcriptor, reescríbela de forma gramaticalmente correcta.
+4. **Preservar Prefijos de Diálogo:** Mantén estrictamente los prefijos y formato del diálogo original del texto de entrada (por ejemplo, si el texto usa "Estudiante:" y "Tutor:", mantén "Estudiante:" y "Tutor:"; si usa "ESTUDIANTE:" y "COMISIÓN:", mantén esos).
+5. **No Resumir:** No resumas el contenido. Conserva cada turno de habla completo y con toda su argumentación clínica original.
 
 Retorna ÚNICAMENTE la transcripción limpia en formato de texto simple, respetando el formato de turnos.`;
 
-    const userPrompt = `Limpia y corrige la siguiente transcripción:\n\n${rawTranscript}`;
+    const userPrompt = `Limpia, corrige y repara la siguiente transcripción de voz a texto:\n\n${rawTranscript}`;
 
     try {
         const cleanedText = await callGemini({
             systemInstruction,
             userPrompt,
-            modelId: 'gemini-2.5-flash-lite',
+            modelId: 'gemini-2.5-flash', // Usar el modelo Flash completo para mayor calidad de corrección
             temperature: 0.1,
             responseMimeType: 'text/plain'
         });
         return cleanedText || rawTranscript;
     } catch (err) {
-        console.error("Error al limpiar transcripción con Gemini Lite:", err);
+        console.error("Error al limpiar transcripción con Gemini 2.5 Flash:", err);
         return rawTranscript; // Fallback to raw transcript on failure
     }
 }

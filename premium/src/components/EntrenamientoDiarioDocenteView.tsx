@@ -31,6 +31,7 @@ export function EntrenamientoDiarioDocenteView() {
         try {
             // Fetch all interns
             const interns = await UsersService.getInterns();
+            const internsMap = new Map(interns.map(i => [i.uid, i]));
             
             // Fetch all training profiles
             const profilesSnap = await getDocs(collection(db, 'training_profiles'));
@@ -39,23 +40,54 @@ export function EntrenamientoDiarioDocenteView() {
                 profilesMap.set(d.id, d.data() as UserTrainingProfile);
             });
 
-            // Merge interns with their training profiles
-            const merged: StudentData[] = interns.map(intern => {
-                const profile = profilesMap.get(intern.uid) || {
-                    userId: intern.uid,
-                    temas: {},
-                    retosCompletadosTotal: 0,
-                    ultimaSesionSemana: null,
-                    sesionesCompletadasEstaSemana: 0,
-                    estiloCognitivo: 'NEUTRO'
-                };
-                return {
-                    uid: intern.uid,
-                    name: intern.displayName || (intern.email ? intern.email.split('@')[0] : 'Sin Email'),
-                    email: intern.email || '',
-                    profile
-                };
-            });
+            // Merge all practice profiles
+            const merged: StudentData[] = [];
+
+            for (const [uid, profile] of profilesMap.entries()) {
+                const existingIntern = internsMap.get(uid);
+                if (existingIntern) {
+                    merged.push({
+                        uid: existingIntern.uid,
+                        name: existingIntern.displayName || (existingIntern.email ? existingIntern.email.split('@')[0] : 'Sin Email'),
+                        email: existingIntern.email || '',
+                        profile
+                    });
+                } else {
+                    // Try to fetch information of docente or other user who has practiced
+                    try {
+                        const userDoc = await UsersService.getById(uid);
+                        if (userDoc) {
+                            merged.push({
+                                uid: userDoc.uid,
+                                name: `${userDoc.displayName || (userDoc.email ? userDoc.email.split('@')[0] : 'Docente')} (Docente)`,
+                                email: userDoc.email || '',
+                                profile
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Error cargando detalles del docente:", uid, e);
+                    }
+                }
+            }
+
+            // Also, if there are interns that haven't practiced yet, add them with empty profiles so the teacher can see they have 0 progress
+            for (const intern of interns) {
+                if (!profilesMap.has(intern.uid)) {
+                    merged.push({
+                        uid: intern.uid,
+                        name: intern.displayName || (intern.email ? intern.email.split('@')[0] : 'Sin Email'),
+                        email: intern.email || '',
+                        profile: {
+                            userId: intern.uid,
+                            temas: {},
+                            retosCompletadosTotal: 0,
+                            ultimaSesionSemana: null,
+                            sesionesCompletadasEstaSemana: 0,
+                            estiloCognitivo: 'NEUTRO'
+                        }
+                    });
+                }
+            }
 
             setStudents(merged);
         } catch (error) {
