@@ -19,6 +19,28 @@ export default function EntrenamientoDiarioVoz() {
     
     const [evaluating, setEvaluating] = useState(false);
     const [evaluationResult, setEvaluationResult] = useState<any>(null);
+    const [timer, setTimer] = useState(0);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout | null = null;
+        if (sessionState === 'IN_PROGRESS') {
+            setTimer(0);
+            interval = setInterval(() => {
+                setTimer(prev => prev + 1);
+            }, 1000);
+        } else {
+            if (interval) clearInterval(interval);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [sessionState]);
+
+    const formatTime = (sec: number) => {
+        const m = Math.floor(sec / 60).toString().padStart(2, '0');
+        const s = (sec % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
 
     // Accordion and modal states for selectable Topic Bank
     const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -154,7 +176,8 @@ export default function EntrenamientoDiarioVoz() {
                         evalData.errores,
                         evalData.radarScores,
                         evalData.estiloCognitivoSugerido,
-                        evalData.cleanedTranscript || transcriptText
+                        evalData.cleanedTranscript || transcriptText,
+                        evalData.feedback
                     );
                     await loadProfile(); 
                 }
@@ -254,13 +277,13 @@ export default function EntrenamientoDiarioVoz() {
         }
     }
 
-    // Preparar data del Radar de la sesión actual
+    // Preparar data del Radar de la sesión actual (mapeando -1 a 0 para graficado correcto)
     const radarData = evaluationResult ? [
-        { subject: 'Biomecánica', score: evaluationResult.radarScores.biomecanica },
-        { subject: 'Diagnóstico', score: evaluationResult.radarScores.diagnostico },
-        { subject: 'Neurofisiología', score: evaluationResult.radarScores.neurofisiologia },
-        { subject: 'Dosificación', score: evaluationResult.radarScores.dosificacion },
-        { subject: 'Terapia Manual', score: evaluationResult.radarScores.terapiaManual },
+        { subject: 'Biomecánica', score: evaluationResult.radarScores.biomecanica === -1 ? 0 : evaluationResult.radarScores.biomecanica },
+        { subject: 'Diagnóstico', score: evaluationResult.radarScores.diagnostico === -1 ? 0 : evaluationResult.radarScores.diagnostico },
+        { subject: 'Neurofisiología', score: evaluationResult.radarScores.neurofisiologia === -1 ? 0 : evaluationResult.radarScores.neurofisiologia },
+        { subject: 'Dosificación', score: evaluationResult.radarScores.dosificacion === -1 ? 0 : evaluationResult.radarScores.dosificacion },
+        { subject: 'Terapia Manual', score: evaluationResult.radarScores.terapiaManual === -1 ? 0 : evaluationResult.radarScores.terapiaManual },
     ] : [];
 
     // Preparar data del Radar acumulado histórico
@@ -527,8 +550,13 @@ export default function EntrenamientoDiarioVoz() {
             {sessionState === 'IN_PROGRESS' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8">
                     <div className="text-center">
-                        <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-800 font-bold rounded-full text-sm mb-4">
-                            Interrogatorio Activo
+                        <div className="flex justify-center gap-3 mb-4">
+                            <div className="inline-block px-4 py-1 bg-indigo-100 text-indigo-800 font-bold rounded-full text-sm">
+                                Interrogatorio Activo
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-4 py-1 bg-slate-100 text-slate-700 font-bold rounded-full text-sm animate-pulse">
+                                ⏱️ {formatTime(timer)}
+                            </div>
                         </div>
                         <h3 className="font-bold text-slate-800 text-xl mb-1">Tema: {currentTopic?.nombre}</h3>
                         <p className="text-slate-500 text-sm">Escucha el caso que planteará el tutor y defiéndelo.</p>
