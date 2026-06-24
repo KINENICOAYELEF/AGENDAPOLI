@@ -216,11 +216,11 @@ export type SimCommissionType = z.infer<typeof SimCommissionSchema>;
 export const SimTrainingEvaluationSchema = z.object({
     puntaje: z.coerce.number().min(1).max(7).describe("Nota de 1.0 a 7.0 (donde 4.0 es el 60% de 100)"),
     radarScores: z.object({
-        biomecanica: z.coerce.number().min(0).max(100),
-        diagnostico: z.coerce.number().min(0).max(100),
-        neurofisiologia: z.coerce.number().min(0).max(100),
-        dosificacion: z.coerce.number().min(0).max(100),
-        terapiaManual: z.coerce.number().min(0).max(100),
+        biomecanica: z.coerce.number().min(-1).max(100),
+        diagnostico: z.coerce.number().min(-1).max(100),
+        neurofisiologia: z.coerce.number().min(-1).max(100),
+        dosificacion: z.coerce.number().min(-1).max(100),
+        terapiaManual: z.coerce.number().min(-1).max(100),
     }),
     feedback: z.array(z.string()).describe("Lista de cosas que hizo bien"),
     errores: z.array(z.string()).describe("Lista de errores conceptuales cometidos"),
