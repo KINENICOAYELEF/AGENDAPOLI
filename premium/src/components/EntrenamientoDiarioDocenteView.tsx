@@ -6,6 +6,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { UsersService } from '@/services/users';
 import { UserTrainingProfile, TopicProgress } from '@/services/entrenamientoFirebase';
 import { CLINICAL_TOPICS, ClinicalTopic } from '../utils/clinicalTopics';
+import { KNEE_TOPICS } from '../utils/kneeTopics';
 import { ResponsiveRadar } from '@nivo/radar';
 
 interface StudentData {
@@ -322,12 +323,14 @@ export function EntrenamientoDiarioDocenteView() {
                                     </div>
                                 ) : (
                                     Object.values(selectedStudent.profile.temas).map(attempt => {
-                                        const topic = CLINICAL_TOPICS.find(t => t.id === attempt.topicId) || ({
-                                            id: attempt.topicId,
-                                            nombre: `Tema ${attempt.topicId}`,
-                                            focoPrincipal: '',
-                                            categoria: 'Desconocida'
-                                        } as unknown as ClinicalTopic);
+                                        const topic = CLINICAL_TOPICS.find(t => t.id === attempt.topicId) 
+                                            || (KNEE_TOPICS.find(t => t.id === attempt.topicId) as unknown as ClinicalTopic)
+                                            || ({
+                                                id: attempt.topicId,
+                                                nombre: `Tema ${attempt.topicId}`,
+                                                focoPrincipal: '',
+                                                categoria: 'Desconocida'
+                                            } as unknown as ClinicalTopic);
                                         
                                         const date = attempt.ultimoRepaso 
                                             ? attempt.ultimoRepaso.toDate().toLocaleDateString()

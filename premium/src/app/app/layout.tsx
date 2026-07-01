@@ -133,6 +133,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             ⚡ Entrenamiento Diario {user.role === 'DOCENTE' && '(BETA DOCENTE)'}
                         </Link>
                     )}
+                    {(user.role === 'DOCENTE' || user.email === 'deny.contreras14@gmail.com') && (
+                        <Link href="/app/entrenamiento-rodilla" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-cyan-300 font-bold mt-2">
+                            🦵 Caso Especial Rodilla {user.role === 'DOCENTE' && '(BETA)'}
+                        </Link>
+                    )}
                     <Link href="/app/defensa-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-300 font-bold mt-2">
                         🗣️ Defensa Comisión (Voz)
                     </Link>
