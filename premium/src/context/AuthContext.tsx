@@ -46,6 +46,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                     // Suscribirse a cambios en tiempo real del perfil
                     unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
+                        // Si la respuesta inicial viene del cache local y reporta que no existe,
+                        // esperamos a la confirmación real del servidor antes de tomar una acción.
+                        if (!docSnap.exists() && docSnap.metadata.fromCache) {
+                            return;
+                        }
+
                         let userRole: Role = "PENDING";
                         let additionalData = {};
 
