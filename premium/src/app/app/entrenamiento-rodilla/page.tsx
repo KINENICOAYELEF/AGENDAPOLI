@@ -13,7 +13,8 @@ export default function EntrenamientoRodillaPage() {
         if (user) {
             const isAuthorized = 
                 user.role === 'DOCENTE' || 
-                user.email === 'deny.contreras14@gmail.com';
+                user.email === 'deny.contreras14@gmail.com' ||
+                user.email === 'kinesiologo.nicolasayelef@gmail.com';
             
             if (!isAuthorized) {
                 router.push('/app/dashboard');
@@ -25,7 +26,8 @@ export default function EntrenamientoRodillaPage() {
 
     const isAuthorized = 
         user.role === 'DOCENTE' || 
-        user.email === 'deny.contreras14@gmail.com';
+        user.email === 'deny.contreras14@gmail.com' ||
+        user.email === 'kinesiologo.nicolasayelef@gmail.com';
 
     if (!isAuthorized) return null;
 
