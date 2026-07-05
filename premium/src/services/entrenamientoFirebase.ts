@@ -158,7 +158,7 @@ export const saveTrainingSession = async (
     profile.ultimaSesionSemana = Timestamp.now();
 
     const updates: any = {
-        [`temas.${topicId}`]: updatedTopicData,
+        temas: profile.temas,
         retosCompletadosTotal: profile.retosCompletadosTotal,
         ultimaSesionSemana: profile.ultimaSesionSemana,
         sesionesCompletadasEstaSemana: profile.sesionesCompletadasEstaSemana
