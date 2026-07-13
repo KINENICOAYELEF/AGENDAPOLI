@@ -12,12 +12,12 @@ export default function EntrenamientoDiarioPage() {
     const [activeTab, setActiveTab] = useState<'simulacion' | 'reportes'>('simulacion');
 
     useEffect(() => {
-        if (user && user.role !== 'DOCENTE' && user.role !== 'INTERNO') {
+        if (user && user.role !== 'DOCENTE') {
             router.push('/app/dashboard');
         }
     }, [user, router]);
 
-    if (!user || (user.role !== 'DOCENTE' && user.role !== 'INTERNO')) return null;
+    if (!user || user.role !== 'DOCENTE') return null;
 
     return (
         <div className="flex-1 overflow-auto bg-slate-50">

@@ -596,7 +596,9 @@ export function SimuladorExamen() {
                                 { key: 'intervencion', label: '💊 Solo Intervención', desc: 'Intervención + Escritura (1 llamada)' },
                                 { key: 'escritura', label: '📝 Solo Escritura', desc: 'Diagnóstico, Objetivos, Plan (1 llamada)' },
                                 { key: 'comision', label: '🎤 Solo Comisión', desc: 'Defensa oral (2 llamadas)' },
-                            ] as { key: PracticeMode; label: string; desc: string }[]).map(mode => (
+                            ] as { key: PracticeMode; label: string; desc: string }[])
+                            .filter(mode => user?.role === 'DOCENTE' || mode.key === 'completo')
+                            .map(mode => (
                                 <button key={mode.key} onClick={() => setPracticeMode(mode.key)}
                                     className={`text-left p-3 rounded-xl border-2 transition-all ${practiceMode === mode.key ? 'border-amber-400 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}>
                                     <div className="font-bold text-xs text-slate-800">{mode.label}</div>

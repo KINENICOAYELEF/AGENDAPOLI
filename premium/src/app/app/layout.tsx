@@ -118,7 +118,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </Link>
                     )}
                     <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300 font-bold mt-4 border-t border-slate-800 pt-4">
-                        🎓 Simulador Examen
+                        🎓 Simulador Examen (Solo Escrito)
                     </Link>
                     <Link href="/app/simulador-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-orange-300 font-bold mt-2">
                         🎤 Simulador Voz (Beta)
@@ -128,9 +128,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             🧪 Sim. Voz (Docente Edición)
                         </Link>
                     )}
-                    {(user.role === 'DOCENTE' || user.role === 'INTERNO') && (
+                    {user.role === 'DOCENTE' && (
                         <Link href="/app/entrenamiento-diario" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-400 font-bold mt-2 border-t border-slate-800 pt-4">
-                            ⚡ Entrenamiento Diario {user.role === 'DOCENTE' && '(BETA DOCENTE)'}
+                            ⚡ Entrenamiento Diario (BETA DOCENTE)
                         </Link>
                     )}
                     {(user.role === 'DOCENTE' || user.email === 'deny.contreras14@gmail.com' || user.email === 'kinesiologo.nicolasayelef@gmail.com') && (
@@ -146,9 +146,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             🗣️ Def. Comisión (Docente Edición)
                         </Link>
                     )}
-                    <Link href="/app/evidencia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-blue-300 font-bold mt-2">
-                        📚 Biblioteca Científica
-                    </Link>
+                    {user.role === 'DOCENTE' && (
+                        <Link href="/app/evidencia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-blue-300 font-bold mt-2">
+                            📚 Biblioteca Científica
+                        </Link>
+                    )}
                 </nav>
 
                 {/* Separador de Espacio de Nombres (Año) */}

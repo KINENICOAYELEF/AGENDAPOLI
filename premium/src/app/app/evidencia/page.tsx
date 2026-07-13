@@ -5,10 +5,20 @@ import { EvidenceLibrary } from "@/components/evidence/EvidenceLibrary";
 import { StudentEvidenceTasks } from "@/components/evidence/StudentEvidenceTasks";
 import { AdminEvidenceManager } from "@/components/evidence/AdminEvidenceManager";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 export default function EvidenciaPage() {
     const { user, loading } = useAuth();
+    const router = useRouter();
 
-    if (loading || !user) return null;
+    useEffect(() => {
+        if (!loading && user && user.role !== 'DOCENTE') {
+            router.push('/app/dashboard');
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user || user.role !== 'DOCENTE') return null;
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -18,15 +28,9 @@ export default function EvidenciaPage() {
                 </h1>
             </div>
 
-            {user.role === 'INTERNO' && (
-                <StudentEvidenceTasks studentId={user.uid} studentName={user.displayName || user.email || "Estudiante"} />
-            )}
-            
-            {user.role === 'DOCENTE' && (
-                <div className="mb-8">
-                    <AdminEvidenceManager />
-                </div>
-            )}
+            <div className="mb-8">
+                <AdminEvidenceManager />
+            </div>
 
             <EvidenceLibrary currentUserId={user.uid} currentUserRole={user.role} currentUserName={user.displayName || user.email || 'Anónimo'} />
         </div>
