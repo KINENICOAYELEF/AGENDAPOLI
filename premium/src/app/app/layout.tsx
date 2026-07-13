@@ -129,6 +129,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </Link>
                     )}
                     {user.role === 'DOCENTE' && (
+                        <Link href="/app/simulador-voz-total" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-purple-400 font-semibold text-xs ml-4 border-l border-slate-700 pl-3">
+                            🧪 Sim. Voz Total (DOCENTE TEST)
+                        </Link>
+                    )}
+                    {user.role === 'DOCENTE' && (
                         <Link href="/app/entrenamiento-diario" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-400 font-bold mt-2 border-t border-slate-800 pt-4">
                             ⚡ Entrenamiento Diario (BETA DOCENTE)
                         </Link>
