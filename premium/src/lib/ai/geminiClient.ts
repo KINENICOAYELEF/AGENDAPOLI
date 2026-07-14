@@ -17,6 +17,7 @@ const globalAiCache = new Map<string, any>();
 interface GeminiCallParams {
     systemInstruction: string;
     userPrompt: string;
+    audioData?: { data: string; mimeType: string };
     schema?: any; // El esquema Zod convertido a JSON Schema (Opcional por ahora si parseamos raw JSON)
     temperature?: number;
     topP?: number;
@@ -41,12 +42,24 @@ export async function callGemini(params: GeminiCallParams): Promise<string> {
 
     const activeModel = params.modelId || DEFAULT_MODEL;
 
+    // Build parts array containing audio if present
+    const parts: any[] = [];
+    if (params.audioData) {
+        parts.push({
+            inlineData: {
+                data: params.audioData.data,
+                mimeType: params.audioData.mimeType
+            }
+        });
+    }
+    parts.push({ text: userPrompt });
+
     // Build the request payload natively for the v1beta Google Generative Language API
     const requestPayload: any = {
         contents: [
             {
                 role: 'user',
-                parts: [{ text: userPrompt }]
+                parts: parts
             }
         ],
         generationConfig: {

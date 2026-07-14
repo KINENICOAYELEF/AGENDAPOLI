@@ -208,21 +208,79 @@ Evalúa esta transcripción con la rigurosidad de un Docente Maestro de postgrad
 
             // ─── CALL 3: Exam Findings ───
             case 'exam': {
-                const { hallazgos_todos_modulos, rubrica_ideal, modulos_seleccionados, justificaciones } = payload;
-                const modulosTexto = modulos_seleccionados.map((m: any) =>
+                const { hallazgos_todos_modulos, rubrica_ideal, modulos_seleccionados, transcripcion_examen } = payload;
+                
+                let finalModules = modulos_seleccionados || [];
+                
+                if (transcripcion_examen) {
+                    const detectionPrompt = `
+Dada la siguiente transcripción de un examen físico por voz en kinesiología:
+"${transcripcion_examen}"
+
+Determina cuáles de los siguientes 8 módulos de examen clínico solicitó evaluar el estudiante de forma explícita o implícita:
+1. observacion_movimiento_inicial (marcha, postura, inspección visual)
+2. rango_movimiento_analitico (ROM, flexión, extensión, grados)
+3. fuerza_tolerancia_carga (MMT, fuerza muscular, resistir carga)
+4. palpacion (tocar estructuras, interlínea, tendón, dolor a la presión)
+5. neuro_vascular (reflejos, dermatomas, pulsos, sensibilidad)
+6. control_motor_sensoriomotor (equilibrio, monopodal, estabilidad dinámica)
+7. pruebas_ortopedicas (pruebas especiales como Lachman, cajón, pivot shift, etc.)
+8. pruebas_funcionales_reintegro (Hop tests, saltos, Y-balance)
+
+Retorna un objeto JSON con la llave "modulos_detectados", que contiene un arreglo con las keys de los módulos detectados (ej: ["palpacion", "pruebas_ortopedicas"]).
+`;
+                    try {
+                        const detectionResult = await callGemini({
+                            systemInstruction: "Eres un asistente clínico que analiza transcripciones de examen físico de kinesiología y mapea los términos a categorías estructuradas.",
+                            userPrompt: detectionPrompt,
+                            modelId: 'gemini-3.1-flash-lite-preview',
+                            temperature: 0.1,
+                            responseMimeType: 'application/json'
+                        });
+                        
+                        let cleanResult = detectionResult.trim();
+                        if (cleanResult.startsWith('```json')) cleanResult = cleanResult.substring(7);
+                        if (cleanResult.endsWith('```')) cleanResult = cleanResult.substring(0, cleanResult.length - 3);
+                        cleanResult = cleanResult.trim();
+                        
+                        const parsed = JSON.parse(cleanResult);
+                        const detectedKeys = parsed.modulos_detectados || [];
+                        
+                        const modulesMap: Record<string, string> = {
+                            observacion_movimiento_inicial: 'Observación / Movimiento Inicial',
+                            rango_movimiento_analitico: 'Rango de Movimiento Analítico',
+                            fuerza_tolerancia_carga: 'Fuerza / Tolerancia a la Carga',
+                            palpacion: 'Palpación',
+                            neuro_vascular: 'Neuro-Vascular / Somatosensorial',
+                            control_motor_sensoriomotor: 'Control Motor / Sensoriomotor',
+                            pruebas_ortopedicas: 'Pruebas Ortopédicas Dirigidas',
+                            pruebas_funcionales_reintegro: 'Pruebas Funcionales / Reintegro'
+                        };
+                        
+                        finalModules = detectedKeys.map((k: string) => ({
+                            modulo: modulesMap[k] || k,
+                            justificacion: 'Solicitado verbalmente en el examen por voz',
+                            pruebas: 'Especificado en la transcripción'
+                        })).filter((m: any) => m.modulo);
+                    } catch (e) {
+                        console.error("Error in exam module detection:", e);
+                    }
+                }
+
+                const modulosTexto = finalModules.map((m: any) =>
                     `- ${m.modulo}: "${m.justificacion}" / Pruebas específicas: ${m.pruebas || 'No especificó'}`
                 ).join('\n');
 
                 const userPrompt = `
 HALLAZGOS COMPLETOS PRE-GENERADOS DEL CASO (TODOS LOS MÓDULOS):
 ${JSON.stringify(hallazgos_todos_modulos)}
-
+ 
 MÓDULOS DE EXAMEN OBLIGATORIOS SEGÚN LA RÚBRICA:
 ${rubrica_ideal.modulos_examen_obligatorios?.join(', ') || 'No especificados'}
-
+ 
 MÓDULOS QUE EL ESTUDIANTE SELECCIONÓ CON SUS JUSTIFICACIONES:
 ${modulosTexto}
-
+ 
 Narra los hallazgos SOLO de los módulos seleccionados. Analiza omisiones y justificaciones.
 `;
                 result = await executeAIAction({
@@ -251,28 +309,34 @@ ${JSON.stringify(rubrica_ideal)}
 
 TRABAJO COMPLETO DEL ESTUDIANTE:
 
-== PREGUNTAS DE ENTREVISTA ==
+== PREGUNTAS DE ENTREVISTA / ANAMNESIS ==
 ${trabajo_estudiante.preguntas_entrevista || '(No registradas)'}
 
-== RAZONAMIENTO CLÍNICO I (Post-Entrevista) ==
-Hipótesis orientativas: ${JSON.stringify(trabajo_estudiante.hipotesis_previas || [])}
-Clasificación dolor tentativa: ${trabajo_estudiante.clasificacion_dolor_previa || 'No completó'}
-Irritabilidad estimada: ${trabajo_estudiante.irritabilidad_previa || 'No completó'}
-Banderas detectadas: ${JSON.stringify(trabajo_estudiante.banderas || {})}
+== RAZONAMIENTO CLÍNICO I (Oral) ==
+${trabajo_estudiante.razonamiento1_voz || '(No registrado)'}
+Hipótesis orientativas (borrador escrito): ${JSON.stringify(trabajo_estudiante.hipotesis_previas || [])}
+Clasificación dolor tentativa (escrito): ${trabajo_estudiante.clasificacion_dolor_previa || 'No completó'}
+Irritabilidad estimada (escrito): ${trabajo_estudiante.irritabilidad_previa || 'No completó'}
+Banderas detectadas (escrito): ${JSON.stringify(trabajo_estudiante.banderas || {})}
 
-== RAZONAMIENTO CLÍNICO II (Post-Examen Físico) ==
-Hipótesis confirmadas/descartadas/nuevas: ${trabajo_estudiante.hipotesis_confirmadas || '(No completó)'}
-Clasificación del dolor actualizada: ${trabajo_estudiante.clasificacion_dolor_final || '(No completó)'}
-Diagnóstico presuntivo (borrador): ${trabajo_estudiante.diagnostico_presuntivo || '(No completó)'}
-Hallazgos clave integrados: ${trabajo_estudiante.hallazgos_clave_integrados || '(No completó)'}
+== EXAMEN FÍSICO / EVALUACIÓN ORAL ==
+${trabajo_estudiante.examen_fisico_voz || '(No registrado)'}
+
+== RAZONAMIENTO CLÍNICO II (Oral) ==
+${trabajo_estudiante.razonamiento2_voz || '(No registrado)'}
+Hipótesis confirmadas/descartadas/nuevas (escrito): ${trabajo_estudiante.hipotesis_confirmadas || '(No completó)'}
+Clasificación del dolor actualizada (escrito): ${trabajo_estudiante.clasificacion_dolor_final || '(No completó)'}
+Diagnóstico presuntivo (escrito): ${trabajo_estudiante.diagnostico_presuntivo || '(No completó)'}
+Hallazgos clave integrados (escrito): ${trabajo_estudiante.hallazgos_clave_integrados || '(No completó)'}
 
 == MÓDULOS DE EXAMEN SELECCIONADOS ==
 ${trabajo_estudiante.modulos_seleccionados || '(No registrados)'}
 
-== INTERVENCIONES KINESIOLÓGICAS AL PACIENTE ==
-${trabajo_estudiante.intervenciones || '(No completó)'}
+== INTERVENCIONES KINESIOLÓGICAS PROPUESTAS (Oral) ==
+${trabajo_estudiante.intervenciones_voz || '(No registrado)'}
+Detalles escritos: ${trabajo_estudiante.intervenciones || '(No completó)'}
 
-== DIAGNÓSTICO KINESIOLÓGICO ==
+== DIAGNÓSTICO KINESIOLÓGICO CIF ==
 ${trabajo_estudiante.diagnostico || '(No completó)'}
 
 == OBJETIVO GENERAL ==
@@ -290,7 +354,13 @@ ${trabajo_estudiante.plan_fases || '(No completó)'}
 == REEVALUACIÓN Y PRONÓSTICO ==
 ${trabajo_estudiante.reevaluacion || '(No completó)'}
 
-Evalúa RIGUROSAMENTE el trabajo completo. Genera scorecard, errores, aciertos y preguntas de comisión.
+== EXPOSICIÓN CONTINUA DEL CASO (Oral - Presentación de 15 minutos) ==
+${trabajo_estudiante.exposicion_caso_voz || '(No registrada)'}
+
+== DEFENSA DE COMISIÓN (Oral - Ronda de preguntas del tribunal) ==
+${trabajo_estudiante.defensa_comision_voz || '(No registrada)'}
+
+Evalúa RIGUROSAMENTE el trabajo completo, incluyendo las defensas orales, el razonamiento y la coherencia general. Genera scorecard, errores, aciertos y preguntas de comisión.
 `;
                 result = await executeAIAction({
                     screen: 'SIMULADOR',
@@ -404,6 +474,35 @@ Evalúa la sesión y extrae el JSON requerido.
                     ...result.data,
                     cleanedTranscript
                 };
+                break;
+            }
+
+            // ─── CALL: Transcribe Audio File ───
+            case 'transcribe': {
+                const { audioBase64, mimeType } = payload;
+                if (!audioBase64 || !mimeType) {
+                    return NextResponse.json({ error: 'MISSING_PARAMS', message: 'audioBase64 y mimeType son requeridos.' }, { status: 400 });
+                }
+                const transcriptionPrompt = `
+Transcribe exactamente la conversación del audio en español, respetando la puntuación, ortografía técnica y de kinesiología (por ejemplo, nombres de test como Lachman, cajón, FADIR, Slump, y términos como nociceptivo, artrocinemática, dosificación, etc.).
+Distingue los turnos de habla. Si se escucha al Alumno (Estudiante/Kinesiólogo) y al Paciente (o Tutor), identifícalos como:
+Kinesiólogo: [Texto]
+Paciente: [Texto]
+Si es un monólogo o exposición, simplemente transcribe el texto continuo.
+Retorna ÚNICAMENTE la transcripción limpia en texto plano, sin explicaciones, sin introducciones y sin resúmenes.
+`;
+                const text = await callGemini({
+                    systemInstruction: "Eres un asistente experto en transcripción médica de kinesiología y rehabilitación física. Transcribes de audio a texto de forma impecable.",
+                    userPrompt: transcriptionPrompt,
+                    audioData: {
+                        data: audioBase64,
+                        mimeType: mimeType
+                    },
+                    modelId: 'gemini-3.5-flash',
+                    temperature: 0.1,
+                    responseMimeType: 'text/plain'
+                });
+                result = { data: { text } };
                 break;
             }
 

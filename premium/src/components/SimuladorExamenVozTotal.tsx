@@ -9,8 +9,7 @@ import { guardarIntento, getTareaConfig, verificarCumplimiento } from '@/service
 import { SimuladorHistorial } from './SimuladorHistorial';
 
 // ─── Types ───
-type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'INTERVENTION' | 'CONSTRUCTION' | 'REVIEW' | 'COMMISSION' | 'RESULTS';
-type PracticeMode = 'completo' | 'entrevista' | 'examen' | 'intervencion' | 'escritura' | 'comision';
+type SimPhase = 'SETUP' | 'INTERVIEW' | 'REASONING' | 'EXAM' | 'REASONING2' | 'INTERVENTION' | 'CONSTRUCTION' | 'EXPOSITION' | 'COMMISSION' | 'RESULTS';
 
 const EXAM_MODULES = [
     { key: 'observacion_movimiento_inicial', label: 'Observación / Movimiento Inicial', ejemplo: 'Ej: Marcha, postura asimétrica, patrón de movimiento' },
@@ -25,15 +24,15 @@ const EXAM_MODULES = [
 
 const PHASE_LABELS: Record<SimPhase, string> = {
     SETUP: 'Configurar Caso',
-    INTERVIEW: 'Entrevista Clínica',
-    REASONING: 'Razonamiento I',
-    EXAM: 'Examen Físico',
-    REASONING2: 'Razonamiento II',
-    INTERVENTION: 'Intervención al Paciente',
-    CONSTRUCTION: 'Escritura Clínica',
-    REVIEW: 'Evaluación',
-    COMMISSION: 'Comisión',
-    RESULTS: 'Resultados',
+    INTERVIEW: 'Estación 1: Entrevista Clínica',
+    REASONING: 'Estación 2: Razonamiento I',
+    EXAM: 'Estación 3: Examen Físico',
+    REASONING2: 'Estación 4: Razonamiento II',
+    INTERVENTION: 'Estación 5: Intervención Clínica',
+    CONSTRUCTION: 'Estación 6: Escritura Kinesiológica',
+    EXPOSITION: 'Estación 7: Exposición de Caso',
+    COMMISSION: 'Estación 8: Defensa de Comisión',
+    RESULTS: 'Resultados y Nota',
 };
 
 // ─── API helper ───
@@ -48,22 +47,23 @@ async function simFetch(action: string, payload: unknown, userId: string) {
     return data.data;
 }
 
-// ─── Practice mode phase mapping ───
-const PRACTICE_PHASES: Record<PracticeMode, SimPhase[]> = {
-    completo: ['INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'INTERVENTION', 'CONSTRUCTION', 'REVIEW', 'COMMISSION', 'RESULTS'],
-    entrevista: ['INTERVIEW', 'REASONING', 'RESULTS'],
-    examen: ['EXAM', 'REASONING2', 'RESULTS'],
-    intervencion: ['INTERVENTION', 'CONSTRUCTION', 'RESULTS'],
-    escritura: ['CONSTRUCTION', 'REVIEW', 'RESULTS'],
-    comision: ['REVIEW', 'COMMISSION', 'RESULTS'],
-};
+const OSCE_PHASES: SimPhase[] = [
+    'INTERVIEW',
+    'REASONING',
+    'EXAM',
+    'REASONING2',
+    'INTERVENTION',
+    'CONSTRUCTION',
+    'EXPOSITION',
+    'COMMISSION',
+    'RESULTS'
+];
 
-// ─── Main Component ───
 export function SimuladorExamenVozTotal() {
     const { user } = useAuth();
     const [phase, setPhase] = useState<SimPhase>('SETUP');
-    const [reviewPhase, setReviewPhase] = useState<SimPhase | null>(null);
     const [loading, setLoading] = useState(false);
+    const [loadingTranscription, setLoadingTranscription] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,8 +72,9 @@ export function SimuladorExamenVozTotal() {
     const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
 
-    // Task compliance
-    const [tareaAlerta, setTareaAlerta] = useState<{ descripcion: string; mensaje: string; creditos: number; frecuencia: number } | null>(null);
+    // Local recording refs
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const chunksRef = useRef<Blob[]>([]);
 
     useEffect(() => {
         getAudioDevices().then(setAudioDevices).catch(() => {});
@@ -84,13 +85,15 @@ export function SimuladorExamenVozTotal() {
     const [interviewData, setInterviewData] = useState<SimInterviewType | null>(null);
     const [examData, setExamData] = useState<SimExamType | null>(null);
     const [evaluationData, setEvaluationData] = useState<SimEvaluationType | null>(null);
-    const [commissionData, setCommissionData] = useState<SimCommissionType | null>(null);
+    const [commissionData, setCommissionData] = useState<any | null>(null);
     const [interviewFeedbackData, setInterviewFeedbackData] = useState<SimInterviewFeedbackType | null>(null);
+    
+    // UI state
     const [showInterviewAnalysis, setShowInterviewAnalysis] = useState(false);
     const [showCommunicationFeedback, setShowCommunicationFeedback] = useState(false);
 
     // Student Work
-    const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '' });
+    const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '', personalidad: 'colaborador' });
     const [studentQuestions, setStudentQuestions] = useState('');
     const [reasoning, setReasoning] = useState({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
     const [examSelections, setExamSelections] = useState<Record<string, { selected: boolean; justificacion: string; pruebas: string }>>(() => {
@@ -100,92 +103,460 @@ export function SimuladorExamenVozTotal() {
     });
     const [construction, setConstruction] = useState({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
     const [commissionAnswers, setCommissionAnswers] = useState<string[]>([]);
-    // Razonamiento 2: Post-examen físico (integración de hallazgos)
     const [reasoning2, setReasoning2] = useState({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
-    // Intervenciones al paciente (fase nueva)
     const [interventions, setInterventions] = useState([
         { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' },
         { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }
     ]);
-    // Practice mode
-    const [practiceMode, setPracticeMode] = useState<PracticeMode>('completo');
 
-    // ─── Practice mode helper: get next valid phase ───
-    const getNextPhase = useCallback((currentPhase: SimPhase): SimPhase | null => {
-        const allowed = PRACTICE_PHASES[practiceMode];
-        const currentIdx = allowed.indexOf(currentPhase);
-        if (currentIdx === -1 || currentIdx >= allowed.length - 1) return null;
-        return allowed[currentIdx + 1];
-    }, [practiceMode]);
+    // Clean voice transcripts per phase
+    const [phaseTranscripts, setPhaseTranscripts] = useState<Record<string, string>>({
+        interview: '',
+        reasoning: '',
+        exam: '',
+        reasoning2: '',
+        intervention: '',
+        exposition: '',
+        commission: ''
+    });
 
-    const getFirstPhase = useCallback((): SimPhase => {
-        return PRACTICE_PHASES[practiceMode][0];
-    }, [practiceMode]);
+    // ─── Audio Chime Synthesizer (Native Web Audio API) ───
+    const playChime = (type: 'beep' | 'bell') => {
+        try {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContextClass) return;
+            const ctx = new AudioContextClass();
+            
+            if (type === 'beep') {
+                // Short warning double-beep
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(800, ctx.currentTime);
+                gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.12);
+                
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(800, ctx.currentTime);
+                    gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.start();
+                    osc2.stop(ctx.currentTime + 0.12);
+                }, 200);
+            } else {
+                // Long metalloid bell chord representing station chime
+                const freqs = [329.63, 392.00, 523.25, 659.25]; // E minor / C major chords
+                freqs.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.06);
+                    osc.stop(ctx.currentTime + 2.5);
+                });
+            }
+        } catch (e) {
+            console.error("Audio Context failed to play chime:", e);
+        }
+    };
 
-    const { connect, disconnect, connectionState, transcript, isSpeaking, volume, isMicOpen, toggleMic } = useGeminiLive({
-        systemInstruction: caseData ? generateDynamicPatientPrompt(setupForm.area, setupForm.dificultad, '', caseData.ficha_visible) : '',
-        voiceName: caseData ? getVoiceForPersona(caseData.ficha_visible.sexo || 'Mujer') : 'Aoede',
+    // ─── Local browser audio recording helpers ───
+    const startLocalRecording = async () => {
+        try {
+            chunksRef.current = [];
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined } });
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            mediaRecorderRef.current = recorder;
+            recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    chunksRef.current.push(e.data);
+                }
+            };
+            recorder.start(250);
+            console.log("[REC] Local recording started.");
+        } catch (err) {
+            console.error("[REC] Error starting recorder:", err);
+        }
+    };
+
+    const stopLocalRecording = (): Promise<{ blob: Blob; base64: string } | null> => {
+        return new Promise((resolve) => {
+            const recorder = mediaRecorderRef.current;
+            if (!recorder || recorder.state === 'inactive') {
+                resolve(null);
+                return;
+            }
+            recorder.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                if (recorder.stream) {
+                    recorder.stream.getTracks().forEach(t => t.stop());
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => {
+                    const base64String = (reader.result as string).split(',')[1];
+                    resolve({ blob, base64: base64String });
+                };
+            };
+            recorder.stop();
+            console.log("[REC] Local recording stopped.");
+        });
+    };
+
+    // ─── OSCE Station Timing Config ───
+    const getPhaseDuration = (p: SimPhase): number => {
+        switch (p) {
+            case 'INTERVIEW': return 480;   // 8 min
+            case 'REASONING': return 180;   // 3 min
+            case 'EXAM': return 360;        // 6 min
+            case 'REASONING2': return 180;  // 3 min
+            case 'INTERVENTION': return 300;// 5 min
+            case 'CONSTRUCTION': return 480;// 8 min
+            case 'EXPOSITION': return 300;  // 5 min
+            case 'COMMISSION': return 360;  // 6 min
+            default: return 0;
+        }
+    };
+
+    const startCountdown = useCallback((seconds: number) => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setTimer(seconds);
+        timerRef.current = setInterval(() => {
+            setTimer(t => {
+                if (t <= 1) {
+                    clearInterval(timerRef.current!);
+                    return 0;
+                }
+                return t - 1;
+            });
+        }, 1000);
+    }, []);
+
+    const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+    // ─── Dynamic Prompts & Voices for Live API ───
+    const getSystemInstructionForPhase = (currentPhase: SimPhase, currentCaseData: SimCaseType | null, form: any) => {
+        if (!currentCaseData) return '';
+        switch (currentPhase) {
+            case 'INTERVIEW': {
+                const personality = form.personalidad || 'colaborador';
+                let personalityPrompt = '';
+                if (personality === 'catastrofista') {
+                    personalityPrompt = '\n\nATENCIÓN: Tu personalidad es CATASTROFISTA y ANSIOSA. Te duele muchísimo, tienes mucho miedo a moverte (kinesiofobia), preguntas frecuentemente si vas a volver a jugar o caminar normal, exageras tus quejas y estás muy sensible emocionalmente. Expresa frustración o temor.';
+                } else if (personality === 'reticente') {
+                    personalityPrompt = '\n\nATENCIÓN: Tu personalidad es RETICENTE, SECA y CORTANTE. Respondes con pocas palabras (ej: "sí", "no", "hace dos semanas"), no das detalles de forma voluntaria. El alumno debe esforzarse mucho haciendo preguntas abiertas específicas para obtener la historia y mecanismo de lesión.';
+                } else {
+                    personalityPrompt = '\n\nATENCIÓN: Tu personalidad es COLABORADORA y TRANQUILA. Respondes con honestidad y de forma normal a las preguntas del estudiante.';
+                }
+                return generateDynamicPatientPrompt(form.area, form.dificultad, '', currentCaseData.ficha_visible) + personalityPrompt;
+            }
+            case 'REASONING':
+                return `Actúas como un Docente Evaluador del Examen Clínico de Kinesiología. El alumno acaba de terminar la entrevista con el paciente.
+                Interrógale verbalmente sobre su análisis clínico inicial de forma muy seria y rigurosa.
+                Pregúntale cuáles son sus 3 hipótesis diagnósticas preliminares, su clasificación de dolor (nociceptivo, neuropático, nociplástico, mixto), irritabilidad estimada (alta/media/baja) y factores biopsicosociales (banderas rojas/amarillas).
+                Sé profesional, académico y formal. Pregúntale una cosa a la vez si responde largo.
+                Comienza diciendo exactamente: 'Kinesiólogo, el paciente ha salido del box. Por favor, dígame cuáles son sus hipótesis diagnósticas y qué factores biopsicosociales o banderas rojas identificó'.`;
+            case 'EXAM':
+                return `Actúas en doble rol en este Examen Físico. Eres el Paciente (${currentCaseData.ficha_visible.nombre}) y el Evaluador Técnico del Box.
+                Si el estudiante se dirige a ti por el nombre del paciente (ej: 'Juan' o 'Paciente'), responde de forma coloquial como el paciente describiendo dolor o sensaciones de acuerdo a estos hallazgos exactos: ${JSON.stringify(currentCaseData.hallazgos_todos_modulos)}.
+                Si el estudiante se dirige a ti como el evaluador (ej: 'Comisión', 'Colega', 'Docente') solicitando medir o realizar una prueba (ej: 'Mido flexión pasiva de rodilla' o 'Prueba de Lachman'), responde con seriedad indicando la medición exacta de los hallazgos: ${JSON.stringify(currentCaseData.hallazgos_todos_modulos)}.
+                No inventes hallazgos que no estén en la lista. Mantén tus intervenciones cortas y precisas.
+                Comienza diciendo: 'Kinesiólogo, estamos en el examen físico. Puede indicarme qué pruebas desea realizar en el paciente o qué mediciones me solicita'.`;
+            case 'REASONING2':
+                return `Actúas como el Docente Evaluador de Kinesiología. El alumno ya tiene los hallazgos del examen físico.
+                Interrógale verbalmente: ¿qué hipótesis confirma con los hallazgos obtenidos, cuáles descarta, y cuál es su diagnóstico clínico presuntivo actual?
+                Sé riguroso, formal y socrático.
+                Comienza diciendo: 'Kinesiólogo, con los hallazgos del examen sobre la mesa, dígame cómo cambia su razonamiento inicial y cuál es su diagnóstico presuntivo actual'.`;
+            case 'INTERVENTION':
+                return `Actúas en doble rol durante la planificación de intervenciones clínicas.
+                Si el estudiante te explica el ejercicio o te educa (ej: 'Juan, vas a hacer esto...'), responde como el Paciente de forma colaborativa o con dudas típicas de paciente (ej: '¿Cuánto peso uso?', '¿Me va a doler?').
+                Si el estudiante justifica biomecánicamente la técnica o dosificación a la comisión (ej: 'Docente, elijo esto por...'), responde como el Evaluador validando su lógica o haciendo una pregunta aclaratoria corta.
+                Ficha del Paciente: ${JSON.stringify(currentCaseData.ficha_visible)}.
+                Hallazgos: ${JSON.stringify(currentCaseData.hallazgos_todos_modulos)}.
+                Comienza diciendo: 'Kinesiólogo, planifiquemos las intervenciones. Explíquele la primera técnica a su paciente y justifíquemela clínicamente a la comisión'.`;
+            case 'EXPOSITION':
+                return `Actúas como un miembro silencioso de la Comisión Evaluadora de Kinesiología.
+                El estudiante va a exponer su caso clínico completo (anamnesis, examen físico, diagnóstico CIF, metas y fases de rehabilitación) sin interrupciones por un máximo de 5 minutos.
+                REGLA DE ORO DE SILENCIO: Debes permanecer en SILENCIO ABSOLUTO. NO respondas, NO interrumpas, NO comentes ni hagas sonidos de audio bajo ninguna circunstancia mientras el alumno expone. Solo escucha y registra todo lo que expone.
+                Solo si el alumno dice directamente que ha terminado o finaliza formalmente (ej: 'Esta es mi presentación', 'He terminado', 'Comisión, quedo atento'), responde de forma muy breve: 'Muchas gracias por su exposición. Puede finalizar la conexión para dar inicio al interrogatorio'.`;
+            case 'COMMISSION':
+                return `Actúas como la Comisión Evaluadora (2 docentes expertos) en un examen de título de kinesiología.
+                Vas a realizar un interrogatorio socrático exigente al alumno basado en su trabajo completo.
+                Formula 2 o 3 preguntas críticas desafiantes sobre su plan de intervención, su diagnóstico CIF o sus metas operacionales basándote en la información general.
+                Haz una sola pregunta a la vez. Cuando responda, repregúntale o cuestiona su justificación científica para obligarlo a defender su decisión clínica en vivo.
+                Comienza saludando formalmente y formulando la primera pregunta crítica sobre su diagnóstico CIF o sus objetivos.`;
+            default:
+                return 'Eres un asistente clínico de kinesiología.';
+        }
+    };
+
+    const getVoiceForPhase = (currentPhase: SimPhase, currentCaseData: SimCaseType | null) => {
+        if (!currentCaseData) return 'Aoede';
+        if (currentPhase === 'INTERVIEW' || currentPhase === 'EXAM' || currentPhase === 'INTERVENTION') {
+            return getVoiceForPersona(currentCaseData.ficha_visible.sexo || 'Mujer');
+        }
+        return 'Puck'; // Serious academic/docente voice
+    };
+
+    // ─── useGeminiLive Instantiation ───
+    const { connect, disconnect, connectionState, transcript, clearTranscript, isSpeaking, volume, isMicOpen, toggleMic } = useGeminiLive({
+        systemInstruction: getSystemInstructionForPhase(phase, caseData, setupForm),
+        voiceName: getVoiceForPhase(phase, caseData),
         audioDeviceId: selectedDeviceId || undefined
     });
 
-    const formattedTranscript = transcript.map(t => `${t.role === 'user' ? 'Kinesiólogo' : 'Paciente'}: ${t.text}`).join('\n');
+    const formattedTranscript = transcript.map(t => `${t.role === 'user' ? 'Kinesiólogo' : 'Paciente/Tutor'}: ${t.text}`).join('\n');
 
-    // Timer
-    const startTimer = useCallback((reset = true) => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        if (reset) setTimer(0);
-        timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-    }, []);
-    const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-
-    const handleEndVoiceInterview = useCallback(async () => {
-        if (!user || !caseData) return;
+    // Generic handler to end a voice connection, stop local recording and fetch clean transcript
+    const processVoicePhaseEnd = async (): Promise<string> => {
         disconnect();
-        
-        const finalTranscriptText = formattedTranscript || '(Sin interacción de voz)';
-        setStudentQuestions(finalTranscriptText); // Guardamos la transcripción entera como las preguntas del alumno para el backend
+        setLoadingTranscription(true);
+        try {
+            const recordingResult = await stopLocalRecording();
+            if (recordingResult && recordingResult.base64) {
+                const res = await simFetch('transcribe', {
+                    audioBase64: recordingResult.base64,
+                    mimeType: 'audio/webm'
+                }, user?.uid || '');
+                return res.text || '(Sin transcripción)';
+            }
+        } catch (err) {
+            console.error("Transcription error:", err);
+            setError("Error al transcribir el audio. Usando registro de WebSocket alternativo.");
+        } finally {
+            setLoadingTranscription(false);
+        }
+        return formattedTranscript || '(Sin interacción de voz)';
+    };
+
+    // Estación 1: Entrevista
+    const handleEndVoiceInterview = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setStudentQuestions(transcriptText);
+        setPhaseTranscripts(prev => ({ ...prev, interview: transcriptText }));
 
         setLoading(true); setError('');
         try {
-            // Mandamos el transcript al backend para que analice la entrevista
             const data = await simFetch('interview', {
                 perfil_secreto: caseData.perfil_secreto,
                 ficha_visible: caseData.ficha_visible,
-                preguntas_estudiante: finalTranscriptText,
+                preguntas_estudiante: transcriptText,
             }, user.uid);
-            
-            // Sobreescribimos la respuesta del paciente del backend con la transcripción real que ocurrió por voz
-            data.respuestas_paciente = finalTranscriptText;
+            data.respuestas_paciente = transcriptText;
             setInterviewData(data);
 
-            // Fetch the advanced Teacher feedback
             try {
                 const feedbackData = await simFetch('interview_feedback', {
                     perfil_secreto: caseData.perfil_secreto,
-                    preguntas_estudiante: finalTranscriptText,
+                    preguntas_estudiante: transcriptText,
                 }, user.uid);
                 setInterviewFeedbackData(feedbackData);
                 setShowCommunicationFeedback(true);
             } catch (err) {
-                console.error("Failed to fetch advanced interview feedback:", err);
+                console.error("Feedback error:", err);
             }
 
-            const next = getNextPhase('INTERVIEW');
-            if (next) setPhase(next);
+            const next: SimPhase = 'REASONING';
+            setPhase(next);
+            startCountdown(getPhaseDuration(next));
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error desconocido');
         } finally {
             setLoading(false);
         }
-    }, [user, caseData, disconnect, formattedTranscript, getNextPhase]);
+    };
+
+    // Estación 2: Razonamiento I
+    const handleEndReasoningVoice = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, reasoning: transcriptText }));
+
+        const next: SimPhase = 'EXAM';
+        setPhase(next);
+        startCountdown(getPhaseDuration(next));
+    };
+
+    // Estación 3: Examen Físico
+    const handleEndExamVoice = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, exam: transcriptText }));
+
+        setLoading(true); setError('');
+        try {
+            const data = await simFetch('exam', {
+                hallazgos_todos_modulos: caseData.hallazgos_todos_modulos,
+                rubrica_ideal: caseData.rubrica_ideal,
+                transcripcion_examen: transcriptText
+            }, user.uid);
+            setExamData(data);
+
+            const next: SimPhase = 'REASONING2';
+            setPhase(next);
+            startCountdown(getPhaseDuration(next));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Error desconocido');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Estación 4: Razonamiento II
+    const handleEndReasoning2Voice = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, reasoning2: transcriptText }));
+
+        const next: SimPhase = 'INTERVENTION';
+        setPhase(next);
+        startCountdown(getPhaseDuration(next));
+    };
+
+    // Estación 5: Intervención
+    const handleEndInterventionVoice = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, intervention: transcriptText }));
+
+        const next: SimPhase = 'CONSTRUCTION';
+        setPhase(next);
+        startCountdown(getPhaseDuration(next));
+    };
+
+    // Estación 6: Construcción CIF (Escrito)
+    const handleConstructionSubmit = async () => {
+        if (!user || !caseData) return;
+        if (!construction.diagnostico.trim()) { setError('Completa al menos el diagnóstico.'); return; }
+        
+        const next: SimPhase = 'EXPOSITION';
+        setPhase(next);
+        startCountdown(getPhaseDuration(next));
+    };
+
+    // Estación 7: Exposición del caso
+    const handleEndExpositionVoice = async () => {
+        if (!user || !caseData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, exposition: transcriptText }));
+
+        setLoading(true); setError('');
+        try {
+            const data = await simFetch('evaluate', {
+                caso_resumen: { ficha: caseData.ficha_visible, hallazgos: caseData.hallazgos_todos_modulos },
+                rubrica_ideal: caseData.rubrica_ideal,
+                trabajo_estudiante: {
+                    preguntas_entrevista: studentQuestions,
+                    razonamiento1_voz: phaseTranscripts.reasoning,
+                    examen_fisico_voz: phaseTranscripts.exam,
+                    razonamiento2_voz: phaseTranscripts.reasoning2,
+                    intervenciones_voz: phaseTranscripts.intervention,
+                    exposicion_caso_voz: transcriptText,
+                    hipotesis_previas: reasoning.hipotesis.filter(h => h.trim()),
+                    clasificacion_dolor_previa: reasoning.clasificacion_dolor,
+                    irritabilidad_previa: reasoning.irritabilidad,
+                    banderas: { rojas: reasoning.banderas_rojas, bps: reasoning.factores_bps },
+                    hipotesis_confirmadas: reasoning2.hipotesis_confirmadas,
+                    clasificacion_dolor_final: reasoning2.clasificacion_actualizada,
+                    diagnostico_presuntivo: reasoning2.diagnostico_presuntivo,
+                    hallazgos_clave_integrados: reasoning2.hallazgos_clave,
+                    diagnostico: construction.diagnostico,
+                    objetivo_general: construction.objetivo_general,
+                    objetivos_especificos: construction.objetivos_especificos,
+                    objetivos_operacionales: construction.objetivos_operacionales,
+                    plan_fases: construction.plan_fases,
+                    reevaluacion: construction.reevaluacion,
+                },
+            }, user.uid);
+            setEvaluationData(data);
+            setCommissionAnswers(new Array(data.preguntas_comision?.length || 0).fill(''));
+
+            const next: SimPhase = 'COMMISSION';
+            setPhase(next);
+            startCountdown(getPhaseDuration(next));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Error al evaluar el caso');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Estación 8: Defensa de Comisión
+    const handleEndCommissionVoice = async () => {
+        if (!user || !caseData || !evaluationData) return;
+        const transcriptText = await processVoicePhaseEnd();
+        setPhaseTranscripts(prev => ({ ...prev, commission: transcriptText }));
+
+        setLoading(true); setError('');
+        try {
+            const data = await simFetch('commission', {
+                preguntas_con_respuesta_ideal: evaluationData.preguntas_comision,
+                respuestas_estudiante: new Array(evaluationData.preguntas_comision.length).fill(transcriptText),
+            }, user.uid);
+            setCommissionData(data);
+            
+            await persistAttempt(evaluationData, data, transcriptText);
+            setPhase('RESULTS');
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Error en la evaluación de la comisión');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAutoAdvance = useCallback(() => {
+        switch (phase) {
+            case 'INTERVIEW':
+                handleEndVoiceInterview();
+                break;
+            case 'REASONING':
+                handleEndReasoningVoice();
+                break;
+            case 'EXAM':
+                handleEndExamVoice();
+                break;
+            case 'REASONING2':
+                handleEndReasoning2Voice();
+                break;
+            case 'INTERVENTION':
+                handleEndInterventionVoice();
+                break;
+            case 'CONSTRUCTION':
+                handleConstructionSubmit();
+                break;
+            case 'EXPOSITION':
+                handleEndExpositionVoice();
+                break;
+            case 'COMMISSION':
+                handleEndCommissionVoice();
+                break;
+        }
+    }, [phase, studentQuestions, reasoning, reasoning2, construction, interventions, phaseTranscripts, evaluationData]);
 
     useEffect(() => {
-        if (phase === 'INTERVIEW' && timer >= 600 && connectionState === 'connected' && !loading) {
-            handleEndVoiceInterview();
+        if (phase === 'SETUP' || phase === 'RESULTS') return;
+        if (timer === 120) {
+            playChime('beep');
         }
-    }, [timer, phase, connectionState, loading, handleEndVoiceInterview]);
+        if (timer === 0 && !loading && !loadingTranscription) {
+            playChime('bell');
+            handleAutoAdvance();
+        }
+    }, [timer, phase, loading, loadingTranscription, handleAutoAdvance]);
 
-    const persistAttempt = async (evalData = evaluationData, commData = commissionData) => {
+    const persistAttempt = async (evalData = evaluationData, commData = commissionData, finalDefenseText = '') => {
         if (!user) return;
         if (timerRef.current) clearInterval(timerRef.current);
         localStorage.removeItem(STORAGE_KEY);
@@ -193,10 +564,10 @@ export function SimuladorExamenVozTotal() {
             await guardarIntento({
                 userId: user.uid,
                 userEmail: user.email || '',
-                userName: user.displayName || user.email || 'Anónimo',
+                userName: user.displayName || user.email || 'Docente Admin',
                 area: setupForm.area || 'aleatoria',
                 dificultad: setupForm.dificultad || 'intermedio',
-                practiceMode,
+                practiceMode: 'completo',
                 pacienteNombre: caseData?.ficha_visible?.nombre || '',
                 motivoConsulta: caseData?.ficha_visible?.motivo_consulta || '',
                 puntajeGlobal: evalData?.puntaje_global ?? 0,
@@ -205,15 +576,13 @@ export function SimuladorExamenVozTotal() {
                 puntajeComision: commData?.puntaje_comision_global ?? 0,
                 notaComision: commData?.nota_chilena_comision ?? 0,
                 scorecard: (evalData?.scorecard || {}) as Record<string, { puntaje: number; comentario: string }>,
-                tiempoSegundos: timer,
-                // Extra fields for rich export
+                tiempoSegundos: 0,
                 erroresCriticos: evalData?.errores_criticos || [],
                 aciertosDestacados: evalData?.aciertos_destacados || [],
                 areasMejora: evalData?.areas_mejora || [],
                 perlaDocente: evalData?.perla_docente || '',
-                commissionAnswers: commissionAnswers || [],
+                commissionAnswers: [finalDefenseText],
                 preguntasComision: evalData?.preguntas_comision || [],
-                // 100% complete session log
                 fullSessionData: {
                     setupForm,
                     studentQuestions,
@@ -225,40 +594,34 @@ export function SimuladorExamenVozTotal() {
                     interventions,
                     construction,
                     commissionAnswers,
-                    preguntasComision: evalData?.preguntas_comision || [],
+                    phaseTranscripts
                 },
                 interviewFeedbackData: interviewFeedbackData || null,
             });
         } catch (fbErr) {
-            console.error('[Simulador] Error guardando en Firebase:', fbErr);
+            console.error('[Simulador] Firebase Save Error:', fbErr);
         }
     };
 
-    // ═══ PROTECCIÓN ANTI-SALIDA (beforeunload + popstate + history sentinel) ═══
-    const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
-    const isReview = phase === 'RESULTS' && reviewPhase !== null;
-
-    // ═══ localStorage AUTOSAVE ═══
-    const STORAGE_KEY = 'simulador_voz_autosave';
+    const STORAGE_KEY = 'simulador_voz_total_autosave';
     useEffect(() => {
         if (phase === 'SETUP' || phase === 'RESULTS') return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
                 phase, timer, caseData, interviewData, interviewFeedbackData, examData, evaluationData, commissionData,
                 studentQuestions, reasoning, reasoning2, interventions, construction,
-                examSelections, commissionAnswers, practiceMode, showInterviewAnalysis, showCommunicationFeedback,
+                examSelections, commissionAnswers, phaseTranscripts, showInterviewAnalysis, showCommunicationFeedback,
                 savedAt: Date.now(),
             }));
         } catch {}
-    }, [phase, studentQuestions, reasoning, reasoning2, interventions, construction, examSelections, commissionAnswers, timer, caseData, commissionData, evaluationData, examData, interviewData, interviewFeedbackData, practiceMode, showInterviewAnalysis, showCommunicationFeedback]);
+    }, [phase, studentQuestions, reasoning, reasoning2, interventions, construction, examSelections, commissionAnswers, timer, caseData, commissionData, evaluationData, examData, interviewData, interviewFeedbackData, phaseTranscripts, showInterviewAnalysis, showCommunicationFeedback]);
 
-    // Auto-restore on mount
     useEffect(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
             const data = JSON.parse(saved);
-            if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) { localStorage.removeItem(STORAGE_KEY); return; } // Expire after 4h
+            if (Date.now() - data.savedAt > 4 * 60 * 60 * 1000) { localStorage.removeItem(STORAGE_KEY); return; }
             if (data.phase && data.caseData) {
                 setCaseData(data.caseData);
                 setInterviewData(data.interviewData || null);
@@ -276,68 +639,39 @@ export function SimuladorExamenVozTotal() {
                 setConstruction(data.construction || { diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
                 if (data.examSelections) setExamSelections(data.examSelections);
                 setCommissionAnswers(data.commissionAnswers || []);
-                setPracticeMode(data.practiceMode || 'completo');
-                setShowInterviewAnalysis(data.showInterviewAnalysis || false);
-                setShowCommunicationFeedback(data.showCommunicationFeedback || false);
+                setPhaseTranscripts(data.phaseTranscripts || {});
                 setTimer(data.timer || 0);
                 setPhase(data.phase);
-                startTimer(false);
+                startCountdown(data.timer || getPhaseDuration(data.phase));
             }
         } catch {}
-    }, [startTimer]);
+    }, [startCountdown]);
 
-    // Check task compliance on mount
-    useEffect(() => {
-        if (!user?.uid) return;
-        getTareaConfig().then(async (cfg) => {
-            if (!cfg || !cfg.activa) { setTareaAlerta(null); return; }
-            const resultado = await verificarCumplimiento(user.uid, cfg);
-            if (!resultado.cumple) {
-                setTareaAlerta({
-                    descripcion: resultado.descripcion,
-                    mensaje: cfg.mensaje || `Debes completar al menos 1 simulación cada ${cfg.frecuenciaDias} días.`,
-                    creditos: resultado.creditosExtraAcumulados,
-                    frecuencia: cfg.frecuenciaDias,
-                });
-            } else {
-                setTareaAlerta(null);
-            }
-        }).catch(console.error);
-    }, [user?.uid]);
+    const isActiveExam = phase !== 'SETUP' && phase !== 'RESULTS';
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (phase !== 'SETUP' && phase !== 'RESULTS') {
+            if (isActiveExam) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [phase]);
+    }, [isActiveExam]);
 
-    // 2) popstate + history.pushState: protects against browser back button / iPad swipe-back
     useEffect(() => {
         if (!isActiveExam) return;
-
-        // Push a sentinel state so pressing "back" lands on it instead of leaving
-        // We do this every time phase changes to keep the sentinel fresh
         window.history.pushState({ simGuard: true }, '');
-
         const handlePopState = () => {
             if (isActiveExam) {
-                // The user pressed back — re-push the sentinel and show warning
                 window.history.pushState({ simGuard: true }, '');
                 setShowExitWarning(true);
             }
         };
-
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [isActiveExam, phase]); // Re-run on phase change to refresh sentinel
+    }, [isActiveExam, phase]);
 
-    // (getNextPhase and getFirstPhase helpers are declared above)
-
-    // ─── Phase Handlers ───
     const handleGenerate = async () => {
         if (!user) return;
         setLoading(true); setError('');
@@ -345,242 +679,14 @@ export function SimuladorExamenVozTotal() {
             const data = await simFetch('generate', setupForm, user.uid);
             setCaseData(data);
             
-            const firstPhase = getFirstPhase();
-            
-            // Si el modo inicia directo en REVIEW o COMMISSION (ej: Solo Comisión),
-            // auto-generamos la evaluación (vacía) para obtener las preguntas de la comisión
-            if (firstPhase === 'REVIEW' || firstPhase === 'COMMISSION') {
-                const evalData = await simFetch('evaluate', {
-                    caso_resumen: { ficha: data.ficha_visible, hallazgos: data.hallazgos_todos_modulos },
-                    rubrica_ideal: data.rubrica_ideal,
-                    trabajo_estudiante: {}, // Trabajo vacío
-                }, user.uid);
-                setEvaluationData(evalData);
-                setCommissionAnswers(new Array(evalData.preguntas_comision?.length || 0).fill(''));
-            }
-            
+            const firstPhase: SimPhase = 'INTERVIEW';
             setPhase(firstPhase);
-            startTimer(true);
+            startCountdown(getPhaseDuration(firstPhase));
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
+            setError(e instanceof Error ? e.message : 'Error al generar el caso.');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleReasoningSubmit = () => {
-        setShowInterviewAnalysis(true);
-    };
-    const handleReasoningContinue = () => {
-        const next = getNextPhase('REASONING');
-        if (next) {
-            setPhase(next);
-            if (next === 'RESULTS') {
-                persistAttempt();
-            }
-        }
-    };
-
-    const handleExamSubmit = async () => {
-        if (!user || !caseData) return;
-        const selected = EXAM_MODULES.filter(m => examSelections[m.key].selected);
-        if (selected.length === 0) { setError('Selecciona al menos un módulo de examen.'); return; }
-        setLoading(true); setError('');
-        try {
-            const data = await simFetch('exam', {
-                hallazgos_todos_modulos: caseData.hallazgos_todos_modulos,
-                rubrica_ideal: caseData.rubrica_ideal,
-                modulos_seleccionados: selected.map(m => ({
-                    modulo: m.label,
-                    justificacion: examSelections[m.key].justificacion,
-                    pruebas: examSelections[m.key].pruebas,
-                })),
-            }, user.uid);
-            setExamData(data);
-            const next = getNextPhase('EXAM');
-            if (next) setPhase(next);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleEvaluate = async () => {
-        if (!user || !caseData) return;
-        if (!construction.diagnostico.trim()) { setError('Completa al menos el diagnóstico.'); return; }
-        setLoading(true); setError('');
-        try {
-            const modulosTexto = EXAM_MODULES.filter(m => examSelections[m.key].selected)
-                .map(m => `${m.label}: ${examSelections[m.key].justificacion}`).join('\n');
-            const data = await simFetch('evaluate', {
-                caso_resumen: { ficha: caseData.ficha_visible, hallazgos: caseData.hallazgos_todos_modulos },
-                rubrica_ideal: caseData.rubrica_ideal,
-                trabajo_estudiante: {
-                    preguntas_entrevista: studentQuestions,
-                    hipotesis_previas: reasoning.hipotesis.filter(h => h.trim()),
-                    clasificacion_dolor_previa: reasoning.clasificacion_dolor,
-                    irritabilidad_previa: reasoning.irritabilidad,
-                    banderas: { rojas: reasoning.banderas_rojas, bps: reasoning.factores_bps },
-                    // Razonamiento post-examen
-                    hipotesis_confirmadas: reasoning2.hipotesis_confirmadas,
-                    clasificacion_dolor_final: reasoning2.clasificacion_actualizada,
-                    diagnostico_presuntivo: reasoning2.diagnostico_presuntivo,
-                    hallazgos_clave_integrados: reasoning2.hallazgos_clave,
-                    // Construcción
-                    modulos_seleccionados: modulosTexto,
-                    intervenciones: interventions.filter(i => i.tecnica.trim()).map((int, idx) =>
-                        `Intervención ${idx + 1}: ${int.tecnica}\n  Objetivo: ${int.objetivo_tecnica}\n  Dosis: ${int.dosis}\n  Posición terapeuta: ${int.posicion_terapeuta}\n  Posición paciente: ${int.posicion_paciente}\n  Instrucciones al paciente: ${int.instrucciones_paciente}`
-                    ).join('\n\n') || '(No completó)',
-                    diagnostico: construction.diagnostico,
-                    objetivo_general: construction.objetivo_general,
-                    objetivos_especificos: construction.objetivos_especificos,
-                    objetivos_operacionales: construction.objetivos_operacionales,
-                    plan_fases: construction.plan_fases,
-                    reevaluacion: construction.reevaluacion,
-                },
-            }, user.uid);
-            setEvaluationData(data);
-            setCommissionAnswers(new Array(data.preguntas_comision?.length || 0).fill(''));
-            const next = getNextPhase('CONSTRUCTION');
-            if (next) {
-                setPhase(next);
-                if (next === 'RESULTS') {
-                    persistAttempt(data);
-                }
-            }
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCommission = async () => {
-        if (!user || !evaluationData) return;
-        const anyEmpty = commissionAnswers.some(a => !a.trim());
-        if (anyEmpty) { setError('Responde todas las preguntas antes de enviar.'); return; }
-        setLoading(true); setError('');
-        try {
-            const data = await simFetch('commission', {
-                preguntas_con_respuesta_ideal: evaluationData.preguntas_comision,
-                respuestas_estudiante: commissionAnswers,
-            }, user.uid);
-            setCommissionData(data);
-            await persistAttempt(evaluationData, data);
-            setPhase('RESULTS');
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleExportPDF = () => {
-        if (!caseData || !evaluationData) return;
-        const notaFinal = commissionData
-            ? ((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1)
-            : evaluationData.nota_chilena?.toFixed(1);
-        const scorecardRows = Object.entries(evaluationData.scorecard).map(([k, val]) => {
-            const v = val as { puntaje: number; comentario: string };
-            return `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;">${k.replace(/_/g, ' ').toUpperCase()}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:15px;color:${v.puntaje >= 60 ? '#059669' : '#dc2626'}">${v.puntaje}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;">${v.comentario}</td></tr>`;
-        }).join('');
-        const erroresHTML = evaluationData.errores_criticos.map((e) =>
-            `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:6px;"><strong style="color:#991b1b;">[${e.fase}]</strong> ${e.error}<br/><span style="font-size:12px;color:#64748b;">→ ${e.explicacion_docente}</span></div>`
-        ).join('');
-        const aciertosHTML = evaluationData.aciertos_destacados.map((a) =>
-            `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:6px;"><strong style="color:#166534;">[${a.fase}]</strong> ${a.acierto}<br/><span style="font-size:12px;color:#64748b;">→ ${a.por_que_importa}</span></div>`
-        ).join('');
-        const comisionHTML = commissionData ? evaluationData.preguntas_comision.map((q, i) => {
-            const ev = commissionData.evaluacion_respuestas?.[i];
-            return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:8px;">
-                <p style="font-weight:700;color:#1e293b;margin:0 0 4px;">P${i+1}: ${q.pregunta}</p>
-                <p style="font-size:13px;color:#334155;margin:0 0 4px;">Mi respuesta: ${commissionAnswers[i] || '—'}</p>
-                ${ev ? `<p style="font-size:12px;margin:2px 0;"><span style="color:${ev.puntaje >= 60 ? '#059669' : '#dc2626'};font-weight:800;">${ev.puntaje}/100</span> — ${ev.comentario}</p>` : ''}
-            </div>`;
-        }).join('') : '';
-        
-        // Detailed blocks for full log
-        const transcriptHTML = `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;white-space:pre-wrap;font-size:13px;color:#334155;">${interviewData?.respuestas_paciente || '(Sin interacción)'}</div>`;
-        const razonamientoHTML = `<div style="margin-bottom:16px;font-size:13px;color:#334155;">
-            <p style="margin-bottom:4px;"><strong>Fase 1 (Hipótesis):</strong> ${reasoning.hipotesis.filter(h=>h.trim()).join(', ') || 'Ninguna'}</p>
-            <p style="margin-bottom:4px;"><strong>Banderas Rojas:</strong> ${reasoning.banderas_rojas || 'Ninguna'} | <strong>Factores BPS:</strong> ${reasoning.factores_bps || 'Ninguna'}</p>
-            <p style="margin-bottom:4px;"><strong>Fase 2 (Integradas):</strong> ${reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
-            <p style="margin-bottom:4px;"><strong>Hallazgos Clave:</strong> ${reasoning2.hallazgos_clave || 'No ingresados'}</p>
-            <p style="margin-bottom:0;"><strong>Mecanismo/Dolor:</strong> ${reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
-        </div>`;
-        const examenHTML = examData ? Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => 
-            `<div style="margin-bottom:8px;"><strong style="font-size:13px;color:#0f766e;">${mod}</strong><p style="margin:2px 0 0;font-size:13px;color:#334155;white-space:pre-wrap;">${findings}</p></div>`
-        ).join('') : '<p style="font-size:13px;color:#64748b;">No se revelaron hallazgos.</p>';
-        const intervencionesHTML = interventions.filter(i=>i.tecnica.trim()).map(int => 
-            `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:8px;font-size:13px;color:#166534;">
-                <strong>Técnica:</strong> ${int.tecnica}<br/>
-                <strong>Objetivo:</strong> ${int.objetivo_tecnica}<br/>
-                <strong>Dosis:</strong> ${int.dosis}
-            </div>`
-        ).join('') || '<p style="font-size:13px;color:#64748b;">Ninguna ingresada.</p>';
-        const construccionHTML = `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e3a8a;">
-            <p style="margin-bottom:6px;"><strong>Diagnóstico CIF:</strong> ${construction.diagnostico}</p>
-            <p style="margin-bottom:6px;"><strong>Objetivo General:</strong> ${construction.objetivo_general}</p>
-            <p style="margin-bottom:6px;white-space:pre-wrap;"><strong>Objetivos Específicos:</strong><br/>${construction.objetivos_especificos}</p>
-            <p style="margin-bottom:0;white-space:pre-wrap;"><strong>Plan de Fases:</strong><br/>${construction.plan_fases}</p>
-        </div>`;
-
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Simulador</title>
-        <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
-        h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
-        .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f59e0b;padding-bottom:16px;margin-bottom:24px;}
-        .nota-box{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 24px;text-align:center;}
-        .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-        table{width:100%;border-collapse:collapse;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
-        @media print{body{padding:20px;} .no-print{display:none;}}
-        .page-break { page-break-before: always; }
-        </style></head><body>
-        <div class="header"><div><h1>🎓 Simulador de Examen Clínico</h1><p style="margin:4px 0;font-size:13px;color:#64748b;">Reporte de Evaluación · ${new Date().toLocaleDateString('es-CL')}</p>
-        <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${user?.displayName || user?.email || 'N/A'} · <strong>Tiempo:</strong> ${formatTime(timer)}</p></div>
-        <div class="nota-box"><div class="nota-big">${notaFinal}</div><div style="font-size:12px;font-weight:700;color:#92400e;">NOTA FINAL</div></div></div>
-        
-        <h2>📋 Caso Clínico</h2>
-        <div class="grid2"><div><strong>Paciente:</strong> ${caseData.ficha_visible.nombre}</div><div><strong>Edad:</strong> ${caseData.ficha_visible.edad}</div>
-        <div><strong>Ocupación:</strong> ${caseData.ficha_visible.ocupacion}</div><div><strong>Actividad:</strong> ${caseData.ficha_visible.deporte_actividad}</div></div>
-        <p><strong>Motivo:</strong> ${caseData.ficha_visible.motivo_consulta}</p>
-        
-        <h2>📊 Scorecard por Competencia</h2>
-        <table><thead><tr><th>Competencia</th><th>Puntaje</th><th>Comentario</th></tr></thead><tbody>${scorecardRows}</tbody></table>
-        <div class="grid2" style="margin-top:16px;">
-        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${evaluationData.puntaje_global}/100</div><div style="font-size:11px;color:#64748b;">Evaluación (70%)</div></div>
-        ${commissionData ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:900;color:#1e293b;">${commissionData.puntaje_comision_global}/100</div><div style="font-size:11px;color:#64748b;">Comisión (30%)</div></div>` : ''}
-        </div>
-        
-        <h2>❌ Errores Críticos</h2>${erroresHTML || '<p style="color:#94a3b8;font-size:13px;">Ninguno detectado.</p>'}
-        <h2>✅ Aciertos Destacados</h2>${aciertosHTML || '<p style="color:#94a3b8;font-size:13px;">—</p>'}
-        ${evaluationData.areas_mejora?.length ? `<h2>📈 Áreas de Mejora</h2><ul>${evaluationData.areas_mejora.map((a: string) => `<li style="font-size:13px;margin-bottom:4px;">${a}</li>`).join('')}</ul>` : ''}
-        <h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${evaluationData.perla_docente}</p>
-        ${commissionData ? `<h2>🎤 Defensa de Comisión</h2>${comisionHTML}<div style="background:#f8fafc;border-radius:10px;padding:14px;margin-top:8px;"><p style="font-size:13px;font-style:italic;color:#475569;">${commissionData.feedback_final}</p></div>` : ''}
-        
-        <div class="page-break"></div>
-        <div style="border-bottom:3px solid #0f172a;padding-bottom:12px;margin-bottom:24px;"><h1>📚 Bitácora Completa de la Sesión</h1><p style="margin:4px 0 0;font-size:13px;color:#64748b;">Registro detallado de todo lo ingresado por el alumno.</p></div>
-        
-        <h2>🗣️ Transcripción de la Entrevista</h2>
-        ${transcriptHTML}
-        
-        <h2>🧠 Razonamiento Clínico</h2>
-        ${razonamientoHTML}
-        
-        <h2>🔍 Hallazgos del Examen Físico</h2>
-        ${examenHTML}
-        
-        <h2>💊 Intervenciones Propuestas</h2>
-        ${intervencionesHTML}
-        
-        <h2>🏗️ Construcción Clínica</h2>
-        ${construccionHTML}
-
-        <div class="no-print" style="text-align:center;margin-top:32px;"><button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Guardar como PDF</button></div>
-        </body></html>`;
-        const w = window.open('', '_blank');
-        if (w) { w.document.write(html); w.document.close(); }
     };
 
     const handleReset = () => {
@@ -593,74 +699,144 @@ export function SimuladorExamenVozTotal() {
         setReasoning2({ hipotesis_confirmadas: '', clasificacion_actualizada: '', diagnostico_presuntivo: '', hallazgos_clave: '' });
         setConstruction({ diagnostico: '', objetivo_general: '', objetivos_especificos: '', objetivos_operacionales: '', plan_fases: '', reevaluacion: '' });
         setInterventions([{ tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }, { tecnica: '', objetivo_tecnica: '', dosis: '', posicion_terapeuta: '', posicion_paciente: '', instrucciones_paciente: '' }]);
-        setCommissionAnswers([]); setReviewPhase(null); setPracticeMode('completo'); setShowHistorial(false);
+        setCommissionAnswers([]); setShowHistorial(false);
+        setPhaseTranscripts({
+            interview: '',
+            reasoning: '',
+            exam: '',
+            reasoning2: '',
+            intervention: '',
+            exposition: '',
+            commission: ''
+        });
         const init: Record<string, { selected: boolean; justificacion: string; pruebas: string }> = {};
         EXAM_MODULES.forEach(m => { init[m.key] = { selected: false, justificacion: '', pruebas: '' }; });
         setExamSelections(init);
     };
 
-    // Progress bar - only show phases in current practice mode
-    const activePhases = ['SETUP' as SimPhase, ...PRACTICE_PHASES[practiceMode]];
-    const currentIdx = activePhases.indexOf(phase);
+    const handleExportPDF = () => {
+        if (!caseData || !evaluationData) return;
+        const notaFinal = commissionData
+            ? ((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1)
+            : evaluationData.nota_chilena?.toFixed(1);
+        
+        const scorecardRows = Object.entries(evaluationData.scorecard).map(([k, val]) => {
+            const v = val as { puntaje: number; comentario: string };
+            return `<tr><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:13px;">${k.replace(/_/g, ' ').toUpperCase()}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:center;font-weight:800;font-size:15px;color:${v.puntaje >= 60 ? '#059669' : '#dc2626'}">${v.puntaje}</td><td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;">${v.comentario}</td></tr>`;
+        }).join('');
+        
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte Examen OSCE</title>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body{font-family:'Inter',sans-serif;max-width:800px;margin:0 auto;padding:40px 30px;color:#1e293b;line-height:1.5;}
+        h1{font-size:22px;margin:0;} h2{font-size:16px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px;color:#334155;}
+        .header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f59e0b;padding-bottom:16px;margin-bottom:24px;}
+        .nota-box{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f59e0b;border-radius:12px;padding:16px 24px;text-align:center;}
+        .nota-big{font-size:36px;font-weight:900;color:#92400e;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        table{width:100%;border-collapse:collapse;} th{text-align:left;padding:8px 10px;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;}
+        @media print{body{padding:20px;} .no-print{display:none;}}
+        .page-break { page-break-before: always; }
+        </style></head><body>
+        <div class="header"><div><h1>🎓 Reporte de Examen OSCE por Voz</h1><p style="margin:4px 0;font-size:13px;color:#64748b;">Evaluación de Caso Clínico Completo · ${new Date().toLocaleDateString('es-CL')}</p>
+        <p style="margin:2px 0;font-size:13px;"><strong>Estudiante:</strong> ${user?.displayName || user?.email || 'N/A'}</p></div>
+        <div class="nota-box"><div class="nota-big">${notaFinal}</div><div style="font-size:12px;font-weight:700;color:#92400e;">NOTA CONSOLIDADA</div></div></div>
+        
+        <h2>📋 Ficha del Paciente</h2>
+        <div class="grid2"><div><strong>Paciente:</strong> ${caseData.ficha_visible.nombre}</div><div><strong>Edad:</strong> ${caseData.ficha_visible.edad}</div>
+        <div><strong>Ocupación:</strong> ${caseData.ficha_visible.ocupacion}</div><div><strong>Actividad:</strong> ${caseData.ficha_visible.deporte_actividad}</div></div>
+        <p><strong>Motivo:</strong> ${caseData.ficha_visible.motivo_consulta}</p>
+        
+        <h2>📊 Scorecard de Competencias</h2>
+        <table><thead><tr><th>Competencia</th><th>Puntaje</th><th>Comentario</th></tr></thead><tbody>${scorecardRows}</tbody></table>
+        
+        <h2>❌ Errores Críticos Detectados</h2>
+        ${evaluationData.errores_criticos.map((e) => `<div style="background:#fef2f2;border:1px solid #fecaca;padding:10px;border-radius:8px;margin-bottom:6px;"><strong style="color:#991b1b;">[${e.fase}]</strong> ${e.error}<br/><span style="font-size:12px;color:#64748b;">→ ${e.explicacion_docente}</span></div>`).join('') || '<p>Ninguno detectado.</p>'}
+        
+        <h2>💎 Perla Docente</h2><p style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px;font-size:13px;color:#3730a3;font-style:italic;">${evaluationData.perla_docente}</p>
+        
+        <div class="page-break"></div>
+        <h2>🗣️ Transcripciones Clínicas (Alta Fidelidad)</h2>
+        <h3>Entrevista Subjetiva:</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;background:#f8fafc;padding:10px;border-radius:8px;">${phaseTranscripts.interview || 'No registrada'}</pre>
+        <h3>Razonamiento I (Oral):</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;background:#f8fafc;padding:10px;border-radius:8px;">${phaseTranscripts.reasoning || 'No registrado'}</pre>
+        <h3>Examen Físico (Oral):</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;background:#f8fafc;padding:10px;border-radius:8px;">${phaseTranscripts.exam || 'No registrado'}</pre>
+        <h3>Exposición del Caso (Oral):</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;background:#f8fafc;padding:10px;border-radius:8px;">${phaseTranscripts.exposition || 'No registrada'}</pre>
+        <h3>Defensa ante la Comisión (Oral):</h3>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;background:#f8fafc;padding:10px;border-radius:8px;">${phaseTranscripts.commission || 'No registrada'}</pre>
+        
+        <div class="no-print" style="text-align:center;margin-top:32px;"><button onclick="window.print()" style="background:#0f172a;color:white;border:none;padding:12px 32px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">📄 Imprimir Reporte</button></div>
+        </body></html>`;
+        
+        const w = window.open('', '_blank');
+        if (w) { w.document.write(html); w.document.close(); }
+    };
 
-    // ─── RENDER ───
+    const currentIdx = OSCE_PHASES.indexOf(phase);
+
+    const handleVoiceConnect = async () => {
+        await startLocalRecording();
+        connect();
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             {/* ═══ EXIT WARNING MODAL ═══ */}
             {showExitWarning && (
-                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl">⚠️</div>
                             <div>
-                                <h3 className="font-black text-lg text-slate-900">¿Abandonar el examen?</h3>
-                                <p className="text-sm text-slate-500">Perderás todo tu progreso actual.</p>
+                                <h3 className="font-black text-lg text-slate-900">¿Abandonar Examen OSCE?</h3>
+                                <p className="text-sm text-slate-500">Perderás todo tu progreso actual de la simulación.</p>
                             </div>
                         </div>
-                        <p className="text-sm text-slate-600">Llevas <strong>{formatTime(timer)}</strong> en este intento y estás en la fase <strong>{PHASE_LABELS[phase]}</strong>. Si sales, tendrás que empezar de cero.</p>
                         <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowExitWarning(false)}
-                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all"
-                            >
-                                Seguir con el examen
-                            </button>
-                            <button
-                                onClick={() => { setShowExitWarning(false); handleReset(); }}
-                                className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 font-bold py-3 rounded-xl transition-all"
-                            >
-                                Abandonar
-                            </button>
+                            <button onClick={() => setShowExitWarning(false)} className="flex-1 bg-slate-900 text-white font-bold py-3 rounded-xl">Seguir</button>
+                            <button onClick={() => { setShowExitWarning(false); handleReset(); }} className="flex-1 bg-red-100 text-red-700 font-bold py-3 rounded-xl">Abandonar</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ════════ ADVANCED COMMUNICATION FEEDBACK MODAL (DIMENSION 1) ════════ */}
+            {/* ════════ LOADING TRANSCRIPTION OVERLAY ════════ */}
+            {loadingTranscription && (
+                <div className="fixed inset-0 z-[9999] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-4 animate-pulse">
+                        <div className="mx-auto w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        <h3 className="text-lg font-black text-slate-800">Transcribiendo Audio de Alta Fidelidad</h3>
+                        <p className="text-sm text-slate-500">
+                            Gemini está procesando la grabación de tu micrófono para corregir términos clínicos de kinesiología y formatear los diálogos con precisión.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* ════════ INTERVIEW COMMUNICATION FEEDBACK MODAL ════════ */}
             {showCommunicationFeedback && interviewFeedbackData && (
-                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5">
                         <div className="flex items-center gap-3 border-b pb-4">
                             <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">🎓</div>
                             <div>
-                                <h3 className="font-black text-xl text-slate-900">Tu Desempeño Comunicacional</h3>
-                                <p className="text-sm text-slate-500">Evaluación Docente de Habilidades Blandas (Dimensión 1)</p>
+                                <h3 className="font-black text-xl text-slate-900">Desempeño Comunicacional</h3>
+                                <p className="text-sm text-slate-500">Evaluación de Habilidades Blandas en la Entrevista (Dimensión 1)</p>
                             </div>
                             <div className="ml-auto text-right">
-                                <div className={`text-2xl font-black ${interviewFeedbackData.comunicacion_avanzada.puntaje >= 80 ? 'text-emerald-600' : interviewFeedbackData.comunicacion_avanzada.puntaje >= 60 ? 'text-amber-500' : 'text-red-600'}`}>
+                                <div className="text-2xl font-black text-purple-600">
                                     {interviewFeedbackData.comunicacion_avanzada.puntaje}/100
                                 </div>
                             </div>
                         </div>
-
                         <p className="text-sm text-slate-600 italic">"{interviewFeedbackData.comunicacion_avanzada.comentario_general_comunicacion}"</p>
-
                         <div className="space-y-3">
                             {[
                                 { key: 'resumenes_reflexivos', label: 'Resúmenes Reflexivos', icon: '🔄', data: interviewFeedbackData.comunicacion_avanzada.resumenes_reflexivos },
                                 { key: 'senalizacion_signposting', label: 'Señalización (Signposting)', icon: '🚦', data: interviewFeedbackData.comunicacion_avanzada.senalizacion_signposting },
                                 { key: 'efecto_nocebo', label: 'Cero Efecto Nocebo', icon: '🛡️', data: interviewFeedbackData.comunicacion_avanzada.efecto_nocebo },
-                                { key: 'empatia_manejo_incertidumbre', label: 'Empatía y Manejo Incertidumbre', icon: '🤝', data: interviewFeedbackData.comunicacion_avanzada.empatia_manejo_incertidumbre },
+                                { key: 'empatia_manejo_incertidumbre', label: 'Empatía y Manejo de Incertidumbre', icon: '🤝', data: interviewFeedbackData.comunicacion_avanzada.empatia_manejo_incertidumbre },
                                 { key: 'ritmo_embudo', label: 'Ritmo y Embudo', icon: '⏳', data: interviewFeedbackData.comunicacion_avanzada.ritmo_embudo },
                             ].map(item => (
                                 <div key={item.key} className={`border rounded-xl p-3 flex gap-3 ${item.data.logrado ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
@@ -677,12 +853,8 @@ export function SimuladorExamenVozTotal() {
                                 </div>
                             ))}
                         </div>
-
-                        <button
-                            onClick={() => setShowCommunicationFeedback(false)}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all"
-                        >
-                            Continuar al Razonamiento Clínico →
+                        <button onClick={() => setShowCommunicationFeedback(false)} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl transition-all">
+                            Continuar a la Estación de Razonamiento
                         </button>
                     </div>
                 </div>
@@ -691,59 +863,46 @@ export function SimuladorExamenVozTotal() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🎓 Simulador de Examen Clínico</h1>
-                    <p className="text-gray-500 text-sm mt-1">Practica tu examen final de Kinesiología MSK/Deportiva</p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-purple-950 flex items-center gap-2">
+                        <span>🎓 Simulador de Examen OSCE por Voz</span>
+                        <span className="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">DOCENTE TEST</span>
+                    </h1>
+                    <p className="text-slate-500 text-sm mt-1">Simulación completa hablada bajo presión de tiempo real</p>
                 </div>
                 {phase !== 'SETUP' && (
                     <div className="flex items-center gap-3">
-                        <div className="bg-slate-900 text-white font-mono px-4 py-2 rounded-xl text-lg shadow">{formatTime(timer)}</div>
-                        <button onClick={handleReset} className="text-xs text-red-500 hover:text-red-700 font-bold">Reiniciar</button>
+                        <div className={`font-mono px-4 py-2 rounded-xl text-lg font-black shadow border ${timer <= 120 ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-slate-900 text-white border-slate-950'}`}>
+                            ⏱️ {formatTime(timer)}
+                        </div>
+                        <button onClick={handleReset} className="text-xs text-red-500 hover:text-red-700 font-bold">Salir del Examen</button>
                     </div>
                 )}
             </div>
 
-            {/* Progress */}
+            {/* Progress bar */}
             {phase !== 'SETUP' && (
-                <div className="flex gap-1">
-                    {activePhases.filter(p => p !== 'SETUP').map((p, i) => (
-                        <div key={p} className={`h-2 flex-1 rounded-full transition-all ${(i + 1) <= currentIdx ? ((i + 1) === currentIdx ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-slate-200'}`} title={PHASE_LABELS[p]} />
-                    ))}
+                <div className="space-y-1">
+                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                        <span>Estación {currentIdx + 1} de {OSCE_PHASES.length - 1}</span>
+                        <span>{PHASE_LABELS[phase]}</span>
+                    </div>
+                    <div className="flex gap-1">
+                        {OSCE_PHASES.filter(p => p !== 'RESULTS').map((p, i) => (
+                            <div key={p} className={`h-2.5 flex-1 rounded-full transition-all ${(i) <= currentIdx ? ((i) === currentIdx ? 'bg-purple-600 scale-y-110' : 'bg-emerald-500') : 'bg-slate-200'}`} title={PHASE_LABELS[p]} />
+                        ))}
+                    </div>
                 </div>
             )}
 
-            {/* Error */}
+            {/* Error notifications */}
             {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">{error}</div>}
 
-            {/* Loading */}
+            {/* Loading generic overlay */}
             {loading && (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center p-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
                     <div className="flex flex-col items-center gap-3">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500" />
-                        <p className="text-slate-500 font-medium text-sm animate-pulse">Procesando con IA...</p>
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ TASK ALERT ════════ */}
-            {phase === 'SETUP' && tareaAlerta && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-start gap-3">
-                        <div className="text-2xl">🚨</div>
-                        <div className="flex-1">
-                            <h3 className="font-black text-red-800 text-sm">TAREA PENDIENTE</h3>
-                            <p className="text-sm text-red-700 mt-0.5">{tareaAlerta.mensaje}</p>
-                            <p className="text-xs text-red-500 mt-1">{tareaAlerta.descripcion}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 pl-9">
-                        <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
-                            Requerimiento: 1 cada {tareaAlerta.frecuencia} días
-                        </span>
-                        {tareaAlerta.creditos > 0 && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
-                                {tareaAlerta.creditos} crédito(s) acumulados
-                            </span>
-                        )}
+                        <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-slate-500 text-sm font-medium">Cargando evaluación y parámetros del caso clínico...</p>
                     </div>
                 </div>
             )}
@@ -751,47 +910,61 @@ export function SimuladorExamenVozTotal() {
             {/* ════════ PHASE: SETUP ════════ */}
             {phase === 'SETUP' && !loading && !showHistorial && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-slate-800">Configura tu caso clínico</h2>
-                        <button onClick={() => setShowHistorial(true)} className="text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
-                            📊 Mi Historial
+                    <div className="flex justify-between items-center border-b pb-4">
+                        <h2 className="text-lg font-bold text-slate-800">Parámetros del Examen OSCE</h2>
+                        <button onClick={() => setShowHistorial(true)} className="text-xs font-bold text-purple-700 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 hover:bg-purple-100 transition-all">
+                            📊 Ver Historial de Intentos
                         </button>
                     </div>
-                    {/* Practice Mode Selector (Removed as requested, defaults to completo) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Área corporal</label>
-                            <select value={setupForm.area} onChange={e => setSetupForm(p => ({ ...p, area: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Área Corporal a Interrogar</label>
+                            <select value={setupForm.area} onChange={e => setSetupForm(p => ({ ...p, area: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
                                 <option value="">Aleatoria</option>
-                                <option value="hombro">Hombro</option><option value="rodilla">Rodilla</option><option value="columna_lumbar">Columna Lumbar</option>
-                                <option value="columna_cervical">Columna Cervical</option><option value="tobillo">Tobillo/Pie</option><option value="cadera">Cadera</option>
-                                <option value="codo_muneca">Codo/Muñeca</option><option value="deportivo">Caso Deportivo</option>
+                                <option value="hombro">Hombro</option>
+                                <option value="rodilla">Rodilla</option>
+                                <option value="columna_lumbar">Columna Lumbar</option>
+                                <option value="columna_cervical">Columna Cervical</option>
+                                <option value="tobillo">Tobillo/Pie</option>
+                                <option value="cadera">Cadera</option>
+                                <option value="codo_muneca">Codo/Muñeca</option>
+                                <option value="deportivo">Caso Deportivo / Gesto Lesional</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Dificultad</label>
-                            <select value={setupForm.dificultad} onChange={e => setSetupForm(p => ({ ...p, dificultad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none">
-                                <option value="basico">Básico</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Dificultad del Caso</label>
+                            <select value={setupForm.dificultad} onChange={e => setSetupForm(p => ({ ...p, dificultad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                                <option value="basico">Básico (Cuadro agudo, biomecánico simple)</option>
+                                <option value="intermedio">Intermedio (Insidioso, carga progresiva)</option>
+                                <option value="avanzado">Avanzado (Dolor persistente, nociplástico, BPS marcado)</option>
                             </select>
                         </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-600 mb-1">Personalidad Oculta del Paciente (Estación 1)</label>
+                            <select value={setupForm.personalidad} onChange={e => setSetupForm(p => ({ ...p, personalidad: e.target.value }))} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                                <option value="colaborador">Paciente Colaborador (Estándar)</option>
+                                <option value="catastrofista">Paciente Catastrofista (Ansioso, kinesiofobia)</option>
+                                <option value="reticente">Paciente Reticente (De pocas palabras, cortante)</option>
+                            </select>
+                        </div>
+                        {audioDevices.length > 1 && (
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-600 mb-1">🎙️ Dispositivo de Micrófono</label>
+                                <select value={selectedDeviceId} onChange={e => setSelectedDeviceId(e.target.value)} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none">
+                                    <option value="">Predeterminado del sistema</option>
+                                    {audioDevices.map(d => (
+                                        <option key={d.deviceId} value={d.deviceId}>{d.label || `Micrófono ${d.deviceId.slice(0,8)}`}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-slate-600 mb-1">Descripción del caso (opcional)</label>
-                        <textarea value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Joven deportista con dolor de rodilla bilateral..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
+                        <label className="block text-sm font-semibold text-slate-600 mb-1">Descripción o Patología Específica (Opcional)</label>
+                        <textarea value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Paciente con diagnóstico médico de rotura parcial de tendón patelar hace 3 meses..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
                     </div>
-                    {audioDevices.length > 1 && (
-                        <div className="sm:col-span-2">
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">🎤 Micrófono</label>
-                            <select value={selectedDeviceId} onChange={e => setSelectedDeviceId(e.target.value)} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none">
-                                <option value="">Predeterminado del sistema</option>
-                                {audioDevices.map(d => (
-                                    <option key={d.deviceId} value={d.deviceId}>{d.label || `Micrófono ${d.deviceId.slice(0,8)}`}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                    <button onClick={handleGenerate} disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                        🎲 Generar Caso Aleatorio
+                    <button onClick={handleGenerate} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50 text-base">
+                        🏁 Iniciar Examen OSCE por Voz
                     </button>
                 </div>
             )}
@@ -801,824 +974,283 @@ export function SimuladorExamenVozTotal() {
                 <SimuladorHistorial onClose={() => setShowHistorial(false)} />
             )}
 
-            {/* ════════ PHASE: INTERVIEW ════════ */}
-            {(phase === 'INTERVIEW' || reviewPhase === 'INTERVIEW') && !loading && caseData && (
+            {/* ════════ STATIONS VIEW CONTAINER ════════ */}
+            {isActiveExam && !loading && caseData && (
                 <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-                        <h3 className="font-bold text-blue-800 mb-2">📋 Ficha del Paciente</h3>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-blue-900">
-                            <div><span className="font-semibold">Nombre:</span> {caseData.ficha_visible.nombre}</div>
-                            <div><span className="font-semibold">Edad:</span> {caseData.ficha_visible.edad}</div>
-                            <div><span className="font-semibold">Sexo:</span> {caseData.ficha_visible.sexo}</div>
-                            <div><span className="font-semibold">Ocupación:</span> {caseData.ficha_visible.ocupacion}</div>
-                            <div className="col-span-2"><span className="font-semibold">Actividad:</span> {caseData.ficha_visible.deporte_actividad}</div>
-                            <div className="col-span-2"><span className="font-semibold">Motivo:</span> {caseData.ficha_visible.motivo_consulta}</div>
-                            <div className="col-span-2"><span className="font-semibold">Derivación:</span> {caseData.ficha_visible.derivacion}</div>
-                            <div className="col-span-2"><span className="font-semibold">Evolución:</span> {caseData.ficha_visible.tiempo_evolucion}</div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex justify-between items-center">
+                        <div className="space-y-1">
+                            <span className="text-[10px] bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                {PHASE_LABELS[phase]}
+                            </span>
+                            <h3 className="font-bold text-slate-800 text-sm">
+                                {phase === 'INTERVIEW' && "Habla con el paciente simulado para recopilar antecedentes."}
+                                {phase === 'REASONING' && "Responde las preguntas de diagnóstico preliminar de la comisión."}
+                                {phase === 'EXAM' && "Pídele pruebas al paciente o solicita mediciones técnicas a la comisión."}
+                                {phase === 'REASONING2' && "Indica a la comisión cómo cambiaron tus sospechas con las pruebas."}
+                                {phase === 'INTERVENTION' && "Guía al paciente en su ejercicio y justifica biomecánicamente la dosis."}
+                                {phase === 'CONSTRUCTION' && "Escribe formalmente el diagnóstico CIF y los objetivos del tratamiento."}
+                                {phase === 'EXPOSITION' && "Expón verbalmente toda la ficha y plan clínico sin interrupciones."}
+                                {phase === 'COMMISSION' && "Defiende verbalmente tu toma de decisiones clínicas ante el tribunal."}
+                            </h3>
                         </div>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h3 className="font-bold text-slate-800 text-xl">🎤 Entrevista por Voz</h3>
-                                <p className="text-sm text-slate-500">Límite de tiempo: 10 minutos. Habla natural con el paciente.</p>
-                            </div>
-                            <div className={`px-4 py-2 rounded-xl font-bold font-mono text-lg ${timer >= 540 ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-slate-100 text-slate-700'}`}>
-                                {Math.floor(Math.max(0, 600 - timer) / 60)}:{Math.max(0, 600 - timer) % 60 < 10 ? '0' : ''}{Math.max(0, 600 - timer) % 60} min restantes
-                            </div>
+
+                    {phase !== 'INTERVIEW' && phase !== 'CONSTRUCTION' && (
+                        <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 text-xs grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div><strong className="text-purple-900">Paciente:</strong> {caseData.ficha_visible.nombre} ({caseData.ficha_visible.edad})</div>
+                            <div><strong className="text-purple-900">Motivo:</strong> {caseData.ficha_visible.motivo_consulta}</div>
+                            <div><strong className="text-purple-900">Derivación:</strong> {caseData.ficha_visible.derivacion}</div>
+                            <div><strong className="text-purple-900">Evolución:</strong> {caseData.ficha_visible.tiempo_evolucion}</div>
                         </div>
+                    )}
 
-                        {!isReview && connectionState === 'disconnected' && (
-                            <button onClick={connect} disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md text-lg">
-                                Iniciar Conexión de Voz
-                            </button>
-                        )}
-                        {!isReview && connectionState === 'connecting' && (
-                            <div className="w-full bg-blue-100 text-blue-700 font-bold py-4 rounded-xl text-center">
-                                Conectando con el paciente...
-                            </div>
-                        )}
-                        {!isReview && connectionState === 'error' && (
-                            <div className="space-y-3">
-                                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-800 text-sm">
-                                    <p className="font-bold mb-2">⚠️ Error al conectar con el simulador de voz</p>
-                                    <p className="mb-2">Por favor verifica lo siguiente:</p>
-                                    <ul className="list-disc list-inside space-y-1 ml-1">
-                                        <li><strong>Reiniciar Servidor:</strong> Si acabas de agregar la API Key al archivo `.env.local`, debes detener tu terminal (`Ctrl + C`) y volver a ejecutar `npm run dev` para que Next.js la detecte.</li>
-                                        <li><strong>Permisos del Navegador:</strong> Asegúrate de haber otorgado permisos de micrófono a la página en la barra de direcciones de tu navegador.</li>
-                                        <li><strong>Conexión a Internet:</strong> Verifica que no tengas bloqueadores de WebSockets o proxies que impidan la conexión a los servidores de Google Gemini Live.</li>
-                                    </ul>
-                                </div>
-                                <button onClick={connect} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-md text-lg">
-                                    Reintentar Conexión de Voz
-                                </button>
-                            </div>
-                        )}
-                        {!isReview && connectionState === 'connected' && (
-                            <div className="space-y-4">
-                                <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-2xl border-2 border-slate-200 relative overflow-hidden">
-                                    <div className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${isSpeaking ? 'bg-blue-100 shadow-[0_0_40px_rgba(59,130,246,0.6)] scale-110' : 'bg-slate-200'} ${volume > 0.05 ? 'scale-[1.05]' : ''}`}>
-                                        <div className={`w-24 h-24 rounded-full transition-all duration-100 ${isSpeaking ? 'bg-blue-500 animate-pulse' : 'bg-slate-300'} ${volume > 0.1 ? 'scale-[1.1]' : ''}`} />
-                                    </div>
-                                    <p className="mt-6 font-bold text-slate-600">
-                                        {isSpeaking ? 'El paciente está hablando...' : 'Escuchando...'}
-                                    </p>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button onClick={toggleMic} className={`flex-1 font-bold py-3 rounded-xl transition-all ${isMicOpen ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-red-100 hover:bg-red-200 text-red-700'}`}>
-                                        {isMicOpen ? '🔇 Mutear Micrófono' : '🔊 Activar Micrófono'}
-                                    </button>
-                                    <button onClick={handleEndVoiceInterview} disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                        Terminar Entrevista →
-                                    </button>
+                    {/* 🎙️ VOICE PANEL */}
+                    {phase !== 'CONSTRUCTION' && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                                    <span className="relative flex h-3 w-3">
+                                        {connectionState === 'connected' && (
+                                            <>
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                            </>
+                                        )}
+                                        {connectionState === 'connecting' && <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 animate-pulse"></span>}
+                                        {connectionState === 'disconnected' && <span className="relative inline-flex rounded-full h-3 w-3 bg-slate-300"></span>}
+                                    </span>
+                                    <span>Canal de Voz en Vivo</span>
+                                </h3>
+                                <div className="text-xs font-semibold text-slate-400">
+                                    {connectionState === 'connected' ? 'Transmisión cifrada de audio activa' : 'Conexión de audio inactiva'}
                                 </div>
                             </div>
-                        )}
 
-                        <div className="bg-slate-900 rounded-xl p-4 h-64 overflow-y-auto font-mono text-sm shadow-inner mt-4">
-                            {transcript.length === 0 ? (
-                                <p className="text-slate-500 italic">La transcripción aparecerá aquí...</p>
-                            ) : (
-                                transcript.map((t, idx) => (
-                                    <div key={idx} className={`mb-3 ${t.role === 'user' ? 'text-blue-300' : 'text-emerald-300'}`}>
-                                        <span className="font-bold opacity-50 select-none">{t.role === 'user' ? 'KINE:' : 'PACIENTE:'}</span> {t.text}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ CONTEXTO CONTINUO (POST-ENTREVISTA) ════════ */}
-            {phase !== 'SETUP' && phase !== 'INTERVIEW' && !loading && interviewData && (
-                <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-4">
-                    <h3 className="font-bold text-green-800 mb-2">💬 Respuestas del Paciente</h3>
-                    <p className="text-sm text-green-900 whitespace-pre-wrap">{interviewData.respuestas_paciente}</p>
-                </div>
-            )}
-
-            {/* ════════ PHASE: REASONING ════════ */}
-            {(phase === 'REASONING' || reviewPhase === 'REASONING') && !loading && interviewData && (
-                <div className="space-y-4">
-
-                    {!showInterviewAnalysis ? (
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
-                            <h3 className="font-bold text-slate-800">🧠 Razonamiento Clínico</h3>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-600 mb-1">Hipótesis Orientativas (3)</label>
-                                {reasoning.hipotesis.map((h, i) => (
-                                    <input key={i} value={h} onChange={e => { const arr = [...reasoning.hipotesis]; arr[i] = e.target.value; setReasoning(r => ({ ...r, hipotesis: arr })); }}
-                                        readOnly={isReview}
-                                        placeholder={`Hipótesis ${i + 1}${i === 0 ? ' (más probable)' : i === 2 ? ' (menos probable)' : ''}`}
-                                        className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm mb-2 focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Clasificación del Dolor</label>
-                                    <select value={reasoning.clasificacion_dolor} onChange={e => setReasoning(r => ({ ...r, clasificacion_dolor: e.target.value }))} disabled={isReview} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50' : ''}`}>
-                                        <option value="">Seleccionar...</option><option>Nociceptivo</option><option>Neuropático</option><option>Nociplástico</option><option>Mixto</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-600 mb-1">Irritabilidad Estimada</label>
-                                    <select value={reasoning.irritabilidad} onChange={e => setReasoning(r => ({ ...r, irritabilidad: e.target.value }))} disabled={isReview} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none ${isReview ? 'bg-slate-50' : ''}`}>
-                                        <option value="">Seleccionar...</option><option>Alta</option><option>Media</option><option>Baja</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-600 mb-1">Banderas Rojas Detectadas</label>
-                                <textarea value={reasoning.banderas_rojas} onChange={e => setReasoning(r => ({ ...r, banderas_rojas: e.target.value }))} readOnly={isReview} placeholder="Ej: Pérdida de peso, dolor nocturno..." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-600 mb-1">Factores BPS Relevantes</label>
-                                <textarea value={reasoning.factores_bps} onChange={e => setReasoning(r => ({ ...r, factores_bps: e.target.value }))} readOnly={isReview} placeholder="Ej: Kinesiofobia, estrés laboral, mal sueño..." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                            </div>
-                            {!isReview && (
-                                <button onClick={handleReasoningSubmit} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                    Confirmar Razonamiento →
+                            {connectionState === 'disconnected' && (
+                                <button onClick={handleVoiceConnect} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl text-lg transition-all shadow-md">
+                                    🎙️ Iniciar Conexión de Voz con la Estación
                                 </button>
                             )}
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5">
-                                <h3 className="font-bold text-amber-800 mb-3">💡 Análisis de tu Entrevista</h3>
-                                {interviewData.analisis_oculto.preguntas_faltantes_criticas.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="font-semibold text-red-700 text-sm mb-2">❌ Preguntas que te faltaron:</h4>
-                                        {interviewData.analisis_oculto.preguntas_faltantes_criticas.map((p, i) => (
-                                            <div key={i} className="bg-white rounded-xl p-3 mb-2 border border-red-100">
-                                                <p className="font-semibold text-sm text-red-800">{p.pregunta}</p>
-                                                <p className="text-xs text-slate-600 mt-1"><strong>Importancia:</strong> {p.por_que_importa}</p>
-                                                <p className="text-xs text-slate-600"><strong>Diferencial:</strong> {p.que_diferencial_afecta}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {interviewData.analisis_oculto.preguntas_bien_hechas.length > 0 && (
-                                    <div>
-                                        <h4 className="font-semibold text-emerald-700 text-sm mb-2">✅ Preguntas bien hechas:</h4>
-                                        {interviewData.analisis_oculto.preguntas_bien_hechas.map((p, i) => (
-                                            <div key={i} className="bg-emerald-50 rounded-xl p-3 mb-2 border border-emerald-100">
-                                                <p className="font-semibold text-sm text-emerald-800">{p.pregunta_detectada}</p>
-                                                <p className="text-xs text-slate-600 mt-1">{p.por_que_importa}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {interviewData.analisis_oculto.preguntas_parcialmente_exploradas && interviewData.analisis_oculto.preguntas_parcialmente_exploradas.length > 0 && (
-                                    <div>
-                                        <h4 className="font-semibold text-orange-700 text-sm mb-2 mt-3">⚠️ Preguntas cerradas o superficiales:</h4>
-                                        {interviewData.analisis_oculto.preguntas_parcialmente_exploradas.map((p, i) => (
-                                            <div key={i} className="bg-orange-50 rounded-xl p-3 mb-2 border border-orange-100">
-                                                <p className="font-semibold text-sm text-orange-800">{p.pregunta}</p>
-                                                <p className="text-xs text-slate-600 mt-1"><strong>Insuficiente porque:</strong> {p.porque_insuficiente}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {Object.entries(interviewData.analisis_oculto.cobertura_entrevista).map(([k, v]) => (
-                                        <div key={k} className={`text-xs px-3 py-1.5 rounded-lg font-semibold ${v ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                            {v ? '✓' : '✗'} {k.replace(/_/g, ' ')}
-                                        </div>
-                                    ))}
-                                </div>
 
-                                {interviewFeedbackData && (
-                                    <div className="mt-5 pt-5 border-t border-amber-200">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h4 className="font-bold text-slate-800">🧠 Razonamiento MSK Avanzado (Dimensión 2)</h4>
-                                            <span className={`text-sm font-bold px-2 py-1 rounded-full ${interviewFeedbackData.razonamiento_clinico_entrevista.puntaje >= 80 ? 'bg-emerald-100 text-emerald-700' : interviewFeedbackData.razonamiento_clinico_entrevista.puntaje >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                                                Score: {interviewFeedbackData.razonamiento_clinico_entrevista.puntaje}/100
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-slate-600 italic mb-3">"{interviewFeedbackData.razonamiento_clinico_entrevista.comentario_general_clinica}"</p>
-                                        
-                                        <div className="space-y-2">
-                                            {[
-                                                { key: 'hilo_conductor_logica', label: 'Hilo Conductor y Lógica', data: interviewFeedbackData.razonamiento_clinico_entrevista.hilo_conductor_logica },
-                                                { key: 'alicia_sins_irritabilidad', label: 'ALICIA + SINS + Irritabilidad', data: interviewFeedbackData.razonamiento_clinico_entrevista.alicia_sins_irritabilidad },
-                                                { key: 'espectro_banderas', label: 'Espectro de Banderas', data: { logrado: interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.rojas_amarillas && interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.azules_negras, feedback: interviewFeedbackData.razonamiento_clinico_entrevista.espectro_banderas.feedback } },
-                                                { key: 'historial_tratamientos_expectativas', label: 'Historial y Expectativas', data: interviewFeedbackData.razonamiento_clinico_entrevista.historial_tratamientos_expectativas },
-                                                { key: 'carga_alostatica_sistemica', label: 'Carga Alostática / Trabajo', data: interviewFeedbackData.razonamiento_clinico_entrevista.carga_alostatica_sistemica },
-                                                { key: 'mecanismo_lesion', label: 'Mecanismo de Lesión', data: interviewFeedbackData.razonamiento_clinico_entrevista.mecanismo_lesion },
-                                            ].map(item => (
-                                                <div key={item.key} className="flex gap-2 text-sm border-b border-amber-100 pb-2 last:border-0">
-                                                    <span className="mt-0.5 text-lg leading-none">{item.data.logrado ? '✅' : '❌'}</span>
-                                                    <div>
-                                                        <strong className="text-slate-700">{item.label}:</strong> <span className="text-slate-600">{item.data.feedback}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <button onClick={handleReasoningContinue} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                                {getNextPhase('REASONING') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : 'Continuar al Examen Físico →'}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ════════ PHASE: EXAM ════════ */}
-            {(phase === 'EXAM' || reviewPhase === 'EXAM') && !loading && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
-                    <h3 className="font-bold text-slate-800">🔍 Planificación del Examen Físico</h3>
-                    <p className="text-xs text-slate-500">Selecciona los módulos que incluirías, justifica cada uno, y especifica qué pruebas harías.</p>
-                    {EXAM_MODULES.map(m => {
-                        const isSelected = examSelections[m.key].selected || !!examSelections[m.key].justificacion || !!examSelections[m.key].pruebas;
-                        return (
-                        <div key={m.key} className={`border rounded-xl p-4 transition-all ${isSelected ? 'border-blue-400 bg-blue-50/50' : 'border-slate-200'}`}>
-                            <label className={`flex items-center gap-2 mb-2 ${isReview ? '' : 'cursor-pointer'}`}>
-                                <input type="checkbox" checked={isSelected} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], selected: e.target.checked } }))} disabled={isReview} className="w-4 h-4 rounded accent-blue-600" />
-                                <span className="font-semibold text-sm text-slate-800">{m.label}</span>
-                            </label>
-                            {(!isReview || isSelected) && (
-                                <div className="space-y-2 pl-6">
-                                    <input value={examSelections[m.key].justificacion} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], justificacion: e.target.value, selected: true } }))} readOnly={isReview} placeholder="¿Por qué incluyes este módulo? (justificación clínica)" className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none transition-all ${isReview ? 'bg-slate-50 cursor-default' : 'hover:border-blue-300'}`} />
-                                    <input value={examSelections[m.key].pruebas} onChange={e => setExamSelections(p => ({ ...p, [m.key]: { ...p[m.key], pruebas: e.target.value, selected: true } }))} readOnly={isReview} placeholder={`Pruebas/tests específicos que harías (${m.ejemplo})`} className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none transition-all ${isReview ? 'bg-slate-50 cursor-default' : 'hover:border-blue-300'}`} />
-                                </div>
-                            )}
-                        </div>
-                    )})}
-                    {!isReview && (
-                        <button onClick={handleExamSubmit} disabled={loading} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                            Evaluar al Paciente →
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* ════════ PHASE: REASONING2 ════════ */}
-            {(phase === 'REASONING2' || reviewPhase === 'REASONING2') && !loading && examData && (
-                <div className="space-y-4">
-                    {/* Header explicativo */}
-                    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5">
-                        <h3 className="font-black text-violet-900 text-base mb-1">🔄 Razonamiento Clínico Integrador</h3>
-                        <p className="text-sm text-violet-700">
-                            Ya tienes los hallazgos del examen físico. Ahora debes <strong>integrarlos con tu razonamiento previo</strong>:
-                            ¿se confirman tus hipótesis? ¿cambia tu clasificación de dolor? ¿qué datos del examen son clave para tu diagnóstico?
-                        </p>
-                        <p className="text-xs text-violet-500 mt-2 italic">
-                            Este paso alimenta directamente tu diagnóstico final. No copies los hallazgos — interprétalos.
-                        </p>
-                    </div>
-
-                    {/* Hallazgos como contexto */}
-                    <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5">
-                        <h4 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos que obtuviste en el examen físico</h4>
-                        {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
-                            <div key={mod} className="mb-3">
-                                <span className="text-xs font-bold text-teal-700 uppercase tracking-wide">{mod}</span>
-                                <p className="text-sm text-slate-700 mt-0.5 whitespace-pre-wrap">{findings as string}</p>
-                            </div>
-                        ))}
-                        {examData.analisis_examen.modulos_omitidos_relevantes.length > 0 && (
-                            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-                                <p className="text-xs font-bold text-amber-800 mb-1">⚠️ Módulos omitidos (información que no tienes):</p>
-                                {examData.analisis_examen.modulos_omitidos_relevantes.map((o, i) => (
-                                    <p key={i} className="text-xs text-amber-700">• {o.modulo}</p>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Razonamiento previo del estudiante */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
-                        <h4 className="font-bold text-slate-800 mb-3 text-sm">🧠 Tu Razonamiento Previo (Fase 1)</h4>
-                        <div className="space-y-2 text-sm text-slate-700">
-                            <p><strong>Hipótesis Orientativas:</strong> {reasoning.hipotesis.filter(h => h.trim()).join(' | ') || 'Ninguna ingresada'}</p>
-                            <p><strong>Clasificación del Dolor:</strong> {reasoning.clasificacion_dolor || 'No ingresada'}</p>
-                            <p><strong>Irritabilidad:</strong> {reasoning.irritabilidad || 'No ingresada'}</p>
-                            <p><strong>Banderas Rojas:</strong> {reasoning.banderas_rojas || 'Ninguna ingresada'}</p>
-                            <p><strong>Factores BPS:</strong> {reasoning.factores_bps || 'Ninguno ingresado'}</p>
-                        </div>
-                    </div>
-
-                    {/* Formulario de integración */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
-                        <h3 className="font-bold text-slate-800">🧠 Tu Integración Clínica</h3>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                1. Hipótesis confirmadas, descartadas o nuevas
-                                <span className="font-normal text-slate-400 ml-1">(¿qué hipótesis persisten, cuáles caen, y aparece alguna nueva?)</span>
-                            </label>
-                            <textarea
-                                value={reasoning2.hipotesis_confirmadas}
-                                onChange={e => setReasoning2(r => ({ ...r, hipotesis_confirmadas: e.target.value }))}
-                                readOnly={isReview}
-                                placeholder="Ej: Se confirma Tendinopatía rotuliana (dolor en polo inferior +, deceleración +, Decline squat +). Se descarta rotura LCA (Lachman -). Nueva hipótesis: posible componente de control motor deficiente (single leg squat con valgo marcado)."
-                                rows={4}
-                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                2. Clasificación del mecanismo de dolor actualizada
-                                <span className="font-normal text-slate-400 ml-1">(¿cambia con los hallazgos físicos? ¿por qué?)</span>
-                            </label>
-                            <textarea
-                                value={reasoning2.clasificacion_actualizada}
-                                onChange={e => setReasoning2(r => ({ ...r, clasificacion_actualizada: e.target.value }))}
-                                readOnly={isReview}
-                                placeholder="Ej: Se mantiene predominantemente Nociceptivo (dolor mecánico con patrón de movimiento claro). Se suma componente Nociplástico leve por hiperalgesia a palpación difusa. Se descarta Neuropático (neuro-vascular sin alteraciones)."
-                                rows={3}
-                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                3. Hallazgos clave que más pesan en tu diagnóstico
-                                <span className="font-normal text-slate-400 ml-1">(los datos que dirigen tu razonamiento final)</span>
-                            </label>
-                            <textarea
-                                value={reasoning2.hallazgos_clave}
-                                onChange={e => setReasoning2(r => ({ ...r, hallazgos_clave: e.target.value }))}
-                                readOnly={isReview}
-                                placeholder="Ej: Dolor 7/10 en polo inferior rotuliano a palpación. Decline squat +++ (reproduce síntoma principal). ROM completo. Valgo dinámico marcado en single leg squat. MMT cuádriceps 4/5."
-                                rows={3}
-                                className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-violet-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`}
-                            />
-                        </div>
-
-                        {phase === 'REASONING2' && (
-                            <button
-                                onClick={() => {
-                                    if (!reasoning2.hipotesis_confirmadas.trim() || !reasoning2.hallazgos_clave.trim()) {
-                                        setError('Completa al menos las hipótesis integradas y los hallazgos clave antes de continuar.');
-                                        return;
-                                    }
-                                    setError('');
-                                    const next = getNextPhase('REASONING2');
-                                    if (next) {
-                                        setPhase(next);
-                                        if (next === 'RESULTS') {
-                                            persistAttempt();
-                                        }
-                                    }
-                                }}
-                                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm"
-                            >
-                                {getNextPhase('REASONING2') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : 'Planificar Intervenciones →'}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ PHASE: INTERVENTION ════════ */}
-            {(phase === 'INTERVENTION' || reviewPhase === 'INTERVENTION') && !loading && (
-                <div className="space-y-4">
-                    {/* Contexto: Integración Clínica */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4">
-                        <h4 className="font-bold text-slate-800 mb-3 text-sm">🧠 Tu Integración Clínica (Contexto)</h4>
-                        <div className="space-y-2 text-sm text-slate-700">
-                            <p><strong>Hipótesis Integradas:</strong> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
-                            <p><strong>Hallazgos Clave:</strong> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
-                            <p><strong>Clasificación del Dolor:</strong> {reasoning2.clasificacion_actualizada || 'No ingresada'}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
-                        <h3 className="font-bold text-slate-800">💊 Intervenciones Kinesiológicas al Paciente</h3>
-                        <p className="text-xs text-slate-500">Describe 2 intervenciones que realizarías en esta sesión. Detalla como si le estuvieras explicando al paciente qué vas a hacer.</p>
-                        {interventions.map((int, idx) => (
-                            <div key={idx} className="border border-emerald-200 rounded-xl p-4 space-y-3 bg-emerald-50/30">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-bold text-sm text-emerald-800">Intervención {idx + 1}</span>
-                                </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Técnica / Intervención</label>
-                                <input value={int.tecnica} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], tecnica: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Ejercicio isométrico de cuádriceps en cadena cerrada" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Objetivo de esta técnica</label>
-                                <input value={int.objetivo_tecnica} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], objetivo_tecnica: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Activar cuádriceps sin aumentar irritabilidad articular" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Dosificación (series, repeticiones, RPE, tiempo, etc.)</label>
-                                <input value={int.dosis} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], dosis: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: 4 series x 30 seg mantenido, RPE 4/10, descanso 60 seg" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Posición del terapeuta</label>
-                                    <input value={int.posicion_terapeuta} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], posicion_terapeuta: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Al lado del paciente, estabilizando la pelvis" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Posición del paciente</label>
-                                    <input value={int.posicion_paciente} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], posicion_paciente: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: Sentado, rodillas a 60° de flexión, pies apoyados" className={`w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none ${isReview ? 'bg-slate-50' : ''}`} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Instrucciones al paciente</label>
-                                <textarea value={int.instrucciones_paciente} onChange={e => { const arr = [...interventions]; arr[idx] = { ...arr[idx], instrucciones_paciente: e.target.value }; setInterventions(arr); }} readOnly={isReview} placeholder="Ej: «Vamos a hacer un ejercicio para activar el músculo del muslo sin forzar la rodilla. Va a sentir tensión pero no dolor. Empuje contra el piso como si quisiera aplastarlo y mantenga 30 segundos...»" rows={3} className={`w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none resize-none ${isReview ? 'bg-slate-50' : ''}`} />
-                            </div>
-                        </div>
-                    ))}
-                    {!isReview && (
-                        <button onClick={() => {
-                            if (interventions.some(i => !i.tecnica.trim() || !i.objetivo_tecnica.trim())) { 
-                                setError('Debes describir las 2 intervenciones (al menos técnica y objetivo).'); 
-                                return; 
-                            }
-                            setError('');
-                            const next = getNextPhase('INTERVENTION');
-                            if (next) {
-                                setPhase(next);
-                                if (next === 'RESULTS') persistAttempt();
-                            }
-                        }} className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
-                            Continuar a Escritura Clínica →
-                        </button>
-                    )}
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ PHASE: CONSTRUCTION ════════ */}
-            {(phase === 'CONSTRUCTION' || reviewPhase === 'CONSTRUCTION') && !loading && examData && (
-                <div className="space-y-4">
-                    {/* Resumen Clínico Previo y Hallazgos (Colapsable) */}
-                    <details className="bg-slate-50 border border-slate-200 rounded-2xl group" open>
-                        <summary className="font-bold text-slate-800 outline-none flex justify-between items-center cursor-pointer p-5 select-none">
-                            <span>📚 Historial Clínico y Hallazgos (Click para colapsar/expandir)</span>
-                            <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
-                        </summary>
-                        
-                        <div className="px-5 pb-5 space-y-6 border-t border-slate-200 pt-4 cursor-default">
-                            {interviewData && (
-                                <div>
-                                    <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
-                                    <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
-                                        {interviewData.respuestas_paciente}
-                                    </p>
+                            {connectionState === 'connecting' && (
+                                <div className="w-full bg-amber-50 border border-amber-200 text-amber-800 font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2">
+                                    <div className="w-5 h-5 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
+                                    Conectando micrófono y cargando perfil del evaluador/paciente...
                                 </div>
                             )}
 
-                            <div>
-                                <h4 className="font-semibold text-sm text-slate-700 mb-2">Razonamiento Previo (Fase 1 y 2):</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                    <div className="bg-white p-3 rounded-xl border border-slate-200">
-                                        <span className="font-semibold text-slate-500 block mb-1">Fase 1: Hipótesis Orientativas:</span>
-                                        <ul className="list-disc pl-4 text-slate-700 mb-2">
-                                            {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
-                                            {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
-                                        </ul>
-                                        <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
-                                        <p><span className="font-semibold text-slate-500">Factores BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                                        <p><span className="font-semibold text-slate-500">Fase 2: Hipótesis Integradas:</span> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
-                                        <p><span className="font-semibold text-slate-500">Fase 2: Hallazgos Clave:</span> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
-                                        <p><span className="font-semibold text-slate-500">Mecanismo Dolor Actualizado:</span> {reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                                <h4 className="font-bold text-emerald-800 mb-2 text-sm">💊 Intervenciones Propuestas:</h4>
-                                <div className="space-y-3">
-                                    {interventions.filter(i => i.tecnica.trim()).map((int, i) => (
-                                        <div key={i} className="text-xs bg-white border border-emerald-100 rounded-lg p-2">
-                                            <p className="font-bold text-emerald-700">Técnica: <span className="font-normal text-slate-700">{int.tecnica}</span></p>
-                                            <p className="font-bold text-emerald-700">Objetivo: <span className="font-normal text-slate-700">{int.objetivo_tecnica}</span></p>
-                                            <p className="font-bold text-emerald-700">Dosis: <span className="font-normal text-slate-700">{int.dosis}</span></p>
+                            {connectionState === 'connected' && (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col items-center justify-center p-6 bg-slate-900 rounded-2xl border border-slate-950 relative overflow-hidden h-32">
+                                        <div className="flex items-center gap-1.5 justify-center h-16 w-full">
+                                            {[...Array(15)].map((_, i) => {
+                                                const factor = 1 - Math.abs(i - 7) / 8;
+                                                const height = Math.max(8, Math.min(100, volume * 350 * factor));
+                                                return (
+                                                    <div 
+                                                        key={i} 
+                                                        className={`w-2.5 rounded-full transition-all duration-75 ${isSpeaking ? 'bg-indigo-400' : 'bg-emerald-400'}`}
+                                                        style={{ height: `${height}%` }}
+                                                    />
+                                                );
+                                            })}
                                         </div>
-                                    ))}
-                                    {interventions.filter(i => i.tecnica.trim()).length === 0 && <p className="text-xs text-slate-500">Ninguna ingresada</p>}
-                                </div>
-                            </div>
-
-                            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-                                <h3 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos del Examen Físico</h3>
-                                {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
-                                    <div key={mod} className="mb-2">
-                                        <h4 className="font-semibold text-xs text-teal-700">{mod}</h4>
-                                        <p className="text-xs text-slate-700 whitespace-pre-wrap">{findings}</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {(examData.analisis_examen.modulos_omitidos_relevantes.length > 0 || examData.analisis_examen.justificaciones_debiles.length > 0) && (
-                                <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
-                                    <h3 className="font-bold text-amber-800 mb-3 text-sm">💡 Análisis de tu Examen</h3>
-                                    {examData.analisis_examen.modulos_omitidos_relevantes.map((o, i) => (
-                                        <div key={i} className="bg-white rounded-lg p-2 mb-2 border border-red-100">
-                                            <p className="font-semibold text-xs text-red-800">Omitiste: {o.modulo}</p>
-                                            <p className="text-[11px] text-slate-600">{o.por_que_era_necesario}</p>
-                                        </div>
-                                    ))}
-                                    {examData.analisis_examen.justificaciones_debiles.map((j, i) => (
-                                        <div key={i} className="bg-white rounded-lg p-2 mb-2 border border-amber-100">
-                                            <p className="font-semibold text-xs text-amber-800">{j.modulo}: Justificación débil</p>
-                                            <p className="text-[11px] text-slate-600">{j.critica}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </details>
-
-                    {/* Construction Form */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
-                        <h3 className="font-bold text-slate-800">🏗️ Construcción Clínica</h3>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Diagnóstico Kinesiológico (párrafo CIF)</label>
-                            <textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({ ...c, diagnostico: e.target.value }))} readOnly={isReview} placeholder="[Nombre/edad/sexo], consulta por [motivo]. Presenta [alteraciones estructurales]. A nivel funcional [disfunciones]. Lo anterior genera limitaciones en [actividades]. Restringiendo su participación en [roles]. Factores personales..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivo General</label>
-                            <textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({ ...c, objetivo_general: e.target.value }))} readOnly={isReview} placeholder="Ej: Restaurar la capacidad funcional del complejo de rodilla para permitir la participación en actividades deportivas y de la vida diaria sin limitación." rows={2} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Objetivos Específicos <span className="font-normal text-slate-400">(1 variable alterada = 1 objetivo específico)</span></label>
-                            <textarea value={construction.objetivos_especificos} onChange={e => setConstruction(c => ({ ...c, objetivos_especificos: e.target.value }))} readOnly={isReview} placeholder={"1. Disminuir dolor en región anterior de rodilla\n2. Aumentar rango de flexión de rodilla\n3. Mejorar fuerza de cuádriceps bilateral\n4. Restaurar control motor en cadena cinética cerrada"} rows={5} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                Objetivos Operacionales 
-                                <span className="font-normal text-slate-400 ml-1">(💡 TIPS COMISIÓN: deben ser granulares, tener plazos temporales, usar métricas clínicas como EVA/ROM, y abarcar todos los objetivos específicos)</span>
-                            </label>
-                            <textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({ ...c, objetivos_operacionales: e.target.value }))} readOnly={isReview} placeholder={"OE1.1: Reducir EVA de 7/10 a 3/10 en reposo, en 4 semanas\nOE1.2: Reducir EVA en Decline squat de 8/10 a 4/10 en 6 semanas\nOE2.1: Aumentar flexión de rodilla de 90° a 130° en 6 semanas\nOE3.1: Aumentar MMT cuádriceps de 4/5 a 5/5 en 8 semanas"} rows={7} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">
-                                Plan de Intervención por Fases
-                                <span className="font-normal text-slate-400 ml-1">(💡 TIPS COMISIÓN: debe ser coherente con las 2 intervenciones que declaraste en el paso anterior y seguir una progresión lógica de carga)</span>
-                            </label>
-                            <textarea value={construction.plan_fases} onChange={e => setConstruction(c => ({ ...c, plan_fases: e.target.value }))} readOnly={isReview} placeholder="FASE 1 (Protección, sem 0-2): Educación en dolor, ejercicios isométricos RPE 3-4...&#10;FASE 2 (Recuperación, sem 2-6): Fortalecimiento concéntrico RPE 5-6...&#10;FASE 3 (Fortalecimiento, sem 6-10): ...&#10;FASE 4 (Reintegro, sem 10+): ..." rows={8} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-600 mb-1">Reevaluación y Pronóstico</label>
-                            <textarea value={construction.reevaluacion} onChange={e => setConstruction(c => ({ ...c, reevaluacion: e.target.value }))} readOnly={isReview} placeholder="Signo comparable: ...&#10;Plan de reevaluación: Semana 2 evaluar..., Semana 6 evaluar...&#10;Pronóstico: Favorable / Reservado / Desfavorable — Justificación:..." rows={5} className={`w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none ${isReview ? 'bg-slate-50 cursor-default' : ''}`} />
-                        </div>
-                        {!isReview && (
-                            <button onClick={handleEvaluate} disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                                {getNextPhase('CONSTRUCTION') === 'RESULTS' ? 'Finalizar y Guardar Intento →' : '📤 Enviar a Comisión Evaluadora'}
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ PHASE: REVIEW (Scorecard + Commission Questions) ════════ */}
-            {(phase === 'REVIEW' || reviewPhase === 'REVIEW') && !loading && evaluationData && (
-                <div className="space-y-4">
-                    {/* Scorecard */}
-                    {practiceMode !== 'comision' && (
-                        <>
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-slate-800">📊 Scorecard</h3>
-                            <div className="flex gap-2">
-                                <div className={`px-4 py-2 rounded-xl font-black text-lg ${evaluationData.puntaje_global >= 85 ? 'bg-emerald-100 text-emerald-700' : evaluationData.puntaje_global >= 70 ? 'bg-yellow-100 text-yellow-700' : evaluationData.puntaje_global >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
-                                    {evaluationData.puntaje_global}/100 — {evaluationData.nivel}
-                                </div>
-                                <div className={`px-4 py-2 rounded-xl font-black text-lg ${evaluationData.nota_chilena >= 6.0 ? 'bg-emerald-100 text-emerald-700' : evaluationData.nota_chilena >= 4.0 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                                    Nota {evaluationData.nota_chilena?.toFixed(1) || 'N/A'}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            {Object.entries(evaluationData.scorecard).map(([key, val]) => (
-                                <div key={key} className="flex items-center gap-3">
-                                    <span className="text-xs font-semibold text-slate-500 w-28 capitalize">{key.replace(/_/g, ' ')}</span>
-                                    <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all ${val.puntaje >= 80 ? 'bg-emerald-500' : val.puntaje >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${val.puntaje}%` }} />
-                                    </div>
-                                    <span className="text-xs font-bold w-10 text-right">{val.puntaje}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    {/* Errors & Wins */}
-                    {evaluationData.errores_criticos.length > 0 && (
-                        <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-                            <h4 className="font-bold text-red-800 mb-2">❌ Errores Críticos</h4>
-                            {evaluationData.errores_criticos.map((e, i) => (
-                                <div key={i} className="mb-2 text-sm"><strong className="text-red-700">[{e.fase}]</strong> {e.error} <span className="text-slate-600">— {e.explicacion_docente}</span></div>
-                            ))}
-                        </div>
-                    )}
-                    {evaluationData.aciertos_destacados.length > 0 && (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
-                            <h4 className="font-bold text-emerald-800 mb-2">✅ Aciertos Destacados</h4>
-                            {evaluationData.aciertos_destacados.map((a, i) => (
-                                <div key={i} className="mb-2 text-sm"><strong className="text-emerald-700">[{a.fase}]</strong> {a.acierto} <span className="text-slate-600">— {a.por_que_importa}</span></div>
-                            ))}
-                        </div>
-                    )}
-                        </>
-                    )}
-
-                    {/* Resumen Clínico Previo y Hallazgos (Colapsable para Comisión) */}
-                    {practiceMode !== 'comision' && (
-                        <details className="bg-slate-50 border border-slate-200 rounded-2xl group" open>
-                            <summary className="font-bold text-slate-800 outline-none flex justify-between items-center cursor-pointer p-5 select-none">
-                                <span>📚 Tu Trabajo Previo (Click para revisar antes de responder)</span>
-                                <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
-                            </summary>
-                            
-                            <div className="px-5 pb-5 space-y-6 border-t border-slate-200 pt-4 cursor-default">
-                                {interviewData && (
-                                    <div>
-                                        <h4 className="font-semibold text-sm text-slate-700 mb-1">Entrevista:</h4>
-                                        <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-200 whitespace-pre-wrap">
-                                            {interviewData.respuestas_paciente}
+                                        <p className="mt-4 text-xs font-mono tracking-wider uppercase text-slate-400">
+                                            {isSpeaking ? 'El evaluador/paciente está hablando...' : 'Micrófono abierto · Escuchando...'}
                                         </p>
                                     </div>
-                                )}
 
+                                    <div className="flex gap-4">
+                                        <button onClick={toggleMic} className={`flex-1 font-bold py-3.5 rounded-xl transition-all border text-sm ${isMicOpen ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300' : 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200'}`}>
+                                            {isMicOpen ? '🔇 Mute Micrófono' : '🔊 Activar Micrófono'}
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                if (phase === 'INTERVIEW') handleEndVoiceInterview();
+                                                else if (phase === 'REASONING') handleEndReasoningVoice();
+                                                else if (phase === 'EXAM') handleEndExamVoice();
+                                                else if (phase === 'REASONING2') handleEndReasoning2Voice();
+                                                else if (phase === 'INTERVENTION') handleEndInterventionVoice();
+                                                else if (phase === 'EXPOSITION') handleEndExpositionVoice();
+                                                else if (phase === 'COMMISSION') handleEndCommissionVoice();
+                                            }}
+                                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all shadow text-sm"
+                                        >
+                                            Finalizar Estación y Transcribir →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {transcript.length > 0 && (
+                                <details className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs">
+                                    <summary className="cursor-pointer font-bold text-slate-500">Ver registro técnico de WebSocket en tiempo real</summary>
+                                    <div className="mt-2 space-y-1 font-mono max-h-32 overflow-y-auto">
+                                        {transcript.map((t, idx) => (
+                                            <div key={idx} className={t.role === 'user' ? 'text-blue-600' : 'text-slate-600'}>
+                                                <strong>{t.role === 'user' ? 'USER:' : 'LIVE:'}</strong> {t.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            )}
+                        </div>
+                    )}
+
+                    {phase === 'REASONING' && interviewData && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-4">
+                            <h4 className="font-bold text-amber-800">💡 Resumen de la Ficha Clínica obtenida:</h4>
+                            <p className="text-xs text-slate-700 whitespace-pre-wrap bg-white p-3 rounded-lg border border-amber-100">{interviewData.respuestas_paciente}</p>
+                        </div>
+                    )}
+
+                    {phase === 'REASONING2' && examData && (
+                        <div className="bg-teal-50 border border-teal-200 rounded-2xl p-5 space-y-3">
+                            <h4 className="font-bold text-teal-800 text-sm">📊 Hallazgos revelados en el Examen Físico:</h4>
+                            {Object.entries(examData.hallazgos_revelados).map(([k, v]) => (
+                                <div key={k} className="text-xs text-slate-700">
+                                    <strong>{k}:</strong> {v as string}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* STATION 6: CONSTRUCTION WRITTEN FORM */}
+                    {phase === 'CONSTRUCTION' && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                            <div className="border-b pb-3">
+                                <h3 className="font-bold text-slate-800 text-lg">Ficha Kinesiológica Formal</h3>
+                                <p className="text-xs text-slate-500">Ingresa de forma estructurada el diagnóstico funcional y el plan de tratamiento.</p>
+                            </div>
+                            
+                            <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-semibold text-sm text-slate-700 mb-2">Razonamiento Previo (Fase 1 y 2):</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                        <div className="bg-white p-3 rounded-xl border border-slate-200">
-                                            <span className="font-semibold text-slate-500 block mb-1">Fase 1: Hipótesis Orientativas:</span>
-                                            <ul className="list-disc pl-4 text-slate-700 mb-2">
-                                                {reasoning.hipotesis.filter(h => h.trim()).map((h, i) => <li key={i}>{h}</li>)}
-                                                {reasoning.hipotesis.filter(h => h.trim()).length === 0 && <li>Ninguna registrada</li>}
-                                            </ul>
-                                            <p><span className="font-semibold text-slate-500">Banderas Rojas:</span> {reasoning.banderas_rojas || 'Ninguna'}</p>
-                                            <p><span className="font-semibold text-slate-500">Factores BPS:</span> {reasoning.factores_bps || 'Ninguna'}</p>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-2">
-                                            <p><span className="font-semibold text-slate-500">Fase 2: Hipótesis Integradas:</span> {reasoning2.hipotesis_confirmadas || 'No ingresadas'}</p>
-                                            <p><span className="font-semibold text-slate-500">Fase 2: Hallazgos Clave:</span> {reasoning2.hallazgos_clave || 'No ingresados'}</p>
-                                            <p><span className="font-semibold text-slate-500">Mecanismo Dolor Actualizado:</span> {reasoning2.clasificacion_actualizada || reasoning.clasificacion_dolor || 'No especificado'}</p>
-                                        </div>
-                                    </div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Diagnóstico Kinesiológico (Modelo CIF)</label>
+                                    <textarea value={construction.diagnostico} onChange={e => setConstruction(c => ({ ...c, diagnostico: e.target.value }))} placeholder="Paciente masculino/femenino de X años... presenta alteraciones en [estructura] limitando su actividad en [función] y restringiendo su participación en [roles]..." rows={4} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
                                 </div>
-
-                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                                    <h4 className="font-bold text-emerald-800 mb-2 text-sm">💊 Intervenciones Propuestas:</h4>
-                                    <div className="space-y-3">
-                                        {interventions.filter(i => i.tecnica.trim()).map((int, i) => (
-                                            <div key={i} className="text-xs bg-white border border-emerald-100 rounded-lg p-2">
-                                                <p className="font-bold text-emerald-700">Técnica: <span className="font-normal text-slate-700">{int.tecnica}</span></p>
-                                                <p className="font-bold text-emerald-700">Objetivo: <span className="font-normal text-slate-700">{int.objetivo_tecnica}</span></p>
-                                                <p className="font-bold text-emerald-700">Dosis: <span className="font-normal text-slate-700">{int.dosis}</span></p>
-                                            </div>
-                                        ))}
-                                        {interventions.filter(i => i.tecnica.trim()).length === 0 && <p className="text-xs text-slate-500">Ninguna ingresada</p>}
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Objetivo General</label>
+                                    <textarea value={construction.objetivo_general} onChange={e => setConstruction(c => ({ ...c, objetivo_general: e.target.value }))} placeholder="Ej: Restaurar la funcionalidad de la rodilla..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
                                 </div>
-
-                                {examData && (
-                                    <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
-                                        <h3 className="font-bold text-teal-800 mb-3 text-sm">📊 Hallazgos del Examen Físico</h3>
-                                        {Object.entries(examData.hallazgos_revelados).map(([mod, findings]) => (
-                                            <div key={mod} className="mb-2">
-                                                <h4 className="font-semibold text-xs text-teal-700">{mod}</h4>
-                                                <p className="text-xs text-slate-700 whitespace-pre-wrap">{findings}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-                                    <h3 className="font-bold text-blue-800 mb-3 text-sm">🏗️ Tu Construcción Clínica</h3>
-                                    <div className="text-xs space-y-2">
-                                        <p><strong className="text-blue-900">Diagnóstico:</strong> {construction.diagnostico}</p>
-                                        <p><strong className="text-blue-900">Objetivo General:</strong> {construction.objetivo_general}</p>
-                                        <p><strong className="text-blue-900">Objetivos Específicos:</strong><br/><span className="whitespace-pre-wrap">{construction.objetivos_especificos}</span></p>
-                                        <p><strong className="text-blue-900">Plan Fases:</strong><br/><span className="whitespace-pre-wrap">{construction.plan_fases}</span></p>
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Objetivos Específicos (OE)</label>
+                                    <textarea value={construction.objetivos_especificos} onChange={e => setConstruction(c => ({ ...c, objetivos_especificos: e.target.value }))} placeholder="1. Disminuir dolor... 2. Flexibilizar..." rows={3} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Objetivos Operacionales (OO) · Clínicamente Medibles</label>
+                                    <textarea value={construction.objetivos_operacionales} onChange={e => setConstruction(c => ({ ...c, objetivos_operacionales: e.target.value }))} placeholder="OO1.1: Reducir dolor a EVA 2/10 en 3 semanas..." rows={3} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Plan de Rehabilitación por Fases (Progresión de Carga)</label>
+                                    <textarea value={construction.plan_fases} onChange={e => setConstruction(c => ({ ...c, plan_fases: e.target.value }))} placeholder="Fase 1 (Protección): ... Fase 2 (Fortalecimiento): ..." rows={4} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Reevaluación y Criterios de Alta</label>
+                                    <textarea value={construction.reevaluacion} onChange={e => setConstruction(c => ({ ...c, reevaluacion: e.target.value }))} placeholder="Signo comparable: ... Pronóstico: ..." rows={3} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
                                 </div>
                             </div>
-                        </details>
+
+                            <button onClick={handleConstructionSubmit} className="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 rounded-xl transition-all shadow-sm">
+                                Registrar Ficha y Pasar a la Estación de Exposición →
+                            </button>
+                        </div>
                     )}
-
-                    {/* Commission Questions */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
-                        <h3 className="font-bold text-slate-800">🎤 Preguntas de la Comisión</h3>
-                        <p className="text-xs text-slate-500">Responde cada pregunta como si estuvieras frente al tribunal. Luego envía para evaluación.</p>
-                        {evaluationData.preguntas_comision.map((q, i) => (
-                            <div key={i} className="border border-slate-200 rounded-xl p-4">
-                                <p className="font-semibold text-sm text-slate-800 mb-2">Pregunta {i + 1}: {q.pregunta}</p>
-                                <textarea value={commissionAnswers[i] || ''} onChange={e => { const arr = [...commissionAnswers]; arr[i] = e.target.value; setCommissionAnswers(arr); }} placeholder="Tu respuesta..." rows={3} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-200 outline-none resize-none" />
-                            </div>
-                        ))}
-                        <button onClick={handleCommission} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50">
-                            Enviar Respuestas de Comisión →
-                        </button>
-                    </div>
                 </div>
             )}
 
-            {/* ════════ PHASE: RESULTS (Review Tabs) ════════ */}
-            {phase === 'RESULTS' && !loading && (
-                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex flex-wrap gap-1 border border-slate-200 mb-6">
-                    {(['RESULTS', 'INTERVIEW', 'REASONING', 'EXAM', 'REASONING2', 'INTERVENTION', 'CONSTRUCTION', 'REVIEW'] as SimPhase[]).map(p => (
-                        <button
-                            key={p}
-                            onClick={() => setReviewPhase(p === 'RESULTS' ? null : p)}
-                            className={`flex-1 min-w-[100px] text-xs font-bold px-3 py-2 rounded-xl transition-all ${
-                                (p === 'RESULTS' && !reviewPhase) || reviewPhase === p
-                                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
-                                    : 'text-slate-500 hover:bg-white/50'
-                            }`}
-                        >
-                            {p === 'RESULTS' ? '🏆 Resultados' : PHASE_LABELS[p]}
-                        </button>
-                    ))}
-                </div>
-            )}
+            {/* RESULTS VIEW */}
+            {phase === 'RESULTS' && !loading && evaluationData && (
+                <div className="space-y-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-3xl p-8 text-white shadow-xl space-y-6 relative overflow-hidden">
+                        <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+                        
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/20 pb-6 gap-4">
+                            <div>
+                                <span className="bg-white/20 text-white font-bold text-xs uppercase tracking-wide px-3 py-1 rounded-full">Examen Finalizado</span>
+                                <h2 className="text-2xl font-black mt-2">Reporte de Evaluación OSCE</h2>
+                                <p className="text-white/70 text-xs mt-1">Tiempo de rotación de estaciones completado</p>
+                            </div>
+                            
+                            <div className="flex gap-4">
+                                <div className="bg-white/10 rounded-2xl px-5 py-3 text-center border border-white/10">
+                                    <div className="text-3xl font-black">{evaluationData.puntaje_global}/100</div>
+                                    <div className="text-[10px] text-white/75 mt-1 font-bold">Puntaje Global</div>
+                                </div>
+                                <div className="bg-amber-400 text-slate-900 rounded-2xl px-5 py-3 text-center border border-amber-300 font-bold shadow-md">
+                                    <div className="text-3xl font-black">
+                                        {commissionData ? ((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1) : evaluationData.nota_chilena.toFixed(1)}
+                                    </div>
+                                    <div className="text-[10px] mt-1 uppercase tracking-wider">Nota Final</div>
+                                </div>
+                            </div>
+                        </div>
 
-            {/* ════════ PHASE: RESULTS (Content) ════════ */}
-            {phase === 'RESULTS' && !reviewPhase && !loading && (
-                <div className="space-y-4">
-                    {commissionData && evaluationData ? (
-                        <>
-                            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
-                                <h3 className="font-black text-xl text-amber-900 mb-4">🏆 Resultado Final</h3>
-                        <div className="grid grid-cols-3 gap-3 mb-4">
-                            <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
-                                <div className={`absolute top-0 w-full h-1 left-0 ${evaluationData.nota_chilena >= 4.0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                                <div className="text-2xl font-black text-slate-800 mt-1">{evaluationData.puntaje_global}</div>
-                                <div className="text-sm font-bold text-slate-600">Nota: {evaluationData.nota_chilena?.toFixed(1) || 'N/A'}</div>
-                                <div className="text-xs text-slate-400 mt-1">Evaluación (70%)</div>
-                            </div>
-                            <div className="bg-white rounded-xl p-4 text-center shadow-sm relative overflow-hidden">
-                                <div className={`absolute top-0 w-full h-1 left-0 ${commissionData.nota_chilena_comision >= 4.0 ? 'bg-blue-400' : 'bg-red-400'}`} />
-                                <div className="text-2xl font-black text-slate-800 mt-1">{commissionData.puntaje_comision_global}</div>
-                                <div className="text-sm font-bold text-slate-600">Nota: {commissionData.nota_chilena_comision?.toFixed(1) || 'N/A'}</div>
-                                <div className="text-xs text-slate-400 mt-1">Comisión (30%)</div>
-                            </div>
-                            <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl p-4 text-center shadow-sm relative overflow-hidden ring-2 ring-amber-300">
-                                <div className={`absolute top-0 w-full h-1 left-0 ${((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)) >= 4.0 ? 'bg-amber-500' : 'bg-red-400'}`} />
-                                <div className="text-2xl font-black text-amber-900 mt-1">{((evaluationData.nota_chilena * 0.7) + (commissionData.nota_chilena_comision * 0.3)).toFixed(1)}</div>
-                                <div className="text-sm font-bold text-amber-800">NOTA FINAL</div>
-                                <div className="text-xs text-amber-600 mt-1">Consolidada</div>
-                            </div>
+                        <div className="text-sm leading-relaxed text-white/90">
+                            <strong>Nivel Alcanzado:</strong> {evaluationData.nivel}
                         </div>
-                        <div className="text-sm text-slate-700 mb-4">⏱️ Tiempo total: <strong>{formatTime(timer)}</strong></div>
                     </div>
-                    {/* Commission Detail */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3">
-                        <h4 className="font-bold text-slate-800">Evaluación de tus respuestas de Comisión</h4>
-                        {commissionData.evaluacion_respuestas.map((r, i) => (
-                            <div key={i} className="border border-slate-200 rounded-xl p-3">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="font-semibold text-sm">Pregunta {r.pregunta_numero}</span>
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${r.puntaje >= 80 ? 'bg-emerald-100 text-emerald-700' : r.puntaje >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{r.puntaje}/100</span>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <h3 className="font-bold text-slate-800 border-b pb-3">📈 Desglose por Competencias Clínicas</h3>
+                        <div className="space-y-4">
+                            {Object.entries(evaluationData.scorecard).map(([key, val]) => (
+                                <div key={key} className="space-y-1">
+                                    <div className="flex justify-between text-xs font-bold text-slate-700">
+                                        <span className="capitalize">{key.replace(/_/g, ' ')}</span>
+                                        <span>{val.puntaje}/100</span>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                        <div className={`h-full rounded-full transition-all ${val.puntaje >= 80 ? 'bg-emerald-500' : val.puntaje >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${val.puntaje}%` }} />
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed italic">"{val.comentario}"</p>
                                 </div>
-                                <p className="text-xs text-slate-600">{r.comentario}</p>
-                                <div className="flex gap-2 mt-2 text-xs">
-                                    <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded">✓ {r.aspecto_correcto}</span>
-                                    <span className="bg-red-50 text-red-700 px-2 py-1 rounded">△ {r.aspecto_a_mejorar}</span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {evaluationData.errores_criticos.length > 0 && (
+                            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
+                                <h4 className="font-bold text-red-800 text-sm">❌ Errores Críticos (Penalizaciones)</h4>
+                                <div className="space-y-2">
+                                    {evaluationData.errores_criticos.map((e, i) => (
+                                        <div key={i} className="text-xs text-red-700 border-b border-red-200/50 pb-2 last:border-0">
+                                            <strong>[{e.fase}]</strong> {e.error}
+                                            <p className="text-slate-600 mt-1">{e.explicacion_docente}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
-                        <div className="bg-slate-50 rounded-xl p-4 mt-3">
-                            <p className="text-sm text-slate-700 italic">{commissionData.feedback_final}</p>
-                        </div>
-                    </div>
-                    {/* Pearl + Improvements */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-                        <h4 className="font-bold text-indigo-800 mb-2">💎 Perla Docente</h4>
-                        <p className="text-sm text-indigo-900">{evaluationData.perla_docente}</p>
-                    </div>
-                    {evaluationData.areas_mejora.length > 0 && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
-                            <h4 className="font-bold text-slate-800 mb-2">📈 Áreas de Mejora Priorizadas</h4>
-                            <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
-                                {evaluationData.areas_mejora.map((a, i) => <li key={i}>{a}</li>)}
-                            </ul>
-                        </div>
-                    )}
-                    {/* Final Actions */}
-                    <div className="flex gap-3 pt-4 border-t border-slate-200">
-                        <button onClick={handleExportPDF} className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">
-                            📄 Exportar PDF
-                        </button>
-                        <button onClick={handleReset} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg">
-                            🎲 Nuevo Caso
-                        </button>
-                    </div>
-                        </>
-                    ) : (
-                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
-                            <div className="text-4xl mb-3">👏</div>
-                            <h3 className="font-black text-xl text-blue-900 mb-2">Práctica Parcial Finalizada</h3>
-                            <p className="text-blue-800 mb-4">Has completado el modo de práctica: <strong>{PRACTICE_PHASES[practiceMode].filter(p => p !== 'RESULTS').map(p => p === 'INTERVIEW' ? 'Entrevista' : p === 'REASONING' ? 'Razonamiento I' : p === 'EXAM' ? 'Examen Físico' : p === 'REASONING2' ? 'Razonamiento II' : p === 'INTERVENTION' ? 'Intervención' : p === 'CONSTRUCTION' ? 'Escritura' : p === 'REVIEW' ? 'Scorecard' : 'Comisión').join(' + ')}</strong></p>
-                            <p className="text-sm text-blue-700">Puedes revisar las pestañas superiores para ver tu desempeño y respuestas en las fases que completaste.</p>
-                            <div className="text-sm text-blue-700 mt-4">⏱️ Tiempo total de práctica: <strong>{formatTime(timer)}</strong></div>
-                            <div className="mt-6 flex justify-center">
-                                <button onClick={handleReset} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-sm">
-                                    🎲 Practicar Nuevo Caso
-                                </button>
+                        )}
+
+                        {evaluationData.aciertos_destacados.length > 0 && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-3">
+                                <h4 className="font-bold text-emerald-800 text-sm">✅ Aciertos Clínicos Destacados</h4>
+                                <div className="space-y-2">
+                                    {evaluationData.aciertos_destacados.map((a, i) => (
+                                        <div key={i} className="text-xs text-emerald-700 border-b border-emerald-200/50 pb-2 last:border-0">
+                                            <strong>[{a.fase}]</strong> {a.acierto}
+                                            <p className="text-slate-600 mt-1">{a.por_que_importa}</p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 space-y-2">
+                        <h4 className="font-bold text-indigo-800 text-sm">💎 Perla Docente (Conclusión Clínica)</h4>
+                        <p className="text-xs text-slate-700 leading-relaxed italic">"{evaluationData.perla_docente}"</p>
+                    </div>
+
+                    <div className="flex gap-4 border-t pt-5">
+                        <button onClick={handleExportPDF} className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition-all shadow text-sm">
+                            📄 Exportar Reporte PDF Completo
+                        </button>
+                        <button onClick={handleReset} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl transition-all shadow text-sm">
+                            🎲 Practicar Nuevo Caso
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
