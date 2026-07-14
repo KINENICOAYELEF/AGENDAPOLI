@@ -75,10 +75,25 @@ export function SimuladorExamenVozTotal() {
     // Local recording refs
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
+    const localStreamRef = useRef<MediaStream | null>(null);
+
+    const stopLocalStream = useCallback(() => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(t => t.stop());
+            localStreamRef.current = null;
+        }
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         getAudioDevices().then(setAudioDevices).catch(() => {});
-    }, []);
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+            stopLocalStream();
+        };
+    }, [stopLocalStream]);
 
     // AI Data
     const [caseData, setCaseData] = useState<SimCaseType | null>(null);
@@ -176,6 +191,7 @@ export function SimuladorExamenVozTotal() {
         try {
             chunksRef.current = [];
             const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined } });
+            localStreamRef.current = stream;
             const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             mediaRecorderRef.current = recorder;
             recorder.ondataavailable = (e) => {
@@ -194,14 +210,13 @@ export function SimuladorExamenVozTotal() {
         return new Promise((resolve) => {
             const recorder = mediaRecorderRef.current;
             if (!recorder || recorder.state === 'inactive') {
+                stopLocalStream();
                 resolve(null);
                 return;
             }
             recorder.onstop = () => {
                 const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                if (recorder.stream) {
-                    recorder.stream.getTracks().forEach(t => t.stop());
-                }
+                stopLocalStream();
                 const reader = new FileReader();
                 reader.readAsDataURL(blob);
                 reader.onloadend = () => {
@@ -546,6 +561,11 @@ export function SimuladorExamenVozTotal() {
         }
     }, [phase, studentQuestions, reasoning, reasoning2, construction, interventions, phaseTranscripts, evaluationData]);
 
+    const autoAdvanceRef = useRef<() => void>(handleAutoAdvance);
+    useEffect(() => {
+        autoAdvanceRef.current = handleAutoAdvance;
+    });
+
     useEffect(() => {
         if (phase === 'SETUP' || phase === 'RESULTS') return;
         if (timer === 120) {
@@ -553,9 +573,9 @@ export function SimuladorExamenVozTotal() {
         }
         if (timer === 0 && !loading && !loadingTranscription) {
             playChime('bell');
-            handleAutoAdvance();
+            autoAdvanceRef.current();
         }
-    }, [timer, phase, loading, loadingTranscription, handleAutoAdvance]);
+    }, [timer, phase, loading, loadingTranscription]);
 
     const persistAttempt = async (evalData = evaluationData, commData = commissionData, finalDefenseText = '') => {
         if (!user) return;
@@ -692,6 +712,7 @@ export function SimuladorExamenVozTotal() {
 
     const handleReset = () => {
         if (timerRef.current) clearInterval(timerRef.current);
+        stopLocalStream();
         localStorage.removeItem(STORAGE_KEY);
         setPhase('SETUP'); setCaseData(null); setInterviewData(null); setInterviewFeedbackData(null); setExamData(null);
         setEvaluationData(null); setCommissionData(null); setShowInterviewAnalysis(false); setShowCommunicationFeedback(false);

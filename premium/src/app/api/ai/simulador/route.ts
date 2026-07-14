@@ -76,6 +76,14 @@ const MAX_REQUESTS = 8; // 5 calls per exam + buffer for retries
 
 function checkRateLimit(userId: string): boolean {
     const now = Date.now();
+    
+    // Evict expired entries to prevent memory leak
+    for (const [key, record] of rateLimitCache.entries()) {
+        if (now - record.timestamp > RATE_LIMIT_WINDOW_MS) {
+            rateLimitCache.delete(key);
+        }
+    }
+
     const record = rateLimitCache.get(userId);
     if (!record) {
         rateLimitCache.set(userId, { count: 1, timestamp: now });

@@ -13,6 +13,16 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
 // CACHE EN MEMORIA (In-Memory Cache)
 // Para producción masiva se sugeriría Redis, pero para este requerimiento basta memoria.
 const globalAiCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 300;
+function setCache(key: string, value: any) {
+    globalAiCache.set(key, value);
+    if (globalAiCache.size > MAX_CACHE_SIZE) {
+        const firstKey = globalAiCache.keys().next().value;
+        if (firstKey !== undefined) {
+            globalAiCache.delete(firstKey);
+        }
+    }
+}
 
 interface GeminiCallParams {
     systemInstruction: string;
@@ -288,7 +298,7 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                     }
                 };
                 
-                globalAiCache.set(cacheKey, resultObj);
+                setCache(cacheKey, resultObj);
                 return resultObj;
             }
 
@@ -335,7 +345,7 @@ export async function executeAIAction<T>(opts: AIExecutionOptions<T>) {
                 }
             };
             
-            globalAiCache.set(cacheKey, resultObj);
+            setCache(cacheKey, resultObj);
             return resultObj;
 
         } catch (err: any) {

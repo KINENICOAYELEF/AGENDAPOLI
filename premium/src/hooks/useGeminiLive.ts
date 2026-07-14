@@ -324,6 +324,8 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
         isMicOpenRef.current = true;
         setConnectionState('connecting');
         setupDoneRef.current = false;
+        playbackNextTimeRef.current = 0;
+        activeSourcesRef.current = 0;
 
         // Solución Android: Pedir permisos de micrófono INMEDIATAMENTE tras el click
         const micStarted = await startMicrophone();
@@ -437,6 +439,8 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
         stopMicrophone();
         setConnectionState('disconnected');
         setIsMicOpen(false);
+        playbackNextTimeRef.current = 0;
+        activeSourcesRef.current = 0;
     }, [stopMicrophone]);
 
     const toggleMic = useCallback(() => {
