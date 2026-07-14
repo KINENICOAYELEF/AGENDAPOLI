@@ -93,7 +93,7 @@ export function SimuladorExamenVozTotal() {
     const [showCommunicationFeedback, setShowCommunicationFeedback] = useState(false);
 
     // Student Work
-    const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '', personalidad: 'colaborador' });
+    const [setupForm, setSetupForm] = useState({ tipo: 'aleatorio', area: '', dificultad: 'intermedio', descripcion: '', personalidad: 'colaborador', modoDemo: false });
     const [studentQuestions, setStudentQuestions] = useState('');
     const [reasoning, setReasoning] = useState({ hipotesis: ['', '', ''], clasificacion_dolor: '', irritabilidad: '', banderas_rojas: '', factores_bps: '' });
     const [examSelections, setExamSelections] = useState<Record<string, { selected: boolean; justificacion: string; pruebas: string }>>(() => {
@@ -216,6 +216,7 @@ export function SimuladorExamenVozTotal() {
 
     // ─── OSCE Station Timing Config ───
     const getPhaseDuration = (p: SimPhase): number => {
+        if (setupForm.modoDemo) return 30; // 30 segundos en modo demo para pruebas rápidas
         switch (p) {
             case 'INTERVIEW': return 480;   // 8 min
             case 'REASONING': return 180;   // 3 min
@@ -962,6 +963,18 @@ export function SimuladorExamenVozTotal() {
                     <div>
                         <label className="block text-sm font-semibold text-slate-600 mb-1">Descripción o Patología Específica (Opcional)</label>
                         <textarea value={setupForm.descripcion} onChange={e => setSetupForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Ej: Paciente con diagnóstico médico de rotura parcial de tendón patelar hace 3 meses..." rows={2} className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-purple-200 outline-none resize-none" />
+                    </div>
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                        <input 
+                            type="checkbox" 
+                            id="modoDemo" 
+                            checked={setupForm.modoDemo} 
+                            onChange={e => setSetupForm(p => ({ ...p, modoDemo: e.target.checked }))} 
+                            className="rounded text-purple-600 focus:ring-purple-200"
+                        />
+                        <label htmlFor="modoDemo" className="font-bold cursor-pointer select-none">
+                            ⚡ Activar Modo Demo (Tiempos cortos de 30s por estación para pruebas rápidas)
+                        </label>
                     </div>
                     <button onClick={handleGenerate} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-sm disabled:opacity-50 text-base">
                         🏁 Iniciar Examen OSCE por Voz
