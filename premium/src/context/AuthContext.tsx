@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { doc, serverTimestamp, onSnapshot, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -36,6 +36,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<AppUser | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const autoPromotedUids = useRef<Set<string>>(new Set());
+    const lastActiveUpdatedUids = useRef<Set<string>>(new Set());
+
     useEffect(() => {
         let unsubDoc: (() => void) | undefined = undefined;
 
@@ -43,6 +46,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (firebaseUser) {
                 try {
                     const userDocRef = doc(db, "users", firebaseUser.uid);
+
+                    // Cancelar listener previo si existía
+                    if (unsubDoc) {
+                        unsubDoc();
+                        unsubDoc = undefined;
+                    }
 
                     // Suscribirse a cambios en tiempo real del perfil
                     unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
@@ -69,19 +78,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             additionalData = data;
 
                             // Si es un correo docente/administrador registrado que quedó bloqueado como PENDING
-                            if (isAdminEmail && userRole === "PENDING") {
+                            // Usamos ref para garantizar que se ejecute a lo sumo 1 vez por sesión
+                            if (isAdminEmail && userRole === "PENDING" && !autoPromotedUids.current.has(firebaseUser.uid)) {
+                                autoPromotedUids.current.add(firebaseUser.uid);
                                 userRole = "DOCENTE";
-                                await setDocCounted(userDocRef, { role: "DOCENTE" }, { merge: true });
+                                setDocCounted(userDocRef, { role: "DOCENTE" }, { merge: true }).catch(err => console.error("Error auto-promoviendo docente:", err));
                             }
                         } else {
                             // Primer inicio de sesión histórico: Creamos el documento "DOCENTE" o "PENDING"
                             userRole = isAdminEmail ? "DOCENTE" : "PENDING";
-                            await setDocCounted(userDocRef, {
-                                displayName: firebaseUser.displayName || "",
-                                email: firebaseUser.email || "",
-                                role: userRole,
-                                createdAt: serverTimestamp(),
-                            });
+                            if (!autoPromotedUids.current.has(firebaseUser.uid)) {
+                                autoPromotedUids.current.add(firebaseUser.uid);
+                                setDocCounted(userDocRef, {
+                                    displayName: firebaseUser.displayName || "",
+                                    email: firebaseUser.email || "",
+                                    role: userRole,
+                                    createdAt: serverTimestamp(),
+                                }, { merge: true }).catch(err => console.error("Error creando perfil inicial:", err));
+                            }
                         }
 
                         setUser({
@@ -98,10 +112,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         setLoading(false);
                     });
 
-                    // Registrar actividad de forma asíncrona
-                    updateDoc(userDocRef, {
-                        lastActiveAt: new Date().toISOString()
-                    }).catch(err => console.error("Error actualizando lastActiveAt:", err));
+                    // Registrar actividad de forma asíncrona (A lo sumo UNA VEZ por sesión por UID)
+                    if (!lastActiveUpdatedUids.current.has(firebaseUser.uid)) {
+                        lastActiveUpdatedUids.current.add(firebaseUser.uid);
+                        updateDoc(userDocRef, {
+                            lastActiveAt: new Date().toISOString()
+                        }).catch(err => console.error("Error actualizando lastActiveAt:", err));
+                    }
 
                 } catch (error) {
                     console.error("Error en flujo de autenticación:", error);
@@ -113,6 +130,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     unsubDoc();
                     unsubDoc = undefined;
                 }
+                autoPromotedUids.current.clear();
+                lastActiveUpdatedUids.current.clear();
                 setUser(null);
                 setLoading(false);
             }

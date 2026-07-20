@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getDocCounted } from "@/services/firestore";
@@ -32,6 +32,8 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
     const [activeYear, setActiveYear] = useState<string>("2026");
     const [availableYears, setAvailableYears] = useState<string[]>(["2025", "2026"]);
     const [loadingYear, setLoadingYear] = useState(true);
+
+    const fetchedUserUidRef = useRef<string>("");
 
     const fetchActiveYear = async () => {
         try {
@@ -70,13 +72,21 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        // Si no hay usuario, apagamos la carga
-        if (!user) {
+        // Si no hay usuario, apagamos la carga y reseteamos la ref
+        if (!user?.uid) {
             setLoadingYear(false);
+            fetchedUserUidRef.current = "";
             return;
         }
+
+        // Evitar ejecuciones repetidas continuas si el UID ya fue procesado en este ciclo de sesión
+        if (fetchedUserUidRef.current === user.uid) {
+            return;
+        }
+
+        fetchedUserUidRef.current = user.uid;
         fetchActiveYear();
-    }, [user]);
+    }, [user?.uid]);
 
     const setWorkingYear = (year: string) => {
         // Solo permitimos el cambio local en memoria si el rol es DOCENTE.
