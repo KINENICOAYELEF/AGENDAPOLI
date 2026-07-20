@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             "kinesiologo.nicolasayelef@gmail.com"
                         ];
                         const userEmail = (firebaseUser.email || "").toLowerCase();
-                        const isAdminEmail = ADMIN_EMAILS.some(admin => userEmail.includes(admin.toLowerCase()) || userEmail.startsWith("nicolas.ayelef"));
+                        const isAdminEmail = ADMIN_EMAILS.includes(userEmail);
 
                         let userRole: Role = "PENDING";
                         let additionalData = {};
@@ -77,15 +77,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             userRole = data.role as Role;
                             additionalData = data;
 
-                            // Si es un correo docente/administrador registrado que quedó bloqueado como PENDING
-                            // Usamos ref para garantizar que se ejecute a lo sumo 1 vez por sesión
-                            if (isAdminEmail && userRole === "PENDING" && !autoPromotedUids.current.has(firebaseUser.uid)) {
-                                autoPromotedUids.current.add(firebaseUser.uid);
+                            // ADMIN: Siempre forzar DOCENTE localmente en cada snapshot.
+                            // El intento de escritura a Firestore solo se hace 1 vez.
+                            if (isAdminEmail && userRole === "PENDING") {
                                 userRole = "DOCENTE";
-                                setDocCounted(userDocRef, { role: "DOCENTE" }, { merge: true }).catch(err => console.error("Error auto-promoviendo docente:", err));
+                                if (!autoPromotedUids.current.has(firebaseUser.uid)) {
+                                    autoPromotedUids.current.add(firebaseUser.uid);
+                                    setDocCounted(userDocRef, { role: "DOCENTE" }, { merge: true })
+                                        .catch(err => console.error("Error auto-promoviendo docente:", err));
+                                }
                             }
                         } else {
-                            // Primer inicio de sesión histórico: Creamos el documento "DOCENTE" o "PENDING"
+                            // Primer inicio de sesión: crear doc con rol correcto
                             userRole = isAdminEmail ? "DOCENTE" : "PENDING";
                             if (!autoPromotedUids.current.has(firebaseUser.uid)) {
                                 autoPromotedUids.current.add(firebaseUser.uid);
