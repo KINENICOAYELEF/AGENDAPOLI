@@ -52,6 +52,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             return;
                         }
 
+                        const ADMIN_EMAILS = [
+                            "nicolas.ayelef@gmail.com",
+                            "kinesiologo.nicolasayelefparraguez@gmail.com",
+                            "kinesiologo.nicolasayelef@gmail.com"
+                        ];
+                        const userEmail = (firebaseUser.email || "").toLowerCase();
+                        const isAdminEmail = ADMIN_EMAILS.some(admin => userEmail.includes(admin.toLowerCase()) || userEmail.startsWith("nicolas.ayelef"));
+
                         let userRole: Role = "PENDING";
                         let additionalData = {};
 
@@ -59,12 +67,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             const data = docSnap.data();
                             userRole = data.role as Role;
                             additionalData = data;
+
+                            // Si es un correo docente/administrador registrado que quedó bloqueado como PENDING
+                            if (isAdminEmail && userRole === "PENDING") {
+                                userRole = "DOCENTE";
+                                await setDocCounted(userDocRef, { role: "DOCENTE" }, { merge: true });
+                            }
                         } else {
-                            // Primer inicio de sesión histórico: Creamos el documento "PENDING"
+                            // Primer inicio de sesión histórico: Creamos el documento "DOCENTE" o "PENDING"
+                            userRole = isAdminEmail ? "DOCENTE" : "PENDING";
                             await setDocCounted(userDocRef, {
                                 displayName: firebaseUser.displayName || "",
                                 email: firebaseUser.email || "",
-                                role: "PENDING",
+                                role: userRole,
                                 createdAt: serverTimestamp(),
                             });
                         }
@@ -77,7 +92,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         setLoading(false);
                     }, (error) => {
                         console.error("Error en onSnapshot de usuario:", error);
-                        setUser({ ...firebaseUser, role: "PENDING" } as AppUser);
+                        const userEmail = (firebaseUser.email || "").toLowerCase();
+                        const isAdminEmail = userEmail.includes("nicolas.ayelef") || userEmail.includes("kinesiologo");
+                        setUser({ ...firebaseUser, role: isAdminEmail ? "DOCENTE" : "PENDING" } as AppUser);
                         setLoading(false);
                     });
 

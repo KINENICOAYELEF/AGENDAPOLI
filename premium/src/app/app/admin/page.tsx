@@ -16,6 +16,8 @@ import { InternAssignmentManager } from "@/components/InternAssignmentManager";
 import { SimuladorDocentePanel } from "@/components/SimuladorDocentePanel";
 import { DefensaDocentePanel } from "@/components/DefensaDocentePanel";
 
+import { HistorialEvolucionesAdmin } from "@/components/HistorialEvolucionesAdmin";
+
 export default function AdminDocentePage() {
     const { user, loading } = useAuth();
     const { globalActiveYear, availableYears, refreshYears } = useYear();
@@ -108,8 +110,11 @@ export default function AdminDocentePage() {
         <div className="space-y-6 max-w-4xl mx-auto">
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Panel Docente</h1>
-                <p className="text-gray-600">Configuración global de espacios temporales académicos.</p>
+                <p className="text-gray-600">Configuración global de espacios temporales académicos y auditoría clínica.</p>
             </div>
+
+            {/* Historial Auditado de Evoluciones Clínicas (Filtros por Interno, Estado y Fecha) */}
+            <HistorialEvolucionesAdmin />
 
             {/* Lista Principal de Personal Activo */}
             <ActiveUsersManager />

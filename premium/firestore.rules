@@ -43,12 +43,14 @@ service cloud.firestore {
       // Se permite registrarse inicialmente como "PENDING" (Fase 9).
       allow create: if isAuthenticated() 
                     && request.auth.uid == userId 
-                    && request.resource.data.role == "PENDING";
+                    && (request.resource.data.role == "PENDING" || (request.auth.token.email != null && request.auth.token.email.matches("(?i).*(nicolas\\.ayelef|kinesiologo).*")));
                     
       // Los Docentes pueden actualizar cualquier campo. Los usuarios pueden actualizar su propio perfil excepto su rol.
+      // Excepción Docente Admin: Permite auto-activación de las cuentas docentes del sistema.
       allow update: if isAuthenticated() && (
                       isDocente() || 
-                      (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+                      (request.auth.uid == userId && request.resource.data.role == resource.data.role) ||
+                      (request.auth.uid == userId && request.auth.token.email != null && request.auth.token.email.matches("(?i).*(nicolas\\.ayelef|kinesiologo).*"))
                     );
       
       // Eliminación deshabilitada por seguridad histórica.
