@@ -103,6 +103,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </Link>
                     )}
                     {user.role === "DOCENTE" && (
+                        <Link href="/app/revision-docente" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-200 font-semibold">
+                            🔎 Bandeja docente
+                        </Link>
+                    )}
+                    {user.role === "DOCENTE" && (
                         <Link href="/app/pfg" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-300">
                             📊 PFG Dashboard
                         </Link>
