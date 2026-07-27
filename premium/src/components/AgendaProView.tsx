@@ -12,6 +12,7 @@ import { AgendaService } from "@/services/agenda";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
+import { Calendar, CalendarCheck2, AlertTriangle } from "lucide-react";
 
 interface AgendaProViewProps {
     baseDate?: Date;
@@ -222,43 +223,43 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
     return (
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[800px]">
             {/* Header / Toolbars */}
-            <div className="bg-slate-50 border-b border-slate-200 p-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                    <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                        <svg className="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        Agenda Extendida
+            <div className="bg-slate-50/80 border-b border-slate-200 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-indigo-600" />
+                        <span>Agenda Extendida</span>
                     </h2>
-                    <div className="flex bg-slate-200/70 p-1 rounded-lg">
+                    <div className="flex bg-slate-200/70 p-1 rounded-xl w-full sm:w-auto justify-stretch">
                         <button
                             onClick={() => setViewMode('HOY')}
-                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'HOY' ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'HOY' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Hoy
                         </button>
                         <button
                             onClick={() => setViewMode('SEMANA')}
-                            className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'SEMANA' ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'SEMANA' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             Semana
                         </button>
                     </div>
                 </div>
 
-                {/* Filtros Secundarios */}
-                <div className="flex flex-wrap gap-3 items-center">
+                {/* Filtros Secundarios Adaptativos para Móvil (iPhone/Android) */}
+                <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
                     <select
                         value={filterScope}
                         onChange={(e) => setFilterScope(e.target.value as any)}
-                        className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-100 outline-none"
+                        className="bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none w-full sm:w-auto"
                     >
-                        <option value="MIS_CITAS">Mis Citas</option>
-                        <option value="TODAS">Agenda General</option>
+                        <option value="MIS_CITAS">👤 Mis Citas Asignadas</option>
+                        <option value="TODAS">🌐 Agenda General (Todos)</option>
                     </select>
 
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-100 outline-none"
+                        className="bg-white border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none w-full sm:w-auto"
                     >
                         <option value="ACTIVAS">Programadas y Completadas</option>
                         <option value="ALL">Histórico Completo (Incluir Canceladas)</option>
@@ -267,27 +268,29 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
             </div>
 
             {/* Listado Body */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto bg-slate-50/40 p-4 space-y-3 custom-scrollbar">
                 {/* Banner de Feriado (Fase 2.3.6) */}
                 {!loading && viewMode === 'HOY' && holidays.some(h => h.date === format(baseDate, 'yyyy-MM-dd')) && (
                     <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex gap-3 shadow-sm mb-4">
-                        <svg className="w-5 h-5 text-rose-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <AlertTriangle className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
                         <div>
-                            <h4 className="font-bold text-rose-900 text-sm">Día Feriado / Bloqueado</h4>
+                            <h4 className="font-bold text-rose-900 text-xs uppercase tracking-wider">Día Feriado / Bloqueado</h4>
                             <p className="text-xs text-rose-700 mt-0.5">La generación automática ignoró este día. Las citas vistas aquí fueron forzadas o desplazadas manualmente.</p>
                         </div>
                     </div>
                 )}
 
                 {loading ? (
-                    <div className="text-center py-10 text-slate-400 font-medium animate-pulse">Consultando Itinerario...</div>
+                    <div className="text-center py-12 text-slate-400 font-bold text-xs animate-pulse">Consultando Itinerario de Atenciones...</div>
                 ) : citas.length === 0 ? (
-                    <div className="text-center py-16 flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div className="text-center py-16 flex flex-col items-center justify-center space-y-3 bg-white rounded-2xl border border-dashed border-slate-200 p-6">
+                        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner">
+                            <CalendarCheck2 className="w-7 h-7" />
                         </div>
-                        <h4 className="text-slate-600 font-bold">Sin citas para este rango</h4>
-                        <p className="text-slate-400 text-sm mt-1">Ajusta los filtros o revisa un rango distinto.</p>
+                        <div className="space-y-1">
+                            <h4 className="text-slate-800 font-bold text-base">Sin citas para este rango</h4>
+                            <p className="text-slate-500 text-xs max-w-sm mx-auto">No tienes atenciones programadas para el periodo seleccionado. Ajusta los filtros o revisa la lista de Personas Usuarias.</p>
+                        </div>
                     </div>
                 ) : (
                     citas.map(cita => {
