@@ -3,17 +3,33 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useYear } from '@/context/YearContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DebugOverlay } from '@/components/DebugOverlay';
 import { SimuladorAlertaModal } from '@/components/SimuladorAlertaModal';
 import { EvidenceAlertaModal } from '@/components/evidence/EvidenceAlertaModal';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { 
+    LayoutDashboard, 
+    Users, 
+    GraduationCap, 
+    Mic, 
+    MessageSquare, 
+    ShieldCheck, 
+    Layers, 
+    LogOut,
+    Menu,
+    X,
+    Calendar,
+    Sparkles,
+    BookOpen
+} from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, loading: authLoading, logout } = useAuth();
     const { activeYear, availableYears, setWorkingYear, loadingYear } = useYear();
     const router = useRouter();
+    const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
@@ -24,16 +40,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     if (authLoading || loadingYear) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-gray-600 font-medium">Verificando sesión y entorno...</p>
+            <div className="flex items-center justify-center min-h-screen bg-slate-900 text-white">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-400 text-sm font-medium">Cargando entorno Polideportivo...</p>
                 </div>
             </div>
         );
     }
 
-    // If there's no user, we might be in the split second before redirect, so return null
     if (!user) return null;
 
     // FASE 9: Pantalla de Bloqueo para Usuarios Pendientes
@@ -42,15 +57,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
                 <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 p-8 space-y-6">
                     <div className="mx-auto w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-6 shadow-inner ring-4 ring-amber-50">
-                        <svg className="w-10 h-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                        <ShieldCheck className="w-10 h-10 text-amber-600" />
                     </div>
                     
                     <div>
                         <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Cuenta en Revisión</h2>
                         <p className="text-slate-500 font-medium leading-relaxed">
-                            Tu registro ha sido completado con éxito con el correo <span className="text-slate-700 font-bold">{user.email}</span>, pero requieres autorización de un Docente o Administrador para acceder a las fichas clínicas.
+                            Tu registro ha sido completado con éxito con el correo <span className="text-slate-700 font-bold">{user.email}</span>, pero requieres autorización de un Docente para acceder.
                         </p>
                     </div>
                     
@@ -61,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <div className="pt-4 border-t border-slate-100">
                         <button
                             onClick={logout}
-                            className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all focus:ring-4 focus:ring-slate-100 outline-none"
+                            className="w-full px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all outline-none"
                         >
                             Cerrar Sesión e Intentar con otra Cuenta
                         </button>
@@ -70,157 +83,260 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
         );
     }
+
+    const isActive = (path: string) => pathname === path;
+
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-slate-100/70 font-sans text-slate-900">
             <SimuladorAlertaModal />
             <EvidenceAlertaModal />
-            {/* Sidebar Desktop / Mobile Drawer */}
+            
             {/* Overlay Móvil */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
 
-            <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white flex flex-col transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-                <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-indigo-400 tracking-wide">POLIDEPORTIVO</h2>
-                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white p-1">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            {/* Sidebar Principal */}
+            <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-950 text-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out border-r border-slate-800/80 shadow-2xl md:shadow-none ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+                {/* Header Marca */}
+                <div className="p-5 border-b border-slate-800/80 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-lg shadow-indigo-600/30">
+                            P
+                        </div>
+                        <div>
+                            <h2 className="text-base font-black tracking-tight text-white leading-tight">POLIDEPORTIVO</h2>
+                            <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase block">Kinesiología</span>
+                        </div>
+                    </div>
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white p-1 rounded-lg">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    <Link href="/app/dashboard" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition">
-                        Dashboard
-                    </Link>
-                    <Link href="/app/usuarios" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition">
-                        Personas Usuarias
-                    </Link>
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/admin" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-red-300">
-                            Admin Docente
+
+                {/* Navegación por Secciones */}
+                <nav className="flex-1 p-3 space-y-6 overflow-y-auto custom-scrollbar">
+                    {/* Grupo 1: Atención Clínica */}
+                    <div className="space-y-1">
+                        <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-2">
+                            Atención Clínica
+                        </span>
+
+                        <Link
+                            href="/app/dashboard"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/dashboard')
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            <span>Dashboard (Agenda)</span>
                         </Link>
-                    )}
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/revision-docente" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-200 font-semibold">
-                            🔎 Bandeja docente
+
+                        <Link
+                            href="/app/usuarios"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/usuarios')
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <Users className="w-4 h-4 shrink-0" />
+                            <span>Personas Usuarias</span>
                         </Link>
-                    )}
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/pfg" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-300">
-                            📊 PFG Dashboard
+                    </div>
+
+                    {/* Grupo 2: Formación y Simulaciones */}
+                    <div className="space-y-1">
+                        <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-2">
+                            Formación & Simulación
+                        </span>
+
+                        <Link
+                            href="/app/simulador"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/simulador')
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <GraduationCap className="w-4 h-4 shrink-0 text-amber-400" />
+                            <span>Simulador Examen (Escrito)</span>
                         </Link>
-                    )}
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/pasantia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-300 font-semibold">
-                        🏥 Pasantía 2º Año
-                    </Link>
-                    )}
-                    {user.role === "DOCENTE" && (
-                        <Link href="/app/cuestionarios" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-purple-300 font-semibold">
-                            📝 Cuestionarios (Beta)
+
+                        <Link
+                            href="/app/simulador-voz"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/simulador-voz')
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <Mic className="w-4 h-4 shrink-0 text-orange-400" />
+                            <span>Simulador Voz (OSCE)</span>
                         </Link>
-                    )}
-                    <Link href="/app/simulador" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-amber-300 font-bold mt-4 border-t border-slate-800 pt-4">
-                        🎓 Simulador Examen (Solo Escrito)
-                    </Link>
-                    <Link href="/app/simulador-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-orange-300 font-bold mt-2">
-                        🎤 Simulador Voz (Beta)
-                    </Link>
+
+                        <Link
+                            href="/app/defensa-voz"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                                isActive('/app/defensa-voz')
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900'
+                            }`}
+                        >
+                            <MessageSquare className="w-4 h-4 shrink-0 text-rose-400" />
+                            <span>Defensa Comisión</span>
+                        </Link>
+                    </div>
+
+                    {/* Grupo 3: Solo Módulos Docentes (Oculto para Internos) */}
                     {user.role === 'DOCENTE' && (
-                        <Link href="/app/simulador-voz-docente" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-orange-400 font-semibold text-xs ml-4 border-l border-slate-700 pl-3">
-                            🧪 Sim. Voz (Docente Edición)
-                        </Link>
-                    )}
-                    {user.role === 'DOCENTE' && (
-                        <Link href="/app/simulador-voz-total" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-purple-400 font-semibold text-xs ml-4 border-l border-slate-700 pl-3">
-                            🧪 Sim. Voz Total (DOCENTE TEST)
-                        </Link>
-                    )}
-                    {user.role === 'DOCENTE' && (
-                        <Link href="/app/entrenamiento-diario" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-emerald-400 font-bold mt-2 border-t border-slate-800 pt-4">
-                            ⚡ Entrenamiento Diario (BETA DOCENTE)
-                        </Link>
-                    )}
-                    {(user.role === 'DOCENTE' || user.email === 'deny.contreras14@gmail.com' || user.email === 'kinesiologo.nicolasayelef@gmail.com') && (
-                        <Link href="/app/entrenamiento-rodilla" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-cyan-300 font-bold mt-2">
-                            🦵 Caso Especial Rodilla {user.role === 'DOCENTE' && '(BETA)'}
-                        </Link>
-                    )}
-                    <Link href="/app/defensa-voz" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-300 font-bold mt-2">
-                        🗣️ Defensa Comisión (Voz)
-                    </Link>
-                    {user.role === 'DOCENTE' && (
-                        <Link href="/app/defensa-voz-docente" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-rose-400 font-semibold text-xs ml-4 border-l border-slate-700 pl-3">
-                            🗣️ Def. Comisión (Docente Edición)
-                        </Link>
-                    )}
-                    {user.role === 'DOCENTE' && (
-                        <Link href="/app/evidencia" onClick={() => setIsSidebarOpen(false)} className="block px-4 py-2 rounded hover:bg-slate-800 transition text-blue-300 font-bold mt-2">
-                            📚 Biblioteca Científica
-                        </Link>
+                        <div className="space-y-1 pt-2 border-t border-slate-800/80">
+                            <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-rose-400 block mb-2">
+                                Gestión Docente
+                            </span>
+
+                            <Link
+                                href="/app/admin"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    isActive('/app/admin') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <ShieldCheck className="w-4 h-4 text-rose-400" />
+                                <span>Panel Admin Docente</span>
+                            </Link>
+
+                            <Link
+                                href="/app/revision-docente"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    isActive('/app/revision-docente') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <Sparkles className="w-4 h-4 text-amber-400" />
+                                <span>Bandeja Auditoría</span>
+                            </Link>
+
+                            <Link
+                                href="/app/pfg"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    isActive('/app/pfg') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <Layers className="w-4 h-4 text-emerald-400" />
+                                <span>PFG Dashboard</span>
+                            </Link>
+
+                            <Link
+                                href="/app/pasantia"
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    isActive('/app/pasantia') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                <BookOpen className="w-4 h-4 text-cyan-400" />
+                                <span>Pasantía 2º Año</span>
+                            </Link>
+                        </div>
                     )}
                 </nav>
 
-                {/* Separador de Espacio de Nombres (Año) */}
-                <div className="px-4 py-4 border-t border-slate-800 shrink-0">
-                    <div className="text-xs opacity-50 uppercase tracking-wider font-semibold mb-2">
-                        Entorno de Datos
+                {/* Selector de Año del Entorno */}
+                <div className="px-4 py-3 border-t border-slate-800/80 shrink-0 bg-slate-900/40">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Año Activo</span>
+                        </span>
+                        {user?.role === "DOCENTE" ? (
+                            <select
+                                value={activeYear}
+                                onChange={(e) => setWorkingYear(e.target.value)}
+                                className="bg-slate-800 text-xs font-bold text-white rounded-lg px-2 py-1 border border-slate-700 focus:outline-none cursor-pointer"
+                            >
+                                {availableYears.map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <span className="text-xs font-bold text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">
+                                {activeYear}
+                            </span>
+                        )}
                     </div>
-                    {user?.role === "DOCENTE" ? (
-                        <select
-                            value={activeYear}
-                            onChange={(e) => setWorkingYear(e.target.value)}
-                            className="w-full bg-slate-800 text-white rounded p-2 text-sm border border-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
-                        >
-                            {availableYears.map(y => (
-                                <option key={y} value={y}>Año: {y}</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <div className="text-sm font-medium text-blue-300">
-                            Año activo: {activeYear}
-                        </div>
-                    )}
                 </div>
 
-                {/* User Card Logout */}
-                <div className="p-4 border-t border-slate-800 flex flex-col gap-2 shrink-0">
-                    <div className="text-xs opacity-50 uppercase tracking-wider font-semibold">
-                        ROL: {user.role}
+                {/* Tarjeta Minimalista del Usuario y Salida */}
+                <div className="p-3 border-t border-slate-800/80 shrink-0 bg-slate-950">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900 border border-slate-800/80">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                                {(user.displayName || user.email || 'I')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-200 block truncate leading-tight">
+                                    {user.displayName || user.email?.split('@')[0]}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block leading-tight">
+                                    {user.role === 'DOCENTE' ? '👑 Docente' : '🎓 Interno'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={logout}
+                            title="Cerrar Sesión"
+                            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </button>
                     </div>
-                    <div className="text-sm opacity-70 mb-2 truncate" title={user.email || ''}>
-                        {user.email}
-                    </div>
-                    <button
-                        onClick={logout}
-                        className="w-full py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded transition text-sm font-semibold"
-                    >
-                        Cerrar Sesión
-                    </button>
                 </div>
             </aside>
 
-            {/* Main Content */}
+            {/* Contenido Principal */}
             <main className="flex-1 flex flex-col overflow-hidden w-full relative">
-                <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 sm:px-6 shadow-sm shrink-0">
+                {/* Header Superior */}
+                <header className="bg-white border-b border-slate-200/80 h-16 flex items-center justify-between px-4 sm:px-6 shadow-xs shrink-0">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)} 
+                            className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                        >
+                            <Menu className="w-5 h-5" />
                         </button>
-                        <span className="text-gray-500 font-medium">Panel Principal</span>
+                        <div>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block leading-none mb-0.5">
+                                {user.role === 'DOCENTE' ? 'Panel de Supervisión Docente' : 'Espacio del Interno'}
+                            </span>
+                            <span className="text-sm font-bold text-slate-800 block leading-none">
+                                Hola, {user.displayName || user.email?.split('@')[0]} 👋
+                            </span>
+                        </div>
                     </div>
+
                     <div className="flex items-center gap-4">
                         <NotificationCenter />
                     </div>
                 </header>
+
                 <div className="flex-1 overflow-auto p-4 sm:p-6 w-full">
                     {children}
                 </div>
             </main>
 
-            {/* Inyección de Telemetría Docente (Solo renderiza si ROL === DOCENTE internamente) */}
+            {/* Inyección de Telemetría Docente */}
             <DebugOverlay />
         </div>
     );
