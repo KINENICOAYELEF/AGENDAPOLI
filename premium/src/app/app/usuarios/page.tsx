@@ -75,16 +75,27 @@ export default function UsuariosPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [globalActiveYear, loadingYear]);
 
+    // Scope filter ('MIS_PACIENTES' | 'TODOS')
+    const [patientScope, setPatientScope] = useState<'MIS_PACIENTES' | 'TODOS'>('MIS_PACIENTES');
+
     // ----- BÚSQUEDA LOCAL OFFLINE -----
-    // Usamos el listado ya descargado guardado en estado, previniendo GASTAR FIREBASE.
-    // Para búsquedas absolutas pesadas habría que conectarse (algolia, meilisearch).
     const filteredUsers = personasUsuarias.filter(u => {
         const anyU = u as any;
         const nom = u.identity?.fullName || anyU.nombreCompleto || "";
         const iden = u.identity?.rut || anyU.rut || "";
         const tel = u.identity?.telefono || anyU.telefono || "";
         const str = `${nom} ${iden} ${tel}`.toLowerCase();
-        return str.includes(searchTerm.toLowerCase());
+        
+        const matchesSearch = str.includes(searchTerm.toLowerCase());
+
+        if (patientScope === 'MIS_PACIENTES' && user?.role === 'INTERNO') {
+            const isMine = anyU.assignedInternId === user.uid || 
+                           anyU.primaryInternUid === user.uid || 
+                           anyU.meta?.assignedInternId === user.uid;
+            return matchesSearch && isMine;
+        }
+
+        return matchesSearch;
     });
 
     const handleUserSaved = (savedUser: PersonaUsuaria, isNew: boolean) => {
@@ -182,7 +193,7 @@ export default function UsuariosPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
 
                 {/* TOOLBAR */}
-                <div className="border-b border-slate-100 p-4 sm:p-5 bg-white flex items-center gap-4">
+                <div className="border-b border-slate-100 p-4 sm:p-5 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                     <div className="relative flex-1 max-w-md">
                         <svg className="absolute left-3.5 top-3 h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="11" cy="11" r="8"></circle>
@@ -196,6 +207,23 @@ export default function UsuariosPage() {
                             className="w-full pl-11 pr-4 py-2.5 bg-slate-50 hover:bg-slate-100 focus:bg-white rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm transition-all"
                         />
                     </div>
+
+                    {user?.role === 'INTERNO' && (
+                        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 self-start sm:self-auto">
+                            <button
+                                onClick={() => setPatientScope('MIS_PACIENTES')}
+                                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${patientScope === 'MIS_PACIENTES' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                👤 Mis Pacientes
+                            </button>
+                            <button
+                                onClick={() => setPatientScope('TODOS')}
+                                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${patientScope === 'TODOS' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                🌐 Todos los Pacientes
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* AREA DE CONTENIDO */}
