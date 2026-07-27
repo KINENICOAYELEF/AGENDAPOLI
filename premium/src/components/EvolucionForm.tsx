@@ -1013,17 +1013,31 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
 
             await setDocCounted(docRef, payload, { merge: true });
 
-            // Auto-vincular al interno con la Persona Usuaria si aún no tiene un interno asignado o si está evolucionando
-            if (usuariaId && user?.uid) {
+            // Vincular al interno con la Persona Usuaria si aún no tiene un interno asignado y confirma que es su paciente regular
+            if (usuariaId && user?.uid && !isAutoSave) {
                 try {
                     const usuariaRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
-                    await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
-                        assignedInternId: user.uid,
-                        assignedInternName: user.displayName || user.email,
-                        updatedAt: new Date().toISOString()
-                    }));
+                    const usuariaSnap = await getDoc(usuariaRef);
+                    if (usuariaSnap.exists()) {
+                        const currentData = usuariaSnap.data();
+                        // Solo preguntar si el paciente no tiene un interno asignado todavía
+                        if (!currentData.assignedInternId) {
+                            const wantAssign = window.confirm(
+                                "¿Deseas vincular a esta persona usuaria a tu lista permanente de internado?\n\n" +
+                                "• Aceptar: Sí, vincular a mi lista permanente.\n" +
+                                "• Cancelar: No, es una atención puntual o de apoyo/suplencia por hoy."
+                            );
+                            if (wantAssign) {
+                                await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
+                                    assignedInternId: user.uid,
+                                    assignedInternName: user.displayName || user.email,
+                                    updatedAt: new Date().toISOString()
+                                }));
+                            }
+                        }
+                    }
                 } catch (e) {
-                    console.warn("No se pudo auto-vincular la persona usuaria:", e);
+                    console.warn("No se pudo consultar/vincular la persona usuaria:", e);
                 }
             }
 
