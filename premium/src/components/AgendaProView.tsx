@@ -12,7 +12,7 @@ import { AgendaService } from "@/services/agenda";
 import { format, addDays, startOfWeek, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
-import { Calendar, CalendarCheck2, AlertTriangle } from "lucide-react";
+import { Calendar, CalendarCheck2, AlertTriangle, UserCheck, UserPlus } from "lucide-react";
 
 interface AgendaProViewProps {
     baseDate?: Date;
@@ -220,6 +220,31 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
         }
     };
 
+    const confirmSelfAssign = async (targetCita: Cita) => {
+        if (!user || !globalActiveYear) return;
+        try {
+            // 1. Vincular en la Cita
+            const citaRef = doc(db, "programs", globalActiveYear, "citas", targetCita.id);
+            await updateDoc(citaRef, sanitizeForFirestoreDeep({
+                internoPlanificadoId: user.uid,
+                updatedAt: new Date().toISOString()
+            }));
+
+            // 2. Vincular en la Persona Usuaria (Asignación Permanente)
+            const usuariaRef = doc(db, "programs", globalActiveYear, "usuarias", targetCita.usuariaId);
+            await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
+                assignedInternId: user.uid,
+                assignedInternName: user.displayName || user.email,
+                updatedAt: new Date().toISOString()
+            }));
+
+            fetchAgenda();
+        } catch (error) {
+            console.error("Error al auto-asignar paciente:", error);
+            alert("No se pudo vincular el paciente.");
+        }
+    };
+
     return (
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[800px]">
             {/* Header / Toolbars */}
@@ -297,27 +322,26 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                         const isScheduled = cita.status === 'SCHEDULED';
                         const isCompleted = cita.status === 'COMPLETED';
 
-                        // Determinar si soy el planificado
+                        // Determinar si soy el planificado o quien atendió
                         const iAmPlanned = cita.internoPlanificadoId === user?.uid;
                         const iAmAttending = cita.internoAtendioId === user?.uid;
-
-                        const requireTakeover = isScheduled && !iAmPlanned && !iAmAttending;
+                        const isMyPatient = iAmPlanned || iAmAttending;
 
                         return (
-                            <div key={cita.id} className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md ${isScheduled ? 'border-indigo-100' : 'border-slate-200 opacity-80'}`}>
+                            <div key={cita.id} className={`bg-white border rounded-2xl overflow-hidden shadow-xs transition-all hover:shadow-md ${isScheduled ? 'border-slate-200' : 'border-slate-200 opacity-80'}`}>
                                 <div className="flex flex-col sm:flex-row">
                                     {/* Left Slot: Time & Status */}
-                                    <div className={`sm:w-32 flex flex-row sm:flex-col items-center justify-between sm:justify-center p-4 border-b sm:border-b-0 sm:border-r border-slate-100 ${isScheduled ? 'bg-indigo-50/50' : 'bg-slate-50'}`}>
+                                    <div className={`sm:w-32 flex flex-row sm:flex-col items-center justify-between sm:justify-center p-4 border-b sm:border-b-0 sm:border-r border-slate-100 ${isScheduled ? 'bg-indigo-50/40' : 'bg-slate-50'}`}>
                                         <div className="text-center">
-                                            <div className="text-sm font-bold text-slate-500">{format(new Date(cita.date + "T00:00:00"), "d MMM", { locale: es })}</div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{format(new Date(cita.date + "T00:00:00"), "d MMM", { locale: es })}</div>
                                             <div className="text-lg font-black text-slate-800">{cita.startTime}</div>
-                                            <div className="text-xs font-semibold text-slate-400">{cita.endTime}</div>
+                                            <div className="text-[11px] font-semibold text-slate-400">{cita.endTime}</div>
                                         </div>
                                         {/* Status Badge */}
                                         <div className="mt-0 sm:mt-2">
-                                            {isScheduled && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Esperando</span>}
-                                            {isCompleted && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Atendido</span>}
-                                            {cita.status === 'CANCELLED' && <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Anulada</span>}
+                                            {isScheduled && <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Esperando</span>}
+                                            {isCompleted && <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Atendido</span>}
+                                            {cita.status === 'CANCELLED' && <span className="bg-rose-100 text-rose-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Anulada</span>}
                                         </div>
                                     </div>
 
@@ -326,11 +350,28 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
                                         <div>
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-base">{cita.usuariaName || `Ficha Clínica (ID: ${cita.usuariaId.slice(0, 6)})`}</h4>
-                                                    <p className="text-xs text-slate-500 font-medium">Proceso: {cita.procesoId}</p>
+                                                    <h4 className="font-bold text-slate-900 text-base">{cita.usuariaName || `Ficha Clínica (ID: ${cita.usuariaId.slice(0, 6)})`}</h4>
+                                                    
+                                                    {/* Badges de Asignación sin IDs raros */}
+                                                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold text-[10px]">
+                                                            Atención Kinesiología
+                                                        </span>
+                                                        {isMyPatient ? (
+                                                            <span className="bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-2 py-0.5 rounded-md font-bold text-[10px] flex items-center gap-1">
+                                                                <UserCheck className="w-3 h-3" />
+                                                                Asignado a ti
+                                                            </span>
+                                                        ) : (
+                                                            <span className="bg-slate-50 text-slate-400 border border-slate-200/60 px-2 py-0.5 rounded-md font-medium text-[10px]">
+                                                                Sin Asignación Permanente
+                                                            </span>
+                                                        )}
+                                                    </div>
+
                                                     {cita.shortReason && (
-                                                        <p className="text-sm text-slate-600 mt-1 italic opacity-90 line-clamp-2">
-                                                            "{cita.shortReason}"
+                                                        <p className="text-xs text-slate-600 mt-2 italic line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                            &ldquo;{cita.shortReason}&rdquo;
                                                         </p>
                                                     )}
                                                 </div>
@@ -338,50 +379,49 @@ export function AgendaProView({ baseDate: incomingBaseDate }: AgendaProViewProps
 
                                             {/* Sub-Badges (Ej: Atendido por Reemplazo) */}
                                             {cita.coverage && (
-                                                <div className="mt-2 text-[11px] bg-sky-50 text-sky-700 py-1 px-2 rounded font-semibold inline-flex items-center gap-1 border border-sky-100">
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                                                    Cita relevada por apoyo / suplencia
+                                                <div className="mt-2 text-[11px] bg-sky-50 text-sky-700 py-1 px-2.5 rounded-lg font-bold inline-flex items-center gap-1 border border-sky-100">
+                                                    <span>Cobertura asumida por reemplazo</span>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Acciones */}
-                                        <div className="mt-4 flex gap-2 justify-end items-center flex-wrap">
-                                            <Link href={`/app/usuarios?openFicha=${cita.usuariaId}`} className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-bold rounded hover:bg-slate-200 transition">
+                                        {/* Acciones del Interno en la Tarjeta */}
+                                        <div className="mt-4 flex gap-2 justify-end items-center flex-wrap pt-3 border-t border-slate-100">
+                                            <Link href={`/app/usuarios?openFicha=${cita.usuariaId}`} className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition">
                                                 Ver Ficha
                                             </Link>
 
-                                            {isScheduled && !requireTakeover && (
-                                                <div className="flex flex-wrap items-center justify-end gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+                                            {!isMyPatient && isScheduled && (
+                                                <button
+                                                    onClick={() => confirmSelfAssign(cita)}
+                                                    className="px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl hover:bg-indigo-100 transition inline-flex items-center gap-1"
+                                                >
+                                                    <UserPlus className="w-3.5 h-3.5" />
+                                                    <span>Vincular como Mi Paciente</span>
+                                                </button>
+                                            )}
+
+                                            {isScheduled && (
+                                                <div className="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
                                                     <button
                                                         onClick={() => { setActionCitaId(cita.id); setActionType('NO_SHOW'); setActionReason(''); }}
-                                                        className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold rounded-lg transition"
+                                                        className="px-2.5 py-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold rounded-xl transition"
                                                     >
                                                         No Show
                                                     </button>
                                                     <button
                                                         onClick={() => { setActionCitaId(cita.id); setActionType('CANCEL'); setActionReason(''); }}
-                                                        className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded-lg transition"
+                                                        className="px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 text-xs font-bold rounded-xl transition"
                                                     >
                                                         Cancelar
                                                     </button>
                                                     <Link
                                                         href={`/app/usuarios?openFicha=${cita.usuariaId}&action=evolucionar`}
-                                                        className="w-full sm:w-auto text-center px-4 py-2 sm:py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition"
+                                                        className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-indigo-700 transition"
                                                     >
-                                                        Evolucionar Cita
+                                                        + Evolucionar Cita
                                                     </Link>
                                                 </div>
-                                            )}
-
-                                            {isScheduled && requireTakeover && (
-                                                <button
-                                                    onClick={() => setTakeoverCitaId(cita.id)}
-                                                    className="w-full sm:w-auto justify-center px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-700 transition flex items-center gap-1 mt-2 sm:mt-0"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                                    Tomar Relevo (Atender)
-                                                </button>
                                             )}
                                         </div>
                                     </div>
