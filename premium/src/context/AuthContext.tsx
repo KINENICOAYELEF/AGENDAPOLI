@@ -63,8 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
                         const ADMIN_EMAILS = [
                             "nicolas.ayelef@gmail.com",
-                            "kinesiologo.nicolasayelefparraguez@gmail.com",
-                            "kinesiologo.nicolasayelef@gmail.com"
+                            "kinesiologo.nicolasayelefparraguez@gmail.com"
                         ];
                         const userEmail = (firebaseUser.email || "").toLowerCase();
                         const isAdminEmail = ADMIN_EMAILS.includes(userEmail);
