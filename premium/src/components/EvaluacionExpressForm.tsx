@@ -378,6 +378,18 @@ export function EvaluacionExpressForm({ usuariaId, procesoId, initialData, onClo
             const docRef = doc(db, "programs", globalActiveYear, "evaluaciones", targetId);
             await setDoc(docRef, sanitizeForFirestoreDeep(basePayload), { merge: true });
 
+            // Sincronizar Anamnesis Remota / Contexto con la Ficha de la Persona Usuaria (Sección C)
+            if (anamnesisRemota?.trim()) {
+                const usuariaRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
+                await setDoc(usuariaRef, sanitizeForFirestoreDeep({
+                    remoteHistory: {
+                        basalSynthesis: anamnesisRemota,
+                        permanentNotes: anamnesisRemota,
+                        lastUpdated: new Date().toISOString()
+                    }
+                }), { merge: true });
+            }
+
             if (isDraft) {
                 setSavingDraft('saved');
                 setTimeout(() => setSavingDraft('idle'), 2000);

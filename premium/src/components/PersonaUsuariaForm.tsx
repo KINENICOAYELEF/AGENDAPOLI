@@ -719,8 +719,13 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-4 bg-white border border-slate-200 rounded-xl whitespace-pre-wrap text-[11px] text-slate-500 italic leading-relaxed">
-                                    {formData.remoteHistory.basalSynthesis || "Expediente basal extraído de registro antiguo sin estructurar."}
+                                <div className="p-5 bg-white border border-indigo-100 rounded-2xl shadow-xs space-y-2">
+                                    <div className="flex items-center gap-2 text-indigo-950 font-bold text-xs border-b border-slate-100 pb-2">
+                                        <span>📝</span> Contexto Basal y Anamnesis Remota (Evaluación Inicial v2)
+                                    </div>
+                                    <div className="whitespace-pre-wrap text-[12px] text-slate-700 font-medium leading-relaxed pt-1">
+                                        {formData.remoteHistory.basalSynthesis || formData.remoteHistory.permanentNotes || "Expediente basal registrado sin estructura previa."}
+                                    </div>
                                 </div>
                             )}
                         </div>
