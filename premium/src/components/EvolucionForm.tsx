@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Evolucion, ExercisePrescription, Evaluacion, TreatmentObjective } from "@/types/clinica";
-import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, limit, serverTimestamp, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { setDocCounted } from "@/services/firestore";
 import { OutcomesService } from "@/services/outcomes";
@@ -1012,6 +1012,20 @@ export function EvolucionForm({ usuariaId, procesoId, citaId, internoAtendioId, 
             const docRef = doc(db, "programs", globalActiveYear, "evoluciones", targetId);
 
             await setDocCounted(docRef, payload, { merge: true });
+
+            // Auto-vincular al interno con la Persona Usuaria si aún no tiene un interno asignado o si está evolucionando
+            if (usuariaId && user?.uid) {
+                try {
+                    const usuariaRef = doc(db, "programs", globalActiveYear, "usuarias", usuariaId);
+                    await updateDoc(usuariaRef, sanitizeForFirestoreDeep({
+                        assignedInternId: user.uid,
+                        assignedInternName: user.displayName || user.email,
+                        updatedAt: new Date().toISOString()
+                    }));
+                } catch (e) {
+                    console.warn("No se pudo auto-vincular la persona usuaria:", e);
+                }
+            }
 
             setFormData(prev => ({
                 ...prev,
