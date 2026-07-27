@@ -1,14 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
-import { Cita } from "@/types/clinica";
+import { Cita, Evolucion } from "@/types/clinica";
 import { AgendaProView } from "@/components/AgendaProView";
 import { AgendaGridView } from "@/components/AgendaGridView";
 import { UsersService } from "@/services/users";
+import { format, subDays } from "date-fns";
+import Link from "next/link";
+import { 
+    Calendar, 
+    CheckCircle2, 
+    Clock, 
+    AlertCircle, 
+    MessageSquare, 
+    UserCheck, 
+    LayoutList, 
+    LayoutGrid,
+    ChevronRight,
+    Sparkles,
+    CalendarPlus
+} from "lucide-react";
 
 export default function DashboardPage() {
     const [layoutMode, setLayoutMode] = useState<'LISTA' | 'GRILLA'>('LISTA');
@@ -18,18 +33,96 @@ export default function DashboardPage() {
     // Data para la grilla
     const [gridCitas, setGridCitas] = useState<(Cita & { internName?: string })[]>([]);
     const [gridLoading, setGridLoading] = useState(false);
-    
-    // gridScope puede ser 'TODAS', 'MIS_CITAS', o 'UID_DEL_INTERNO'
     const [gridScope, setGridScope] = useState<string>('TODAS');
-    
-    // Lista de internos (solo para ADMIN/DOCENTE)
     const [internosList, setInternosList] = useState<AppUser[]>([]);
+
+    // Alertas y Notificaciones Específicas del Interno
+    const [docenteFeedbackList, setDocenteFeedbackList] = useState<{ id: string; usuariaName: string; feedback: string; date: string }[]>([]);
+    const [yesterdayDrafts, setYesterdayDrafts] = useState<{ id: string; usuariaName: string; date: string }[]>([]);
+    const [unevolvedTodayCitas, setUnevolvedTodayCitas] = useState<Cita[]>([]);
+    const [todayCompletedCount, setTodayCompletedCount] = useState<number>(0);
+    const [todayTotalCount, setTodayTotalCount] = useState<number>(0);
 
     useEffect(() => {
         if (user && user.role === 'DOCENTE') {
             UsersService.getInterns().then(setInternosList).catch(console.error);
         }
     }, [user]);
+
+    // Cargar alertas específicas para el interno en sesión
+    useEffect(() => {
+        if (!globalActiveYear || !user) return;
+
+        const fetchInternAlerts = async () => {
+            try {
+                const todayStr = format(new Date(), 'yyyy-MM-dd');
+                const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+
+                // 1. Citas de hoy del interno
+                const citasRef = collection(db, "programs", globalActiveYear, "citas");
+                const qToday = query(
+                    citasRef, 
+                    where("date", "==", todayStr)
+                );
+                const snapToday = await getDocs(qToday);
+                const myTodayCitas: Cita[] = [];
+                let completedCount = 0;
+
+                snapToday.docs.forEach(d => {
+                    const data = { id: d.id, ...d.data() } as Cita;
+                    if (data.internoPlanificadoId === user.uid || data.internoAtendioId === user.uid) {
+                        myTodayCitas.push(data);
+                        if (data.status === 'COMPLETED') completedCount++;
+                    }
+                });
+
+                setTodayTotalCount(myTodayCitas.length);
+                setTodayCompletedCount(completedCount);
+                setUnevolvedTodayCitas(myTodayCitas.filter(c => c.status === 'SCHEDULED'));
+
+                // 2. Evoluciones recientes con Handoff/Feedback Docente o Borradores de Ayer
+                const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
+                const qEvols = query(evolsRef);
+                const snapEvols = await getDocs(qEvols);
+                
+                const feedbackItems: { id: string; usuariaName: string; feedback: string; date: string }[] = [];
+                const yesterdayItems: { id: string; usuariaName: string; date: string }[] = [];
+
+                snapEvols.docs.forEach(d => {
+                    const data = d.data() as Evolucion;
+                    const isMyEvol = (data as any).clinicianResponsibleUid === user.uid || (data as any).clinicianResponsible === user.uid || data.audit?.createdBy === user.uid;
+                    
+                    if (isMyEvol) {
+                        // Feedback docente no leído / presente
+                        if (data.handoffText && data.handoffText.trim() !== '') {
+                            feedbackItems.push({
+                                id: d.id,
+                                usuariaName: (data as any).usuariaName || 'Paciente',
+                                feedback: data.handoffText,
+                                date: data.sessionAt || ''
+                            });
+                        }
+                        // Borrador de ayer o anterior sin cerrar
+                        if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt < todayStr) {
+                            yesterdayItems.push({
+                                id: d.id,
+                                usuariaName: (data as any).usuariaName || 'Paciente',
+                                date: data.sessionAt
+                            });
+                        }
+                    }
+                });
+
+                setDocenteFeedbackList(feedbackItems.slice(0, 3));
+                setYesterdayDrafts(yesterdayItems.slice(0, 3));
+
+            } catch (err) {
+                console.error("Error cargando alertas de interno:", err);
+            }
+        };
+
+        fetchInternAlerts();
+    }, [globalActiveYear, user]);
 
     // Cargar citas para la vista de grilla
     useEffect(() => {
@@ -42,7 +135,6 @@ export default function DashboardPage() {
                 const activeStatuses = ["SCHEDULED", "COMPLETED", "NO_SHOW"];
                 let allCitas: (Cita & { internName?: string })[] = [];
 
-                // Fetch por status para evitar índices compuestos
                 for (const status of activeStatuses) {
                     const q = query(citasRef, where("status", "==", status));
                     const snap = await getDocs(q);
@@ -51,23 +143,18 @@ export default function DashboardPage() {
                     });
                 }
 
-                // Diccionarios de caché para nombres
-                const nameMap: Record<string, string> = {}; // usuarias
-                const internNameMap: Record<string, string> = {}; // internos
+                const nameMap: Record<string, string> = {};
+                const internNameMap: Record<string, string> = {};
                 
-                // Pre-poblar caché de internos con la lista cargada (si aplica)
                 internosList.forEach(int => {
                     internNameMap[int.uid] = int.displayName || int.email?.split('@')[0] || '';
                 });
                 
-                // Si el usuario actual no está en la caché interna, lo agregamos para "Mis Citas"
                 if (!internNameMap[user.uid]) {
                     internNameMap[user.uid] = user.displayName || 'Tú';
                 }
 
                 const orphanIds = new Set<string>();
-
-                // 1. Resolver nombres de pacientes faltantes
                 const unpopulatedVars = Array.from(new Set(allCitas.filter(c => !c.usuariaName).map(c => c.usuariaId)));
                 if (unpopulatedVars.length > 0) {
                     await Promise.all(unpopulatedVars.map(async (uid) => {
@@ -83,45 +170,14 @@ export default function DashboardPage() {
                     }));
                 }
 
-                // 2. Resolver nombres de internos faltantes (para los que no pasaron por getInterns)
-                const missingInternIds = new Set<string>();
-                allCitas.forEach(c => {
-                    const iid = c.internoPlanificadoId || c.internoAtendioId;
-                    if (iid && !internNameMap[iid]) {
-                        missingInternIds.add(iid);
-                    }
-                });
-
-                if (missingInternIds.size > 0) {
-                    await Promise.all(Array.from(missingInternIds).map(async (uid) => {
-                        try {
-                            const snap = await getDoc(doc(db, "users", uid));
-                            if (snap.exists()) {
-                                const data = snap.data();
-                                internNameMap[uid] = data.displayName || data.email?.split('@')[0] || `ID: ${uid.slice(0, 4)}`;
-                            } else {
-                                internNameMap[uid] = 'Interno Desconocido';
-                            }
-                        } catch { }
-                    }));
-                }
-
-                // 3. Aplicar nombres resueltos a las citas y filtrar huérfanas
                 allCitas = allCitas.filter(c => !orphanIds.has(c.usuariaId)).map(c => {
                     const result = { ...c };
                     if (!result.usuariaName && nameMap[result.usuariaId]) {
                         result.usuariaName = nameMap[result.usuariaId];
                     }
-                    const internId = result.internoPlanificadoId || result.internoAtendioId;
-                    if (internId && internNameMap[internId]) {
-                        // Solo mostramos nombre de interno si estamos en TODO el calendario.
-                        // En "Mis Citas" o si es nuestra grilla no hace tanta falta, pero dejémoslo.
-                        result.internName = internNameMap[internId];
-                    }
                     return result;
                 });
 
-                // 4. Filtrar por Scope
                 if (gridScope === 'TODAS') {
                     setGridCitas(allCitas);
                 } else if (gridScope === 'MIS_CITAS') {
@@ -129,7 +185,6 @@ export default function DashboardPage() {
                         c.internoPlanificadoId === user.uid || c.internoAtendioId === user.uid
                     ));
                 } else {
-                    // Scope es un UID de un interno específico
                     setGridCitas(allCitas.filter(c =>
                         c.internoPlanificadoId === gridScope || c.internoAtendioId === gridScope
                     ));
@@ -146,33 +201,126 @@ export default function DashboardPage() {
     }, [layoutMode, globalActiveYear, user, gridScope, internosList]);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-6 max-w-7xl mx-auto">
+            {/* Header del Dashboard */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/80 pb-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Agenda & Citas</h1>
-                    <p className="text-gray-600">Gestor de asistencia, coberturas e historial clínico.</p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Agenda & Atenciones</h1>
+                    <p className="text-xs sm:text-sm text-slate-500 font-medium">Gestor de atenciones diarias, asignaciones e historial clínico.</p>
                 </div>
-                {/* Layout Toggle */}
-                <div className="flex items-center gap-2">
-                    <div className="flex bg-slate-200/70 p-1 rounded-xl">
+
+                {/* Layout Switcher */}
+                <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                    <div className="flex bg-slate-200/70 p-1 rounded-xl w-full sm:w-auto">
                         <button
                             onClick={() => setLayoutMode('LISTA')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${layoutMode === 'LISTA' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${layoutMode === 'LISTA' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                            Lista
+                            <LayoutList className="w-4 h-4" />
+                            <span>Lista</span>
                         </button>
                         <button
                             onClick={() => setLayoutMode('GRILLA')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${layoutMode === 'GRILLA' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${layoutMode === 'GRILLA' ? 'bg-white shadow-sm text-indigo-700' : 'text-slate-500 hover:text-slate-700'}`}
                         >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
-                            Grilla
+                            <LayoutGrid className="w-4 h-4" />
+                            <span>Grilla</span>
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* Tarjetas KPI de Estado Rápido para el Interno */}
+            {user?.role === 'INTERNO' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <Calendar className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Atenciones de Hoy</span>
+                            <span className="text-xl font-black text-slate-900 block leading-tight">{todayTotalCount} Pacientes</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Completados / Firmados</span>
+                            <span className="text-xl font-black text-slate-900 block leading-tight">{todayCompletedCount} Atendidos</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${unevolvedTodayCitas.length > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Pendientes de Hoy</span>
+                            <span className="text-xl font-black text-slate-900 block leading-tight">{unevolvedTodayCitas.length} por Evolucionar</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN DINÁMICA: Observaciones / Feedback Docente (Solo se renderiza si EXISTEN) */}
+            {docenteFeedbackList.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-xs uppercase tracking-wider">
+                        <Sparkles className="w-4 h-4 text-amber-600" />
+                        <span>Observaciones y Feedback Docente Pendiente</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {docenteFeedbackList.map(item => (
+                            <div key={item.id} className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                <div>
+                                    <span className="text-xs font-bold text-slate-900 block">{item.usuariaName}</span>
+                                    <p className="text-xs text-slate-600 italic mt-0.5">&ldquo;{item.feedback}&rdquo;</p>
+                                </div>
+                                <Link
+                                    href="/app/usuarios"
+                                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition shrink-0 inline-flex items-center gap-1"
+                                >
+                                    <span>Ver y Corregir</span>
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* SECCIÓN DINÁMICA: Borradores / Pendientes de Ayer (Solo se renderiza si EXISTEN) */}
+            {yesterdayDrafts.length > 0 && (
+                <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider">
+                        <AlertCircle className="w-4 h-4 text-rose-600" />
+                        <span>Evoluciones Pendientes de Días Anteriores (Ayer)</span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {yesterdayDrafts.map(item => (
+                            <div key={item.id} className="bg-white p-3 rounded-xl border border-rose-200 flex justify-between items-center gap-2">
+                                <div>
+                                    <span className="text-xs font-bold text-slate-900 block">{item.usuariaName}</span>
+                                    <span className="text-[10px] text-rose-600 font-semibold block">Borrador no cerrado del {item.date}</span>
+                                </div>
+                                <Link
+                                    href="/app/usuarios"
+                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shrink-0"
+                                >
+                                    Firmar Evolución
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Vistas Principales (Lista vs Grilla) */}
             {layoutMode === 'LISTA' ? (
                 <AgendaProView />
             ) : (
@@ -182,7 +330,7 @@ export default function DashboardPage() {
                         <select
                             value={gridScope}
                             onChange={(e) => setGridScope(e.target.value)}
-                            className="bg-white border border-slate-300 text-slate-700 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-100 outline-none shadow-sm min-w-[200px]"
+                            className="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-100 outline-none shadow-xs w-full sm:w-auto"
                         >
                             <option value="TODAS">📅 Agenda General (Todos)</option>
                             <option value="MIS_CITAS">👤 Solo Mis Citas</option>
