@@ -32,6 +32,8 @@ export function HistorialEvolucionesAdmin() {
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [timeRange, setTimeRange] = useState<"ALL" | "7DAYS" | "30DAYS">("ALL");
     const [sortDirection, setSortDirection] = useState<"DESC" | "ASC">("DESC");
+    // Limit de visualización incremental para rendimiento (Paginación suave)
+    const [displayLimit, setDisplayLimit] = useState<number>(25);
 
     // Modal de Vista Detallada de Evolución
     const [detailModalEvol, setDetailModalEvol] = useState<Evolucion | null>(null);
@@ -332,12 +334,13 @@ export function HistorialEvolucionesAdmin() {
                 ) : (
                     <div className="space-y-4">
                         <div className="flex justify-between items-center text-xs font-bold text-slate-500 px-1">
-                            <span>Mostrando {filteredEvoluciones.length} evoluciones</span>
+                            <span>Mostrando {Math.min(displayLimit, filteredEvoluciones.length)} de {filteredEvoluciones.length} evoluciones</span>
                             <span>Ordenado de {sortDirection === "DESC" ? "más reciente a más antiguo" : "más antiguo a más reciente"}</span>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
-                            {filteredEvoluciones.map((ev) => {
+                        {/* Ventana de desplazamiento interno con altura fija para evitar desbordar la página */}
+                        <div className="max-h-[580px] overflow-y-auto pr-2 space-y-4 border border-slate-100 p-2 rounded-2xl bg-slate-50/40">
+                            {filteredEvoluciones.slice(0, displayLimit).map((ev) => {
                                 const paciente = pacientesMap[ev.usuariaId];
                                 const pacienteNombre = paciente?.identity?.fullName || `${(paciente as any)?.nombres || ''} ${(paciente as any)?.apellidos || ''}`.trim() || "Usuaria Desconocida";
                                 const pacienteRut = paciente?.identity?.rut || (paciente as any)?.rut || "Sin RUT";
@@ -458,6 +461,20 @@ export function HistorialEvolucionesAdmin() {
                                     </div>
                                 );
                             })}
+
+                            {displayLimit < filteredEvoluciones.length && (
+                                <div className="pt-3 pb-2 text-center">
+                                    <button
+                                        onClick={() => setDisplayLimit(prev => prev + 25)}
+                                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition inline-flex items-center gap-2"
+                                    >
+                                        <span>Cargar más evoluciones ({filteredEvoluciones.length - displayLimit} restantes)</span>
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
