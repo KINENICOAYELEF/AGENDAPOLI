@@ -37,8 +37,8 @@ export default function DashboardPage() {
     const [internosList, setInternosList] = useState<AppUser[]>([]);
 
     // Alertas y Notificaciones Específicas del Interno
-    const [docenteFeedbackList, setDocenteFeedbackList] = useState<{ id: string; usuariaName: string; feedback: string; date: string }[]>([]);
-    const [yesterdayDrafts, setYesterdayDrafts] = useState<{ id: string; usuariaName: string; date: string }[]>([]);
+    const [docenteFeedbackList, setDocenteFeedbackList] = useState<any[]>([]);
+    const [yesterdayDrafts, setYesterdayDrafts] = useState<any[]>([]);
     const [unevolvedTodayCitas, setUnevolvedTodayCitas] = useState<Cita[]>([]);
     const [todayCompletedCount, setTodayCompletedCount] = useState<number>(0);
     const [todayTotalCount, setTodayTotalCount] = useState<number>(0);
@@ -85,29 +85,37 @@ export default function DashboardPage() {
                 const qEvols = query(evolsRef);
                 const snapEvols = await getDocs(qEvols);
                 
-                const feedbackItems: { id: string; usuariaName: string; feedback: string; date: string }[] = [];
-                const yesterdayItems: { id: string; usuariaName: string; date: string }[] = [];
+                const feedbackItems: any[] = [];
+                const yesterdayItems: any[] = [];
 
                 snapEvols.docs.forEach(d => {
                     const data = d.data() as Evolucion;
                     const isMyEvol = (data as any).clinicianResponsibleUid === user.uid || (data as any).clinicianResponsible === user.uid || data.audit?.createdBy === user.uid;
                     
                     if (isMyEvol) {
-                        // Feedback docente no leído / presente
-                        if (data.handoffText && data.handoffText.trim() !== '') {
+                        // Feedback docente real (docenteComment o docenteFeedback)
+                        const realFeedback = (data as any).docenteComment || (data as any).docenteFeedback;
+                        if (realFeedback && typeof realFeedback === 'string' && realFeedback.trim() !== '') {
                             feedbackItems.push({
                                 id: d.id,
-                                usuariaName: (data as any).usuariaName || 'Paciente',
-                                feedback: data.handoffText,
+                                usuariaId: (data as any).personaUsuariaId || (data as any).usuariaId || '',
+                                usuariaName: (data as any).usuariaName || (data as any).personaUsuariaName || 'Paciente',
+                                feedback: realFeedback,
                                 date: data.sessionAt || ''
                             });
                         }
                         // Borrador de ayer o anterior sin cerrar
-                        if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt < todayStr) {
+                        if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt.split('T')[0] < todayStr) {
+                            let formattedDate = data.sessionAt;
+                            try {
+                                formattedDate = format(new Date(data.sessionAt), 'dd/MM/yyyy');
+                            } catch (e) {}
+
                             yesterdayItems.push({
                                 id: d.id,
-                                usuariaName: (data as any).usuariaName || 'Paciente',
-                                date: data.sessionAt
+                                usuariaId: (data as any).personaUsuariaId || (data as any).usuariaId || '',
+                                usuariaName: (data as any).usuariaName || (data as any).personaUsuariaName || 'Paciente',
+                                date: formattedDate
                             });
                         }
                     }
@@ -281,7 +289,7 @@ export default function DashboardPage() {
                                     <p className="text-xs text-slate-600 italic mt-0.5">&ldquo;{item.feedback}&rdquo;</p>
                                 </div>
                                 <Link
-                                    href="/app/usuarios"
+                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
                                     className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition shrink-0 inline-flex items-center gap-1"
                                 >
                                     <span>Ver y Corregir</span>
@@ -309,7 +317,7 @@ export default function DashboardPage() {
                                     <span className="text-[10px] text-rose-600 font-semibold block">Borrador no cerrado del {item.date}</span>
                                 </div>
                                 <Link
-                                    href="/app/usuarios"
+                                    href={item.usuariaId ? `/app/usuarios?openFicha=${item.usuariaId}&action=EVOLUCIONAR` : '/app/usuarios'}
                                     className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shrink-0"
                                 >
                                     Firmar Evolución

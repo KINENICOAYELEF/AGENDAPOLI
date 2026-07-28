@@ -137,7 +137,7 @@ export function PersonaUsuariaForm({ initialData, initialAction, onClose, onSave
 
     // Control de Sub- vistas (Navegación esclava en modal)
     const [subView, setSubView] = useState<'main' | 'procesos'>(
-        initialAction === 'evolucionar' && initialData?.id ? 'procesos' : 'main'
+        (initialAction?.toLowerCase() === 'evolucionar' || initialAction?.toLowerCase() === 'procesos') && initialData?.id ? 'procesos' : 'main'
     );
 
     // Estado interno del formulario

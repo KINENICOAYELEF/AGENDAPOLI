@@ -36,6 +36,13 @@ export function ProcesosManager({ personaUsuariaId, personaUsuariaName, remoteHi
             setIndexError(null);
             const data = await ProcesosService.getByPersona(globalActiveYear, personaUsuariaId);
             setProcesos(data);
+
+            // Si existe un proceso activo, seleccionarlo directamente para ir al Timeline
+            const active = data.find(p => p.estado === 'ACTIVO') || data[0];
+            if (active) {
+                setSelectedProceso(active);
+                setView('timeline');
+            }
         } catch (error: any) {
             console.error("Error cargando procesos:", error);
             if (error?.message?.includes('indexes?create_composite')) {
