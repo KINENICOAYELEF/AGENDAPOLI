@@ -80,10 +80,18 @@ export default function DashboardPage() {
                 setTodayCompletedCount(completedCount);
                 setUnevolvedTodayCitas(myTodayCitas.filter(c => c.status === 'SCHEDULED'));
 
-                // 2. Evoluciones recientes con Handoff/Feedback Docente o Borradores de Ayer
+                // 2. Cargar personas usuarias activas para validar existencia y nombres reales
+                const usersRef = collection(db, "programs", globalActiveYear, "personasUsuarias");
+                const snapUsers = await getDocs(usersRef);
+                const validUsersMap: Record<string, string> = {};
+                snapUsers.docs.forEach(uDoc => {
+                    const uData = uDoc.data();
+                    validUsersMap[uDoc.id] = uData.identity?.fullName || uData.nombreCompleto || 'Paciente';
+                });
+
+                // 3. Evoluciones recientes con Feedback Docente o Borradores sin cerrar
                 const evolsRef = collection(db, "programs", globalActiveYear, "evoluciones");
-                const qEvols = query(evolsRef);
-                const snapEvols = await getDocs(qEvols);
+                const snapEvols = await getDocs(evolsRef);
                 
                 const feedbackItems: any[] = [];
                 const yesterdayItems: any[] = [];
@@ -91,20 +99,25 @@ export default function DashboardPage() {
                 snapEvols.docs.forEach(d => {
                     const data = d.data() as Evolucion;
                     const isMyEvol = (data as any).clinicianResponsibleUid === user.uid || (data as any).clinicianResponsible === user.uid || data.audit?.createdBy === user.uid;
+                    const pid = (data as any).personaUsuariaId || (data as any).usuariaId || '';
                     
-                    if (isMyEvol) {
+                    // Si el paciente fue eliminado o no existe en la BD, se descarta para no dejar huérfanos
+                    if (isMyEvol && pid && validUsersMap[pid]) {
+                        const realName = validUsersMap[pid];
+
                         // Feedback docente real (docenteComment o docenteFeedback)
                         const realFeedback = (data as any).docenteComment || (data as any).docenteFeedback;
                         if (realFeedback && typeof realFeedback === 'string' && realFeedback.trim() !== '') {
                             feedbackItems.push({
                                 id: d.id,
-                                usuariaId: (data as any).personaUsuariaId || (data as any).usuariaId || '',
-                                usuariaName: (data as any).usuariaName || (data as any).personaUsuariaName || 'Paciente',
+                                usuariaId: pid,
+                                usuariaName: realName,
                                 feedback: realFeedback,
                                 date: data.sessionAt || ''
                             });
                         }
-                        // Borrador de ayer o anterior sin cerrar
+
+                        // Borrador de días anteriores sin cerrar (perteneciente a este interno)
                         if (data.status === 'DRAFT' && data.sessionAt && data.sessionAt.split('T')[0] < todayStr) {
                             let formattedDate = data.sessionAt;
                             try {
@@ -113,16 +126,16 @@ export default function DashboardPage() {
 
                             yesterdayItems.push({
                                 id: d.id,
-                                usuariaId: (data as any).personaUsuariaId || (data as any).usuariaId || '',
-                                usuariaName: (data as any).usuariaName || (data as any).personaUsuariaName || 'Paciente',
+                                usuariaId: pid,
+                                usuariaName: realName,
                                 date: formattedDate
                             });
                         }
                     }
                 });
 
-                setDocenteFeedbackList(feedbackItems.slice(0, 3));
-                setYesterdayDrafts(yesterdayItems.slice(0, 3));
+                setDocenteFeedbackList(feedbackItems.slice(0, 5));
+                setYesterdayDrafts(yesterdayItems.slice(0, 5));
 
             } catch (err) {
                 console.error("Error cargando alertas de interno:", err);
@@ -306,7 +319,7 @@ export default function DashboardPage() {
                 <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
                     <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider">
                         <AlertCircle className="w-4 h-4 text-rose-600" />
-                        <span>Evoluciones Pendientes de Días Anteriores (Ayer)</span>
+                        <span>Evoluciones Pendientes de Firmar (Días Anteriores)</span>
                     </div>
 
                     <div className="space-y-2">
