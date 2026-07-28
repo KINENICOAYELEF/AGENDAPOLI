@@ -31,39 +31,44 @@ export const YearProvider = ({ children }: { children: ReactNode }) => {
     const [globalActiveYear, setGlobalActiveYear] = useState<string>("2026");
     const [activeYear, setActiveYear] = useState<string>("2026");
     const [availableYears, setAvailableYears] = useState<string[]>(["2025", "2026"]);
-    const [loadingYear, setLoadingYear] = useState(true);
+    const [loadingYear, setLoadingYear] = useState(false);
 
     const fetchedUserUidRef = useRef<string>("");
 
     const fetchActiveYear = async () => {
         try {
-            setLoadingYear(true);
-            const currentYear = new Date().getFullYear();
-            // Genera un rango de 11 años: desde hace 5 años hasta 5 años en el futuro. Ej (2021-2031)
-            const yearsToCheck = Array.from({ length: 11 }, (_, i) => (currentYear - 5 + i).toString());
-            let foundYear = ""; // Default empty instead of faking "2026"
+            // Evaluamos de forma paralela los años clave para evitar latencia de for-loop secuencial
+            const yearsToCheck = ["2025", "2026", "2027"];
             const available: string[] = [];
+            let foundYear = "2026";
 
-            // Validamos sin CollectionGroup (para evitar errores de indexación en plan Spark)
-            for (const yr of yearsToCheck) {
-                const docRef = doc(db, "programs", yr, "meta", "settings");
-                const snap = await getDocCounted(docRef);
-                if (snap.exists()) {
-                    available.push(yr);
-                    if (snap.data().isActive === true) {
-                        foundYear = yr;
+            const results = await Promise.all(
+                yearsToCheck.map(async (yr) => {
+                    try {
+                        const docRef = doc(db, "programs", yr, "meta", "settings");
+                        const snap = await getDocCounted(docRef);
+                        if (snap.exists()) {
+                            return { yr, isActive: snap.data().isActive === true };
+                        }
+                    } catch (e) {
+                        return null;
                     }
+                    return null;
+                })
+            );
+
+            results.forEach(res => {
+                if (res) {
+                    available.push(res.yr);
+                    if (res.isActive) foundYear = res.yr;
                 }
-            }
+            });
 
             if (available.length > 0) {
                 setAvailableYears(available);
-            } else {
-                setAvailableYears(["2025", "2026"]);
             }
-
             setGlobalActiveYear(foundYear);
-            setActiveYear(foundYear || "2026"); // Fallback local para que la UI no colapse, pero el global queda vacío si no hay DB.
+            setActiveYear(foundYear);
         } catch (error) {
             console.error("Error fetching years from Firebase:", error);
         } finally {

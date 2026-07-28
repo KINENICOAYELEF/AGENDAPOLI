@@ -317,11 +317,12 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                             {items.map((item, idx) => {
                                 const isEval = item.type === 'evaluacion';
                                 const isReeval = isEval && (item.data as Evaluacion).type === 'REEVALUATION';
+                                const isDraftEvol = !isEval && (item.data as Evolucion).status === 'DRAFT';
 
                                 return (
                                     <div key={item.data.id || idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group select-none">
                                         {/* Marker */}
-                                        <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 border-white bg-slate-200 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 ${isEval ? (isReeval ? 'bg-emerald-500' : 'bg-slate-800') : 'bg-indigo-500'
+                                        <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 border-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 ${isDraftEvol ? 'bg-amber-500 animate-bounce' : isEval ? (isReeval ? 'bg-emerald-500' : 'bg-slate-800') : 'bg-indigo-500'
                                             }`}>
                                             {isEval ? (
                                                 isReeval ? <ArrowPathIcon className="w-3 h-3 text-white" /> : <ClipboardIcon className="w-3 h-3 text-white" />
@@ -332,7 +333,11 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
 
                                         {/* Card */}
                                         <div
-                                            className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
+                                            className={`w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-4 rounded-2xl border transition-all cursor-pointer ${
+                                                isDraftEvol 
+                                                    ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/90 border-amber-300 ring-2 ring-amber-400 shadow-md' 
+                                                    : 'bg-white border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200'
+                                            }`}
                                             onClick={() => {
                                                 if (isEval) {
                                                     setSelectedEval(item.data as Evaluacion);
@@ -343,15 +348,31 @@ export function ProcesoTimeline({ personaUsuariaId, personaUsuariaName, proceso,
                                                 }
                                             }}
                                         >
+                                            {/* ALERTA DE BORRADOR SIN FIRMAR */}
+                                            {isDraftEvol && (
+                                                <div className="mb-3 bg-amber-500 text-white px-3 py-1.5 rounded-xl flex items-center justify-between shadow-xs">
+                                                    <span className="text-xs font-black flex items-center gap-1.5 tracking-wide">
+                                                        <span>⚠️</span> BORRADOR PENDIENTE
+                                                    </span>
+                                                    <span className="text-[10px] bg-white text-amber-900 px-2 py-0.5 rounded-lg font-black uppercase shadow-xs">
+                                                        ✍️ FIRMAR AHORA
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="text-[10px] font-bold text-slate-400">
                                                     {new Date(item.data.sessionAt || 0).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                                                 </span>
-                                                {isEval && (
+                                                {isEval ? (
                                                     <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${(item.data as Evaluacion).status === 'CLOSED' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'}`}>
                                                         {(item.data as Evaluacion).status === 'CLOSED' ? 'Cerrada' : 'Abierta'}
                                                     </span>
-                                                )}
+                                                ) : isDraftEvol ? (
+                                                    <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                                                        Borrador Abierto
+                                                    </span>
+                                                ) : null}
                                             </div>
                                             <div className="text-sm font-bold text-slate-800 leading-tight mb-2">
                                                 {isEval ? (isReeval ? 'Re-Evaluación Seguimiento' : 'Evaluación Inicial') : 'Evolución de Sesión'}
