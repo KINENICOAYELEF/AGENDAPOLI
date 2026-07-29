@@ -458,7 +458,7 @@ export const HIP_TOPICS: HipTopic[] = [
     },
     {
         id: "c3.2",
-        nombre: "3.2 — Rango activo, pasivo y contracturas",
+        nombre: "3.2 — Rango de movimiento activo, pasivo y restricciones articulares",
         categoria: "Evaluación Post-Artroplastia",
         contenidoBase: `
 - Evaluación Goniométrica Estandarizada de Cadera Post-PTC:
@@ -824,7 +824,7 @@ export const HIP_TOPICS: HipTopic[] = [
     },
     {
         id: "c6.2",
-        nombre: "6.2 — Evaluación y diagnóstico diferencial",
+        nombre: "6.2 — Evaluación clínica y diagnóstico diferencial del GTPS",
         categoria: "Dolor Lateral de Cadera",
         contenidoBase: `
 - Evaluación Clínica Específica de GTPS / Tendinopatía Glutéala (Batería diagnóstica de alta precisión):
@@ -981,7 +981,7 @@ export const HIP_TOPICS: HipTopic[] = [
             "Cuáles son los criterios del Consenso de Doha para clasificar el dolor relacionado con el Iliopsoas?",
             " Explica el mecanismo biomecánico del resalte interno de cadera (Coxa Saltans Interna) y sobre qué estructuras salta el tendón del psoas.",
             "¿Cómo realizas el diagnóstico diferencial entre un resalte interno del psoas y un chasquido intraarticular por rotura labral?",
-            "¿Por qué la hiperactividad compensatoria del Iliopsoas suele asociarse a una amnesia o inhibición neuromuscular del Glúteo Mayor?"
+            "¿Por qué la hiperactividad compensatoria del Iliopsoas suele asociarse a una inhibición artrogénica del Glúteo Mayor (arthrogenic muscle inhibition)?"
         ],
         casoEtapa3: `"Bailarina de 20 años presenta chasquido doloroso 5/10 en la cara anterior de la ingle al bajar la pierna desde un passe o grand battement. La palpación en la fosa ilíaca es muy sensible." Diagnostica la estructura afectada y propón 2 ejercicios de reeducación neuromuscular.`,
         preguntasEtapa4: [

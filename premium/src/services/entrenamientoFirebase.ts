@@ -217,17 +217,68 @@ export const selectOptimalTopicForUser = async (userId: string): Promise<{ topic
     return { topic: fallback, historicalErrors: [] };
 };
 
-// Obtener todos los perfiles de estudiantes para la vista Docente
-export const getAllStudentTrainingProfiles = async (): Promise<UserTrainingProfile[]> => {
+export interface StudentTrainingView {
+    profile: UserTrainingProfile;
+    displayName: string;
+    email: string;
+    role: string;
+}
+
+// Obtener todos los perfiles de estudiantes con nombres e información de usuario para la vista Docente
+export const getDetailedStudentTrainingProfiles = async (): Promise<StudentTrainingView[]> => {
     try {
-        const querySnapshot = await getDocs(collection(db, 'training_profiles'));
-        const profiles: UserTrainingProfile[] = [];
-        querySnapshot.forEach((docSnap) => {
-            profiles.push(docSnap.data() as UserTrainingProfile);
+        // 1. Obtener todos los perfiles de entrenamiento
+        const profilesSnap = await getDocs(collection(db, 'training_profiles'));
+        const profilesMap: Record<string, UserTrainingProfile> = {};
+        profilesSnap.forEach((docSnap) => {
+            profilesMap[docSnap.id] = docSnap.data() as UserTrainingProfile;
         });
-        return profiles;
+
+        // 2. Obtener todos los usuarios registrados
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const results: StudentTrainingView[] = [];
+
+        usersSnap.forEach((docSnap) => {
+            const userData = docSnap.data();
+            const uid = docSnap.id;
+            const userProfile = profilesMap[uid] || {
+                userId: uid,
+                temas: {},
+                retosCompletadosTotal: 0,
+                ultimaSesionSemana: null,
+                sesionesCompletadasEstaSemana: 0,
+                estiloCognitivo: 'NEUTRO'
+            };
+
+            results.push({
+                profile: userProfile,
+                displayName: userData.displayName || userData.name || `Usuario (${uid.substring(0, 6)})`,
+                email: userData.email || 'Sin email',
+                role: userData.role || 'INTERNO'
+            });
+        });
+
+        // Incluir cualquier perfil que esté en training_profiles pero no en users
+        Object.keys(profilesMap).forEach(uid => {
+            if (!results.some(r => r.profile.userId === uid)) {
+                results.push({
+                    profile: profilesMap[uid],
+                    displayName: `Usuario (${uid.substring(0, 6)})`,
+                    email: 'Sin email',
+                    role: 'INTERNO'
+                });
+            }
+        });
+
+        return results;
     } catch (error) {
-        console.error("Error al obtener perfiles de estudiantes:", error);
+        console.error("Error al obtener perfiles detallados de estudiantes:", error);
         return [];
     }
+};
+
+// Mantener compatibilidad previa
+export const getAllStudentTrainingProfiles = async (): Promise<UserTrainingProfile[]> => {
+    const detailed = await getDetailedStudentTrainingProfiles();
+    return detailed.map(d => d.profile);
 };
