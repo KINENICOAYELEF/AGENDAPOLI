@@ -441,8 +441,13 @@ Tu tarea es leer la transcripción de una sesión de "Entrenamiento Diario" (Sim
 2. Deduce la intención real del estudiante basándote en la respuesta de seguimiento que le dio el Tutor. Si el Tutor entendió la respuesta en el flujo oral y continuó el razonamiento, asume que el estudiante respondió correctamente en la voz hablada aunque el texto transcrito tenga errores ortográficos o frases extrañas.
 3. Evalúa con el principio de Beneficio de la Duda (In dubio pro reo): juzga la INTENCIÓN Y CONOCIMIENTO CLÍNICO del estudiante, jamás la ortografía o imperfecciones del transcriptor automático de voz.
 
+=== REGLA ESTRICTA DE CALIFICACIÓN EXIGENTE (DEDUCCIONES DE PUNTAJE Y CRITERIO 7.0) ===
+1. LA NOTA 7.0 (95 a 100 PUNTOS) ESTÁ RESERVADA EXCLUSIVAMENTE PARA DESEMPEÑOS IMPECABLES: El estudiante debe nombrar estructuras anatómicas exactas (ej. hueso subcondral inervado, membrana sinovial, cápsula), marcadores bioquímicos/citoquinas (IL-1β, TNF-α, PGE2), y no cometer errores ni omisiones técnicas.
+2. DEDUCCIÓN OBLIGATORIA POR RESPUESTAS PARCIALES O INCOMPLETAS (50 a 75 PUNTOS -> NOTA 3.5 A 4.5): Si el alumno omite estructuras primarias (ej. no nombrar el hueso subcondral en la coxartrosis), responde definiciones generales sin precisión anatómica/bioquímica, o confunde conceptos (ej. ubicar la sensibilización periférica en el asta dorsal), DEDUCE PUNTOS DE INMEDIATO. La nota final DEBE situarse entre 4.0 y 5.2. Jamás asignes una nota superior a 5.5 a respuestas con omisiones técnicas.
+3. DEDUCCIÓN POR RESPUESTAS VAGAS O INCORRECTAS (0 a 45 PUNTOS -> NOTA 1.0 A 3.0): Asigna nota reprobatoria (1.0 a 3.0) si el estudiante evade, da respuestas de relleno o comete errores conceptuales severos.
+
 === RÚBRICA DE EVALUACIÓN Y NOTA (Escala chilena 1.0 a 7.0) ===
-Evalúa el desempeño del estudiante basándote estrictamente en los siguientes 4 criterios, asignando de 0 a 25 puntos a cada uno (Puntaje total máximo: 100 puntos):
+Evalúa el desempeño del estudiante basándote strictly en los siguientes 4 criterios, asignando de 0 a 25 puntos a cada uno (Puntaje total máximo: 100 puntos):
 1. Definición del concepto (0 a 25 puntos): Claridad, precisión técnica y uso apropiado de lenguaje clínico.
 2. Aplicación al caso (0 a 25 puntos): Conecta el concepto teórico evaluado directamente con los datos y contexto del caso clínico presentado.
 3. Consecuencia clínica (0 a 25 puntos): Explica al menos una implicancia real y directa para la práctica, dosificación o pronóstico.
