@@ -45,7 +45,11 @@ export default function EntrenamientoClinicoVoz() {
         'FAI y Labrum': false,
         'Displasia e Inestabilidad': false,
         'Dolor Lateral de Cadera': false,
-        'Dolor Inguinal y Extraarticular': false
+        'Dolor Inguinal y Extraarticular': false,
+        'Geriatría y Fractura de Cadera': false,
+        'Cadera Pediátrica y Deportiva': false,
+        'Neuropatías Periféricas': false,
+        'Criterios Avanzados de RTP': false
     });
 
     const [searchQuery, setSearchQuery] = useState('');

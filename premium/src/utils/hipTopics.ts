@@ -1,7 +1,7 @@
 export interface HipTopic {
     id: string;
     nombre: string;
-    categoria: 'Coxartrosis' | 'Artroplastia (PTC)' | 'Evaluación Post-Artroplastia' | 'FAI y Labrum' | 'Displasia e Inestabilidad' | 'Dolor Lateral de Cadera' | 'Dolor Inguinal y Extraarticular';
+    categoria: 'Coxartrosis' | 'Artroplastia (PTC)' | 'Evaluación Post-Artroplastia' | 'FAI y Labrum' | 'Displasia e Inestabilidad' | 'Dolor Lateral de Cadera' | 'Dolor Inguinal y Extraarticular' | 'Geriatría y Fractura de Cadera' | 'Cadera Pediátrica y Deportiva' | 'Neuropatías Periféricas' | 'Criterios Avanzados de RTP';
     contenidoBase: string;
     preguntasEtapa2: string[];
     casoEtapa3: string;
@@ -1100,11 +1100,134 @@ export const HIP_TOPICS: HipTopic[] = [
             "¿Cuáles son los 4 criterios clínicos y funcionales obligatorios que debe cumplir un deportista para autorizar el alta y retorno competitivo (RTP) tras un desgarro muscular de aductor o isquiosural?",
             " Explica la importancia de la dosificación de ejercicios excéntricos de alta velocidad en las etapas finales de la rehabilitación muscular."
         ],
-        casoEtapa3: `"Futbolista de 21 años sufrió un desgarro miotendinoso del recto anterior derecho hace 3 semanas. No siente dolor al caminar (0/10) y pide entrar a jugar el partido del fin de semana. En la evaluación: dolor 4/10 al patear balón y LSI de fuerza de 70%." Argumenta si le das el alta y cuál es tu plan de las próximas 2 semanas.`,
+        casoEtapa3: `"Futbolista de 21 años sufrió un desgarro miotendinoso del recto anterior derecho hace 3 semanas. No siente dolor al caminar (0/10) y pide entrar a jugar el partido del fin de semana. En la evaluación: dolor 4/10 al patear balón y LSI de fuerza de 70%." Argumenta si le das el alta y cuál is tu plan de las próximas 2 semanas.`,
         preguntasEtapa4: [
             "¿Por qué las lesiones de la unión intratendinosa (BAMIC Tipo C) requieren casi el doble de tiempo de recuperación que las lesiones miofasciales periféricas?",
             "¿Qué es la prueba de Nordics (Nordic Hamstring Exercise) y qué evidencia existe sobre su uso en la prevención de re-lesiones?",
             "¿Cómo se diferencia clínicamente en las primeras 48 horas una contusión muscular simple (charquicán/bocadillo) de un desgarro muscular por distracción?"
         ]
+    },
+
+    // ────────────── CATEGORÍA 8: GERIATRÍA Y FRACTURA DE CADERA ──────────────
+    {
+        id: "c8.1",
+        nombre: "8.1 — Manejo kinesiológico integral de la fractura de cadera en adulto mayor",
+        categoria: "Geriatría y Fractura de Cadera",
+        contenidoBase: `
+- Fracturas de Cadera en Adulto Mayor: urgencia traumatológica y geriátrica mayor.
+- Clasificación Quirúrgica y Biomecánica:
+  1. Intracapsulares (Cuello Femoral): alto riesgo de osteonecrosis de la cabeza femoral por interrupción de la arteria circunfleja femoral medial. Tratamiento: Hemiartroplastia o PTC en pacientes independientes, osteosíntesis con tornillos canulados en jóvenes.
+  2. Extracapsulares (Intertrocantéricas y Subtrocantéricas): buena vascularización, conservan cabeza femoral. Tratamiento: Clavo Cefalomedular (PFNA) o placa DHS (Dynamic Hip Screw).
+- Directrices EBM de Rehabilitación Inmediata (NICE / AAOS 2024):
+  - Movilización y bipedestación con carga según tolerancia en las primeras 24-48 horas postoperatorias (salvo contraindicación quirúrgica explícita).
+  - Manejo y prevención activa del Delírium postquirúrgico (orientación espacio-temporal, movilización precoz, manejo del dolor sin dosis excesivas de opióides).
+  - Entrenamiento de transferencias (cama-silla, silla-bipedestación) y reeducación de la marcha con andador/bastones.
+  - Plan de prevención de caídas post-alta: evaluación del entorno domiciliario, fortalecimiento de cuádriceps/glúteos y reentrenamiento del equilibrio dinámico.
+`,
+        preguntasEtapa2: [
+            "Diferencia el comportamiento vascular y quirúrgico entre una fractura intracapsular del cuello femoral y una fractura extracapsular intertrocantérica.",
+            "¿Cuáles son las justificaciones biológicas y funcionales de la bipedestación con carga precoz antes de las 48 horas postquirúrgicas en el adulto mayor?",
+            "¿Qué rol cumple el kinesiólogo en la prevención y manejo del delírium hiperactivo o hipoactivo en las primeras 72 horas hospitalarias?",
+            " Explica los componentes clave de una pauta de prevención secundaria de caídas al momento del alta hospitalaria."
+        ],
+        casoEtapa3: `"Don Osvaldo, 84 años, operado de osteosíntesis por clavo cefalomedular PFNA por fractura intertrocantérica derecha hace 36 horas. Presenta desorientación moderada y rechaza ponerse de pie por miedo a romper la cadera." Diseña tu abordaje kinesiológico inicial para lograr la primera transferencia y carga indolora.`,
+        preguntasEtapa4: [
+            "¿Por qué la hemiartroplastia es de elección sobre la osteosíntesis en pacientes ancianos con fractura desplazada de cuello femoral?",
+            "¿Qué tests funcionales estandarizados (ej: TUG, SPPB) recomiendan las guías clínicas para evaluar el riesgo de re-caída al mes del alta?",
+            "¿Cómo se dosifica el ejercicio terapéutico progresivo en un adulto mayor con sarcopenia y osteopenia severa post-fractura de cadera?"
+        ]
+    },
+
+    // ────────────── CATEGORÍA 9: CADERA PEDIÁTRICA Y DEPORTIVA ──────────────
+    {
+        id: "c8.2",
+        nombre: "8.2 — Cadera pediátrica y adolescente: Perthes, Epifisiolisis y Avulsiones Apofisarias",
+        categoria: "Cadera Pediátrica y Deportiva",
+        contenidoBase: `
+- Patología Pediátrica y Juvenil de Cadera: requiriere diagnóstico precoz para evitar deformidades estructurales irreversibles.
+- Enfermedad de Legg-Calvé-Perthes: necrosis avascular idiopática de la epífisis femoral en niños (frecuente entre 4 y 8 años). Presentación: cojera insidiosa e indolora o dolor leve en ingle/rodilla con limitación de abducción y rotación interna.
+- Epifisiolisis Femoral Proximal (SCFE - Slipped Capital Femoral Epiphysis): desplazamiento del cuello femoral respecto a la epífisis en adolescentes (10-15 años, sobrepeso o brote de crecimiento). Urgencia ortopédica (riesgo de condrólisis y avascularidad). Signo clínico clásico: rotación externa obligada durante la flexión pasiva de cadera (Signo de Drehmann positivo).
+- Avulsiones Apofisarias en Deportistas Jóvenes: tracción brusca de cartílago de crecimiento no fusionado en inserciones musculares:
+  1. Espina Ilíaca Anteroinferior (EIAA): tracción del Recto Anterior.
+  2. Espina Ilíaca Anterosuperior (EIAS): tracción del Tensor de la Fascia Lata / Sartorio.
+  3. Tuberosidad Isquiática: tracción de Isquiosurales.
+`,
+        preguntasEtapa2: [
+            "¿Cómo diferencia clínicamente la presentación típica de la Enfermedad de Legg-Calvé-Perthes de la Epifisiolisis Femoral Proximal (SCFE)?",
+            " Explica el Signo de Drehmann y su significado biomecánico en la evaluación de un adolescente con sospecha de SCFE.",
+            "¿Cuáles son las localizaciones anatómicas más frecuentes de avulsión apofisaria por tracción muscular en atletas adolescentes y qué músculos las provocan?",
+            "¿Por qué una epifisiolisis femoral proximal requiere reposo absoluto de carga y derivación quirúrgica urgente a traumatología infantil?"
+        ],
+        casoEtapa3: `"Mateo, 13 años, futbolista en brote de crecimiento (IMC percentil 92), consulta por dolor en ingle y cojera de 2 semanas. Al evaluar la flexión pasiva de cadera derecha, la pierna se va automáticamente a rotación externa e inclinación lateral (Signo de Drehmann +)." Argumenta cuál es tu conducta inmediata como kinesiólogo.`,
+        preguntasEtapa4: [
+            "¿Qué secuelas morfológicas a largo plazo (ej. deformidad en empuñadura de pistola / Cam FAI) genera una epifisiolisis no diagnosticada a tiempo?",
+            "¿Cuál es el protocolo de manejo conservador y progresión de carga tras una avulsión de la EIAA en un velocista de 15 años?",
+            "¿Por qué el dolor referido a la cara anterior de la rodilla en niños siempre debe obligar a examinar la articulación coxofemoral?"
+        ]
+    },
+
+    // ────────────── CATEGORÍA 10: NEUROPATÍAS PERIFÉRICAS ──────────────
+    {
+        id: "c8.3",
+        nombre: "8.3 — Neuropatías periféricas y atrapamientos nerviosos periarticulares",
+        categoria: "Neuropatías Periféricas",
+        contenidoBase: `
+- Neuropatías Periféricas de Cadera y Pelvis: cuadros a menudo subdiagnósticados o confundidos con radiculopatías lumbares o tendinopatías.
+- Meralgia Parestésica (Neuropatía del Nervio Cutáneo Femoral Lateral - LCFN):
+  - Compresión del LCFN al pasar bajo el ligamento inguinal (cerca de la EIAS).
+  - Clínica: disestesias, ardor, adormecimiento y alodinia estricta en la cara anterolateral del muslo (patrón en "bolsillo de pantalón"). Sin déficit motor.
+  - Factores favorecedores: ropa ajustada, cinturones pesados, obesidad, embarazo o postura prolongada en bipedestación.
+- Atrapamiento del Nervio Ciático Próximo / Síndrome del Espacio Glúteo Profundo (Deep Gluteal Syndrome - DGS):
+  - Compresión no discogénica del nervio ciático en el espacio subglúteo (por bandas fibrosas, músculo piriforme, gemelos/obturador interno o vasos aberrantes).
+  - Clínica: dolor en glúteo profundo que se irradia por cara posterior del muslo, exacerbado por la sedestación prolongada (>30 min), y maniobras de provocación en flexión, aducción y rotación interna de cadera (FADIR modificada / FAIR test).
+`,
+        preguntasEtapa2: [
+            "Diferencia la Meralgia Parestésica de una radiculopatía lumbar L3-L4 en cuanto a territorio sensitivo y hallazgos motores.",
+            " Explica la anatomía del Espacio Glúteo Profundo (Deep Gluteal Space) y las estructuras que pueden atrapar al nervio ciático a este nivel.",
+            "¿Cuáles son las maniobras de neurodinamia y provocación clínica específicas para desencadenar el dolor en el Síndrome del Espacio Glúteo Profundo?",
+            "¿Qué intervenciones conservadoras EBM (educación, desensibilización, neurodinamia, modificación de carga) se aplican en la Meralgia Parestésica?"
+        ],
+        casoEtapa3: `"Paciente de 42 años, conductor de camión, consulta por dolor ardoroso y sensación de "quemadura" en la cara anterolateral del muslo derecho de 3 meses. Refiere que empeora al usar cinturón de seguridad ajustado. La evaluación motora y los reflejos rotulianos son 100% normales." Formula tu hipótesis diagnóstica y tu plan kinesiológico de desensibilización.`,
+        preguntasEtapa4: [
+            "¿Por qué la prueba de la postura en sedestación sobre un objeto duro (Wallet sign / signo de la billetera) es orientadora del síndrome del piriforme/espacio glúteo?",
+            "¿Qué diferencias existen entre el neurodeslizamiento (slider) y la tensión neural (tensioner) en la rehabilitación del nervio ciático o cutáneo femoral lateral?",
+            "¿Cuándo se considera fallido el tratamiento conservador y se indica una liberación artroscópica del nervio ciático en el espacio subglúteo?"
+        ]
+    },
+
+    // ────────────── CATEGORÍA 11: CRITERIOS AVANZADOS DE RTP ──────────────
+    {
+        id: "c8.4",
+        nombre: "8.4 — Criterios avanzados EBM de Return to Play (RTP) y evaluación objetiva de carga",
+        categoria: "Criterios Avanzados de RTP",
+        contenidoBase: `
+- Retorno al Deporte y la Competición (RTP - Return to Play) en Cadera EBM 2026:
+  - Abandono definitivo de criterios arbitrarios basados únicamente en "tiempo transcurrido" (ej: "esperar 4 meses") o "ausencia de dolor en reposo".
+  - Transición por fases estandarizadas: Return to Activity -> Return to Sport -> Return to Performance.
+- Batería de Evaluación Objetiva Multidimensional:
+  1. Dinamometría Isométrica de Mano (Hand-Held Dynamometry - HHD):
+     - Medición objetiva del torque abductor, aductor y flexor de cadera en N·m/kg.
+     - Criterio de simetría: LSI (Limb Symmetry Index) ≥90-95% en comparación con la extremidad sana previa.
+     - Ratio Aductor/Abductor: debe ser de al menos 80-100% para prevenir pubalgias y re-lesiones aductores.
+  2. Cuestionarios Validados PROMs (Patient-Reported Outcome Measures):
+     - iHOT-33 (International Hip Outcome Tool) o HOOS (Hip disability and Osteoarthritis Outcome Score) >85-90 puntos.
+     - Escala Hip-RSI (Hip Return to Sport after Injury): evaluación del componente psicológico, aprensión y confianza neurocognitiva.
+  3. Pruebas Funcionales y Biomecánicas de Alta Velocidad:
+     - Single Leg Hop Test, Triple Hop Test y Side Hop Test con análisis cualitativo del control del valgo dinámico.
+     - Pruebas de desaceleración brusca y cambios de dirección (ej: Y-Balance Test, T-Test) monitoreadas sin mecanismos de compensación pélvica.
+`,
+        preguntasEtapa2: [
+            " Explica por qué el LSI (Limb Symmetry Index) de fuerza abductora y aductora mediante dinamometría es superior a la escala manual de Daniels en la toma de decisión de RTP.",
+            "¿Cuál es el valor mínimo recomendado del cuestionario iHOT-33 y de la escala Hip-RSI para autorizar el retorno competitivo en atletas intervenidos de FAI?",
+            " Explica la batería de saltos unilaterales (Hop Tests) aplicados a la articulación de la cadera y qué aspectos cualitativos deben observarse además de la distancia alcanzada.",
+            "¿De qué manera el ratio de fuerza aductor/abductor influye en el riesgo de recidiva de dolor inguinal en deportistas de cambio de dirección?"
+        ],
+        casoEtapa3: `"Jugadora de hockey de 24 años, 5 meses post-operada de artroscopia de cadera por FAI Cam. No presenta dolor (0/10) al trotar y exige alta para la final del torneo. En la dinamometría HHD: LSI abductor es de 78%, Hip-RSI es de 62/100 (alta aprensión a caer) y muestra valgo dinámico compensatorio en el Single Leg Hop." Fundamenta clínicamente tu decisión sobre el alta competitiva.`,
+        preguntasEtapa4: [
+            "¿Qué es la brecha entre el 'Return to Sport' (RTS) y el 'Return to Performance' (RTP) y cómo se gestiona en la fase final de rehabilitación?",
+            "¿Qué métricas de carga externa (ej: GPS, acelerometría) y carga interna (RPE acumulada) ayudan a monitorear la progresión de volumen e intensidad pre-competencia?",
+            "¿Cómo influyen los déficits de control motor pélvico en el plano frontal y transversal durante la caída de un salto en el estrés de cizallamiento labral?"
+        ]
     }
 ];
+
