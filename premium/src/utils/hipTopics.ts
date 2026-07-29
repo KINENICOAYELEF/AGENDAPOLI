@@ -652,14 +652,14 @@ export const HIP_TOPICS: HipTopic[] = [
 - Pilares del Tratamiento Kinesiológico del FAI:
   1. Modificación del patrón de carga y educación ergonómica: evitar temporalmente posiciones de pinzamiento (flexión profunda >90° + aducción + RI), adaptar altura de asientos, modificar técnica de sentadilla.
   2. Control Neuromuscular Lumbopélvico y Estabilizadores profundos: fortalecer glúteo mayor, abductores y rotadores profundos (obturadores/gemelos) para centrar dinámicamente la cabeza femoral y evitar la traslación anterior.
-  3. Control del tono del Iliopsoas y Tensor de la Fascia Lata: frecuentemente hiperactivos en compensación.
+  3. Modulación de carga de flexores y abductores superficiales (Iliopsoas y TFL): reducir la irritabilidad inicial y mejorar la tolerancia al movimiento.
   4. Exposición Progresiva a la carga y rango: reintroducción gradual de la flexión profunda y rotación interna bajo control de dolor (≤3/10).
 `,
         preguntasEtapa2: [
             "¿Cuáles son los 3 pilares del tratamiento conservador kinesiológico en el Síndrome de FAI según los ensayos clínicos contemporáneos (ej: UK FashIoN)?",
             " Explica por qué el fortalecimiento de los rotadores profundos de cadera (obturadores, gemelos) ayuda a reducir el choque biomecánico en FAI.",
             "¿Cómo adaptas ergonómicamente las actividades laborales y de entrenamiento de un deportista con FAI sintomático en la fase reactiva?",
-            "¿Qué estrategia de ejercicio utilizas para reducir la dominancia compensatoria del Tensor de la Fascia Lata (TFL) sobre el Glúteo Medio?"
+            "¿Qué estrategia de ejercicio utilizas para optimizar la coactivación del Glúteo Medio y reducir la irritabilidad sintomática del TFL en FAI?"
         ],
         casoEtapa3: `"Crossfitter de 27 años con FAI Cam sintomático. Su dolor inguinal 6/10 ocurre al hacer sentadillas profundas (deep squat). Se niega a dejar de entrenar." Diseña las modificaciones inmediatas de su sentadilla (rango, stance, carga) y su plan neuromuscular de 4 semanas.`,
         preguntasEtapa4: [
@@ -739,7 +739,7 @@ export const HIP_TOPICS: HipTopic[] = [
         casoEtapa3: `"Bailarina de 19 años con Beighton Score 7/9. Consulta por dolor inguinal y sensación de que la cadera 'se desencaja' al hacer extensiones. Su profesor le pide que estire más la cadera abriendo de piernas." Justifica clínicamente por qué debes contraindicar ese estiramiento y cuál es tu plan.`,
         preguntasEtapa4: [
             "¿Qué prueba clínica específica (ej. Abduction-Hyperextension-External Rotation Test / AHRE test) evalúa la inestabilidad anterior de cadera?",
-            "¿Por qué el músculo Iliopsoas se vuelve contracturado/hiperactivo de forma compensatoria en pacientes con microinestabilidad anterior?",
+            "¿Por qué el músculo Iliopsoas incrementa su actividad electromiográfica de coactivación en pacientes con microinestabilidad anterior como mecanismo protector?",
             "¿Qué es la plicatura capsular y qué efecto tiene sobre el volumen de la cavidad articular?"
         ]
     },
@@ -975,7 +975,7 @@ export const HIP_TOPICS: HipTopic[] = [
   - Mecanismo: chasquido o salto audible/palpable del tendón del Iliopsoas al deslizarse sobre la eminencia iliopectínea del hueso pélvico o sobre la cabeza femoral al pasar de flexión/abducción/RE a extensión/aducción/RI.
   - Resalte Interno Asintomático: muy común en bailarinas y gimnastas; no requiere intervención si no hay dolor.
   - Bursitis del Iliopsoas Sintomática: la fricción repetitiva distiende la bursa iliopectínea (la bursa más grande del cuerpo, en comunicación con la articulación en un 15% de las personas), generando dolor inguinal anterior profundo.
-- Tratamiento Kinesiológico: control del tono de flexores de cadera, reeducación del patrón de extensión (activar glúteo mayor para evitar dominancia del psoas), fortalecimiento excéntrico guiado y modificación de rangos de flexión extrema repetitiva.
+- Tratamiento Kinesiológico EBM: gestión de carga progresiva de flexores de cadera (ejercicios isométricos iniciales e isotónicos de Iliopsoas), fortalecimiento de extensores de cadera (Glúteo Mayor) para optimizar el control neuromuscular dinámico y modificación ergonómica de rangos de flexión extrema repetitiva.
 `,
         preguntasEtapa2: [
             "Cuáles son los criterios del Consenso de Doha para clasificar el dolor relacionado con el Iliopsoas?",

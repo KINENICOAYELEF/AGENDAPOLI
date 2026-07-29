@@ -195,12 +195,13 @@ export default function EntrenamientoClinicoVoz() {
     const isDisconnectedOrTimeout = connectionState === 'disconnected' || connectionState === 'error' || timer >= 600;
 
     // Active student view for Docente tab
-    const selectedStudentView = studentViews.find(s => s.profile.userId === selectedStudentId) || studentViews[0];
+    const selectedStudentView = studentViews.find(s => s.profile?.userId === selectedStudentId) || studentViews[0];
 
     // Total stats calculation
-    const completedTopicsCount = myProfile ? Object.keys(myProfile.temas).length : 0;
-    const avgGrade = myProfile && completedTopicsCount > 0 
-        ? (Object.values(myProfile.temas).reduce((acc, t) => acc + t.ultimoPuntaje, 0) / completedTopicsCount).toFixed(1)
+    const myTemas = myProfile?.temas ? Object.values(myProfile.temas) : [];
+    const completedTopicsCount = myTemas.length;
+    const avgGrade = completedTopicsCount > 0 
+        ? (myTemas.reduce((acc, t) => acc + (t.ultimoPuntaje ?? 0), 0) / completedTopicsCount).toFixed(1)
         : 'N/A';
 
     return (
@@ -678,12 +679,13 @@ export default function EntrenamientoClinicoVoz() {
                                     <span>Registro Personal de Intentos Guardados</span>
                                 </h3>
 
-                                {!myProfile || Object.keys(myProfile.temas).length === 0 ? (
+                                 {myTemas.length === 0 ? (
                                     <p className="text-xs text-slate-500 py-8 text-center">Aún no has completado ninguna sesión de práctica.</p>
                                 ) : (
                                     <div className="space-y-3">
-                                        {Object.values(myProfile.temas).map((t) => {
+                                        {myTemas.map((t) => {
                                             const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
+                                            const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
 
                                             return (
                                                 <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
@@ -696,14 +698,14 @@ export default function EntrenamientoClinicoVoz() {
                                                         </div>
 
                                                         <div className="text-right">
-                                                            <span className="text-base font-black text-emerald-600">{t.ultimoPuntaje.toFixed(1)}</span>
-                                                            <span className="text-[10px] text-slate-400 block">{t.vecesCompletado} intentos</span>
+                                                            <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
+                                                            <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
                                                         </div>
                                                     </div>
 
                                                     {t.ultimoTranscript && (
                                                         <details className="text-xs text-slate-600 pt-1">
-                                                            <summary className="cursor-pointer font-bold text-indigo-600 hover:text-indigo-700">
+                                                            <summary className="cursor-pointer font-bold text-indigo-600 hover:text-indigo-700 select-none">
                                                                 Ver Transcripción Completa del Diálogo por Voz
                                                             </summary>
                                                             <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
@@ -739,77 +741,86 @@ export default function EntrenamientoClinicoVoz() {
                                         onChange={(e) => setSelectedStudentId(e.target.value)}
                                         className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-purple-200 outline-none cursor-pointer w-full sm:w-auto"
                                     >
-                                        {studentViews.map(sv => (
-                                            <option key={sv.profile.userId} value={sv.profile.userId}>
-                                                {sv.displayName} ({sv.email}) — {Object.keys(sv.profile.temas).length} temas
-                                            </option>
-                                        ))}
+                                        {studentViews.map(sv => {
+                                            const studentTemasCount = sv.profile?.temas ? Object.keys(sv.profile.temas).length : 0;
+                                            return (
+                                                <option key={sv.profile?.userId || sv.email} value={sv.profile?.userId}>
+                                                    {sv.displayName} ({sv.email}) — {studentTemasCount} temas
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 </div>
 
                                 {/* Detalle del Estudiante Seleccionado */}
-                                {selectedStudentView && (
-                                    <div className="space-y-4 pt-2">
-                                        <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-200 flex flex-wrap items-center justify-between gap-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center font-bold text-sm">
-                                                    {selectedStudentView.displayName.substring(0, 2).toUpperCase()}
+                                {selectedStudentView && (() => {
+                                    const studentTemas = selectedStudentView.profile?.temas ? Object.values(selectedStudentView.profile.temas) : [];
+                                    const nameInitials = (selectedStudentView.displayName || 'US').substring(0, 2).toUpperCase();
+
+                                    return (
+                                        <div className="space-y-4 pt-2">
+                                            <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-200 flex flex-wrap items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center font-bold text-sm">
+                                                        {nameInitials}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-purple-950">{selectedStudentView.displayName}</h4>
+                                                        <p className="text-xs text-purple-700">{selectedStudentView.email} • Rol: {selectedStudentView.role}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="text-sm font-bold text-purple-950">{selectedStudentView.displayName}</h4>
-                                                    <p className="text-xs text-purple-700">{selectedStudentView.email} • Rol: {selectedStudentView.role}</p>
+
+                                                <div className="flex items-center gap-4 text-right">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">Temas Practicados</span>
+                                                        <span className="text-lg font-black text-purple-950">{studentTemas.length} / 32</span>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4 text-right">
-                                                <div>
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">Temas Practicados</span>
-                                                    <span className="text-lg font-black text-purple-950">{Object.keys(selectedStudentView.profile.temas).length} / 32</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                            {/* Lista de temas del estudiante */}
+                                            <div className="space-y-3">
+                                                {studentTemas.length === 0 ? (
+                                                    <p className="text-xs text-slate-500 py-8 text-center">Este estudiante aún no ha completado sesiones en este módulo.</p>
+                                                ) : (
+                                                    studentTemas.map((t) => {
+                                                        const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
+                                                        const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
 
-                                        {/* Lista de temas del estudiante */}
-                                        <div className="space-y-3">
-                                            {Object.keys(selectedStudentView.profile.temas).length === 0 ? (
-                                                <p className="text-xs text-slate-500 py-8 text-center">Este estudiante aún no ha completado sesiones en este módulo.</p>
-                                            ) : (
-                                                Object.values(selectedStudentView.profile.temas).map((t) => {
-                                                    const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
-
-                                                    return (
-                                                        <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                                            <div className="flex items-center justify-between">
-                                                                <div>
-                                                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 uppercase">
-                                                                        {t.topicId}
-                                                                    </span>
-                                                                    <h5 className="text-xs font-bold text-slate-900 mt-1">{topicInfo?.nombre || t.topicId}</h5>
-                                                                </div>
-
-                                                                <div className="text-right">
-                                                                    <span className="text-base font-black text-emerald-600">{t.ultimoPuntaje.toFixed(1)}</span>
-                                                                    <span className="text-[10px] text-slate-400 block">{t.vecesCompletado} intentos</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {t.ultimoTranscript && (
-                                                                <details className="text-xs text-slate-600 pt-1">
-                                                                    <summary className="cursor-pointer font-bold text-purple-700 hover:text-purple-800">
-                                                                        Ver Transcripción Completa del Estudiante
-                                                                    </summary>
-                                                                    <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
-                                                                        {t.ultimoTranscript}
+                                                        return (
+                                                            <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 uppercase">
+                                                                            {t.topicId}
+                                                                        </span>
+                                                                        <h5 className="text-xs font-bold text-slate-900 mt-1">{topicInfo?.nombre || t.topicId}</h5>
                                                                     </div>
-                                                                </details>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
+
+                                                                    <div className="text-right">
+                                                                        <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
+                                                                        <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {t.ultimoTranscript && (
+                                                                    <details className="text-xs text-slate-600 pt-1">
+                                                                        <summary className="cursor-pointer font-bold text-purple-700 hover:text-purple-800 select-none">
+                                                                            Ver Transcripción Completa del Estudiante
+                                                                        </summary>
+                                                                        <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
+                                                                            {t.ultimoTranscript}
+                                                                        </div>
+                                                                    </details>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
