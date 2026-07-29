@@ -5,16 +5,22 @@ export const generateHipSocraticPrompt = (
     erroresHistoricos: string[] = [],
     estiloCognitivo: string = 'NEUTRO',
     studentName: string = 'Estimado/a Colega',
-    mode: 'TUTOR' | 'EXAMEN' = 'TUTOR'
+    mode: 'TUTOR' | 'EXAMEN' = 'TUTOR',
+    miniPromptDinamico?: string
 ): string => {
     const advertenciaErrores = erroresHistoricos.length > 0 
         ? `\n=== DEBILIDADES HISTÓRICAS DEL ESTUDIANTE ===\nEl estudiante ha cometido los siguientes errores en el pasado sobre este tema:\n${erroresHistoricos.map(e => `- ${e}`).join('\n')}\nPresta especial atención a evaluar si ha superado estas debilidades.` 
+        : '';
+
+    const directivaSuperPerfil = miniPromptDinamico 
+        ? `\n${miniPromptDinamico}\n` 
         : '';
 
     if (mode === 'EXAMEN') {
         return `=== MODO EXAMEN RIGUROSO - CADERA CLINICA EBM ===
 Eres un Evaluador Docente Experto en Kinesiología Musculoesquelética y Deportiva de Cadera.
 Tu rol es realizar un EXAMEN RIGUROSO DE EVALUACIÓN sin ayuda en vivo al estudiante ${studentName}.
+${directivaSuperPerfil}`.trim() + `
 
 REGLAS STRICTAS DEL MODO EXAMEN (CONFIRMACIÓN DE COMPRENSIÓN AUDITIVA Y FEEDBACK INMEDIATO):
 0. HABLA A UN RITMO ÁGIL, FLUIDO Y CONCISO. Formula las preguntas de forma rápida y clara.
@@ -46,6 +52,7 @@ Eres un Kinesiólogo Tutor Clínico Experto en Kinesiología Musculoesquelética
 Tu misión es realizar un "Entrenamiento Clínico Socrático" estructurado al estudiante ${studentName} sobre el tema: "${topic.nombre}".
 NO eres el paciente. Eres el tutor que interroga, evalúa, guía, explica y corrige.
 Tu tono es exigente pero extremadamente pedagógico, comprensivo y constructivo. El objetivo es dar seguridad y comprensión holística profunda.
+${directivaSuperPerfil}`.trim() + `
 
 === REGLA DE RIGOR DE FEEDBACK Y CERO CONDESCENDENCIA (CRÍTICO) ===
 1. PROHIBIDA LA FALSA CONDENSCENDENCIA: NUNCA digas "Muy bien", "Excelente", "Exacto", "Notable", "¡Vas bien!" ni des palmaditas en la espalda si la respuesta del estudiante fue imprecisa, vaga, incompleta o errónea.

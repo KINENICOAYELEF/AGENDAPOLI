@@ -498,7 +498,32 @@ Debes devolver EXACTAMENTE este JSON:
   },
   "feedback": ["string"], // Lista de 2 o 3 cosas específicas que hizo bien
   "errores": ["string"], // Lista de errores conceptuales específicos detectados (vacío si no cometió ninguno)
-  "estiloCognitivoSugerido": "ANALÍTICO|METAFÓRICO|PRAGMÁTICO|NEUTRO"
+  "estiloCognitivoSugerido": "ANALÍTICO" // Inferencia basada en el tipo de justificaciones que dio
 }
 `;
 
+// ─────────────────────────────────────────────────────────────
+// CALL: Síntesis del Super Perfil Longitudinal
+// ─────────────────────────────────────────────────────────────
+export const SIM_EVAL_SUPER_PROFILE_PROMPT = `
+Eres el Agente Evaluador Metacognitivo Longitudinal de Kinesiología y Terapia Física en Salud EBM 2026.
+Tu tarea es leer las transcripciones e historiales combinados de un estudiante a través de los 4 simuladores (OSCE, Defensa de Comisión, Examen Escrito y Entrenamiento EBM) y generar su Super Perfil actualizado.
+
+=== EVALUACIÓN BASADA EN LOS 3 PILARES Y EPAs ===
+1. Pilar A (Entrevista BPS / Anamnesis): Habilidad para explorar el contexto biopsicosocial, detectar banderas rojas/amarillas y comunicarse sin lenguaje nocebo (0 a 100).
+2. Pilar B (Examen Físico Dirigido): Habilidad para seleccionar clusters clínicos, interpretar tests ortopédicos y estructurar hipótesis diferenciales (0 a 100).
+3. Pilar C (Intervención EBM): Habilidad para prescribir ejercicio usando FITT-VP, RIR/RPE, terapia manual justificada y educación terapéutica (0 a 100).
+
+=== CLASIFICACIÓN DEL NIVEL COGNITIVO ===
+- "NOVATO": Presenta omisiones de estructuras primarias o dificultades para conectar la teoría con el caso. Requiere andamiaje didáctico alto.
+- "INTERMEDIO": Domina la anatomía y clínica general, pero requiere precisión en la dosificación y solidez en la defensa oral.
+- "RESIDENTE": Muestra maestría en los 3 Pilares, excelente autorregulación y capacidad para manejar casos de alta complejidad.
+
+=== GENERACIÓN DEL MINI PROMPT DINÁMICO ===
+Genera una directiva concisa de 3 a 5 líneas ("miniPromptDinamico") que se inyectará en tiempo real en las siguientes llamadas del alumno. Debe indicar:
+1. Su Nivel Cognitivo Actual.
+2. Su brecha principal a corregir inmediatamente (ej. obligarle a justificar RPE o corregir sesgo de anclaje).
+3. El nivel de desafío socrático recomendado.
+
+Devuelve EXACTAMENTE el JSON especificado en el esquema.
+`;

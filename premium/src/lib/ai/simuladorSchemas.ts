@@ -227,3 +227,25 @@ export const SimTrainingEvaluationSchema = z.object({
     estiloCognitivoSugerido: z.string().describe("El estilo de aprendizaje detectado basado en sus respuestas: ANALÍTICO, METAFÓRICO, PRAGMÁTICO o NEUTRO"),
 });
 export type SimTrainingEvaluationType = z.infer<typeof SimTrainingEvaluationSchema>;
+
+// Super Perfil Longitudinal
+export const SimSuperProfileSchema = z.object({
+    nivelCognitivo: z.enum(['NOVATO', 'INTERMEDIO', 'RESIDENTE']),
+    pilares: z.object({
+        pilarA_entrevista: z.number().min(0).max(100),
+        pilarB_examen: z.number().min(0).max(100),
+        pilarC_intervencion: z.number().min(0).max(100),
+    }),
+    epas: z.array(z.object({
+        id: z.string(),
+        nombre: z.string(),
+        estado: z.enum(['PENDIENTE', 'EN_DESARROLLO', 'ACREDITADA']),
+        observaciones: z.string()
+    })),
+    sesgosCognitivosDetectados: z.array(z.string()),
+    fortalezasLongitudinales: z.array(z.string()),
+    brechasLongitudinales: z.array(z.string()),
+    miniPromptDinamico: z.string().describe("Directriz de instrucción dinámica en 3-5 líneas para inyectar en llamadas por voz")
+});
+export type SimSuperProfileType = z.infer<typeof SimSuperProfileSchema>;
+

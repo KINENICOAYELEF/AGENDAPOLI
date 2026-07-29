@@ -13,6 +13,8 @@ import {
     StudentTrainingView,
     TopicProgress 
 } from '../services/entrenamientoFirebase';
+import { getSuperProfile } from '../services/superProfileService';
+import { SuperProfile } from '../types/superProfile';
 import { 
     Activity, ShieldAlert, RefreshCw, Mic, MicOff, CheckCircle2, 
     ChevronRight, ChevronDown, Search, Sparkles, AlertTriangle, FileText, 
@@ -25,6 +27,7 @@ export default function EntrenamientoClinicoVoz() {
 
     // Profiles & Firebase data
     const [myProfile, setMyProfile] = useState<UserTrainingProfile | null>(null);
+    const [superProfile, setSuperProfile] = useState<SuperProfile | null>(null);
     const [studentViews, setStudentViews] = useState<StudentTrainingView[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string>('');
     const [loadingData, setLoadingData] = useState(true);
@@ -79,6 +82,9 @@ export default function EntrenamientoClinicoVoz() {
             const profileData = await getUserTrainingProfile(user.uid);
             setMyProfile(profileData);
 
+            const sp = await getSuperProfile(user.uid, user.displayName || 'Interno');
+            setSuperProfile(sp);
+
             if (user.role === 'DOCENTE') {
                 const students = await getDetailedStudentTrainingProfiles();
                 setStudentViews(students);
@@ -127,7 +133,8 @@ export default function EntrenamientoClinicoVoz() {
                 myProfile?.temas[currentTopic.id]?.erroresHistoricos || [], 
                 myProfile?.estiloCognitivo || 'NEUTRO',
                 user?.displayName ? user.displayName.split(' ')[0] : 'Docente',
-                mode
+                mode,
+                superProfile?.miniPromptDinamico
               )
             : '',
         voiceName: 'Puck'
@@ -242,6 +249,20 @@ export default function EntrenamientoClinicoVoz() {
                     cleanedTranscriptText,
                     fortalezas
                 );
+
+                // Disparo de síntesis del Super Perfil Longitudinal en segundo plano
+                fetch('/api/ai/super-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'SYNTHESIZE',
+                        userId: user.uid,
+                        estudianteNombre: user.displayName || 'Interno',
+                        recentTranscript: cleanedTranscriptText,
+                        recentErrors: aspectosReforzar
+                    })
+                }).catch(e => console.error("Error en síntesis background de SuperProfile:", e));
+
                 await loadInitialData();
             }
         } catch (err) {
