@@ -32,6 +32,8 @@ export default function EntrenamientoClinicoVoz() {
     const [studentViews, setStudentViews] = useState<StudentTrainingView[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string>('');
     const [loadingData, setLoadingData] = useState(true);
+    const [testingAntigravity, setTestingAntigravity] = useState(false);
+    const [antigravityTestOutput, setAntigravityTestOutput] = useState<any | null>(null);
 
     // Session state
     const [sessionState, setSessionState] = useState<'IDLE' | 'CONNECTING' | 'IN_PROGRESS' | 'COMPLETED'>('IDLE');
@@ -100,6 +102,29 @@ export default function EntrenamientoClinicoVoz() {
             console.error("Error cargando datos de entrenamiento:", error);
         } finally {
             setLoadingData(false);
+        }
+    };
+
+    const handleTestAntigravityRest = async () => {
+        if (!user) return;
+        setTestingAntigravity(true);
+        setAntigravityTestOutput(null);
+        try {
+            const res = await fetch('/api/ai/super-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'TEST_ANTIGRAVITY_REST',
+                    userId: user.uid,
+                    estudianteNombre: user.displayName || 'Interno'
+                })
+            });
+            const data = await res.json();
+            setAntigravityTestOutput(data);
+        } catch (err: any) {
+            setAntigravityTestOutput({ error: err.message });
+        } finally {
+            setTestingAntigravity(false);
         }
     };
 
@@ -1117,14 +1142,21 @@ export default function EntrenamientoClinicoVoz() {
                                     </div>
                                 </div>
 
-                                {/* Inspección de Payload REST HTTP nativo */}
-                                <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 font-mono text-xs space-y-2">
-                                    <div className="flex items-center justify-between text-indigo-300 font-bold">
+                                {/* Inspección de Payload REST HTTP nativo y Botón de Prueba en Vivo */}
+                                <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 font-mono text-xs space-y-3">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-indigo-300 font-bold">
                                         <span className="flex items-center gap-1.5 text-[11px] text-amber-300 uppercase tracking-wider">
                                             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                                             Google Antigravity REST HTTP Interaction Protocol
                                         </span>
-                                        <span className="text-[10px] text-slate-400">Header: x-goog-api-key</span>
+                                        <button
+                                            onClick={handleTestAntigravityRest}
+                                            disabled={testingAntigravity}
+                                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                                        >
+                                            {testingAntigravity ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                            <span>{testingAntigravity ? 'Ejecutando Interacción...' : 'Probar Interacción REST Nativa'}</span>
+                                        </button>
                                     </div>
                                     <pre className="text-[11px] text-indigo-200/90 overflow-x-auto p-2.5 bg-slate-900/90 rounded border border-slate-800">
 {`POST https://generativelanguage.googleapis.com/v1beta/interactions
@@ -1135,6 +1167,65 @@ Body: {
   "environment": { "type": "remote" }
 }`}
                                     </pre>
+
+                                    {antigravityTestOutput && (
+                                        <div className="mt-3 p-3 bg-indigo-900/40 rounded border border-indigo-700/60 text-xs text-indigo-100 font-mono space-y-1">
+                                            <div className="text-amber-300 font-bold">Respuesta Nativa del Agente Antigravity (JSON):</div>
+                                            <pre className="text-[10px] text-indigo-200 overflow-x-auto max-h-48 p-2 bg-slate-950 rounded">
+                                                {JSON.stringify(antigravityTestOutput, null, 2)}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* LAS 4 FUNCIONES Y CAPACIDADES DEL AGENTE EN POLIDEPORTIVO */}
+                            <div className="space-y-3">
+                                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-amber-500" />
+                                    Capacidades y Servicios Activos del Agente Antigravity
+                                </h3>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-indigo-300 transition-all">
+                                        <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
+                                            <BookOpen className="w-4 h-4 text-indigo-600" />
+                                            <span>1. Generador Adaptativo de Casos Clínicos (ZPD)</span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Genera casos clínicos en tiempo real ajustados exactamente al Nivel Cognitivo del estudiante (Novato, Intermedio o Residente), introduciendo banderas rojas y amarillas en la medida exacta de su Zona de Desarrollo Próximo.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-purple-300 transition-all">
+                                        <div className="flex items-center gap-2 text-purple-700 font-bold text-sm">
+                                            <ShieldAlert className="w-4 h-4 text-purple-600" />
+                                            <span>2. Detector de Lenguaje Nocebo y Sesgos Cognitivos</span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Escanea las transcripciones por voz y respuestas escritas identificando sesgos de anclaje (*anchoring bias*), cierre prematuro y uso de lenguaje nocebo o catastrófico ante pacientes simulados.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-emerald-300 transition-all">
+                                        <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                                            <Layers className="w-4 h-4 text-emerald-600" />
+                                            <span>3. Prescriptor de Lecturas EBM & Justificación Tisular</span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Analiza las fallas anatómicas y biomecánicas del alumno y recomienda guías clínicas específicas (ej. JOSPT, Brukner & Khan) para subsanar los errores detectados durante el entrenamiento.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-300 transition-all">
+                                        <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+                                            <Award className="w-4 h-4 text-amber-600" />
+                                            <span>4. Dictamen de Acreditación de EPAs de Pasantía</span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Sintetiza el progreso longitudinal a través de los 4 simuladores y genera el informe de acreditación de las 5 Actividades Profesionales Confiables (EPAs) para el expediente del interno.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
