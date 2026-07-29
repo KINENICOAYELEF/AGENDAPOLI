@@ -32,8 +32,6 @@ export default function EntrenamientoClinicoVoz() {
     const [studentViews, setStudentViews] = useState<StudentTrainingView[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string>('');
     const [loadingData, setLoadingData] = useState(true);
-    const [testingAntigravity, setTestingAntigravity] = useState(false);
-    const [antigravityTestOutput, setAntigravityTestOutput] = useState<any | null>(null);
 
     // Session state
     const [sessionState, setSessionState] = useState<'IDLE' | 'CONNECTING' | 'IN_PROGRESS' | 'COMPLETED'>('IDLE');
@@ -102,29 +100,6 @@ export default function EntrenamientoClinicoVoz() {
             console.error("Error cargando datos de entrenamiento:", error);
         } finally {
             setLoadingData(false);
-        }
-    };
-
-    const handleTestAntigravityRest = async () => {
-        if (!user) return;
-        setTestingAntigravity(true);
-        setAntigravityTestOutput(null);
-        try {
-            const res = await fetch('/api/ai/super-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'TEST_ANTIGRAVITY_REST',
-                    userId: user.uid,
-                    estudianteNombre: user.displayName || 'Interno'
-                })
-            });
-            const data = await res.json();
-            setAntigravityTestOutput(data);
-        } catch (err: any) {
-            setAntigravityTestOutput({ error: err.message });
-        } finally {
-            setTestingAntigravity(false);
         }
     };
 
@@ -1142,21 +1117,14 @@ export default function EntrenamientoClinicoVoz() {
                                     </div>
                                 </div>
 
-                                {/* Inspección de Payload REST HTTP nativo y Botón de Prueba en Vivo */}
-                                <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 font-mono text-xs space-y-3">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-indigo-300 font-bold">
+                                {/* Inspección de Payload REST HTTP nativo */}
+                                <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 font-mono text-xs space-y-2">
+                                    <div className="flex items-center justify-between text-indigo-300 font-bold">
                                         <span className="flex items-center gap-1.5 text-[11px] text-amber-300 uppercase tracking-wider">
                                             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                                             Google Antigravity REST HTTP Interaction Protocol
                                         </span>
-                                        <button
-                                            onClick={handleTestAntigravityRest}
-                                            disabled={testingAntigravity}
-                                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                                        >
-                                            {testingAntigravity ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                                            <span>{testingAntigravity ? 'Ejecutando Interacción...' : 'Probar Interacción REST Nativa'}</span>
-                                        </button>
+                                        <span className="text-[10px] text-slate-400">Header: x-goog-api-key</span>
                                     </div>
                                     <pre className="text-[11px] text-indigo-200/90 overflow-x-auto p-2.5 bg-slate-900/90 rounded border border-slate-800">
 {`POST https://generativelanguage.googleapis.com/v1beta/interactions
@@ -1167,63 +1135,83 @@ Body: {
   "environment": { "type": "remote" }
 }`}
                                     </pre>
-
-                                    {antigravityTestOutput && (
-                                        <div className="mt-3 p-3 bg-indigo-900/40 rounded border border-indigo-700/60 text-xs text-indigo-100 font-mono space-y-1">
-                                            <div className="text-amber-300 font-bold">Respuesta Nativa del Agente Antigravity (JSON):</div>
-                                            <pre className="text-[10px] text-indigo-200 overflow-x-auto max-h-48 p-2 bg-slate-950 rounded">
-                                                {JSON.stringify(antigravityTestOutput, null, 2)}
-                                            </pre>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* LAS 4 FUNCIONES Y CAPACIDADES DEL AGENTE EN POLIDEPORTIVO */}
-                            <div className="space-y-3">
+                            {/* EXPLICACIÓN VISUAL: ¿CÓMO OPERA EL SERVICIO DE ANTIGRAVITY EN ESTA PLATAFORMA? */}
+                            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
                                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                                    <Sparkles className="w-5 h-5 text-amber-500" />
-                                    Capacidades y Servicios Activos del Agente Antigravity
+                                    <Layers className="w-5 h-5 text-indigo-600" />
+                                    ¿Cómo opera el servicio de Antigravity en esta Plataforma?
                                 </h3>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-indigo-300 transition-all">
-                                        <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
-                                            <BookOpen className="w-4 h-4 text-indigo-600" />
-                                            <span>1. Generador Adaptativo de Casos Clínicos (ZPD)</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            Genera casos clínicos en tiempo real ajustados exactamente al Nivel Cognitivo del estudiante (Novato, Intermedio o Residente), introduciendo banderas rojas y amarillas en la medida exacta de su Zona de Desarrollo Próximo.
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-100 space-y-2">
+                                        <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-black text-xs flex items-center justify-center">1</div>
+                                        <h4 className="text-xs font-bold text-slate-900">Captura Multimódulo</h4>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            Recopila transcripciones de Voz socrática, Examen Escrito, OSCE y Defensa de Comisión.
                                         </p>
                                     </div>
 
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-purple-300 transition-all">
-                                        <div className="flex items-center gap-2 text-purple-700 font-bold text-sm">
-                                            <ShieldAlert className="w-4 h-4 text-purple-600" />
-                                            <span>2. Detector de Lenguaje Nocebo y Sesgos Cognitivos</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            Escanea las transcripciones por voz y respuestas escritas identificando sesgos de anclaje (*anchoring bias*), cierre prematuro y uso de lenguaje nocebo o catastrófico ante pacientes simulados.
+                                    <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100 space-y-2">
+                                        <div className="w-7 h-7 rounded-lg bg-purple-600 text-white font-black text-xs flex items-center justify-center">2</div>
+                                        <h4 className="text-xs font-bold text-slate-900">Llamada REST a Antigravity</h4>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            Envía el historial al endpoint <code className="text-purple-700 font-mono">/v1beta/interactions</code> usando el agente <code className="text-purple-700 font-mono">antigravity-preview-05-2026</code>.
                                         </p>
                                     </div>
 
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-emerald-300 transition-all">
-                                        <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
-                                            <Layers className="w-4 h-4 text-emerald-600" />
-                                            <span>3. Prescriptor de Lecturas EBM & Justificación Tisular</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            Analiza las fallas anatómicas y biomecánicas del alumno y recomienda guías clínicas específicas (ej. JOSPT, Brukner & Khan) para subsanar los errores detectados durante el entrenamiento.
+                                    <div className="bg-blue-50/60 p-4 rounded-xl border border-blue-100 space-y-2">
+                                        <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center">3</div>
+                                        <h4 className="text-xs font-bold text-slate-900">Síntesis de 3 Pilares & EPAs</h4>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            Calcula los puntajes de Entrevista, Examen e Intervención, detecta sesgos y actualiza el Super Perfil.
                                         </p>
                                     </div>
 
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-300 transition-all">
-                                        <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
-                                            <Award className="w-4 h-4 text-amber-600" />
-                                            <span>4. Dictamen de Acreditación de EPAs de Pasantía</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            Sintetiza el progreso longitudinal a través de los 4 simuladores y genera el informe de acreditación de las 5 Actividades Profesionales Confiables (EPAs) para el expediente del interno.
+                                    <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 space-y-2">
+                                        <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center">4</div>
+                                        <h4 className="text-xs font-bold text-slate-900">Inyección Dinámica Live</h4>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            Inyecta el <code className="text-emerald-700 font-mono">miniPromptDinamico</code> en tiempo real en la siguiente llamada por voz.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* OTRAS FUNCIONES EN LAS QUE ANTIGRAVITY PUEDE AYUDAR EN LA PLATAFORMA */}
+                            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 text-white space-y-4 shadow-md">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-amber-400" />
+                                    <h3 className="text-base font-black text-white">Nuevas Funciones Extensibles del Agente Antigravity en Polideportivo</h3>
+                                </div>
+                                <p className="text-xs text-slate-300">
+                                    Basado en los módulos activos de tu barra lateral (Atención Clínica, Gestión Docente y Simulación), Antigravity puede expandirse a las siguientes áreas:
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                                    <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/70 space-y-2">
+                                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase">1. Anatomía Extendida</span>
+                                        <h4 className="font-bold text-white text-sm">Generación de Nuevas Regiones (Rodilla, Hombro, Columna)</h4>
+                                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                                            Reemplazar las etiquetas "PRÓXIMAMENTE" generando automáticamente temarios y casos clínicos EBM estructurados para Rodilla, Hombro, Lumbar y Tobillo.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/70 space-y-2">
+                                        <span className="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-400/30 uppercase">2. Auditoría Clínica</span>
+                                        <h4 className="font-bold text-white text-sm">Auditoría de Fichas Reales (Bandeja Auditoría & Pasantía)</h4>
+                                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                                            Auditar las fichas clínicas reales redactadas por los internos en "Personas Usuarias" verificando lenguaje BPS, banderas rojas y criterios EBM.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/70 space-y-2">
+                                        <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-400/30 uppercase">3. Tutoría Metodológica</span>
+                                        <h4 className="font-bold text-white text-sm">Asesoría Metodológica en Tesis (PFG Dashboard)</h4>
+                                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                                            Revisión de proyectos de título de los alumnos: metodología, cálculo muestral, consistencia del problema de investigación y citación EBM.
                                         </p>
                                     </div>
                                 </div>
