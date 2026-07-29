@@ -502,6 +502,22 @@ export default function EntrenamientoClinicoVoz() {
                         </div>
                     </div>
 
+                    {/* Banner de Examen Concluido en Vivo */}
+                    {transcript.some(t => t.text.toLowerCase().includes('examen finalizado') || t.text.toLowerCase().includes('ha concluido')) && (
+                        <div className="bg-gradient-to-r from-emerald-600 to-indigo-600 text-white p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 shadow-lg border border-emerald-400 animate-pulse">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+                                <span className="text-xs font-black uppercase tracking-wider">¡Evaluación Concluida! La IA ha cerrado el examen por voz.</span>
+                            </div>
+                            <button 
+                                onClick={handleEndSession} 
+                                className="bg-white text-emerald-950 px-5 py-2 rounded-lg text-xs font-black hover:bg-emerald-50 uppercase tracking-wider shadow-sm transition transform hover:scale-105"
+                            >
+                                Ver Dictamen y Nota Final
+                            </button>
+                        </div>
+                    )}
+
                     {/* Botones */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                         <button

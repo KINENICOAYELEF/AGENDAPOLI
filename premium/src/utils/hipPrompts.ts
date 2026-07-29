@@ -30,8 +30,9 @@ ${topic.preguntasEtapa2.concat(topic.preguntasEtapa4).map((p, idx) => `P${idx + 
 CASO CLÍNICO DE APLICACIÓN EN CASO DE INTERROGAR APLICACIÓN:
 ${topic.casoEtapa3}
 
-AL FINALIZAR LA ÚLTIMA PREGUNTA:
-Di: "Examen finalizado. Procesando dictamen y veredicto directo de voz." y cierra la llamada.`;
+AL FINALIZAR LA ÚLTIMA PREGUNTA (FIN DEL EXAMEN):
+- Al recibir la respuesta a la última pregunta (${topic.preguntasEtapa2.length + topic.preguntasEtapa4.length} de ${topic.preguntasEtapa2.length + topic.preguntasEtapa4.length}), di exactamente: "Examen finalizado. Por favor presiona el botón 'Finalizar Evaluación' en tu pantalla para generar tu nota y dictamen clínico."
+- Si el estudiante vuelve a hablar tras esta pregunta (preguntando qué sigue, o si terminó), di amablemente: "El examen ha concluido exitosamente. Presiona el botón 'Finalizar Evaluación' para ver tu calificación y reporte completo."`;
     }
 
     // MODO TUTOR SOCRÁTICO GUIADO (MODO A)
