@@ -193,9 +193,49 @@ export default function EntrenamientoClinicoVoz() {
     };
 
     const handleCancelSession = () => {
-        disconnect();
-        setSessionState('IDLE');
+        const confirmExit = window.confirm(
+            "¿Estás seguro de que deseas salir de la sesión de práctica activa?\n\nAl salir regresarás al temario de temas EBM."
+        );
+        if (confirmExit) {
+            disconnect();
+            setSessionState('IDLE');
+        }
     };
+
+    // Manejo de Intercepción del Botón Atrás del Navegador y Cierre Accidental
+    useEffect(() => {
+        if (sessionState === 'IN_PROGRESS' || sessionState === 'CONNECTING') {
+            // Insertar estado ficticio para atrapar el botón atrás del navegador
+            window.history.pushState({ inSimulationSession: true }, '', window.location.href);
+
+            const handlePopState = () => {
+                const confirmExit = window.confirm(
+                    "¿Estás seguro de que deseas salir de la práctica en curso?\n\nAl salir regresarás al temario de temas EBM sin perderte en el Dashboard."
+                );
+
+                if (confirmExit) {
+                    disconnect();
+                    setSessionState('IDLE');
+                } else {
+                    // Si cancela, re-insertamos la trampa para mantener protegido el botón atrás
+                    window.history.pushState({ inSimulationSession: true }, '', window.location.href);
+                }
+            };
+
+            const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+                e.preventDefault();
+                e.returnValue = '';
+            };
+
+            window.addEventListener('popstate', handlePopState);
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+            return () => {
+                window.removeEventListener('popstate', handlePopState);
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            };
+        }
+    }, [sessionState, disconnect]);
 
     const isDisconnectedOrTimeout = connectionState === 'disconnected' || connectionState === 'error' || timer >= 600;
 

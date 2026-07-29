@@ -152,7 +152,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
             channelData[i] = pcm16[i] / 32768.0;
         }
 
-        const playbackRate = 1.30;
+        const playbackRate = 1.15;
         const source = playbackCtx.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRate;
