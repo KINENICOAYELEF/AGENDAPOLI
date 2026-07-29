@@ -16,7 +16,7 @@ import {
 import { 
     Activity, ShieldAlert, RefreshCw, Mic, MicOff, CheckCircle2, 
     ChevronRight, ChevronDown, Search, Sparkles, AlertTriangle, FileText, 
-    History, X, Award, Calendar, Clock, ArrowRight, BookOpen, Layers, Users, ShieldCheck, Filter, User
+    History, X, Award, Calendar, Clock, ArrowRight, ArrowLeft, BookOpen, Layers, Users, ShieldCheck, Filter, User
 } from 'lucide-react';
 
 export default function EntrenamientoClinicoVoz() {
@@ -192,6 +192,11 @@ export default function EntrenamientoClinicoVoz() {
         }
     };
 
+    const handleCancelSession = () => {
+        disconnect();
+        setSessionState('IDLE');
+    };
+
     const isDisconnectedOrTimeout = connectionState === 'disconnected' || connectionState === 'error' || timer >= 600;
 
     // Active student view for Docente tab
@@ -306,16 +311,27 @@ export default function EntrenamientoClinicoVoz() {
 
                     {/* Top Bar Llamada */}
                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-indigo-400 bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-800 uppercase">
-                                    {currentTopic.categoria}
-                                </span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">
-                                    {mode === 'EXAMEN' ? 'Modo Examen Estricto' : 'Modo Tutor Formativo'}
-                                </span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleCancelSession}
+                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-slate-700 shadow-sm shrink-0"
+                                title="Volver a la selección de temas EBM"
+                            >
+                                <ArrowLeft className="w-4 h-4 text-indigo-400" />
+                                <span>Volver al Temario</span>
+                            </button>
+
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-800 uppercase">
+                                        {currentTopic.categoria}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                        {mode === 'EXAMEN' ? 'Modo Examen Estricto' : 'Modo Tutor Formativo'}
+                                    </span>
+                                </div>
+                                <h2 className="text-xl font-bold text-white mt-1">{currentTopic.nombre}</h2>
                             </div>
-                            <h2 className="text-xl font-bold text-white mt-1">{currentTopic.nombre}</h2>
                         </div>
 
                         <div className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl text-right">
