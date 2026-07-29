@@ -1100,12 +1100,12 @@ export default function EntrenamientoClinicoVoz() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-medium">
                                     <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Modelo de Razonamiento Profundo</span>
-                                        <span className="text-sm font-bold text-amber-300 font-mono">gemini-3.5-pro</span>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Agent Identifier</span>
+                                        <span className="text-sm font-bold text-amber-300 font-mono">antigravity-preview-05-2026</span>
                                     </div>
                                     <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Voz e Interacción Live</span>
-                                        <span className="text-sm font-bold text-indigo-300 font-mono">gemini-3.1-flash-live</span>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">REST Endpoint</span>
+                                        <span className="text-sm font-bold text-indigo-300 font-mono">/v1beta/interactions</span>
                                     </div>
                                     <div className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50">
                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Deep Research & Skills</span>
@@ -1115,6 +1115,26 @@ export default function EntrenamientoClinicoVoz() {
                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Alumnos en Supervisión</span>
                                         <span className="text-sm font-bold text-white font-mono">{allSuperProfiles.length} Registrados</span>
                                     </div>
+                                </div>
+
+                                {/* Inspección de Payload REST HTTP nativo */}
+                                <div className="bg-slate-950 p-4 rounded-xl border border-indigo-900/60 font-mono text-xs space-y-2">
+                                    <div className="flex items-center justify-between text-indigo-300 font-bold">
+                                        <span className="flex items-center gap-1.5 text-[11px] text-amber-300 uppercase tracking-wider">
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                            Google Antigravity REST HTTP Interaction Protocol
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">Header: x-goog-api-key</span>
+                                    </div>
+                                    <pre className="text-[11px] text-indigo-200/90 overflow-x-auto p-2.5 bg-slate-900/90 rounded border border-slate-800">
+{`POST https://generativelanguage.googleapis.com/v1beta/interactions
+Headers: { "Content-Type": "application/json", "x-goog-api-key": "process.env.GEMINI_API_KEY" }
+Body: {
+  "agent": "antigravity-preview-05-2026",
+  "input": [{ "type": "text", "text": prompt }],
+  "environment": { "type": "remote" }
+}`}
+                                    </pre>
                                 </div>
                             </div>
 
