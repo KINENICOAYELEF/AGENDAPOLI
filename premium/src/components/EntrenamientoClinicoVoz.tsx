@@ -51,6 +51,17 @@ export default function EntrenamientoClinicoVoz() {
     const [searchQuery, setSearchQuery] = useState('');
     const [timer, setTimer] = useState(0);
 
+    // Real AI Evaluation State
+    const [evaluating, setEvaluating] = useState(false);
+    const [evalResult, setEvalResult] = useState<{
+        topicId: string;
+        topicNombre: string;
+        puntaje: number;
+        feedback: string[];
+        errores: string[];
+        transcriptText: string;
+    } | null>(null);
+
     useEffect(() => {
         if (user) {
             loadInitialData();
@@ -168,27 +179,79 @@ export default function EntrenamientoClinicoVoz() {
 
     const handleEndSession = async () => {
         disconnect();
+        setEvaluating(true);
         setSessionState('COMPLETED');
-        if (user) {
-            try {
-                const fullText = transcript.map(t => `${t.role === 'user' ? 'Alumno' : 'Tutor Orion'}: ${t.text}`).join('\n');
-                const notaCalculada = mode === 'EXAMEN' ? 6.2 : 6.8;
-                
+
+        const activeTopic = currentTopic;
+        const fullText = transcript.map(t => `${t.role === 'user' ? 'Alumno' : 'Tutor Orion'}: ${t.text}`).join('\n');
+
+        let notaCalculada = 4.0;
+        let fortalezas: string[] = [];
+        let aspectosReforzar: string[] = [];
+        let cleanedTranscriptText = fullText;
+        let radarObj = { biomecanica: 50, diagnostico: 50, neurofisiologia: 50, dosificacion: 50, terapiaManual: 50 };
+        let estiloCognitivo = 'NEUTRO';
+
+        try {
+            if (fullText.trim().length > 20) {
+                const response = await fetch('/api/ai/simulador', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'evaluate-training',
+                        userId: user?.uid || 'guest',
+                        payload: { transcript: fullText }
+                    })
+                });
+
+                if (response.ok) {
+                    const json = await response.json();
+                    if (json.success && json.data) {
+                        const d = json.data;
+                        notaCalculada = typeof d.puntaje === 'number' ? d.puntaje : 4.0;
+                        fortalezas = Array.isArray(d.feedback) ? d.feedback : [];
+                        aspectosReforzar = Array.isArray(d.errores) ? d.errores : [];
+                        cleanedTranscriptText = d.cleanedTranscript || fullText;
+                        if (d.radarScores) radarObj = d.radarScores;
+                        if (d.estiloCognitivoSugerido) estiloCognitivo = d.estiloCognitivoSugerido;
+                    }
+                }
+            }
+
+            setEvalResult({
+                topicId: activeTopic.id,
+                topicNombre: activeTopic.nombre,
+                puntaje: notaCalculada,
+                feedback: fortalezas,
+                errores: aspectosReforzar,
+                transcriptText: cleanedTranscriptText
+            });
+
+            if (user) {
                 await saveTrainingSession(
                     user.uid,
-                    currentTopic.id,
+                    activeTopic.id,
                     notaCalculada,
-                    [],
-                    { biomecanica: 6.5, diagnostico: 6.5, neurofisiologia: 6.5, dosificacion: 6.5, terapiaManual: 6.5 },
-                    'NEUTRO',
-                    fullText,
-                    [`Sesión completada en ${mode === 'EXAMEN' ? 'Modo Examen Estricto' : 'Modo Tutor Formativo'}: ${currentTopic.nombre}`]
+                    aspectosReforzar,
+                    radarObj,
+                    estiloCognitivo,
+                    cleanedTranscriptText,
+                    fortalezas
                 );
-
                 await loadInitialData();
-            } catch (err) {
-                console.error("Error guardando sesión en Firebase:", err);
             }
+        } catch (err) {
+            console.error("Error evaluando sesión con IA:", err);
+            setEvalResult({
+                topicId: activeTopic.id,
+                topicNombre: activeTopic.nombre,
+                puntaje: 4.0,
+                feedback: ["Sesión finalizada y registrada."],
+                errores: ["Revisar transcripción para detalles."],
+                transcriptText: fullText
+            });
+        } finally {
+            setEvaluating(false);
         }
     };
 
@@ -457,75 +520,98 @@ export default function EntrenamientoClinicoVoz() {
                     </div>
                 </div>
             ) : sessionState === 'COMPLETED' ? (
-                /* REPORTE DE RESULTADOS */
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                        <div>
-                            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200 uppercase">
-                                Sesión Finalizada y Almacenada en Registro Clínico
+                /* REPORTE DE RESULTADOS DE EVALUACIÓN CON IA */
+                evaluating ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4 shadow-sm">
+                        <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto" />
+                        <h3 className="text-lg font-bold text-slate-900">Analizando desempeño clínico con IA...</h3>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                            La Inteligencia Artificial está evaluando la transcripción completa de tu diálogo socrático, calculando tu nota (1.0 a 7.0) y generando tus fortalezas y errores conceptuales.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                            <div>
+                                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200 uppercase">
+                                    Sesión Finalizada y Almacenada en Registro Clínico
+                                </span>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+                                    {evalResult?.topicNombre || currentTopic.nombre}
+                                </h2>
+                            </div>
+                            <div className="text-left sm:text-right shrink-0">
+                                <span className={`text-3xl font-black ${
+                                    (evalResult?.puntaje ?? 4.0) >= 4.0 ? 'text-emerald-600' : 'text-rose-600'
+                                }`}>
+                                    {(evalResult?.puntaje ?? 4.0).toFixed(1)}
+                                </span>
+                                <span className="text-[10px] text-slate-500 block font-bold uppercase">Nota Obtenida (Escala 1.0 - 7.0)</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 space-y-2">
+                                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                    Fortalezas Demostradas
+                                </span>
+                                {(!evalResult?.feedback || evalResult.feedback.length === 0) ? (
+                                    <p className="text-xs text-slate-600 italic">No se registraron fortalezas destacadas en este intento.</p>
+                                ) : (
+                                    <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                        {evalResult.feedback.map((f, i) => (
+                                            <li key={i}>{f}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+
+                            <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-2">
+                                <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                    Aspectos a Reforzar
+                                </span>
+                                {(!evalResult?.errores || evalResult.errores.length === 0) ? (
+                                    <p className="text-xs text-slate-600 italic">No se registraron errores conceptuales severos.</p>
+                                ) : (
+                                    <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                        {evalResult.errores.map((e, i) => (
+                                            <li key={i}>{e}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <FileText className="w-4 h-4 text-indigo-600" />
+                                Diálogo Transcrito Completo (Procesado por IA)
                             </span>
-                            <h2 className="text-2xl font-black text-slate-900 mt-2">{currentTopic.nombre}</h2>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-3xl font-black text-emerald-600">{mode === 'EXAMEN' ? '6.2' : '6.8'}</span>
-                            <span className="text-[10px] text-slate-500 block font-bold uppercase">Nota Asignada</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 space-y-2">
-                            <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                Fortalezas Demostradas
-                            </span>
-                            <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
-                                <li>Diferenció correctamente la nocicepción articular de la sensibilización.</li>
-                                <li>Justificó la dosificación de ejercicio basada en la regla de las 24 horas.</li>
-                                <li>Mantuvo un lenguaje terapéutico positivo libre de lenguaje nocebo.</li>
-                            </ul>
+                            <div className="max-h-48 overflow-y-auto custom-scrollbar text-xs text-slate-700 space-y-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+                                {evalResult?.transcriptText || transcript.map(t => `${t.role === 'user' ? 'Estudiante' : 'Tutor Orion'}: ${t.text}`).join('\n')}
+                            </div>
                         </div>
 
-                        <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-2">
-                            <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                                Aspectos a Reforzar
-                            </span>
-                            <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
-                                <li>Profundizar en la evaluación goniométrica de extensión de cadera en prono.</li>
-                                <li>Repasar los criterios de derivación quirúrgica en clasificación Tonnis.</li>
-                            </ul>
+                        <div className="flex justify-between gap-3 pt-2">
+                            <button
+                                onClick={() => setSessionState('IDLE')}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition border border-slate-200"
+                            >
+                                Volver al Temario
+                            </button>
+
+                            <button
+                                onClick={() => handleStartSession(currentTopic)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase transition shadow-sm flex items-center gap-2"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                <span>Practicar Este Tema de Nuevo</span>
+                            </button>
                         </div>
                     </div>
-
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <FileText className="w-4 h-4 text-indigo-600" />
-                            Diálogo Transcrito Completo
-                        </span>
-                        <div className="max-h-48 overflow-y-auto custom-scrollbar text-xs text-slate-700 space-y-2 p-3 bg-white rounded-lg border border-slate-200">
-                            {transcript.map((t, i) => (
-                                <p key={i}><strong>{t.role === 'user' ? 'Estudiante' : 'Tutor Orion'}:</strong> {t.text}</p>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between gap-3 pt-2">
-                        <button
-                            onClick={() => setSessionState('IDLE')}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition border border-slate-200"
-                        >
-                            Volver al Temario
-                        </button>
-
-                        <button
-                            onClick={() => handleStartSession(currentTopic)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase transition shadow-sm flex items-center gap-2"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            <span>Practicar Este Tema de Nuevo</span>
-                        </button>
-                    </div>
-                </div>
+                )
             ) : (
                 /* VISTAS DE PESTAÑAS */
                 <>
