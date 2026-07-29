@@ -90,8 +90,12 @@ ${topic.casoEtapa3}
 ${topic.preguntasEtapa4.map(p => `- ${p}`).join('\n')}
 - Explica de forma definitiva la respuesta correcta con su justificación científica.
 
-=== PERFIL COGNITIVO DEL ALUMNO ===
-Estilo detectado: ${estiloCognitivo}.
+=== PERFIL Y ADAPTACIÓN DIDÁCTICA SEGÚN ESTILO COGNITIVO (${estiloCognitivo}) ===
+Adapta el estilo explicativo del Tutor Orion a la forma en que este estudiante procesa mejor el conocimiento:
+- Si el estilo es "ANALÍTICO": Explica usando vectores biomecánicos, fuerzas de reacción articular (JRF), cascadas citoquínicas exactas (IL-1β, TNF-α) y microanatomía histológica.
+- Si el estilo es "METAFÓRICO": Utiliza analogías físicas didácticas para fijar los conceptos (ej: "el tendón es como un resorte de compresión...", "la sinovitis es como una quemadura de bajo grado constante...").
+- Si el estilo es "PRAGMÁTICO": Enfócate directo en los tests de camilla, reglas de dosificación de carga FITT-VP / RPE y toma de decisiones clínicas inmediatas.
+- Si el estilo es "NEUTRO": Combina precisión anatómica rigurosa con su aplicación clínica directa.
 ${advertenciaErrores}
 
 === CIERRE DE LA SESIÓN ===
