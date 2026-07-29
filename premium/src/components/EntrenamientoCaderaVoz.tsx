@@ -5,16 +5,25 @@ import { useAuth } from '../context/AuthContext';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { HIP_TOPICS, HipTopic } from '../utils/hipTopics';
 import { generateHipSocraticPrompt } from '../utils/hipPrompts';
-import { getUserTrainingProfile, saveTrainingSession, UserTrainingProfile, TopicProgress } from '../services/entrenamientoFirebase';
+import { 
+    getUserTrainingProfile, 
+    getAllStudentTrainingProfiles, 
+    saveTrainingSession, 
+    UserTrainingProfile, 
+    TopicProgress 
+} from '../services/entrenamientoFirebase';
 import { 
     Activity, ShieldAlert, RefreshCw, Mic, MicOff, CheckCircle2, 
     ChevronRight, Search, Sparkles, AlertTriangle, FileText, 
-    History, X, Award, Flame, Calendar, Clock, ArrowRight, BookOpen, Layers
+    History, X, Award, Calendar, Clock, ArrowRight, BookOpen, Layers, Users, ShieldCheck, Filter
 } from 'lucide-react';
 
 export default function EntrenamientoCaderaVoz() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<UserTrainingProfile | null>(null);
+    const [allProfiles, setAllProfiles] = useState<UserTrainingProfile[]>([]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [sessionState, setSessionState] = useState<'IDLE' | 'CONNECTING' | 'IN_PROGRESS' | 'COMPLETED'>('IDLE');
     
@@ -26,14 +35,15 @@ export default function EntrenamientoCaderaVoz() {
 
     // Modals
     const [showHistoryModal, setShowHistoryModal] = useState(false);
-    const [showTopicDetailModal, setShowTopicDetailModal] = useState(false);
-    const [selectedHistoryTopic, setSelectedHistoryTopic] = useState<TopicProgress | null>(null);
 
     const [timer, setTimer] = useState(0);
 
     useEffect(() => {
         if (user) {
             loadProfile();
+            if (user.role === 'DOCENTE') {
+                loadAllStudentProfiles();
+            }
         }
     }, [user]);
 
@@ -47,6 +57,18 @@ export default function EntrenamientoCaderaVoz() {
             console.error("Error cargando perfil de entrenamiento:", error);
         } finally {
             setLoadingProfile(false);
+        }
+    };
+
+    const loadAllStudentProfiles = async () => {
+        try {
+            const profiles = await getAllStudentTrainingProfiles();
+            setAllProfiles(profiles);
+            if (profiles.length > 0 && !selectedStudentId) {
+                setSelectedStudentId(profiles[0].userId);
+            }
+        } catch (error) {
+            console.error("Error cargando perfiles de estudiantes:", error);
         }
     };
 
@@ -102,16 +124,6 @@ export default function EntrenamientoCaderaVoz() {
         'Dolor Inguinal y Extraarticular'
     ];
 
-    const categoryIcons: Record<string, string> = {
-        'Coxartrosis': '🦵',
-        'Artroplastia (PTC)': '🦴',
-        'Evaluación Post-Artroplastia': '📋',
-        'FAI y Labrum': '💎',
-        'Displasia e Inestabilidad': '🤸',
-        'Dolor Lateral de Cadera': '⚡',
-        'Dolor Inguinal y Extraarticular': '⚽'
-    };
-
     const filteredTopics = HIP_TOPICS.filter(t => {
         const matchesCat = selectedCategory === 'TODAS' || t.categoria === selectedCategory;
         const matchesQuery = t.nombre.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -162,6 +174,9 @@ export default function EntrenamientoCaderaVoz() {
                 );
 
                 await loadProfile();
+                if (user.role === 'DOCENTE') {
+                    await loadAllStudentProfiles();
+                }
             } catch (err) {
                 console.error("Error guardando sesión de cadera en Firebase:", err);
             }
@@ -170,35 +185,36 @@ export default function EntrenamientoCaderaVoz() {
 
     const isDisconnectedOrTimeout = connectionState === 'disconnected' || connectionState === 'error' || timer >= 600;
 
+    // Perfil seleccionado en la vista docente
+    const activeDocenteSelectedProfile = allProfiles.find(p => p.userId === selectedStudentId) || profile;
+
     return (
         <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            {/* Header Banner - Diseño Premium Docente */}
+            {/* Header Banner Professional (Sin Emojis) */}
             <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 p-6 md:p-8 rounded-3xl border border-indigo-500/20 shadow-2xl">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                
                 <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
                     <div className="space-y-2 max-w-3xl">
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="bg-purple-500/20 text-purple-300 text-[10px] font-black uppercase px-3 py-1 rounded-full border border-purple-500/30 flex items-center gap-1.5 shadow-sm">
                                 <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
-                                Módulo Privado Docente
+                                Módulo Privado de Supervisión Docente
                             </span>
                             <span className="bg-indigo-500/20 text-indigo-300 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-indigo-500/30">
-                                32 Temas EBM Cadera
+                                32 Temas Clínicos EBM Cadera
                             </span>
                             <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" />
-                                Gemini Live 3.1
+                                Audio Motor Gemini Live
                             </span>
                         </div>
 
-                        <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-                            <Activity className="w-8 h-8 text-purple-400 shrink-0" />
-                            Entrenamiento Clínico: Cadera EBM
+                        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                            <Activity className="w-7 h-7 text-purple-400 shrink-0" />
+                            Entrenamiento Clínico: Cadera y Evidencia Científica
                         </h1>
 
                         <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                            Simulador socrático de voz con 32 mini-prompts de precisión biomecánica, neurofisiológica y clínica holística.
+                            Simulador socrático de voz estructurado con 32 mini-prompts de precisión biomecánica, neurofisiológica y razonamiento clínico.
                         </p>
                     </div>
 
@@ -209,7 +225,7 @@ export default function EntrenamientoCaderaVoz() {
                             className="bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg backdrop-blur-md"
                         >
                             <History className="w-4 h-4 text-amber-400" />
-                            <span>Ver Mi Historial</span>
+                            <span>{user?.role === 'DOCENTE' ? 'Supervisión de Estudiantes' : 'Mi Historial de Intentos'}</span>
                         </button>
 
                         <div className="bg-slate-950/90 p-1.5 rounded-2xl border border-slate-800 flex gap-1 shadow-inner">
@@ -221,7 +237,7 @@ export default function EntrenamientoCaderaVoz() {
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
-                                🎓 Tutor Formativo
+                                Modo A: Tutor Formativo
                             </button>
                             <button
                                 onClick={() => setMode('EXAMEN')}
@@ -231,7 +247,7 @@ export default function EntrenamientoCaderaVoz() {
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
-                                ⏱️ Examen Estricto
+                                Modo B: Examen Estricto
                             </button>
                         </div>
                     </div>
@@ -249,8 +265,8 @@ export default function EntrenamientoCaderaVoz() {
                                     <AlertTriangle className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-amber-200">Llamada de Voz Pausada (Límite 10 min o Desconexión)</h4>
-                                    <p className="text-xs text-amber-300/80">La sesión WebSocket se pausó. Haz clic en Reconectar para continuar sin perder tu lugar.</p>
+                                    <h4 className="text-sm font-bold text-amber-200">Llamada de Voz Pausada (Límite alcanzado o desconexión)</h4>
+                                    <p className="text-xs text-amber-300/80">La sesión WebSocket se pausó. Haz clic en el botón para reconectar y reanudar la pregunta actual.</p>
                                 </div>
                             </div>
                             <button
@@ -309,7 +325,7 @@ export default function EntrenamientoCaderaVoz() {
                         </div>
 
                         <p className="text-xs font-semibold text-slate-300">
-                            {isSpeaking ? '🗣️ Tutor Orion hablando...' : isMicOpen ? '🎙️ Micrófono Abierto. Responde oralmente...' : '🤫 Micrófono Silenciado'}
+                            {isSpeaking ? 'Tutor Orion hablando...' : isMicOpen ? 'Micrófono Abierto. Responde oralmente...' : 'Micrófono Silenciado'}
                         </p>
                     </div>
 
@@ -337,7 +353,7 @@ export default function EntrenamientoCaderaVoz() {
                                         }`}
                                     >
                                         <span className="font-bold block text-[10px] uppercase opacity-70 mb-1">
-                                            {msg.role === 'user' ? '👤 Tú (Alumno)' : '🎓 Tutor Orion'}
+                                            {msg.role === 'user' ? 'Estudiante' : 'Tutor Orion'}
                                         </span>
                                         {msg.text}
                                     </div>
@@ -373,7 +389,7 @@ export default function EntrenamientoCaderaVoz() {
                     <div className="flex items-center justify-between border-b border-slate-800 pb-5">
                         <div>
                             <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/50">
-                                ✅ Sesión Finalizada y Guardada en Firebase
+                                Sesión Finalizada y Almacenada en Registro Clínico
                             </span>
                             <h2 className="text-2xl font-black text-white mt-2">{currentTopic.nombre}</h2>
                         </div>
@@ -388,23 +404,23 @@ export default function EntrenamientoCaderaVoz() {
                         <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
                             <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                                 <CheckCircle2 className="w-4 h-4" />
-                                3 Fortalezas Demostradas
+                                Fortalezas Demostradas
                             </span>
                             <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
                                 <li>Diferenció correctamente la nocicepción articular de la sensibilización.</li>
                                 <li>Justificó la dosificación de ejercicio basada en la regla de las 24 horas.</li>
-                                <li>Mantuvo un lenguaje terapéutico positivo libre de nocebo.</li>
+                                <li>Mantuvo un lenguaje terapéutico positivo libre de lenguaje nocebo.</li>
                             </ul>
                         </div>
 
                         <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
                             <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                                 <AlertTriangle className="w-4 h-4" />
-                                2 Puntos a Reforzar
+                                Aspectos a Reforzar
                             </span>
                             <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
                                 <li>Profundizar en la evaluación goniométrica de extensión de cadera en prono.</li>
-                                <li>Repasar los criterios de derivación quirúrgica del Tonnis Grado 3.</li>
+                                <li>Repasar los criterios de derivación quirúrgica en clasificación Tonnis.</li>
                             </ul>
                         </div>
                     </div>
@@ -417,7 +433,7 @@ export default function EntrenamientoCaderaVoz() {
                         </span>
                         <div className="max-h-48 overflow-y-auto custom-scrollbar text-xs text-slate-300 space-y-2 p-2 bg-slate-900/50 rounded-xl">
                             {transcript.map((t, i) => (
-                                <p key={i}><strong>{t.role === 'user' ? 'Alumno' : 'Tutor Orion'}:</strong> {t.text}</p>
+                                <p key={i}><strong>{t.role === 'user' ? 'Estudiante' : 'Tutor Orion'}:</strong> {t.text}</p>
                             ))}
                         </div>
                     </div>
@@ -428,7 +444,7 @@ export default function EntrenamientoCaderaVoz() {
                             onClick={() => setSessionState('IDLE')}
                             className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-3 rounded-2xl text-xs font-bold transition"
                         >
-                            ← Volver al Temario
+                            Volver al Temario
                         </button>
 
                         <button
@@ -441,7 +457,7 @@ export default function EntrenamientoCaderaVoz() {
                     </div>
                 </div>
             ) : (
-                /* NAVEGADOR DE 32 TEMAS CON BADGES DE PROGRESO FIREBASE */
+                /* NAVEGADOR DE 32 TEMAS CON BADGES PROFESIONALES */
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Lista con Filtros y Categorías */}
                     <div className="lg:col-span-2 space-y-4">
@@ -457,7 +473,7 @@ export default function EntrenamientoCaderaVoz() {
                                 />
                             </div>
 
-                            {/* Píldoras de Categorías con Íconos */}
+                            {/* Píldoras de Categorías Profesionales sin Emojis */}
                             <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
                                 {categories.map(cat => (
                                     <button
@@ -469,7 +485,7 @@ export default function EntrenamientoCaderaVoz() {
                                                 : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                                         }`}
                                     >
-                                        <span>{categoryIcons[cat] || '🏷️'}</span>
+                                        <Layers className="w-3 h-3" />
                                         <span>{cat}</span>
                                     </button>
                                 ))}
@@ -527,7 +543,7 @@ export default function EntrenamientoCaderaVoz() {
                             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block flex items-center gap-1.5">
                                     <Sparkles className="w-3.5 h-3.5" />
-                                    Mini-Prompt & Contenido Base EBM
+                                    Mini-Prompt y Contenido Base EBM
                                 </span>
                                 <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line max-h-56 overflow-y-auto custom-scrollbar">
                                     {currentTopic.contenidoBase}
@@ -552,43 +568,89 @@ export default function EntrenamientoCaderaVoz() {
                             }`}
                         >
                             <Mic className="w-4 h-4" />
-                            <span>{mode === 'EXAMEN' ? '🎙️ Iniciar Examen Estricto' : '🎙️ Iniciar Tutoría Formativa'}</span>
+                            <span>{mode === 'EXAMEN' ? 'Iniciar Examen Estricto' : 'Iniciar Tutoría Formativa'}</span>
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* MODAL DE HISTORIAL DE ACTIVIDAD FIREBASE */}
+            {/* MODAL DE HISTORIAL Y SUPERVISIÓN CON DISTINCIÓN DE ROL */}
             {showHistoryModal && (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 w-full max-w-3xl rounded-3xl p-6 text-white space-y-5 max-h-[85vh] flex flex-col justify-between shadow-2xl">
+                    <div className="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-3xl p-6 md:p-8 text-white space-y-6 max-h-[85vh] flex flex-col justify-between shadow-2xl">
                         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                            <h3 className="text-lg font-black flex items-center gap-2">
-                                <History className="w-5 h-5 text-amber-400" />
-                                Histórico de Entrenamiento Registrado en Firebase
-                            </h3>
-                            <button onClick={() => setShowHistoryModal(false)} className="p-1.5 text-slate-400 hover:text-white rounded-lg">
+                            <div>
+                                <h3 className="text-xl font-black flex items-center gap-2">
+                                    {user?.role === 'DOCENTE' ? (
+                                        <>
+                                            <ShieldCheck className="w-6 h-6 text-purple-400" />
+                                            <span>Panel de Supervisión Docente de Estudiantes</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <History className="w-6 h-6 text-amber-400" />
+                                            <span>Mi Historial de Intentos de Entrenamiento</span>
+                                        </>
+                                    )}
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1">
+                                    {user?.role === 'DOCENTE' 
+                                        ? 'Registro acumulado de desempeño de internos en Firestore.' 
+                                        : 'Resumen de tus temas practicados y transcripciones guardadas.'}
+                                </p>
+                            </div>
+
+                            <button onClick={() => setShowHistoryModal(false)} className="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
+                        {/* SELECTOR DE ESTUDIANTE PARA ROL DOCENTE */}
+                        {user?.role === 'DOCENTE' && (
+                            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex items-center gap-2 text-xs text-slate-300 font-bold">
+                                    <Users className="w-4 h-4 text-indigo-400" />
+                                    <span>Seleccionar Estudiante / Interno:</span>
+                                </div>
+
+                                <select
+                                    value={selectedStudentId}
+                                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                                    className="bg-slate-900 border border-slate-700 text-white text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                                >
+                                    {allProfiles.map(p => (
+                                        <option key={p.userId} value={p.userId}>
+                                            Estudiante ID: {p.userId.substring(0, 8)}... ({Object.keys(p.temas).length} temas practicados)
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* CONTENIDO DEL HISTORIAL */}
                         <div className="overflow-y-auto custom-scrollbar flex-1 space-y-3 pr-1">
-                            {!profile || Object.keys(profile.temas).length === 0 ? (
-                                <p className="text-xs text-slate-500 text-center py-12">Aún no has completado ninguna sesión en este módulo.</p>
+                            {(!activeDocenteSelectedProfile || Object.keys(activeDocenteSelectedProfile.temas).length === 0) ? (
+                                <div className="text-center py-12 space-y-2">
+                                    <BookOpen className="w-8 h-8 text-slate-600 mx-auto" />
+                                    <p className="text-xs text-slate-500">No hay registros acumulados de sesiones para este perfil.</p>
+                                </div>
                             ) : (
-                                Object.values(profile.temas).map((t) => (
-                                    <div key={t.topicId} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                                Object.values(activeDocenteSelectedProfile.temas).map((t) => (
+                                    <div key={t.topicId} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-bold text-white">{t.topicId}</span>
-                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-800/40">
+                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800/40">
                                                 Última Nota: {t.ultimoPuntaje.toFixed(1)}
                                             </span>
                                         </div>
                                         <p className="text-[11px] text-slate-400">Veces completado: {t.vecesCompletado}</p>
+
                                         {t.ultimoTranscript && (
                                             <details className="text-[11px] text-slate-400 pt-1">
-                                                <summary className="cursor-pointer font-bold text-indigo-400">Ver Transcripción Guardada</summary>
-                                                <div className="mt-2 p-2 bg-slate-900 rounded-xl text-slate-300 max-h-32 overflow-y-auto font-mono text-[10px]">
+                                                <summary className="cursor-pointer font-bold text-indigo-400 hover:text-indigo-300">
+                                                    Ver Transcripción del Diálogo de Voz
+                                                </summary>
+                                                <div className="mt-2 p-3 bg-slate-900 rounded-xl text-slate-300 max-h-40 overflow-y-auto font-mono text-[10px] leading-relaxed border border-slate-800">
                                                     {t.ultimoTranscript}
                                                 </div>
                                             </details>
@@ -601,9 +663,9 @@ export default function EntrenamientoCaderaVoz() {
                         <div className="pt-2 border-t border-slate-800 text-right">
                             <button
                                 onClick={() => setShowHistoryModal(false)}
-                                className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold"
+                                className="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition"
                             >
-                                Cerrar Historial
+                                Cerrar Modal
                             </button>
                         </div>
                     </div>

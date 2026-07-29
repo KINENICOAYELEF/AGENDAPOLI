@@ -216,3 +216,18 @@ export const selectOptimalTopicForUser = async (userId: string): Promise<{ topic
     const fallback = CLINICAL_TOPICS[Math.floor(Math.random() * CLINICAL_TOPICS.length)];
     return { topic: fallback, historicalErrors: [] };
 };
+
+// Obtener todos los perfiles de estudiantes para la vista Docente
+export const getAllStudentTrainingProfiles = async (): Promise<UserTrainingProfile[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, 'training_profiles'));
+        const profiles: UserTrainingProfile[] = [];
+        querySnapshot.forEach((docSnap) => {
+            profiles.push(docSnap.data() as UserTrainingProfile);
+        });
+        return profiles;
+    } catch (error) {
+        console.error("Error al obtener perfiles de estudiantes:", error);
+        return [];
+    }
+};
