@@ -197,11 +197,29 @@ export default function EntrenamientoClinicoVoz() {
     // Active student view for Docente tab
     const selectedStudentView = studentViews.find(s => s.profile?.userId === selectedStudentId) || studentViews[0];
 
-    // Total stats calculation
-    const myTemas = myProfile?.temas ? Object.values(myProfile.temas) : [];
-    const completedTopicsCount = myTemas.length;
+    // Helper: Filtrar ÚNICAMENTE temas EBM de este módulo y agruparlos por Categoría
+    const ebmTopicSet = new Set(HIP_TOPICS.map(t => t.id));
+    const groupTemasByCategory = (temasObj?: Record<string, TopicProgress>) => {
+        if (!temasObj) return {};
+        const ebmTemas = Object.values(temasObj).filter(t => ebmTopicSet.has(t.topicId));
+        const grouped: Record<string, { topicProg: TopicProgress; topicInfo: HipTopic }[]> = {};
+        
+        ebmTemas.forEach((t) => {
+            const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
+            if (topicInfo) {
+                const cat = topicInfo.categoria;
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push({ topicProg: t, topicInfo });
+            }
+        });
+        return grouped;
+    };
+
+    const myTemasGrouped = groupTemasByCategory(myProfile?.temas);
+    const myEbmTemasFlat = Object.values(myTemasGrouped).flat();
+    const completedTopicsCount = myEbmTemasFlat.length;
     const avgGrade = completedTopicsCount > 0 
-        ? (myTemas.reduce((acc, t) => acc + (t.ultimoPuntaje ?? 0), 0) / completedTopicsCount).toFixed(1)
+        ? (myEbmTemasFlat.reduce((acc, item) => acc + (item.topicProg.ultimoPuntaje ?? 0), 0) / completedTopicsCount).toFixed(1)
         : 'N/A';
 
     return (
@@ -672,50 +690,61 @@ export default function EntrenamientoClinicoVoz() {
                                 </div>
                             </div>
 
-                            {/* Lista de Historial */}
+                             {/* Lista de Historial Organizado por Módulo */}
                             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
                                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                                     <History className="w-5 h-5 text-amber-600" />
-                                    <span>Registro Personal de Intentos Guardados</span>
+                                    <span>Registro Personal de Intentos Guardados en Entrenamiento Clínico EBM</span>
                                 </h3>
 
-                                 {myTemas.length === 0 ? (
-                                    <p className="text-xs text-slate-500 py-8 text-center">Aún no has completado ninguna sesión de práctica.</p>
+                                {Object.keys(myTemasGrouped).length === 0 ? (
+                                    <p className="text-xs text-slate-500 py-8 text-center">Aún no has completado ninguna sesión de práctica en este módulo.</p>
                                 ) : (
-                                    <div className="space-y-3">
-                                        {myTemas.map((t) => {
-                                            const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
-                                            const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
-
-                                            return (
-                                                <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 uppercase">
-                                                                {t.topicId}
-                                                            </span>
-                                                            <h4 className="text-sm font-bold text-slate-900 mt-1">{topicInfo?.nombre || t.topicId}</h4>
-                                                        </div>
-
-                                                        <div className="text-right">
-                                                            <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
-                                                            <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {t.ultimoTranscript && (
-                                                        <details className="text-xs text-slate-600 pt-1">
-                                                            <summary className="cursor-pointer font-bold text-indigo-600 hover:text-indigo-700 select-none">
-                                                                Ver Transcripción Completa del Diálogo por Voz
-                                                            </summary>
-                                                            <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
-                                                                {t.ultimoTranscript}
-                                                            </div>
-                                                        </details>
-                                                    )}
+                                    <div className="space-y-6">
+                                        {Object.entries(myTemasGrouped).map(([catName, items]) => (
+                                            <div key={catName} className="space-y-3">
+                                                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                                                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{catName}</h4>
+                                                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold ml-auto">{items.length} temas</span>
                                                 </div>
-                                            );
-                                        })}
+
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {items.map(({ topicProg: t, topicInfo }) => {
+                                                        const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
+
+                                                        return (
+                                                            <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 uppercase">
+                                                                            {t.topicId}
+                                                                        </span>
+                                                                        <h5 className="text-xs font-bold text-slate-900 mt-1">{topicInfo.nombre}</h5>
+                                                                    </div>
+
+                                                                    <div className="text-right shrink-0 ml-4">
+                                                                        <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
+                                                                        <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {t.ultimoTranscript && (
+                                                                    <details className="text-xs text-slate-600 pt-1">
+                                                                        <summary className="cursor-pointer font-bold text-indigo-600 hover:text-indigo-700 select-none">
+                                                                            Ver Transcripción Completa del Diálogo por Voz
+                                                                        </summary>
+                                                                        <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
+                                                                            {t.ultimoTranscript}
+                                                                        </div>
+                                                                    </details>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -733,7 +762,7 @@ export default function EntrenamientoClinicoVoz() {
                                             <ShieldCheck className="w-5 h-5 text-purple-600" />
                                             <span>Panel de Auditoría y Desempeño de Estudiantes</span>
                                         </h3>
-                                        <p className="text-xs text-slate-500 mt-1">Supervisa los avances, notas e transcripciones de voz registradas en Firestore.</p>
+                                        <p className="text-xs text-slate-500 mt-1">Supervisa los avances, notas e transcripciones de voz registradas en Firestore (Módulo EBM Cadera).</p>
                                     </div>
 
                                     <select
@@ -742,23 +771,25 @@ export default function EntrenamientoClinicoVoz() {
                                         className="bg-slate-50 border border-slate-300 text-slate-900 text-xs font-bold rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-purple-200 outline-none cursor-pointer w-full sm:w-auto"
                                     >
                                         {studentViews.map(sv => {
-                                            const studentTemasCount = sv.profile?.temas ? Object.keys(sv.profile.temas).length : 0;
+                                            const studentGrouped = groupTemasByCategory(sv.profile?.temas);
+                                            const studentEbmCount = Object.values(studentGrouped).flat().length;
                                             return (
                                                 <option key={sv.profile?.userId || sv.email} value={sv.profile?.userId}>
-                                                    {sv.displayName} ({sv.email}) — {studentTemasCount} temas
+                                                    {sv.displayName} ({sv.email}) — {studentEbmCount} temas EBM
                                                 </option>
                                             );
                                         })}
                                     </select>
                                 </div>
 
-                                {/* Detalle del Estudiante Seleccionado */}
+                                {/* Detalle del Estudiante Seleccionado Organizado por Módulo */}
                                 {selectedStudentView && (() => {
-                                    const studentTemas = selectedStudentView.profile?.temas ? Object.values(selectedStudentView.profile.temas) : [];
+                                    const studentGrouped = groupTemasByCategory(selectedStudentView.profile?.temas);
+                                    const studentEbmTemasFlat = Object.values(studentGrouped).flat();
                                     const nameInitials = (selectedStudentView.displayName || 'US').substring(0, 2).toUpperCase();
 
                                     return (
-                                        <div className="space-y-4 pt-2">
+                                        <div className="space-y-6 pt-2">
                                             <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-200 flex flex-wrap items-center justify-between gap-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center font-bold text-sm">
@@ -772,52 +803,63 @@ export default function EntrenamientoClinicoVoz() {
 
                                                 <div className="flex items-center gap-4 text-right">
                                                     <div>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">Temas Practicados</span>
-                                                        <span className="text-lg font-black text-purple-950">{studentTemas.length} / 32</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">Temas EBM Practicados</span>
+                                                        <span className="text-lg font-black text-purple-950">{studentEbmTemasFlat.length} / 32</span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Lista de temas del estudiante */}
-                                            <div className="space-y-3">
-                                                {studentTemas.length === 0 ? (
-                                                    <p className="text-xs text-slate-500 py-8 text-center">Este estudiante aún no ha completado sesiones en este módulo.</p>
-                                                ) : (
-                                                    studentTemas.map((t) => {
-                                                        const topicInfo = HIP_TOPICS.find(ht => ht.id === t.topicId);
-                                                        const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
-
-                                                        return (
-                                                            <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                                                <div className="flex items-center justify-between">
-                                                                    <div>
-                                                                        <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 uppercase">
-                                                                            {t.topicId}
-                                                                        </span>
-                                                                        <h5 className="text-xs font-bold text-slate-900 mt-1">{topicInfo?.nombre || t.topicId}</h5>
-                                                                    </div>
-
-                                                                    <div className="text-right">
-                                                                        <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
-                                                                        <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
-                                                                    </div>
-                                                                </div>
-
-                                                                {t.ultimoTranscript && (
-                                                                    <details className="text-xs text-slate-600 pt-1">
-                                                                        <summary className="cursor-pointer font-bold text-purple-700 hover:text-purple-800 select-none">
-                                                                            Ver Transcripción Completa del Estudiante
-                                                                        </summary>
-                                                                        <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
-                                                                            {t.ultimoTranscript}
-                                                                        </div>
-                                                                    </details>
-                                                                )}
+                                            {/* Lista de temas del estudiante agrupados por módulo */}
+                                            {Object.keys(studentGrouped).length === 0 ? (
+                                                <p className="text-xs text-slate-500 py-8 text-center">Este estudiante aún no ha completado sesiones en este módulo EBM.</p>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    {Object.entries(studentGrouped).map(([catName, items]) => (
+                                                        <div key={catName} className="space-y-3">
+                                                            <div className="flex items-center gap-2 border-b border-purple-200 pb-2">
+                                                                <BookOpen className="w-4 h-4 text-purple-700" />
+                                                                <h5 className="text-xs font-black text-purple-950 uppercase tracking-wider">{catName}</h5>
+                                                                <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-semibold ml-auto">{items.length} temas</span>
                                                             </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
+
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                {items.map(({ topicProg: t, topicInfo }) => {
+                                                                    const puntajeFmt = typeof t.ultimoPuntaje === 'number' ? t.ultimoPuntaje.toFixed(1) : 'N/A';
+
+                                                                    return (
+                                                                        <div key={t.topicId} className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div>
+                                                                                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 uppercase">
+                                                                                        {t.topicId}
+                                                                                    </span>
+                                                                                    <h6 className="text-xs font-bold text-slate-900 mt-1">{topicInfo.nombre}</h6>
+                                                                                </div>
+
+                                                                                <div className="text-right shrink-0 ml-4">
+                                                                                    <span className="text-base font-black text-emerald-600">{puntajeFmt}</span>
+                                                                                    <span className="text-[10px] text-slate-400 block">{t.vecesCompletado ?? 1} intentos</span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {t.ultimoTranscript && (
+                                                                                <details className="text-xs text-slate-600 pt-1">
+                                                                                    <summary className="cursor-pointer font-bold text-purple-700 hover:text-purple-800 select-none">
+                                                                                        Ver Transcripción Completa del Estudiante
+                                                                                    </summary>
+                                                                                    <div className="mt-2 p-3 bg-white rounded-lg border border-slate-200 font-mono text-[11px] max-h-40 overflow-y-auto">
+                                                                                        {t.ultimoTranscript}
+                                                                                    </div>
+                                                                                </details>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })()}

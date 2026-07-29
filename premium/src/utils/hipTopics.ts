@@ -376,7 +376,7 @@ export const HIP_TOPICS: HipTopic[] = [
         preguntasEtapa4: [
             "¿Por qué los step-ups laterales de baja altura estimulan mejor el control frontal de la pelvis que la abducción en decúbito lateral?",
             "¿Qué nivel de fuerza en la escala de Daniels (MMT) debe alcanzar el glúteo medio para autorizar la marcha independiente sin bastón?",
-            "¿Cómo afecta el acortamiento adaptativo del flexor de cadera (Iliopsoas) al patrón de extensión de cadera en la fase de despegue?"
+            "¿Cómo afecta la restricción de movilidad del flexor de cadera (Iliopsoas) al patrón de extensión en la fase de despegue de la marcha?"
         ]
     },
     {
@@ -440,14 +440,14 @@ export const HIP_TOPICS: HipTopic[] = [
   2. Edema de extremidad inferior: medir perimetría en tobillo, pantorrilla y muslo (distinguir edema blando gravitacional fisiológico de edema duro asimétrico con dolor en pantorrilla = TVP).
   3. Evaluación Postural y Dismetría de Extremidades (LLD):
      - Dismetría Real (Anatómica): medición desde Espina Ilíaca Anterosuperior (EIAS) a Maléolo Medial.
-     - Dismetría Aparente (Funcional): medición desde Ombligo a Maléolo Medial. Frecuentemente causada por basculación pélvica, contractura de aductores o espasmo del cuadrado lumbar contralateral.
+     - Dismetría Aparente (Funcional): medición desde Ombligo a Maléolo Medial. Frecuentemente causada por basculación pélvica, rigidez de aductores o hipertonía defensiva del cuadrado lumbar contralateral.
 - Evaluación de oblicuidad pélvica: palpación simultánea de crestas ilíacas y EIAS en bipedestación.
 `,
         preguntasEtapa2: [
             "Describe el paso a paso exacto de la palpación y goniometría para diferenciar una dismetría de extremidades REAL de una APARENTE.",
             "¿Cómo evalúas la movilidad de la cicatriz quirúrgica respecto a planos subdérmicos y fasciales y por qué influye en el rango de flexión?",
             "¿Qué características perimétricas y palpatorias te hacen descartar un linfedema o TVP frente a un edema postoperatorio fisiológico?",
-            "¿Qué papel cumple la contractura del músculo cuadrado lumbar contralateral en la sensación subjetiva de 'pierna larga'?"
+            "¿Qué papel cumple la tensión defensiva del músculo cuadrado lumbar contralateral en la sensación subjetiva de 'pierna larga'?"
         ],
         casoEtapa3: `"Paciente de 6 semanas post-PTC posterolateral. Refiere que la cicatriz le 'tira' al sentarse y siente la pierna operada más larga. Al medir: EIAS a maléolo = 88 cm en ambas piernas. Ombligo a maléolo = 93 cm en operada vs 91 cm en sana." Diagnostica el problema y propone 2 intervenciones.`,
         preguntasEtapa4: [
@@ -467,21 +467,21 @@ export const HIP_TOPICS: HipTopic[] = [
   - Abducción (meta: 35°-45°) y Adducción (evaluada con precaución según fase).
   - Rotaciones pasivas en posición neutra y a 90° de flexión (respetando restricciones quirúrgicas del abordaje).
 - Diagnóstico Diferencial de la Restricción de Rango:
-  - End-feel Capsular/Ligamentoso Firme (ganable mediante terapia manual y estiramiento).
+  - End-feel Capsular/Ligamentoso Firme (ganable mediante terapia manual y movimiento activo).
   - End-feel Duro Óseo/Protésico (bloqueo mecánico por impaction o protuberancia ósea/heterotópica: NO forzar).
-  - Bloqueo por Protección Muscular / Espasmo / Miedo (requiere PNE, calor local, inhibición y movimiento lento).
+  - Bloqueo por Protección Muscular / Guarding Neuromuscular por Dolor o Miedo (requiere PNE, exposición gradual al movimiento y modulación neurofisiológica).
 `,
         preguntasEtapa2: [
             " Explica la técnica goniométrica correcta para medir la extensión pura de cadera evitando el engaño de la anteversión pélvica o hiperlordosis lumbar.",
             "Diferencia el diagnóstico y conducta clínica entre un end-feel firme capsular versus un end-feel duro en la flexión de cadera post-PTC.",
-            "¿Cómo utilizas el Test de Thomas para detectar una contractura en flexión del Iliopsoas versus un acortamiento del Recto Femoral?",
+            "¿Cómo utilizas el Test de Thomas para diferenciar una restricción en flexión del Iliopsoas versus una restricción de longitud del Recto Femoral?",
             "¿Por qué es más prioritario lograr los 0° de extensión completa de cadera para la marcha que ganar los últimos 15° de flexión profunda?"
         ],
         casoEtapa3: `"Paciente de 8 semanas post-PTC. Al evaluar extensión pasiva en prono, la cadera se queda a -10° de extensión. Al forzar suavemente siente un tope duro indoloro y la pelvis se eleva inmediatamente de la camilla." Diagnostica el tipo de restricción y determina si es adecuado forzar el rango.`,
         preguntasEtapa4: [
             "¿Qué grado de flexión de cadera en camilla es el mínimo requerido para que un paciente logre subir escaleras sin girar el tronco?",
             "¿Qué es la oscilación pélvica anterior compensatoria y qué músculos sufren atrofia secundaria cuando persiste un déficit de extensión de cadera?",
-            "¿Cómo se distingue clínicamente una contractura del Tensor de la Fascia Lata (Test de Ober) de una restricción de la cápsula anterior?"
+            "¿Cómo se distingue clínicamente una rigidez o restricción del Tensor de la Fascia Lata (Test de Ober) de una restricción de la cápsula anterior?"
         ]
     },
     {
@@ -1000,12 +1000,12 @@ export const HIP_TOPICS: HipTopic[] = [
   - Etiología: sobrecarga por cizallamiento vertical y rotacional de la sínfisis púbica durante la marcha rápida, cambios de dirección y patadas.
 - Dolor Inguinal Relacionado con el Canal Inguinal ('Sports Hernia' / Hernia del Deportista / Athletic Pubalgia):
   - Criterios Diagnósticos: Dolor en la región del canal inguinal Y dolor reproducido al realizar la maniobra de Valsalva, tos o abdominales resistidos (sit-ups), sin evidencia de hernia abdominal palpable/clínica.
-  - Patomecánica: debilidad o micro-desgarro de la pared posterior del canal inguinal (fascia transversalis, tendón conjunto del oblicuo interno y transverso) debida a la tracción asimétrica entre los abdominales y los aductores.
+  - Patomecánica: debilidad o micro-desgarro de la pared posterior del canal inguinal (fascia transversalis, tendón conjunto del oblicuo interno y transverso) debida a las fuerzas de tracción asimétricas entre los abdominales y los aductores.
 - Coexistencia de entidades de Doha: es sumamente común que un deportista presente 2 o más entidades en simultáneo (ej: Aductores + Pubis + Canal Inguinal).
 `,
         preguntasEtapa2: [
             "Cómo diferencias la entidad 'Dolor Relacionado con el Pubis' de la entidad 'Dolor Relacionado con el Canal Inguinal' según el Consenso de Doha?",
-            " Explica la patomecánica de cizallamiento de la sínfisis púbica provocada por el desequilibrio entre el recto abdominal y el aductor largo.",
+            " Explica la patomecánica de cizallamiento de la sínfisis púbica provocada por las fuerzas de tracción asimétricas entre el recto abdominal y el aductor largo.",
             "¿Qué es la 'Sports Hernia' o hernia del deportista y por qué no presenta un saco herniario palpable a la inspección tradicional?",
             "¿Por qué la maniobra de Valsalva (toser, pujar) exacerba el dolor en la entidad del canal inguinal?"
         ],
