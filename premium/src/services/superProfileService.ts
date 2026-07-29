@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, Timestamp } from 'firebase/firestore';
 import { SuperProfile, INITIAL_SUPER_PROFILE } from '@/types/superProfile';
 
 const SUPER_PROFILES_COLLECTION = 'super_profiles';
@@ -25,6 +25,23 @@ export async function getSuperProfile(userId: string, userName: string = 'Intern
     } catch (error) {
         console.error('Error al obtener SuperProfile desde Firestore:', error);
         return INITIAL_SUPER_PROFILE(userId, userName);
+    }
+}
+
+/**
+ * Obtiene todos los Super Profiles de la cohorte para el panel del Agente Antigravity (Docente / Admin).
+ */
+export async function getAllSuperProfiles(): Promise<SuperProfile[]> {
+    try {
+        const querySnapshot = await getDocs(collection(db, SUPER_PROFILES_COLLECTION));
+        const profiles: SuperProfile[] = [];
+        querySnapshot.forEach((docSnap) => {
+            profiles.push(docSnap.data() as SuperProfile);
+        });
+        return profiles;
+    } catch (error) {
+        console.error('Error al obtener todos los SuperProfiles:', error);
+        return [];
     }
 }
 
