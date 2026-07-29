@@ -152,10 +152,8 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
             channelData[i] = pcm16[i] / 32768.0;
         }
 
-        const playbackRate = 1.10;
         const source = playbackCtx.createBufferSource();
         source.buffer = audioBuffer;
-        source.playbackRate.value = playbackRate;
         source.connect(playbackCtx.destination);
         
         if (playbackNextTimeRef.current < playbackCtx.currentTime) {
@@ -163,7 +161,7 @@ export function useGeminiLive({ systemInstruction, voiceName = "Aoede", audioDev
         }
         
         source.start(playbackNextTimeRef.current);
-        playbackNextTimeRef.current += (audioBuffer.duration / playbackRate);
+        playbackNextTimeRef.current += audioBuffer.duration;
         
         activeSourcesRef.current += 1;
         source.onended = () => {
