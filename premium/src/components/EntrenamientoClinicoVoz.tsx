@@ -71,6 +71,15 @@ export default function EntrenamientoClinicoVoz() {
     } | null>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tab') === 'ANTIGRAVITY_AGENT') {
+                setActiveTab('ANTIGRAVITY_AGENT');
+            }
+        }
+    }, []);
+
+    useEffect(() => {
         if (user) {
             loadInitialData();
         }
