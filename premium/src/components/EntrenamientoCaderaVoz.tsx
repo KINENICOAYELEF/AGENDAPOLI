@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { HIP_TOPICS, HipTopic } from '../utils/hipTopics';
 import { generateHipSocraticPrompt } from '../utils/hipPrompts';
+import { saveTrainingSession } from '../services/entrenamientoFirebase';
 import { Activity, BookOpen, ShieldAlert, Award, RefreshCw, Volume2, Mic, MicOff, CheckCircle2, ChevronRight, Search, Sparkles } from 'lucide-react';
 
 export default function EntrenamientoCaderaVoz() {
@@ -84,9 +85,26 @@ export default function EntrenamientoCaderaVoz() {
         }
     };
 
-    const handleEndSession = () => {
+    const handleEndSession = async () => {
         disconnect();
         setSessionState('COMPLETED');
+        if (user) {
+            try {
+                const fullText = transcript.map(t => `${t.role === 'user' ? 'Alumno' : 'IA'}: ${t.text}`).join('\n');
+                await saveTrainingSession(
+                    user.uid,
+                    currentTopic.id,
+                    6.0,
+                    [],
+                    { biomecanica: 6.0, diagnostico: 6.0, neurofisiologia: 6.0, dosificacion: 6.0, terapiaManual: 6.0 },
+                    'NEUTRO',
+                    fullText,
+                    [`Completó tema de cadera: ${currentTopic.nombre}`]
+                );
+            } catch (err) {
+                console.error("Error guardando sesión de cadera en Firebase:", err);
+            }
+        }
     };
 
     return (
