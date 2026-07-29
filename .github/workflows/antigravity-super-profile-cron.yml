@@ -1,0 +1,26 @@
+name: Antigravity Agent Super Profile Nightly Synthesis
+
+on:
+  schedule:
+    # Runs every night at 02:00 AM UTC (23:00 PM Chile)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  synthesize-super-profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Antigravity Synthesis Cron Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://polideportivo.vercel.app' }}
+        run: |
+          node premium/scripts/run-antigravity-cron.js
