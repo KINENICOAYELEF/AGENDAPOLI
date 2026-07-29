@@ -8,6 +8,9 @@ import type { SimCaseType } from '@/lib/ai/simuladorSchemas';
 import { saveVoiceDefense, exportarDefensaVozPDF } from '@/services/simuladorFirebase';
 import { DefensaVozHistorial } from './DefensaVozHistorial';
 
+import { getSuperProfile } from '@/services/superProfileService';
+import type { SuperProfile } from '@/types/superProfile';
+
 // ─── Types ───
 type SimPhase = 'SETUP' | 'CONSTRUCTION' | 'COMMISSION_VOICE' | 'RESULTS';
 
@@ -25,7 +28,14 @@ async function simFetch(action: string, payload: unknown, userId: string) {
 
 export function DefensaExamenVoz() {
     const { user } = useAuth();
+    const [superProfile, setSuperProfile] = useState<SuperProfile | null>(null);
     const [phase, setPhase] = useState<SimPhase>('SETUP');
+
+    useEffect(() => {
+        if (user) {
+            getSuperProfile(user.uid, user.displayName || 'Interno').then(setSuperProfile).catch(() => {});
+        }
+    }, [user]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
@@ -58,7 +68,9 @@ export function DefensaExamenVoz() {
             caseData.ficha_visible,
             caseData.perfil_secreto,
             caseData.hallazgos_todos_modulos,
-            construction
+            construction,
+            undefined,
+            superProfile?.miniPromptDinamico
         ) : '',
         voiceName: 'Orion',
         audioDeviceId: selectedDeviceId || undefined

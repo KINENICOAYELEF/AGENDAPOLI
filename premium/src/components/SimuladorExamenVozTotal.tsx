@@ -59,8 +59,18 @@ const OSCE_PHASES: SimPhase[] = [
     'RESULTS'
 ];
 
+import { getSuperProfile } from '@/services/superProfileService';
+import type { SuperProfile } from '@/types/superProfile';
+
 export function SimuladorExamenVozTotal() {
     const { user } = useAuth();
+    const [superProfile, setSuperProfile] = useState<SuperProfile | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            getSuperProfile(user.uid, user.displayName || 'Interno').then(setSuperProfile).catch(() => {});
+        }
+    }, [user]);
     const [phase, setPhase] = useState<SimPhase>('SETUP');
     const [loading, setLoading] = useState(false);
     const [loadingTranscription, setLoadingTranscription] = useState(false);
@@ -524,6 +534,20 @@ export function SimuladorExamenVozTotal() {
             setCommissionData(data);
             
             await persistAttempt(evaluationData, data, transcriptText);
+
+            // Disparo de síntesis del Super Perfil Longitudinal en segundo plano
+            fetch('/api/ai/super-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'SYNTHESIZE',
+                    userId: user.uid,
+                    estudianteNombre: user.displayName || 'Interno',
+                    recentTranscript: transcriptText,
+                    recentErrors: data?.errores || []
+                })
+            }).catch(e => console.error("Error en síntesis background de SuperProfile:", e));
+
             setPhase('RESULTS');
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Error en la evaluación de la comisión');

@@ -95,9 +95,11 @@ export const generateCommissionPrompt = (
         cantidadPreguntas?: number;
         tiempoLimiteMin?: number;
         instruccionesDocente?: string;
-    }
+    },
+    miniPromptDinamico?: string
 ): string => {
     const cantidadPreguntas = config?.cantidadPreguntas ?? 15;
+    const directivaSuperPerfil = miniPromptDinamico ? `\n=== DIRECTRIZ LONGITUDINAL DEL AGENTE ANTIGRAVITY ===\n${miniPromptDinamico}\n` : '';
 
     const fasesTexto = `FASE 1: Ataque a la Propuesta Escrita (Aprox. 3 preguntas)
 Cuestiona agresivamente el Diagnóstico Kinesiológico o el Plan de Fases que el estudiante escribió. Pregúntale por qué decidió esos objetivos y ataca posibles debilidades o contradicciones.
@@ -136,6 +138,7 @@ ${config.instruccionesDocente}` : '';
 Eres una comisión evaluadora de exámenes de grado de Kinesiología en Chile.
 El estudiante acaba de leer el caso clínico y ha escrito sus propuestas.
 Tu deber es interrogarlo verbalmente evaluando su razonamiento a través de un total EXACTO de ${cantidadPreguntas} PREGUNTAS principales numeradas.
+${directivaSuperPerfil}`.trim() + `
 
 === CONTEXTO DEL CASO ===
 Paciente: ${fichaVisible?.nombre || 'Desconocido'}, ${fichaVisible?.edad || 'N/A'}. Motivo: ${fichaVisible?.motivo_consulta || 'N/A'}.
