@@ -36,10 +36,10 @@ export default function EntrenamientoClinicoVoz() {
     const [currentTopic, setCurrentTopic] = useState<HipTopic>(HIP_TOPICS[0]);
     const [mode, setMode] = useState<'TUTOR' | 'EXAMEN'>('TUTOR');
 
-    // UI Accordion States
-    const [openZone, setOpenZone] = useState<string>('Cadera');
+    // UI Accordion States - Todos colapsados por defecto para una vista limpia
+    const [openZone, setOpenZone] = useState<string>('');
     const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-        'Coxartrosis': true,
+        'Coxartrosis': false,
         'Artroplastia (PTC)': false,
         'Evaluación Post-Artroplastia': false,
         'FAI y Labrum': false,
