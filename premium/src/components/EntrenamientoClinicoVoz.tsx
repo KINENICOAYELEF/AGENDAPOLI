@@ -115,7 +115,7 @@ export default function EntrenamientoClinicoVoz() {
                 mode
               )
             : '',
-        voiceName: 'Orion'
+        voiceName: 'Puck'
     });
 
     const bodyZones = [
