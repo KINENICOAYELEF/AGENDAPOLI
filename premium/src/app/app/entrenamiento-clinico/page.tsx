@@ -10,7 +10,7 @@ export default function EntrenamientoClinicoPage() {
 
     if (!user) return null;
 
-    if (user.role !== 'DOCENTE' && user.role !== 'INTERNO' && user.role !== 'STUDENT') {
+    if (user.role !== 'DOCENTE' && user.role !== 'INTERNO') {
         return (
             <div className="max-w-md mx-auto my-12 p-6 bg-white border border-slate-200 rounded-2xl text-center space-y-4 text-slate-900 shadow-sm">
                 <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
