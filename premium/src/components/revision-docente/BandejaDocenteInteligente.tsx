@@ -6,6 +6,7 @@ import { AgentReview, StudentLearningProfile } from '@/types/agentDataFoundation
 import { collection, getDocs, doc, updateDoc, setDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { FichaAlumnoCompletaModal } from './FichaAlumnoCompletaModal';
 
 export function BandejaDocenteInteligente() {
     const { user } = useAuth();
@@ -16,6 +17,10 @@ export function BandejaDocenteInteligente() {
     const [editingReview, setEditingReview] = useState<AgentReview | null>(null);
     const [editText, setEditText] = useState('');
     const [isTriggeringRun, setIsTriggeringRun] = useState(false);
+    
+    // Estado para la modal de ficha completa
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+    const [selectedProfile, setSelectedProfile] = useState<StudentLearningProfile | null>(null);
 
     useEffect(() => {
         loadBandejaData();
@@ -189,6 +194,16 @@ export function BandejaDocenteInteligente() {
                                         </span>
                                         <span className="text-xs font-bold text-slate-900">Estudiante ID: {review.studentId}</span>
                                         <span className="text-[11px] text-slate-400 font-mono">• Registro: {review.recordType}</span>
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedStudentId(review.studentId);
+                                                setSelectedProfile(profiles[review.studentId] || null);
+                                            }}
+                                            className="ml-2 px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1 border border-indigo-200"
+                                        >
+                                            <UserCheck className="w-3 h-3" />
+                                            Ver Ficha Completa
+                                        </button>
                                     </div>
                                     <span className="text-[11px] text-slate-400 font-mono">Confianza IA: {Math.round(review.confidence * 100)}%</span>
                                 </div>
@@ -282,6 +297,18 @@ export function BandejaDocenteInteligente() {
                         );
                     })}
                 </div>
+            )}
+
+            {/* Modal de Ficha Completa del Alumno */}
+            {selectedStudentId && (
+                <FichaAlumnoCompletaModal
+                    studentId={selectedStudentId}
+                    profile={selectedProfile}
+                    onClose={() => {
+                        setSelectedStudentId(null);
+                        setSelectedProfile(null);
+                    }}
+                />
             )}
         </div>
     );

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAgentRun } from '@/lib/agent/runManager';
 import { runAgent } from '@/lib/agent/client';
 import { updateAgentRun } from '@/lib/agent/runManager';
+import { runCensusEngine } from '@/lib/agent/censusEngine';
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,9 @@ export async function POST(req: Request) {
       try {
         const response = await runAgent(payload.prompt || '', payload.context);
         await updateAgentRun(runId, 'completed', response);
+        
+        // Ejecutar el motor de censo en segundo plano
+        await runCensusEngine();
       } catch (err: any) {
         await updateAgentRun(runId, 'error', { error: err.message });
       }
