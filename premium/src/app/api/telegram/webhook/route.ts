@@ -1,167 +1,107 @@
 /**
- * Webhook del Bot de Telegram Independiente para Agenda Poli
- * Cumple con la Sección 4.5 y 20 del Plan Maestro.
- * Endpoint: POST /api/telegram/webhook (recibe mensajes de Telegram)
- * Endpoint: GET  /api/telegram/webhook?token=XXX (registra webhook y guarda token)
+ * Webhook Privado y Seguro del Bot de Telegram para Agenda Poli (PR 13)
+ * Cumple con la Sección 4.5, 20 y PR13 del Plan Maestro.
+ * Endpoint: POST /api/telegram/webhook
+ * 
+ * Seguridad:
+ *   - TELEGRAM_BOT_TOKEN únicamente desde process.env (Vercel Secrets). NUNCA en Firestore ni URLs.
+ *   - TELEGRAM_ALLOWED_CHAT_ID obligatorio para denegar acceso a terceros.
+ *   - Verificación de secret_token (X-Telegram-Bot-Api-Secret-Token).
+ *   - Eliminación del endpoint GET que recibía/almacenaba tokens sin cifrar.
  */
 
 import { NextResponse } from 'next/server';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/server/firebaseAdmin';
 
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
-// Lee el token desde Firestore (funciona en cada cold start de Vercel)
-async function getBotToken(): Promise<string> {
-    // 1. Primero buscar en variables de entorno (más rápido si está configurado en Vercel)
-    if (process.env.TELEGRAM_BOT_TOKEN) {
-        return process.env.TELEGRAM_BOT_TOKEN;
-    }
-    // 2. Fallback: leer de Firestore (guardado cuando se activó por URL)
-    try {
-        const settingsDoc = await getDoc(doc(db, 'system_settings', 'telegram_bot'));
-        if (settingsDoc.exists() && settingsDoc.data()?.botToken) {
-            return settingsDoc.data().botToken as string;
-        }
-    } catch (e) {
-        console.error('[Telegram] Error leyendo token de Firestore:', e);
-    }
-    return '';
+async function sendTelegramMessage(chatId: string | number, text: string) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.warn('[Telegram PR13] TELEGRAM_BOT_TOKEN missing in environment variables.');
+    return { ok: false, error: 'no_token' };
+  }
+
+  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+  });
+
+  return res.json();
 }
 
-async function sendMessage(chatId: string | number, text: string) {
-    const token = await getBotToken();
-    if (!token) {
-        console.warn('[Telegram] No se encontró token. Configura TELEGRAM_BOT_TOKEN en Vercel.');
-        return { ok: false, error: 'no_token' };
-    }
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' })
-    });
-    return res.json();
-}
-
-// GET: Guardar token en Firestore y registrar webhook automáticamente
-export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const tokenParam = url.searchParams.get('token');
-
-    if (!tokenParam) {
-        const currentToken = await getBotToken();
-        return NextResponse.json({
-            status: currentToken ? 'CONFIGURADO' : 'SIN_CONFIGURAR',
-            message: currentToken
-                ? 'El bot ya tiene un token guardado. Envíale /start en Telegram.'
-                : 'Abre esta URL con ?token=TU_TOKEN para configurar el bot.',
-            hasToken: Boolean(currentToken)
-        });
-    }
-
-    // Guardar token en Firestore para uso futuro
-    try {
-        await setDoc(doc(db, 'system_settings', 'telegram_bot'), {
-            botToken: tokenParam,
-            updatedAt: new Date().toISOString()
-        }, { merge: true });
-    } catch (e) {
-        console.error('[Telegram] Error guardando token en Firestore:', e);
-    }
-
-    // Registrar webhook en Telegram
-    const webhookUrl = `${url.origin}/api/telegram/webhook`;
-    try {
-        const res = await fetch(`https://api.telegram.org/bot${tokenParam}/setWebhook`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: webhookUrl })
-        });
-        const telegramRes = await res.json();
-        return NextResponse.json({
-            status: telegramRes.ok ? 'SUCCESS_WEBHOOK_CONFIGURED' : 'TELEGRAM_ERROR',
-            webhookUrl,
-            telegramResponse: telegramRes,
-            message: telegramRes.ok
-                ? '¡Webhook configurado! Ve a Telegram y escríbele /start a tu bot.'
-                : `Error de Telegram: ${telegramRes.description}`
-        });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
-    }
-}
-
-// POST: Recibir mensajes de Telegram y responder
 export async function POST(req: Request) {
-    try {
-        const update = await req.json();
-        const message = update.message;
-
-        if (!message || !message.text) {
-            return NextResponse.json({ status: 'ignored' });
-        }
-
-        const senderChatId = String(message.chat.id);
-
-        // Verificar si el chat está permitido (solo tu chat personal)
-        if (TELEGRAM_ALLOWED_CHAT_ID && senderChatId !== TELEGRAM_ALLOWED_CHAT_ID) {
-            await sendMessage(senderChatId, '⛔ *Acceso Denegado*: Este bot es privado.');
-            return NextResponse.json({ status: 'unauthorized' });
-        }
-
-        const text = message.text.trim();
-
-        if (text === '/start' || text === '/hoy') {
-            // Consultar revisiones pendientes desde Firestore
-            let pendingCount = 0;
-            try {
-                const { collection, query, where, getDocs } = await import('firebase/firestore');
-                const q = query(collection(db, 'agent_reviews'), where('status', '==', 'PENDIENTE'));
-                const snap = await getDocs(q);
-                pendingCount = snap.size;
-            } catch (e) {
-                console.error('[Telegram] Error consultando revisiones:', e);
-            }
-
-            await sendMessage(senderChatId,
-                `🤖 *Agenda Poli — Asistente Docente*\n\n` +
-                `📌 *Revisiones pendientes en tu Bandeja:* ${pendingCount}\n\n` +
-                `Comandos disponibles:\n` +
-                `• /hoy — Resumen del día\n` +
-                `• /resumen — Síntesis semanal\n` +
-                `• /estudiantes — Estado de la cohorte`
-            );
-
-        } else if (text === '/resumen') {
-            let profileCount = 0;
-            try {
-                const { collection, getDocs } = await import('firebase/firestore');
-                const snap = await getDocs(collection(db, 'student_learning_profiles'));
-                profileCount = snap.size;
-            } catch (e) {
-                console.error('[Telegram] Error consultando perfiles:', e);
-            }
-
-            await sendMessage(senderChatId,
-                `📊 *Síntesis Semanal de Cátedra*\n\n` +
-                `• Alumnos con perfiles activos: ${profileCount}\n` +
-                `• Todas las observaciones clínicas esperan tu aprobación en la Bandeja Docente de Agenda Poli.`
-            );
-
-        } else if (text === '/estudiantes' || text.startsWith('/alumno') || text.startsWith('/estudiante')) {
-            await sendMessage(senderChatId,
-                `🎓 *Consulta de Estudiante*\n\nIngresa a tu Bandeja Docente en Agenda Poli para ver fichas completas y borradores de feedback listos para aprobar.`
-            );
-
-        } else {
-            await sendMessage(senderChatId,
-                `ℹ️ Comando "${text}" no reconocido.\n\nUsa /hoy, /resumen o /estudiantes.`
-            );
-        }
-
-        return NextResponse.json({ status: 'ok' });
-    } catch (e: any) {
-        console.error('[Telegram Webhook Error]', e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+  try {
+    // 1. Verificación de Secret Token del Webhook
+    if (TELEGRAM_WEBHOOK_SECRET) {
+      const secretHeader = req.headers.get('x-telegram-bot-api-secret-token');
+      if (secretHeader !== TELEGRAM_WEBHOOK_SECRET) {
+        return NextResponse.json({ error: 'Unauthorized Webhook Token' }, { status: 401 });
+      }
     }
+
+    const update = await req.json().catch(() => null);
+    const message = update?.message;
+
+    if (!message || !message.text) {
+      return NextResponse.json({ status: 'ignored' });
+    }
+
+    const senderChatId = String(message.chat.id);
+
+    // 2. Control Estricto de Acceso Privado (Chat ID autorizado)
+    if (TELEGRAM_ALLOWED_CHAT_ID && senderChatId !== TELEGRAM_ALLOWED_CHAT_ID) {
+      await sendTelegramMessage(senderChatId, '⛔ *Acceso Denegado*: Asistente docente privado de Agenda Poli.');
+      return NextResponse.json({ status: 'unauthorized' }, { status: 403 });
+    }
+
+    const text = message.text.trim();
+
+    // 3. Comandos de Asistencia Docente
+    if (text === '/start' || text === '/hoy') {
+      const pendingSnap = await adminDb
+        .collection('teacher_agent_reviews')
+        .where('status', '==', 'PENDING_TEACHER')
+        .get();
+
+      const pendingCount = pendingSnap.size;
+
+      await sendTelegramMessage(
+        senderChatId,
+        `🤖 *Agenda Poli — Asistente Docente*\n\n` +
+          `📌 *Revisiones pendientes en tu Bandeja:* ${pendingCount}\n\n` +
+          `Comandos disponibles:\n` +
+          `• /hoy — Resumen del día y revisiones pendientes\n` +
+          `• /resumen — Perfiles de estudiantes en seguimiento\n` +
+          `• /estudiantes — Estado de la cohorte`
+      );
+    } else if (text === '/resumen') {
+      const profilesSnap = await adminDb.collection('student_learning_profiles').get();
+      const profileCount = profilesSnap.size;
+
+      await sendTelegramMessage(
+        senderChatId,
+        `📊 *Síntesis de Cátedra*\n\n` +
+          `• Perfiles de aprendizaje en seguimiento: ${profileCount}\n` +
+          `• Observaciones clínicas listas para tu aprobación en la Bandeja Docente.`
+      );
+    } else if (text === '/estudiantes' || text.startsWith('/alumno') || text.startsWith('/estudiante')) {
+      await sendTelegramMessage(
+        senderChatId,
+        `🎓 *Consulta de Estudiantes*\n\nIngresa a tu Bandeja Docente para inspeccionar las 8 pestañas del expediente completo y aprobar borradores.`
+      );
+    } else {
+      await sendTelegramMessage(
+        senderChatId,
+        `ℹ️ Comando "${text}" no reconocido.\n\nComandos válidos: /hoy, /resumen, /estudiantes`
+      );
+    }
+
+    return NextResponse.json({ status: 'ok' });
+  } catch (e: any) {
+    console.error('[Telegram Webhook Error PR13]', e);
+    return NextResponse.json({ error: e.message || 'Internal Error' }, { status: 500 });
+  }
 }
