@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import { useAuth, AppUser } from "@/context/AuthContext";
 import { useYear } from "@/context/YearContext";
 import { Evaluacion, Evolucion } from "@/types/clinica";
+import { BandejaDocenteInteligente } from "@/components/revision-docente/BandejaDocenteInteligente";
 
 type RecordKind = "EVALUACION" | "EVOLUCION";
 type Filter = "TODOS" | "PENDIENTES" | "BORRADORES" | "ALERTAS";
@@ -194,7 +195,10 @@ export default function RevisionDocentePage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-8">
-            <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+            {/* AGENTE AUTÓNOMO Y OBSERVACIONES DOCENTES DE ANTIGRAVITY */}
+            <BandejaDocenteInteligente />
+
+            <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 border-t border-slate-200 pt-6">
                 <div>
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 mb-2"><span className="w-2 h-2 rounded-full bg-indigo-500" /> Supervisión clínica</div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Bandeja docente</h1>
