@@ -1,0 +1,23 @@
+{
+  "hooks": [
+    {
+      "event": "on_feedback_draft_created",
+      "action": "teacher-calibration",
+      "description": "Trigger teacher calibration to adjust the draft style before presenting to the teacher."
+    },
+    {
+      "event": "on_finding_saved",
+      "action": "notification-triage",
+      "description": "Evaluate the urgency of the new clinical finding and decide if an alert should be sent."
+    },
+    {
+      "event": "on_record_analyzed",
+      "action": "student-reasoning",
+      "description": "Update the longitudinal student reasoning profile."
+    }
+  ],
+  "security": {
+    "block_direct_student_messaging": true,
+    "require_manual_approval_for_final_grades": true
+  }
+}
